@@ -1,0 +1,184 @@
+# BSD Router Project NanoBSD configuration file
+
+# Name of this NanoBSD build.  (Used to construct workdir names)
+NANO_NAME=BSDRP
+
+# Source tree directory
+NANO_SRC=/usr/src
+
+# Where nanobsd additional files live under the source tree
+NANO_TOOLS=tools/tools/nanobsd/BSDRP
+
+# Where cust_pkg() finds packages to install
+NANO_PACKAGE_DIR=${NANO_SRC}/${NANO_TOOLS}/Pkg
+NANO_PACKAGE_LIST="*"
+
+# Object tree directory
+# default is subdir of /usr/obj
+# XXX: MAKEOBJDIRPREFIX handling... ?
+#NANO_OBJ=""
+
+# The directory to put the final images
+# default is ${NANO_OBJ}
+#NANO_DISKIMGDIR=""
+
+# Parallel Make
+NANO_PMAKE="make -j 3"
+
+# The default name for any image we create.
+NANO_IMGNAME="_.disk.full"
+
+# Options to put in make.conf during buildworld only
+CONF_BUILD=''
+
+# Options to put in make.conf during installworld only
+CONF_INSTALL='
+WITHOUT_TOOLCHAIN=YES
+'
+
+# Options to put in make.conf during both build- & installworld.
+# See the file /usr/src/tools/build/options for details
+#CONF_WORLD=''
+CONF_WORLD='
+WITHOUT_ACCT=
+WITHOUT_APM=
+WITHOUT_ASSERT_DEBUG=
+WITHOUT_ATM=
+WITHOUT_AUDIT=
+WITHOUT_AUTHPF=
+WITHOUT_BIND=
+WITHOUT_BIND_DNSSEC=
+WITHOUT_BIND_ETC=
+WITHOUT_BIND_LIBS_LWRES=
+WITHOUT_BIND_MTREE=
+WITHOUT_BIND_NAMED=
+WITHOUT_BIND_UTILS=
+WITHOUT_BLUETOOTH=
+WITHOUT_CALENDAR=
+WITHOUT_CTM=
+WITHOUT_CVS=
+WITHOUT_DICT=
+WITHOUT_EXAMPLES=
+WITHOUT_FLOPPY=
+WITHOUT_FREEBSD_UPDATE=
+WITHOUT_GAMES=
+WITHOUT_GCOV=
+WITHOUT_GDB=
+WITHOUT_GPIB=
+WITHOUT_GROFF=
+WITHOUT_HTML=
+WITHOUT_INFO=
+WITHOUT_IPFILTER=
+WITHOUT_IPFW=
+WITHOUT_IPX=
+WITHOUT_IPX_SUPPORT=
+WITHOUT_JAIL=
+WITHOUT_KERBEROS=
+WITHOUT_KERBEROS_SUPPORT=
+WITHOUT_LEGACY_CONSOLE=
+WITHOUT_LIB32=
+WITHOUT_LOCALES=
+WITHOUT_LOCATE=
+WITHOUT_LPR=
+WITHOUT_MAIL=
+WITHOUT_MAILWRAPPER=
+WITHOUT_MAN=
+WITHOUT_NCP=
+WITHOUT_NDIS=
+WITHOUT_NETCAT=
+WITHOUT_NIS=
+WITHOUT_NLS=
+WITHOUT_NLS_CATALOGS=
+WITHOUT_NS_CACHING=
+WITHOUT_PORTSNAP=
+WITHOUT_QUOTAS=
+WITHOUT_RCMDS=
+WITHOUT_RCS=
+WITHOUT_RESCUE=
+WITHOUT_SENDMAIL=
+WITHOUT_SHAREDOCS=
+WITHOUT_SSP=
+WITHOUT_SYSINSTALL=
+WITHOUT_TELNET=
+WITHOUT_WIRELESS=
+WITHOUT_WIRELESS_SUPPORT=
+WITHOUT_WPA_SUPPLICANT_EAPOL=
+WITHOUT_ZFS=
+'
+
+# Kernel config file to use
+#NANO_KERNEL=BSDRP-I386
+NANO_KERNEL=BSDRP-AMD64
+
+# Customize commands.
+NANO_CUSTOMIZE=""
+
+# Late customize commands.
+NANO_LATE_CUSTOMIZE=""
+
+# Newfs paramters to use
+NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -U"
+
+# The drive name of the media at runtime
+NANO_DRIVE=ad0
+
+# Target media size in 512 bytes sectors
+NANO_MEDIASIZE=1200000
+
+# Number of code images on media (1 or 2)
+NANO_IMAGES=2
+
+# 0 -> Leave second image all zeroes so it compresses better.
+# 1 -> Initialize second image with a copy of the first
+NANO_INIT_IMG2=0
+
+# Size of code file system in 512 bytes sectors
+# If zero, size will be as large as possible.
+NANO_CODESIZE=0
+
+# Size of configuration file system in 512 bytes sectors
+# Cannot be zero.
+NANO_CONFSIZE=2048
+
+# Size of data file system in 512 bytes sectors
+# If zero: no partition configured.
+# If negative: max size possible
+NANO_DATASIZE=0
+
+# Size of the /etc ramdisk in 512 bytes sectors
+NANO_RAM_ETCSIZE=10240
+
+# Size of the /tmp+/var ramdisk in 512 bytes sectors
+NANO_RAM_TMPVARSIZE=10240
+
+# Media geometry, only relevant if bios doesn't understand LBA.
+NANO_SECTS=63
+NANO_HEADS=16
+
+# boot0 flags/options and configuration
+#  boot/boot0: vga console
+#  boot/boot0sio : serial console
+#  if serial used:  don't forget to add "customize_cmd cust_comconsole" line with this option too
+NANO_BOOT0CFG="-o packet -s 1 -m 3"
+#NANO_BOOTLOADER="boot/boot0sio"
+NANO_BOOTLOADER="boot/boot0"
+
+# Backing type of md(4) device
+# Can be "file" or "swap"
+NANO_MD_BACKING="file"
+
+# Progress Print level
+PPLEVEL=3
+
+#######################################################################
+# Not a variable at this time
+
+#NANO_ARCH=i386
+NANO_ARCH=amd64
+
+#Install NanoBSD scripts
+customize_cmd cust_install_files
+#To be used with the serial boot loader:
+#customize_cmd cust_comconsole
+# Allow root login via ssh
+customize_cmd cust_allow_ssh_root
