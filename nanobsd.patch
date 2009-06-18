@@ -1,0 +1,13 @@
+--- nanobsd.orig	2009-06-17 20:32:03.000000000 +0200
++++ nanobsd.sh	2009-06-17 20:36:23.000000000 +0200
+@@ -490,6 +490,10 @@
+ 	) > ${MAKEOBJDIRPREFIX}/_.di 2>&1
+ )
+ 
++create_amd64_diskimage ( ) (
++	create_i386_diskimage $@
++)
++
+ last_orders () (
+ 	# Redefine this function with any last orders you may have
+ 	# after the build completed, for instance to copy the finished
