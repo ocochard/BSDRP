@@ -32,28 +32,29 @@ pprint() {
     fi
 }
 
+check_current_dir() {
+#### Check current dir
+
+if [ "$NANOBSD_DIR/BSDRP" != `pwd` ]
+then
+	pprint 1 "You need to install source code of BSDRP in $NANOBSD_DIR/BSDRP"
+	pprint 1 "Download BSDRP source with this command:"
+	pprint 1 "cd /usr/src/tools/tools/nanobsd"
+	pprint 1 "svn co https://bsdrp.svn.sourceforge.net/svnroot/bsdrp/trunk BSDRP"
+	exit 1
+fi
+}
+
 check_system() {
 #### Check prerequisites
 
-#testing host version is not reliable: It's possible to install current source on a 7 release for example
-#we need to test that source current are installed
-#if [ $SYSTEM_RELEASE != $SYSTEM_REQUIRED ]
+pprint 3 "Checking if FreeBSD-current sources are installed..."
+
 if [ ! -f /usr/src/sys/sys/vimage.h  ]
 then
-	pprint 1 "BSDRP need up-to-date sources for FreeBSD $SYSTEM_REQUIRED"
-#	pprint 1 "And you have a $SYSTEM_RELEASE"
-	pprint 1 "And vimage.h (introduce in current source) not found"
+	pprint 1 "BSDRP need up-to-date sources for FreeBSD-current"
+	pprint 1 "And source file vimage.h (introduce in FreeBSD-current) not found"
 	exit 1
-fi
-
-pprint 3 "Checking if FreeBSD sources are installed..."
-if [ -d "$NANOBSD_DIR" ]
-then
-	pprint 3 "NanoBSD detected (sources installed)"
-else
-	pprint 1 "NanoBSD directory ($NANOBSD_DIR) not found"
-	pprint 1 "Did you installed FreeBSD sources ?"
-	exit
 fi
 
 }
@@ -74,11 +75,12 @@ then
 fi
 }
 #############################################
-########### Main code ######################
-############################################
+############ Main code ######################
+#############################################
 
 pprint 1 "Experimental (not working) BSDRP Make file"
 
+check_current_dir
 check_system
 
 echo "BSDRP build script"
@@ -97,6 +99,15 @@ done
 
 system_patch
 
+case $TARGET_ARCH in
+	"amd64") echo "add amd64 custom";;
+	"i386") echo "add i386 custom";;
+esac
+
+case $INPUT_CONSOLE in
+	"vga") echo "add vga custom";;
+	"serial") echo "add serial custom";;
+esac
 #sh $NANOBSD_DIR/nanobsd.sh -b -c BSDRP.nano
 #sh ../nanobsd.sh -c BSDRP.nano
 exit 0
