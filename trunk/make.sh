@@ -33,6 +33,7 @@ pprint() {
 }
 
 check_system() {
+#### Check prerequisites
 if [ $SYSTEM_RELEASE != $SYSTEM_REQUIRED ]
 then
         pprint 1 "BSDRP need an up-to-date FreeBSD $SYSTEM_REQUIRED"
@@ -40,17 +41,27 @@ then
 	exit 1
 fi
 
+pprint 3 "Checking if FreeBSD sources are installed..."
 if [ -d "$NANOBSD_DIR" ]
 then
-	pprint 3 "NanoBSD detected."
+	pprint 3 "NanoBSD detected (sources installed)"
 else
 	pprint 1 "NanoBSD directory ($NANOBSD_DIR) not found"
-	pprint 1 "You need to install source"
+	pprint 1 "Did you installed FreeBSD sources ?"
 	exit
 fi
 
 }
 
+system_patch() {
+###### Adding patch to NanoBSD if needed
+pprint 3 "Checking in NanoBSD allready patched"
+if !grep -q amd64 $NANOBSD_DIR/nanobsd fic1 && [ $TARGET_ARCH = "amd64" ]
+then
+	pprint 3 "Patching NanoBSD with target amd64 support"	
+	patch $NANOBSD_DIR/nanobsd nanobsd.patch
+fi
+}
 #############################################
 ########### Main code ######################
 ############################################
@@ -59,25 +70,21 @@ pprint 1 "Experimental (not working) BSDRP Make file"
 
 check_system
 
-pprint 2 "Display version : $SYSTEM_RELEASE"
-
 echo "BSDRP build script"
 echo ""
-echo "Enter architecture (i386/amd64): "
-while ( $INPUT_ARCH != "i386" )
+echo "Enter target architecture (i386/amd64): "
+while [ $TARGET_ARCH != "i386" ]
 do
-	read INPUT_ARCH <&1
+	read TARGET_ARCH <&1
 done
 
-echo "Enter console type (vga/serial): "
+echo "Enter default console (vga/serial): "
 while ( INPUT_CONSOLE="vga" || "serial" )
 do
 	read INPUT_CONSOLE <&1
 done
-echo "Enter word:"
-read word <&1
-echo "$line $word"
 
+system_patch
 
 #sh $NANOBSD_DIR/nanobsd.sh -b -c BSDRP.nano
 #sh ../nanobsd.sh -c BSDRP.nano
