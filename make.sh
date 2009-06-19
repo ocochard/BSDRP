@@ -34,10 +34,15 @@ pprint() {
 
 check_system() {
 #### Check prerequisites
-if [ $SYSTEM_RELEASE != $SYSTEM_REQUIRED ]
+
+#testing host version is not reliable: It's possible to install current source on a 7 release for example
+#we need to test that source current are installed
+#if [ $SYSTEM_RELEASE != $SYSTEM_REQUIRED ]
+if [ ! -f /usr/src/sys/sys/vimage.h  ]
 then
-        pprint 1 "BSDRP need up-to-date sources for FreeBSD $SYSTEM_REQUIRED"
-	pprint 1 "And you have a $SYSTEM_RELEASE"
+	pprint 1 "BSDRP need up-to-date sources for FreeBSD $SYSTEM_REQUIRED"
+#	pprint 1 "And you have a $SYSTEM_RELEASE"
+	pprint 1 "And vimage.h (introduce in current source) not found"
 	exit 1
 fi
 
@@ -55,14 +60,17 @@ fi
 
 system_patch() {
 ###### Adding patch to NanoBSD if needed
-pprint 3 "Checking in NanoBSD allready patched"
-grep -q 'amd64' $NANOBSD_DIR/nanobsd
-if [[ $? -eq 0 ]] 
+if [ "$TARGET_ARCH" = "amd64"  ]
 then
-	pprint 3 "NanoBSD allready patched"
-else
-	pprint 3 "Patching NanoBSD with target amd64 support"
-	patch $NANOBSD_DIR/nanobsd nanobsd.patch
+	pprint 3 "Checking in NanoBSD allready patched"
+	grep -q 'amd64' $NANOBSD_DIR/nanobsd.sh
+	if [ $? -eq 0 ] 
+	then
+		pprint 3 "NanoBSD allready patched"
+	else
+		pprint 3 "Patching NanoBSD with target amd64 support"
+		patch $NANOBSD_DIR/nanobsd.sh nanobsd.patch
+	fi
 fi
 }
 #############################################
