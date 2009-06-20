@@ -201,7 +201,10 @@ then
 	pprint 1 "/usr/obj/nanobsd.BSDRP/BSDRP.img"
 else
 	pprint 1 "NanoBSD meet an error, check the log files here:"
-	pprint 1 "/usr/obj/nanobsd.BSDRP/"		
+	pprint 1 "/usr/obj/nanobsd.BSDRP/"	
+	pprint 1 "An error during the buildworld stage can be caused by"
+	pprint 1 "a bug in the FreeBSD-current code"	
+	pprint 1 "try to re-sync your code" 
 fi
 
 
