@@ -165,7 +165,8 @@ NANO_MD_BACKING="file"
 # Progress Print level
 PPLEVEL=3
 
-# Need to check if this function works with cross-compiling arch!!!!
+# Need to check if this function works with cross-compiling architecture!!!!
+# Is this function which delete all my /usr/src after re-start the make.sh ?
 add_port () {
         port=`echo $1 | sed -e 's/\//_/'`
         eval "
@@ -181,7 +182,7 @@ add_port () {
                 mkdir -p \${NANO_WORLDDIR}/usr/workdir
                 cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
                 chroot \${NANO_WORLDDIR} /bin/sh -exc \
-                        'make WRKDIRPREFIX=/usr/workdir -C /usr/ports/$1 \
+                        'env TARGET_ARCH=${NANO_ARCH} make WRKDIRPREFIX=/usr/workdir -C /usr/ports/$1 \
                         install BATCH=yes $2'
                 rm \${NANO_WORLDDIR}/etc/resolv.conf
                 rm -rf \${NANO_WORLDDIR}/usr/obj

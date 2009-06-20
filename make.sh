@@ -120,6 +120,26 @@ then
 	fi
 fi
 }
+
+check_clean() {
+##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount
+# Need to optimize this code
+mount > /tmp/BSDRP.mnt
+grep -q 'BSDRP' /tmp/BSDRP.mnt
+if [ $? -eq 0 ] 
+	then
+		pprint 1 "Unmounted NanoBSD works directory found"
+		pprint 1 "This can create a bug that delete all your /usr/src directory"
+		pprint 1 "Unmount manually theses mount points"
+		rm /tmp/BSDRP.mnt
+		exit 1
+	else
+		pprint 3 "Patching NanoBSD with target amd64 support"
+		patch $NANOBSD_DIR/nanobsd.sh nanobsd.patch
+		rm /tmp/BSDRP.mnt
+	fi
+
+}
 #############################################
 ############ Main code ######################
 #############################################
@@ -128,6 +148,7 @@ pprint 1 "BSD Router Project image generator"
 
 check_current_dir
 check_system
+check_clean
 
 pprint 1 "BSDRP build script"
 pprint 1 ""
