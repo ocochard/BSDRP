@@ -104,7 +104,7 @@ fi
 ############ Main code ######################
 #############################################
 
-pprint 1 "Experimental (not working) BSDRP Make file"
+pprint 1 "BSD Router Project image generator"
 
 check_current_dir
 check_system
@@ -123,7 +123,9 @@ do
 	read INPUT_CONSOLE <&1
 done
 
-pprint 1 "Do you want to SKIP rebuild world ( y / n ) ? "
+pprint 1 "If you had allready build an BSDRP image, you can skip the build process." 
+pprint 1 "Do you want to SKIP build world ( y / n ) ? "
+
 while [ "$SKIP_REBUILD" != "y" -a "$SKIP_REBUILD" != "n" ]
 do
 	read SKIP_REBUILD <&1
@@ -171,7 +173,17 @@ else
 	sh ../nanobsd.sh -c /tmp/BSDRP.nano
 fi
 
-pprint 1 "If NanoBSD build finish without error, you will find the BSDRP image file here"
-pprint 1 "/usr/obj/nanobsd.BSDRP/BSDRP.img"
+# Testing exit code of NanoBSD:
+
+if [ $? -eq 0 ] 
+then
+	pprint 1 "NanoBSD build finish, BSDRP image file is here"
+	pprint 1 "/usr/obj/nanobsd.BSDRP/BSDRP.img"
+else
+	pprint 1 "NanoBSD meet an error, check the log files here:
+	pprint 1 "/usr/obj/nanobsd.BSDRP/"		
+fi
+
+
 
 exit 0
