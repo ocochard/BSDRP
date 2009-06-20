@@ -80,9 +80,29 @@ if [ ! -f /usr/src/sys/sys/vimage.h  ]
 then
 	pprint 1 "BSDRP need up-to-date sources for FreeBSD-current"
 	pprint 1 "And source file vimage.h (introduce in FreeBSD-current) not found"
+	pprint 1 "You can install FreeBSP sources using these steps:"
+	pprint 1 "cp /usr/share/examples/cvsup/standard-supfile /etc"
+	pprint 1 "Edit /etc/standard-supfile and replace the line:"
+	pprint 1 "*default host=CHANGE_THIS.FreeBSD.org"
+	pprint 1 "by, for example:"
+	pprint 1 "*default host=cvsup2.FreeBSD.org"
+	pprint 1 "(you can found other cvsup mirrors here: http://www.freebsd.org/doc/handbook/cvsup.html) "
+	pprint 1 "cvsup -g -L 2 /etc/standard-supfile"
 	exit 1
 fi
 
+pprint 3 "Checking if ports sources are installed…"
+
+if [ ! -d /usr/ports/net/quagga ]
+then
+	pprint 1 "BSDRP need up-to-date FreeBSD ports sources tree"
+	pprint 1 "And it seems that you didn't install the ports source tree"
+	pprint 1 "You need to download/extract the ports source tree with this command"
+	pprint 1 "portsnap fetch extract update"
+	pprint 1 "Then update the ports index with this command"
+	pprint 1 "portsdb -F"
+	exit 1
+fi
 }
 
 system_patch() {
@@ -180,7 +200,7 @@ then
 	pprint 1 "NanoBSD build finish, BSDRP image file is here"
 	pprint 1 "/usr/obj/nanobsd.BSDRP/BSDRP.img"
 else
-	pprint 1 "NanoBSD meet an error, check the log files here:
+	pprint 1 "NanoBSD meet an error, check the log files here:"
 	pprint 1 "/usr/obj/nanobsd.BSDRP/"		
 fi
 
