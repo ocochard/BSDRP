@@ -165,7 +165,7 @@ do
 done
 
 pprint 1 "If you had allready build an BSDRP image, you can skip the build process." 
-pprint 1 "Do you want to SKIP build world ( y / n ) ? "
+pprint 1 "Do you want to SKIP build world and kernel ( y / n ) ? "
 
 while [ "$SKIP_REBUILD" != "y" -a "$SKIP_REBUILD" != "n" ]
 do
