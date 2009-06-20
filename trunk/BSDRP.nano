@@ -1,5 +1,7 @@
 # BSD Router Project NanoBSD configuration file
 #
+# NanoBSD port support added from Gitoyen:
+# http://www.gitoyen.net/Howto-NanoBSD-quagga-router 
 ################## Common section #################
 
 # Name of this NanoBSD build.  (Used to construct workdir names)
@@ -153,10 +155,7 @@ NANO_RAM_TMPVARSIZE=10240
 NANO_SECTS=63
 NANO_HEADS=16
 
-# boot0 flags/options and configuration
-#  boot/boot0: vga console
-#  boot/boot0sio : serial console
-#  if serial used:  don't forget to add "customize_cmd cust_comconsole" line with this option too
+# Boot0cfg configuration mode
 NANO_BOOT0CFG="-o packet -s 1 -m 3"
 
 # Backing type of md(4) device
@@ -165,6 +164,50 @@ NANO_MD_BACKING="file"
 
 # Progress Print level
 PPLEVEL=3
+
+# Need to check if this function works with cross-compiling arch!!!!
+add_port () {
+        port=`echo $1 | sed -e 's/\//_/'`
+        eval "
+        add_port_${port} () {
+                mkdir -p \${NANO_WORLDDIR}/usr/ports
+                mount -t unionfs -o noatime /usr/src \
+                        \${NANO_WORLDDIR}/usr/src
+                mount -t unionfs -o noatime /usr/ports \
+                        \${NANO_WORLDDIR}/usr/ports
+                mkdir -p \${NANO_WORLDDIR}/dev
+                mount -t devfs devfs \${NANO_WORLDDIR}/dev
+                mkdir -p \${NANO_WORLDDIR}/usr/pobj
+                mkdir -p \${NANO_WORLDDIR}/usr/workdir
+                cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
+                chroot \${NANO_WORLDDIR} /bin/sh -exc \
+                        'make WRKDIRPREFIX=/usr/workdir -C /usr/ports/$1 \
+                        install BATCH=yes $2'
+                rm \${NANO_WORLDDIR}/etc/resolv.conf
+                rm -rf \${NANO_WORLDDIR}/usr/obj
+                rm -rf \${NANO_WORLDDIR}/usr/pobj
+                rm -rf \${NANO_WORLDDIR}/usr/workdir
+                umount \${NANO_WORLDDIR}/dev
+                umount \${NANO_WORLDDIR}/usr/ports
+                umount \${NANO_WORLDDIR}/usr/src
+                rmdir \${NANO_WORLDDIR}/usr/ports
+        }
+        customize_cmd add_port_${port}
+        "
+}
+
+# Add libdlmalloc lib: Make BGP in Quagga more faster
+add_port "devel/libdlmalloc"
+add_port "net/quagga" "-DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC"
+# Add a text editor
+add_port "editors/vim" "-DWITHOUT_X11"
+
+cleanup_ports () {
+        chroot ${NANO_WORLDDIR} /bin/sh -exc \
+        'pkg_delete auto* help2man* gmake* libtool* m4* '
+}
+
+customize_cmd cleanup_ports
 
 #Install NanoBSD scripts
 customize_cmd cust_install_files
