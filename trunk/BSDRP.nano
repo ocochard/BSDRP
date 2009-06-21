@@ -41,6 +41,7 @@ CONF_INSTALL=''
 
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options for details
+# WITHOUT_INFO= incompatible for installing a dependency of Quagga
 #CONF_WORLD=''
 CONF_WORLD='
 WITHOUT_ACCT=
@@ -70,7 +71,6 @@ WITHOUT_GDB=
 WITHOUT_GPIB=
 WITHOUT_GROFF=
 WITHOUT_HTML=
-WITHOUT_INFO=
 WITHOUT_IPFILTER=
 WITHOUT_IPFW=
 WITHOUT_IPX=
@@ -207,7 +207,7 @@ add_port "editors/vim" "-DWITHOUT_X11"
 
 cleanup_ports () {
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'pkg_delete auto* help2man* gmake* libtool* m4* '
+        'pkg_delete gmake* libtool* '
 }
 
 customize_cmd cleanup_ports
