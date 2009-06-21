@@ -161,8 +161,9 @@ do
 	read STORAGE_TYPE <&1
 done
 
-pprint 1 "Do you want to gzip the BSDRP image ( y / n ) ? "
-pprint 1 "This will reduce the 600Mb image file to about 70Mb (usefull for network transfert)"
+pprint 1 "Do you want to zip the BSDRP image ( y / n ) ? "
+pprint 1 "This will reduce the 600Mb image file to about 70Mb"
+pprint 1 "(usefull for network transfert)"
 while [ "$ZIP_IMAGE" != "y" -a "$ZIP_IMAGE" != "n" ]
 do
 	read ZIP_IMAGE <&1
@@ -211,17 +212,6 @@ case $INPUT_CONSOLE in
 ;;
 esac
 
-echo "# Late customize commands."  >> /tmp/BSDRP.nano
-
-case $ZIP_IMAGE in
-	"y") echo "NANO_LATE_CUSTOMIZE=\"bzip2 -9 \${NANO_DISKIMGDIR}/\${NANO_IMGNAME}\"" >> /tmp/BSDRP.nano 
-;;
-	"n") echo "NANO_LATE_CUSTOMIZE=\"\"" >> /tmp/BSDRP.nano
-
-;;
-esac
-
-
 # Start nanobsd using the BSDRP configuration file
 pprint 1 "Launching NanoBSD build process..."
 if [ "$SKIP_REBUILD" = "y" ]
@@ -243,6 +233,14 @@ else
 	pprint 1 "An error during the buildworld stage can be caused by"
 	pprint 1 "a bug in the FreeBSD-current code"	
 	pprint 1 "try to re-sync your code" 
+	exit 1
+fi
+
+if [ "$ZIP_IMAGE" = "y" ] 
+then
+	pprint 1 "Zip the BSDRP image" 
+	bzip2 -9v /usr/obj/nanobsd.BSDRP/BSDRP.img
+
 fi
 
 exit 0

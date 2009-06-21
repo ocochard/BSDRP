@@ -112,6 +112,9 @@ WITHOUT_ZFS=
 # Customize commands.
 NANO_CUSTOMIZE=""
 
+# Late customize commands.
+NANO_LATE_CUSTOMIZE=""
+
 # Newfs paramters to use
 NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -U"
 
@@ -206,7 +209,9 @@ cleanup_ports () {
 
 customize_cmd cleanup_ports
 
-#Install NanoBSD scripts
+# Set physical disk layout for generic USB of 1Gb
+UsbDevice Generic 1000
+# Install NanoBSD scripts
 customize_cmd cust_install_files
 # Allow root login via ssh
 customize_cmd cust_allow_ssh_root
