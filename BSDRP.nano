@@ -110,7 +110,7 @@ WITHOUT_ZFS=
 '
 
 # Customize commands.
-NANO_CUSTOMIZE="
+NANO_CUSTOMIZE=""
 
 # Newfs paramters to use
 NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -U"
