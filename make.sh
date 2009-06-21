@@ -162,10 +162,10 @@ do
 done
 
 pprint 1 "Do you want to gzip the BSDRP image ( y / n ) ? "
-pprint 1 "This will reduce the 600Mb image file to about 80Mb (usefull for network transfert)"
-while [ "$GZIP_IMAGE" != "y" -a "$GZIP_IMAGE" != "n" ]
+pprint 1 "This will reduce the 600Mb image file to about 70Mb (usefull for network transfert)"
+while [ "$ZIP_IMAGE" != "y" -a "$ZIP_IMAGE" != "n" ]
 do
-	read GZIP_IMAGE <&1
+	read ZIP_IMAGE <&1
 done
 pprint 1 "If you had allready build an BSDRP image, you can skip the build process." 
 pprint 1 "Do you want to SKIP build world and kernel ( y / n ) ? "
@@ -213,8 +213,8 @@ esac
 
 echo "# Late customize commands."  >> /tmp/BSDRP.nano
 
-case $GZIP_IMAGE in
-	"y") echo "NANO_LATE_CUSTOMIZE=\"gzip -9n \${NANO_DISKIMGDIR}/\${NANO_IMGNAME}\"" >> /tmp/BSDRP.nano 
+case $ZIP_IMAGE in
+	"y") echo "NANO_LATE_CUSTOMIZE=\"bzip2 -9 \${NANO_DISKIMGDIR}/\${NANO_IMGNAME}\"" >> /tmp/BSDRP.nano 
 ;;
 	"n") echo "NANO_LATE_CUSTOMIZE=\"\"" >> /tmp/BSDRP.nano
 
