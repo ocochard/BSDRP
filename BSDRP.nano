@@ -110,16 +110,10 @@ WITHOUT_ZFS=
 '
 
 # Customize commands.
-NANO_CUSTOMIZE=""
-
-# Late customize commands.
-NANO_LATE_CUSTOMIZE=""
+NANO_CUSTOMIZE="
 
 # Newfs paramters to use
 NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -U"
-
-# The drive name of the media at runtime
-NANO_DRIVE=ad0
 
 # Target media size in 512 bytes sectors
 NANO_MEDIASIZE=1200000
