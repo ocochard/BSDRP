@@ -225,12 +225,11 @@ fi
 
 if [ $? -eq 0 ] 
 then
-	pprint 1 "NanoBSD build finish, BSDRP image file is here"
-	pprint 1 "/usr/obj/nanobsd.BSDRP/BSDRP.img"
+	pprint 1 "NanoBSD build finish successfully."
 else
 	pprint 1 "NanoBSD meet an error, check the log files here:"
 	pprint 1 "/usr/obj/nanobsd.BSDRP/"	
-	pprint 1 "An error during the buildworld stage can be caused by"
+	pprint 1 "An error during the buildworld or buildkernel stage can be caused by"
 	pprint 1 "a bug in the FreeBSD-current code"	
 	pprint 1 "try to re-sync your code" 
 	exit 1
@@ -238,8 +237,13 @@ fi
 
 if [ "$ZIP_IMAGE" = "y" ] 
 then
-	pprint 1 "Zip the BSDRP image" 
+	pprint 1 "Zipping the BSDRP image..." 
 	bzip2 -9v /usr/obj/nanobsd.BSDRP/BSDRP.img
+        pprint 1 "You will found the zipped BSDRP image file here:"
+        pprint 1 "/usr/obj/nanobsd.BSDRP/BSDRP.img.bz2"
+else
+	pprint 1 "You will found the BSDRP image file here:"
+        pprint 1 "/usr/obj/nanobsd.BSDRP/BSDRP.img"
 
 fi
 
