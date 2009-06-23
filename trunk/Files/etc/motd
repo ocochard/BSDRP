@@ -1,11 +1,8 @@
-BSDRP (FreeBSD 8.0-CURRENT)
-
 Welcome to BSD Router Project!
 
 For more information, go to:
 http://bsdrp.net
 
 TO DO:
-- fix save_cfg
+- Works on /usr/local/bin/config
 - auto save generated ssh key after the first boot
-- customize .cshrc

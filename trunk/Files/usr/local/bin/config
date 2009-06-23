@@ -1,0 +1,113 @@
+#!/bin/sh
+#
+# config script for BSD Router Project 
+#
+# Copyright (c) 2009, The BSDRP Development Team 
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+# Uncomment for enable the debug mode:
+#set -xv
+
+getoption () {
+	OPTION="$1"
+	echo "debug: $OPTION"
+	case "$OPTION" in
+		save)
+			save
+			;;
+		apply)
+			apply 
+			;;
+		rollback)
+			rollback
+			;;
+		put)
+			put
+			;;
+		get)
+			get
+			;;
+		help)
+			usage
+			;;
+		*)
+			echo "Bad command"
+			usage
+			;;
+	esac
+}
+
+# Display help
+usage () {
+	echo "BSDRP config tools"
+	echo "Usage: $0 option"
+	echo "  save     : Save current config"
+	echo "  apply    : Apply current config"
+	echo "  rollback : Revert to previous config"
+	echo "  put      : Put config to a remote server"
+	echo "  get      : Get config from remote server"
+	echo "  help     : Display this help message"
+	exit 0
+}
+# save configuration
+save () {
+	echo "save configuration"
+	echo "This function will save the configuration"
+	echo "Old configuration files will be rotated tgz" 
+	exit 0
+}
+
+# Apply configuration
+apply () {
+	echo "Apply configuration"
+	echo "This function will test all changes"
+	echo "and force process to use new configuration"
+	exit 0
+}
+
+# Rollback to previous configuration
+Rollback () {
+	echo "Rollback to previous saved configuration"
+	echo "And apply ???"
+	exit 0
+}
+
+# Send configuration to an svn/cvs/scp server ?
+put () {
+	echo "Send configuration to an svn/cvs/scp server"
+	exit 0
+}
+
+# Get configuration from an svn/cvs/scp server
+get () {
+	echo "Get configuration from an svn/cvs/scp server"
+	exit 0
+}
+
+###################
+## Main function ##
+###################
+
+getoption
