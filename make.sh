@@ -28,6 +28,26 @@
 #
 
 #############################################
+########## TO DO list #######################
+#############################################
+# 1. copy LICENSE and AUTHORS to the /root of image (NANO_LATE_CUSTOMIZE)
+# 2. rename freebsd config bin to config.orig: avoid conflict with futur config script (NANO_LATE_CUSTOMIZE)
+# 3. Provide example configuration file (real config file commented?)
+# 4. Add info: LBA bios, and it's a 1Gb image media
+# mdconfig -a -t vnode -f BSDRP-i386-vga-ad0.img -x 63 -y 16
+# mdconfig -a -t vnode -f BSDRP-i386-vga-ad0.img -x 63 -y 16
+# md0
+# ls /dev/md0*
+# /dev/md0    /dev/md0s1  /dev/md0s1a /dev/md0s2  /dev/md0s3
+# md0s1a: first system partition
+# md0s2a: Second system partition, didn't exist if the system was never upgraded
+# md0s3: cfg partition
+# mount /dev/md0s1a /mnt
+# Bidouillage
+# umount /mnt
+# mdconfig -d -u 0
+
+#############################################
 ############ Variables definition ###########
 #############################################
 
@@ -154,8 +174,8 @@ do
 done
 
 pprint 1 "What type of storage media will be used ? "
-pprint 1 "ad0 : For ATA hard drive, CF on IDE adapter, etc."
-pprint 1 "da0 : For USB device."
+pprint 1 "ad0 : For ATA hard drive, CF on IDE adapter, etc."
+pprint 1 "da0 : For USB device."
 while [ "$STORAGE_TYPE" != "ad0" -a "$STORAGE_TYPE" != "da0" ]
 do
 	read STORAGE_TYPE <&1
