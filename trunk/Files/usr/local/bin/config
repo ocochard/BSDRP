@@ -29,16 +29,17 @@
 
 # Uncomment for enable the debug mode:
 #set -xv
-
 getoption () {
 	OPTION="$1"
-	echo "debug: $OPTION"
 	case "$OPTION" in
 		save)
 			save
 			;;
 		apply)
 			apply 
+			;;
+		diff)
+			diff
 			;;
 		rollback)
 			rollback
@@ -49,11 +50,14 @@ getoption () {
 		get)
 			get
 			;;
+		reset)
+			reset
+			;;
 		help)
 			usage
 			;;
 		*)
-			echo "Bad command"
+			echo "illegal option: $1"
 			usage
 			;;
 	esac
@@ -61,14 +65,15 @@ getoption () {
 
 # Display help
 usage () {
-	echo "BSDRP config tools"
+	echo "BSDRP configuration tool"
 	echo "Usage: $0 option"
-	echo "  save     : Save current config"
-	echo "  apply    : Apply current config"
-	echo "  rollback : Revert to previous config"
-	echo "  put      : Put config to a remote server"
-	echo "  get      : Get config from remote server"
-	echo "  help     : Display this help message"
+	echo "  - save     : Save current config"
+	echo "  - apply    : Apply current config"
+	echo "  - rollback : Revert to previous config"
+	echo "  - put      : Put config to a remote server"
+	echo "  - get      : Get config from remote server"
+	echo "  - reset  : Return to default configuration"
+	echo "  - help     : Display this help message"
 	exit 0
 }
 # save configuration
@@ -82,15 +87,23 @@ save () {
 # Apply configuration
 apply () {
 	echo "Apply configuration"
-	echo "This function will test all changes"
-	echo "and force process to use new configuration"
+	echo "This function will force routing process to reload the configuration files"
+	echo "Need to add a sub option: apply secure timeout"
+	echo "this option will wait for the new command: apply confirm before the end of the timeout (in minutes)"
+	echo "If the admin don't use this command: BSDRP will rollback the configuration automatically"	
+	exit 0
+}
+
+# Display diff between current and saved configuration
+diff () {
+	echo "Display diff between current and saved configuration"
 	exit 0
 }
 
 # Rollback to previous configuration
-Rollback () {
+rollback () {
 	echo "Rollback to previous saved configuration"
-	echo "And apply ???"
+	echo "And apply automatically ???"
 	exit 0
 }
 
@@ -106,8 +119,14 @@ get () {
 	exit 0
 }
 
+# Clear all existing configuration and return to default setting
+reset () {
+        echo "Clear existing configuration and return to default setting"
+        exit 0
+}
+
 ###################
 ## Main function ##
 ###################
 
-getoption
+getoption $1
