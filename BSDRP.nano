@@ -29,9 +29,6 @@ NANO_PACKAGE_LIST="*"
 # Parallel Make
 NANO_PMAKE="make -j 3"
 
-# The default name for any image we create.
-NANO_IMGNAME="BSDRP.img"
-
 # Options to put in make.conf during buildworld only
 CONF_BUILD=''
 
@@ -113,7 +110,11 @@ WITHOUT_ZFS=
 NANO_CUSTOMIZE=""
 
 # Late customize commands.
-NANO_LATE_CUSTOMIZE=""
+NANO_LATE_CUSTOMIZE='
+cp ${NANO_TOOLS}/AUTHORS ${NANO_WORLDDIR}/root
+cp ${NANO_TOOLS}/LICENSE ${NANO_WORLDDIR}/root
+rm ${NANO_WORLDDIR}/usr/sbin/config
+'
 
 # Newfs paramters to use
 NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -U"
