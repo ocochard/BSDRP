@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# config script for BSD Router Project 
+# Configuration tool for BSD Router Project 
 #
 # Copyright (c) 2009, The BSDRP Development Team 
 # All rights reserved.
@@ -30,8 +30,10 @@
 # Uncomment for enable the debug mode:
 #set -xv
 getoption () {
-	OPTION="$1"
-	case "$OPTION" in
+	FIRST_OPTION="$1"
+	SECOND_OPTION="$2"
+	THIRD_OPTION="$3"
+	case "$FIRST_OPTION" in
 		save)
 			save
 			;;
@@ -57,7 +59,7 @@ getoption () {
 			usage
 			;;
 		*)
-			echo "illegal option: $1"
+			echo "illegal option: $FIRST_OPTION"
 			usage
 			;;
 	esac
@@ -66,14 +68,26 @@ getoption () {
 # Display help
 usage () {
 	echo "BSDRP configuration tool"
-	echo "Usage: $0 option"
-	echo "  - save     : Save current config"
-	echo "  - apply    : Apply current config"
-	echo "  - rollback : Revert to previous config"
-	echo "  - put      : Put config to a remote server"
-	echo "  - get      : Get config from remote server"
-	echo "  - reset  : Return to default configuration"
-	echo "  - help     : Display this help message"
+	if $SECOND_OPTION="apply"
+	then
+		echo "Options for apply:"
+		echo " - secure timeout : Automatically rollback if the command confirm is not enter before timeout (in minute)"
+		echo " - confirm : Need to be enter for cancelling the auto rollback feature enabled with the secure command."
+		echo " - in timeout : Apply configuration after timeout (in minutes)"
+		echo " - at date/time : Apply configuration at date/time"
+		echo " - cancel : Cancel scheduled apply"
+	else
+# value $0 is the name of the called script
+		echo "Usage: $0 option"
+		echo "  - save     : Save current config"
+		echo "  - apply    : Apply current config"
+		echo "  - rollback : Revert to previous config"
+		echo "  - put      : Put config to a remote server"
+		echo "  - get      : Get config from remote server"
+		echo "  - reset  : Return to default configuration"
+		echo "  - help [option]  : Display this help message. "
+		echo "		  	If [option] given, display more detail about"
+	fi
 	exit 0
 }
 # save configuration
@@ -87,10 +101,29 @@ save () {
 # Apply configuration
 apply () {
 	echo "Apply configuration"
-	echo "This function will force routing process to reload the configuration files"
-	echo "Need to add a sub option: apply secure timeout"
-	echo "this option will wait for the new command: apply confirm before the end of the timeout (in minutes)"
-	echo "If the admin don't use this command: BSDRP will rollback the configuration automatically"	
+	case "$SECOND_OPTION" in
+                secure)
+                        echo "Apply config and rollback in $THIRD_OPTION minutes"
+                        ;;
+		confirm)
+			echo "Cancel the auto-rollback introduce by the apply secure"
+			;;
+		in)
+			echo "Apply config in $THIRD_OPTION minutes"
+			;;
+		at)
+			echo "Apply config at $THIRD_OPTION date"
+			;;
+		cancel)
+			echo "Cancel in and at apply"
+			;;
+		*)
+		echo "This function will force routing process to reload the configuration files"
+		echo "Need to add a sub option: apply secure timeout"
+		echo "this option will wait for the new command: apply confirm before the end of the timeout (in minutes)"
+		echo "If the admin don't use this command: BSDRP will rollback the configuration automatically"	
+		;;	
+	esac
 	exit 0
 }
 
@@ -129,4 +162,4 @@ reset () {
 ## Main function ##
 ###################
 
-getoption $1
+getoption $*
