@@ -126,27 +126,27 @@ rm /tmp/BSDRP.mnt
 # Ask some questions to the user
 get_user_input () {
 
-pprint 1 "What type of BSDRP image to you want to generated ( full / upgrade ) ? "
-pprint 1 " - full : This is the image of the complete disk, to be used for installation"
-pprint 1 " - upgrade : This is the image to be used for the upgrade tool only (this image will be bzipped)"
+pprint 1 "Type of BSDRP image to generate ( full / upgrade ) ? "
+pprint 1 " - full : Image of the complete disk, to be used for installation"
+pprint 1 " - upgrade : Image for the upgrade tool only"
 while [ "$IMG_TYPE" != "full" -a "$IMG_TYPE" != "upgrade" ]
 do
 	read IMG_TYPE <&1
 done
 
-pprint 1 "What type of target architecture ( i386 / amd64 ) ? "
+pprint 1 "Target architecture ( i386 / amd64 ) ? "
 while [ "$TARGET_ARCH" != "i386" -a "$TARGET_ARCH" != "amd64" ]
 do
 	read TARGET_ARCH <&1
 done
 
-pprint 1 "What type of default console ( vga / serial ) ? "
+pprint 1 "Default console ( vga / serial ) ? "
 while [ "$INPUT_CONSOLE" != "vga" -a "$INPUT_CONSOLE" != "serial" ]
 do
 	read INPUT_CONSOLE <&1
 done
 
-pprint 1 "What type of storage media will be used ? "
+pprint 1 "Storage media ? "
 pprint 1 "ad0 : For ATA hard drive, CF on IDE adapter, etc."
 pprint 1 "da0 : For USB device."
 while [ "$STORAGE_TYPE" != "ad0" -a "$STORAGE_TYPE" != "da0" ]
@@ -156,9 +156,8 @@ done
 
 if [ "$IMG_TYPE" = "full" ]
 then
-	pprint 1 "Do you want to zip the BSDRP image ( y / n ) ? "
-	pprint 1 "This will reduce the 600Mb image file to about 70Mb"
-	pprint 1 "(usefull for network transfert)"
+	pprint 1 "Zip the BSDRP image ( y / n ) ? "
+	pprint 1 "Reduce the 600Mb image file to about 70Mb"
 	while [ "$ZIP_IMAGE" != "y" -a "$ZIP_IMAGE" != "n" ]
 	do
 		read ZIP_IMAGE <&1
