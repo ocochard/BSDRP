@@ -110,11 +110,7 @@ WITHOUT_ZFS=
 NANO_CUSTOMIZE=""
 
 # Late customize commands.
-NANO_LATE_CUSTOMIZE='
-cp ${NANO_TOOLS}/AUTHORS ${NANO_WORLDDIR}/root
-cp ${NANO_TOOLS}/LICENSE ${NANO_WORLDDIR}/root
-rm ${NANO_WORLDDIR}/usr/sbin/config
-'
+NANO_LATE_CUSTOMIZE=""
 
 # Newfs paramters to use
 NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -U"
@@ -209,6 +205,15 @@ cleanup_ports () {
 }
 
 customize_cmd cleanup_ports
+
+bsdrp_custom () {
+	cp -v ${NANO_TOOLS}/AUTHORS ${NANO_WORLDDIR}/root/
+	cp -v ${NANO_TOOLS}/LICENSE ${NANO_WORLDDIR}/root/
+	rm ${NANO_WORLDDIR}/usr/sbin/config
+}
+
+customize_cmd bsdrp_custom
+
 
 # Set physical disk layout for generic USB of 1Gb
 UsbDevice Generic 1000
