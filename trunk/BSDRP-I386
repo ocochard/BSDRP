@@ -343,3 +343,6 @@ device		umass		# Disks/Mass storage - Requires scbus and da
 #device		fwip		# IP over FireWire (RFC 2734,3146)
 #device		dcons		# Dumb console driver
 #device		dcons_crom	# Configuration ROM for dcons
+
+# Add device Polling
+options DEVICE_POLLING
