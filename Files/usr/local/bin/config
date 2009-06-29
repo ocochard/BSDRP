@@ -29,16 +29,21 @@
 
 # Uncomment for enable the debug mode:
 #set -xv
+
+# Stop the script automatically on error
+set -e
+
+# Get options passed by user
 getoption () {
 	FIRST_OPTION="$1"
 	SECOND_OPTION="$2"
 	THIRD_OPTION="$3"
 	case "$FIRST_OPTION" in
 		save)
-			save
+			save_cfg
 			;;
 		apply)
-			apply 
+			apply_cfg 
 			;;
 		diff)
 			diff
@@ -90,16 +95,59 @@ usage () {
 	fi
 	exit 0
 }
+
+# Mount /cfg
+mount_cfg () {
+	trap "umount /cfg" 1 2 15 EXIT
+	mount /cfg
+}
+
+# Umount /cfg
+umount_cfg () {
+	umount /cfg
+	trap 1 2 15 EXIT
+}
+
+# Rotate cfg
+rotate_cfg () {
+}
 # save configuration
-save () {
+save_cfg () {
 	echo "save configuration"
 	echo "This function will save the configuration"
 	echo "Old configuration files will be rotated tgz" 
+	mount_cfg
+	rotate_cfg
+# save config files
+	(
+	cd /cfg
+	for i in "$@" `find * -type f`
+	do
+       	 cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i
+	done
+	)
+# save ssh keys
+	if [ -d /cfg/ssh ]
+	then
+		cd /cfg
+		for i in "$@" `find ssh_host_* -type f`
+        	do
+         		cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i
+        	done
+	else
+		mkdir -p /cfg/ssh
+		(
+		cd /etc/ssh
+		cp ssh_host_* /cfg/ssh
+		)
+	fi
+
+	umount_cfg
 	exit 0
 }
 
 # Apply configuration
-apply () {
+apply_cfg () {
 	echo "Apply configuration"
 	case "$SECOND_OPTION" in
                 secure)
