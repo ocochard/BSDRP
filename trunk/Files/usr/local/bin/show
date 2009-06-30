@@ -1,0 +1,102 @@
+#!/bin/sh
+#
+# Show tool for BSD Router Project 
+#
+# Copyright (c) 2009, The BSDRP Development Team 
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+# Uncomment for enable the debug mode:
+#set -xv
+
+# Stop the script automatically on error
+set -e
+
+# Get options passed by user
+getoption () {
+	FIRST_OPTION="$1"
+	SECOND_OPTION="$2"
+	THIRD_OPTION="$3"
+	case "$FIRST_OPTION" in
+		version)
+			version
+			;;
+		route)
+			route 
+			;;
+		help)
+			usage
+			;;
+		*)
+			echo "illegal option: $FIRST_OPTION"
+			usage
+			;;
+	esac
+}
+
+# Display help
+usage () {
+	echo "BSDRP show tool"
+	if $SECOND_OPTION="route"
+	then
+		echo "Options for route:"
+		echo " - ipv4 : Display only IPv4 routes"
+		echo " - ipv6 : Display only IPv6 routes"
+	else
+# value $0 is the name of the called script
+		echo "Usage: $0 option"
+		echo "  - route    : Display routes"
+		echo "  - version  : Display BSDRP version"
+		echo "  - help [option]  : Display this help message. "
+		echo "		  	If [option] given, display more detail about"
+	fi
+	exit 0
+}
+
+# Display version
+version () {
+	cat /etc/BSDRP.version
+}
+
+# Apply configuration
+route () {
+	case "$SECOND_OPTION" in
+                ipv4)
+                       netstat -rn -f inet 
+			;;
+		ipv6)
+			netstat -rn -f inet6	
+			;;
+		*)
+		netstat -rn
+		;;	
+	esac
+	exit 0
+}
+
+###################
+## Main function ##
+###################
+
+getoption $*
