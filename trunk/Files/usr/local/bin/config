@@ -129,10 +129,10 @@ save_cfg () {
 # save ssh keys
 	if [ -d /cfg/ssh ]
 	then
-		cd /cfg
+		cd /etc/ssh
 		for i in "$@" `find ssh_host_* -type f`
         	do
-         		cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i
+         		cmp -s /etc/ssh/$i /cfg/ssh/$i || cp -pfv /etc/ssh/$i /cfg/ssh/$i
         	done
 	else
 		mkdir -p /cfg/ssh
