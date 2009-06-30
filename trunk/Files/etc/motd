@@ -3,6 +3,5 @@ Welcome to BSD Router Project!
 For more information, go to:
 http://bsdrp.net
 
-TO DO:
-- Works on /usr/local/bin/config
-- auto save generated ssh key after the first boot
+For using Quagga, go to:
+http://www.quagga.net
