@@ -194,7 +194,7 @@ add_port () {
 add_port "devel/libdlmalloc"
 # Quagga depend of perl
 add_port "lang/perl5.8" "WITHOUT_PERL_MALLOC=yes"
-add_port "net/quagga" "-DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC"
+add_port "net/quagga" "-DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
 # Quagga install some software that we don't need anymore after install: devel/libtool15, devel/gettext, /devel/gmake
 # Add a text editor
 add_port "editors/vim" "-DWITHOUT_X11"
