@@ -28,7 +28,7 @@
 #
 
 # Uncomment for enable the debug mode:
-#set -xv
+set -xv
 
 # Stop the script automatically on error
 set -e
@@ -45,6 +45,9 @@ getoption () {
 		route)
 			route 
 			;;
+		process)
+			process
+			;;
 		help)
 			usage
 			;;
@@ -58,28 +61,38 @@ getoption () {
 # Display help
 usage () {
 	echo "BSDRP show tool"
-	if $SECOND_OPTION="route"
-	then
-		echo "Options for route:"
-		echo " - ipv4 : Display only IPv4 routes"
-		echo " - ipv6 : Display only IPv6 routes"
-	else
+	case "$SECOND_OPTION" in
+                route)
+			echo "Options for route:"
+	                echo " - ipv4 : Display only IPv4 routes"
+			echo " - ipv6 : Display only IPv6 routes" 
+			;;
+		process)
+			echo "Options for process:"
+			echo " - cpu"
+			echo " - memory"
+			echo " - int"
+			;;
+		*)
 # value $0 is the name of the called script
 		echo "Usage: $0 option"
 		echo "  - route    : Display routes"
+		echo "  - process  : Display process information"
 		echo "  - version  : Display BSDRP version"
 		echo "  - help [option]  : Display this help message. "
 		echo "		  	If [option] given, display more detail about"
-	fi
+			;;	
+	esac	
 	exit 0
 }
 
 # Display version
 version () {
 	cat /etc/BSDRP.version
+	exit 0
 }
 
-# Apply configuration
+# Display routes
 route () {
 	case "$SECOND_OPTION" in
                 ipv4)
@@ -94,6 +107,26 @@ route () {
 	esac
 	exit 0
 }
+
+# Display process
+process () {
+        case "$SECOND_OPTION" in
+                cpu)
+                        top -b
+                        ;;
+                memory)
+                        vmstat -h -m
+                        ;;
+		int)
+			vmstat -h -i
+			;;
+                *)
+			top -b
+               		;;
+        esac
+        exit 0
+}
+
 
 ###################
 ## Main function ##
