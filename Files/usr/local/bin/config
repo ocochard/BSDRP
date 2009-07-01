@@ -110,13 +110,15 @@ umount_cfg () {
 
 # Rotate cfg
 rotate_cfg () {
+	echo "TO DO: Old configuration files will be rotated tgz"
 }
 # save configuration
 save_cfg () {
-	echo "TO DO: Old configuration files will be rotated tgz" 
 	mount_cfg
 	rotate_cfg
-# save config files
+	# save config files
+	echo "TO DO: Need to copy modified file into /cfg (including subdir)"
+	echo "Because modified but non existant file in /cfg will no be copied"
 	(
 	cd /cfg
 	for i in "$@" `find * -type f`
@@ -124,7 +126,7 @@ save_cfg () {
        	 cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i
 	done
 	)
-# save ssh keys
+	# save ssh keys
 	if [ -d /cfg/ssh ]
 	then
 		cd /etc/ssh
