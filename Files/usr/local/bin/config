@@ -60,7 +60,7 @@ getoption () {
 		reset)
 			reset
 			;;
-		help)
+		help|h)
 			usage
 			;;
 		*)
@@ -90,7 +90,7 @@ usage () {
 		echo "  - put      : Put config to a remote server"
 		echo "  - get      : Get config from remote server"
 		echo "  - reset  : Return to default configuration"
-		echo "  - help [option]  : Display this help message. "
+		echo "  - help/h [option]  : Display this help message. "
 		echo "		  	If [option] given, display more detail about"
 	fi
 	exit 0
@@ -113,9 +113,7 @@ rotate_cfg () {
 }
 # save configuration
 save_cfg () {
-	echo "save configuration"
-	echo "This function will save the configuration"
-	echo "Old configuration files will be rotated tgz" 
+	echo "TO DO: Old configuration files will be rotated tgz" 
 	mount_cfg
 	rotate_cfg
 # save config files

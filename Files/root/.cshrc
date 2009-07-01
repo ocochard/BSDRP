@@ -44,3 +44,4 @@ set color
 set colorcat
 alias ls ls -G
 alias ll ls -hl
+alias cli vtysh
