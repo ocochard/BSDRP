@@ -28,7 +28,7 @@
 #
 
 # Uncomment for enable the debug mode:
-set -xv
+# set -xv
 
 # Stop the script automatically on error
 set -e
@@ -39,16 +39,16 @@ getoption () {
 	SECOND_OPTION="$2"
 	THIRD_OPTION="$3"
 	case "$FIRST_OPTION" in
-		version)
+		version|ver)
 			version
 			;;
 		route)
 			route 
 			;;
-		process)
+		process|proc)
 			process
 			;;
-		help)
+		help|h)
 			usage
 			;;
 		*)
@@ -64,22 +64,22 @@ usage () {
 	case "$SECOND_OPTION" in
                 route)
 			echo "Options for route:"
-	                echo " - ipv4 : Display only IPv4 routes"
-			echo " - ipv6 : Display only IPv6 routes" 
+	                echo " - ipv4/4 : Display only IPv4 routes"
+			echo " - ipv6/6 : Display only IPv6 routes" 
 			;;
-		process)
+		process|proc)
 			echo "Options for process:"
 			echo " - cpu"
-			echo " - memory"
+			echo " - memory/mem"
 			echo " - int"
 			;;
 		*)
 # value $0 is the name of the called script
 		echo "Usage: $0 option"
 		echo "  - route    : Display routes"
-		echo "  - process  : Display process information"
-		echo "  - version  : Display BSDRP version"
-		echo "  - help [option]  : Display this help message. "
+		echo "  - process/proc  : Display process information"
+		echo "  - version/ver  : Display BSDRP version"
+		echo "  - help/h [option]  : Display this help message. "
 		echo "		  	If [option] given, display more detail about"
 			;;	
 	esac	
@@ -95,10 +95,10 @@ version () {
 # Display routes
 route () {
 	case "$SECOND_OPTION" in
-                ipv4)
+                ipv4|4)
                        netstat -rn -f inet 
 			;;
-		ipv6)
+		ipv6|6)
 			netstat -rn -f inet6	
 			;;
 		*)
@@ -114,7 +114,7 @@ process () {
                 cpu)
                         top -b
                         ;;
-                memory)
+                memory|mem)
                         vmstat -h -m
                         ;;
 		int)
