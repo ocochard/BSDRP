@@ -1,0 +1,54 @@
+#!/bin/sh
+#
+# Configuration tool for BSD Router Project
+#
+# Copyright (c) 2009, The BSDRP Development Team
+# All rights reserved.
+# Based on the updatep1 and updatep2 script of nanoBSD
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+# Exit script if error meet
+set -e
+
+DEST_PART=1
+# Set the NANO_DRIVE varible by starting this small script:
+#. /etc/nanobsd.conf
+if mount | grep ${NANO_DRIVE}s$(DEST_PART) > /dev/null ; then
+	DEST_PART=2
+	if mount | grep ${NANO_DRIVE}s$(DEST_PART) > /dev/null ; then
+		echo "Upgrade can't detect the non-active partition"
+		exit 1
+	fi
+fi
+
+# Blow away old system.
+dd if=/dev/zero of=/dev/${NANO_DRIVE}s$(DEST_PART) bs=1m count=1 > /dev/null 2>&1
+
+# Copy in new system
+dd of=/dev/${NANO_DRIVE}s$(DEST_PART) obs=64k
+
+# Check that it worked
+fsck_ffs -n /dev/${NANO_DRIVE}s$(DEST_PART)a
+
+boot0cfg -s $(DEST_PART) -v ${NANO_DRIVE}
