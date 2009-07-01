@@ -34,6 +34,7 @@ if ($?prompt) then
         endif
 endif
 
+# BSDRP cool shell... Do not need to install bash :-)
 set prompt='%B[%n@%m%b]%B%~%b%#'
 set filec
 set history = 100
@@ -44,4 +45,6 @@ set color
 set colorcat
 alias ls ls -G
 alias ll ls -hl
+# Some BSDRP aliases:
 alias cli vtysh
+alias include grep

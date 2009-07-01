@@ -210,6 +210,8 @@ bsdrp_custom () {
 	cp -v ${NANO_TOOLS}/AUTHORS ${NANO_WORLDDIR}/root/
 	cp -v ${NANO_TOOLS}/LICENSE ${NANO_WORLDDIR}/root/
 	rm ${NANO_WORLDDIR}/usr/sbin/config
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+	'chown -R quagga:quagga /usr/local/etc/quagga'
 }
 
 customize_cmd bsdrp_custom
