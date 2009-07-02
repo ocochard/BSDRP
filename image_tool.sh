@@ -32,6 +32,7 @@
 
 DEST_ROOT=/tmp/bsdrp_root
 DEST_CFG=/tmp/bsdrp_cfg
+BSDRP_SRC=/usr/src/tools/tools/nanobsd/BSDRP
 
 # Get options passed by user
 getoption () {
@@ -44,7 +45,10 @@ getoption () {
                 umount)
                         umount_img 
                         ;;
-		help)
+		update)
+			update_img
+			;;
+		help|h)
 			usage
 			;;
 		*)
@@ -67,10 +71,51 @@ usage () {
 	echo "Usage: $0 option"
 	echo "  - mount filename  : Mount BSDRP image"
 	echo "  - umount   : umount BSDRP image"
+	echo "  - update   : Copy some of the BSDRP source Files/ to mounted root"
 	echo "  - help (h) [option]  : Display this help message. "
 	exit 0
 }
 
+# update image
+update_img () {
+	# Verifing that destination mount points are mounted
+	(mount | grep "${DEST_ROOT}"  > /dev/null 2>&1 )
+	if [ ! $? -eq 0 ]
+	then
+		echo "It seem that ${DEST_ROOT} is not mounted"
+		echo '"Use "image_tools mount" before to use udpate'		
+		exit 1
+	fi
+
+	(mount | grep "${DEST_CFG}"  > /dev/null 2>&1 )
+	if [ ! $? -eq 0 ]
+	then
+		echo "It seem that ${DEST_CFG} is not mounted"
+		echo '"Use "image_tools mount" before to use update'		
+		exit 1
+	fi
+
+	# Verifing the presence of BSDRP Files folder:
+	if [ ! -d ${BSDRP_SRC}/Files ]
+	then
+		echo "Don't found ${BSDRP_SRC}/Files !"
+		exit 1
+	fi
+	
+	# Copying all Files (and create dir) execpt .svn and /usr/local/etc (because need special permission for quagga)
+	(
+	cd ${BSDRP_SRC}/Files
+	find . -print | grep -Ev '/(CVS|\.svn|etc)' | cpio -dumpv ${DEST_ROOT}/
+	)
+	(
+	cd ${BSDRP_SRC}/Files/etc
+	find . -print | grep -Ev '/(CVS|\.svn)' | cpio -dumpv ${DEST_ROOT}/conf/base/etc/
+	find . -print | grep -Ev '/(CVS|\.svn)' | cpio -dumpv ${DEST_ROOT}/etc/
+	)
+	
+
+
+}
 # Mount image
 mount_img () {
 	# Checking if file exist
@@ -194,7 +239,7 @@ umount_img () {
 	# Destroy memory disk:
 	echo "Destroy ${MD}"
 	mdconfig -d -u $MD
-	echo "Successful umount BSDRP image into:"
+	echo "Successful umount BSDRP image"
 
 	# cleanup
 	rm /tmp/bsdrp_image_tools.tmp

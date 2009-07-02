@@ -151,15 +151,16 @@ save_cfg () {
 	#       cmp /default/file with /etc/file and cp to /cf if dif
 	#   fi
 	# end for
+	# # find . -print | grep -Ev '/(CVS|\.svn)' | cpio -dumpv ${NANO_WORLDDIR}
 	(
 	cd /etc
 	for i in "$@" `find * -type f`
 	do
-		if [ -d /cfg/$i ]
+		if [ -f /cfg/$i ]
 		then
 			cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i
 		else
-			cmp -s /conf/default/etc/$i /etc/$i || cp -pfv /etc/$i /cfg/$i
+			cmp -s /conf/base/etc/$i /etc/$i || (find $i -print |  cpio -dumpv /cfg/)
 		fi
 	done
 	)	
