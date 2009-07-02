@@ -51,6 +51,11 @@ getoption () {
 		help|h)
 			usage
 			;;
+		license|lic)
+			license
+			;;
+		authors|author)
+			;;
 		*)
 			echo "illegal option: $FIRST_OPTION"
 			usage
@@ -79,6 +84,8 @@ usage () {
 		echo "  - route    : Display routes"
 		echo "  - process/proc  : Display process information"
 		echo "  - version/ver  : Display BSDRP version"
+		echo "  - license/lic  : Display BSDRP license"
+		echo "  - authors      : Display authors and contributors list"
 		echo "  - help/h [option]  : Display this help message. "
 		echo "		  	If [option] given, display more detail about"
 			;;	
@@ -86,6 +93,17 @@ usage () {
 	exit 0
 }
 
+# Display LICENSE
+license () {
+	cat /root/LICENSE
+	exit 0
+} 
+
+# Display AUTHORS
+authors () {
+	cat /root/AUTHORS
+	exit 0
+}
 # Display version
 version () {
 	cat /etc/BSDRP.version

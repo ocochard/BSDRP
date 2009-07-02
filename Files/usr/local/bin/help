@@ -33,12 +33,12 @@
 # Stop the script automatically on error
 set -e
 
-echo "Welcome to BSD Router Project help page"
+echo "Welcome to BSD Router Project help"
 echo ""
-echo "BSDRP is a FreeBSD with some customized tools:"
-echo " - config : Permit to manage config files"
-echo " - show : Permit to display some system information"
-echo " - upgrade : Permit to upgrade BSDRP"
-echo " - cli : Permit to enter into router mode (quagga)"
-echo " - help : This tool"
+echo "BSDRP is an embedded FreeBSD (NanoBSD) with some customized tools:"
+echo " - config  : Manage config files"
+echo " - show    : Display system information" 
+echo " - upgrade : upgrade BSDRP"
+echo " - cli     : Enter into router mode (quagga)"
+echo " - help    : Display this help message"
 echo ""
