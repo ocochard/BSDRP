@@ -60,7 +60,7 @@ getoption () {
 
 # Display help
 usage () {
-	echo "BSDRP show tool"
+	echo "BSD Router Project show tool"
 	case "$SECOND_OPTION" in
                 route)
 			echo "Options for route:"
