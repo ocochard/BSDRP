@@ -68,7 +68,12 @@ getoption () {
 			usage
 			;;
 		*)
-			echo "illegal option: $FIRST_OPTION"
+			if [ "${FIRST_OPTION}" = "" ];
+			then
+				echo "missing option"
+			else	
+				echo "illegal option: $FIRST_OPTION"
+			fi
 			usage
 			;;
 	esac
@@ -76,8 +81,8 @@ getoption () {
 
 # Display help
 usage () {
-	echo "BSDRP configuration tool"
-	if $SECOND_OPTION="apply"
+	echo "BSD Router Project configuration tool"
+	if [ "${SECOND_OPTION}" = "apply" ];
 	then
 		echo "Options for apply:"
 		echo " - secure timeout : Automatically rollback if the command confirm is not enter before timeout (in minute)"
@@ -138,8 +143,6 @@ save_cfg () {
 	mount_cfg
 	archive_cfg
 	# save config files
-	echo "TO DO: Need to copy modified file into /cfg (including subdir)"
-	echo "Because modified but non existant file in /cfg will no be copied"
 	# Algo:
 	# for all files (and subdir) in /etc:
 	#    if exist /cfg/file then
@@ -149,12 +152,18 @@ save_cfg () {
 	#   fi
 	# end for
 	(
-	cd /cfg
+	cd /etc
 	for i in "$@" `find * -type f`
 	do
-       	 cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i
+		if [ -d /cfg/$i ]
+		then
+			cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i
+		else
+			cmp -s /conf/default/etc/$i /etc/$i || cp -pfv /etc/$i /cfg/$i
+		fi
 	done
-	)
+	)	
+
 	# save ssh keys
 	if [ -d /cfg/ssh ]
 	then
