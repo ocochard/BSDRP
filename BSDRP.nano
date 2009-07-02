@@ -206,6 +206,7 @@ cleanup_ports () {
 
 customize_cmd cleanup_ports
 
+# BSDRP custom function
 bsdrp_custom () {
 	cp -v ${NANO_TOOLS}/AUTHORS ${NANO_WORLDDIR}/root/
 	cp -v ${NANO_TOOLS}/LICENSE ${NANO_WORLDDIR}/root/
@@ -214,12 +215,13 @@ bsdrp_custom () {
 	'chown -R quagga:quagga /usr/local/etc/quagga'
 }
 
-customize_cmd bsdrp_custom
-
-
 # Set physical disk layout for generic USB of 1Gb
 UsbDevice Generic 1000
-# Install NanoBSD scripts
+# Install Custom scripts and config files
 customize_cmd cust_install_files
+
+# Need to execute the bsdrp_custom after the cust_install_files
+customize_cmd bsdrp_custom
+
 # Allow root login via ssh
 customize_cmd cust_allow_ssh_root
