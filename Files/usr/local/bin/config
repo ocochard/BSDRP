@@ -124,6 +124,14 @@ save_cfg () {
 	# save config files
 	echo "TO DO: Need to copy modified file into /cfg (including subdir)"
 	echo "Because modified but non existant file in /cfg will no be copied"
+	# Algo:
+	# for all files (and subdir) in /etc:
+	#    if exist /cfg/file then
+	#	cmp /etc/file with /cfg/file and cp to /cfg if diff
+	#    else
+	#       cmp /default/file with /etc/file and cp to /cf if dif
+	#   fi
+	# end for
 	(
 	cd /cfg
 	for i in "$@" `find * -type f`
