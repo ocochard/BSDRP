@@ -106,6 +106,7 @@ authors () {
 }
 # Display version
 version () {
+	echo "BSD Router Project version:"
 	cat /etc/BSDRP.version
 	exit 0
 }
