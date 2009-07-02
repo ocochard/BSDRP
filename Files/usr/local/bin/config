@@ -113,14 +113,30 @@ umount_cfg () {
 	trap 1 2 15 EXIT
 }
 
-# Rotate cfg
-rotate_cfg () {
-	echo "TO DO: Old configuration files will be rotated tgz"
+# Archive cfg
+archive_cfg () {
+	if [ ! -d /cfg/archives ]
+	then
+		mkdir /cfg/archives
+	else
+		if [ -f /cfg/archives/rollback.tar.bz2 ]
+		then
+			rm /cfg/archives/rollback.tar.bz2
+		fi
+	fi
+	tar -cjvpf /cfg/archives/rollback.tar.bz2 -C /cfg/ --exclude archives .
+	if [ $? -eq 0 ]	
+	then
+		echo "Actual configuration archived."
+	else
+		echo "Meet an error during archive step of actual configuration"
+		exit 1
+	fi
 }
 # save configuration
 save_cfg () {
 	mount_cfg
-	rotate_cfg
+	archive_cfg
 	# save config files
 	echo "TO DO: Need to copy modified file into /cfg (including subdir)"
 	echo "Because modified but non existant file in /cfg will no be copied"
