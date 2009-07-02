@@ -60,6 +60,10 @@ getoption () {
 		reset)
 			reset
 			;;
+		password|pass)
+                        password_root
+                        ;;
+
 		help|h)
 			usage
 			;;
@@ -90,7 +94,8 @@ usage () {
 		echo "  - put      : Put config to a remote server"
 		echo "  - get      : Get config from remote server"
 		echo "  - reset  : Return to default configuration"
-		echo "  - help/h [option]  : Display this help message. "
+		echo "  - password (pass) : Change root password"
+		echo "  - help (h) [option]  : Display this help message. "
 		echo "		  	If [option] given, display more detail about"
 	fi
 	exit 0
@@ -206,6 +211,19 @@ reset () {
         exit 0
 }
 
+# Change root password
+password_root () {
+	passwd root
+
+	cfgslice=`grep '/cfg' /etc/fstab | cut -d \  -f 1`
+
+	trap "umount /cfg" 1 2 15 EXIT
+	mount /cfg
+	cp /etc/master.passwd /etc/passwd /etc/pwd.db /etc/spwd.db /etc/group /cfg
+	umount /cfg
+	trap 1 2 15 EXIT
+
+}
 ###################
 ## Main function ##
 ###################
