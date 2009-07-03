@@ -140,7 +140,9 @@ do
 	read TARGET_ARCH <&1
 done
 
-pprint 1 "Default console ( vga / serial ) ? "
+pprint 1 "Console type:"
+pprint 1 " - vga : vga and serial"
+pprint 1 " - serial : serial only"
 while [ "$INPUT_CONSOLE" != "vga" -a "$INPUT_CONSOLE" != "serial" ]
 do
 	read INPUT_CONSOLE <&1
@@ -218,10 +220,12 @@ echo "# Bootloader type"  >> /tmp/BSDRP.nano
 
 case $INPUT_CONSOLE in
 	"vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/BSDRP.nano 
+	echo "#Configure dual vga/serial console port" >> /tmp/BSDRP.nano
+	echo "customize_cmd bsdrp_console_dual" >> /tmp/BSDRP.nano
 ;;
 	"serial") echo "NANO_BOOTLOADER=\"boot/boot0sio\"" >> /tmp/BSDRP.nano
-	echo "#Configure console port" >> /tmp/BSDRP.nano
-	echo "customize_cmd cust_comconsole" >> /tmp/BSDRP.nano
+	echo "#Configure serial console port" >> /tmp/BSDRP.nano
+	echo "customize_cmd bsdrp_console_serial" >> /tmp/BSDRP.nano
 ;;
 esac
 
