@@ -106,10 +106,13 @@ update_img () {
 		exit 1
 	fi
 	
-	# Copying all Files (and create dir) execpt .svn and /usr/local/etc (because need special permission for quagga)
+	# Copying all Files (and create dir) 
+	# execpt:
+	# .svn and /usr/local/etc (because need special permission for quagga)
+	# boot/ (because line are added to this file in serial or dual mode)
 	(
 	cd ${BSDRP_SRC}/Files
-	find . -print | grep -Ev '/(CVS|\.svn|etc)' | cpio -dumpv ${DEST_ROOT}/
+	find . -print | grep -Ev '/(CVS|\.svn|etc|boot)' | cpio -dumpv ${DEST_ROOT}/
 	)
 	(
 	cd ${BSDRP_SRC}/Files/etc
