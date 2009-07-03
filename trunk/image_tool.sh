@@ -32,6 +32,7 @@
 
 DEST_ROOT=/tmp/bsdrp_root
 DEST_CFG=/tmp/bsdrp_cfg
+DEST_DATA=/tmp/bsdrp_data
 BSDRP_SRC=/usr/src/tools/tools/nanobsd/BSDRP
 
 # Get options passed by user
@@ -102,6 +103,15 @@ check_is_mount () {
 		echo '"Use "image_tools mount" before'		
 		exit 1
 	fi
+	
+	(mount | grep "${DEST_DATA}"  > /dev/null 2>&1 )
+	if [ ! $? -eq 0 ]
+	then
+		echo "It seem that ${DEST_DATA} is not mounted"
+		echo '"Use "image_tools mount" before'		
+		exit 1
+	fi
+
 }
 # Convert function
 convert_drive () {
@@ -226,29 +236,6 @@ convert_2qemu () {
 
 # Check if BSDRP image is allready mounted
 check_notmounted () {
-	# Checking if file exist
-        if [ ! -f ${FILENAME} ]
-        then
-                echo "Can't found ${FILENAME}"
-                exit 1
-        fi
-        # Checking file type
-        (file -b ${FILENAME} | grep "boot sector"  > /dev/null 2>&1 )
-        if [ ! $? -eq 0 ]
-        then
-                echo "Not a BSDRP image file detected"
-                echo "If your BSDRP image is zipped, unzip it before to use
- with this tools"
-                exit 1
-        fi
-
-}
-# Mount image
-mount_img () {
-
-	check_img
-	check_notmounted
-
 	# Verifing that destination mount point are free
 	(mount | grep "${DEST_ROOT}"  > /dev/null 2>&1 )
 	if [ $? -eq 0 ]
@@ -265,21 +252,21 @@ mount_img () {
 		echo '"Use "image_tools umount" before to use mount'		
 		exit 1
 	fi
-# Checking if file exist
-        if [ ! -f ${FILENAME} ]
-        then
-                echo "Can't found ${FILENAME}"
-                exit 1
-        fi
-        # Checking file type
-        (file -b ${FILENAME} | grep "boot sector"  > /dev/null 2>&1 )
-        if [ ! $? -eq 0 ]
-        then
-                echo "Not a BSDRP image file detected"
-                echo "If your BSDRP image is zipped, unzip it before to use
- with this tools"
-                exit 1
-        fi
+
+	(mount | grep "${DEST_DATA}"  > /dev/null 2>&1 )
+	if [ $? -eq 0 ]
+	then
+		echo "It seem that ${DEST_DATA} is allready mounted"
+		echo '"Use "image_tools umount" before to use mount'		
+		exit 1
+	fi
+
+}
+# Mount image
+mount_img () {
+
+	check_notmounted
+	check_img
 
 	# Create the destination folders
 
@@ -292,7 +279,12 @@ mount_img () {
 	then
 		mkdir ${DEST_CFG}
 	fi
-	
+
+	if [ ! -d ${DEST_DATA} ]
+	then
+		mkdir ${DEST_DATA}
+	fi
+
 	# Create RAM disk
 
 	MD=`mdconfig -a -t vnode -f ${FILENAME} -x 63 -y 16`
@@ -323,46 +315,27 @@ mount_img () {
 		exit 1
 	fi
 
+	mount /dev/${MD}s4 ${DEST_DATA}
+	if [ ! $? -eq 0 ]
+	then
+		echo "Meet a problem for mounting data partition of the image."
+		echo "Destroying Ram drive..."
+		mdconfig -d -u $MD
+		exit 1
+	fi
+
 	echo "Successful mount BSDRP image into:"
 	echo " - root partition: ${DEST_ROOT}"
 	echo " - cfg partition : ${DEST_CFG}"
+	echo " - data partition : ${DEST_DATA}"
 	
 	exit 0	
 }
 
+# umount the image
 umount_img () {
-	# Verifing that destination mount points are mounted
-	(mount | grep "${DEST_ROOT}"  > /dev/null 2>&1 )
-	if [ ! $? -eq 0 ]
-	then
-		echo "It seem that ${DEST_ROOT} is not mounted"
-		echo '"Use "image_tools mount" before to use umount'		
-		exit 1
-	fi
 
-	(mount | grep "${DEST_CFG}"  > /dev/null 2>&1 )
-	if [ ! $? -eq 0 ]
-	then
-		echo "It seem that ${DEST_CFG} is not mounted"
-		echo '"Use "image_tools mount" before to use umount'		
-		exit 1
-	fi
-
-	umount ${DEST_ROOT}
-	if [ ! $? -eq 0 ]
-	then
-		echo "Meet a problem for umounting root partition of the image."
-		echo "Still in use ?"
-		exit 1
-	fi
-
-	umount ${DEST_CFG}
-	if [ ! $? -eq 0 ]
-	then
-		echo "Meet a problem for umounting cfg partition of the image."
-		echo "Still in use ?"
-		exit 1
-	fi
+	check_is_mount
 
 	# Get the Memory Disk identifier:
 	. /tmp/bsdrp_image_tools.tmp
