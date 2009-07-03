@@ -209,7 +209,7 @@ apply_cfg () {
 # Display diff between current and saved configuration
 diff () {
 	mount_cfg
-	echo "Diffference between current and saved configuration files:"
+	echo "Difference between running and saved configuration files:"
 	(
 	cd /etc
 	for i in "$@" `find * -type f`
