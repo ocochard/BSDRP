@@ -142,16 +142,6 @@ archive_cfg () {
 save_cfg () {
 	mount_cfg
 	archive_cfg
-	# save config files
-	# Algo:
-	# for all files (and subdir) in /etc:
-	#    if exist /cfg/file then
-	#	cmp /etc/file with /cfg/file and cp to /cfg if diff
-	#    else
-	#       cmp /default/file with /etc/file and cp to /cf if dif
-	#   fi
-	# end for
-	# # find . -print | grep -Ev '/(CVS|\.svn)' | cpio -dumpv ${NANO_WORLDDIR}
 	(
 	cd /etc
 	for i in "$@" `find * -type f`
@@ -216,7 +206,19 @@ apply_cfg () {
 
 # Display diff between current and saved configuration
 diff () {
-	echo "Display diff between current and saved configuration"
+	echo "Diffference between current and saved configuration:"
+	(
+	cd /etc
+	for i in "$@" `find * -type f`
+	do
+		if [ -f /cfg/$i ]
+		then
+			cmp -s /etc/$i /cfg/$i || echo "/etc/$i"
+		else
+			cmp -s /conf/base/etc/$i /etc/$i || find $i -print
+		fi
+	done
+	)
 	exit 0
 }
 
