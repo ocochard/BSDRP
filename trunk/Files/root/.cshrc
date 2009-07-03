@@ -48,3 +48,4 @@ alias ll ls -hl
 # Some BSDRP aliases:
 alias cli vtysh
 alias include grep
+alias reload reboot

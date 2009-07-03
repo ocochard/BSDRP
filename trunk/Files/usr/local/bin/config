@@ -206,6 +206,7 @@ apply_cfg () {
 
 # Display diff between current and saved configuration
 diff () {
+	mount_cfg
 	echo "Diffference between current and saved configuration:"
 	(
 	cd /etc
@@ -219,6 +220,7 @@ diff () {
 		fi
 	done
 	)
+	umount_cfg
 	exit 0
 }
 
