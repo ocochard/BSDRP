@@ -39,43 +39,42 @@ getoption () {
 	SECOND_OPTION="$2"
 	THIRD_OPTION="$3"
 	case "$FIRST_OPTION" in
-		save)
-			save_cfg
-			;;
-		apply)
-			apply_cfg 
-			;;
-		diff)
-			diff
-			;;
-		rollback)
-			rollback
-			;;
-		put)
-			put
-			;;
-		get)
-			get
-			;;
-		reset)
-			reset
-			;;
-		password|pass)
-                        password_root
-                        ;;
-
-		help|h)
-			usage
-			;;
-		*)
-			if [ "${FIRST_OPTION}" = "" ];
-			then
-				echo "missing option"
-			else	
-				echo "illegal option: $FIRST_OPTION"
-			fi
-			usage
-			;;
+	save)
+		save_cfg
+		;;
+	apply)
+		apply_cfg 
+		;;
+	diff)
+		diff
+		;;
+	rollback)
+		rollback
+		;;
+	put)
+		put
+		;;
+	get)
+		get
+		;;
+	reset)
+		reset
+		;;
+	password|pass)
+        password_root
+        ;;
+	help|h)
+		usage
+		;;
+	*)
+		if [ "${FIRST_OPTION}" = "" ];
+		then
+			echo "missing option"
+		else	
+			echo "illegal option: $FIRST_OPTION"
+		fi
+		usage
+		;;
 	esac
 }
 
@@ -127,7 +126,8 @@ mount_data () {
 	mount /dev/${NANO_DRIVE}s4 /mnt
 }
 
-# umount data () {
+# umount data
+umount_data () {
 	umount /mnt
 	trap 1 2 15 EXIT
 }

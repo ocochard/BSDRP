@@ -337,6 +337,30 @@ umount_img () {
 
 	check_is_mount
 
+	umount ${DEST_ROOT}
+	if [ ! $? -eq 0 ]
+	then
+		echo "Meet a problem for umounting root partition of the image."
+		echo "Still in use ?"
+		exit 1
+	fi
+
+	umount ${DEST_CFG}
+	if [ ! $? -eq 0 ]
+	then
+		echo "Meet a problem for umounting cfg partition of the image."
+		echo "Still in use ?"
+		exit 1
+	fi
+
+	umount ${DEST_DATA}
+	if [ ! $? -eq 0 ]
+	then
+		echo "Meet a problem for umounting data partition of the image."
+		echo "Still in use ?"
+		exit 1
+	fi
+
 	# Get the Memory Disk identifier:
 	. /tmp/bsdrp_image_tools.tmp
 
