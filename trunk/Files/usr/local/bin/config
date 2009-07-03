@@ -119,7 +119,7 @@ umount_cfg () {
 
 # Mount data
 mount_data () {
-	trap "umount /data" 1 2 15 EXIT
+	trap "umount /data" 1 2 15 EXIT
 	# Get disk name
 	. /etc/nanobsd.conf
 	#Now we can use $NANO_DRIVE
@@ -129,12 +129,12 @@ mount_data () {
 # umount data
 umount_data () {
 	umount /mnt
-	trap 1 2 15 EXIT
+	trap 1 2 15 EXIT
 }
 # Archive cfg
 archive_cfg () {
 	mount_data
-	echo "Archive configuration files…"
+	echo "Archive configuration files..."
 	if [ ! -d /mnt/archives ]
 	then
 		mkdir /mnt/archives
@@ -202,16 +202,16 @@ apply_cfg () {
                         echo "TO DO: Apply config and rollback in $THIRD_OPTION minutes"
                         ;;
 		confirm)
-			echo "TO DO: Cancel the auto-rollback introduce by the apply secure"
+			echo "TO DO: Cancel the auto-rollback introduce by the apply secure"
 			;;
 		in)
-			echo "TO DO: Apply config in $THIRD_OPTION minutes"
+			echo "TO DO: Apply config in $THIRD_OPTION minutes"
 			;;
 		at)
 			echo "TO DO: Apply config at $THIRD_OPTION date"
 			;;
 		cancel)
-			echo "TO DO: Cancel in and at apply"
+			echo "TO DO: Cancel in and at apply"
 			;;
 		*)
 		echo "This function will force routing process to reload the configuration files"
@@ -270,14 +270,14 @@ rollback () {
 
 # Send configuration to an svn/cvs/scp server ?
 put () {
-	echo "TO DO"
+	echo "TO DO"
 	echo "Send configuration to an svn/cvs/scp server"
 	exit 0
 }
 
 # Get configuration from an svn/cvs/scp server
 get () {
-	echo "TO DO"
+	echo "TO DO"
 	echo "Get configuration from an svn/cvs/scp server"
 	exit 0
 }
@@ -285,7 +285,7 @@ get () {
 
 # Clear all existing configuration and return to default setting
 reset () {
-		echo "TO DO"
+		echo "TO DO"
         echo "Clear existing configuration and return to default setting"
         exit 0
 }
@@ -294,15 +294,6 @@ reset () {
 # Is this function really usefull ?????'
 password_root () {
 	passwd root
-
-	#cfgslice=`grep '/cfg' /etc/fstab | cut -d \  -f 1`
-
-	#trap "umount /cfg" 1 2 15 EXIT
-	#mount /cfg
-	#cp /etc/master.passwd /etc/passwd /etc/pwd.db /etc/spwd.db /etc/group /cfg
-	#umount /cfg
-	#trap 1 2 15 EXIT
-
 }
 ###################
 ## Main function ##
