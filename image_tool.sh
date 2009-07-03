@@ -157,6 +157,16 @@ convert_2qemu () {
         echo "Can't found ${FILENAME}"
         exit 1
     fi
+
+	# Checking if destination file exist
+    if [ -f ${FILENAME}.qcow2 ]
+    then
+        echo "Destination file allready exist."
+		echo "Move existing file to .old"
+		mv ${FILENAME}.qcow2 ${FILENAME}.qcow2.old
+    fi
+
+
 	echo "Converting image…"
 	qemu-img convert -c -f raw -O qcow2 ${FILENAME} ${FILENAME}.qcow2
   	if [ ! $? -eq 0 ]

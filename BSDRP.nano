@@ -236,6 +236,10 @@ bsdrp_console_serial () {
 }
 
 # Enable use of keyboard/vga and serial
+#
+###### Warning ####
+# Don't boot if no serial port available
+#
 bsdrp_console_dual () {
     sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
@@ -250,6 +254,13 @@ bsdrp_console_dual () {
 	echo 'console="comconsole,vidconsole" >> ${NANO_WORLDDIR}/boot/loader.conf
 
 }
+
+# Standard vga console, with serial port configured as vt100 console
+bsdrp_console_vga () {
+	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+}
+
 # Set physical disk layout for generic USB of 1Gb
 UsbDevice Generic 1000
 # Install Custom scripts and config files
