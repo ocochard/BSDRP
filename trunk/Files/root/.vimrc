@@ -98,3 +98,4 @@ set ignorecase
 set paste
 set noswapfile
 set viminfo=""
+set mouse-=a
