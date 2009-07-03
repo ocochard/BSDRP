@@ -36,33 +36,36 @@ BSDRP_SRC=/usr/src/tools/tools/nanobsd/BSDRP
 
 # Get options passed by user
 getoption () {
-        OPTION="$1"
-        FILENAME="$2"
-        case "$OPTION" in
-                mount)
-                        mount_img
-                        ;;
-                umount)
-                        umount_img 
-                        ;;
+	OPTION="$1"
+    FILENAME="$2"
+   	case "$OPTION" in
+		mount)
+        	mount_img
+            ;;
+        umount)
+       	    umount_img 
+            ;;
 		update)
 			update_img
 			;;
 		qemu)
 			convert_2qemu
 			;;
+		convert)
+			convert
+			;;
 		help|h)
 			usage
 			;;
 		*)
-                        if [ "${OPTION}" = "" ];
-                        then
-                                echo "missing option"
-                        else    
-                                echo "illegal option: $OPTION"
-                        fi
-                        usage
-                        ;;
+            if [ "${OPTION}" = "" ];
+            then
+          		echo "missing option"
+            else    
+            	echo "illegal option: $OPTION"
+            fi
+            usage
+            ;;
         esac
 }
 
@@ -75,19 +78,20 @@ usage () {
 	echo "  - mount <filename>  : Mount BSDRP image"
 	echo "  - umount   : umount BSDRP image"
 	echo "  - update   : Copy some of the BSDRP source Files/ to mounted root"
-	echo "  - qemu <filename>   : Convert BSDRP image to compressed qcow2 (qemu) format (not mandatory for using it with qemu)"	
-	echo "  - help (h) [option]  : Display this help message. "
+	echo "  - qemu <filename>   : Convert BSDRP image to compressed qcow2 (qemu) format (not mandatory for using it with qemu)"
+	echo "  - convert    : Convert ad0 to da0 and vice e versa"
+	echo "  - help (h) [option]  : Display this help message"
 	exit 0
 }
 
-# update image
-update_img () {
+# Check if image is mounted
+check_is_mount () {
 	# Verifing that destination mount points are mounted
 	(mount | grep "${DEST_ROOT}"  > /dev/null 2>&1 )
 	if [ ! $? -eq 0 ]
 	then
 		echo "It seem that ${DEST_ROOT} is not mounted"
-		echo '"Use "image_tools mount" before to use udpate'		
+		echo '"Use "image_tools mount" before'		
 		exit 1
 	fi
 
@@ -95,9 +99,48 @@ update_img () {
 	if [ ! $? -eq 0 ]
 	then
 		echo "It seem that ${DEST_CFG} is not mounted"
-		echo '"Use "image_tools mount" before to use update'		
+		echo '"Use "image_tools mount" before'		
 		exit 1
 	fi
+}
+# Convert function
+convert_drive () {
+	echo "mount -o ro /dev/${NEW_DRIVE}s3" > ${DEST_ROOT}/conf/default/etc/remount	
+	echo "NANO_DRIVE=${NEW_DRIVE}" > ${DEST_ROOT}/etc/nanobsd.conf
+	echo "/dev/${NEW_DRIVE}s1a / ufs ro 1 1" > ${DEST_ROOT}/etc/fstab
+    echo "/dev/${NEW_DRIVE}s3 /cfg ufs rw,noauto 2 2" >> ${DEST_ROOT}/etc/fstab
+	echo "Done!"
+	echo "Don't forget to change the filename from ${NANO_DRIVE} to ${NEW_DRIVE} once image will be umounted"
+	exit 0
+}
+
+# Convert Disk type (ad0 to da0, da0 to ad0) 
+convert () {
+	check_is_mount
+	# Get original disk type (set the variable NANO_DRIVE)
+	. ${DEST_ROOT}/etc/nanobsd.conf
+	case "$NANO_DRIVE" in
+		ad0)
+			echo "ad0 detected, convert to da0:"
+			NEW_DRIVE=da0
+			convert_drive	
+			exit 0
+			;;
+		da0)
+			echo "da0 detected, convert to ad0:"
+			NEW_DRIVE=ad0
+			convert_drive
+			exit 0
+			;;
+		*)
+			echo "Unknown value: ${NANO_DRIVE}"
+			exit 1
+	esac
+	
+}
+# update image
+update_img () {
+	check_is_mount
 
 	# Verifing the presence of BSDRP Files folder:
 	if [ ! -d ${BSDRP_SRC}/Files ]
@@ -116,7 +159,6 @@ update_img () {
 	)
 	(
 	cd ${BSDRP_SRC}/Files/etc
-	find . -print | grep -Ev '/(CVS|\.svn)' | cpio -dumpv ${DEST_ROOT}/conf/base/etc/
 	find . -print | grep -Ev '/(CVS|\.svn)' | cpio -dumpv ${DEST_ROOT}/etc/
 	)
 
