@@ -33,7 +33,7 @@ set -e
 
 DEST_PART=1
 # Set the NANO_DRIVE varible by starting this small script:
-#. /etc/nanobsd.conf
+. /etc/nanobsd.conf
 if mount | grep ${NANO_DRIVE}s$(DEST_PART) > /dev/null ; then
 	DEST_PART=2
 	if mount | grep ${NANO_DRIVE}s$(DEST_PART) > /dev/null ; then

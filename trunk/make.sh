@@ -34,6 +34,9 @@
 # Uncomment for enable debug: 
 #set -x
 
+# Exit if error
+#set -e
+
 NANOBSD_DIR=/usr/src/tools/tools/nanobsd
 
 #Compact flash database needed for NanoBSD ?
@@ -144,7 +147,7 @@ pprint 1 "Console type for boot message:"
 pprint 1 " - vga : vga only"
 pprint 1 " - dual : vga and serial (BUGGY and serial port mandatory!)"
 pprint 1 " - serial : serial only"
-while [ "$INPUT_CONSOLE" != "vga" -a "$INPUT_CONSOLE" != "serial" -a ]"$INPUT_CONSOLE" != "dual" 
+while [ "$INPUT_CONSOLE" != "vga" -a "$INPUT_CONSOLE" != "serial" -a "$INPUT_CONSOLE" != "dual" ]
 do
 	read INPUT_CONSOLE <&1
 done

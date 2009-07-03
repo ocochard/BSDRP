@@ -118,27 +118,44 @@ umount_cfg () {
 	trap 1 2 15 EXIT
 }
 
+# Mount data
+mount_data () {
+	trap "umount /data" 1 2 15 EXIT
+	# Get disk name
+	. /etc/nanobsd.conf
+	#Now we can use $NANO_DRIVE
+	mount /dev/${NANO_DRIVE}s4 /mnt
+}
+
+# umount data () {
+	umount /mnt
+	trap 1 2 15 EXIT
+}
 # Archive cfg
 archive_cfg () {
+	mount_data
 	echo "Archive configuration files…"
-	if [ ! -d /cfg/archives ]
+	if [ ! -d /mnt/archives ]
 	then
-		mkdir /cfg/archives
+		mkdir /mnt/archives
 	else
-		if [ -f /cfg/archives/rollback.tar.bz2 ]
+		if [ -f /mnt/archives/rollback.tar.bz2 ]
 		then
-			rm /cfg/archives/rollback.tar.bz2
+			rm /mnt/archives/rollback.tar.bz2
 		fi
 	fi
-	tar -cjvpf /cfg/archives/rollback.tar.bz2 -C /cfg/ --exclude archives . 2>/dev/null
+	tar -cjvpf /mnt/archives/rollback.tar.bz2 -C /cfg/ . 2>/dev/null
 
 	if [ $? -eq 0 ]	
 	then
 		echo "Archive done."
 	else
 		echo "Meet an error."
+		umount_data	
 		exit 1
 	fi
+	umount_data
+	exit 0
 }
 # save configuration
 save_cfg () {
@@ -229,21 +246,23 @@ diff () {
 # Rollback to previous configuration
 rollback () {
 	echo "Rollback the archived configuration"
-	mount_cfg
+	mount_data
 	# Check if archive exist
-	if [ -f /cfg/archives/rollback.tar.bz2 ]
+	if [ -f /mnt/archives/rollback.tar.bz2 ]
 	then
-		tar -x -C /etc/ -f /cfg/archives/rollback.tar.bz2
+		tar -x -C /etc/ -f /mnt/archives/rollback.tar.bz2
 		if [ ! $? -eq 0 ]	
 		then
 			echo "Error during restoring previous configuration."
+			umount_data
 			exit 1
 		fi
 	else
 		echo "No archive found."
-		umount_cfg
+		umount_data
 		exit 1
 	fi
+	umount_data
 	echo "Done."
 	echo "TO DO: need to force process to reload config"
 	exit 0
@@ -251,33 +270,38 @@ rollback () {
 
 # Send configuration to an svn/cvs/scp server ?
 put () {
+	echo "TO DO"
 	echo "Send configuration to an svn/cvs/scp server"
 	exit 0
 }
 
 # Get configuration from an svn/cvs/scp server
 get () {
+	echo "TO DO"
 	echo "Get configuration from an svn/cvs/scp server"
 	exit 0
 }
+	
 
 # Clear all existing configuration and return to default setting
 reset () {
+		echo "TO DO"
         echo "Clear existing configuration and return to default setting"
         exit 0
 }
 
 # Change root password
+# Is this function really usefull ?????'
 password_root () {
 	passwd root
 
-	cfgslice=`grep '/cfg' /etc/fstab | cut -d \  -f 1`
+	#cfgslice=`grep '/cfg' /etc/fstab | cut -d \  -f 1`
 
-	trap "umount /cfg" 1 2 15 EXIT
-	mount /cfg
-	cp /etc/master.passwd /etc/passwd /etc/pwd.db /etc/spwd.db /etc/group /cfg
-	umount /cfg
-	trap 1 2 15 EXIT
+	#trap "umount /cfg" 1 2 15 EXIT
+	#mount /cfg
+	#cp /etc/master.passwd /etc/passwd /etc/pwd.db /etc/spwd.db /etc/group /cfg
+	#umount /cfg
+	#trap 1 2 15 EXIT
 
 }
 ###################
