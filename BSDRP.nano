@@ -215,6 +215,41 @@ bsdrp_custom () {
 	'chown -R quagga:quagga /usr/local/etc/quagga'
 }
 
+# Enable only serial system only
+# Usefull ????
+bsdrp_console_serial () {
+# Enable getty on console
+    sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+
+    # Disable getty on syscons devices
+    sed -i "" -e '/^ttyv[0-8]/s/    on/     off/' ${NANO_WORLDDIR}/etc/ttys
+
+    # Tell loader to use serial console early.
+    echo " -h" > ${NANO_WORLDDIR}/boot.config
+
+	# Customize loader.conf file:
+	echo 'boot_serial="YES" >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'comconsole_speed="9600" >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'console="comconsole" >> ${NANO_WORLDDIR}/boot/loader.conf
+
+}
+
+# Enable use of keyboard/vga and serial
+bsdrp_console_dual () {
+    sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+
+    # Tell loader to use serial and vga console.
+    echo " -D" > ${NANO_WORLDDIR}/boot.config
+
+	# Customize loader.conf file:
+	echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'boot_serial="YES" >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'comconsole_speed="9600" >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'console="comconsole,vidconsole" >> ${NANO_WORLDDIR}/boot/loader.conf
+
+}
 # Set physical disk layout for generic USB of 1Gb
 UsbDevice Generic 1000
 # Install Custom scripts and config files
