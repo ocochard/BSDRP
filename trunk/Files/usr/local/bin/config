@@ -120,6 +120,7 @@ umount_cfg () {
 
 # Archive cfg
 archive_cfg () {
+	echo "Archive configuration files…"
 	if [ ! -d /cfg/archives ]
 	then
 		mkdir /cfg/archives
@@ -129,12 +130,13 @@ archive_cfg () {
 			rm /cfg/archives/rollback.tar.bz2
 		fi
 	fi
-	tar -cjvpf /cfg/archives/rollback.tar.bz2 -C /cfg/ --exclude archives .
+	tar -cjvpf /cfg/archives/rollback.tar.bz2 -C /cfg/ --exclude archives . 2>/dev/null
+
 	if [ $? -eq 0 ]	
 	then
-		echo "Actual configuration archived."
+		echo "Archive done."
 	else
-		echo "Meet an error during archive step of actual configuration"
+		echo "Meet an error."
 		exit 1
 	fi
 }
@@ -180,19 +182,19 @@ apply_cfg () {
 	echo "Apply configuration"
 	case "$SECOND_OPTION" in
                 secure)
-                        echo "Apply config and rollback in $THIRD_OPTION minutes"
+                        echo "TO DO: Apply config and rollback in $THIRD_OPTION minutes"
                         ;;
 		confirm)
-			echo "Cancel the auto-rollback introduce by the apply secure"
+			echo "TO DO: Cancel the auto-rollback introduce by the apply secure"
 			;;
 		in)
-			echo "Apply config in $THIRD_OPTION minutes"
+			echo "TO DO: Apply config in $THIRD_OPTION minutes"
 			;;
 		at)
-			echo "Apply config at $THIRD_OPTION date"
+			echo "TO DO: Apply config at $THIRD_OPTION date"
 			;;
 		cancel)
-			echo "Cancel in and at apply"
+			echo "TO DO: Cancel in and at apply"
 			;;
 		*)
 		echo "This function will force routing process to reload the configuration files"
@@ -207,7 +209,7 @@ apply_cfg () {
 # Display diff between current and saved configuration
 diff () {
 	mount_cfg
-	echo "Diffference between current and saved configuration:"
+	echo "Diffference between current and saved configuration files:"
 	(
 	cd /etc
 	for i in "$@" `find * -type f`

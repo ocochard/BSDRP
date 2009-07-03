@@ -140,10 +140,11 @@ do
 	read TARGET_ARCH <&1
 done
 
-pprint 1 "Console type:"
-pprint 1 " - vga : vga and serial"
+pprint 1 "Console type for boot message:"
+pprint 1 " - vga : vga only"
+pprint 1 " - dual : vga and serial (serial port mandatory!)"
 pprint 1 " - serial : serial only"
-while [ "$INPUT_CONSOLE" != "vga" -a "$INPUT_CONSOLE" != "serial" ]
+while [ "$INPUT_CONSOLE" != "vga" -a "$INPUT_CONSOLE" != "serial" -a ]"$INPUT_CONSOLE" != "dual" 
 do
 	read INPUT_CONSOLE <&1
 done
@@ -219,9 +220,14 @@ esac
 echo "# Bootloader type"  >> /tmp/BSDRP.nano
 
 case $INPUT_CONSOLE in
-	"vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/BSDRP.nano 
+	"dual") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/BSDRP.nano 
 	echo "#Configure dual vga/serial console port" >> /tmp/BSDRP.nano
 	echo "customize_cmd bsdrp_console_dual" >> /tmp/BSDRP.nano
+;;
+
+	"vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/BSDRP.nano 
+	echo "#Configure vga only console port" >> /tmp/BSDRP.nano
+	echo "customize_cmd bsdrp_console_vga" >> /tmp/BSDRP.nano
 ;;
 	"serial") echo "NANO_BOOTLOADER=\"boot/boot0sio\"" >> /tmp/BSDRP.nano
 	echo "#Configure serial console port" >> /tmp/BSDRP.nano
