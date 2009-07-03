@@ -106,8 +106,11 @@ authors () {
 }
 # Display version
 version () {
-	echo "BSD Router Project version:"
-	cat /etc/BSDRP.version
+	VERSION=`cat /etc/BSDRP.version`
+	echo "BSD Router Project version: ${VERSION}"
+	echo ""
+	echo "Based on:"
+	uname -v
 	exit 0
 }
 
