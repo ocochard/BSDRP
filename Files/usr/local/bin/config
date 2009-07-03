@@ -228,8 +228,24 @@ diff () {
 
 # Rollback to previous configuration
 rollback () {
-	echo "Rollback to previous saved configuration"
-	echo "And apply automatically ???"
+	echo "Rollback the archived configuration"
+	mount_cfg
+	# Check if archive exist
+	if [ -f /cfg/archives/rollback.tar.bz2 ]
+	then
+		tar -x -C /etc/ -f /cfg/archives/rollback.tar.bz2
+		if [ ! $? -eq 0 ]	
+		then
+			echo "Error during restoring previous configuration."
+			exit 1
+		fi
+	else
+		echo "No archive found."
+		umount_cfg
+		exit 1
+	fi
+	echo "Done."
+	echo "TO DO: need to force process to reload config"
 	exit 0
 }
 

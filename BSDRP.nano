@@ -136,7 +136,9 @@ NANO_CONFSIZE=2048
 # Size of data file system in 512 bytes sectors
 # If zero: no partition configured.
 # If negative: max size possible
-NANO_DATASIZE=0
+# This filesystem is used for archive configuration and
+# for user customized scripts or tool
+NANO_DATASIZE=2048
 
 # Size of the /etc ramdisk in 512 bytes sectors
 NANO_RAM_ETCSIZE=10240
@@ -229,9 +231,9 @@ bsdrp_console_serial () {
     echo " -h" > ${NANO_WORLDDIR}/boot.config
 
 	# Customize loader.conf file:
-	echo 'boot_serial="YES" >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'comconsole_speed="9600" >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'console="comconsole" >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'comconsole_speed="9600"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'console="comconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 
 }
 
@@ -249,9 +251,9 @@ bsdrp_console_dual () {
 
 	# Customize loader.conf file:
 	echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'boot_serial="YES" >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'comconsole_speed="9600" >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'console="comconsole,vidconsole" >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'comconsole_speed="9600"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 
 }
 
