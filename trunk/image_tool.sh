@@ -48,6 +48,9 @@ getoption () {
 		update)
 			update_img
 			;;
+		qemu)
+			convert_2qemu
+			;;
 		help|h)
 			usage
 			;;
@@ -69,9 +72,10 @@ usage () {
 
 # value $0 is the name of the called script
 	echo "Usage: $0 option"
-	echo "  - mount filename  : Mount BSDRP image"
+	echo "  - mount <filename>  : Mount BSDRP image"
 	echo "  - umount   : umount BSDRP image"
 	echo "  - update   : Copy some of the BSDRP source Files/ to mounted root"
+	echo "  - qemu <filename>   : Convert BSDRP image to compressed qcow2 (qemu) format (not mandatory for using it with qemu)"	
 	echo "  - help (h) [option]  : Display this help message. "
 	exit 0
 }
@@ -112,26 +116,83 @@ update_img () {
 	find . -print | grep -Ev '/(CVS|\.svn)' | cpio -dumpv ${DEST_ROOT}/conf/base/etc/
 	find . -print | grep -Ev '/(CVS|\.svn)' | cpio -dumpv ${DEST_ROOT}/etc/
 	)
-	
 
+}
+# Check validity of image file
+check_img () {
+	if [ "${FILENAME}" = "" ];
+	then
+		echo "Missing filename"
+		usage
+	fi
+	# Checking if file exist
+        if [ ! -f ${FILENAME} ]
+		then
+                echo "Can't found ${FILENAME}"
+                exit 1
+        fi
+        # Checking file type
+        (file -b ${FILENAME} | grep "boot sector"  > /dev/null 2>&1 )
+        if [ ! $? -eq 0 ]
+        then
+                echo "Not a BSDRP image file detected"
+                echo "If your BSDRP image is zipped, unzip it before to use
+ with this tools"
+                exit 1
+        fi
+	
+}
+
+# Convert to qcow2 format
+convert_2qemu () {
+	check_img
+	if [ ! -f /usr/local/bin/qemu-img ]
+	then
+		echo "Don't found qemu-img: Is qemu installed ?"
+		exit 1
+	fi
+	# Checking if file exist
+    if [ ! -f ${FILENAME} ]
+    then
+        echo "Can't found ${FILENAME}"
+        exit 1
+    fi
+	echo "Converting image…"
+	qemu-img convert -c -f raw -O qcow2 ${FILENAME} ${FILENAME}.qcow2
+  	if [ ! $? -eq 0 ]
+	then
+		echo "Meet a problem during qemu-img convert"
+		exit 1
+	fi
+	echo "Img convert successfully"
+	echo "New image: ${FILENAME}.qcow2"
+	exit 0
+}
+
+# Check if BSDRP image is allready mounted
+check_notmounted () {
+	# Checking if file exist
+        if [ ! -f ${FILENAME} ]
+        then
+                echo "Can't found ${FILENAME}"
+                exit 1
+        fi
+        # Checking file type
+        (file -b ${FILENAME} | grep "boot sector"  > /dev/null 2>&1 )
+        if [ ! $? -eq 0 ]
+        then
+                echo "Not a BSDRP image file detected"
+                echo "If your BSDRP image is zipped, unzip it before to use
+ with this tools"
+                exit 1
+        fi
 
 }
 # Mount image
 mount_img () {
-	# Checking if file exist
-	if [ ! -f ${FILENAME} ]
-	then
-		echo "Can't found ${FILENAME}"
-		exit 1
-	fi
-	# Checking file type
-	(file -b ${FILENAME} | grep "boot sector"  > /dev/null 2>&1 )
-	if [ ! $? -eq 0 ]
-	then
-		echo "Not a BSDRP image file detected"
-		echo "If your BSDRP image is zipped, unzip it before to use with this tools"		
-		exit 1
-	fi
+
+	check_img
+	check_notmounted
 
 	# Verifing that destination mount point are free
 	(mount | grep "${DEST_ROOT}"  > /dev/null 2>&1 )
@@ -149,6 +210,21 @@ mount_img () {
 		echo '"Use "image_tools umount" before to use mount'		
 		exit 1
 	fi
+# Checking if file exist
+        if [ ! -f ${FILENAME} ]
+        then
+                echo "Can't found ${FILENAME}"
+                exit 1
+        fi
+        # Checking file type
+        (file -b ${FILENAME} | grep "boot sector"  > /dev/null 2>&1 )
+        if [ ! $? -eq 0 ]
+        then
+                echo "Not a BSDRP image file detected"
+                echo "If your BSDRP image is zipped, unzip it before to use
+ with this tools"
+                exit 1
+        fi
 
 	# Create the destination folders
 
