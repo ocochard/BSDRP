@@ -197,7 +197,7 @@ save_cfg () {
 
 # Apply configuration
 apply_cfg () {
-	echo "Apply configuration"
+	echo "TO DO: Apply configuration"
 	case "$SECOND_OPTION" in
                 secure)
                         echo "TO DO: Apply config and rollback in $THIRD_OPTION minutes"
