@@ -60,9 +60,9 @@ fi
 dd if=/dev/zero of=/dev/${NANO_DRIVE}s${DST_SLICE} bs=1m count=1 > /dev/null 2>&1
 
 # Copy in new system
-echo "Upgrading... Please wait."
 dd of=/dev/${NANO_DRIVE}s${DST_SLICE} obs=64k
 
+echo "Upgrading... Please wait."
 # Check that it worked
 fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a
 
@@ -72,11 +72,17 @@ tunefs -L ${NANO_GLABEL_SYS}${DST_SLICE} /dev/${NANO_DRIVE}s${DST_SLICE}a
 # Adapt fstab of the new system
 mkdir /tmp/upgrade
 mount /dev/ufs/${NANO_GLABEL_SYS}${DST_SLICE} /tmp/upgrade
-for f in /tmp/upgrade/etc/fstab /tmp/upgrade/conf/base/etc/fstab
+for f in /tmp/upgrade/etc/fstab /tmp/upgrade/conf/base/etc/fstab /etc/fstab
 	do
 	    sed -i "" "s/${NANO_GLABEL_SYS}${SRC_SLICE}/${NANO_GLABEL_SYS}${DST_SLICE}/g" $f
     done
 umount /tmp/upgrade
+
+# Save the config file that include the fstab
+# Don't know if it's usefull
+mount /cfg
+cp /etc/fstap /cfg
+umount /cfg
 
 # Changing bootloader
 boot0cfg -s ${DST_SLICE} -v ${NANO_DRIVE}
