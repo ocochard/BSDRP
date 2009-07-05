@@ -157,6 +157,12 @@ NANO_BOOT0CFG="-o packet -s 1 -m 3"
 # Can be "file" or "swap"
 NANO_MD_BACKING="file"
 
+# Label name
+# Alphacharacter only
+NANO_GLABEL_SYS="BSDRP"
+NANO_GLABEL_CFG="cfg"
+NANO_GLABEL_DATA="data"
+
 # Progress Print level
 PPLEVEL=3
 
