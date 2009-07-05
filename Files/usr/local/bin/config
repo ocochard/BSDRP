@@ -285,6 +285,7 @@ get () {
 reset () {
 		echo "TO DO"
         echo "Clear existing configuration and return to default setting"
+		echo "Warning: Kept the fstab!"
         exit 0
 }
 
