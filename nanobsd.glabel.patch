@@ -1,5 +1,5 @@
-*** nanobsd.sh.orig	2009-07-05 08:18:18.000000000 +0200
---- nanobsd.sh	2009-07-05 17:05:38.000000000 +0200
+*** nanobsd.sh.orig	2009-07-05 19:58:26.000000000 +0200
+--- nanobsd.sh	2009-07-05 20:54:22.000000000 +0200
 ***************
 *** 128,133 ****
 --- 128,139 ----
@@ -57,17 +57,22 @@
   	)
   )
 ***************
-*** 449,454 ****
---- 454,462 ----
-  	bsdlabel -w -B -b ${NANO_WORLDDIR}/boot/boot ${MD}s1
+*** 450,456 ****
   	bsdlabel ${MD}s1
   
-+ 	# Set label
-+ 	tunefs -L ${NANO_GLABEL_SYS}1 /dev/${MD}s1a
-+ 
   	# Create first image
-  	newfs ${NANO_NEWFS} /dev/${MD}s1a
+! 	newfs ${NANO_NEWFS} /dev/${MD}s1a
   	mount /dev/${MD}s1a ${MNT}
+  	df -i ${MNT}
+  	echo "Copying worlddir..."
+--- 455,461 ----
+  	bsdlabel ${MD}s1
+  
+  	# Create first image
+! 	newfs -L ${NANO_GLABEL_SYS}1 ${NANO_NEWFS} /dev/${MD}s1a
+  	mount /dev/${MD}s1a ${MNT}
+  	df -i ${MNT}
+  	echo "Copying worlddir..."
 ***************
 *** 465,485 ****
   		# Duplicate to second image (if present)
@@ -82,16 +87,16 @@
   	fi
   	
 ! 	# Create Config slice
-  	newfs ${NANO_NEWFS} /dev/${MD}s3
+! 	newfs ${NANO_NEWFS} /dev/${MD}s3
   	# XXX: fill from where ?
   
 ! 	# Create Data slice, if any.
   	if [ $NANO_DATASIZE -ne 0 ] ; then
-  		newfs ${NANO_NEWFS} /dev/${MD}s4
+! 		newfs ${NANO_NEWFS} /dev/${MD}s4
   		# XXX: fill from where ?
   	fi
   
---- 473,497 ----
+--- 470,492 ----
   		# Duplicate to second image (if present)
   		echo "Duplicating to second image..."
   		dd if=/dev/${MD}s1 of=/dev/${MD}s2 bs=64k
@@ -106,14 +111,12 @@
   	fi
   	
 ! 	# Create Config slice and set label
-  	newfs ${NANO_NEWFS} /dev/${MD}s3
-+ 	tunefs - L ${NANO_GLABEL_CFG} /dev/${MD}s3
+! 	newfs -L ${NANO_GLABEL_CFG} ${NANO_NEWFS} /dev/${MD}s3
   	# XXX: fill from where ?
   
 ! 	# Create Data slice and set label, if any.
   	if [ $NANO_DATASIZE -ne 0 ] ; then
-  		newfs ${NANO_NEWFS} /dev/${MD}s4
-+ 		tunefs -L ${NANO_GLABEL_DATA} /dev/${MD}s4
+! 		newfs -L ${NANO_GLABEL_DATA} ${NANO_NEWFS} /dev/${MD}s4
   		# XXX: fill from where ?
   	fi
   

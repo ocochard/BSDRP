@@ -120,10 +120,7 @@ umount_cfg () {
 # Mount data
 mount_data () {
 	trap "umount /data" 1 2 15 EXIT
-	# Get disk name
-	. /etc/nanobsd.conf
-	#Now we can use $NANO_DRIVE
-	mount /dev/${NANO_DRIVE}s4 /mnt
+	mount /dev/ufs/data /mnt
 }
 
 # umount data
@@ -167,9 +164,9 @@ save_cfg () {
 	do
 		if [ -f /cfg/$i ]
 		then
-			cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i
+			cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i 2>/dev/null
 		else
-			cmp -s /conf/base/etc/$i /etc/$i || (find $i -print |  cpio -dumpv /cfg/)
+			cmp -s /conf/base/etc/$i /etc/$i || (find $i -print |  cpio -dumpv /cfg/ 2>/dev/null)
 		fi
 	done
 	)	
@@ -180,13 +177,13 @@ save_cfg () {
 		cd /etc/ssh
 		for i in "$@" `find ssh_host_* -type f`
         	do
-         		cmp -s /etc/ssh/$i /cfg/ssh/$i || cp -pfv /etc/ssh/$i /cfg/ssh/$i
+         		cmp -s /etc/ssh/$i /cfg/ssh/$i || cp -pfv /etc/ssh/$i /cfg/ssh/$i 2>/dev/null
         	done
 	else
 		mkdir -p /cfg/ssh
 		(
 		cd /etc/ssh
-		cp ssh_host_* /cfg/ssh
+		cp ssh_host_* /cfg/ssh 2>/dev/null
 		)
 	fi
 
