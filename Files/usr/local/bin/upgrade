@@ -31,24 +31,48 @@
 # Exit script if error meet
 set -e
 
-DEST_PART=1
-# Set the NANO_DRIVE varible by starting this small script:
-. /etc/nanobsd.conf
-if mount | grep ${NANO_DRIVE}s$(DEST_PART) > /dev/null ; then
-	DEST_PART=2
-	if mount | grep ${NANO_DRIVE}s$(DEST_PART) > /dev/null ; then
-		echo "Upgrade can't detect the non-active partition"
-		exit 1
-	fi
+# Get the NANO_GLABEL_SYS variable
+# (get the name from mount output, and remove the last character
+NANO_GLABEL_SYS=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1 | sed 's/\(.*\)./\1/'`
+
+# Get the disk name using its label
+NANO_DRIVE=`glabel list | grep -B2 ufs/${NANO_GLABEL_SYS} | head -n 1 | cut -f3 -d' ' | cut -d's' -f1`
+
+# Get the full disk name
+NANO_FULLDRIVE=`glabel list | grep -B2 ufs/${NANO_GLABEL_SYS} | head -n 1 | cut -f3 -d " "`
+
+# Check and set final varible
+DEST_SLICE=0
+if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s1"` ]; then 
+	DEST_SLICE=2
+fi
+if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s2"` ]; then                
+    DEST_SLICE=1
+fi
+if [ $DEST_SLICE = 0 ]; then
+	echo "Can't detect active slice"
+	exit 1
 fi
 
 # Blow away old system.
-dd if=/dev/zero of=/dev/${NANO_DRIVE}s$(DEST_PART) bs=1m count=1 > /dev/null 2>&1
+dd if=/dev/zero of=/dev/${NANO_DRIVE}s$(DEST_SLICE) bs=1m count=1 > /dev/null 2>&1
 
 # Copy in new system
-dd of=/dev/${NANO_DRIVE}s$(DEST_PART) obs=64k
+dd of=/dev/${NANO_DRIVE}s$(DEST_SLICE) obs=64k
 
 # Check that it worked
-fsck_ffs -n /dev/${NANO_DRIVE}s$(DEST_PART)a
+fsck_ffs -n /dev/${NANO_DRIVE}s$(DEST_SLICE)a
 
-boot0cfg -s $(DEST_PART) -v ${NANO_DRIVE}
+# Set Label into the new slice
+tunefs -L ${NANO_GLABEL_SYS}$(DEST_SLICE) /dev/${NANO_DRIVE}s$(DEST_SLICE)a
+
+# Adapt fstab of the new system
+mount /dev/ufs/${NANO_GLABEL_SYS}$(DEST_SLICE) /mnt
+for f in /mnt/etc/fstab /mnt/conf/base/etc/fstab
+	do
+	    sed -i "" "s/${NANO_GLABEL_SYS}1/${NANO_GLABEL}2/g" $f
+    done
+umount /mnt
+
+# Changing bootloader
+boot0cfg -s $(DEST_SLICE) -v ${NANO_DRIVE}

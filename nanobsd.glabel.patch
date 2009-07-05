@@ -1,0 +1,119 @@
+*** nanobsd.sh.orig	2009-07-05 08:18:18.000000000 +0200
+--- nanobsd.sh	2009-07-05 17:05:38.000000000 +0200
+***************
+*** 128,133 ****
+--- 128,139 ----
+  # Can be "file" or "swap"
+  NANO_MD_BACKING="file"
+  
++ # Label name
++ # Alphacharacter only
++ NANO_GLABEL_SYS="nanobsd"
++ NANO_GLABEL_CFG="cfg"
++ NANO_GLABEL_DATA="data"
++ 
+  # Progress Print level
+  PPLEVEL=3
+  
+***************
+*** 310,316 ****
+  	echo "$NANO_RAM_TMPVARSIZE" > conf/base/var/md_size
+  
+  	# pick up config files from the special partition
+! 	echo "mount -o ro /dev/${NANO_DRIVE}s3" > conf/default/etc/remount
+  
+  	# Put /tmp on the /var ramdisk (could be symlink already)
+  	rmdir tmp || true
+--- 316,322 ----
+  	echo "$NANO_RAM_TMPVARSIZE" > conf/base/var/md_size
+  
+  	# pick up config files from the special partition
+! 	echo "mount -o ro /dev/ufs/${NANO_GLABEL_CFG}" > conf/default/etc/remount
+  
+  	# Put /tmp on the /var ramdisk (could be symlink already)
+  	rmdir tmp || true
+***************
+*** 332,342 ****
+  	# Make root filesystem R/O by default
+  	echo "root_rw_mount=NO" >> etc/defaults/rc.conf
+  
+! 	# save config file for scripts
+! 	echo "NANO_DRIVE=${NANO_DRIVE}" > etc/nanobsd.conf
+  
+! 	echo "/dev/${NANO_DRIVE}s1a / ufs ro 1 1" > etc/fstab
+! 	echo "/dev/${NANO_DRIVE}s3 /cfg ufs rw,noauto 2 2" >> etc/fstab
+  	mkdir -p cfg
+  	)
+  )
+--- 338,347 ----
+  	# Make root filesystem R/O by default
+  	echo "root_rw_mount=NO" >> etc/defaults/rc.conf
+  
+! 	# Set the active partition or scripts
+  
+! 	echo "/dev/ufs/${NANO_GLABEL_SYS}1 / ufs ro 1 1" > etc/fstab
+! 	echo "/dev/ufs/${NANO_GLABEL_CFG} /cfg ufs rw,noauto 2 2" >> etc/fstab
+  	mkdir -p cfg
+  	)
+  )
+***************
+*** 449,454 ****
+--- 454,462 ----
+  	bsdlabel -w -B -b ${NANO_WORLDDIR}/boot/boot ${MD}s1
+  	bsdlabel ${MD}s1
+  
++ 	# Set label
++ 	tunefs -L ${NANO_GLABEL_SYS}1 /dev/${MD}s1a
++ 
+  	# Create first image
+  	newfs ${NANO_NEWFS} /dev/${MD}s1a
+  	mount /dev/${MD}s1a ${MNT}
+***************
+*** 465,485 ****
+  		# Duplicate to second image (if present)
+  		echo "Duplicating to second image..."
+  		dd if=/dev/${MD}s1 of=/dev/${MD}s2 bs=64k
+  		mount /dev/${MD}s2a ${MNT}
+! 		for f in ${MNT}/etc/fstab ${MNT}/conf/base/etc/fstab
+! 		do
+! 			sed -i "" "s/${NANO_DRIVE}s1/${NANO_DRIVE}s2/g" $f
+! 		done
+! 		umount ${MNT}
+  	fi
+  	
+! 	# Create Config slice
+  	newfs ${NANO_NEWFS} /dev/${MD}s3
+  	# XXX: fill from where ?
+  
+! 	# Create Data slice, if any.
+  	if [ $NANO_DATASIZE -ne 0 ] ; then
+  		newfs ${NANO_NEWFS} /dev/${MD}s4
+  		# XXX: fill from where ?
+  	fi
+  
+--- 473,497 ----
+  		# Duplicate to second image (if present)
+  		echo "Duplicating to second image..."
+  		dd if=/dev/${MD}s1 of=/dev/${MD}s2 bs=64k
++ 		tunefs -L ${NANO_GLABEL_SYS}2 /dev/${MD}s2
+  		mount /dev/${MD}s2a ${MNT}
+!         for f in ${MNT}/etc/fstab ${MNT}/conf/base/etc/fstab
+!         do
+!         	sed -i "" "s/${NANO_GLABEL_SYS}1/${NANO_GLABEL}2/g" $f
+!         done
+!         umount ${MNT}
+! 
+  	fi
+  	
+! 	# Create Config slice and set label
+  	newfs ${NANO_NEWFS} /dev/${MD}s3
++ 	tunefs - L ${NANO_GLABEL_CFG} /dev/${MD}s3
+  	# XXX: fill from where ?
+  
+! 	# Create Data slice and set label, if any.
+  	if [ $NANO_DATASIZE -ne 0 ] ; then
+  		newfs ${NANO_NEWFS} /dev/${MD}s4
++ 		tunefs -L ${NANO_GLABEL_DATA} /dev/${MD}s4
+  		# XXX: fill from where ?
+  	fi
+  
