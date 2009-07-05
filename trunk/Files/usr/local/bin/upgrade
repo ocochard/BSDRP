@@ -32,7 +32,7 @@
 set -e
 
 # Get the NANO_GLABEL_SYS variable
-# (get the name from mount output, and remove the last character
+# (get the name from mount output, and remove the last character)
 NANO_GLABEL_SYS=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1 | sed 's/\(.*\)./\1/'`
 
 # Get the disk name using its label
@@ -42,37 +42,41 @@ NANO_DRIVE=`glabel list | grep -B2 ufs/${NANO_GLABEL_SYS} | head -n 1 | cut -f3 
 NANO_FULLDRIVE=`glabel list | grep -B2 ufs/${NANO_GLABEL_SYS} | head -n 1 | cut -f3 -d " "`
 
 # Check and set final varible
-DEST_SLICE=0
+DST_SLICE=0
 if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s1"` ]; then 
-	DEST_SLICE=2
+	DST_SLICE=2
+	SRC_SLICE=1
 fi
 if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s2"` ]; then                
-    DEST_SLICE=1
+    DST_SLICE=1
+	SRC_SLICE=2
 fi
-if [ $DEST_SLICE = 0 ]; then
+if [ $DST_SLICE = 0 ]; then
 	echo "Can't detect active slice"
 	exit 1
 fi
 
 # Blow away old system.
-dd if=/dev/zero of=/dev/${NANO_DRIVE}s$(DEST_SLICE) bs=1m count=1 > /dev/null 2>&1
+dd if=/dev/zero of=/dev/${NANO_DRIVE}s${DST_SLICE} bs=1m count=1 > /dev/null 2>&1
 
 # Copy in new system
-dd of=/dev/${NANO_DRIVE}s$(DEST_SLICE) obs=64k
+echo "Upgrading... Please wait."
+dd of=/dev/${NANO_DRIVE}s${DST_SLICE} obs=64k
 
 # Check that it worked
-fsck_ffs -n /dev/${NANO_DRIVE}s$(DEST_SLICE)a
+fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a
 
 # Set Label into the new slice
-tunefs -L ${NANO_GLABEL_SYS}$(DEST_SLICE) /dev/${NANO_DRIVE}s$(DEST_SLICE)a
+tunefs -L ${NANO_GLABEL_SYS}${DST_SLICE} /dev/${NANO_DRIVE}s${DST_SLICE}a
 
 # Adapt fstab of the new system
-mount /dev/ufs/${NANO_GLABEL_SYS}$(DEST_SLICE) /mnt
-for f in /mnt/etc/fstab /mnt/conf/base/etc/fstab
+mkdir /tmp/upgrade
+mount /dev/ufs/${NANO_GLABEL_SYS}${DST_SLICE} /tmp/upgrade
+for f in /tmp/upgrade/etc/fstab /tmp/upgrade/conf/base/etc/fstab
 	do
-	    sed -i "" "s/${NANO_GLABEL_SYS}1/${NANO_GLABEL}2/g" $f
+	    sed -i "" "s/${NANO_GLABEL_SYS}${SRC_SLICE}/${NANO_GLABEL_SYS}${DST_SLICE}/g" $f
     done
-umount /mnt
+umount /tmp/upgrade
 
 # Changing bootloader
-boot0cfg -s $(DEST_SLICE) -v ${NANO_DRIVE}
+boot0cfg -s ${DST_SLICE} -v ${NANO_DRIVE}
