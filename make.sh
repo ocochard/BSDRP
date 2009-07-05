@@ -100,18 +100,26 @@ system_patch() {
 # NanoBSD image use fixed boot disk: ad0, da0, etc...
 # This is a big limitation for a "generic" image that can be installed
 # on a USB (da0) or on an hard drive (ad0).
-patch ${NANOBSD_DIR}/nanobsd.sh nanobsd.glabel.patch
+pprint 3 "Checking in NanoBSD allready glabel patched"
+grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh
+if [ $? -eq 0 ] 
+then
+	pprint 3 "NanoBSD allready glabel patched"
+else
+	pprint 3 "Patching NanoBSD with glabel support"
+	patch ${NANOBSD_DIR}/nanobsd.sh nanobsd.glabel.patch
+fi
 
 # Adding amd64 support to NanoBSD:
 if [ "$TARGET_ARCH" = "amd64"  ]
 then
-	pprint 3 "Checking in NanoBSD allready patched"
+	pprint 3 "Checking in NanoBSD allready amd64 patched"
 	grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh
 	if [ $? -eq 0 ] 
 	then
-		pprint 3 "NanoBSD allready patched"
+		pprint 3 "NanoBSD allready amd64 patched"
 	else
-		pprint 3 "Patching NanoBSD with target amd64 support"
+		pprint 3 "Patching NanoBSD with amd64 support"
 		patch ${NANOBSD_DIR}/nanobsd.sh nanobsd.amd64.patch
 	fi
 fi
