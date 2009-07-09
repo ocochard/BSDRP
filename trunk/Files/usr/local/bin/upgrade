@@ -32,7 +32,7 @@
 ##  Example of Usage ##
 #######################	
 
-# Put the bziped _.disk.image on “my-server”, in the  home dir of “my-user”,
+# Put the bziped _.disk.image on my-server, in the  home dir of my-user,
 # and from the nanoBSD device, enter this command:
 # ssh my-user@my-server cat _.disk.image.bz2 | bzcat | upgrade
 
@@ -45,21 +45,24 @@ set -e
 NANO_GLABEL_SYS=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1 | sed 's/\(.*\)./\1/'`
 
 # Get the disk name using its label
-NANO_DRIVE=`glabel status | grep -B2 ufs/${NANO_GLABEL_SYS} | awk '{print $3}' | cut -d's' -f1`
+NANO_DRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS} | awk '{print $3}' | cut -d's' -f1`
 
 # Get the full disk name
-NANO_FULLDRIVE=`glabel status | grep -B2 ufs/${NANO_GLABEL_SYS} | awk '{print $3}'`
+NANO_FULLDRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS} | awk '{print $3}'`
 
 # Check and set final variable
 DST_SLICE=0
-if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s1"` ]; then 
+echo $NANO_FULLDRIVE | /usr/bin/grep "s1" > /dev/null 2>&1
+if [ $? ]; then 
 	DST_SLICE=2
 	SRC_SLICE=1
 fi
-if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s2"` ]; then                
+echo $NANO_FULLDRIVE | /usr/bin/grep "s2" > /dev/null 2>&1
+if [ $? ]; then                
     DST_SLICE=1
 	SRC_SLICE=2
 fi
+
 if [ $DST_SLICE = 0 ]; then
 	echo "Can't detect active slice"
 	exit 1
