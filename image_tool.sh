@@ -108,8 +108,6 @@ check_is_mount () {
 	if [ ! $? -eq 0 ]
 	then
 		echo "It seem that ${DEST_DATA} is not mounted"
-		echo '"Use "image_tools mount" before'		
-		exit 1
 	fi
 
 }
@@ -310,8 +308,6 @@ mount_img () {
 	if [ ! $? -eq 0 ]
 	then
 		echo "Meet a problem for mounting cfg partition of the image."
-		echo "Destroying Ram drive..."
-		mdconfig -d -u $MD
 		exit 1
 	fi
 
@@ -319,9 +315,6 @@ mount_img () {
 	if [ ! $? -eq 0 ]
 	then
 		echo "Meet a problem for mounting data partition of the image."
-		echo "Destroying Ram drive..."
-		mdconfig -d -u $MD
-		exit 1
 	fi
 
 	echo "Successful mount BSDRP image into:"
@@ -357,8 +350,7 @@ umount_img () {
 	if [ ! $? -eq 0 ]
 	then
 		echo "Meet a problem for umounting data partition of the image."
-		echo "Still in use ?"
-		exit 1
+		echo "Not a blocking problem"
 	fi
 
 	# Get the Memory Disk identifier:
