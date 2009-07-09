@@ -45,10 +45,10 @@ set -e
 NANO_GLABEL_SYS=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1 | sed 's/\(.*\)./\1/'`
 
 # Get the disk name using its label
-NANO_DRIVE=`glabel list | grep -B2 ufs/${NANO_GLABEL_SYS} | head -n 1 | cut -f3 -d' ' | cut -d's' -f1`
+NANO_DRIVE=`glabel status | grep -B2 ufs/${NANO_GLABEL_SYS} | awk '{print $3}' | cut -d's' -f1`
 
 # Get the full disk name
-NANO_FULLDRIVE=`glabel list | grep -B2 ufs/${NANO_GLABEL_SYS} | head -n 1 | cut -f3 -d " "`
+NANO_FULLDRIVE=`glabel status | grep -B2 ufs/${NANO_GLABEL_SYS} | awk '{print $3}'`
 
 # Check and set final variable
 DST_SLICE=0
@@ -90,7 +90,7 @@ umount /tmp/upgrade
 # Save the config file that include the fstab
 # Don't know if it's usefull
 mount /cfg
-cp /etc/fstap /cfg
+cp /etc/fstab /cfg
 umount /cfg
 
 # Changing bootloader
