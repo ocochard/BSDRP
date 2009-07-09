@@ -52,6 +52,10 @@ NANO_FULLDRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS} | awk '{print $3}'`
 
 # Check and set final variable
 DST_SLICE=0
+
+# Need to disable set -e for using return code
+set +e
+
 echo $NANO_FULLDRIVE | /usr/bin/grep "s1" > /dev/null 2>&1
 if [ $? ]; then 
 	DST_SLICE=2
@@ -67,6 +71,9 @@ if [ $DST_SLICE = 0 ]; then
 	echo "Can't detect active slice"
 	exit 1
 fi
+
+# Ok, now we can use auto-exit on non null return value
+set -e
 
 # Blow away old system.
 dd if=/dev/zero of=/dev/${NANO_DRIVE}s${DST_SLICE} bs=1m count=1 > /dev/null 2>&1
