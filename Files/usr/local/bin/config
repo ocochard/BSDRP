@@ -248,6 +248,9 @@ rollback () {
 	# Check if archive exist
 	if [ -f /mnt/archives/rollback.tar.bz2 ]
 	then
+		# Backup fstab file
+		cp /etc/fstab /tmp
+		# Unzip the archive to /etc
 		tar -x -C /etc/ -f /mnt/archives/rollback.tar.bz2
 		if [ ! $? -eq 0 ]	
 		then
@@ -255,8 +258,11 @@ rollback () {
 			umount_data
 			exit 1
 		fi
+		# Restore fstab file
+		cp /tmp/fstab /etc/fstab
 	else
-		echo "No archive found."
+		echo "No archive file found."
+		echo "You need to save your configuration once before to rollback it"
 		umount_data
 		exit 1
 	fi
