@@ -1,7 +1,8 @@
 Release 0.2
 
-Removing "ad0" or "da0" dependency using glabel: Big thanks to Scott Ullrich (pfSense) for this tips!
-
+- Removing "ad0" or "da0" dependency using glabel: Big thanks to Scott Ullrich (pfSense) for this tips!
+- Tune Kernel: Enable MROUTING and ALTQ, MULTIPLE FIB (4)
+- Improve the BSDRP scripts: upgrade and config
 
 
 -----------
