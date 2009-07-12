@@ -11,6 +11,6 @@ BSDRP is based upon/includes various free software packages, listed below. The a
 * FreeBSD:  Copyright (c) 1995-2009 The FreeBSD Project. All rights reserved.
 * Gitoyen-NanoBSD-Quagga-router : Gitoyen patch to NanoBSD that add ports compiling support.
 * Quagga routing software.
-* Idea of using glabel for simplify image type: Scott Ullrich (pfSense) 
+* Idea of using glabel for reducing image type: Scott Ullrich (pfSense) 
 
 
