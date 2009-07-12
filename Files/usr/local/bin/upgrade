@@ -43,12 +43,15 @@ set -e
 # Get the NANO_GLABEL_SYS variable
 # (get the name from mount output, and remove the last character)
 NANO_GLABEL_SYS=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1 | sed 's/\(.*\)./\1/'`
+# Get the NANO_GLABEL_SYS_FULL variable
+# (kept the last 1 or 2 number)
+NANO_GLABEL_SYS_FULL=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1`
 
 # Get the disk name using its label
-NANO_DRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS} | awk '{print $3}' | cut -d's' -f1`
+NANO_DRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} | awk '{print $3}' | cut -d's' -f1`
 
 # Get the full disk name
-NANO_FULLDRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS} | awk '{print $3}'`
+NANO_FULLDRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} | awk '{print $3}'`
 
 # Check and set final variable
 DST_SLICE=0
