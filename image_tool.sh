@@ -52,9 +52,9 @@ getoption () {
 		qemu)
 			convert_2qemu
 			;;
-		convert)
-			convert
-			;;
+		#convert)
+		#	convert
+		#	;;
 		help|h)
 			usage
 			;;
@@ -80,7 +80,7 @@ usage () {
 	echo "  - umount   : umount BSDRP image"
 	echo "  - update   : Copy some of the BSDRP source Files/ to mounted root"
 	echo "  - qemu <filename>   : Convert BSDRP image to compressed qcow2 (qemu) format (not mandatory for using it with qemu)"
-	echo "  - convert    : Convert ad0 to da0 and vice e versa"
+#	echo "  - convert    : Convert ad0 to da0 and vice e versa"
 	echo "  - help (h) [option]  : Display this help message"
 	exit 0
 }
