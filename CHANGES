@@ -1,4 +1,4 @@
-Release 0.2
+Release 0.2 (not released)
 
 - Removing "ad0" or "da0" dependency using glabel: Big thanks to Scott Ullrich (pfSense) for this tips!
 - Reduce the minimum disk size from 1GB to 512MB
