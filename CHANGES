@@ -1,8 +1,9 @@
-Release 0.3
+Release 0.3 (not released)
 
 To do:
 - Need to remove all gcc suite include in FreeBSD
 
+-----------
 Release 0.2
 
 - Upgrade to FreeBSD 8.0-BETA1
