@@ -77,7 +77,10 @@ options 	STOP_NMI		# Stop CPUS using NMI instead of IPI
 options 	HWPMC_HOOKS		# Necessary kernel hooks for hwpmc(4)
 options 	AUDIT			# Security event auditing
 options 	MAC			# TrustedBSD MAC Framework
-options		FLOWTABLE		# per-cpu routing cache
+# Disable Flowtable
+# Here is the advice about why disabling Flowtable for a router:
+# http://lists.freebsd.org/pipermail/freebsd-current/2009-July/009244.html
+# options		FLOWTABLE		# per-cpu routing cache
 #options 	KDTRACE_FRAME		# Ensure frames are compiled in
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
 
