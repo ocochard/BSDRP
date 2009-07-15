@@ -379,8 +379,24 @@ device		umass		# Disks/Mass storage - Requires scbus and da
 #device		dcons_crom	# Configuration ROM for dcons
 
 # Add device Polling
-options DEVICE_POLLING
+options		DEVICE_POLLING
 
 # Add multiple route table support
-options ROUTETABLES=4
+options		ROUTETABLES=4
 
+# Enable CARP: Common Address Redundancy Protocol (a patented free VRRP)
+device		carp
+
+# Enable LAGG: link aggregation and link failover interface
+device		lagg
+
+# Enable netgraph
+options		NETGRAPH 
+
+#  The `vlan' device implements the VLAN tagging of Ethernet frames
+#  according to IEEE 802.1Q.
+device		vlan
+
+# Kept the use of modules (for kept a small kernel) but prevent to build all modules
+# Need to found how this works...
+# makeoptions    MODULES_OVERRIDE="acpi ng if_bridge"

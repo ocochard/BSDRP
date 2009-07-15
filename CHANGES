@@ -1,6 +1,8 @@
 Release 0.3 (not released)
 
 - Enable IPv6 forwarding by default (it was a bug and not a feature)
+- Enable carp,lagg,vlan,netgraph in the kernel
+- Remove all non usefull kernel modules (works in progress)
 
 To do:
 - Need to remove all gcc suite include in FreeBSD
