@@ -2,10 +2,10 @@ Release 0.3 (not released)
 
 - Enable IPv6 forwarding by default (it was a bug and not a feature)
 - Enable carp,lagg,vlan,netgraph in the kernel
-- Remove all non usefull kernel modules (works in progress)
+- Remove all non usefull kernel modules (save 30Mb)
 
 To do:
-- Need to remove all gcc suite include in FreeBSD
+- Removing all compilation tools (needed for quagga and vim installation)
 
 -----------
 Release 0.2
