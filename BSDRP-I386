@@ -398,5 +398,5 @@ options		NETGRAPH
 device		vlan
 
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
-# Need to found how this works...
-# makeoptions    MODULES_OVERRIDE="acpi ng if_bridge"
+# Name are relative to /usr/src/sys/modules
+makeoptions    MODULES_OVERRIDE="acpi netgraph if_ef if_bridge"
