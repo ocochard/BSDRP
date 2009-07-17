@@ -375,6 +375,8 @@ device		udav		# Davicom DM9601E USB
 
 # Add device Polling
 options		DEVICE_POLLING
+# Increase HZ for optimizing polling
+options		HZ=2000 
 
 # Add multiple route table support
 options		ROUTETABLES=4

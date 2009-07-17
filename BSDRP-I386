@@ -380,6 +380,8 @@ device		umass		# Disks/Mass storage - Requires scbus and da
 
 # Add device Polling
 options		DEVICE_POLLING
+# Increase HZ for optimizing polling
+options		HZ=2000 
 
 # Add multiple route table support
 options		ROUTETABLES=4

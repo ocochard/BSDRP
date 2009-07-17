@@ -52,7 +52,7 @@ alias reload reboot
 # Some BSDRP command complete
 complete *config  'p/1/(save apply rollback put get reset password help )/'
 complete *show  'p/1/(route process version license authors help )/'
-
+complete *route 'p/1/(add flush del change get monitor )/'
 # Others Command complete
 # http://hea-www.harvard.edu/~fine/Tech/tcsh.html
 
