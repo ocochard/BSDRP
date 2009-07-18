@@ -4,6 +4,7 @@ Release 0.3 (not released)
 - Enable carp,lagg,vlan,netgraph in the kernel
 - Remove all non usefull kernel modules (save 30Mb)
 - Begin to tune kernel and sysctl values
+- Enable device polling for all NIC that support it
 
 To do:
 - Removing all compilation tools (needed for quagga and vim installation)
