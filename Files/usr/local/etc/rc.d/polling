@@ -1,0 +1,92 @@
+#!/bin/sh
+#
+# BSD Router Project: Auto enable polling for interface that support it
+#
+# Copyright (c) 2009, The BSDRP Development Team 
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE PROJECT ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE PROJECT BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# PROVIDE: polling
+# REQUIRE: netif
+# KEYWORD: nojail
+#
+# Add the following to /etc/rc.conf[.local] to enable this service
+#
+# polling_enable="YES"
+#
+
+. /etc/rc.subr
+
+name="polling"
+rcvar=`set_rcvar`
+
+start_cmd="polling_start"
+stop_cmd="polling_stop"
+
+# List of supported drivers
+# Get from the "man polling"
+SUPPORTED_DEVICES="bge dc em fwe fwip fxp ixgb nfe nge re rl sf sis ste stge vge vr xl"
+# Get the list of detected devices
+DETECTED_DEVICES=`ifconfig -l`
+
+polling_start()
+{
+	# If the device support it, enable polling:
+	for DETECTED in $DETECTED_DEVICES
+	do
+		for SUPPORTED in $SUPPORTED_DEVICES
+		do
+			if [ `echo $DETECTED | /usr/bin/grep "$SUPPORTED"` ]; then 	
+				echo "Try to enable polling for: $DETECTED"
+				if [ `ifconfig $DETECTED polling` ]; then
+					echo "done"
+				else
+					echo "can't enable polling on $DETECTED"
+				fi
+			fi
+		done
+	done
+exit 0
+}
+
+polling_stop()
+{
+	# Disable polling on all interface that support it:
+	for DETECTED in $DETECTED_DEVICES
+	do
+		for SUPPORTED in $SUPPORTED_DEVICES
+		do
+			if [ `echo $DETECTED | /usr/bin/grep "$SUPPORTED"` ]; then 	
+				echo "Try to disable polling for: $DETECTED"
+				if [ `ifconfig $DETECTED -polling` ]; then
+					echo "done"
+				else
+					echo "can't stop polling on $DETECTED"
+				fi
+			fi
+		done
+	done
+exit 0
+}
+
+load_rc_config $name
+run_rc_command "$1"

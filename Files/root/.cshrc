@@ -50,10 +50,12 @@ alias cli vtysh
 alias include grep
 alias reload reboot
 # Some BSDRP command complete
-complete *config  'p/1/(save apply rollback put get reset password help )/'
-complete *show  'p/1/(route process version license authors help )/'
-complete *route 'p/1/(add flush del change get monitor )/'
+complete config  'p/1/(save apply rollback put get reset password help )/'
+complete show  'p/1/(route process version license authors help )/'
+complete route 'p/1/(add flush del change get monitor )/'
+
 # Others Command complete
+# Lot's of these command complete were found here:
 # http://hea-www.harvard.edu/~fine/Tech/tcsh.html
 
 # directories
@@ -99,4 +101,4 @@ complete chgrp 'p/1/g/'
 
 # users
 complete chown 'p/1/u/'
-
+complete passwd 'p/1/u/'
