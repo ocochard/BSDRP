@@ -1,0 +1,91 @@
+--- /usr/src/tools/tools/nanobsd/nanobsd.sh	2009-07-12 19:06:20.000000000 +0200
++++ nanobsd.sh	2009-07-18 01:10:45.000000000 +0200
+@@ -124,10 +124,17 @@
+ NANO_BOOT0CFG="-o packet -s 1 -m 3"
+ NANO_BOOTLOADER="boot/boot0sio"
+ 
++# boot2 flags/options
++# default force serial console
++NANO_BOOT2CFG=" -h"
++
+ # Backing type of md(4) device
+ # Can be "file" or "swap"
+ NANO_MD_BACKING="file"
+ 
++# for swap type md(4) backing, write out the mbr only
++NANO_IMAGE_MBRONLY=true
++
+ # Progress Print level
+ PPLEVEL=3
+ 
+@@ -143,6 +150,13 @@
+ #
+ #######################################################################
+ 
++nano_cleanup() {
++	if [ $? -ne 0 ]; then
++		echo "Error encountered.  Check for errors in last log file." 1>&2
++	fi
++	exit $?
++}
++
+ clean_build ( ) (
+ 	pprint 2 "Clean and create object directory (${MAKEOBJDIRPREFIX})"
+ 
+@@ -344,7 +358,7 @@
+ prune_usr() (
+ 
+ 	# Remove all empty directories in /usr 
+-	find ${NANO_WORLDDIR}/usr -type d -depth -print |
++	find ${NANO_WORLDDIR}/usr -type d -depth -not -name aout -print |
+ 		while read d
+ 		do
+ 			rmdir $d > /dev/null 2>&1 || true 
+@@ -485,13 +499,20 @@
+ 	fi
+ 
+ 	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
+-		echo "Writing out ${NANO_IMGNAME}..."
+-		dd if=/dev/${MD} of=${IMG} bs=64k
++		if [ ${NANO_IMAGE_MBRONLY} ]; then
++			echo "Writing out _.disk.mbr..."
++			dd if=/dev/${MD} of=${NANO_DISKIMGDIR}/_.disk.mbr bs=512 count=1
++		else
++			echo "Writing out ${NANO_IMGNAME}..."
++			dd if=/dev/${MD} of=${IMG} bs=64k
++		fi
+ 	fi
+ 
+ 	echo "Writing out _.disk.image..."
+ 	dd if=/dev/${MD}s1 of=${NANO_DISKIMGDIR}/_.disk.image bs=64k
+ 	mdconfig -d -u $MD
++	trap - 1 2 15
++	trap "nano_cleanup" EXIT
+ 	) > ${NANO_OBJ}/_.di 2>&1
+ )
+ 
+@@ -571,8 +592,7 @@
+ 	# Disable getty on syscons devices
+ 	sed -i "" -e '/^ttyv[0-8]/s/	on/	off/' ${NANO_WORLDDIR}/etc/ttys
+ 
+-	# Tell loader to use serial console early.
+-	echo " -h" > ${NANO_WORLDDIR}/boot.config
++	echo ${NANO_BOOT2CFG@@
+ 	echo "	-i	suppress disk image build"
+ 	echo "	-k	suppress buildkernel"
+ 	echo "	-n	add -DNO_CLEAN to buildworld, buildkernel, etc"
+-	echo "	-q	make output more quite"
++	echo "	-q	make output quieter"
+ 	echo "	-v	make output more verbose"
+ 	echo "	-w	suppress buildworld"
+ 	echo "	-c	specify config file"
+@@ -754,6 +774,8 @@
+ 	usage
+ fi
+ 
++trap "nano_cleanup" EXIT
++
+ #######################################################################
+ # Setup and Export Internal variables
+ #
+
