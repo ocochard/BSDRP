@@ -33,9 +33,9 @@
 # Stop the script automatically on error
 set -e
 
-echo "Welcome to BSD Router Project help"
+echo "Welcome to BSD Router Project (BSDRP) help"
 echo ""
-echo "BSDRP is an embedded FreeBSD (NanoBSD) with some customized tools:"
+echo "BSDRP is an embedded FreeBSD with some customized tools:"
 echo " - config  : Manage config files"
 echo " - show    : Display system information" 
 echo " - upgrade : upgrade BSDRP"

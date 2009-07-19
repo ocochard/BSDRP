@@ -71,6 +71,8 @@ check_system() {
 #### Check prerequisites
 
 pprint 3 "Checking if FreeBSD-current sources are installed..."
+# Need to be changed by testing presence of REVISION="8.0" in
+# /usr/src/sys/conf/newvers.sh
 
 if [ ! -f /usr/src/sys/sys/vimage.h  ]
 then
@@ -123,6 +125,20 @@ then
 		patch ${NANOBSD_DIR}/nanobsd.sh nanobsd.amd64.patch
 	fi
 fi
+
+# Adding another cool patch that fix a lot's of problem
+# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
+pprint 3 "Checking in NanoBSD allready PR-136889 patched"
+pprint 3 "TO DO: Adapt this patch to the BSDRP patched nanobsd"
+grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh
+if [ $? -eq 0 ] 
+then
+	pprint 3 "NanoBSD allready PR-136889 patched"
+else
+	pprint 3 "Patching NanoBSD with some fixes (PR-136889)"
+	patch ${NANOBSD_DIR}/nanobsd.sh nanobsd.pr-136889.patch
+fi
+
 }
 
 check_clean() {
