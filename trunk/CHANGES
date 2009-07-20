@@ -1,15 +1,18 @@
 Release 0.3 (not released)
 
 - Upgrade to FreeBSD 8.0-BETA2
+- Add XORP (http://www.xorp.org/)
 - Enable IPv6 forwarding by default (it was a bug and not a feature)
 - Enable carp,lagg,vlan,netgraph in the kernel
-- Remove all non usefull kernel modules (save 30Mb)
+- Remove all non usefull kernel modules and perl
 - Begin to tune kernel and sysctl values
 - Enable device polling for all NIC that support it (and changes HZ from 1000 to 2000)
 - Add a proposed NanoBSD patch (http://www.freebsd.org/cgi/query-pr.cgi?pr=136889)
 
 To do:
 - Removing all compilation tools (needed for quagga and vim installation)
+- Need to reduce HZ (to 50) for using BSDRP under Qemu,VirtualBox, VMware, etc.
+- Need to check that ARCH is used for adding port
 
 -----------
 Release 0.2

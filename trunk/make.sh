@@ -129,7 +129,6 @@ fi
 # Adding another cool patch that fix a lot's of problem
 # http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
 pprint 3 "Checking in NanoBSD allready PR-136889 patched"
-pprint 3 "TO DO: Adapt this patch to the BSDRP patched nanobsd"
 grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh
 if [ $? -eq 0 ] 
 then
