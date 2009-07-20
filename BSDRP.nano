@@ -229,6 +229,7 @@ bsdrp_custom () {
 	rm ${NANO_WORLDDIR}/usr/sbin/config
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'chown -R quagga:quagga /usr/local/etc/quagga'
+    gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel
 }
 
 # Enable only serial system only
