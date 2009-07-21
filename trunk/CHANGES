@@ -4,7 +4,7 @@ Release 0.3 (not released)
 - Add XORP (http://www.xorp.org/)
 - Enable IPv6 forwarding by default (it was a bug and not a feature)
 - Enable carp,lagg,vlan,netgraph in the kernel
-- Cleanup: Remove all non usefull kernel modules, perl, gzip kernel
+- Cleanup: Remove all non usefull kernel modules, remove perl, gzip kernel
 - Begin to tune kernel and sysctl values
 - Enable device polling for all NIC that support it (and changes HZ from 1000 to 2000)
 - Patch NanoBSD with a proposed patch (http://www.freebsd.org/cgi/query-pr.cgi?pr=136889)
@@ -13,7 +13,7 @@ To do:
 - Removing all compilation tools (needed for quagga and vim installation)
 - Need to reduce HZ (to 50) for using BSDRP under Qemu,VirtualBox, VMware, etc.
 => Need to add a warning message if Qemu/VMware/Virtualbox is detected meanwhile
-- Need to check that ARCH is used for adding port
+- Need to check that ARCH is correctly used when compiling new port (see some amd64 message when compiling for i386 from an amd64 freebsd)
 - Need to create an admin account to be used in place of root
 - Need to remove files in /usr/share/info
 
