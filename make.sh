@@ -32,11 +32,12 @@
 #############################################
 
 # Uncomment for enable debug: 
-#set -x
+# set -x
 
 # Exit if error
 #set -e
 
+FREEBSD_SRC=/usr/src/
 NANOBSD_DIR=/usr/src/tools/tools/nanobsd
 
 #Compact flash database needed for NanoBSD ?
@@ -71,12 +72,21 @@ check_system() {
 #### Check prerequisites
 
 pprint 3 "Checking if FreeBSD-current sources are installed..."
-# Need to be changed by testing presence of REVISION="8.0" in
-# /usr/src/sys/conf/newvers.sh
-
-if [ ! -f /usr/src/sys/sys/vimage.h  ]
+SRC_VERSION=0
+grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh
+if [ $? -eq 0 ]
 then
-	pprint 1 "BSDRP need up-to-date sources for FreeBSD-current"
+	SRC_VERSION="8.0"
+fi
+grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh
+if [ $? -eq 0 ]
+then
+    SRC_VERSION="7.2"
+fi
+
+if [ ${SRC_VERSION} = 0 ]
+then
+	pprint 1 "BSDRP need FreeBSD 8.0-current or 7.2 sources"
 	pprint 1 "And source file vimage.h (introduce in FreeBSD-current) not found"
 	pprint 1 "Read HOW TO here:"
 	pprint 1 "http://bsdrp.net/documentation/technical_docs"
@@ -242,12 +252,26 @@ case $TARGET_ARCH in
 	"amd64") echo "NANO_KERNEL=BSDRP-AMD64" >> /tmp/BSDRP.nano
 		echo "NANO_ARCH=amd64"  >> /tmp/BSDRP.nano
 		pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
-		cp -v BSDRP-AMD64 /usr/src/sys/amd64/conf
+		case ${SRC_VERSION} in
+		"8.0")
+			cp -v BSDRP-AMD64.8_0 /usr/src/sys/amd64/conf/BSDRP-AMD64
+			;;
+		"7.2")
+			cp -v BSDRP-AMD64.7_2 /usr/src/sys/amd64/conf/BSDRP-AMD64
+			;;
+		esac
 		;;
 	"i386") echo "NANO_KERNEL=BSDRP-I386" >> /tmp/BSDRP.nano
 		echo "NANO_ARCH=i386"  >> /tmp/BSDRP.nano
 		pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
-		cp -v BSDRP-I386 /usr/src/sys/i386/conf
+		case ${SRC_VERSION} in
+		"8.0")
+			cp -v BSDRP-I386.8_0 /usr/src/sys/i386/conf/BSDRP-I386
+			;;
+		"7.2")
+			cp -v BSDRP-I386.7_2 /usr/src/sys/i386/conf/BSDRP-I386
+			;;
+		esac
 		;;
 esac
 
