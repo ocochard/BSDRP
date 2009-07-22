@@ -99,4 +99,6 @@ cp /etc/fstab /cfg
 umount /cfg
 
 # Changing bootloader
+sysctl kern.geom.debugflags=16
 boot0cfg -s ${DST_SLICE} -v ${NANO_DRIVE}
+sysctl kern.geom.debugflags=0
