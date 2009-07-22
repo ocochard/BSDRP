@@ -93,7 +93,8 @@ then
 	exit 1
 fi
 
-pprint 3 "Checking if ports sources are installed…"
+pprint 3 "Will generate a BSDRP image based on FreeBSD ${SRC_VERSION}"
+pprint 3 "Checking if ports sources are installed..."
 
 if [ ! -d /usr/ports/net/quagga ]
 then
