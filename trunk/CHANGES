@@ -13,7 +13,7 @@ Release 0.3 (not released)
 To do:
 - Need to test XORP
 - Removing all compilation tools (needed only during quagga, net-snmp, xorp and vim installation)
-- Need to found a solution for reducing HZ (to 50) for correct performance under under Qemu,VirtualBox, VMware, etc.
+- Need to found a solution for reducing HZ (to 50) for correct performance under under Qemu,VirtualBox, VMware, etc. (Idea: copy the active part to the passive, add kern.hz in /boot/loader.conf, disable polling in rc.conf, and boot0cfg)
 => Need to add a warning message if Qemu/VMware/Virtualbox is detected meanwhile
 - Need to check that ARCH is correctly used when compiling new port (see some amd64 message when compiling for i386 from an amd64 freebsd)
 - Need to create an admin account to be used in place of root ?

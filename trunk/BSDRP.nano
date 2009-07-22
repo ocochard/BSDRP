@@ -205,7 +205,7 @@ add_port "devel/libdlmalloc"
 # Quagga and net-snmp need perl for building
 add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT -DNO_INSTALL_MANPAGES"
 # Then we need to install net-snmp without perl modules
-add_port "net-mgmt/net-snmp" "-DNO_INSTALL_MANPAGES -DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
+add_port "net-mgmt/net-snmp" "-DNOPORTDOCS -DNO_INSTALL_MANPAGES -DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
 # Quagga installation
 add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
 # Quagga install some software that we don't need anymore after install: devel/libtool15, devel/gettext, /devel/gmake, /lang/gawk
