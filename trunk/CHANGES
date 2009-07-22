@@ -1,6 +1,6 @@
 Release 0.3 (not released)
 
-- Upgrade to FreeBSD 8.0-BETA2
+- Upgrade to FreeBSD 8.0-BETA2 (and add FreeBSD 7.2 support)
 - Add XORP (http://www.xorp.org/)
 - Add ISISd with Quagga
 - Enable IPv6 forwarding by default (it was a bug and not a feature)
@@ -11,12 +11,13 @@ Release 0.3 (not released)
 - Patch NanoBSD with a proposed patch (http://www.freebsd.org/cgi/query-pr.cgi?pr=136889)
 
 To do:
-- Removing all compilation tools (needed for quagga and vim installation)
-- Need to reduce HZ (to 50) for using BSDRP under Qemu,VirtualBox, VMware, etc.
+- Need to test XORP
+- Removing all compilation tools (needed only during quagga, net-snmp, xorp and vim installation)
+- Need to found a solution for reducing HZ (to 50) for correct performance under under Qemu,VirtualBox, VMware, etc.
 => Need to add a warning message if Qemu/VMware/Virtualbox is detected meanwhile
 - Need to check that ARCH is correctly used when compiling new port (see some amd64 message when compiling for i386 from an amd64 freebsd)
-- Need to create an admin account to be used in place of root
-- Need to remove the man page installed with ports
+- Need to create an admin account to be used in place of root ?
+- Need to remove the man pages installed by ports that don't respect the "NO_INSTALL_MANPAGES" rules
 
 -----------
 Release 0.2
