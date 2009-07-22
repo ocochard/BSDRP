@@ -2,9 +2,10 @@ Release 0.3 (not released)
 
 - Upgrade to FreeBSD 8.0-BETA2
 - Add XORP (http://www.xorp.org/)
+- Add ISISd with Quagga
 - Enable IPv6 forwarding by default (it was a bug and not a feature)
 - Enable carp,lagg,vlan,netgraph in the kernel
-- Cleanup: Remove all non usefull kernel modules, remove perl, gzip kernel
+- Cleanup: Remove all non usefull kernel modules, remove perl, gzip kernel, replace vim with vim-lite
 - Begin to tune kernel and sysctl values
 - Enable device polling for all NIC that support it (and changes HZ from 1000 to 2000)
 - Patch NanoBSD with a proposed patch (http://www.freebsd.org/cgi/query-pr.cgi?pr=136889)
@@ -15,7 +16,7 @@ To do:
 => Need to add a warning message if Qemu/VMware/Virtualbox is detected meanwhile
 - Need to check that ARCH is correctly used when compiling new port (see some amd64 message when compiling for i386 from an amd64 freebsd)
 - Need to create an admin account to be used in place of root
-- Need to remove files in /usr/share/info
+- Need to remove the man page installed with ports
 
 -----------
 Release 0.2
