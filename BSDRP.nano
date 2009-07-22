@@ -203,18 +203,18 @@ add_port () {
 add_port "devel/libdlmalloc"
 # Quagga need net-snmp, and net-snmp need perl by default.
 # Quagga and net-snmp need perl for building
-add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT"
+add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT -DNO_INSTALL_MANPAGES"
 # Then we need to install net-snmp without perl modules
-add_port "net-mgmt/net-snmp" "-DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
+add_port "net-mgmt/net-snmp" "-DNO_INSTALL_MANPAGES -DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
 # Quagga installation
-add_port "net/quagga" "-DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
+add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
 # Quagga install some software that we don't need anymore after install: devel/libtool15, devel/gettext, /devel/gmake, /lang/gawk
 # Add a text editor
-add_port "editors/vim" "-DWITHOUT_X11"
+add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES"
 # Add XORP
 #add_port "net/xorp" "-DWITH_ADVMCAST -DWITH_IPV6 -DWITH_SNMP -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 # Xorp wants to start snmpd.... disable it:
-add_port "net/xorp" "-DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
+add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 cleanup_ports () {
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
         'pkg_delete gmake* libtool* gawk* perl* '
@@ -224,12 +224,26 @@ customize_cmd cleanup_ports
 
 # BSDRP custom function
 bsdrp_custom () {
+	# Copy BSDRP information files
 	cp -v ${NANO_TOOLS}/AUTHORS ${NANO_WORLDDIR}/root/
 	cp -v ${NANO_TOOLS}/LICENSE ${NANO_WORLDDIR}/root/
-	rm ${NANO_WORLDDIR}/usr/sbin/config
+	# Set Quagga permission
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'chown -R quagga:quagga /usr/local/etc/quagga'
-    gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel
+	# Compress the kernel (save 3Mb)
+	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]
+	then
+		gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel
+	fi
+	
+	# Remove some unused files
+        rm ${NANO_WORLDDIR}/usr/sbin/config
+	
+	# Remove info files (save 2 Mb)
+	if [ -d ${NANO_WORLDDIR}/usr/share/info ]
+	then
+		rm -f ${NANO_WORLDDIR}/usr/share/info/*.gz
+	fi
 }
 
 # Enable only serial system only
