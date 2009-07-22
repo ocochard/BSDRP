@@ -33,7 +33,7 @@ NANO_PMAKE="make -j 3"
 CONF_BUILD=''
 
 # Options to put in make.conf during installworld only
-# Do not use: WITHOUT_TOOLCHAIN=YES, because installing port need it
+# Do not use: WITHOUT_TOOLCHAIN=YES, because installing port need it
 CONF_INSTALL=''
 
 # Options to put in make.conf during both build- & installworld.
@@ -286,7 +286,7 @@ bsdrp_console_dual () {
 
 }
 
-# Standard vga console, with serial port configured as vt100 console
+# Standard vga console, with serial port configured as vt100 console
 bsdrp_console_vga () {
 	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
