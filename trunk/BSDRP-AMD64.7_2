@@ -1,8 +1,8 @@
 #
 # GENERIC -- Generic kernel configuration file for FreeBSD/amd64
 #
-# For more information on this file, please read the config(5) manual page,
-# and/or the handbook section on Kernel Configuration Files:
+# For more information on this file, please read the handbook section on
+# Kernel Configuration Files:
 #
 #    http://www.FreeBSD.org/doc/en_US.ISO8859-1/books/handbook/kernelconfig-config.html
 #
@@ -16,36 +16,27 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: src/sys/amd64/conf/GENERIC,v 1.528 2009/06/10 02:07:58 yongari Exp $
+# $FreeBSD: src/sys/amd64/conf/GENERIC,v 1.484.2.19.2.1 2009/04/15 03:14:26 kensmith Exp $
 
 cpu		HAMMER
-ident	BSDRP-AMD64
+ident		BSDRP-AMD64
 
 # To statically compile in device wiring instead of /boot/device.hints
 #hints		"GENERIC.hints"		# Default places to look for devices.
 
-# Use the following to compile in values accessible to the kernel
-# through getenv() (or kenv(1) in userland). The format of the file
-# is 'variable=value', see kenv(1)
-#
-# env		"GENERIC.env"
-
-#BSDRP: Remove debug
 #makeoptions	DEBUG=-g		# Build kernel with gdb(1) debug symbols
 
 options 	SCHED_ULE		# ULE scheduler
 options 	PREEMPTION		# Enable kernel thread preemption
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
-#options 	SCTP			# Stream Control Transmission Protocol
+#options 	SCTP			# Stream Control Transmission Protocol 
 options 	FFS			# Berkeley Fast Filesystem
 options 	SOFTUPDATES		# Enable FFS soft updates support
 #options 	UFS_ACL			# Support for access control lists
 #options 	UFS_DIRHASH		# Improve performance on big directories
-#BSDRP: Remove gjournal
 options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
 options 	MD_ROOT			# MD is a potential root device
-#BSDRP: Remove NFS
 #options 	NFSCLIENT		# Network Filesystem Client
 #options 	NFSSERVER		# Network Filesystem Server
 #options 	NFSLOCKD		# Network Lock Manager
@@ -56,31 +47,22 @@ options 	PROCFS			# Process filesystem (requires PSEUDOFS)
 options 	PSEUDOFS		# Pseudo-filesystem framework
 options 	GEOM_PART_GPT		# GUID Partition Tables.
 options 	GEOM_LABEL		# Provides labelization
-options 	COMPAT_43TTY		# BSD 4.3 TTY compat (sgtty)
-#BSDRP: Remove compat
+options 	COMPAT_43TTY		# BSD 4.3 TTY compat [KEEP THIS!]
 #options 	COMPAT_IA32		# Compatible with i386 binaries
 #options 	COMPAT_FREEBSD4		# Compatible with FreeBSD4
 #options 	COMPAT_FREEBSD5		# Compatible with FreeBSD5
 #options 	COMPAT_FREEBSD6		# Compatible with FreeBSD6
-#options 	COMPAT_FREEBSD7		# Compatible with FreeBSD7
 options 	SCSI_DELAY=5000		# Delay (in ms) before probing SCSI
 #options 	KTRACE			# ktrace(1) support
 #options 	STACK			# stack(9) support
 options 	SYSVSHM			# SYSV-style shared memory
 options 	SYSVMSG			# SYSV-style message queues
 options 	SYSVSEM			# SYSV-style semaphores
-options 	P1003_1B_SEMAPHORES	# POSIX-style semaphores
 options 	_KPOSIX_PRIORITY_SCHEDULING # POSIX P1003_1B real-time extensions
-options		PRINTF_BUFR_SIZE=128    # Prevent printf output being interspersed.
 options 	KBD_INSTALL_CDEV	# install a CDEV entry in /dev
+options 	ADAPTIVE_GIANT		# Giant mutex is adaptive.
 options 	STOP_NMI		# Stop CPUS using NMI instead of IPI
-options 	HWPMC_HOOKS		# Necessary kernel hooks for hwpmc(4)
 options 	AUDIT			# Security event auditing
-options 	MAC			# TrustedBSD MAC Framework
-# Disable Flowtable
-# Here is the advice about why disabling Flowtable for a router:
-# http://lists.freebsd.org/pipermail/freebsd-current/2009-July/009244.html
-# options		FLOWTABLE		# per-cpu routing cache
 #options 	KDTRACE_FRAME		# Ensure frames are compiled in
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
 
@@ -89,15 +71,15 @@ options 	MAC			# TrustedBSD MAC Framework
 # loaded as modules at this point. ALTQ requires a stable TSC so if yours is
 # broken or changes with CPU throttling then you must also have the ALTQ_NOPCC
 # option.
-options 	ALTQ
-options 	ALTQ_CBQ	# Class Based Queueing
-options 	ALTQ_RED	# Random Early Detection
-options 	ALTQ_RIO	# RED In/Out
-options 	ALTQ_HFSC	# Hierarchical Packet Scheduler
-options 	ALTQ_CDNR	# Traffic conditioner
-options 	ALTQ_PRIQ	# Priority Queueing
-#options 	ALTQ_NOPCC	# Required if the TSC is unusable
-#options 	ALTQ_DEBUG
+options         ALTQ
+options         ALTQ_CBQ        # Class Based Queueing
+options         ALTQ_RED        # Random Early Detection
+options         ALTQ_RIO        # RED In/Out
+options         ALTQ_HFSC       # Hierarchical Packet Scheduler
+options         ALTQ_CDNR       # Traffic conditioner
+options         ALTQ_PRIQ       # Priority Queueing
+#options        ALTQ_NOPCC      # Required if the TSC is unusable
+#options        ALTQ_DEBUG
 
 # MROUTING enables the kernel multicast packet forwarder, which works
 # with mrouted and XORP.
@@ -109,19 +91,9 @@ options     MROUTING        # Multicast routing
 # This is enabled on a per-socket basis using the TCP_MD5SIG socket option.
 # This requires the use of 'device crypto', 'options IPSEC'
 # or 'device cryptodev'.
-device 		crypto
-options 	IPSEC
-options 	TCP_SIGNATURE		#include support for RFC 2385
-
-# Debugging for use in -current
-# BSDRP: Remove debug
-#options 	KDB			# Enable kernel debugger support.
-#options 	DDB			# Support DDB.
-#options 	GDB			# Support remote GDB.
-#options 	INVARIANTS		# Enable calls of extra sanity checking
-#options 	INVARIANT_SUPPORT	# Extra sanity checks of internal structures, required by INVARIANTS
-#options 	WITNESS			# Enable checks to detect deadlocks and cycles
-#options 	WITNESS_SKIPSPIN	# Don't run witness on spinlocks for speed
+device          crypto
+options         IPSEC
+options         TCP_SIGNATURE           #include support for RFC 2385
 
 # Make an SMP-capable kernel by default
 options 	SMP			# Symmetric MultiProcessor Kernel
@@ -134,13 +106,11 @@ device		acpi
 device		pci
 
 # Floppy drives
-#BSDRP: Remove floppy
 #device		fdc
 
 # ATA and ATAPI devices
 device		ata
 device		atadisk		# ATA disk drives
-#BSDRP: Remove not used ATA
 #device		ataraid		# ATA RAID drives
 #device		atapicd		# ATAPI CDROM drives
 #device		atapifd		# ATAPI floppy drives
@@ -148,7 +118,6 @@ device		atadisk		# ATA disk drives
 options 	ATA_STATIC_ID	# Static device numbering
 
 # SCSI Controllers
-# BSDRP: Remove SCSI Controllers
 #device		ahc		# AHA2940 and onboard AIC7xxx devices
 #options 	AHC_REG_PRETTY_PRINT	# Print register bitfields in debug
 					# output.  Adds ~128k to driver.
@@ -158,7 +127,7 @@ options 	ATA_STATIC_ID	# Static device numbering
 #device		amd		# AMD 53C974 (Tekram DC-390(T))
 #device		hptiop		# Highpoint RocketRaid 3xxx series
 #device		isp		# Qlogic family
-#device		ispfw		# Firmware for QLogic HBAs- normally a module
+#device 	ispfw		# Firmware for QLogic HBAs- normally a module
 #device		mpt		# LSI-Logic MPT-Fusion
 #device		ncr		# NCR/Symbios Logic
 #device		sym		# NCR/Symbios Logic (newer chipsets + those of `ncr')
@@ -168,6 +137,7 @@ options 	ATA_STATIC_ID	# Static device numbering
 #device		adw		# Advansys wide SCSI adapters
 #device		aic		# Adaptec 15[012]x SCSI adapters, AIC-6[23]60.
 #device		bt		# Buslogic/Mylex MultiMaster SCSI adapters
+
 
 # SCSI peripherals
 device		scbus		# SCSI bus (required for SCSI)
@@ -179,22 +149,18 @@ device		pass		# Passthrough device (direct SCSI access)
 #device		ses		# SCSI Environmental Services (and SAF-TE)
 
 # RAID controllers interfaced to the SCSI subsystem
-# BSDRP: Remove RAID
-#device		amr		# AMI MegaRAID
-#device		arcmsr		# Areca SATA II RAID
-#XXX it is not 64-bit clean, -scottl
-#device		asr		# DPT SmartRAID V, VI and Adaptec SCSI RAID
-#device		ciss		# Compaq Smart RAID 5*
-#device		dpt		# DPT Smartcache III, IV - See NOTES for options
-#device		hptmv		# Highpoint RocketRAID 182x
-#device		hptrr		# Highpoint RocketRAID 17xx, 22xx, 23xx, 25xx
-#device		iir		# Intel Integrated RAID
-#device		ips		# IBM (Adaptec) ServeRAID
-#device		mly		# Mylex AcceleRAID/eXtremeRAID
-#device		twa		# 3ware 9000 series PATA/SATA RAID
+device		amr		# AMI MegaRAID
+device		arcmsr		# Areca SATA II RAID
+device		ciss		# Compaq Smart RAID 5*
+device		dpt		# DPT Smartcache III, IV - See NOTES for options
+device		hptmv		# Highpoint RocketRAID 182x
+device		hptrr		# Highpoint RocketRAID 17xx, 22xx, 23xx, 25xx
+device		iir		# Intel Integrated RAID
+device		ips		# IBM (Adaptec) ServeRAID
+device		mly		# Mylex AcceleRAID/eXtremeRAID
+device		twa		# 3ware 9000 series PATA/SATA RAID
 
 # RAID controllers
-#BSDRP: Remove RAID
 #device		aac		# Adaptec FSA RAID
 #device		aacp		# SCSI passthrough for aac (requires CAM)
 #device		ida		# Compaq Smart RAID
@@ -207,9 +173,8 @@ device		pass		# Passthrough device (direct SCSI access)
 # atkbdc0 controls both the keyboard and the PS/2 mouse
 device		atkbdc		# AT keyboard controller
 device		atkbd		# AT keyboard
-# BSDRP: remove mouse
 #device		psm		# PS/2 mouse
-#BSDRP: remove kbd
+
 #device		kbdmux		# keyboard multiplexer
 
 device		vga		# VGA video card driver
@@ -228,6 +193,7 @@ device		agp		# support several AGP chipsets
 #device		cardbus		# CardBus (32-bit) bus
 
 # Serial (COM) ports
+device		sio		# 8250, 16[45]50 based serial ports
 device		uart		# Generic UART driver
 
 # Parallel port
@@ -235,7 +201,7 @@ device		uart		# Generic UART driver
 #device		ppbus		# Parallel port bus (required)
 #device		lpt		# Printer
 #device		plip		# TCP/IP over parallel
-device		ppi		# Parallel port interface device
+#device		ppi		# Parallel port interface device
 #device		vpo		# Requires scbus and da
 
 # If you've got a "dumb" serial or parallel PCI card that is
@@ -249,16 +215,13 @@ device		em		# Intel PRO/1000 Gigabit Ethernet Family
 device		igb		# Intel PRO/1000 PCIE Server Gigabit Family
 device		ixgbe		# Intel PRO/10GbE PCIE Ethernet Family
 device		le		# AMD Am7900 LANCE and Am79C9xx PCnet
-device		ti		# Alteon Networks Tigon I/II gigabit Ethernet
 device		txp		# 3Com 3cR990 (``Typhoon'')
 device		vx		# 3Com 3c590, 3c595 (``Vortex'')
 
 # PCI Ethernet NICs that use the common MII bus controller code.
 # NOTE: Be sure to keep the 'device miibus' line in order to use these NICs!
 device		miibus		# MII bus support
-device		ae		# Attansic/Atheros L2 FastEthernet
 device		age		# Attansic/Atheros L1 Gigabit Ethernet
-device		alc		# Atheros AR8131/AR8132 Ethernet
 device		ale		# Atheros AR8121/AR8113/AR8114 Ethernet
 device		bce		# Broadcom BCM5706/BCM5708 Gigabit Ethernet
 device		bfe		# Broadcom BCM440x 10/100 Ethernet
@@ -279,7 +242,7 @@ device		sf		# Adaptec AIC-6915 (``Starfire'')
 device		sis		# Silicon Integrated Systems SiS 900/SiS 7016
 device		sk		# SysKonnect SK-984x & SK-982x gigabit Ethernet
 device		ste		# Sundance ST201 (D-Link DFE-550TX)
-device		stge		# Sundance/Tamarack TC9021 gigabit Ethernet
+device		ti		# Alteon Networks Tigon I/II gigabit Ethernet
 device		tl		# Texas Instruments ThunderLAN
 device		tx		# SMC EtherPower II (83c170 ``EPIC'')
 device		vge		# VIA VT612x gigabit Ethernet
@@ -298,20 +261,19 @@ device		sn		# SMC's 9000 series of Ethernet chips
 device		xe		# Xircom pccard Ethernet
 
 # Wireless NIC cards
-#BSDRP: Remove Wireless
 #device		wlan		# 802.11 support
-#options 	IEEE80211_DEBUG	# enable debug msgs
-#options 	IEEE80211_AMPDU_AGE # age frames in AMPDU reorder q's
-#options    IEEE80211_SUPPORT_MESH  # enable 802.11s D3.0 support
 #device		wlan_wep	# 802.11 WEP support
 #device		wlan_ccmp	# 802.11 CCMP support
 #device		wlan_tkip	# 802.11 TKIP support
 #device		wlan_amrr	# AMRR transmit rate control algorithm
+#device		wlan_scan_ap	# 802.11 AP mode scanning
+#device		wlan_scan_sta	# 802.11 STA mode scanning
 #device		an		# Aironet 4500/4800 802.11 wireless NICs.
 #device		ath		# Atheros pci/cardbus NIC's
-#device		ath_hal		# pci/cardbus chip support
-#options 	AH_SUPPORT_AR5416	# enable AR5416 tx/rx descriptors
+#device		ath_hal		# Atheros HAL (Hardware Access Layer)
+#options		AH_SUPPORT_AR5416	# enable AR5416 tx/rx descriptors
 #device		ath_rate_sample	# SampleRate tx rate control for ath
+#device		awi		# BayStack 660 and others
 #device		ral		# Ralink Technology RT2500 wireless NICs.
 #device		wi		# WaveLAN/Intersil/Symbol 802.11 wireless NICs.
 
@@ -319,8 +281,10 @@ device		xe		# Xircom pccard Ethernet
 device		loop		# Network loopback
 device		random		# Entropy device
 device		ether		# Ethernet support
+device		sl		# Kernel SLIP
+device		ppp		# Kernel PPP
 device		tun		# Packet tunnel.
-device		pty		# BSD-style compatibility pseudo ttys
+device		pty		# Pseudo-ttys (telnet etc)
 device		md		# Memory "disks"
 device		gif		# IPv6 and IPv4 tunneling
 device		faith		# IPv6-to-IPv4 relaying (translation)
@@ -337,19 +301,20 @@ device		ohci		# OHCI PCI->USB interface
 device		ehci		# EHCI PCI->USB interface (USB 2.0)
 device		usb		# USB Bus (required)
 #device		udbp		# USB Double Bulk Pipe devices
+device		ugen		# Generic
 device		uhid		# "Human Interface Devices"
 device		ukbd		# Keyboard
 #device		ulpt		# Printer
 device		umass		# Disks/Mass storage - Requires scbus and da
 #device		ums		# Mouse
-#device		rum		# Ralink Technology RT2501USB wireless NICs
-#device		uath		# Atheros AR5523 wireless NICs
 #device		ural		# Ralink Technology RT2500USB wireless NICs
-#device		zyd		# ZyDAS zb1211/zb1211b wireless NICs
 #device		urio		# Diamond Rio 500 MP3 player
+#device		uscanner	# Scanners
 # USB Serial devices
+device		ucom		# Generic com ttys
 device		uark		# Technologies ARK3116 based serial adapters
 device		ubsa		# Belkin F5U103 and compatible serial adapters
+device		ubser		# BWCT console serial adapters
 device		uftdi		# For FTDI usb serial adapters
 device		uipaq		# Some WinCE based devices
 device		uplcom		# Prolific PL-2303 serial adapters
@@ -363,7 +328,6 @@ device		uvscom		# USB serial support for DDI pocket's PHS
 #device		cue		# CATC USB Ethernet
 #device		kue		# Kawasaki LSI USB Ethernet
 #device		rue		# RealTek RTL8150 USB Ethernet
-#device		udav		# Davicom DM9601E USB
 
 # FireWire support
 #device		firewire	# FireWire bus code
@@ -374,12 +338,12 @@ device		uvscom		# USB serial support for DDI pocket's PHS
 #device		dcons_crom	# Configuration ROM for dcons
 
 # Add device Polling
-options		DEVICE_POLLING
+options         DEVICE_POLLING
 # Increase HZ for optimizing polling
-options		HZ=2000 
+options         HZ=2000
 
 # Add multiple route table support
-options		ROUTETABLES=4
+options         ROUTETABLES=4
 
 # Enable CARP: Common Address Redundancy Protocol (a patented free VRRP)
 device      carp
