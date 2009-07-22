@@ -112,6 +112,26 @@ system_patch() {
 # NanoBSD image use fixed boot disk: ad0, da0, etc...
 # This is a big limitation for a "generic" image that can be installed
 # on a USB (da0) or on an hard drive (ad0).
+# If FreeBSD 7.2 source code detected, download latest nanobsd.sh script
+
+if [ ${SRC_VERSION} = "7.2" ]
+then
+	if [ ! -f ../nanobsd.bak.7_2 ]
+	then
+		pprint 3 "Downloading new nanobsd.sh script"
+		(
+		cd ..
+		mv nanobsd.sh nanobsd.bak.7_2
+		fetch -o nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.28.2.4"
+		if [ ! $? -eq 0 ]
+		then
+			mv nanobsd.bak.7_2 nanobsd.sh
+			pprint 3 "Error for downloading latest nanobsd.sh script"
+			exit 1
+		fi
+		)
+	fi
+fi
 pprint 3 "Checking in NanoBSD allready glabel patched"
 grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh
 if [ $? -eq 0 ] 
