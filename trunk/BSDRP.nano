@@ -263,7 +263,7 @@ examples/quagga
 		if [ -d ${NANO_WORLDDIR}/usr/local/share/$c ]
 		then
 			rm -rf ${NANO_WORLDDIR}/usr/local/share/$c
-		if
+		fi
 	done
 
 	# Remove info files (save 2 Mb)
