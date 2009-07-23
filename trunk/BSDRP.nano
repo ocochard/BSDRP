@@ -184,7 +184,7 @@ add_port () {
                 mkdir -p \${NANO_WORLDDIR}/usr/workdir
                 cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
                 chroot \${NANO_WORLDDIR} /bin/sh -exc \
-                        'env TARGET_ARCH=${NANO_ARCH} make WRKDIRPREFIX=/usr/workdir -C /usr/ports/$1 \
+                        'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} make WRKDIRPREFIX=/usr/workdir -C /usr/ports/$1 \
                         install BATCH=yes $2'
                 rm \${NANO_WORLDDIR}/etc/resolv.conf
                 rm -rf \${NANO_WORLDDIR}/usr/obj
@@ -201,20 +201,25 @@ add_port () {
 
 # Add libdlmalloc lib: Make BGP in Quagga more faster
 add_port "devel/libdlmalloc"
-# Quagga need net-snmp, and net-snmp need perl by default.
+
 # Quagga and net-snmp need perl for building
 add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT -DNO_INSTALL_MANPAGES"
+
 # Then we need to install net-snmp without perl modules
 add_port "net-mgmt/net-snmp" "-DNOPORTDOCS -DNO_INSTALL_MANPAGES -DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
+
 # Quagga installation
 add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
 # Quagga install some software that we don't need anymore after install: devel/libtool15, devel/gettext, /devel/gmake, /lang/gawk
-# Add a text editor
+
+# Add a text editor that support colorization (usefull for edit shell script)
 add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES"
+
 # Add XORP
 #add_port "net/xorp" "-DWITH_ADVMCAST -DWITH_IPV6 -DWITH_SNMP -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 # Xorp wants to start snmpd.... disable it:
 add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
+
 cleanup_ports () {
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
         'pkg_delete gmake* libtool* gawk* perl* '
@@ -235,15 +240,40 @@ bsdrp_custom () {
 	then
 		gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel
 	fi
-	
-	# Remove some unused files
-        rm ${NANO_WORLDDIR}/usr/sbin/config
-	
+	# Remove info and man pages
+	if [ -d ${NANO_WORLDDIR}/usr/local/info ]
+	then
+		rm -f ${NANO_WORLDDIR}/usr/local/info/*.*
+	fi
+	if [ -d ${NANO_WORLDDIR}/usr/local/man ]
+	then
+		rm -f ${NANO_WORLDDIR}/usr/local/man/man1/*.gz
+		rm -f ${NANO_WORLDDIR}/usr/local/man/man3/*.gz
+	fi
+	# Remove doc folder
+	DOCS_TO_REMOVE='
+doc/gettext
+doc/libasprintf
+doc/libiconv
+doc/snmp
+examples/quagga
+'
+	for c in $DOCS_TO_REMOVE
+	do	
+		if [ -d ${NANO_WORLDDIR}/usr/local/share/$c ]
+		then
+			rm -rf ${NANO_WORLDDIR}/usr/local/share/$c
+		if
+	done
+
 	# Remove info files (save 2 Mb)
 	if [ -d ${NANO_WORLDDIR}/usr/share/info ]
 	then
 		rm -f ${NANO_WORLDDIR}/usr/share/info/*.gz
 	fi
+
+	# About removing all gcc suite
+	# This prevent to rebuild a BSDRP image easly: a make world is needed for regenerate the gcc tools (needed for build the ports)
 }
 
 # Enable only serial system only
