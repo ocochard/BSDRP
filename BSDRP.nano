@@ -176,7 +176,7 @@ add_port () {
 		# Need to:
 		# 1. check ARCH of this package!
 		# 2. Add a trap
-		( cd /usr/ports/$port; PKG_NAME=`make package-name` )
+		( cd /usr/ports/$1; PKG_NAME=`make package-name` )
 		if [ -f \${NANO_OBJ}/packages/All/${PKG_NAME}.tbz ]; then
 		# Pkg file found: Generate add_pkg_NAME function
 			eval "
