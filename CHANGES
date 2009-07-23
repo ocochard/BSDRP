@@ -8,7 +8,10 @@ Release 0.3 (not released)
 - Cleanup: Remove all non usefull kernel modules, remove perl, gzip kernel, replace vim with vim-lite, remove docs/infos files
 - Begin to tune kernel and sysctl values
 - Enable device polling for all NIC that support it (and changes HZ from 1000 to 2000)
-- Patch NanoBSD with a proposed patch (http://www.freebsd.org/cgi/query-pr.cgi?pr=136889)
+- Build tools:
+	- Patch NanoBSD with a proposed patch (http://www.freebsd.org/cgi/query-pr.cgi?pr=136889)
+	- Permit to build BSDRP from a FreeBSD 7.2 base
+	- Prevent to rebuild ports during each image rebuild
 
 To do:
 - Need to test XORP
