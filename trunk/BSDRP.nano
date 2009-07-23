@@ -204,7 +204,7 @@ add_port () {
                 	cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
                 	chroot \${NANO_WORLDDIR} /bin/sh -exc \
                         'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} make WRKDIRPREFIX=/usr/workdir -C /usr/ports/$1 \
-                        package‐recursive BATCH=yes $2'
+                        package-recursive BATCH=yes $2'
                 	rm \${NANO_WORLDDIR}/etc/resolv.conf
                 	rm -rf \${NANO_WORLDDIR}/usr/obj
                 	rm -rf \${NANO_WORLDDIR}/usr/pobj
