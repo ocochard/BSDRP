@@ -169,54 +169,65 @@ NANO_GLABEL_DATA="data"
 PPLEVEL=3
 
 # Need to check if this function works with cross-compiling architecture!!!!
+# Recursive complex fonction: Generate one function for each ports
 add_port () {
         port=`echo $1 | sed -e 's/\//_/'`
-        eval "
-        add_port_${port} () {
-				# Check if package allready exist
-				# Need to:
-				# 1. check ARCH of this package!
-				# 2. Add a trap
-				if [ -f \${NANO_OBJ}/packages/$1 ]; then
+		# Check if package allready exist
+		# Need to:
+		# 1. check ARCH of this package!
+		# 2. Add a trap
+		( cd /usr/ports/$port; PKG_NAME=`make package-name` )
+		if [ -f \${NANO_OBJ}/packages/All/${PKG_NAME}.tbz ]; then
+		# Pkg file found: Generate add_pkg_NAME function
+			eval "
+				add_pkg_${port} () {
 					mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
 					mount -t unionfs -o noatime \${NANO_OBJ}/packages \
 						\${NANO_WORLDDIR}/usr/ports/packages
 					chroot \${NANO_WORLDDIR} /bin/sh -exc \
-                        'pkg_add $1'
+                		'pkg_add ${PKG_FULLNAME}'
 					umount \${NANO_WORLDDIR}/usr/ports/packages
 					rmdir \${NANO_WORLDDIR}/usr/ports
-				else	
+				}
+        		customize_cmd add_pkg_${port}
+        	"
+		else
+		# No pkg file: Generate add_port_NAME function
+        	eval "
+        		add_port_${port} () {
 					# Build the package and install the ports
 					if [ ! -d \${NANO_OBJ}/packages ]; then
 						mkdir -p \${NANO_OBJ}/packages
 					fi	
-                	mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
-                	mount -t unionfs -o noatime /usr/src \
-                        \${NANO_WORLDDIR}/usr/src
-                	mount -t unionfs -o noatime /usr/ports \
-                        \${NANO_WORLDDIR}/usr/ports
+               		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
+               		mount -t unionfs -o noatime /usr/src \
+                       \${NANO_WORLDDIR}/usr/src
+               		mount -t unionfs -o noatime /usr/ports \
+                       \${NANO_WORLDDIR}/usr/ports
 					mount -t unionfs -o noatime \${NANO_OBJ}/packages \
 						\${NANO_WORLDDIR}/usr/ports/packages
-                	mkdir -p \${NANO_WORLDDIR}/dev
-                	mount -t devfs devfs \${NANO_WORLDDIR}/dev
-                	mkdir -p \${NANO_WORLDDIR}/usr/pobj
-                	mkdir -p \${NANO_WORLDDIR}/usr/workdir
-                	cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
-                	chroot \${NANO_WORLDDIR} /bin/sh -exc \
+               		mkdir -p \${NANO_WORLDDIR}/dev
+               		mount -t devfs devfs \${NANO_WORLDDIR}/dev
+               		mkdir -p \${NANO_WORLDDIR}/usr/pobj
+               		mkdir -p \${NANO_WORLDDIR}/usr/workdir
+               		cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
+               		chroot \${NANO_WORLDDIR} /bin/sh -exc \
                         'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} make WRKDIRPREFIX=/usr/workdir -C /usr/ports/$1 \
                         package-recursive BATCH=yes $2'
-                	rm \${NANO_WORLDDIR}/etc/resolv.conf
-                	rm -rf \${NANO_WORLDDIR}/usr/obj
-                	rm -rf \${NANO_WORLDDIR}/usr/pobj
-                	rm -rf \${NANO_WORLDDIR}/usr/workdir
-                	umount \${NANO_WORLDDIR}/dev
-                	umount \${NANO_WORLDDIR}/usr/ports
-                	umount \${NANO_WORLDDIR}/usr/src
-                	rmdir \${NANO_WORLDDIR}/usr/ports
-				fi
-        }
-        customize_cmd add_port_${port}
-        "
+               		rm \${NANO_WORLDDIR}/etc/resolv.conf
+               		rm -rf \${NANO_WORLDDIR}/usr/obj
+               		rm -rf \${NANO_WORLDDIR}/usr/pobj
+               		rm -rf \${NANO_WORLDDIR}/usr/workdir
+               		umount \${NANO_WORLDDIR}/dev
+					umount \${NANO_WORLDDIR}/usr/ports/packages
+               		umount \${NANO_WORLDDIR}/usr/ports
+               		umount \${NANO_WORLDDIR}/usr/src
+					rmdir \${NANO_WORLDDIR}/usr/ports/packages
+               		rmdir \${NANO_WORLDDIR}/usr/ports
+        		}
+        		customize_cmd add_port_${port}
+        	"
+		fi
 }
 
 # Add libdlmalloc lib: Make BGP in Quagga more faster
