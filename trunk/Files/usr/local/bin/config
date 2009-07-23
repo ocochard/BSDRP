@@ -39,6 +39,9 @@ getoption () {
 	SECOND_OPTION="$2"
 	THIRD_OPTION="$3"
 	case "$FIRST_OPTION" in
+	system)
+		system
+		;;
 	save)
 		save_cfg
 		;;
@@ -60,9 +63,6 @@ getoption () {
 	reset)
 		reset
 		;;
-	password|pass)
-        password_root
-        ;;
 	help|h)
 		usage
 		;;
@@ -89,19 +89,28 @@ usage () {
 		echo " - in timeout : Apply configuration after timeout (in minutes)"
 		echo " - at date/time : Apply configuration at date/time"
 		echo " - cancel : Cancel scheduled apply"
-	else
-# value $0 is the name of the called script
-		echo "Usage: $0 option"
-		echo "  - save     : Save current config"
-		echo "  - apply    : Apply current config"
-		echo "  - rollback : Revert to previous config"
-		echo "  - put      : Put config to a remote server"
-		echo "  - get      : Get config from remote server"
-		echo "  - reset  : Return to default configuration"
-		echo "  - password (pass) : Change root password"
-		echo "  - help (h) [option]  : Display this help message. "
-		echo "		  	If [option] given, display more detail about"
+		exit 0
 	fi
+	if [ "${SECOND_OPTION}" = "system" ];
+    then
+        echo "Options for system:"
+        echo " - reboot : Reboot the system"
+        echo " - halt : Halt the system"
+        echo " - virtualized : Configure for usage as a Virtual Machine"
+        exit 0
+    fi
+
+# value $0 is the name of the called script
+	echo "Usage: $0 option"
+	echo "  - save     : Save current config"
+	echo "  - apply    : Apply current config"
+	echo "  - rollback : Revert to previous config"
+	echo "  - put      : Put config to a remote server"
+	echo "  - get      : Get config from remote server"
+	echo "  - reset  : Return to default configuration"
+	echo "  - system : Special system commands"
+	echo "  - help (h) [option]  : Display this help message. "
+	echo "		  	If [option] given, display more detail about the option"
 	exit 0
 }
 
@@ -191,14 +200,101 @@ save_cfg () {
 	echo "Done."
 	exit 0
 }
+# Special system tools
+system () {
+	case "$SECOND_OPTION" in
+        reboot)
+            echo "TO DO: Check that config is saved before reboot and ask confirm"
+            ;;
+        halt)
+            echo "TO DO: Check that config is saved before halt and ask confirm"
+            ;;
+        virtualized)
+			system_virtualized
+			;;
+		*)
+        	echo "Unknow option: $SECOND_OPTION"
+			echo "Good options are:"
+			echo "- reboot"
+			echo "- halt"
+			echo "- virtualized"
+			exit 1
+        ;;
+    esac
+    exit 0
 
+}
+
+# Create a new image with acceptable performance under virtualization (quemu, vmware, virtualbox, etc...)
+system_virtualized () {
+	echo "This step will configure BSDRP for being use under a virtualized host"
+	echo "A reboot is needed"
+	echo "Do you want to continue ? (y/n)"
+	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]
+	do
+        read USER_CONFIRM <&1
+	done
+	# The next part is a copy/past of upgrade... need to create shared function .subr for avoiding copy/past
+	#Get the active system slice number and use the upgrade script
+	NANO_GLABEL_SYS_FULL=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1`
+
+	# Get the disk name using its label
+	NANO_DRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} | awk '{print $3}' | cut -d's' -f1`
+
+	# Get the full disk name
+	NANO_FULLDRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} | awk '{print $3}'`
+
+	# Check and set final variable
+	DST_SLICE=0
+
+	if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s1"` ]; then
+        DST_SLICE=2
+        SRC_SLICE=1
+	fi
+	if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s2"` ]; then
+    	DST_SLICE=1
+        SRC_SLICE=2
+	fi
+	if [ $DST_SLICE = 0 ]; then
+        echo "Can't detect active slice"
+        exit 1
+	fi
+	
+	# Use upgrade for copying active partition over passive partition
+	dd if=/dev/${NANO_DRIVE}s${SRC_SLICE} | upgrade
+	
+	# Now we need to mount this filesystem and add the modification:
+	if [ `mkdir /tmp/freetibet` ]; then
+		echo "Can't creat tempory directory"
+		exit 1
+    fi
+	if [ `mount /dev/ufs/BSDRP${DST_SLICE} /tmp/freetibet` ]; then
+        echo "Can't mount /dev/ufs/BSDRP${DST_SLICE}"
+        exit 1
+    fi
+	
+	if [ `echo kern.hz=50 >> /tmp/freetibet/boot/loader.conf` ]; then
+		echo "Can't modify loader.conf"
+		umount /tmp/freetibet
+		exit 1
+	fi
+
+	if [ `umount /tmp/freetibet` ]; then
+        echo "Can't umount"
+        exit 1
+    fi
+
+exit 0
+
+
+}
 # Apply configuration
 apply_cfg () {
 	echo "TO DO: Apply configuration"
 	case "$SECOND_OPTION" in
-                secure)
-                        echo "TO DO: Apply config and rollback in $THIRD_OPTION minutes"
-                        ;;
+        secure)
+            echo "TO DO: Apply config and rollback in $THIRD_OPTION minutes"
+            ;;
 		confirm)
 			echo "TO DO: Cancel the auto-rollback introduce by the apply secure"
 			;;
@@ -295,11 +391,6 @@ reset () {
         exit 0
 }
 
-# Change root password
-# Is this function really usefull ?????'
-password_root () {
-	passwd root
-}
 ###################
 ## Main function ##
 ###################
