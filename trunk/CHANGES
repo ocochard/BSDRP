@@ -18,6 +18,7 @@ To do:
 - Need to check that ARCH is correctly used when compiling new port (see some amd64 message when compiling for i386 from an amd64 freebsd)
 - Need to create an admin account to be used in place of root ?
 - Need to remove the man pages installed by ports that don't respect the "NO_INSTALL_MANPAGES" rules
+- Need to check if there are diff before accept a reboot or halt
 
 -----------
 Release 0.2
