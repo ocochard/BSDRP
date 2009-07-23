@@ -73,10 +73,11 @@ fi
 # Blow away old system.
 dd if=/dev/zero of=/dev/${NANO_DRIVE}s${DST_SLICE} bs=1m count=1 > /dev/null 2>&1
 
+echo "Upgrading... Please wait."
+
 # Copy in new system
 dd of=/dev/${NANO_DRIVE}s${DST_SLICE} obs=64k
 
-echo "Upgrading... Please wait."
 # Check that it worked
 fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a
 
