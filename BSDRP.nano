@@ -275,8 +275,12 @@ add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES"
 add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 
 cleanup_ports () {
+		# The build tools are installed only if ports are compiled, then don't exist otherwize.
+		# Need to prevent auto exist of this script
+		set +e
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
         'pkg_delete gmake* libtool* gawk* perl* '
+		set -e
 }
 
 customize_cmd cleanup_ports
