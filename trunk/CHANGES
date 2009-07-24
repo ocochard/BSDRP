@@ -12,6 +12,7 @@ Release 0.3 (not released)
 	- Patch NanoBSD with a proposed patch (http://www.freebsd.org/cgi/query-pr.cgi?pr=136889)
 	- Permit to build BSDRP from a FreeBSD 7.2 base
 	- Prevent to rebuild ports during each image rebuild
+	- Fix bug with ARCH variable in add_port function
 
 To do:
 - Need to test XORP
