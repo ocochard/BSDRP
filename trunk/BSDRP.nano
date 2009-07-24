@@ -334,6 +334,9 @@ examples/quagga
 	if [ -d ${NANO_WORLDDIR}/usr/include ]
 	then
 		rm -rf ${NANO_WORLDDIR}/usr/include/*
+		rm -rf ${NANO_WORLDDIR}/usr/include/dlmalloc
+		rm -rf ${NANO_WORLDDIR}/usr/include/net-snmp
+		rm -rf ${NANO_WORLDDIR}/usr/include/quagga
 	fi
 	# About removing all gcc suite
 	# How to found the list of all binary files members of gcc suite ?
