@@ -196,9 +196,11 @@ add_port () {
 					mount -t unionfs -o noatime \${NANO_OBJ}/ports/distfiles \
                         \${NANO_WORLDDIR}/usr/ports/distfiles
 					chroot \${NANO_WORLDDIR} /bin/sh -exc \
-                		'env PKG_PATH=/usr/ports/packages/All pkg_add ${PKG_NAME}.tbz'
+                		'cd /usr/ports/packages/All;pkg_add ${PKG_NAME}.tbz'
 					umount \${NANO_WORLDDIR}/usr/ports/packages
 					umount \${NANO_WORLDDIR}/usr/ports/distfiles
+					rmdir \${NANO_WORLDDIR}/usr/ports/packages
+					rmdir \${NANO_WORLDDIR}/usr/ports/distfiles
 					rmdir \${NANO_WORLDDIR}/usr/ports
 				}
         		customize_cmd add_pkg_${port}
@@ -232,7 +234,7 @@ add_port () {
                		cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
                		chroot \${NANO_WORLDDIR} /bin/sh -exc \
                         'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} make WRKDIRPREFIX=/usr/workdir -C /usr/ports/$1 \
-                        package-recursive BATCH=yes $2'
+                        package BATCH=yes $2'
                		rm \${NANO_WORLDDIR}/etc/resolv.conf
                		rm -rf \${NANO_WORLDDIR}/usr/obj
                		rm -rf \${NANO_WORLDDIR}/usr/pobj
@@ -324,6 +326,11 @@ examples/quagga
 		rm -f ${NANO_WORLDDIR}/usr/share/info/*.gz
 	fi
 
+	# Remove all include files (16Mb)
+	if [ -d ${NANO_WORLDDIR}/usr/include ]
+	then
+		rm -rf ${NANO_WORLDDIR}/usr/include/*
+	fi
 	# About removing all gcc suite
 	# How to found the list of all binary files members of gcc suite ?
 	# This do not prevent to rebuild a BSDRP image easly because there is 
