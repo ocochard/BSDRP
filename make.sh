@@ -32,7 +32,7 @@
 #############################################
 
 # Uncomment for enable debug: 
-# set -x
+#set -x
 
 # Exit if error
 #set -e
@@ -204,6 +204,9 @@ while [ "$TARGET_ARCH" != "i386" -a "$TARGET_ARCH" != "amd64" ]
 do
 	read TARGET_ARCH <&1
 done
+
+# This variable is needed earlier for generating the BSDRP nano config file
+export TARGET_ARCH
 
 pprint 1 "Console type for boot message:"
 pprint 1 " - vga : vga only"
