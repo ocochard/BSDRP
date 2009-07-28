@@ -338,6 +338,18 @@ examples/quagga
 		rm -rf ${NANO_WORLDDIR}/usr/include/net-snmp
 		rm -rf ${NANO_WORLDDIR}/usr/include/quagga
 	fi
+	# Remove some files
+    FILES_TO_REMOVE='
+usr/sbin/config
+'
+    for c in $FILES_TO_REMOVE
+    do
+        if [ -d ${NANO_WORLDDIR}/$c ]
+        then
+            rm -rf ${NANO_WORLDDIR}/$c
+        fi
+    done
+
 	# About removing all gcc suite
 	# How to found the list of all binary files members of gcc suite ?
 	# This do not prevent to rebuild a BSDRP image easly because there is 
