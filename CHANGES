@@ -1,6 +1,6 @@
 Release 0.3 (not released)
 
-- Upgrade to FreeBSD 8.0-BETA2 (and add FreeBSD 7.2 support)
+- Based on FreeBSD 7.2 (will revert to 8.0 when it will be more stable)
 - Add XORP (http://www.xorp.org/)
 - Add ISISd with Quagga
 - Enable IPv6 forwarding by default (it was a bug and not a feature)
@@ -10,7 +10,7 @@ Release 0.3 (not released)
 - Enable device polling for all NIC that support it (and changes HZ from 1000 to 2000)
 - Build tools:
 	- Patch NanoBSD with a proposed patch (http://www.freebsd.org/cgi/query-pr.cgi?pr=136889)
-	- Permit to build BSDRP from a FreeBSD 7.2 base
+	- Permit to build BSDRP from a FreeBSD 7.2 or 8.0 base
 	- Prevent to rebuild ports during each image rebuild
 	- Fix bug with ARCH variable in add_port function
 
