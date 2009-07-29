@@ -185,7 +185,11 @@ add_port () {
 		# 2. Add a trap
 		cd /usr/ports/$1
 		PKG_NAME=`make package-name` 
-		if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.tbz ]; then
+		if [ ! -d ${NANO_OBJ}/ports ]; then
+			mkdir -p ${NANO_OBJ}/ports/distfiles
+			mkdir -p ${NANO_OBJ}/ports/packages
+		fi	
+		if [ -d ${NANO_OBJ}/ports/packages/All -a -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.tbz ]; then
 		# Pkg file found: Generate add_pkg_NAME function
 			eval "
 				add_pkg_${port} () {
@@ -210,12 +214,6 @@ add_port () {
         	eval "
         		add_port_${port} () {
 					# Build the package and install the ports
-					if [ ! -d \${NANO_OBJ}/ports/packages ]; then
-						mkdir -p \${NANO_OBJ}/ports/packages
-					fi	
-					if [ ! -d \${NANO_OBJ}/ports/distfiles ]; then
-                        mkdir -p \${NANO_OBJ}/ports/distfiles
-                    fi
 
                		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
 					mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
