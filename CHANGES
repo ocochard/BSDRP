@@ -21,6 +21,7 @@ To do:
 - ARCH and TARGET_ARC seems not used when compiling new port (the log file show  somes amd64 related messages when compiling for a i386 target from an amd64 freebsd system)
 - Need to check if there are diff before accept a reboot or halt
 - Need to remove all gcc suites files
+- Need to add a cleanup or a trap function in the pkg_add/add_port function
 
 -----------
 Release 0.2

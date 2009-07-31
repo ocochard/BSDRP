@@ -193,6 +193,12 @@ add_port () {
 		# Pkg file found: Generate add_pkg_NAME function
 			eval "
 				add_pkg_${port} () {
+					# if there are a problem during pkg_add, clean the system before exit
+					#trap 'df -i \${NANO_WORLDDIR}/usr/ports/packages; umount \${NANO_WORLDDIR}/usr/ports/packages || true; \
+					#df -i \${NANO_WORLDDIR}/usr/ports/distfiles; umount \${NANO_WORLDDIR}/usr/ports/distfiles || true; \
+					#rmdir \${NANO_WORLDDIR}/usr/ports/packages || true; \
+					#rmdir \${NANO_WORLDDIR}/usr/ports/distfiles || true; \
+					#rmdir \${NANO_WORLDDIR}/usr/ports || true' 1 2 15 EXIT
 					mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
 					mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
 					mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
@@ -206,6 +212,8 @@ add_port () {
 					rmdir \${NANO_WORLDDIR}/usr/ports/packages
 					rmdir \${NANO_WORLDDIR}/usr/ports/distfiles
 					rmdir \${NANO_WORLDDIR}/usr/ports
+					# reset the trap
+					#trap - 1 2 15
 				}
         		customize_cmd add_pkg_${port}
         	"
@@ -214,7 +222,14 @@ add_port () {
         	eval "
         		add_port_${port} () {
 					# Build the package and install the ports
-
+					#trap 'df -i \${NANO_WORLDDIR}/dev; umount \${NANO_WORLDDIR}/dev || true; \
+					#df -i \${NANO_WORLDDIR}/usr/ports/packages; umount \${NANO_WORLDDIR}/usr/ports/packages || true; \
+					#df -i \${NANO_WORLDDIR}/usr/ports/distfiles; umount \${NANO_WORLDDIR}/usr/ports/distfiles || true; \
+					#df -i \${NANO_WORLDDIR}/usr/ports; umount \${NANO_WORLDDIR}/usr/ports || true; \
+					#df -i \${NANO_WORLDDIR}/usr/src; umount \${NANO_WORLDDIR}/usr/src || true; \
+					#rmdir \${NANO_WORLDDIR}/usr/ports/packages || true; \
+					#rmdir \${NANO_WORLDDIR}/usr/ports/distfiles || true; \ 
+					#rmdir \${NANO_WORLDDIR}/usr/ports || true' 1 2 15 EXIT
                		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
 					mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
                		mount -t unionfs -o noatime /usr/src \
@@ -245,6 +260,7 @@ add_port () {
 					rmdir \${NANO_WORLDDIR}/usr/ports/packages
 					rmdir \${NANO_WORLDDIR}/usr/ports/distfiles
                		rmdir \${NANO_WORLDDIR}/usr/ports
+					#trap - 1 2 15
         		}
         		customize_cmd add_port_${port}
         	"
