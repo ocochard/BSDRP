@@ -348,14 +348,15 @@ if [ "$IMG_TYPE" = "upgrade" ]
 then
 	BSRDP_FILENAME="BSDRP_${BSDRP_VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
 	pprint 1 "Zipping the BSDRP upgrade image..." 
-	mv /usr/obj/nanobsd.BSDRP/_.disk.image /usr/obj/nanoBSDRP/${BSDRP_FILENAME}
+	mv /usr/obj/nanobsd.BSDRP/_.disk.image /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
 	bzip2 -9v /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
         pprint 1 "You will found the zipped BSDRP upgrade image file here:"
         pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2"
 else
+	BSRDP_FILENAME="BSDRP_${BSDRP_VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
+	mv /usr/obj/nanobsd.BSDRP/_.disk.full /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
 	if [ "$ZIP_IMAGE" = "y" ] 
 	then
-		BSRDP_FILENAME="BSDRP_${BSDRP_VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
 		pprint 1 "Zipping the BSDRP full image..." 
 		bzip2 -9v /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
         	pprint 1 "You will found the zipped BSDRP full image file here:"
