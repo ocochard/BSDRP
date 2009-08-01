@@ -191,62 +191,20 @@ rm /tmp/BSDRP.mnt
 
 }
 
-# Ask some questions to the user
-get_user_input () {
-
-pprint 1 "Type of BSDRP image to generate ( full / upgrade ) ? "
-pprint 1 " - full : Image of the complete disk, to be used for installation"
-pprint 1 " - upgrade : Image for the upgrade tool only"
-while [ "$IMG_TYPE" != "full" -a "$IMG_TYPE" != "upgrade" ]
-do
-	read IMG_TYPE <&1
-done
-
-pprint 1 "Target architecture ( i386 / amd64 ) ? "
-while [ "$TARGET_ARCH" != "i386" -a "$TARGET_ARCH" != "amd64" ]
-do
-	read TARGET_ARCH <&1
-done
-
-# This variable is needed earlier for generating the BSDRP nano config file
-export TARGET_ARCH
-
-pprint 1 "Console type for boot message:"
-pprint 1 " - vga : vga only"
-pprint 1 " - dual : vga and serial (BUGGY and serial port mandatory!)"
-pprint 1 " - serial : serial only"
-while [ "$INPUT_CONSOLE" != "vga" -a "$INPUT_CONSOLE" != "serial" -a "$INPUT_CONSOLE" != "dual" ]
-do
-	read INPUT_CONSOLE <&1
-done
-
-#pprint 1 "Storage media ? "
-#pprint 1 "ad0 : For ATA hard drive, CF on IDE adapter, etc."
-#pprint 1 "da0 : For USB device."
-#while [ "$STORAGE_TYPE" != "ad0" -a "$STORAGE_TYPE" != "da0" ]
-#do
-#	read STORAGE_TYPE <&1
-#done
-
-if [ "$IMG_TYPE" = "full" ]
-then
-	pprint 1 "Zip the BSDRP image ( y / n ) ? "
-	pprint 1 "Reduce the 600Mb image file to about 70Mb"
-	while [ "$ZIP_IMAGE" != "y" -a "$ZIP_IMAGE" != "n" ]
-	do
-		read ZIP_IMAGE <&1
-	done
-fi
-
-pprint 1 "If you had allready build an BSDRP image, you can skip the build process." 
-pprint 1 "Do you want to SKIP build world and kernel ( y / n ) ? "
-
-while [ "$SKIP_REBUILD" != "y" -a "$SKIP_REBUILD" != "n" ]
-do
-	read SKIP_REBUILD <&1
-done
-
+usage () {
+        (
+        echo "Usage: $0 -bzdh [-c vga|serial] [-a i386|amd64]"
+        echo "  -c      specify console type: vga (default) or serial"
+        echo "  -a      specify target architecture: i386 or amd64"
+		echo "          if not specified, use the running system arch"
+        echo "  -b      suppress buildworld"
+        echo "  -z      prevent to bzip the full image"
+        echo "  -d      Enable debug"
+		echo "  -h      Display this help message"
+        ) 1>&2
+        exit 2
 }
+
 #############################################
 ############ Main code ######################
 #############################################
@@ -258,7 +216,77 @@ check_current_dir
 check_system
 check_clean
 
-get_user_input
+#get_user_input
+
+# Get argument
+
+TARGET_ARCH=`uname -m`
+DEBUG=""
+SKIP_REBUILD=""
+INPUT_CONSOLE="vga"
+ZIP_IMAGE="y"
+set +e
+args=`getopt c:a:zbdh $*`
+if [ $? -ne 0 ] ; then
+        usage
+        exit 2
+fi
+set -e
+
+set -- $args
+for i
+do
+        case "$i"
+        in
+        -a)
+                case "$2" in
+				amd64)
+					TARGET_ARCH="amd64"
+					;;
+				i386)
+					TARGET_ARCH="i386"
+					;;
+				esac
+				shift
+				shift
+                ;;
+        -c)
+                case "$2" in
+                vga)
+                    INPUT_CONSOLE="vga"
+                    ;;
+                serial)
+                    INPUT_CONSOLE="serial"
+                    ;;
+                esac
+				shift
+				shift
+                ;;
+        -b)
+                SKIP_REBUILD="-b"
+                shift
+                ;;
+        -d)
+                DEBUG="-x"
+                shift
+                ;;
+		-z)
+				ZIP_IMAGE="n"
+				shift
+				;;
+        -h)
+                usage
+                ;;
+        --)
+                shift
+                break
+        esac
+done
+
+if [ $# -gt 0 ] ; then
+        echo "$0: Extraneous arguments supplied"
+        usage
+fi
 
 system_patch
 
@@ -322,12 +350,7 @@ esac
 
 # Start nanobsd using the BSDRP configuration file
 pprint 1 "Launching NanoBSD build process..."
-if [ "$SKIP_REBUILD" = "y" ]
-then
-	sh ../nanobsd.sh -b -c /tmp/BSDRP.nano
-else
-	sh ../nanobsd.sh -c /tmp/BSDRP.nano
-fi
+sh ${DEBUG} ../nanobsd.sh ${SKIP_REBUILD} -c /tmp/BSDRP.nano
 
 # Testing exit code of NanoBSD:
 
@@ -344,27 +367,24 @@ else
 fi
 
 BSDRP_VERSION=`cat ${(NANOBSD_DIR}/BSDRP/Files/etc/BSDRP.version`
-if [ "$IMG_TYPE" = "upgrade" ]
+BSRDP_FILENAME="BSDRP_${BSDRP_VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
+pprint 1 "Zipping the BSDRP upgrade image..." 
+mv /usr/obj/nanobsd.BSDRP/_.disk.image /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
+bzip2 -9v /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
+pprint 1 "You will found the zipped BSDRP upgrade image file here:"
+pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2"
+
+BSRDP_FILENAME="BSDRP_${BSDRP_VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
+mv /usr/obj/nanobsd.BSDRP/_.disk.full /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
+if [ "$ZIP_IMAGE" = "y" ] 
 then
-	BSRDP_FILENAME="BSDRP_${BSDRP_VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
-	pprint 1 "Zipping the BSDRP upgrade image..." 
-	mv /usr/obj/nanobsd.BSDRP/_.disk.image /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
+	pprint 1 "Zipping the BSDRP full image..." 
 	bzip2 -9v /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
-        pprint 1 "You will found the zipped BSDRP upgrade image file here:"
-        pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2"
+   	pprint 1 "You will found the zipped BSDRP full image file here:"
+   	pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2"
 else
-	BSRDP_FILENAME="BSDRP_${BSDRP_VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
-	mv /usr/obj/nanobsd.BSDRP/_.disk.full /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
-	if [ "$ZIP_IMAGE" = "y" ] 
-	then
-		pprint 1 "Zipping the BSDRP full image..." 
-		bzip2 -9v /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
-        	pprint 1 "You will found the zipped BSDRP full image file here:"
-        	pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2"
-	else
-		pprint 1 "You will found the BSDRP full image file here:"
-        	pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}"
-	fi
+	pprint 1 "You will found the BSDRP full image file here:"
+   	pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}"
 fi
 
 exit 0
