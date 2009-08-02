@@ -40,7 +40,7 @@
 # Exit if error
 #set -e
 
-FREEBSD_SRC=/usr/src/
+FREEBSD_SRC=/usr/src
 NANOBSD_DIR=/usr/src/tools/tools/nanobsd
 BSDRP_VERSION=`cat ${NANOBSD_DIR}/BSDRP/Files/etc/BSDRP.version`
 
@@ -74,10 +74,14 @@ check_current_dir() {
 check_system() {
 	pprint 3 "Checking if FreeBSD-current sources are installed..."
 	SRC_VERSION=0
-	if [ ! `grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh` ]; then
+	if [ ! -f ${FREEBSD_SRC}/sys/conf/newvers.sh ]; then
+		pprint 1 "ERROR: Can't found FreeBSD sources!"
+		exit 1
+	fi	
+	if `grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
 		SRC_VERSION="8.0"
 	fi
-	if [ ! `grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh` ]; then
+	if `grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
     	SRC_VERSION="7.2"
 	fi
 
@@ -87,7 +91,6 @@ check_system() {
 		pprint 1 "http://bsdrp.net/documentation/technical_docs"
 		exit 1
 	fi
-
 	pprint 3 "Will generate a BSDRP image based on FreeBSD ${SRC_VERSION}"
 	pprint 3 "Checking if ports sources are installed..."
 
@@ -108,7 +111,7 @@ system_patch() {
 	# on a USB (da0) or on an hard drive (ad0).
 	# If FreeBSD 7.2 source code detected, download latest nanobsd.sh script
 
-	if [ ${SRC_VERSION} = "7.2" ]; then
+	if [ "${SRC_VERSION}" = "7.2" ]; then
 		if [ ! -f ../nanobsd.bak.7_2 ]; then
 			pprint 3 "FreeBSD 7.2 source detected"
 			(
@@ -136,7 +139,7 @@ system_patch() {
 	# Adding amd64 support to NanoBSD:
 	if [ "$TARGET_ARCH" = "amd64"  ]; then
 		pprint 3 "Checking in NanoBSD allready amd64 patched"
-		if [ ! `$grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
+		if [ ! `grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
 			pprint 3 "NanoBSD allready amd64 patched"
 		else
 			pprint 3 "Patching NanoBSD with amd64 support"
@@ -148,7 +151,7 @@ system_patch() {
 	# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
 	pprint 3 "Checking in NanoBSD allready PR-136889 patched"
 	
-	if [ ! `$grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
+	if [ ! `grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
 		pprint 3 "NanoBSD allready PR-136889 patched"
 	else
 		pprint 3 "Patching NanoBSD with some fixes (PR-136889)"
@@ -264,12 +267,12 @@ check_clean
 pprint 1 "Will generate an BSD Router Project image with theses values:"
 pprint 1 "- Target architecture: ${TARGET_ARCH}"
 pprint 1 "- Console : ${INPUT_CONSOLE}"
-if [ ${SKIP_REBUILD} = "" ]; then
+if [ "${SKIP_REBUILD}" = "" ]; then
 	pprint 1 "- Build the full world (take about 2 hours): YES"
 else
 	pprint 1 "- Build the full world (take about 2 hours): NO"
 fi
-if [ ${ZIP_IMAGE} = "y" ]; then
+if [ "${ZIP_IMAGE}" = "y" ]; then
 	pprint 1 "- Zip the final full image: YES"
 else
 	pprint 1 "- Zip the final full image: NO"
