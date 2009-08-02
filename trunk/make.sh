@@ -377,7 +377,7 @@ else
 	exit 1
 fi
 
-BSDRP_VERSION=`cat ${(NANOBSD_DIR}/BSDRP/Files/etc/BSDRP.version`
+BSDRP_VERSION=`cat ${NANOBSD_DIR}/BSDRP/Files/etc/BSDRP.version`
 BSRDP_FILENAME="BSDRP_${BSDRP_VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
 pprint 1 "Zipping the BSDRP upgrade image..." 
 mv /usr/obj/nanobsd.BSDRP/_.disk.image /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
