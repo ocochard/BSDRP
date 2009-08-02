@@ -42,6 +42,7 @@
 
 FREEBSD_SRC=/usr/src/
 NANOBSD_DIR=/usr/src/tools/tools/nanobsd
+BSDRP_VERSION=`cat ${NANOBSD_DIR}/BSDRP/Files/etc/BSDRP.version`
 
 #Compact flash database needed for NanoBSD ?
 #cp $NANOBSD_DIR/FlashDevice.sub .
@@ -61,133 +62,110 @@ pprint() {
     fi
 }
 
-check_current_dir() {
 #### Check current dir
-
-if [ "${NANOBSD_DIR}/BSDRP" != `pwd` ]
-then
-	pprint 1 "You need to install BSDRP source code in ${NANOBSD_DIR}/BSDRP"
-	exit 1
-fi
+check_current_dir() {
+	if [ "${NANOBSD_DIR}/BSDRP" != `pwd` ]; then
+		pprint 1 "You need to install BSDRP source code in ${NANOBSD_DIR}/BSDRP"
+		exit 1
+	fi
 }
 
-check_system() {
 #### Check prerequisites
+check_system() {
+	pprint 3 "Checking if FreeBSD-current sources are installed..."
+	SRC_VERSION=0
+	if [ ! `grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh` ]; then
+		SRC_VERSION="8.0"
+	fi
+	if [ ! `grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh` ]; then
+    	SRC_VERSION="7.2"
+	fi
 
-pprint 3 "Checking if FreeBSD-current sources are installed..."
-SRC_VERSION=0
-grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh
-if [ $? -eq 0 ]
-then
-	SRC_VERSION="8.0"
-fi
-grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh
-if [ $? -eq 0 ]
-then
-    SRC_VERSION="7.2"
-fi
+	if [ ${SRC_VERSION} = 0 ]; then
+		pprint 1 "ERROR: BSDRP need FreeBSD 8.0-current or 7.2 sources"
+		pprint 1 "Read HOW TO here:"
+		pprint 1 "http://bsdrp.net/documentation/technical_docs"
+		exit 1
+	fi
 
-if [ ${SRC_VERSION} = 0 ]
-then
-	pprint 1 "BSDRP need FreeBSD 8.0-current or 7.2 sources"
-	pprint 1 "Read HOW TO here:"
-	pprint 1 "http://bsdrp.net/documentation/technical_docs"
-	exit 1
-fi
+	pprint 3 "Will generate a BSDRP image based on FreeBSD ${SRC_VERSION}"
+	pprint 3 "Checking if ports sources are installed..."
 
-pprint 3 "Will generate a BSDRP image based on FreeBSD ${SRC_VERSION}"
-pprint 3 "Checking if ports sources are installed..."
-
-if [ ! -d /usr/ports/net/quagga ]
-then
-	pprint 1 "BSDRP need up-to-date FreeBSD ports sources tree"
-	pprint 1 "And it seems that you didn't install the ports source tree"
+	if [ ! -d /usr/ports/net/quagga ]; then
+		pprint 1 "ERROR: BSDRP need up-to-date FreeBSD ports sources tree"
+		pprint 1 "And it seems that you didn't install the ports source tree"
         pprint 1 "Read HOW TO here:"
         pprint 1 "http://bsdrp.net/documentation/technical_docs"
-	exit 1
-fi
+		exit 1
+	fi
 }
 
+###### Adding patch to NanoBSD
 system_patch() {
-###### Adding patch to NanoBSD 
+	# Adding BSDRP label patch to NanoBSD
+	# NanoBSD image use fixed boot disk: ad0, da0, etc...
+	# This is a big limitation for a "generic" image that can be installed
+	# on a USB (da0) or on an hard drive (ad0).
+	# If FreeBSD 7.2 source code detected, download latest nanobsd.sh script
 
-# Adding BSDRP label patch to NanoBSD
-# NanoBSD image use fixed boot disk: ad0, da0, etc...
-# This is a big limitation for a "generic" image that can be installed
-# on a USB (da0) or on an hard drive (ad0).
-# If FreeBSD 7.2 source code detected, download latest nanobsd.sh script
-
-if [ ${SRC_VERSION} = "7.2" ]
-then
-	if [ ! -f ../nanobsd.bak.7_2 ]
-	then
-		pprint 3 "Downloading new nanobsd.sh script"
-		(
-		cd ..
-		mv nanobsd.sh nanobsd.bak.7_2
-		fetch -o nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.28.2.4"
-		if [ ! $? -eq 0 ]
-		then
-			mv nanobsd.bak.7_2 nanobsd.sh
-			pprint 3 "Error for downloading latest nanobsd.sh script"
-			exit 1
+	if [ ${SRC_VERSION} = "7.2" ]; then
+		if [ ! -f ../nanobsd.bak.7_2 ]; then
+			pprint 3 "FreeBSD 7.2 source detected"
+			(
+			cd ..
+			pprint 3 "Backup old nanobsd.sh"
+			mv nanobsd.sh nanobsd.bak.7_2
+			pprint 3 "Download new nanobsd.sh script"
+				if [ ! `fetch -o nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.28.2.4"` ]; then
+				pprint 3 "Restoring original nanobsd.sh"	
+				mv nanobsd.bak.7_2 nanobsd.sh
+				pprint 3 "ERROR: Can't download latest nanobsd.sh script"
+				exit 1
+			fi
+			)
 		fi
-		)
 	fi
-fi
-pprint 3 "Checking in NanoBSD allready glabel patched"
-grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh
-if [ $? -eq 0 ] 
-then
-	pprint 3 "NanoBSD allready glabel patched"
-else
-	pprint 3 "Patching NanoBSD with glabel support"
-	patch ${NANOBSD_DIR}/nanobsd.sh nanobsd.glabel.patch
-fi
-
-# Adding amd64 support to NanoBSD:
-if [ "$TARGET_ARCH" = "amd64"  ]
-then
-	pprint 3 "Checking in NanoBSD allready amd64 patched"
-	grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh
-	if [ $? -eq 0 ] 
-	then
-		pprint 3 "NanoBSD allready amd64 patched"
+	pprint 3 "Checking in NanoBSD allready glabel patched"
+	if [ ! `grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh` ]; then
+		pprint 3 "NanoBSD allready glabel patched"
 	else
-		pprint 3 "Patching NanoBSD with amd64 support"
-		patch ${NANOBSD_DIR}/nanobsd.sh nanobsd.amd64.patch
+		pprint 3 "Patching NanoBSD with glabel support"
+		patch ${NANOBSD_DIR}/nanobsd.sh nanobsd.glabel.patch
 	fi
-fi
 
-# Adding another cool patch that fix a lot's of problem
-# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
-pprint 3 "Checking in NanoBSD allready PR-136889 patched"
-grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh
-if [ $? -eq 0 ] 
-then
-	pprint 3 "NanoBSD allready PR-136889 patched"
-else
-	pprint 3 "Patching NanoBSD with some fixes (PR-136889)"
-	patch ${NANOBSD_DIR}/nanobsd.sh nanobsd.pr-136889.patch
-fi
+	# Adding amd64 support to NanoBSD:
+	if [ "$TARGET_ARCH" = "amd64"  ]; then
+		pprint 3 "Checking in NanoBSD allready amd64 patched"
+		if [ ! `$grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
+			pprint 3 "NanoBSD allready amd64 patched"
+		else
+			pprint 3 "Patching NanoBSD with amd64 support"
+			patch ${NANOBSD_DIR}/nanobsd.sh nanobsd.amd64.patch
+		fi
+	fi
+
+	# Adding another cool patch that fix a lot's of problem
+	# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
+	pprint 3 "Checking in NanoBSD allready PR-136889 patched"
+	
+	if [ ! `$grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
+		pprint 3 "NanoBSD allready PR-136889 patched"
+	else
+		pprint 3 "Patching NanoBSD with some fixes (PR-136889)"
+		patch ${NANOBSD_DIR}/nanobsd.sh nanobsd.pr-136889.patch
+	fi
 
 }
 
-check_clean() {
 ##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount
-# Need to optimize this code
-mount > /tmp/BSDRP.mnt
-grep -q 'BSDRP' /tmp/BSDRP.mnt
-if [ $? -eq 0 ] 
-then
-	pprint 1 "Unmounted NanoBSD works directory found!"
-	pprint 1 "This can create a bug that delete all your /usr/src directory"
-	pprint 1 "Unmount manually theses mount points"
-	rm /tmp/BSDRP.mnt
-	exit 1
-fi
-rm /tmp/BSDRP.mnt
-
+check_clean() {
+	if [ `mount | grep -q 'BSDRP'` ]; then 
+		pprint 1 "ERROR: Unmounted NanoBSD works directory found!"
+		pprint 1 "This can create a bug that delete all your /usr/src directory"
+		pprint 1 "Unmount manually theses mount points"
+		exit 1
+	fi
+	return 0
 }
 
 usage () {
@@ -195,7 +173,7 @@ usage () {
         echo "Usage: $0 -bzdh [-c vga|serial] [-a i386|amd64]"
         echo "  -c      specify console type: vga (default) or serial"
         echo "  -a      specify target architecture: i386 or amd64"
-		echo "          if not specified, use the running system arch"
+		echo "          if not specified, use this system arch (`uname -m`)"
         echo "  -b      suppress buildworld"
         echo "  -z      prevent to bzip the full image"
         echo "  -d      Enable debug"
@@ -211,13 +189,7 @@ usage () {
 pprint 1 "BSD Router Project image build script"
 pprint 1 ""
 
-check_current_dir
-check_system
-check_clean
-
-#get_user_input
-
-# Get argument
+#Get argument
 
 TARGET_ARCH=`uname -m`
 DEBUG=""
@@ -285,6 +257,10 @@ if [ $# -gt 0 ] ; then
         usage
 fi
 
+check_current_dir
+check_system
+check_clean
+
 pprint 1 "Will generate an BSD Router Project image with theses values:"
 pprint 1 "- Target architecture: ${TARGET_ARCH}"
 pprint 1 "- Console : ${INPUT_CONSOLE}"
@@ -308,7 +284,7 @@ cp -v BSDRP.nano /tmp/BSDRP.nano
 echo "############# Variable section (generated by BSDRP make.sh) ###########" >> /tmp/BSDRP.nano
 
 echo "# The default name for any image we create." >> /tmp/BSDRP.nano
-echo "NANO_IMGNAME=\"BSDRP-full-${TARGET_ARCH}-${INPUT_CONSOLE}.img\"" >> /tmp/BSDRP.nano
+echo "NANO_IMGNAME=\"BSDRP_${BSDRP_VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img\"" >> /tmp/BSDRP.nano
 echo "# The drive name of the media at runtime" >> /tmp/BSDRP.nano
 #echo "NANO_DRIVE=$STORAGE_TYPE" >> /tmp/BSDRP.nano
 
@@ -365,8 +341,11 @@ sh ${DEBUG} ../nanobsd.sh ${SKIP_REBUILD} -c /tmp/BSDRP.nano
 
 # Testing exit code of NanoBSD:
 
-if [ $? -eq 0 ] 
-then
+if [ $? -eq 0 ]; then 
+	#if check_clean ; then
+	#	pprint 1 "Bad unmount of port function detected"
+	#	exit 1
+	#fi	
 	pprint 1 "NanoBSD build finish successfully."
 else
 	pprint 1 "NanoBSD meet an error, check the log files here:"
@@ -377,20 +356,18 @@ else
 	exit 1
 fi
 
-BSDRP_VERSION=`cat ${NANOBSD_DIR}/BSDRP/Files/etc/BSDRP.version`
-BSRDP_FILENAME="BSDRP_${BSDRP_VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
+BSDRP_FILENAME="BSDRP_${BSDRP_VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
 pprint 1 "Zipping the BSDRP upgrade image..." 
 mv /usr/obj/nanobsd.BSDRP/_.disk.image /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
-bzip2 -9v /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
+bzip2 -9vf /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
 pprint 1 "You will found the zipped BSDRP upgrade image file here:"
 pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2"
 
-BSRDP_FILENAME="BSDRP_${BSDRP_VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
-mv /usr/obj/nanobsd.BSDRP/_.disk.full /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
+BSDRP_FILENAME="BSDRP_${BSDRP_VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
 if [ "$ZIP_IMAGE" = "y" ] 
 then
 	pprint 1 "Zipping the BSDRP full image..." 
-	bzip2 -9v /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
+	bzip2 -9vf /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
    	pprint 1 "You will found the zipped BSDRP full image file here:"
    	pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2"
 else
