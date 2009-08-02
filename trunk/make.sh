@@ -90,7 +90,6 @@ fi
 if [ ${SRC_VERSION} = 0 ]
 then
 	pprint 1 "BSDRP need FreeBSD 8.0-current or 7.2 sources"
-	pprint 1 "And source file vimage.h (introduce in FreeBSD-current) not found"
 	pprint 1 "Read HOW TO here:"
 	pprint 1 "http://bsdrp.net/documentation/technical_docs"
 	exit 1
@@ -181,7 +180,7 @@ mount > /tmp/BSDRP.mnt
 grep -q 'BSDRP' /tmp/BSDRP.mnt
 if [ $? -eq 0 ] 
 then
-	pprint 1 "Unmounted NanoBSD works directory found"
+	pprint 1 "Unmounted NanoBSD works directory found!"
 	pprint 1 "This can create a bug that delete all your /usr/src directory"
 	pprint 1 "Unmount manually theses mount points"
 	rm /tmp/BSDRP.mnt
@@ -225,13 +224,11 @@ DEBUG=""
 SKIP_REBUILD=""
 INPUT_CONSOLE="vga"
 ZIP_IMAGE="y"
-set +e
 args=`getopt c:a:zbdh $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
 fi
-set -e
 
 set -- $args
 for i
@@ -286,6 +283,20 @@ done
 if [ $# -gt 0 ] ; then
         echo "$0: Extraneous arguments supplied"
         usage
+fi
+
+pprint 1 "Will generate an BSD Router Project image with theses values:"
+pprint 1 "- Target architecture: ${TARGET_ARCH}"
+pprint 1 "- Console : ${INPUT_CONSOLE}"
+if [ ${SKIP_REBUILD} = "" ]; then
+	pprint 1 "- Build the full world (take about 2 hours): YES"
+else
+	pprint 1 "- Build the full world (take about 2 hours): NO"
+fi
+if [ ${ZIP_IMAGE} = "y" ]; then
+	pprint 1 "- Zip the final full image: YES"
+else
+	pprint 1 "- Zip the final full image: NO"
 fi
 
 system_patch
