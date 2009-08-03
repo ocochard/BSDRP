@@ -360,6 +360,10 @@ options         HZ=2000
 # Add multiple route table support
 options         ROUTETABLES=4
 
+# eliminating data copies on socket reads and writes.
+# man 9 zero_copy
+options			ZERO_COPY_SOCKETS
+
 # Enable CARP: Common Address Redundancy Protocol (a patented free VRRP)
 device          carp
 

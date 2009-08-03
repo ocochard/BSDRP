@@ -4,7 +4,7 @@ Release 0.3 (not released)
 - Add XORP (http://www.xorp.org/): Add VRRP and PIM (with OSPF, BGP, RIP)
 - Add ISISd with Quagga
 - Enable IPv6 forwarding by default
-- Enable carp,lagg,vlan,netgraph in the kernel
+- Enable carp,lagg,vlan,netgraph,zero_copy_sockets in the kernel
 - Cleanup: Remove all non usefull kernel modules, remove perl, gzip kernel, replace vim with vim-lite, remove docs/infos files
 - Begin to tune kernel and sysctl values
 - Enable device polling for all NIC that support it (and changes HZ from 1000 to 2000)
