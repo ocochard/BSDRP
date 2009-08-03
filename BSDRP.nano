@@ -185,7 +185,7 @@ add_port () {
 		# 2. Add a trap
 		cd /usr/ports/$1
 		PKG_NAME=`make package-name` 
-		if [ -d ${NANO_OBJ}/ports/packages/All -a -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.tbz ]; then
+		if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.tbz ]; then
 		# Pkg file found: Generate add_pkg_NAME function
 			eval "
 				add_pkg_${port} () {
