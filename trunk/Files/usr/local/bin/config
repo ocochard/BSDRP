@@ -224,11 +224,11 @@ apply_cfg () {
 
 # Display diff between current and saved configuration
 # Return 0 if no diff found
-# Return 1 if diff found
+# Return 1 if diff found
 diff () {
 	mount_cfg
 	RESULT=0
-	echo "Difference between running and saved configuration files:"
+	echo "Looking for differences between running and saved configuration files..."
 	(
 	cd /etc
 	for i in "$@" `find * -type f`
@@ -242,7 +242,12 @@ diff () {
 	done
 	)
 	umount_cfg
-	exit $RESULT
+	if [ $RESULT = 0 ]; then
+		echo "None found."
+		exit 0
+	else
+		exit 1
+	fi
 }
 
 # Rollback to previous configuration
