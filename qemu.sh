@@ -178,10 +178,10 @@ check_user
 check_image
 parse_filename
 create_interfaces
-
+echo "Starting qemu..."
 ${QEMU_ARCH} -hda ${FILENAME} -net nic -net tap,ifname=tap0 -localtime -kernel-kqemu \
 ${QEMU_OUTPUT} -k fr
-
+echo "...qemu stoped"
 echo "Destroying Interfaces"
 ifconfig ${TAP_NUMBER} destroy
 ifconfig ${BRIDGE_NUMBER} destroy
