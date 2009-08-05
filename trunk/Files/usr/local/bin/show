@@ -58,6 +58,7 @@ getoption () {
 			license
 			;;
 		authors|author)
+			authors
 			;;
 		*)
 			echo "illegal option: $FIRST_OPTION"
