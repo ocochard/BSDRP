@@ -347,7 +347,7 @@ usr/sbin/config
 '
     for c in $FILES_TO_REMOVE
     do
-        if [ -d ${NANO_WORLDDIR}/$c ]
+        if [ -f ${NANO_WORLDDIR}/$c ]
         then
             rm -rf ${NANO_WORLDDIR}/$c
         fi
