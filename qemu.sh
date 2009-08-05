@@ -41,19 +41,21 @@ if [ $# -ne 1 ] ; then
 	exit 0
 fi
 
+FILENAME=$1
+
 check_system () {
-	if [ ! `uname -s | grep FreeBSD` ]; then
+	if ! `uname -s | grep -q FreeBSD`; then
 		echo "Error: This script was wrote for a FreeBSD"
 		echo "You need to adapt it for other system"
 		exit 1
 	fi
-	if ! pkg_info -q -E -x qemu; then
+	if ! `pkg_info -q -E -x qemu  > /dev/null 2>&1`; then
         echo "Error: qemu not found"
 		echo "Install qemu: pkg_add -r qemu"
         exit 1
 	fi
 
-	if ! pkg_info -q -E -x kqemu; then
+	if ! `pkg_info -q -E -x kqemu  > /dev/null 2>&1`; then
         echo "Warning: kqemu not found"
 		echo "kqemu is not mandatory, but improve a lot the speed"
 	fi
@@ -81,13 +83,19 @@ check_user () {
 }
 
 check_image () {
-	if [ ! -f $1 ]; then
-		echo "Can't found $1"
+	if [ ! -f ${FILENAME} ]; then
+		echo "ERROR: Can't found the file ${FILENAME}"
 		exit 1
 	fi
 
-	if ! `file -b $1 | grep "boot sector"  > /dev/null 2>&1`; then
-		echo "Not a BSDRP image (zipped?)"
+    if `file -b ${FILENAME} | grep -q "bzip2 compressed data"  > /dev/null 2>&1`; then
+        echo "Bzipped image detected, unzip it..."
+		bunzip2 -k ${FILENAME}
+		echo "Need to change FILENAME value: remove the last.bz2"
+    fi
+
+	if ! `file -b ${FILENAME} | grep -q "boot sector"  > /dev/null 2>&1`; then
+		echo "ERROR: Not a BSDRP image??"
 		exit 1
 	fi
 	
@@ -100,26 +108,80 @@ check_image () {
 # Check if $1 is an amd64 or i386 image
 # Creating admin bridge interface
 create_interfaces () {
-if [ `ifconfig -l | grep bridge0` ]; then
+if ! `ifconfig | grep -q 10.0.0.254`; then
 	echo "Creating admin bridge interface..."
-	IF_NUMBER=`ifconfig bridge create`
-	if [ `ifconfig bridge${IF_NUMBER} 10.0.0.254/24` ]; then
-		echo "Can't set IP adress on bridge${IF_NUMBER}"
+	BRIDGE_NUMBER=`ifconfig bridge create`
+	if ! `ifconfig ${BRIDGE_NUMBER} 10.0.0.254/24`; then
+		echo "Can't set IP address on ${BRIDGE_NUMBER}"
 		exit 1
-	else
-		ifconfig 
 	fi
+else
+	echo "Need to found the bridge number configured with 10.0.0.254"
 fi
 #SharedTAP interface for communicating with the host
 echo creating tap interface
-ifconfig tap0 create
-ifconfig tap0 10.0.0.254/24
+if ! `ifconfig | grep -q "10.0.0.1"`; then
+    echo "Creating admin tap interface..."
+    TAP_NUMBER=`ifconfig tap create`
+    if ! `ifconfig ${TAP_NUMBER} 10.0.0.1/24`; then
+        echo "Can't set IP address on ${TAP_NUMBER}"
+        exit 1
+    fi
+else
+    echo "Need to found the tap number configured with 10.0.0.254"
+fi
+
+# Link bridge with tap
+ifconfig ${BRIDGE_NUMBER} addm ${TAP_NUMBER} up
+ifconfig ${TAP_NUMBER} up
 }
 
+# Parse filename for detecting ARCH and console
+parse_filename () {
+	QEMU_ARCH=0
+	if echo "${FILENAME}" | grep -q "amd64"; then
+		QEMU_ARCH="qemu-system-x86_64"
+		echo "filename guests a x86_64 image"
+	fi
+	if echo "${FILENAME}" | grep -q "i386"; then
+        QEMU_ARCH="qemu"
+		echo "filename guests a i386 image"
+    fi
+	if [ "$QEMU_ARCH" = "0" ]; then
+		echo "WARNING: Can't guests arch of this image"
+		echo "Will use as default i386"
+		QEMU_ARCH="qemu"
+	fi
+	QEMU_OUTPUT=0
+	if echo "${FILENAME}" | grep -q "serial"; then
+        QEMU_OUTPUT="-nographic"
+        echo "filename guests a serial image"
+		echo "Will use standard console as input/output"
+    fi
+    if echo "${FILENAME}" | grep -q "vga"; then
+        QEMU_OUTPUT="-vnc :0"
+		echo "filename guests a vga image"
+        echo "Will start a VNC server on :0 for input/output"
+    fi
+    if [ "$QEMU_OUTPUT" = "0" ]; then
+        echo "WARNING: Can't suppose default console of this image"
+		echo "Will start a VNC server on :0 for input/output"
+        QEMU_OUTPUT="-vnc :0"
+    fi
+
+}
 # Main script
+
+echo "BSD Router Project Qemu script"
 check_system
 check_user
-check_image $1
-echo "Starting qemu with vga redirected to vnc :0"
-echo "qemu-system-x86_64 -hda $1 -net nic -net tap,ifname=tap0 -localtime -kernel-kqemu \
--vnc :0 -k fr -usbdevice tablet"
+check_image
+parse_filename
+create_interfaces
+
+${QEMU_ARCH} -hda ${FILENAME} -net nic -net tap,ifname=tap0 -localtime -kernel-kqemu \
+${QEMU_OUTPUT} -k fr
+
+echo "Destroying Interfaces"
+ifconfig ${TAP_NUMBER} destroy
+ifconfig ${BRIDGE_NUMBER} destroy
