@@ -53,6 +53,8 @@ alias reload reboot
 complete config  'p/1/(save diff apply rollback put get reset password help )/'
 complete show  'p/1/(route process version license authors help )/'
 complete route 'p/1/(add flush del change get monitor )/'
+set iflist=`ifconfig -l`
+complete ifconfig 'p/1/$iflist/'
 
 # Others Command complete
 # Lot's of these command complete were found here:
