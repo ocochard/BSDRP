@@ -1,0 +1,185 @@
+#!/bin/sh
+#
+# System tool for BSD Router Project 
+#
+# Copyright (c) 2009, The BSDRP Development Team 
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. Neither the name of the BSD Router Project/BSDRP nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+# Uncomment for enable the debug mode:
+#set -xv
+
+# Stop the script automatically on error
+set -e
+
+# Get options passed by user
+getoption () {
+	FIRST_OPTION="$1"
+	SECOND_OPTION="$2"
+	THIRD_OPTION="$3"
+	case "$FIRST_OPTION" in
+	halt|stop)
+		sys_halt
+		;;
+	reboot|reload)
+		sys_reboot
+		;;
+	virtualized)
+		sys_virtualized
+		;;
+	help|h)
+		usage
+		;;
+	*)
+		if [ "${FIRST_OPTION}" = "" ];
+		then
+			echo "missing option"
+		else	
+			echo "illegal option: $FIRST_OPTION"
+		fi
+		usage
+		;;
+	esac
+}
+
+# Display help
+usage () {
+	echo "BSD Router Project: system tool"
+
+# value $0 is the name of the called script
+	echo "Usage: $0 option"
+    echo "  - reboot/reload     : Restart the system"
+	echo "  - halt/stop     : Poweroff the system"
+	echo "  - virtualized   : Configure for usage as a VM"
+	echo "  - help/h [option]  : Display this help message. "
+	echo "		  	If [option] given, display more detail about the option"
+	exit 0
+}
+
+#ask to save configuration
+ask_save () {
+	echo "Do you want to save the configuration before to continue ? (y/n)"
+	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
+       	read USER_CONFIRM <&1
+	done
+	if [ "$USER_CONFIRM" = "y" ]; then
+		config save	
+	fi
+}
+# Check if cfg was modified
+check_cfg () {
+	echo "If diff in cfg exist"
+	if ! `config diff >/dev/null`; then
+		ask_save	
+	fi
+}
+
+# Reboot
+sys_reboot () {
+	check_cfg
+	reboot
+}
+
+# Halt
+sys_halt () {
+	check_cfg
+	halt -p
+}
+# Create a new image with acceptable performance under virtualization (quemu, vmware, virtualbox, etc...)
+system_virtualized () {
+	echo "This step will configure BSDRP for being use as a VM"
+	echo "A reboot is needed"
+	echo "Do you want to continue ? (y/n)"
+	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]
+	do
+        read USER_CONFIRM <&1
+	done
+	
+	if [ "$USER_CONFIRM" = "n" ]; then
+		echo "Canceling"
+		exit 0
+	fi
+	# The next part is a copy/past of upgrade function... need to create shared function .subr for avoiding copy/past
+	#Get the active system slice number and use the upgrade script
+	NANO_GLABEL_SYS_FULL=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1`
+
+	# Get the disk name using its label
+	NANO_DRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} | awk '{print $3}' | cut -d's' -f1`
+
+	# Get the full disk name
+	NANO_FULLDRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} | awk '{print $3}'`
+
+	# Check and set final variable
+	DST_SLICE=0
+
+	if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s1"` ]; then
+        DST_SLICE=2
+        SRC_SLICE=1
+	fi
+	if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s2"` ]; then
+    	DST_SLICE=1
+        SRC_SLICE=2
+	fi
+	if [ $DST_SLICE = 0 ]; then
+        echo "Can't detect active slice"
+        exit 1
+	fi
+	
+	# Use upgrade for copying active partition over passive partition
+	dd if=/dev/${NANO_DRIVE}s${SRC_SLICE} | upgrade
+	
+	# Now we need to mount this filesystem and add the modification:
+	if [ `mkdir /tmp/freetibet` ]; then
+		echo "Can't creat tempory directory"
+		exit 1
+    fi
+	if [ `mount /dev/ufs/BSDRP${DST_SLICE} /tmp/freetibet` ]; then
+        echo "Can't mount /dev/ufs/BSDRP${DST_SLICE}"
+        exit 1
+    fi
+	
+	if [ `echo kern.hz=50 >> /tmp/freetibet/boot/loader.conf` ]; then
+		echo "Can't modify loader.conf"
+		umount /tmp/freetibet
+		exit 1
+	fi
+
+	if [ `umount /tmp/freetibet` ]; then
+        echo "Can't umount"
+        exit 1
+    fi
+
+exit 0
+
+
+}
+
+###################
+## Main function ##
+###################
+
+getoption $*
