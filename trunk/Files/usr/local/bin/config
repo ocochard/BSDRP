@@ -105,6 +105,7 @@ usage () {
 
 # value $0 is the name of the called script
 	echo "Usage: $0 option"
+    echo "  - diff     : Show diff between current and saved config"
 	echo "  - save     : Save current config"
 	echo "  - apply    : Apply current config"
 	echo "  - rollback : Revert to previous config"
