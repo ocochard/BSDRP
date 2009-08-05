@@ -123,10 +123,10 @@ echo creating tap interface
 if ! `ifconfig | grep -q "10.0.0.1"`; then
     echo "Creating admin tap interface..."
     TAP_NUMBER=`ifconfig tap create`
-    if ! `ifconfig ${TAP_NUMBER} 10.0.0.1/24`; then
-        echo "Can't set IP address on ${TAP_NUMBER}"
-        exit 1
-    fi
+	# ifconfig report an error message, but configure IP correctly
+	set +e
+    ifconfig ${TAP_NUMBER} 10.0.0.1/24
+	set -e
 else
     echo "Need to found the tap number configured with 10.0.0.254"
 fi
@@ -178,10 +178,12 @@ check_user
 check_image
 parse_filename
 create_interfaces
+#trap "ifconfig ${TAP_NUMBER} destroy;ifconfig ${BRIDGE_NUMBER} destroy" 1 2 15 EXIT
 echo "Starting qemu..."
 ${QEMU_ARCH} -hda ${FILENAME} -net nic -net tap,ifname=tap0 -localtime -kernel-kqemu \
 ${QEMU_OUTPUT} -k fr
 echo "...qemu stoped"
 echo "Destroying Interfaces"
+#trap "" 1 2 15 EXIT
 ifconfig ${TAP_NUMBER} destroy
 ifconfig ${BRIDGE_NUMBER} destroy
