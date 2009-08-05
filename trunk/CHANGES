@@ -23,6 +23,7 @@ To do:
 - Need to check if there are diff before accept a reboot or halt
 - Need to remove all gcc suites files
 - Need to add a cleanup or a trap function in the pkg_add/add_port function
+- Need to read /usr/share/examples/tcsh/complete.tcsh
 
 -----------
 Release 0.2
