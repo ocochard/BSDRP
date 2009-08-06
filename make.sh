@@ -77,11 +77,14 @@ check_system() {
 	if [ ! -f ${FREEBSD_SRC}/sys/conf/newvers.sh ]; then
 		pprint 1 "ERROR: Can't found FreeBSD sources!"
 		exit 1
-	fi	
-	if ! `grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
+	fi
+		
+	grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh
+	if [ $? -eq 0 ]; then
 		SRC_VERSION="8.0"
 	fi
-	if ! `grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
+	grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh
+	if [ $? -eq 0 ]; then
     	SRC_VERSION="7.2"
 	fi
 
