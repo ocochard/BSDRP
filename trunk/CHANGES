@@ -14,8 +14,8 @@ Release 0.3 (not released)
 	- Permit to build BSDRP from a FreeBSD 7.2 or 8.0 source base
 	- Prevent to rebuild ports for each nanobsd image rebuild
 	- Fix bug with ARCH variable in add_port function
-    - Create a qemu script for testing BSDRP
-	- Replace question in the make.sh script by command line options
+	- Create a qemu script for testing BSDRP
+	- Replace questions in the make.sh script by command line options
 
 To do:
 - Need to test XORP
