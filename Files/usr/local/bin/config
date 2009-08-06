@@ -227,7 +227,11 @@ apply_cfg () {
 # Return 1 if diff found
 diff () {
 	mount_cfg
-	RESULT=0
+	# Don't know how to exchange variable with the subshell
+	# Then using a file in /tmp
+	if [ -f /tmp/DIFF_FOUND ]; then
+		rm /tmp/DIFF_FOUND
+	fi
 	echo "Looking for differences between running and saved configuration files..."
 	(
 	cd /etc
@@ -235,18 +239,25 @@ diff () {
 	do
 		if [ -f /cfg/$i ]
 		then
-			cmp -s /etc/$i /cfg/$i || (RESULT=1;echo "/etc/$i")
+			if ! cmp -s /etc/$i /cfg/$i; then
+				echo "/etc/$i"
+				echo "1" > /tmp/DIFF_FOUND
+			fi
 		else
-			cmp -s /conf/base/etc/$i /etc/$i || (RESULT=1;find $i -print)
+			if ! cmp -s /conf/base/etc/$i /etc/$i; then
+				find $i -print
+				echo "1" > /tmp/DIFF_FOUND
+			fi
 		fi
 	done
 	)
 	umount_cfg
-	if [ $RESULT = 0 ]; then
+	if [ -f /tmp/DIFF_FOUND ]; then
+		rm /tmp/DIFF_FOUND
+		exit 1
+	else
 		echo "None found."
 		exit 0
-	else
-		exit 1
 	fi
 }
 
