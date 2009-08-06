@@ -275,7 +275,7 @@ add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DWITH_ISISD -DWITH_OSPF_NSSA -DWIT
 #add_port "net/openospfd"
 
 # Libiconv is needed by vim-lite, but the package is not automatiaccly generate, then force it:
-add_port "converters/libiconv"
+add_port "converters/libiconv" "-DNO_INSTALL_MANPAGES"
 # Add a text editor that support colorization (usefull for edit shell script)
 add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES"
 
