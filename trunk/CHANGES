@@ -16,13 +16,13 @@ Release 0.3 (not released)
 	- Fix bug with ARCH variable in add_port function
 	- Create a qemu script for testing BSDRP
 	- Replace questions in the make.sh script by command line options
+	- Add auto-cleanup function of unmounted working unionfs dir
 
 To do:
 - Need to test XORP
 - Need to add a warning message if Qemu/VMware/Virtualbox is detected
 - ARCH and TARGET_ARC seems not used when compiling new port (the log file show  somes amd64 related messages when compiling for a i386 target from an amd64 freebsd system)
 - Need to remove all gcc suites files
-- Need to add a cleanup or a trap function in the pkg_add/add_port function
 - Need to read /usr/share/examples/tcsh/complete.tcsh
 
 -----------
