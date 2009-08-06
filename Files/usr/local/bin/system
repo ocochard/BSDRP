@@ -94,7 +94,7 @@ ask_save () {
 # Check if cfg was modified
 check_cfg () {
 	echo "Checking if configuration is saved."
-	if `config diff >/dev/null`; then
+	if config diff quiet; then
 		ask_save	
 	fi
 }

@@ -81,8 +81,8 @@ getoption () {
 # Display help
 usage () {
 	echo "BSD Router Project configuration tool"
-	if [ "${SECOND_OPTION}" = "apply" ];
-	then
+	case "${SECOND_OPTION}" in
+	apply)
 		echo "Options for apply:"
 		echo " - secure timeout : Automatically rollback if the command confirm is not enter before timeout (in minute)"
 		echo " - confirm : Need to be enter for cancelling the auto rollback feature enabled with the secure command."
@@ -90,7 +90,13 @@ usage () {
 		echo " - at date/time : Apply configuration at date/time"
 		echo " - cancel : Cancel scheduled apply"
 		exit 0
-	fi
+		;;
+	diff)
+		echo "Option fo diff:"
+		echo " - quiet : Don't display file (return 1 if changes found, 0 otherwise)"
+		exit 0
+		;;
+	esac
 
 # value $0 is the name of the called script
 	echo "Usage: $0 option"
@@ -232,7 +238,9 @@ diff () {
 	if [ -f /tmp/DIFF_FOUND ]; then
 		rm /tmp/DIFF_FOUND
 	fi
-	echo "Looking for differences between running and saved configuration files..."
+	if [ ! "$SECOND_OPTION" = "quiet" ]; then
+		echo "Looking for differences between running and saved configuration files..."
+	fi
 	(
 	cd /etc
 	for i in "$@" `find * -type f`
@@ -240,12 +248,16 @@ diff () {
 		if [ -f /cfg/$i ]
 		then
 			if ! cmp -s /etc/$i /cfg/$i; then
-				echo "/etc/$i"
+				if [ ! "$SECOND_OPTION" = "quiet" ]; then
+					echo "/etc/$i"
+				fi
 				echo "1" > /tmp/DIFF_FOUND
 			fi
 		else
 			if ! cmp -s /conf/base/etc/$i /etc/$i; then
-				find $i -print
+				if [ ! "$SECOND_OPTION" = "quiet" ]; then
+					find $i -print
+				fi
 				echo "1" > /tmp/DIFF_FOUND
 			fi
 		fi
@@ -256,7 +268,9 @@ diff () {
 		rm /tmp/DIFF_FOUND
 		exit 1
 	else
-		echo "None found."
+		if [ ! "$SECOND_OPTION" = "quiet" ]; then
+			echo "None found."
+		fi
 		exit 0
 	fi
 }
