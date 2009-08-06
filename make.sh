@@ -78,10 +78,10 @@ check_system() {
 		pprint 1 "ERROR: Can't found FreeBSD sources!"
 		exit 1
 	fi	
-	if `grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
+	if ! `grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
 		SRC_VERSION="8.0"
 	fi
-	if `grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
+	if ! `grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
     	SRC_VERSION="7.2"
 	fi
 
@@ -162,11 +162,14 @@ system_patch() {
 
 ##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount
 check_clean() {
-	if [ `mount | grep -q 'BSDRP'` ]; then 
-		pprint 1 "ERROR: Unmounted NanoBSD works directory found!"
+	if [ ! `mount | grep -q '<above>'` ]; then 
+		pprint 1 "WARNING: Unmounted NanoBSD works directory found!"
 		pprint 1 "This can create a bug that delete all your /usr/src directory"
-		pprint 1 "Unmount manually theses mount points"
-		exit 1
+		for d in `mount | grep '<above>' | cut -d ' ' -f 3`
+		do
+			echo "Try to unmount: $d"
+			umount $d
+		done
 	fi
 	return 0
 }
