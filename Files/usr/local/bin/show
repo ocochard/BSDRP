@@ -114,7 +114,7 @@ version () {
 	echo "BSD Router Project version: ${VERSION}"
 	echo ""
 	echo "Based on:"
-	uname -v
+	uname -srp
 	exit 0
 }
 
