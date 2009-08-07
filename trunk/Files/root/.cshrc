@@ -57,9 +57,8 @@ complete config  'p/1/(save diff apply rollback put get reset password help )/'
 complete show  'p/1/(route process version license authors help )/'
 complete route 'p/1/(add flush del change get monitor )/'
 complete system 'p/1/(reboot halt virtualized check-vm help )/'
-set iflist=`ifconfig -l`
-complete ifconfig 'p/1/$iflist/'
-
+complete ifconfig 'p/1/`ifconfig -l`/'
+complete sysctl 'n/*/`sysctl -Na`/'
 # Others Command complete
 # Lot's of these command complete were found here:
 # http://hea-www.harvard.edu/~fine/Tech/tcsh.html
@@ -110,4 +109,4 @@ complete chown 'p/1/u/'
 complete passwd 'p/1/u/'
 
 ###### Auto start some cmd ######
-system check-vm
+system check-vm quiet

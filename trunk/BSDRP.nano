@@ -267,7 +267,7 @@ add_port "net-mgmt/net-snmp" "-DNOPORTDOCS -DNO_INSTALL_MANPAGES -DWITH_IPV6 -DW
 
 # Quagga installation
 add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
-# Quagga install some software that we don't need anymore after install: devel/libtool15, devel/gettext, /devel/gmake, /lang/gawk
+# Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Nod enabled:
 #add_port "net/openbgpd"
@@ -281,8 +281,8 @@ add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES"
 
 # Add XORP
 #add_port "net/xorp" "-DWITH_ADVMCAST -DWITH_IPV6 -DWITH_SNMP -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
-# Xorp wants to start snmpd.... disable it:
-add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DWITH_ADVMCAST -DWITH_IPV6 -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
+# Xorp wants to start snmpd for testing it before to compile!!!!.... disable it:
+add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.
@@ -303,6 +303,9 @@ bsdrp_custom () {
 	# Set Quagga permission
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'chown -R quagga:quagga /usr/local/etc/quagga'
+	# Put root in xorp group
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+    'pw groupmod xorp -M root'
 	# Compress the kernel (save 3Mb)
 	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]
 	then
