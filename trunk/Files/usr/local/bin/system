@@ -141,7 +141,7 @@ check_vm () {
     exit 0
 }
 # Create a new image with acceptable performance under virtualization (quemu, vmware, virtualbox, etc...)
-system_virtualized () {
+sys_virtualized () {
 	echo "This step will configure BSDRP for being use as a VM"
 	echo "A reboot is needed"
 	echo "Do you want to continue ? (y/n)"
