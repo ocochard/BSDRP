@@ -132,7 +132,8 @@ system_patch() {
 		fi
 	fi
 	pprint 3 "Checking in NanoBSD allready glabel patched"
-	if [ ! `grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh` ]; then
+	grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh
+	if [ $? -eq 0 ]; then
 		pprint 3 "NanoBSD allready glabel patched"
 	else
 		pprint 3 "Patching NanoBSD with glabel support"
@@ -142,7 +143,8 @@ system_patch() {
 	# Adding amd64 support to NanoBSD:
 	if [ "$TARGET_ARCH" = "amd64"  ]; then
 		pprint 3 "Checking in NanoBSD allready amd64 patched"
-		if [ ! `grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
+		grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh
+		if [ $? -eq 0 ]; then 
 			pprint 3 "NanoBSD allready amd64 patched"
 		else
 			pprint 3 "Patching NanoBSD with amd64 support"
@@ -153,8 +155,8 @@ system_patch() {
 	# Adding another cool patch that fix a lot's of problem
 	# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
 	pprint 3 "Checking in NanoBSD allready PR-136889 patched"
-	
-	if [ ! `grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
+	grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh
+	if [ $? -eq 0 ]; then 
 		pprint 3 "NanoBSD allready PR-136889 patched"
 	else
 		pprint 3 "Patching NanoBSD with some fixes (PR-136889)"
