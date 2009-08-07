@@ -9,7 +9,8 @@ Release 0.3 (not released)
 - Begin to tune kernel and sysctl values
 - Enable device polling for all NIC that support it (and changes HZ from 1000 to 2000)
 - BSDRP script: Add system tool, and prevent to halt/reboot without saving configuration
-- Add advice if running under Qemu detected
+- Add warning if running under Qemu without tuning kern.hz is detected
+- Adapt update script to the boot0cfg bug present in FreeBSD 7.2 and 8.0-current
 - Build tools:
 	- Patch NanoBSD with a proposed patch (http://www.freebsd.org/cgi/query-pr.cgi?pr=136889)
 	- Permit to build BSDRP from a FreeBSD 7.2 or 8.0 source base

@@ -70,8 +70,18 @@ getoption () {
 # Display help
 usage () {
 	echo "BSD Router Project: system tool"
-
-# value $0 is the name of the called script
+	case ${SECOND_OPTION} in
+	check-vm)
+		echo "Check if running under a Virtualized environnement (Qemu, VirtualBox, etc.)Â"
+		echo "- [quiet] : Display only the warning"
+		exit 0
+		;;
+	virtualized)
+		echo "Optimize the system for running as a VM"
+		exit 0
+		;;
+	esac
+	# value $0 is the name of the called script
 	echo "Usage: $0 option"
     echo "  - reboot/reload   : Restart the system"
 	echo "  - halt/stop       : Poweroff the system"
@@ -121,24 +131,29 @@ sys_halt () {
 
 # Check if system is under a VM
 check_vm () {
-    if [ `sysctl dev.acpi.0.%desc | grep -q QEMU` ]; then
-        VM_FOUND=0
+    if [ "`sysctl -q dev.acpi.0.%desc | grep -q QEMU`" ]; then
+        VM_FOUND=true
 	else
-		VM_FOUND=1
+		VM_FOUND=false
     fi
     # Need to add vmware, virtualbox, etc...
-    if [ $VM_FOUND ]; then
-        echo "VM usage detected"
+    if (${VM_FOUND}); then
+		if [ "${SECOND_OPTION}"  != "quiet" ]; then
+        	echo "VM environnement detected"
+		fi
     fi
     if [ `grep -q "kern.hz=50" /boot/loader.conf` ]; then
-        NOT_TUNED=0
+        NOT_TUNED=true
     else
-        NOT_TUNED=1
+        NOT_TUNED=false
     fi
-    if [ $VM_FOUND -a $NOT_TUNED ]; then
-        echo "Warning: default kern.hz not lowered!"
-        echo 'Use "system virtualized" for tuning your system for a VM usage'
-    fi
+	# Stupid if, but don't know how to use [ x -a y ]
+    if (${VM_FOUND}); then
+		if (${NOT_TUNED}); then
+        	echo "Warning: default kern.hz not lowered!"
+        	echo 'Use "system virtualized" for tuning your system for a VM usage'
+   		fi 
+	fi
     exit 0
 }
 
