@@ -72,7 +72,7 @@ usage () {
 	echo "BSD Router Project: system tool"
 	case ${SECOND_OPTION} in
 	check-vm)
-		echo "Check if running under a Virtualized environnement (Qemu, VirtualBox, etc.)Â"
+		echo "Check if running under a Virtualized environnement (Qemu, VirtualBox, etc.)"
 		echo "- [quiet] : Display only the warning"
 		exit 0
 		;;
@@ -131,11 +131,15 @@ sys_halt () {
 
 # Check if system is under a VM
 check_vm () {
-    if [ "`sysctl -q dev.acpi.0.%desc | grep -q QEMU`" ]; then
+	#Don't know how to use the pipe in a if
+	set +e
+	sysctl -q dev.acpi.0.%desc | grep -q QEMU
+    if [ $? -eq 0 ]; then
         VM_FOUND=true
 	else
 		VM_FOUND=false
     fi
+	set -e
     # Need to add vmware, virtualbox, etc...
     if (${VM_FOUND}); then
 		if [ "${SECOND_OPTION}"  != "quiet" ]; then
