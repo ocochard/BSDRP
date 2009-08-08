@@ -171,6 +171,10 @@ check_clean() {
 		do
 			echo "Try to unmount: $d"
 			umount $d
+			if [ $? -ne 0 ]; then
+      				exit 1 
+    			fi
+
 		done
 	fi
 	return 0
