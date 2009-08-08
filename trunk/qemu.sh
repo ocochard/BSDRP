@@ -137,11 +137,13 @@ ifconfig ${TAP_NUMBER} up
 parse_filename () {
 	QEMU_ARCH=0
 	if echo "${FILENAME}" | grep -q "amd64"; then
-		QEMU_ARCH="qemu-system-x86_64"
+		QEMU_ARCH="qemu-system-x86_64 -m 256 -no-kqemu"
 		echo "filename guests a x86_64 image"
+		echo "Warning: Disable kqemu for using with the 64 bit image, because there is a bug in kqemu"
+		echo "Will remove this limitation when this bug will be fixed"
 	fi
 	if echo "${FILENAME}" | grep -q "i386"; then
-        QEMU_ARCH="qemu"
+        QEMU_ARCH="qemu -kernel-kqemu"
 		echo "filename guests a i386 image"
     fi
 	if [ "$QEMU_ARCH" = "0" ]; then
@@ -177,7 +179,7 @@ parse_filename
 create_interfaces
 #trap "ifconfig ${TAP_NUMBER} destroy;ifconfig ${BRIDGE_NUMBER} destroy" 1 2 15 EXIT
 echo "Starting qemu..."
-${QEMU_ARCH} -hda ${FILENAME} -net nic -net tap,ifname=tap0 -localtime -kernel-kqemu \
+${QEMU_ARCH} -hda ${FILENAME} -net nic -net tap,ifname=tap0 -localtime \
 ${QEMU_OUTPUT} -k fr
 echo "...qemu stoped"
 echo "Destroying Interfaces"

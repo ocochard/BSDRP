@@ -41,5 +41,5 @@ Release 0.1
 
 First Release that include:
 - Base FreeBSD 8.0-CURRENT system (NanoBSD), without VIMAGE support
-- Customized script (config, upgrade, help, command completion, etc…)
+- Customized script (config, upgrade, help, command completion, etc.)
 - Quagga ready to use (OSPFv2, OSPFv3, RIP, RIPng and BGP)

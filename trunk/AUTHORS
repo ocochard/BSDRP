@@ -9,7 +9,7 @@ Reuse of existing softwares/patches:
 BSDRP is based upon/includes various free software packages, listed below. The authors of BSDRP would like to thank the authors of these software packages for their efforts.
 
 * FreeBSD:  Copyright (c) 1995-2009 The FreeBSD Project. All rights reserved.
-* Gitoyen-NanoBSD-Quagga-router : Gitoyen patch to NanoBSD that add ports compiling support.
+* Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support.
 * Quagga routing software.
 * XORP eXtensible Open Router Platform: Copyright (c) 2001-2009 XORP, Inc.
 * Net-SNMP 
