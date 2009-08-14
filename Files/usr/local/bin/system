@@ -134,13 +134,20 @@ check_vm () {
 	#Don't know how to use the pipe in a if
 	set +e
 	sysctl -q dev.acpi.0.%desc | grep -q QEMU
-    if [ $? -eq 0 ]; then
-        VM_FOUND=true
+	if [ $? -eq 0 ]; then
+        	VM_FOUND=true
 	else
 		VM_FOUND=false
-    fi
+    	fi
+	sysctl -q dev.ad.0.%desc | grep -q VMware
+	if [ $? -eq 0 ]; then
+        	VM_FOUND=true
+        else
+                VM_FOUND=false
+    	fi
+
 	set -e
-    # Need to add vmware, virtualbox, etc...
+    # Need to add virtualbox, virtualpc, etc...
     if (${VM_FOUND}); then
 		if [ "${SECOND_OPTION}"  != "quiet" ]; then
         	echo "VM environnement detected"
