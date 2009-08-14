@@ -10,7 +10,7 @@ Release 0.3 (not released)
 - Enable device polling for all NIC that support it (and changes HZ from 1000 to 2000)
 - BSDRP script: Add system tool, and prevent to halt/reboot without saving configuration
 - Add warning if running under Qemu without tuning kern.hz is detected
-- Adapt update script to the boot0cfg bug present in FreeBSD 7.2 and 8.0-current
+- Adapt NanoBSD update script to the new comportement of boot0cfg since FreeBSD 7.2
 - Build tools:
 	- Patch NanoBSD with a proposed patch (http://www.freebsd.org/cgi/query-pr.cgi?pr=136889)
 	- Permit to build BSDRP from a FreeBSD 7.2 or 8.0 source base
@@ -21,8 +21,8 @@ Release 0.3 (not released)
 	- Add auto-cleanup function of unmounted working unionfs dir
 
 To do:
-- Need to test XORP
-- Need to add a warning message if VMware/Virtualbox is detected
+- Need to test quagga config file usage after a reboot (permission problem)
+- Need to add Virtualbox in "system check-vm" tool
 - ARCH and TARGET_ARC seems not used when compiling new port (the log file show  somes amd64 related messages when compiling for a i386 target from an amd64 freebsd system)
 - Need to remove all gcc suites files
 - Need to read /usr/share/examples/tcsh/complete.tcsh
