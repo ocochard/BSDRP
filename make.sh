@@ -387,7 +387,7 @@ else
    	pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}"
 fi
 pprint 1 "Generating checksum..."
-md5 /usr/obj/nanobsd.BSDRP/BSDRP_${BSDRP_VERSION}* > /usr/obj/nanobsd.BSDRP/checksums.txt
+md5 /usr/obj/nanobsd.BSDRP/BSDRP_${BSDRP_VERSION}* >> /usr/obj/nanobsd.BSDRP/checksums.txt
 sha256 /usr/obj/nanobsd.BSDRP/BSDRP_${BSDRP_VERSION}* >> /usr/obj/nanobsd.BSDRP/checksums.txt
 pprint 1 "Done !"
 exit 0
