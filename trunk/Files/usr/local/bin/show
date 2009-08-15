@@ -57,6 +57,9 @@ getoption () {
 		authors|author)
 			authors
 			;;
+		packages|package)
+			packages
+			;;
 		*)
 			echo "illegal option: $FIRST_OPTION"
 			usage
@@ -86,6 +89,7 @@ usage () {
 		echo "  - process/proc  : Display process information"
 		echo "  - version/ver  : Display BSDRP version"
 		echo "  - license/lic  : Display BSDRP license"
+		echo "  - packages     : Display lists of installed packages"
 		echo "  - authors      : Display authors and contributors list"
 		echo "  - help/h [option]  : Display this help message. "
 		echo "		  	If [option] given, display more detail about"
@@ -103,6 +107,12 @@ license () {
 # Display AUTHORS
 authors () {
 	cat /root/AUTHORS
+	exit 0
+}
+
+# Display packages
+packages () {
+	pkg_info
 	exit 0
 }
 # Display version
