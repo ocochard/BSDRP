@@ -186,7 +186,9 @@ usage () {
         echo "  -c      specify console type: vga (default) or serial"
         echo "  -a      specify target architecture: i386 or amd64"
 		echo "          if not specified, use this system arch (`uname -m`)"
-        echo "  -b      suppress buildworld"
+        echo "  -b      suppress buildworld and buildkernel"
+		echo "  -k		suppress buildkernel"
+		echo "  -w		suppress buildworld"
         echo "  -z      prevent to bzip the full image"
         echo "  -d      Enable debug"
 		echo "  -h      Display this help message"
@@ -208,7 +210,7 @@ DEBUG=""
 SKIP_REBUILD=""
 INPUT_CONSOLE="vga"
 ZIP_IMAGE="y"
-args=`getopt c:a:zbdh $*`
+args=`getopt c:a:zbdhkw $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
@@ -247,6 +249,15 @@ do
                 SKIP_REBUILD="-b"
                 shift
                 ;;
+		-k)
+                SKIP_REBUILD="-k"
+                shift
+                ;;
+		-w)
+                SKIP_REBUILD="-w"
+                shift
+                ;;
+
         -d)
                 DEBUG="-x"
                 shift
