@@ -1,0 +1,61 @@
+# Some BSDRP command complete
+complete config  'p/1/(save diff apply rollback put get reset password help )/'
+complete show  'p/1/(route process version license authors packages help )/'
+complete route 'p/1/(add flush del change get monitor )/'
+complete system 'p/1/(reboot halt virtualized check-vm help )/'
+complete ifconfig 'p/1/`ifconfig -l`/'
+complete sysctl 'n/*/`sysctl -Na`/'
+complete ifconfig   'p@1@`ifconfig -l`@' 'n/*/(add anycast arp staticarp broadcast debug \
+                    promisc delete down media mediaopt name polling create destroy metric \
+                    mtu netmask prefixlen link monitor up)/'
+# Others Command complete
+# Lot's of these command complete were found here:
+# http://hea-www.harvard.edu/~fine/Tech/tcsh.html
+# /usr/share/examples/tcsh/complete.tcsh
+# 
+# directories
+complete cd 'C/*/d/'
+complete rmdir 'C/*/d/'
+
+# signal names
+# also note that the initial - can be created with the first completion
+# but without appending a space (note the extra slash with no
+# append character specified)
+complete kill 'c/-/S/' 'p/1/(-)//'
+
+# use available commands as arguments for which, where, and man
+complete which 'p/1/c/'
+complete where 'p/1/c/'
+complete man 'p/1/c/'
+
+# aliases
+complete alias 'p/1/a/'
+complete unalias 'p/1/a/'
+
+# variables
+complete unset 'p/1/s/'
+complete set 'p/1/s/'
+
+# environment variables
+complete unsetenv 'p/1/e/'
+complete setenv 'p/1/e/'
+#(kinda cool: complete first arg with an env variable, and add an =,
+# continue completion of first arg with a filename.  complete 2nd arg
+# with a command)
+complete env 'c/*=/f/' 'p/1/e/=/' 'p/2/c/'
+
+# limits
+complete limit 'p/1/l/'
+
+# key bindings
+complete bindkey 'C/*/b/'
+
+# groups
+complete chgrp 'p/1/g/'
+
+# users
+complete chown 'p/1/u/'
+complete passwd 'p/1/u/'
+
+# commands
+complete trace      p/1/c/

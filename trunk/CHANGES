@@ -1,31 +1,34 @@
 Release 0.3 (not released)
 
-- Downgrade to FreeBSD 7.2 (permit to use it in production environement without waiting for a stable FreeBSD 8.0)
+- Downgrade to FreeBSD 7.2 (permit to use it in production environement without waiting for FreeBSD 8.0 stable)
 - Add XORP (http://www.xorp.org/): Add VRRP and PIM (with OSPF, BGP, RIP)
 - Add ISISd with Quagga
 - Enable IPv6 forwarding by default
 - Enable carp,lagg,vlan,netgraph,zero_copy_sockets in the kernel
 - Cleanup: Remove all non usefull kernel modules, remove perl, gzip kernel, replace vim with vim-lite, remove docs/infos files
 - Begin to tune kernel and sysctl values
-- Enable device polling for all NIC that support it (and changes HZ from 1000 to 2000)
+- Enable device polling for all NIC that support it  and changes kern.HZ from 1000 to 2000
 - BSDRP script: Add system tool, and prevent to halt/reboot without saving configuration
 - Add warning if running under Qemu without tuning kern.hz is detected
-- Adapt NanoBSD update script to the new comportement of boot0cfg since FreeBSD 7.2
 - Build tools:
 	- Patch NanoBSD with a proposed patch (http://www.freebsd.org/cgi/query-pr.cgi?pr=136889)
 	- Permit to build BSDRP from a FreeBSD 7.2 or 8.0 source base
 	- Prevent to rebuild ports for each nanobsd image rebuild
-	- Fix bug with ARCH variable in add_port function
 	- Create a qemu script for testing BSDRP
 	- Replace questions in the make.sh script by command line options
-	- Add auto-cleanup function of unmounted working unionfs dir
+	- Add auto-cleanup function of unmounted unionfs directory
+
+Bugs fix:
+- Fix quagga vty permission: This bug prevent to start quagga after a reboot
+- Adapt NanoBSD update script to the new comportement of boot0cfg since FreeBSD 7.2: This bug prevent to boot on the correct
+slice after an upgrade.
+- Fix TARGET_ARCH variable in make.sh for compiling ports
 
 To do:
-- Need to test quagga config file usage after a reboot (permission problem)
 - Need to add Virtualbox in "system check-vm" tool
-- ARCH and TARGET_ARC seems not used when compiling new port (the log file show  somes amd64 related messages when compiling for a i386 target from an amd64 freebsd system)
+- During compiling ports, the log file show somes amd64 related messages when compiling for a i386 target in an amd64 system
 - Need to remove all gcc suites files
-- Need to read /usr/share/examples/tcsh/complete.tcsh
+- Improve and fix command completion
 
 -----------
 Release 0.2
