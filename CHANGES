@@ -1,4 +1,4 @@
-Release 0.3 (not released)
+Release 0.3
 
 - Downgrade to FreeBSD 7.2 (permit to use it in production environement without waiting for FreeBSD 8.0 stable)
 - Add XORP (http://www.xorp.org/): Add VRRP and PIM (with OSPF, BGP, RIP)
@@ -28,7 +28,7 @@ To do:
 - Need to add Virtualbox in "system check-vm" tool
 - During compiling ports, the log file show somes amd64 related messages when compiling for a i386 target in an amd64 system
 - Need to remove all gcc suites files
-- Improve and fix command completion
+- Improve command completion
 
 -----------
 Release 0.2
