@@ -135,16 +135,18 @@ check_vm () {
 	set +e
 	sysctl -q dev.acpi.0.%desc | grep -q QEMU
 	if [ $? -eq 0 ]; then
-        	VM_FOUND=true
+       	VM_FOUND=true
 	else
 		VM_FOUND=false
     	fi
-	sysctl -q dev.ad.0.%desc | grep -q VMware
-	if [ $? -eq 0 ]; then
-        	VM_FOUND=true
-        else
-                VM_FOUND=false
+	if ! (${VM_FOUND}); then
+		sysctl -q dev.ad.0.%desc | grep -q VMware
+		if [ $? -eq 0 ]; then
+       		VM_FOUND=true
+    	else
+        	VM_FOUND=false
     	fi
+	fi
 
 	set -e
     # Need to add virtualbox, virtualpc, etc...
@@ -154,11 +156,11 @@ check_vm () {
 		fi
     fi
     if [ `grep -q "kern.hz=50" /boot/loader.conf` ]; then
-        NOT_TUNED=true
-    else
         NOT_TUNED=false
+    else
+        NOT_TUNED=true
     fi
-	# Stupid if, but don't know how to use [ x -a y ]
+	# Stupid if, but don't know how to use an "add" condition in the if
     if (${VM_FOUND}); then
 		if (${NOT_TUNED}); then
         	echo "Warning: default kern.hz not lowered!"

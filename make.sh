@@ -163,6 +163,9 @@ system_patch() {
 }
 
 ##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount
+# exit with 0 if no problem detected
+# exit with 1 if problem detected, but clean it
+# exit with 2 if problem detected and can't clean it
 check_clean() {
 	if [ ! `mount | grep -q '<above>'` ]; then 
 		pprint 1 "WARNING: Unmounted NanoBSD works directory found!"
@@ -172,23 +175,25 @@ check_clean() {
 			echo "Try to unmount: $d"
 			umount $d
 			if [ $? -ne 0 ]; then
-      				exit 1 
+      				exit 2 
     			fi
 
 		done
+		return 1
+	else
+		return 0
 	fi
-	return 0
 }
 
 usage () {
         (
-        echo "Usage: $0 -bzdh [-c vga|serial] [-a i386|amd64]"
+        echo "Usage: $0 -bkwzdh [-c vga|serial] [-a i386|amd64]"
         echo "  -c      specify console type: vga (default) or serial"
         echo "  -a      specify target architecture: i386 or amd64"
-		echo "          if not specified, use this system arch (`uname -m`)"
+		echo "          if not specified, use local system arch (`uname -m`)"
         echo "  -b      suppress buildworld and buildkernel"
-		echo "  -k	    suppress buildkernel"
-		echo "  -w	    suppress buildworld"
+		echo "  -k      suppress buildkernel"
+		echo "  -w      suppress buildworld"
         echo "  -z      prevent to bzip the full image"
         echo "  -d      Enable debug"
 		echo "  -h      Display this help message"
@@ -315,7 +320,6 @@ echo "# Kernel config file to use" >> /tmp/BSDRP.nano
 
 case $TARGET_ARCH in
 	"amd64") echo "NANO_KERNEL=BSDRP-AMD64" >> /tmp/BSDRP.nano
-		echo "NANO_ARCH=amd64"  >> /tmp/BSDRP.nano
 		pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
 		case ${SRC_VERSION} in
 		"8.0")
@@ -327,7 +331,6 @@ case $TARGET_ARCH in
 		esac
 		;;
 	"i386") echo "NANO_KERNEL=BSDRP-I386" >> /tmp/BSDRP.nano
-		echo "NANO_ARCH=i386"  >> /tmp/BSDRP.nano
 		pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
 		case ${SRC_VERSION} in
 		"8.0")
@@ -358,22 +361,19 @@ case $INPUT_CONSOLE in
 ;;
 esac
 
+# Export some variables for using them under nanobsd
+export TARGET_ARCH
 # Start nanobsd using the BSDRP configuration file
 pprint 1 "Launching NanoBSD build process..."
 sh ${DEBUG} ../nanobsd.sh ${SKIP_REBUILD} -c /tmp/BSDRP.nano
 
 # Testing exit code of NanoBSD:
-
-if [ $? -eq 0 ]; then 
-	#if check_clean ; then
-	#	pprint 1 "Bad unmount of port function detected"
-	#	exit 1
-	#fi	
+if [ $? -eq 0 ]; then
 	pprint 1 "NanoBSD build finish successfully."
 else
 	pprint 1 "NanoBSD meet an error, check the log files here:"
 	pprint 1 "/usr/obj/nanobsd.BSDRP/"	
-	pprint 1 "An error during the buildworld or buildkernel stage can be caused by"
+	pprint 1 "An error during the build world or kernel can be caused by"
 	pprint 1 "a bug in the FreeBSD-current code"	
 	pprint 1 "try to re-sync your code" 
 	exit 1
