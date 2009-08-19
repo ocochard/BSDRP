@@ -2,6 +2,7 @@ Release 0.31 (not released)
 - Add Virtualbox detection
 - Cleanup default /etc/rc.conf
 - Remove not impacting sysctl configuration
+- Prevent somes warning message during startup (dumpdev, net-snmp)
 
 Release 0.3
 
