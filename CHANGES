@@ -1,3 +1,8 @@
+Release 0.31 (not released)
+- Add Virtualbox detection
+- Cleanup default /etc/rc.conf
+- Remove not impacting sysctl configuration
+
 Release 0.3
 
 - Downgrade to FreeBSD 7.2 (permit to use it in production environement without waiting for FreeBSD 8.0 stable)

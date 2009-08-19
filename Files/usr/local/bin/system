@@ -133,12 +133,14 @@ sys_halt () {
 check_vm () {
 	#Don't know how to use the pipe in a if
 	set +e
+	# Look for Qemu
 	sysctl -q dev.acpi.0.%desc | grep -q QEMU
 	if [ $? -eq 0 ]; then
        	VM_FOUND=true
 	else
 		VM_FOUND=false
     	fi
+	# Look for VMware
 	if ! (${VM_FOUND}); then
 		sysctl -q dev.ad.0.%desc | grep -q VMware
 		if [ $? -eq 0 ]; then
@@ -147,7 +149,15 @@ check_vm () {
         	VM_FOUND=false
     	fi
 	fi
-
+	# Look for Virtualbox
+	if ! (${VM_FOUND}); then
+		sysctl -q dev.acpi.0.%desc | grep -q VBOX
+		if [ $? -eq 0 ]; then
+       		VM_FOUND=true
+    	else
+        	VM_FOUND=false
+    	fi
+	fi
 	set -e
     # Need to add virtualbox, virtualpc, etc...
     if (${VM_FOUND}); then

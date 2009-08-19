@@ -380,15 +380,22 @@ else
 fi
 
 BSDRP_FILENAME="BSDRP_${BSDRP_VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
-pprint 1 "Zipping the BSDRP upgrade image..." 
+if [ -f /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME} ]; then
+	pprint 1 "Backuping old BSDRP upgrade image..."
+	mv -f /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2 /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2.bak
+fi 
+pprint 1 "Zipping the BSDRP upgrade image..."
 mv /usr/obj/nanobsd.BSDRP/_.disk.image /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
 bzip2 -9vf /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
 pprint 1 "You will found the zipped BSDRP upgrade image file here:"
 pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2"
 
 BSDRP_FILENAME="BSDRP_${BSDRP_VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
-if [ "$ZIP_IMAGE" = "y" ] 
-then
+if [ "$ZIP_IMAGE" = "y" ]; then
+	if [ -f /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME} ]; then
+		pprint 1 "Backuping old BSDRP full zipped image..."
+		mv -f /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2 /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2.bak
+	fi 
 	pprint 1 "Zipping the BSDRP full image..." 
 	bzip2 -9vf /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
    	pprint 1 "You will found the zipped BSDRP full image file here:"
@@ -398,6 +405,7 @@ else
    	pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}"
 fi
 pprint 1 "Generating checksum..."
+date >> /usr/obj/nanobsd.BSDRP/checksums.txt
 md5 /usr/obj/nanobsd.BSDRP/BSDRP_${BSDRP_VERSION}* >> /usr/obj/nanobsd.BSDRP/checksums.txt
 sha256 /usr/obj/nanobsd.BSDRP/BSDRP_${BSDRP_VERSION}* >> /usr/obj/nanobsd.BSDRP/checksums.txt
 pprint 1 "Done !"
