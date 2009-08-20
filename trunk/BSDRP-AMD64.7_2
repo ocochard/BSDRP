@@ -78,7 +78,7 @@ options         ALTQ_RIO        # RED In/Out
 options         ALTQ_HFSC       # Hierarchical Packet Scheduler
 options         ALTQ_CDNR       # Traffic conditioner
 options         ALTQ_PRIQ       # Priority Queueing
-#options        ALTQ_NOPCC      # Required if the TSC is unusable
+options        ALTQ_NOPCC      # Required if the TSC is unusable
 #options        ALTQ_DEBUG
 
 # MROUTING enables the kernel multicast packet forwarder, which works
