@@ -69,7 +69,7 @@ check_current_dir() {
 
 #### Check prerequisites
 check_system() {
-	pprint 3 "Checking if FreeBSD-current sources are installed..."
+	pprint 3 "Checking if FreeBSD sources are installed..."
 	SRC_VERSION=0
 	if [ ! -f ${FREEBSD_SRC}/sys/conf/newvers.sh ]; then
 		pprint 1 "ERROR: Can't found FreeBSD sources!"
@@ -86,7 +86,7 @@ check_system() {
 	fi
 
 	if [ ${SRC_VERSION} = 0 ]; then
-		pprint 1 "ERROR: BSDRP need FreeBSD 8.0-current or 7.2 sources"
+		pprint 1 "ERROR: BSDRP need FreeBSD 8.0 or 7.2 sources"
 		pprint 1 "Read HOW TO here:"
 		pprint 1 "http://bsdrp.net/documentation/technical_docs"
 		exit 1

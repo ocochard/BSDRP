@@ -158,18 +158,19 @@ check_vm () {
         	VM_FOUND=false
     	fi
 	fi
-	set -e
     # Need to add virtualbox, virtualpc, etc...
     if (${VM_FOUND}); then
-		if [ "${SECOND_OPTION}"  != "quiet" ]; then
+		if [ "${SECOND_OPTION}" != "quiet" ]; then
         	echo "VM environnement detected"
 		fi
     fi
-    if [ `grep -q "kern.hz=50" /boot/loader.conf` ]; then
+	grep -q kern.hz=50 /boot/loader.conf
+    if [ $? -eq 0 ]; then
         NOT_TUNED=false
     else
         NOT_TUNED=true
     fi
+	set -e
 	# Stupid if, but don't know how to use an "add" condition in the if
     if (${VM_FOUND}); then
 		if (${NOT_TUNED}); then
