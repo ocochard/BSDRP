@@ -8,6 +8,7 @@ Release 0.31 (not released)
 Bug fixes:
 - Fix "system check-vm" tool
 - Fix make.sh error when start for the first time
+- Configure nsswitch.conf with WITHOUT_NIS
 
 -----------
 Release 0.3
