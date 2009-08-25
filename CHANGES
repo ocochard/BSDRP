@@ -7,7 +7,7 @@ Release 0.31 (not released)
 
 Bug fixes:
 - Fix "system check-vm" tool
-- Fix second compilation try with add_port_converters_libiconv (add -DFORCE_PKG_REGISTER)
+- Fix make.sh error when start for the first time
 
 -----------
 Release 0.3

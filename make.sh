@@ -222,6 +222,7 @@ if [ $? -ne 0 ] ; then
 fi
 
 set -- $args
+DELETE_ALL=true
 for i
 do
         case "$i"
@@ -252,14 +253,17 @@ do
                 ;;
         -b)
                 SKIP_REBUILD="-b"
+				DELETE_ALL=false
                 shift
                 ;;
 		-k)
                 SKIP_REBUILD="-k"
+				DELETE_ALL=false
                 shift
                 ;;
 		-w)
                 SKIP_REBUILD="-w"
+				DELETE_ALL=false
                 shift
                 ;;
 
@@ -363,6 +367,14 @@ esac
 
 # Export some variables for using them under nanobsd
 export TARGET_ARCH
+
+# Delete the destination dir
+if ($DELETE_ALL); then
+	if [ -d /usr/obj/nanobsd.BSDRP ]; then
+		pprint 1 "Delete existing /usr/obj/nanobsd.BSRP directory"
+		rm -rf /usr/obj/nanobsd.BSDRP
+	fi
+fi
 # Start nanobsd using the BSDRP configuration file
 pprint 1 "Launching NanoBSD build process..."
 sh ${DEBUG} ../nanobsd.sh ${SKIP_REBUILD} -c /tmp/BSDRP.nano
