@@ -369,13 +369,19 @@ sh ${DEBUG} ../nanobsd.sh ${SKIP_REBUILD} -c /tmp/BSDRP.nano
 
 # Testing exit code of NanoBSD:
 if [ $? -eq 0 ]; then
-	pprint 1 "NanoBSD build finish successfully."
+	pprint 1 "NanoBSD build seems finish successfully."
 else
-	pprint 1 "NanoBSD meet an error, check the log files here:"
+	pprint 1 "ERROR: NanoBSD meet an error, check the log files here:"
 	pprint 1 "/usr/obj/nanobsd.BSDRP/"	
 	pprint 1 "An error during the build world or kernel can be caused by"
 	pprint 1 "a bug in the FreeBSD-current code"	
 	pprint 1 "try to re-sync your code" 
+	exit 1
+fi
+
+# The exit code on NanoBSD doesn't work for port compilation/installation
+if [ ! -f /usr/obj/nanobsd.BSDRP/_.disk.image ]; then
+	pprint 1 "ERROR: NanoBSD meet an error (port installation/compilation ?)"
 	exit 1
 fi
 
