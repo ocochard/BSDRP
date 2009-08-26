@@ -10,6 +10,7 @@ Bug fixes:
 - Fix make.sh error when start for the first time
 - Configure nsswitch.conf with WITHOUT_NIS
 - Fix (at last!) the problem with bad permission on saved configuration files
+- Fix the stupid method of "system virtualized"
 
 -----------
 Release 0.3
