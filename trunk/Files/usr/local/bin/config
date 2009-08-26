@@ -164,13 +164,13 @@ save_cfg () {
 	echo "Saving configuration..."
 	(
 	cd /etc
-	for i in "$@" `find * -type f`
+	for i in "$@" `find * -depth`
 	do
 		if [ -f /cfg/$i ]
 		then
 			cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i 2>/dev/null
 		else
-			cmp -s /conf/base/etc/$i /etc/$i || (find $i -print |  cpio -dumpv /cfg/ 2>/dev/null)
+			cmp -s /conf/base/etc/$i /etc/$i || (find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
 		fi
 	done
 	)	
