@@ -195,30 +195,19 @@ sys_virtualized () {
 		echo "Canceling"
 		exit 0
 	fi
-	# Get the drive mounted	
-	NANO_DRIVE=`mount | grep " / " | cut -d' ' -f1`
 	
-	# Now we need to mount this filesystem and add the modification:
-	if [ -d /tmp/freetibet ]; then
-		echo "/tmp/freetibet allready exist ?"
+	if [ `mount -u -o rw /` ]; then
+		echo "Error: Can't mount in read-write mode the /"
 		exit 1
-	elif [ `mkdir /tmp/freetibet` ]; then
-		echo "Can't creat tempory directory"
-		exit 1
-    fi
-	if [ `mount ${NANO_DRIVE} /tmp/freetibet` ]; then
-        echo "Can't mount ${NANO_DRIVE}"
-        exit 1
-    fi
+	fi
 	
-	if [ `echo kern.hz=50 >> /tmp/freetibet/boot/loader.conf` ]; then
-		echo "Can't modify loader.conf"
-		umount /tmp/freetibet
+	if [ `echo kern.hz=50 >> /boot/loader.conf` ]; then
+		echo "Error: Can't modify loader.conf"
 		exit 1
 	fi
 
-	if [ `umount /tmp/freetibet` ]; then
-        echo "Can't umount"
+	if [ `mount -u -o ro /` ]; then
+        echo "Error: Can't re-mount in read-only mode the /"
         exit 1
     fi
 
