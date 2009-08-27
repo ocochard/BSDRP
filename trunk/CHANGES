@@ -1,16 +1,16 @@
 Release 0.31 (not released)
-- Add Virtualbox detection
+- Add Virtualbox detection on "system check-vm"
 - Cleanup default /etc/rc.conf
-- Remove not impacting sysctl configuration
+- Remove not impacting sysctl tunning (TCP endpoint related)
 - Prevent somes warning message during startup (dumpdev, net-snmp)
 - Kernel : enable ATLQ_NOPPC because kernel use SMP
 
 Bug fixes:
-- Fix "system check-vm" tool
-- Fix make.sh error when start for the first time
-- Configure nsswitch.conf with WITHOUT_NIS
-- Fix (at last!) the problem with bad permission on saved configuration files
-- Fix the stupid method of "system virtualized"
+- "system check-vm" tool badly detected allready tuned system 
+- make.sh need to be started twice for generating the images (Bug 2843819)
+- Adapt nsswitch.conf to BSDRP (WITHOUT_NIS)
+- Problem with bad permission on saved configuration directories, that prevent to start Quagga after a reboot (Bug 2843816)
+- "system virtualized" hang the system by baddly remount an allready mounted filesystem (Bug 2843819)
 
 -----------
 Release 0.3
