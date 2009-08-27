@@ -11,6 +11,7 @@ Bug fixes:
 - Adapt nsswitch.conf to BSDRP (WITHOUT_NIS)
 - Problem with bad permission on saved configuration directories, that prevent to start Quagga after a reboot (Bug 2843816)
 - "system virtualized" hang the system by baddly remount an allready mounted filesystem (Bug 2843819)
+- Add bridgestp module (needed for bridge)
 
 Know bug:
 - Keyboard input don't works under VirtualBox

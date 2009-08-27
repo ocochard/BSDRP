@@ -404,7 +404,7 @@ device		vlan
 
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules
-makeoptions    MODULES_OVERRIDE="acpi netgraph if_ef if_bridge"
+makeoptions    MODULES_OVERRIDE="acpi netgraph if_ef if_bridge bridgestp"
 
 # Enable VIMAGE
 options     VIMAGE
