@@ -1,5 +1,5 @@
 Release 0.31 (not released)
-- Add Virtualbox detection on "system check-vm"
+- Add Virtualbox detection on "system check-vm" (thanks to Baptiste Chaussade)
 - Cleanup default /etc/rc.conf
 - Remove not impacting sysctl tunning (TCP endpoint related)
 - Prevent somes warning message during startup (dumpdev, net-snmp)
