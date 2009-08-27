@@ -12,6 +12,9 @@ Bug fixes:
 - Problem with bad permission on saved configuration directories, that prevent to start Quagga after a reboot (Bug 2843816)
 - "system virtualized" hang the system by baddly remount an allready mounted filesystem (Bug 2843819)
 
+Know bug:
+- Keyboard input don't works under VirtualBox
+
 -----------
 Release 0.3
 
