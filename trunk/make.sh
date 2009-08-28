@@ -398,7 +398,7 @@ if [ ! -f /usr/obj/nanobsd.BSDRP/_.disk.image ]; then
 fi
 
 BSDRP_FILENAME="BSDRP_${BSDRP_VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
-if [ -f /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME} ]; then
+if [ -f /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2 ]; then
 	pprint 1 "Backuping old BSDRP upgrade image..."
 	mv -f /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2 /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2.bak
 fi 
