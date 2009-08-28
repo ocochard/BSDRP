@@ -83,6 +83,11 @@ options 	MAC			# TrustedBSD MAC Framework
 #options 	KDTRACE_FRAME		# Ensure frames are compiled in
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
 
+# Enable Packet Filter
+device pf
+device pflog
+device pfsync
+
 # altq(9). Enable the base part of the hooks with the ALTQ option.
 # Individual disciplines must be built into the base system and can not be
 # loaded as modules at this point. ALTQ requires a stable TSC so if yours is
@@ -387,19 +392,9 @@ options		ZERO_COPY_SOCKETS
 # Enable CARP: Common Address Redundancy Protocol (a patented free VRRP)
 device      carp
 
-# Enable LAGG: link aggregation and link failover interface
-device      lagg
-
-# Enable netgraph
-options     NETGRAPH
-
-#  The `vlan' device implements the VLAN tagging of Ethernet frames
-#  according to IEEE 802.1Q.
-device      vlan
-
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules
-makeoptions    MODULES_OVERRIDE="acpi netgraph if_ef if_bridge bridgestp"
+makeoptions    MODULES_OVERRIDE="acpi netgraph if_ef if_bridge bridgestp if_lagg if_vlan ipfw"
 
 # Enable VIMAGE
 options		VIMAGE

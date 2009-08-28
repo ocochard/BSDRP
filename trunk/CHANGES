@@ -3,7 +3,7 @@ Release 0.31 (not released)
 - Cleanup default /etc/rc.conf
 - Remove not impacting sysctl tunning (TCP endpoint related)
 - Prevent somes warning message during startup (dumpdev, net-snmp)
-- Kernel : enable ATLQ_NOPPC because kernel use SMP
+- Kernel : enable Packet filter (mandatory for altq), enable ALTQ_NOPPC because kernel use SMP
 
 Bug fixes:
 - "system check-vm" tool badly detected allready tuned system 

@@ -66,20 +66,25 @@ options 	STOP_NMI		# Stop CPUS using NMI instead of IPI
 options 	AUDIT			# Security event auditing
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
 
+# Enable Packet Filter
+device pf
+device pflog
+device pfsync
+
 # altq(9). Enable the base part of the hooks with the ALTQ option.
 # Individual disciplines must be built into the base system and can not be
 # loaded as modules at this point. ALTQ requires a stable TSC so if yours is
 # broken or changes with CPU throttling then you must also have the ALTQ_NOPCC
 # option.
-options         ALTQ
-options         ALTQ_CBQ        # Class Based Queueing
-options         ALTQ_RED        # Random Early Detection
-options         ALTQ_RIO        # RED In/Out
-options         ALTQ_HFSC       # Hierarchical Packet Scheduler
-options         ALTQ_CDNR       # Traffic conditioner
-options         ALTQ_PRIQ       # Priority Queueing
-options         ALTQ_NOPCC      # Required if the TSC is unusable
-#options        ALTQ_DEBUG
+options     ALTQ
+options     ALTQ_CBQ        # Class Based Queueing
+options     ALTQ_RED        # Random Early Detection
+options     ALTQ_RIO        # RED In/Out
+options     ALTQ_HFSC       # Hierarchical Packet Scheduler
+options     ALTQ_CDNR       # Traffic conditioner
+options     ALTQ_PRIQ       # Priority Queueing
+options     ALTQ_NOPCC      # Required if the TSC is unusable
+#options     ALTQ_DEBUG
 
 # MROUTING enables the kernel multicast packet forwarder, which works
 # with mrouted and XORP.
@@ -353,31 +358,21 @@ device		uvscom		# USB serial support for DDI pocket's PHS
 #device		dcons_crom	# Configuration ROM for dcons
 
 # Add device Polling
-options         DEVICE_POLLING
+options     DEVICE_POLLING
 # Increase HZ for optimizing polling
-options         HZ=2000
+options     HZ=2000
 
 # Add multiple route table support
-options         ROUTETABLES=4
+options     ROUTETABLES=4
 
 # eliminating data copies on socket reads and writes.
 # man 9 zero_copy
-options			ZERO_COPY_SOCKETS
+options		ZERO_COPY_SOCKETS
 
 # Enable CARP: Common Address Redundancy Protocol (a patented free VRRP)
-device          carp
-
-# Enable LAGG: link aggregation and link failover interface
-device          lagg
-
-# Enable netgraph
-options         NETGRAPH
-
-#  The `vlan' device implements the VLAN tagging of Ethernet frames
-#  according to IEEE 802.1Q.
-device          vlan
+device      carp
 
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules
-makeoptions    MODULES_OVERRIDE="acpi netgraph if_ef if_bridge bridgestp"
+makeoptions    MODULES_OVERRIDE="acpi netgraph if_ef if_bridge bridgestp if_lagg if_vlan ipfw"
 
