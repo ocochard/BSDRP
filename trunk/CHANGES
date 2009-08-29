@@ -14,7 +14,8 @@ Bug fixes:
 - Add bridgestp module (needed for bridge)
 
 Know bug:
-- Keyboard input don't works under VirtualBox
+- Keyboard input don't works under VirtualBox (#2840062)
+- upgrade script doesn't works (#2846985): After using boo0cfg, all UFS label are removed, the / is no more useable
 
 -----------
 Release 0.3
