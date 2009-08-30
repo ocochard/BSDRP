@@ -1,4 +1,8 @@
-Release 0.31 (not released)
+Release 0.32 (not released)
+
+Working on...
+
+Release 0.31
 - Add Virtualbox detection on "system check-vm" (thanks to Baptiste Chaussade)
 - Cleanup default /etc/rc.conf
 - Remove not impacting sysctl tunning (TCP endpoint related)
