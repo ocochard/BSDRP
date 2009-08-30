@@ -118,10 +118,9 @@ packages () {
 # Display version
 version () {
 	VERSION=`cat /etc/BSDRP.version`
-	echo "BSD Router Project version: ${VERSION}"
-	echo ""
-	echo "Based on:"
-	uname -srp
+	FREEBSD_VERSION=`uname -srp`
+    	echo "BSD Router Project version: ${VERSION}"
+    	echo "Based on: ${FREEBSD_VERSION}"
 	exit 0
 }
 
