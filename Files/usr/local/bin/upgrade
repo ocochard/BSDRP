@@ -100,9 +100,12 @@ cp /etc/fstab /cfg
 umount /cfg
 
 # Changing bootloader
-sysctl kern.geom.debugflags=16
+# some man page say that is better to use debugflag before modifying MBR
+# But this remove all geom UFS label, and let the system in ustable state
+# (the / use an UFS label, then it's not more useable after boot0tcf)
+#sysctl kern.geom.debugflags=16
 boot0cfg -s ${DST_SLICE} -v ${NANO_DRIVE}
 # Special bug fix for FreeBSD 7.2 and 8.0-current:
 # boot0cfg don't update the MBR active slice !!!
 echo "a ${DST_SLICE}" | fdisk -f /dev/stdin ${NANO_DRIVE}
-sysctl kern.geom.debugflags=0
+#sysctl kern.geom.debugflags=0

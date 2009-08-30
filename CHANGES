@@ -12,10 +12,10 @@ Bug fixes:
 - Problem with bad permission on saved configuration directories, that prevent to start Quagga after a reboot (Bug 2843816)
 - "system virtualized" hang the system by baddly remount an allready mounted filesystem (Bug 2843819)
 - Add bridgestp module (needed for bridge)
+- upgrade script doesn't works (#2846985): After using geom debug and boo0cfg, all UFS label are removed, the / is no more useable.
 
 Know bug:
 - Keyboard input don't works under VirtualBox (#2840062)
-- upgrade script doesn't works (#2846985): After using boo0cfg, all UFS label are removed, the / is no more useable
 
 -----------
 Release 0.3
