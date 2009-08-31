@@ -204,7 +204,7 @@ memory () {
         printf "mem_cache:   + %12d (%7dMB) [%3d%%] %s\n" $mem_cache `echo "$mem_cache / ( 1024 * 1024 )" | bc` `echo "$mem_cache * 100 / $mem_all" | bc` "Cached: almost avail. for allocation"
         printf "mem_free:    + %12d (%7dMB) [%3d%%] %s\n" $mem_free `echo "$mem_free / ( 1024 * 1024 )" | bc` `echo "$mem_free * 100 / $mem_all" | bc` "Free: fully available for allocation"
         printf "mem_gap_vm:  + %12d (%7dMB) [%3d%%] %s\n" $mem_gap_vm `echo "$mem_gap_vm / ( 1024 * 1024 )" | bc` `echo "$mem_gap_vm * 100 / $mem_all" | bc` "Memory gap: UNKNOWN"
-        printf "______________ ____________ ___________ _______\n"
+        printf "______________ ____________ ___________ ______\n"
         printf "mem_all:     = %12d (%7dMB) [100%%] %s\n" $mem_all `echo "$mem_all / ( 1024 * 1024 )" | bc` "Total real memory managed"
         printf "mem_gap_sys: + %12d (%7dMB)        %s\n" $mem_gap_sys `echo "$mem_gap_sys / ( 1024 * 1024 )" | bc` "Memory gap: Kernel?!"
         printf "______________ ____________ ___________\n"
