@@ -13,6 +13,7 @@ BSDRP is based upon/includes various free software packages, listed below. The a
 * Quagga routing software.
 * XORP eXtensible Open Router Platform: Copyright (c) 2001-2009 XORP, Inc.
 * Net-SNMP 
-* Idea of using glabel for reducing image type: Scott Ullrich (pfSense) 
+* Idea of using glabel for reducing image type: Scott Ullrich (pfSense)
+* "show memory" is a shell port of the perl freebsd-memory : Copyright (c) 2003-2004 Ralf S. Engelschall
 
 

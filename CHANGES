@@ -1,6 +1,5 @@
 Release 0.32 (not released)
-
-Working on...
+- Add "show memory"
 
 Release 0.31
 - Add Virtualbox detection on "system check-vm" (thanks to Baptiste Chaussade)
