@@ -81,9 +81,9 @@ usage () {
 			;;
 		process|proc)
 			echo "Options for process:"
-			echo " - cpu: CPU of each process"
-			echo " - memory/mem : Memory usage of each process"
-			echo " - int : Interrupt usage of each process"
+			echo " - cpu : CPU usage for each process"
+			echo " - memory/mem : Memory usage of each process"
+			echo " - int : Interrupt usage of each process"
 			;;
 		*)
 # value $0 is the name of the called script
@@ -92,11 +92,11 @@ usage () {
 		echo "  - process/proc  : Display process information"
 		echo "  - version/ver  : Display BSDRP version"
 		echo "  - license/lic  : Display BSDRP license"
-		echo "  - memory/mem   : Display general memory usage"
+		echo "  - memory/mem   : Display general memory usage"
 		echo "  - packages     : Display lists of installed packages"
 		echo "  - authors      : Display authors and contributors list"
 		echo "  - help/h [option]  : Display this help message. "
-		echo "		  	If [option] given, display more detail about"
+		echo "		 If [option] given, display more detail about"
 			;;	
 	esac	
 	exit 0
