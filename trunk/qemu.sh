@@ -33,13 +33,6 @@
 #Exit if not managed error encoutered
 set -e
 
-if [ $# -ne 1 ] ; then
-	echo "usage: $0 BSDRP-image-filename"
-	exit 0
-fi
-
-FILENAME=$1
-
 check_system () {
 	if ! `uname -s | grep -q FreeBSD`; then
 		echo "Error: This script was wrote for a FreeBSD"
@@ -88,7 +81,8 @@ check_image () {
     if `file -b ${FILENAME} | grep -q "bzip2 compressed data"  > /dev/null 2>&1`; then
         echo "Bzipped image detected, unzip it..."
 		bunzip2 -k ${FILENAME}
-		echo "Need to change FILENAME value: remove the last.bz2"
+		# change FILENAME by removing the last.bz2"
+		FILENAME=`echo ${FILENAME} | sed -e 's/.bz2//g'`
     fi
 
 	if ! `file -b ${FILENAME} | grep -q "boot sector"  > /dev/null 2>&1`; then
@@ -169,7 +163,64 @@ parse_filename () {
     fi
 
 }
-# Main script
+
+usage () {
+        (
+        echo "Usage: $0 [-l] [BSDRP-full.img]"
+        echo "  -l      lab mode: start 4 qemu processs"
+		echo "  -h      display this help"
+		echo ""
+		echo "Note: In lab mode, the qemu process are started in snapshot mode,"
+		echo "this mean that the config file are not write into the image"
+        ) 1>&2
+        exit 2
+}
+
+###############
+# Main script #
+###############
+
+#Exit if not managed error encoutered
+set +e
+
+### Parse argument
+
+args=`getopt hl $*`
+
+if [ $? -ne 0 ] ; then
+        usage
+        exit 2
+fi
+set -e
+
+set -- $args
+lab_mode=false
+for i
+do
+        case "$i" 
+        in
+        -l)
+                lab_mode=true
+                shift
+                ;;
+        -h)
+                usage
+                ;;
+		--)
+                shift
+                break
+        esac
+done
+
+FILENAME=$1
+shift
+
+if [ $# -gt 0 ] ; then
+        echo "$0: Extraneous arguments supplied"
+        usage
+fi
+
+set -e
 
 echo "BSD Router Project Qemu script"
 check_system
@@ -177,12 +228,10 @@ check_user
 check_image
 parse_filename
 create_interfaces
-#trap "ifconfig ${TAP_NUMBER} destroy;ifconfig ${BRIDGE_NUMBER} destroy" 1 2 15 EXIT
 echo "Starting qemu..."
 ${QEMU_ARCH} -hda ${FILENAME} -net nic -net tap,ifname=tap0 -localtime \
 ${QEMU_OUTPUT} -k fr
 echo "...qemu stoped"
 echo "Destroying Interfaces"
-#trap "" 1 2 15 EXIT
 ifconfig ${TAP_NUMBER} destroy
 ifconfig ${BRIDGE_NUMBER} destroy
