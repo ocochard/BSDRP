@@ -30,9 +30,6 @@
 #Uncomment for debug
 #set -x
 
-#Exit if not managed error encoutered
-set -e
-
 check_system () {
 	if ! `uname -s | grep -q FreeBSD`; then
 		echo "Error: This script was wrote for a FreeBSD"
@@ -92,41 +89,69 @@ check_image () {
 	
 	
 }
-# To do list
-# Check if we are under FreeBSD
-# Check if qemu is installed
-# Check if kqemu and ao is loaded
-# Check if $1 is an amd64 or i386 image
-# Creating admin bridge interface
-create_interfaces () {
-if ! `ifconfig | grep -q 10.0.0.254`; then
-	echo "Creating admin bridge interface..."
-	BRIDGE_NUMBER=`ifconfig bridge create`
-	if ! `ifconfig ${BRIDGE_NUMBER} 10.0.0.254/24`; then
-		echo "Can't set IP address on ${BRIDGE_NUMBER}"
-		exit 1
-	fi
-else
-	echo "Need to found the bridge number configured with 10.0.0.254"
-fi
-#SharedTAP interface for communicating with the host
-echo creating tap interface
-if ! `ifconfig | grep -q "10.0.0.1"`; then
-    echo "Creating admin tap interface..."
-    TAP_NUMBER=`ifconfig tap create`
-	# ifconfig report an error message, but configure IP correctly
-	set +e
-    ifconfig ${TAP_NUMBER} 10.0.0.1/24
-	set -e
-else
-    echo "Need to found the tap number configured with 10.0.0.254"
-fi
 
-# Link bridge with tap
-ifconfig ${BRIDGE_NUMBER} addm ${TAP_NUMBER} up
-ifconfig ${TAP_NUMBER} up
+# Creating interfaces
+create_interfaces () {
+	if ! `ifconfig | grep -q 10.0.0.254`; then
+		echo "Creating admin bridge interface..."
+		BRIDGE_IF=`ifconfig bridge create`
+		if ! `ifconfig ${BRIDGE_IF} 10.0.0.254/24`; then
+			echo "Can't set IP address on ${BRIDGE_IF}"
+			exit 1
+		fi
+	else
+		echo "Need to found the bridge number configured with 10.0.0.254"
+	fi
+	#Shared TAP interface for communicating with the host
+   	echo "Creating admin tap interface..."
+   	TAP_IF=`ifconfig tap create`
+
+	# Link bridge with tap
+	ifconfig ${BRIDGE_IF} addm ${TAP_IF} up
+	ifconfig ${TAP_IF} up
 }
 
+# Creating interfaces for lAB mode
+create_interfaces_lab () {
+	if ! `ifconfig | grep -q 10.0.0.254`; then
+		echo "Creating admin bridge interface..."
+		BRIDGE_IF=`ifconfig bridge create`
+		if ! `ifconfig ${BRIDGE_IF} 10.0.0.254/24`; then
+			echo "Can't set IP address on ${BRIDGE_IF}"
+			exit 1
+		fi
+	else
+		echo "Need to found the bridge number configured with 10.0.0.254"
+		exit 1
+	fi
+	#Shared TAP interface for communicating with the host
+	echo "creating the 4 tap interfaces"
+	i=1
+	while [ $i -le 4 ]; do
+    	echo "Creating admin tap interface..."
+    	eval TAP_IF_${i}=`ifconfig tap create`
+
+		# Link bridge with tap
+		TAP_IF="TAP_IF_$i"
+		TAP_IF=`eval echo $"${TAP_IF}"`
+		ifconfig ${BRIDGE_IF} addm ${TAP_IF} up
+		ifconfig ${TAP_IF} up
+	i=`expr $i + 1`
+	done
+}
+
+# Delete all admin interfaces create for lab mode
+delete_interface_lab () {
+	i=1
+	while [ $i -le 4 ]; do
+		TAP_IF="TAP_IF_$i"
+		TAP_IF=`eval echo $"${TAP_IF}"`
+    	ifconfig ${TAP_IF} destroy
+    		i=`expr $i + 1`
+	done
+	ifconfig ${BRIDGE_IF} destroy
+
+} 
 # Parse filename for detecting ARCH and console
 parse_filename () {
 	QEMU_ARCH=0
@@ -166,12 +191,13 @@ parse_filename () {
 
 usage () {
         (
-        echo "Usage: $0 [-l] [BSDRP-full.img]"
+        echo "Usage: $0 [-lh] -i BSDRP-full.img"
         echo "  -l      lab mode: start 4 qemu processs"
 		echo "  -h      display this help"
+		echo "  -i      specify BSDRP image name"
 		echo ""
 		echo "Note: In lab mode, the qemu process are started in snapshot mode,"
-		echo "this mean that the config file are not write into the image"
+		echo "this mean that all write to BSDRP disks are not write into the image"
         ) 1>&2
         exit 2
 }
@@ -180,13 +206,10 @@ usage () {
 # Main script #
 ###############
 
-#Exit if not managed error encoutered
-set +e
-
 ### Parse argument
 
-args=`getopt hl $*`
-
+set +e
+args=`getopt i:hl $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
@@ -194,44 +217,58 @@ fi
 set -e
 
 set -- $args
-lab_mode=false
+LAB_MODE=false
 for i
 do
         case "$i" 
         in
         -l)
-                lab_mode=true
+                LAB_MODE=true
                 shift
                 ;;
         -h)
                 usage
                 ;;
+		-i)
+				FILENAME="$2"
+				shift
+				shift
+				;;
 		--)
                 shift
                 break
         esac
 done
 
-FILENAME=$1
-shift
-
 if [ $# -gt 0 ] ; then
         echo "$0: Extraneous arguments supplied"
         usage
 fi
-
-set -e
 
 echo "BSD Router Project Qemu script"
 check_system
 check_user
 check_image
 parse_filename
-create_interfaces
-echo "Starting qemu..."
-${QEMU_ARCH} -hda ${FILENAME} -net nic -net tap,ifname=tap0 -localtime \
-${QEMU_OUTPUT} -k fr
+
+if ($LAB_MODE); then
+	create_interfaces_lab
+else
+	create_interfaces
+fi
+
+if ($LAB_MODE); then
+	echo "Starting qemu in lab mode..."
+else
+	echo "Starting qemu..."
+	${QEMU_ARCH} -hda ${FILENAME} -net nic -net tap,ifname=tap0 -localtime \
+	${QEMU_OUTPUT} -k fr
+fi
 echo "...qemu stoped"
 echo "Destroying Interfaces"
-ifconfig ${TAP_NUMBER} destroy
-ifconfig ${BRIDGE_NUMBER} destroy
+if ($LAB_MODE); then
+	delete_interface_lab
+else
+	ifconfig ${TAP_IF} destroy
+	ifconfig ${BRIDGE_IF} destroy
+fi
