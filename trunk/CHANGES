@@ -1,8 +1,12 @@
 Release 0.32 (not released)
 - Add "show memory"
+- Disable "system virtualized" when using FreeBSD 8
 
-Need to add: system virtualized only for 7.x, not for 8.x (uname -r)
+Know bug:
+- Keyboard input don't works under VirtualBox (#2840062)
+- Qemu don't works with serial "uart" drivers (replace sio driver) in FreeBSD 8.0
 
+------------
 Release 0.31
 - Add Virtualbox detection on "system check-vm" (thanks to Baptiste Chaussade)
 - Cleanup default /etc/rc.conf

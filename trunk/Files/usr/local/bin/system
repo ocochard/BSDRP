@@ -170,19 +170,41 @@ check_vm () {
     else
         NOT_TUNED=true
     fi
-	set -e
+	
+	# Since FreeBSD 8, the kernel automatically detect the VM presence and lower the kern.hz
+	uname -r | grep -q 8.0
+	if [ $? -eq 0 ]; then
+		FREEBSD_8=true
+	else
+		FREEBSD_8=false
+	fi
 	# Stupid if, but don't know how to use an "add" condition in the if
     if (${VM_FOUND}); then
+		if (${FREEBSD8}); then
+			echo "VM usage detected, but since FreeBSD 8 there is no need to tune the system"
+			exit 0
+		fi
 		if (${NOT_TUNED}); then
         	echo "Warning: default kern.hz not lowered!"
         	echo 'Use "system virtualized" for tuning your system for a VM usage'
    		fi 
 	fi
+	set -e
     exit 0
 }
 
 # Create a new image with acceptable performance under virtualization (quemu, vmware, virtualbox, etc...)
 sys_virtualized () {
+
+	# Check if FreeBSD 8 detected
+	set +e
+	uname -r | grep -q 8.0
+    if [ $? -eq 0 ]; then
+		echo "There is no need of tuning BSDRP based on FreeBSD 8.0 for being use as a VM"
+		exit 0
+    fi
+	set -e
+
 	echo "This step will configure BSDRP for being use as a VM"
 	echo "A reboot is needed"
 	echo "Do you want to continue ? (y/n)"
