@@ -47,6 +47,11 @@ check_system () {
 		echo "kqemu is not mandatory, but improve a lot the speed"
 	fi
 
+	if ! `pkg_info -q -E -x screen  > /dev/null 2>&1`; then
+        echo "Warning: screen not found"
+		echo "screen is mandatory for using serial image in lab mode"
+	fi
+
 	if ! kldstat -m kqemu; then
 		echo "Loading kqemu"
 		if kldload kqemu; then
@@ -125,9 +130,9 @@ create_interfaces_lab () {
 		exit 1
 	fi
 	#Shared TAP interface for communicating with the host
-	echo "creating the 4 tap interfaces"
+	echo "Creating the $NUMBER_VM tap interfaces that be shared with host"
 	i=1
-	while [ $i -le 4 ]; do
+	while [ $i -le $NUMBER_VM ]; do
     	echo "Creating admin tap interface..."
     	eval TAP_IF_${i}=`ifconfig tap create`
 
@@ -143,7 +148,7 @@ create_interfaces_lab () {
 # Delete all admin interfaces create for lab mode
 delete_interface_lab () {
 	i=1
-	while [ $i -le 4 ]; do
+	while [ $i -le $NUMBER_VM ]; do
 		TAP_IF="TAP_IF_$i"
 		TAP_IF=`eval echo $"${TAP_IF}"`
     	ifconfig ${TAP_IF} destroy
@@ -190,12 +195,22 @@ parse_filename () {
 
 }
 
+start_lab_vm () {
+	echo "Code to write"
+	echo "Need to start a full meshed lab with:"
+	echo "a tap admin interface (allready created)"
+	echo "a full meshed Point-to-Point ethernet networ"
+	echo "2 shared LAN with all members"
+	echo ""
+	echo "Need to start screen for each serial image"
+}
+
 usage () {
         (
-        echo "Usage: $0 [-lh] -i BSDRP-full.img"
-        echo "  -l      lab mode: start 4 qemu processs"
-		echo "  -h      display this help"
-		echo "  -i      specify BSDRP image name"
+        echo "Usage: $0 [-l] -i BSDRP-full.img [-l number]"
+        echo "  -l X   lab mode: start X BSDRP VM full meshed"
+		echo "  -h     display this help"
+		echo "  -i     specify BSDRP image name"
 		echo ""
 		echo "Note: In lab mode, the qemu process are started in snapshot mode,"
 		echo "this mean that all write to BSDRP disks are not write into the image"
@@ -210,7 +225,7 @@ usage () {
 ### Parse argument
 
 set +e
-args=`getopt i:hl $*`
+args=`getopt i:hl: $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
@@ -219,13 +234,14 @@ set -e
 
 set -- $args
 LAB_MODE=false
-FILENAME=""
 for i
 do
         case "$i" 
         in
         -l)
                 LAB_MODE=true
+				NUMBER_VM=$2
+				shift
                 shift
                 ;;
         -h)
@@ -241,6 +257,10 @@ do
                 break
         esac
 done
+
+if [ $NUMBER_VM < 1 ]; then
+	usage
+fi
 if [ "$FILENAME" = "" ]; then
 	usage
 fi
@@ -263,6 +283,8 @@ fi
 
 if ($LAB_MODE); then
 	echo "Starting qemu in lab mode..."
+    echo "With $NUMBER_VM BSDRP VM full meshed"
+	start_lab_vm	
 else
 	echo "Starting qemu..."
 	${QEMU_ARCH} -hda ${FILENAME} -net nic -net tap,ifname=tap0 -localtime \
