@@ -156,9 +156,10 @@ delete_interface_lab () {
 parse_filename () {
 	QEMU_ARCH=0
 	if echo "${FILENAME}" | grep -q "amd64"; then
-		QEMU_ARCH="qemu-system-x86_64 -m 256 -no-kqemu"
+		#QEMU_ARCH="qemu-system-x86_64 -m 256 -no-kqemu"
+		QEMU_ARCH="qemu-system-x86_64 -m 256"
 		echo "filename guests a x86_64 image"
-		echo "Warning: Disable kqemu for using with the 64 bit image, because there is a bug in kqemu"
+		echo "Warning: Disable kqemu for using with the 64 bit image, because there is a bug running FreeBSD 7.2 as guest with kqemu"
 		echo "Will remove this limitation when this bug will be fixed"
 	fi
 	if echo "${FILENAME}" | grep -q "i386"; then
