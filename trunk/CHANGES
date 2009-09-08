@@ -1,6 +1,8 @@
 Release 0.32 (not released)
 - Add "show memory"
 
+Need to add: system virtualized only for 7.x, not for 8.x (uname -r)
+
 Release 0.31
 - Add Virtualbox detection on "system check-vm" (thanks to Baptiste Chaussade)
 - Cleanup default /etc/rc.conf
