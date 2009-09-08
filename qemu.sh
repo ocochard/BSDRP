@@ -218,6 +218,7 @@ set -e
 
 set -- $args
 LAB_MODE=false
+FILENAME=""
 for i
 do
         case "$i" 
@@ -239,10 +240,12 @@ do
                 break
         esac
 done
-
+if [ "$FILENAME" = "" ]; then
+	usage
+fi
 if [ $# -gt 0 ] ; then
-        echo "$0: Extraneous arguments supplied"
-        usage
+    echo "$0: Extraneous arguments supplied"
+    usage
 fi
 
 echo "BSD Router Project Qemu script"
