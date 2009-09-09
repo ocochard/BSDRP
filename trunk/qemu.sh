@@ -168,7 +168,8 @@ parse_filename () {
 		echo "Will remove this limitation when this bug will be fixed"
 	fi
 	if echo "${FILENAME}" | grep -q "i386"; then
-        QEMU_ARCH="qemu -kernel-kqemu"
+        #QEMU_ARCH="qemu -kernel-kqemu"
+		QEMU_ARCH="qemu -m 64"
 		echo "filename guests a i386 image"
     fi
 	if [ "$QEMU_ARCH" = "0" ]; then
@@ -179,36 +180,58 @@ parse_filename () {
 	QEMU_OUTPUT=0
 	if echo "${FILENAME}" | grep -q "serial"; then
         QEMU_OUTPUT="-nographic"
+		SERIAL=true
         echo "filename guests a serial image"
 		echo "Will use standard console as input/output"
     fi
     if echo "${FILENAME}" | grep -q "vga"; then
         QEMU_OUTPUT="-vnc :0"
+		SERIAL=false
 		echo "filename guests a vga image"
         echo "Will start a VNC server on :0 for input/output"
     fi
     if [ "$QEMU_OUTPUT" = "0" ]; then
         echo "WARNING: Can't suppose default console of this image"
 		echo "Will start a VNC server on :0 for input/output"
+		SERIAL=false
         QEMU_OUTPUT="-vnc :0"
     fi
 
 }
 
 start_lab_vm () {
-	echo "Code to write"
 	echo "Need to start a full meshed lab with:"
-	echo "a tap admin interface (allready created)"
-	echo "a full meshed Point-to-Point ethernet networ"
 	echo "2 shared LAN with all members"
 	echo ""
-	echo "Need to start screen for each serial image"
+	PP_LINK=`echo "( $NUMBER_VM * ($NUMBER_VM -1 ) ) / 2" | bc`
+	i=1
+	while [ $i -le $NUMBER_VM ]; do
+		TAP_IF="TAP_IF_$i"
+		TAP_IF=`eval echo $"${TAP_IF}"`
+		QEMU_NAME="-name Router${i}"
+		QEMU_ADMIN_NIC="-net nic,macaddr=AA:AA:00:00:00:0${i},vlan=0 -net tap,vlan=0,ifname=${TAP_IF}"
+		#Now generate X x (X-1)/2 full meshed link
+		j=1
+		QEMU_PP_NIC=""
+		while [ $j -le $NUMBER_VM ]; do
+			if [ $i -ne $j ]; then
+				if [ $i -le $j ]; then
+					QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=BB:BB:00:00:0${i}:${i}${j},vlan=${i}${j} -net socket,mcast=230.0.0.1:100${i}${j},vlan=${i}${j}"
+				else
+					QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=BB:BB:00:00:0${i}:${j}${i},vlan=${j}${i} -net socket,mcast=230.0.0.1:100${j}${i},vlan=${j}${i}"
+				fi
+			fi
+			j=`expr $j + 1`	
+		done
+		screen -t ${QEMU_NAME} -d -m ${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC}
+    	i=`expr $i + 1`
+	done
 }
 
 usage () {
         (
         echo "Usage: $0 [-l] -i BSDRP-full.img [-l number]"
-        echo "  -l X   lab mode: start X BSDRP VM full meshed"
+        echo "  -l X   lab mode: start X BSDRP VM full meshed (between 2 and 9)"
 		echo "  -h     display this help"
 		echo "  -i     specify BSDRP image name"
 		echo ""
@@ -258,9 +281,18 @@ do
         esac
 done
 
-if [ $NUMBER_VM < 1 ]; then
-	usage
+if [ "$NUMBER_VM" != "" ]; then
+	if [ $NUMBER_VM -le 2 ]; then
+		echo "Error: Use a minimal of 2 routers in your lab."
+		exit 1
+	fi
+
+	if [ $NUMBER_VM -ge 9 ]; then
+		echo "Error: Use a maximum of 9 routers in your lab."
+		exit 1
+	fi
 fi
+
 if [ "$FILENAME" = "" ]; then
 	usage
 fi
