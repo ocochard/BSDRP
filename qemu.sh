@@ -32,24 +32,20 @@
 
 check_system () {
 	if ! `uname -s | grep -q FreeBSD`; then
-		echo "Error: This script was wrote for a FreeBSD"
+		echo "Error: This script was wrote for a FreeBSD only"
 		echo "You need to adapt it for other system"
 		exit 1
 	fi
 	if ! `pkg_info -q -E -x qemu  > /dev/null 2>&1`; then
         echo "Error: qemu not found"
-		echo "Install qemu: pkg_add -r qemu"
+		echo "Install qemu with: pkg_add -r qemu"
         exit 1
 	fi
 
 	if ! `pkg_info -q -E -x kqemu  > /dev/null 2>&1`; then
         echo "Warning: kqemu not found"
 		echo "kqemu is not mandatory, but improve a lot the speed"
-	fi
-
-	if ! `pkg_info -q -E -x screen  > /dev/null 2>&1`; then
-        echo "Warning: screen not found"
-		echo "screen is mandatory for using serial image in lab mode"
+        echo "Install kqemu with: pkg_add -r kqemu"
 	fi
 
 	if ! kldstat -m kqemu; then
@@ -91,7 +87,6 @@ check_image () {
 		echo "ERROR: Not a BSDRP image??"
 		exit 1
 	fi
-	
 	
 }
 
@@ -141,7 +136,7 @@ create_interfaces_lab () {
 		TAP_IF=`eval echo $"${TAP_IF}"`
 		ifconfig ${BRIDGE_IF} addm ${TAP_IF} up
 		ifconfig ${TAP_IF} up
-	i=`expr $i + 1`
+	    i=`expr $i + 1`
 	done
 }
 
@@ -152,7 +147,7 @@ delete_interface_lab () {
 		TAP_IF="TAP_IF_$i"
 		TAP_IF=`eval echo $"${TAP_IF}"`
     	ifconfig ${TAP_IF} destroy
-    		i=`expr $i + 1`
+    	i=`expr $i + 1`
 	done
 	ifconfig ${BRIDGE_IF} destroy
 
@@ -161,14 +156,10 @@ delete_interface_lab () {
 parse_filename () {
 	QEMU_ARCH=0
 	if echo "${FILENAME}" | grep -q "amd64"; then
-		#QEMU_ARCH="qemu-system-x86_64 -m 256 -no-kqemu"
-		QEMU_ARCH="qemu-system-x86_64 -m 256"
-		echo "filename guests a x86_64 image"
-		echo "Warning: Disable kqemu for using with the 64 bit image, because there is a bug running FreeBSD 7.2 as guest with kqemu"
-		echo "Will remove this limitation when this bug will be fixed"
+		QEMU_ARCH="qemu-system-x86_64 -m 64"
+        echo "filename guest a x86-64 image"
 	fi
 	if echo "${FILENAME}" | grep -q "i386"; then
-        #QEMU_ARCH="qemu -kernel-kqemu"
 		QEMU_ARCH="qemu -m 64"
 		echo "filename guests a i386 image"
     fi
@@ -179,16 +170,17 @@ parse_filename () {
 	fi
 	QEMU_OUTPUT=0
 	if echo "${FILENAME}" | grep -q "serial"; then
-        QEMU_OUTPUT="-nographic"
+        QEMU_OUTPUT="-nographic -vga none"
 		SERIAL=true
         echo "filename guests a serial image"
 		echo "Will use standard console as input/output"
     fi
     if echo "${FILENAME}" | grep -q "vga"; then
-        QEMU_OUTPUT="-vnc :0"
+        QEMU_OUTPUT="-vnc :0 -serial none"
 		SERIAL=false
 		echo "filename guests a vga image"
         echo "Will start a VNC server on :0 for input/output"
+        echo "DEBUG: BSDRP bug with no serial port"
     fi
     if [ "$QEMU_OUTPUT" = "0" ]; then
         echo "WARNING: Can't suppose default console of this image"
@@ -200,17 +192,20 @@ parse_filename () {
 }
 
 start_lab_vm () {
-	echo "Need to start a full meshed lab with:"
-	echo "2 shared LAN with all members"
+	echo "Starting a lab with $NUMBER_VM routers:"
+    echo "- 1 shared LAN between all routers and the host"
+	echo "- 2 shared LAN between all routers"
+    echo "- Full mesh ethernet point-to-point link between each routers"
 	echo ""
-	PP_LINK=`echo "( $NUMBER_VM * ($NUMBER_VM -1 ) ) / 2" | bc`
 	i=1
+    #Enter the main loop for each VM
 	while [ $i -le $NUMBER_VM ]; do
 		TAP_IF="TAP_IF_$i"
 		TAP_IF=`eval echo $"${TAP_IF}"`
 		QEMU_NAME="-name Router${i}"
 		QEMU_ADMIN_NIC="-net nic,macaddr=AA:AA:00:00:00:0${i},vlan=0 -net tap,vlan=0,ifname=${TAP_IF}"
-		#Now generate X x (X-1)/2 full meshed link
+	    #Enter in the Point-to-Point loop
+        #Now generate X x (X-1)/2 full meshed link
 		j=1
 		QEMU_PP_NIC=""
 		while [ $j -le $NUMBER_VM ]; do
@@ -223,9 +218,29 @@ start_lab_vm () {
 			fi
 			j=`expr $j + 1`	
 		done
-		screen -t ${QEMU_NAME} -d -m ${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC}
+        if ($SERIAL); then
+            QEMU_OUTPUT="-serial telnet::800${i},server,nowait"
+            echo "Connect to the router ${i} by telneting to localhost on port 800${i}:"
+            echo "telnet localhost 800${i}"
+        else
+            QEMU_OUTPUT="-vnc :${i}"
+            echo "Connect to the router ${i} by VNC client on display ${i}"
+        fi
+		${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
     	i=`expr $i + 1`
 	done
+
+    #Now wait for qemu process end before continue
+    i=1
+	while [ $i -le $NUMBER_VM ]; do
+        wait `cat /tmp/BSDRP-$i.pid` 
+        #while ps -p `cat /tmp/BSDRP-$i.pid` > /dev/null
+        #do
+        #    sleep 1
+        #done
+        i=`expr $i + 1`
+    done
+    
 }
 
 usage () {
