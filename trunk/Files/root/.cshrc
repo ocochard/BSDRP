@@ -56,5 +56,8 @@ alias reboot 'system reboot'
 #Load command complete file
 source ~/.complete
 
+#Don't generate core file
+limit coredumpsize 0
+
 ###### Auto start some cmd ######
 system check-vm quiet
