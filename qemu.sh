@@ -219,7 +219,7 @@ start_lab_vm () {
 			j=`expr $j + 1`	
 		done
         if ($SERIAL); then
-            QEMU_OUTPUT="-serial telnet::800${i},server,nowait"
+            QEMU_OUTPUT="-nographic -vga none -serial telnet::800${i},server,nowait"
             echo "Connect to the router ${i} by telneting to localhost on port 800${i}:"
             echo "telnet localhost 800${i}"
         else
@@ -230,14 +230,13 @@ start_lab_vm () {
     	i=`expr $i + 1`
 	done
 
-    #Now wait for qemu process end before continue
+    #Now wait for each qemu process end before continue
     i=1
 	while [ $i -le $NUMBER_VM ]; do
-        wait `cat /tmp/BSDRP-$i.pid` 
-        #while ps -p `cat /tmp/BSDRP-$i.pid` > /dev/null
-        #do
-        #    sleep 1
-        #done
+        while (ps -p `cat /tmp/BSDRP-$i.pid` > /dev/null)
+        do
+            sleep 1
+        done
         i=`expr $i + 1`
     done
     
@@ -297,7 +296,7 @@ do
 done
 
 if [ "$NUMBER_VM" != "" ]; then
-	if [ $NUMBER_VM -le 2 ]; then
+	if [ $NUMBER_VM -lt 1 ]; then
 		echo "Error: Use a minimal of 2 routers in your lab."
 		exit 1
 	fi
