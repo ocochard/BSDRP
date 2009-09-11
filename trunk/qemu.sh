@@ -65,8 +65,10 @@ check_system () {
 
 check_user () {
 	if [ ! $(whoami) = "root" ]; then
-		echo "You need to be root"
-		exit 1
+		echo "Warning: You need to be root for creating shared LAN interfaces with the hosts"
+        ROOT=false
+    else
+        ROOT=true
 	fi	
 }
 
@@ -91,7 +93,7 @@ check_image () {
 }
 
 # Creating interfaces
-create_interfaces () {
+create_interfaces_shared () {
 	if ! `ifconfig | grep -q 10.0.0.254`; then
 		echo "Creating admin bridge interface..."
 		BRIDGE_IF=`ifconfig bridge create`
@@ -156,11 +158,11 @@ delete_interface_lab () {
 parse_filename () {
 	QEMU_ARCH=0
 	if echo "${FILENAME}" | grep -q "amd64"; then
-		QEMU_ARCH="qemu-system-x86_64 -m 64"
+		QEMU_ARCH="qemu-system-x86_64 -m 96"
         echo "filename guest a x86-64 image"
 	fi
 	if echo "${FILENAME}" | grep -q "i386"; then
-		QEMU_ARCH="qemu -m 64"
+		QEMU_ARCH="qemu -m 96"
 		echo "filename guests a i386 image"
     fi
 	if [ "$QEMU_ARCH" = "0" ]; then
@@ -200,16 +202,27 @@ start_lab_vm () {
 	i=1
     #Enter the main loop for each VM
 	while [ $i -le $NUMBER_VM ]; do
+        echo "Router$i have the folllowing NIC:"
 		TAP_IF="TAP_IF_$i"
 		TAP_IF=`eval echo $"${TAP_IF}"`
 		QEMU_NAME="-name Router${i}"
-		QEMU_ADMIN_NIC="-net nic,macaddr=AA:AA:00:00:00:0${i},vlan=0 -net tap,vlan=0,ifname=${TAP_IF}"
+        if ($ROOT); then
+            NIC_NUMBER=0
+            echo "em${NIC_NUMBER} connected to shared with host LAN, configure IP 10.0.0.${i}/8 on this."
+            NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
+		    QEMU_ADMIN_NIC="-net nic,macaddr=AA:AA:00:00:00:0${i},vlan=0 -net tap,vlan=0,ifname=${TAP_IF}"
+        else
+            QEMU_ADMIN_NIC=""
+            NIC_NUMBER=0
+        fi
 	    #Enter in the Point-to-Point loop
         #Now generate X x (X-1)/2 full meshed link
 		j=1
 		QEMU_PP_NIC=""
 		while [ $j -le $NUMBER_VM ]; do
 			if [ $i -ne $j ]; then
+                echo "em${NIC_NUMBER} connected to Router${j}."
+                NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
 				if [ $i -le $j ]; then
 					QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=AA:AA:00:00:0${i}:${i}${j},vlan=${i}${j} -net socket,mcast=230.0.0.1:100${i}${j},vlan=${i}${j}"
 				else
@@ -222,6 +235,8 @@ start_lab_vm () {
         j=1
         QEMU_LAN_NIC=""
         while [ $j -le $NUMBER_LAN ]; do
+            echo "em${NIC_NUMBER} connected to LAN number ${j}."
+            NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
             QEMU_LAN_NIC="${QEMU_LAN_NIC} -net nic,macaddr=CC:CC:00:00:0${j}:0${i},vlan=10${j} -net socket,mcast=230.0.0.1:1000${j},vlan=10${j}"
             j=`expr $j + 1`
         done
@@ -233,7 +248,7 @@ start_lab_vm () {
             QEMU_OUTPUT="-vnc :${i}"
             echo "Connect to the router ${i} by VNC client on display ${i}"
         fi
-		${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_LAN_NIC} ${QEMU_PP_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
+		${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} ${QEMU_LAN_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
     	i=`expr $i + 1`
 	done
 
@@ -344,10 +359,12 @@ check_user
 check_image
 parse_filename
 
-if ($LAB_MODE); then
-	create_interfaces_lab
-else
-	create_interfaces
+if ($ROOT); then
+    if ($LAB_MODE); then
+	    create_interfaces_lab
+    else
+	    create_interfaces_shared
+    fi
 fi
 
 if ($LAB_MODE); then
@@ -360,10 +377,12 @@ else
 	${QEMU_OUTPUT} -k fr
 fi
 echo "...qemu stoped"
-echo "Destroying Interfaces"
-if ($LAB_MODE); then
-	delete_interface_lab
-else
-	ifconfig ${TAP_IF} destroy
-	ifconfig ${BRIDGE_IF} destroy
+if ($ROOT); then
+    echo "Destroying shared Interfaces..."
+    if ($LAB_MODE); then
+	    delete_interface_lab
+    else
+	    ifconfig ${TAP_IF} destroy
+	    ifconfig ${BRIDGE_IF} destroy
+    fi
 fi
