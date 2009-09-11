@@ -284,6 +284,9 @@ add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES"
 # Xorp wants to start snmpd for testing it before to compile!!!!.... disable it:
 add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 
+# Add FreeVRRPd: using XORP only for VRRP is too complex
+add_port "net/freevrrpd" "-DNO_INSTALL_MANPAGES"
+
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.
 		# Need to prevent auto exist of this script
