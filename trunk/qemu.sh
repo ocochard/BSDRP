@@ -65,10 +65,11 @@ check_system () {
 
 check_user () {
 	if [ ! $(whoami) = "root" ]; then
-		echo "Warning: You need to be root for creating shared LAN interfaces with the hosts"
-        ROOT=false
-    else
-        ROOT=true
+        if ($SHARED_WITH_HOST); then
+		    echo "Warning: You need to be root for creating the shared LAN interfaces with the hosts"
+            echo "Disable the shared LAN"
+            SHARED_WITH_HOST=false
+        fi
 	fi	
 }
 
@@ -206,7 +207,7 @@ start_lab_vm () {
 		TAP_IF="TAP_IF_$i"
 		TAP_IF=`eval echo $"${TAP_IF}"`
 		QEMU_NAME="-name Router${i}"
-        if ($ROOT); then
+        if ($SHARED_WITH_HOST); then
             NIC_NUMBER=0
             echo "em${NIC_NUMBER} connected to shared with host LAN, configure IP 10.0.0.${i}/8 on this."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
@@ -215,7 +216,7 @@ start_lab_vm () {
             QEMU_ADMIN_NIC=""
             NIC_NUMBER=0
         fi
-	    #Enter in the Point-to-Point loop
+	    #Enter in the Cross-over (Point-to-Point) NIC loop
         #Now generate X x (X-1)/2 full meshed link
 		j=1
 		QEMU_PP_NIC=""
@@ -231,7 +232,7 @@ start_lab_vm () {
 			fi
 			j=`expr $j + 1`	
 		done
-        #Enter in the shared LAN loop
+        #Enter in the LAN NIC loop
         j=1
         QEMU_LAN_NIC=""
         while [ $j -le $NUMBER_LAN ]; do
@@ -242,8 +243,7 @@ start_lab_vm () {
         done
         if ($SERIAL); then
             QEMU_OUTPUT="-nographic -vga none -serial telnet::800${i},server,nowait"
-            echo "Connect to the router ${i} by telneting to localhost on port 800${i}:"
-            echo "telnet localhost 800${i}"
+            echo "Connect to the router ${i} by telneting to localhost on port 800${i}"
         else
             QEMU_OUTPUT="-vnc :${i}"
             echo "Connect to the router ${i} by VNC client on display ${i}"
@@ -266,14 +266,16 @@ start_lab_vm () {
 
 usage () {
         (
-        echo "Usage: $0 [-l] -i BSDRP-full.img [-l router-number shared-link-number]"
+        echo "Usage: $0 [-s] -i BSDRP-full.img [-n router-number] [-l LAN-number]"
         echo "  -i filename     BSDRP file image path"
-        echo "  -l X            Lab mode: start X routers (between 2 and 9) full meshed"
-        echo "  -s Y            Number of shared LAN between 0 and 9 (in lab mode only)"
+        echo "  -n X            Lab mode: start X routers (between 2 and 9) full meshed"
+        echo "  -l Y            Number of LAN between 0 and 9 (in lab mode only)"
+        echo "  -s              Enable a shared LAN with Qemu host"
 		echo "  -h              Display this help"
 		echo ""
 		echo "Note: In lab mode, the qemu process are started in snapshot mode,"
 		echo "this mean that all modifications to disks are lose after quitting the lab"
+        echo "Script need to be started with root if you want a shared LAN with the Qemu host"
         ) 1>&2
         exit 2
 }
@@ -285,7 +287,7 @@ usage () {
 ### Parse argument
 
 set +e
-args=`getopt i:hl:s: $*`
+args=`getopt i:hl:n:s $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
@@ -294,22 +296,26 @@ set -e
 
 set -- $args
 LAB_MODE=false
+SHARED_WITH_HOST=false
 for i
 do
         case "$i" 
         in
-        -l)
+        -n)
                 LAB_MODE=true
 				NUMBER_VM=$2
                 shift
                 shift
                 ;;
-        -s)
+        -l)
                 NUMBER_LAN=$2
                 shift
                 shift
                 ;;
-
+        -s)
+                SHARED_WITH_HOST=true
+                shift
+                ;;
         -h)
                 usage
                 ;;
@@ -359,7 +365,7 @@ check_user
 check_image
 parse_filename
 
-if ($ROOT); then
+if ($SHARED_WITH_HOST); then
     if ($LAB_MODE); then
 	    create_interfaces_lab
     else
@@ -377,7 +383,7 @@ else
 	${QEMU_OUTPUT} -k fr
 fi
 echo "...qemu stoped"
-if ($ROOT); then
+if ($SHARED_WITH_HOST); then
     echo "Destroying shared Interfaces..."
     if ($LAB_MODE); then
 	    delete_interface_lab
