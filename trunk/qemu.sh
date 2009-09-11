@@ -194,7 +194,7 @@ parse_filename () {
 start_lab_vm () {
 	echo "Starting a lab with $NUMBER_VM routers:"
     echo "- 1 shared LAN between all routers and the host"
-	echo "- 2 shared LAN between all routers"
+	echo "- $NUMBER_LAN LAN between all routers"
     echo "- Full mesh ethernet point-to-point link between each routers"
 	echo ""
 	i=1
@@ -211,13 +211,20 @@ start_lab_vm () {
 		while [ $j -le $NUMBER_VM ]; do
 			if [ $i -ne $j ]; then
 				if [ $i -le $j ]; then
-					QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=BB:BB:00:00:0${i}:${i}${j},vlan=${i}${j} -net socket,mcast=230.0.0.1:100${i}${j},vlan=${i}${j}"
+					QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=AA:AA:00:00:0${i}:${i}${j},vlan=${i}${j} -net socket,mcast=230.0.0.1:100${i}${j},vlan=${i}${j}"
 				else
-					QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=BB:BB:00:00:0${i}:${j}${i},vlan=${j}${i} -net socket,mcast=230.0.0.1:100${j}${i},vlan=${j}${i}"
+					QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=AA:AA:00:00:0${i}:${j}${i},vlan=${j}${i} -net socket,mcast=230.0.0.1:100${j}${i},vlan=${j}${i}"
 				fi
 			fi
 			j=`expr $j + 1`	
 		done
+        #Enter in the shared LAN loop
+        j=1
+        QEMU_LAN_NIC=""
+        while [ $j -le $NUMBER_LAN ]; do
+            QEMU_LAN_NIC="${QEMU_LAN_NIC} -net nic,macaddr=CC:CC:00:00:0${j}:0${i},vlan=10${j} -net socket,mcast=230.0.0.1:1000${j},vlan=10${j}"
+            j=`expr $j + 1`
+        done
         if ($SERIAL); then
             QEMU_OUTPUT="-nographic -vga none -serial telnet::800${i},server,nowait"
             echo "Connect to the router ${i} by telneting to localhost on port 800${i}:"
@@ -226,7 +233,7 @@ start_lab_vm () {
             QEMU_OUTPUT="-vnc :${i}"
             echo "Connect to the router ${i} by VNC client on display ${i}"
         fi
-		${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
+		${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_LAN_NIC} ${QEMU_PP_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
     	i=`expr $i + 1`
 	done
 
@@ -244,13 +251,14 @@ start_lab_vm () {
 
 usage () {
         (
-        echo "Usage: $0 [-l] -i BSDRP-full.img [-l number]"
-        echo "  -l X   lab mode: start X BSDRP VM full meshed (between 2 and 9)"
-		echo "  -h     display this help"
-		echo "  -i     specify BSDRP image name"
+        echo "Usage: $0 [-l] -i BSDRP-full.img [-l router-number shared-link-number]"
+        echo "  -i filename     BSDRP file image path"
+        echo "  -l X            Lab mode: start X routers (between 2 and 9) full meshed"
+        echo "  -s Y            Number of shared LAN between 0 and 9 (in lab mode only)"
+		echo "  -h              Display this help"
 		echo ""
 		echo "Note: In lab mode, the qemu process are started in snapshot mode,"
-		echo "this mean that all write to BSDRP disks are not write into the image"
+		echo "this mean that all modifications to disks are lose after quitting the lab"
         ) 1>&2
         exit 2
 }
@@ -262,7 +270,7 @@ usage () {
 ### Parse argument
 
 set +e
-args=`getopt i:hl: $*`
+args=`getopt i:hl:s: $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
@@ -278,9 +286,15 @@ do
         -l)
                 LAB_MODE=true
 				NUMBER_VM=$2
-				shift
+                shift
                 shift
                 ;;
+        -s)
+                NUMBER_LAN=$2
+                shift
+                shift
+                ;;
+
         -h)
                 usage
                 ;;
@@ -305,6 +319,15 @@ if [ "$NUMBER_VM" != "" ]; then
 		echo "Error: Use a maximum of 9 routers in your lab."
 		exit 1
 	fi
+fi
+
+if [ "$NUMBER_LAN" != "" ]; then
+    if [ $NUMBER_LAN -ge 9 ]; then
+        echo "Error: Use a maximum of 9 LAN in your lab."
+        exit 1
+    fi
+else
+    NUMBER_LAN=0
 fi
 
 if [ "$FILENAME" = "" ]; then
