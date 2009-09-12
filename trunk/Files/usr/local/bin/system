@@ -180,7 +180,7 @@ check_vm () {
 	fi
 	# Stupid if, but don't know how to use an "add" condition in the if
     if (${VM_FOUND}); then
-		if (${FREEBSD8}); then
+		if (${FREEBSD_8}); then
 			echo "VM usage detected, but since FreeBSD 8 there is no need to tune the system"
 			exit 0
 		fi
