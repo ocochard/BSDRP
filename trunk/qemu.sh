@@ -276,6 +276,7 @@ usage () {
 		echo "Note: In lab mode, the qemu process are started in snapshot mode,"
 		echo "this mean that all modifications to disks are lose after quitting the lab"
         echo "Script need to be started with root if you want a shared LAN with the Qemu host"
+        echo "WARNING: Multicast traffic is not possible between Qemu guest!!"
         ) 1>&2
         exit 2
 }
