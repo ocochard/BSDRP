@@ -45,6 +45,7 @@ set color
 set colorcat
 alias ls ls -G
 alias ll ls -hl
+
 # Some BSDRP aliases:
 alias cli vtysh
 alias xorp xorpsh
@@ -52,6 +53,7 @@ alias include grep
 alias reload 'system reboot'
 alias halt 'system halt'
 alias reboot 'system reboot'
+alias vim 'vim -i /tmp/viminfo'
 
 #Load command complete file
 source ~/.complete
