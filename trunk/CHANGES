@@ -1,11 +1,11 @@
 Release 0.32 (not released)
 - Add "show memory"
 - Disable "system virtualized" when using FreeBSD 8
-- Add FreeVRRPd (I know that CARP is better, but need compatibility. I know that XORP have it, but using XORP only for VRRP)
+- Add FreeVRRPd
 
 Know bug:
 - Keyboard input don't works under VirtualBox (#2840062)
-- Qemu don't works with serial "uart" drivers (replace sio driver) in FreeBSD 8.0
+- Qemu 0.10.6 have a bug with serial "uart" drivers in FreeBSD 8.0
 
 ------------
 Release 0.31
