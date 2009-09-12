@@ -3,6 +3,9 @@ Release 0.32 (not released)
 - Disable "system virtualized" when using FreeBSD 8
 - Add FreeVRRPd
 
+Bug fixes:
+- Remove vm-check in /root/.cshrc that prevent use of scp
+
 Know bug:
 - Keyboard input don't works under VirtualBox (#2840062)
 - Qemu 0.10.6 have a bug with serial "uart" drivers in FreeBSD 8.0
