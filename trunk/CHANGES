@@ -9,7 +9,6 @@ Bug fixes:
 
 Know bug:
 - Keyboard input don't works under VirtualBox (#2840062)
-- Qemu 0.10.6 have a bug with serial "uart" drivers in FreeBSD 8.0
 - BSDRP don't start if no serial port present
 
 ------------
