@@ -68,12 +68,16 @@ check_system () {
 
 check_user () {
 	if [ ! $(whoami) = "root" ]; then
+        if ($LAB_MODE); then
+            echo "Error: You need to be root for using the Lab Mode (create TAP and bridge interface)"
+            exit 1 
+        fi
         if ($SHARED_WITH_HOST); then
 		    echo "Warning: You need to be root for creating the shared LAN interfaces with the hosts"
             echo "Disable the shared LAN"
             SHARED_WITH_HOST=false
         fi
-	fi	
+        	fi	
 }
 
 check_image () {
@@ -118,7 +122,6 @@ create_interfaces () {
     i=1
     while [ $i -le $LAN ];do
         eval BRIDGE_LAN_IF_${i}=`ifconfig bridge create`
-        BRIDGE_LAN_IF=`ifconfig bridge create`
         i=`expr $i + 1` 
     done
     # Main loop for each router
@@ -131,13 +134,14 @@ create_interfaces () {
         if ($SHARED_WITH_HOST); then
             eval TAP_SHARED_IF_${i}=`ifconfig tap create`
 		    # Link bridge with tap
-		    TAP_SHARED_IF="TAP_IF_$i"
+		    TAP_SHARED_IF="TAP_SHARED_IF_$i"
 		    TAP_SHARED_IF=`eval echo $"${TAP_SHARED_IF}"`
             ifconfig ${TAP_SHARED_IF} up
 		    ifconfig ${BRIDGE_SHARED_IF} addm ${TAP_SHARED_IF} up
             echo "em${NIC_NUMBER} connected to the shared with host LAN, configure IP 10.0.0.${i}/24 on this NIC."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-		    eval QEMU_SHARED_IF_${i}='-net nic,macaddr=AA:AA:00:00:00:0${i},vlan=0 -net tap,vlan=0,ifname=${TAP_SHARED_IF}'
+            TEMPO="-net nic,macaddr=AA:AA:00:00:00:0${i},vlan=0 -net tap,vlan=0,ifname=${TAP_SHARED_IF}"
+		    eval QEMU_SHARED_IF_${i}=`echo '${TEMPO}'`
         else
             eval QEMU_SHARED_IF_${i}=""
         fi  
@@ -165,20 +169,18 @@ create_interfaces () {
                     BRIDGE_PP_IF=`eval echo $"${BRIDGE_PP_IF}"`
                     ifconfig ${TAP_PP_IF} up
                     ifconfig ${BRIDGE_PP_IF} addm ${TAP_PP_IF} up
-echo "bug to fix here"
-#+ eval 'QEMU_PP_IF_1=${QEMU_PP} -net nic,macaddr=AA:AA:00:00:0${i}:${i}${j},vlan=${i}${j} -net tap,vlan=${i}${j},ifname=${TAP_PP_IF}'
-#+ QEMU_PP_IF_1='' -net nic,macaddr=AA:AA:00:00:01:12,vlan=12 -net tap,vlan=12,ifname=tap0
-#-net: not found
-                    eval QEMU_PP_IF_$i='${QEMU_PP} -net nic,macaddr=AA:AA:00:00:0${i}:${i}${j},vlan=${i}${j} -net tap,vlan=${i}${j},ifname=${TAP_PP_IF}'
+                    TEMPO="${QEMU_PP} -net nic,macaddr=AA:AA:00:00:0${i}:${i}${j},vlan=${i}${j} -net tap,vlan=${i}${j},ifname=${TAP_PP_IF}"
+                    eval QEMU_PP_IF_$i=`echo '${TEMPO}'`
                 else
-                    eval TAP_PP_IF_${j}${i}_${j}=`ifconfig tap create`
-                    TAP_PP_IF="TAP_PP_IF_${j}${i}_${j}"
+                    eval TAP_PP_IF_${j}${i}_${i}=`ifconfig tap create`
+                    TAP_PP_IF="TAP_PP_IF_${j}${i}_${i}"
                     TAP_PP_IF=`eval echo $"${TAP_PP_IF}"`
                     BRIDGE_PP_IF="BRIDGE_PP_IF_${j}${i}"
                     BRIDGE_PP_IF=`eval echo $"${BRIDGE_PP_IF}"`
                     ifconfig ${TAP_PP_IF} up
                     ifconfig ${BRIDGE_PP_IF} addm ${TAP_PP_IF} up
-                    eval QEMU_PP_IF_$i='${QEMU_PP} -net nic,macaddr=AA:AA:00:00:0${i}:${j}${i},vlan=${j}${i} -net tap,vlan=${j}${i},ifname=${TAP_PP_IF}'
+                    TEMPO="${QEMU_PP} -net nic,macaddr=AA:AA:00:00:0${i}:${j}${i},vlan=${j}${i} -net tap,vlan=${j}${i},ifname=${TAP_PP_IF}"
+                    eval QEMU_PP_IF_$i=`echo '${TEMPO}'`
                 fi
             fi
             j=`expr $j + 1` 
@@ -201,7 +203,8 @@ echo "bug to fix here"
             ifconfig ${BRIDGE_LAN_IF} addm ${TAP_LAN_IF} up
             QEMU_LAN="QEMU_LAN_IF_$i"
             QEMU_LAN=`eval echo$"${QEMU_LAN}"`
-            eval QEMU_LAN_IF_$i='${QEMU_LAN} -net nic,macaddr=CC:CC:00:00:0${j}:0${i},vlan=10${j} -net tap,vlan=10${j},ifname=${TAP_LAN_IF}'
+            TEMPO="${QEMU_LAN} -net nic,macaddr=CC:CC:00:00:0${j}:0${i},vlan=10${j} -net tap,vlan=10${j},ifname=${TAP_LAN_IF}"
+            eval QEMU_LAN_IF_$i=`echo '${TEMPO}'`
             j=`expr $j + 1` 
         done
         i=`expr $i + 1`
@@ -212,19 +215,11 @@ echo "bug to fix here"
 delete_interfaces () {
     # Delete shared with host bridge and TAP
     if ($SHARED_WITH_HOST); then
-	    i=1
-	    while [ $i -le $NUMBER_VM ]; do
-		    TAP_SHARED_IF="TAP_IF_$i"
-		    TAP_SHARED_IF=`eval echo $"${TAP_SHARED_IF}"`
-    	    ifconfig ${TAP_SHARED_IF} destroy
-    	    i=`expr $i + 1`
-	    done
 	    ifconfig ${BRIDGE_SHARED_IF} destroy
     fi
     #Delete Bridged interfaces that will be used for each LAN
     i=1
     while [ $i -le $LAN ];do
-        eval BRIDGE_LAN_IF_${i}=`ifconfig bridge create`
         BRIDGE_LAN="BRIDGE_LAN_IF_$i"
 		BRIDGE_LAN=`eval echo $"${BRIDGE_LAN}"`
     	ifconfig ${BRIDGE_LAN} destroy
@@ -235,22 +230,25 @@ delete_interfaces () {
     while [ $i -le $ROUTERS ]; do
         # Delele the shared with host bridged interface
         if ($SHARED_WITH_HOST); then
-		    TAP_SHARED_IF="TAP_IF_$i"
+		    TAP_SHARED_IF="TAP_SHARED_IF_$i"
 		    TAP_SHARED_IF=`eval echo $"${TAP_SHARED_IF}"`
             ifconfig ${TAP_SHARED_IF} destroy
         fi  
         # Delete all Point-to-Point link loop
         j=1 
-        while [ $j -le $LAN ]; do
+        while [ $j -le $ROUTERS ]; do
             if [ $i -ne $j ]; then
                 if [ $i -le $j ]; then
                     TAP_PP_IF="TAP_PP_IF_${i}${j}_${i}"
                     TAP_PP_IF=`eval echo $"${TAP_PP_IF}"`
                     ifconfig ${TAP_PP_IF} destroy
                 else
-                    TAP_PP_IF="TAP_PP_IF_${j}${i}_${j}"
+                    TAP_PP_IF="TAP_PP_IF_${j}${i}_${i}"
                     TAP_PP_IF=`eval echo $"${TAP_PP_IF}"`
                     ifconfig ${TAP_PP_IF} destroy
+                    BRIDGE_PP_IF="BRIDGE_PP_IF_${j}${i}"
+                    BRIDGE_PP_IF=`eval echo $"${BRIDGE_PP_IF}"`
+                    ifconfig ${BRIDGE_PP_IF} destroy
                 fi
             fi
             j=`expr $j + 1` 
@@ -325,19 +323,19 @@ start_lab_vm () {
             echo "Connect to the router ${i} by VNC client on display ${i}"
         fi
         QEMU_SHARED="QEMU_SHARED_IF_$i"
-        QEMU_SHARED=`eval echo$"${QEMU_SHARED}"`
+        QEMU_SHARED=`eval echo $"${QEMU_SHARED}"`
 		QEMU_LAN="QEMU_LAN_IF_$i"
-        QEMU_LAN=`eval echo$"${QEMU_LAN}"`
+        QEMU_LAN=`eval echo $"${QEMU_LAN}"`
         QEMU_PP="QEMU_PP_IF_$i"
-        QEMU_PP=`eval echo$"${QEMU_PP}"`
+        QEMU_PP=`eval echo $"${QEMU_PP}"`
 
-        echo "${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_SHARED} ${QEMU_PP} ${QEMU_LAN} -pidfile /tmp/BSDRP-$i.pid -daemonize"
+        ${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_SHARED} ${QEMU_PP} ${QEMU_LAN} -pidfile /tmp/BSDRP-$i.pid -daemonize
     	i=`expr $i + 1`
 	done
 
     #Now wait for each qemu process end before continue
     i=1
-	while [ $i -le $NUMBER_VM ]; do
+	while [ $i -le $ROUTERS ]; do
         while (ps -p `cat /tmp/BSDRP-$i.pid` > /dev/null)
         do
             sleep 1
@@ -358,9 +356,6 @@ usage () {
 		echo ""
 		echo "Note: In lab mode, the qemu process are started in snapshot mode,"
 		echo "this mean that all modifications to disks are lose after quitting the lab"
-        echo "Script need to be started with root if you want a shared LAN with the Qemu host"
-        echo "WARNING: Multicast traffic is not possible with the socket mode used by Qemu:"
-        echo "This mean that no VRRP, CARP, OSPF or all other protocol using multicast is possible"
         ) 1>&2
         exit 2
 }
@@ -464,6 +459,7 @@ else
     echo "BUG HERE: need to replace hard-coded tap0 with variable"
 	${QEMU_ARCH} -hda ${FILENAME} -net nic -net tap,ifname=tap0 -localtime \
 	${QEMU_OUTPUT} -k fr
+fi
 echo "...qemu stoped"
 
 delete_interfaces
