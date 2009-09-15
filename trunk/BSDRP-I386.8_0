@@ -394,8 +394,9 @@ options		ROUTETABLES=4
 # man 9 zero_copy
 options		ZERO_COPY_SOCKETS
 
-# Enable CARP: Common Address Redundancy Protocol (a patented free VRRP)
-device		carp
+# CARP: Common Address Redundancy Protocol (a patented free VRRP)
+# CARP is disabled because it's incompatible with freevrrpd
+# device		carp
 
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules
