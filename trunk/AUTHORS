@@ -15,5 +15,5 @@ BSDRP is based upon/includes various free software packages, listed below. The a
 * Net-SNMP 
 * Idea of using glabel for reducing image type: Scott Ullrich (pfSense)
 * "show memory" is a shell port of the perl freebsd-memory : Copyright (c) 2003-2004 Ralf S. Engelschall
-
+* FreeVRRPd : VRRP daemon
 
