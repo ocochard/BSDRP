@@ -28,7 +28,9 @@
 #
 
 # Note: this script use bridged TAP interface between guest becaus the qemu-sock
-# interfaces don't support multicast traffic.
+# interfaces don't support multicast traffic (and prevent to use carp for example).
+# Old script (A lot more simpler) can he found here:
+# http://bsdrp.svn.sourceforge.net/viewvc/bsdrp/trunk/qemu.sh?revision=220&content-type=text%2Fplain&pathrev=220
 
 #Uncomment for debug
 #set -x

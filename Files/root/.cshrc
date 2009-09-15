@@ -54,6 +54,7 @@ alias reload 'system reboot'
 alias halt 'system halt'
 alias reboot 'system reboot'
 alias vim 'vim -i /tmp/viminfo'
+alias wr 'config save'
 
 #Load command complete file
 source ~/.complete
