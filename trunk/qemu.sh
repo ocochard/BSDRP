@@ -306,13 +306,6 @@ parse_filename () {
 }
 
 start_lab_vm () {
-	echo "Starting a lab with $ROUTERS routers:"
-    if ($SHARED_WITH_HOST); then
-        echo "- A LAN between all routers and the host"
-    fi
-	echo "- $LAN LAN(s) between all routers"
-    echo "- Full mesh ethernet links between each routers"
-	echo ""
 	i=1
     #Enter the main loop for each VM
 	while [ $i -le $ROUTERS ]; do
@@ -450,11 +443,19 @@ check_user
 check_image
 parse_filename
 
+if ($LAB_MODE); then
+    echo "Starting a lab with $ROUTERS routers:"
+    if ($SHARED_WITH_HOST); then
+        echo "- A LAN between all routers and the host"
+    fi
+	echo "- $LAN LAN(s) between all routers"
+    echo "- Full mesh ethernet links between each routers"
+	echo ""
+fi
+
 create_interfaces
 
 if ($LAB_MODE); then
-	echo "Starting qemu in lab mode..."
-    echo "With $ROUTERS BSDRP VM full meshed"
 	start_lab_vm	
 else
 	echo "Starting qemu..."
