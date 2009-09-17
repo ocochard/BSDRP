@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Qemu test script for BSD Router Project
+# Qemu lab and start script for BSD Router Project
 #
 # Copyright (c) 2009, The BSDRP Development Team
 # All rights reserved.
@@ -438,8 +438,8 @@ if [ $# -gt 0 ] ; then
 fi
 
 echo "BSD Router Project Qemu script"
-check_system
 check_user
+check_system
 check_image
 parse_filename
 
