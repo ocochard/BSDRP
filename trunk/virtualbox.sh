@@ -31,10 +31,11 @@
 #set -x
 
 # Global variable
-WORKING_DIR="/tmp/BSDRP-lab"
+WORKING_DIR="/tmp/$USER/BSDRP-lab"
+MAX_VM=9
 
 if [ ! -d $WORKING_DIR ]; then
-    mkdir /tmp/BSDRP-lab
+    mkdir -p $WORKING_DIR
 fi
 # Check system pre-requise for starting virtualbox
 
@@ -140,9 +141,10 @@ check_vm () {
 # $1 : Name of the VM
 create_vm () {
     if [ "$1" = "" ]; then
-        echo "BUG: In function create_vm() that need a vm nameb"
+        echo "BUG: In function create_vm() that need a vm name"
         exit 1
     fi
+    # Check if the vm allready exist
     if check_vm $1; then
         VBoxManage createvm --name $1 --ostype $VM_ARCH --register
         if [ -f $WORKING_DIR/$1.vdi ]; then
@@ -150,15 +152,20 @@ create_vm () {
         fi
         VBoxManage clonehd $WORKING_DIR/BSDRP_lab.vdi $1.vdi
         VBoxManage modifyvm $1 --hda $1.vdi
+    else
+        # if existing: Is running ?
+        if `VBoxManage showvminfo $1 | grep -q "running"`; then
+            VBoxManage controlvm $1 poweroff
+            sleep 5
+        fi
     fi
     VBoxManage modifyvm $1 --audio none --memory 92 --vram 1 --boot1 disk --floppy disabled
     VBoxManage modifyvm $1 --biosbootmenu disabled 
     if ($SERIAL); then
-        VBoxManage modifyvm $1 --uart1 0x3F8 4 --uartmode1 server /tmp/$1.serial
+        VBoxManage modifyvm $1 --uart1 0x3F8 4 --uartmode1 server $WORKING_DIR/$1.serial
     else
         VBoxManage modifyvm $1 --vrdp on --vrdpauthtype null --vrdpport 330$1
     fi
-
 }
 
 # Parse filename for detecting ARCH and console
@@ -189,12 +196,12 @@ parse_filename () {
         echo "Will start a VNC server on :0 for input/output"
         echo "DEBUG: BSDRP bug with no serial port"
     fi
-    echo 'VM_ARCH="$VM_ARCH"' > ${WORKING_DIR}/image.info
-    echo 'SERIAL=$SERIAL' >> ${WORKING_DIR}/image.info
+    echo "VM_ARCH=$VM_ARCH" > ${WORKING_DIR}/image.info
+    echo "SERIAL=$SERIAL" >> ${WORKING_DIR}/image.info
 
 }
 
-
+# This function generate the clones
 clone_vm () {
     echo "Creating lab with $NUMBER_VM routers:"
     echo "- $NUMBER_LAN LAN between all routers"
@@ -238,33 +245,57 @@ start_vm () {
     i=1
     #Enter the main loop for each VM
     while [ $i -le $NUMBER_VM ]; do
-        VBoxHeadless --startvm BSDRP_lab_R$i
-
-# socat UNIX-CONNECT:/tmp/vb1.serial TCP-LISTEN:8040
-
+        VBoxHeadless --vrdp config --startvm BSDRP_lab_R$i &
+        sleep 2
         if ($SERIAL); then
-            socat UNIX-CONNECT:/tmp/BSDRP_lab_R$i.serial TCP-LISTEN:800$i
+            socat UNIX-CONNECT:$WORKING_DIR/BSDRP_lab_R$i.serial TCP-LISTEN:800$i &
             echo "Connect to the router ${i} by telneting to localhost on port 800${i}"
         else
             echo "Connect to the router ${i} by RDP client on port 330${i}"
         fi
         i=`expr $i + 1`
     done
-
 }
 
 delete_all_vm () {
-    echo "TO DO"
-    exit 0
+    stop_all_vm
+    i=1
+    #Enter the main loop for each VM
+    while [ $i -le $MAX_VM ]; do
+        if check_vm BSDRP_lab_R1; then
+            VBoxManage unregistervm BSDRP_lab_R$i --delete
+        fi 
+        i=`expr $i + 1`
+    done
+
 }
+
+# Stop All VM
+stop_all_vm () {
+    i=1
+    #Enter the main loop for each VM
+    while [ $i -le $MAX_VM ]; do
+        # Check if the vm allready exist
+        if ! check_vm BSDRP_lab_R$i; then
+            # if existing: Is running ?
+            if `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "running"`; then
+                VBoxManage controlvm BSDRP_lab_R$i poweroff
+                sleep 5
+            fi
+        fi
+        i=`expr $i + 1`
+    done
+}
+
 usage () {
         (
-        echo "Usage: $0 [-shd] -i BSDRP-full.img [-n router-number] [-l LAN-number]"
+        echo "Usage: $0 [-hds] -i BSDRP-full.img [-n router-number] [-l LAN-number]"
         echo "  -i filename     BSDRP image file name (to be used the first time only)"
         echo "  -d delete       Delete all BSDRP VM and disks"
         echo "  -n X            Number of router (between 2 and 9) full meshed"
         echo "  -l Y            Number of LAN between 0 and 9"
         echo "  -h              Display this help"
+        echo "  -s              Stop all VM"
         echo ""
         ) 1>&2
         exit 2
@@ -277,7 +308,7 @@ usage () {
 ### Parse argument
 
 set +e
-args=`getopt i:dhl:n: $*`
+args=`getopt i:dhl:n:s $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
@@ -312,6 +343,11 @@ do
                 shift
                 shift
                 ;;
+        -s)
+                stop_all_vm
+                shift
+                shift
+                ;;
         --)
                 shift
                 break
@@ -324,15 +360,18 @@ if [ "$NUMBER_VM" != "" ]; then
         exit 1
     fi
 
-    if [ $NUMBER_VM -ge 9 ]; then
-        echo "Error: Use a maximum of 9 routers in your lab."
+    if [ $NUMBER_VM -ge $MAX_VM ]; then
+        echo "ERROR: Use a maximum of $MAX_VM routers in your lab."
         exit 1
     fi
+else
+    echo "ERROR: Missing -n number-router"
+    usage
 fi
 
 if [ "$NUMBER_LAN" != "" ]; then
     if [ $NUMBER_LAN -ge 9 ]; then
-        echo "Error: Use a maximum of 9 LAN in your lab."
+        echo "ERROR: Use a maximum of 9 LAN in your lab."
         exit 1
     fi
 else
@@ -366,7 +405,7 @@ case "$OS_DETECTED" in
         break
         ;;
     *)
-        echo "This script doesn't support $OS_DETECTED"
+        echo "ERROR: This script doesn't support $OS_DETECTED"
         exit 1
         ;;
 esac
@@ -379,34 +418,12 @@ if [ "$FILENAME" != "" ]; then
     convert_image
 else
     if [ -f ${WORKING_DIR}/image.info ]; then 
-        ${WORKING_DIR}/image.info
+        . ${WORKING_DIR}/image.info
     else
-        echo "You need to use the option -i filname for the first start"
+        echo "ERROR: You need to use the option -i filname for the first start"
         exit 1
     fi
 fi
 
 clone_vm
-exit 0
 start_vm
-
-# Principe:
-
-
-# VBoxManage modifyvm R1 --memory 92 --hda /home/olivier/qemu/BSDRP_0.32_full_amd64_serial.vdi
-# VBoxManage modifyvm R1 --audio none --uart1 0x3F8 4 --uartmode1 server /tmp/vb1.serial
-
-# VBoxManage modifyvdi /home/olivier/qemu/BSDRP_0.32_full_amd64_serial.vdk --compact
-
-# VBoxManage modifyvm R1 --nic1 intnet --nictype1 82540EM --intnet1 LAN12 --macaddress1 080027011201
-
-# VBoxManage modifyvm R1 --nic2 intnet --nictype2 82540EM --intnet2 WAN13 --macaddress2 080027011301
-
-# VBoxHeadless --startvm R1
-
-# /usr/ports/net/socat/
-
-# socat UNIX-CONNECT:/tmp/vb1.serial TCP-LISTEN:8040
-
-# telnet localhost:8040
-
