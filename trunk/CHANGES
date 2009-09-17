@@ -1,8 +1,9 @@
 Release 0.32 (not released)
 - Add "show memory"
 - Disable "system virtualized" when using FreeBSD 8
-- Add FreeVRRPd
+- Replace carp by vrrp (using FreeVRRPd)
 - Move packet filter to a module (disable pfsync and pflog)
+- Qemu and Virtualbox lab script
 
 Bug fixes:
 - Remove vm-check in /root/.cshrc that prevent use of scp
