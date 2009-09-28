@@ -66,7 +66,7 @@ options 	STOP_NMI		# Stop CPUS using NMI instead of IPI
 #options 	AUDIT			# Security event auditing
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
 
-# Enable Packet Filter
+# Enable Packet Filter (moved as modules)
 #device pf
 #device pflog
 #device pfsync

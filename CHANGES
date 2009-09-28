@@ -5,7 +5,7 @@ Release 0.32 (not released)
 - Move packet filter to a module (disable pfsync and pflog)
 - Qemu and Virtualbox lab script
 - Upgrade to Quagga 0.99.15
-- Kernel: Disable audit
+- Kernel: Disable audit, MAC, Gjournal
 
 Bug fixes:
 - Remove vm-check in /root/.cshrc that prevent use of scp
