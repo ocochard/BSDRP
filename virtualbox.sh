@@ -56,7 +56,7 @@ check_system_freebsd () {
 
     if ! kldstat -m vboxdrv; then
         echo "vboxdrv module not loaded, loading it..."
-        if kldload vboxdrv; then
+        if kldload /boot/modules/vboxdrv; then
             echo "ERROR: Can't load vboxdrv"
             exit 1
         fi
