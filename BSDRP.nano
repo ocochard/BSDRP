@@ -22,8 +22,6 @@ NANO_PACKAGE_LIST="*"
 # XXX: MAKEOBJDIRPREFIX handling... ?
 # Need to configure this variable because it's used in the pkg_add function
 NANO_OBJ=/usr/obj/nanobsd.${NANO_NAME}
-# Question: Why there is the / at the end of NANO_OBJ?
-# Because all use of NANO_OBJ in nanobsd.sh add another / after ??
 
 # The directory to put the final images
 # default is ${NANO_OBJ}
@@ -46,7 +44,6 @@ CONF_INSTALL=''
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options for details
 # WITHOUT_INFO= incompatible for installing a dependency of Quagga
-#CONF_WORLD=''
 CONF_WORLD='
 WITHOUT_ACCT=
 WITHOUT_APM=
@@ -274,17 +271,17 @@ add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DWITH_ISISD -DWITH_OSPF_NSSA -DWIT
 #add_port "devel/libevent"
 #add_port "net/openospfd"
 
-# Libiconv is needed by vim-lite, but the package is not automatiaccly generate, then force it:
+# Libiconv is needed by vim-lite, but the package is not automaticaly generated, then force it:
 add_port "converters/libiconv" "-DNO_INSTALL_MANPAGES -DFORCE_PKG_REGISTER"
-# Add a text editor that support colorization (usefull for edit shell script)
+# Add a text editor that support syntax colorization (usefull for edit shell script)
 add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES"
 
 # Add XORP
 #add_port "net/xorp" "-DWITH_ADVMCAST -DWITH_IPV6 -DWITH_SNMP -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
-# Xorp wants to start snmpd for testing it before to compile!!!!.... disable it:
+# Xorp wants stupidly start snmpd for testing it before to compile!!!!.... disable it:
 add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 
-# Add FreeVRRPd: using XORP only for VRRP is too complex
+# Add FreeVRRPd: using XORP only for VRRP is too memory/CPU hungry:
 add_port "net/freevrrpd" "-DNO_INSTALL_MANPAGES"
 
 cleanup_ports () {
@@ -375,7 +372,6 @@ usr/sbin/config
 }
 
 # Enable only serial system only
-# Usefull ????
 bsdrp_console_serial () {
 # Enable getty on console
     sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
@@ -397,7 +393,7 @@ bsdrp_console_serial () {
 # Enable use of keyboard/vga and serial
 #
 ###### Warning ####
-# Don't boot if no serial port available
+# BUG TO FIX: Don't boot if no serial port available!
 #
 bsdrp_console_dual () {
     sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
