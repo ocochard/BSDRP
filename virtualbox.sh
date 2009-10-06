@@ -56,7 +56,7 @@ check_system_freebsd () {
 
     if ! kldstat -m vboxdrv; then
         echo "vboxdrv module not loaded, loading it..."
-        if kldload /boot/modules/vboxdrv; then
+        if kldload /boot/modules/vboxdrv.ko; then
             echo "ERROR: Can't load vboxdrv"
             exit 1
         fi
@@ -188,12 +188,11 @@ parse_filename () {
     if echo "${FILENAME}" | grep -q "serial"; then
         SERIAL=true
         echo "filename guests a serial image"
-        echo "Will use standard console as input/output"
     fi
     if echo "${FILENAME}" | grep -q "vga"; then
         SERIAL=false
         echo "filename guests a vga image"
-        echo "Will start a VNC server on :0 for input/output"
+        echo "Will start a RDP server on :0 for input/output"
         echo "DEBUG: BSDRP bug with no serial port"
     fi
     echo "VM_ARCH=$VM_ARCH" > ${WORKING_DIR}/image.info
@@ -245,7 +244,12 @@ start_vm () {
     i=1
     #Enter the main loop for each VM
     while [ $i -le $NUMBER_VM ]; do
-        VBoxHeadless --vrdp config --startvm BSDRP_lab_R$i &
+        # OSE version of VB doesn't support --vrdp option
+        if ($OSE); then
+            VBoxHeadless --startvm BSDRP_lab_R$i &
+        else
+            VBoxHeadless --vrdp config --startvm BSDRP_lab_R$i &
+        fi
         sleep 2
         if ($SERIAL); then
             socat UNIX-CONNECT:$WORKING_DIR/BSDRP_lab_R$i.serial TCP-LISTEN:800$i &
@@ -409,6 +413,12 @@ case "$OS_DETECTED" in
         exit 1
         ;;
 esac
+
+if VBoxManage -v | grep -q "OSE"; then
+    OSE=true
+else
+    OSE=false
+fi
 
 check_user
 
