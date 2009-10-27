@@ -284,6 +284,9 @@ add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OP
 # Add FreeVRRPd: using XORP only for VRRP is too memory/CPU hungry:
 add_port "net/freevrrpd" "-DNO_INSTALL_MANPAGES"
 
+# Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
+add_port "net/ucarp" "-DNO_INSTALL_MANPAGES"
+
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.
 		# Need to prevent auto exist of this script

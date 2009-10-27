@@ -1,7 +1,8 @@
 Release 0.32 (not released)
 - Add "show memory"
 - Disable "system virtualized" when using FreeBSD 8
-- Replace carp by vrrp (using FreeVRRPd)
+- Replace carp in kernel by ucarp (userland carp)
+- Add vrrp (using FreeVRRPd)
 - Move packet filter to a module (disable pfsync and pflog)
 - Qemu and Virtualbox lab script
 - Upgrade to Quagga 0.99.15
