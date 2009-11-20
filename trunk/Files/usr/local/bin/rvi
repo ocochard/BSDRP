@@ -29,12 +29,12 @@ from depot ($USER@`uname -n`:$PWD) \
 Backup : $file.$date"
 	logger -s -t rvi -p user.notice $msg
 	echo $msg | mail -s "## rvi" -E netadmin@example.com
-	cp $file $file.$date
-	co -l -f $file
-	cp $file.$date $file
-	rcsdiff -u $file
-	ci -u -m"rvi" $file
-	chown $OWNER:$GROUP $FILE && chmod $RIGHTS $FILE
+	cp $dir/$file $dir/$file.$date
+	co -l -f $dir/$file
+	cp $dir/$file.$date $dir/$file
+	rcsdiff -u $dir/$file
+	ci -u -m"rvi" $dir/$file
+	chown $OWNER $dir/$file && chmod $RIGHTS $dir/$file
         #exit 1
 fi
 
