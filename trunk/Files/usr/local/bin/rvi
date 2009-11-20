@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+# Script adapted from:
+# 	http://www.eila.univ-paris-diderot.fr/user/pascal_cabaud/sysadmin/rvi
+# 	Pascal Cabaud
+# 	Universite Paris Diderot
+# TO DO: Add sudo and syslog for notify changes
+
+RIGHTS=`stat -f %Op $1 | cut -c3-`
+OWNER=`stat -f %u:%g $1`
+
+date=`date +%Y%m%d.%H%M%S`
+
+dir=`dirname $1`
+file=`basename $1`
+if [ ! -d $dir/RCS ]; then
+	mkdir -p $dir/RCS
+	if [ -f $dir/$file,v -a -d $dir/RCS ]; then
+		mv $dir/$file,v $dir/RCS
+	fi
+fi
+
+if [ -f $dir/RCS/$file,v -a $dir/RCS/$file,v \
+	-ot $dir/$file -o -f $dir/$file,v -a $dir/$file,v -ot $dir/$file ]
+then
+        echo "Found $file,v older than $file"
+	msg="## Warning! $1 is younger than $file,v\
+from depot ($USER@`uname -n`:$PWD) \
+Backup : $file.$date"
+	logger -s -t rvi -p user.notice $msg
+	echo $msg | mail -s "## rvi" -E netadmin@example.com
+	cp $file $file.$date
+	co -l -f $file
+	cp $file.$date $file
+	rcsdiff -u $file
+	ci -u -m"rvi" $file
+	chown $OWNER:$GROUP $FILE && chmod $RIGHTS $FILE
+        #exit 1
+fi
+
+co -l -f $1
+chown $OWNER $1 && chmod $RIGHTS $1
+${EDITOR:=vim} $1
+rcsdiff -u $1
+ci -u -m"rvi" $1
+chown $OWNER $1 && chmod $RIGHTS $1
+

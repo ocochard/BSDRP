@@ -1,5 +1,6 @@
 Release 0.32 (not released)
 - Add "show memory"
+- Add rvi script that use RCS revisionning for editing file
 - Disable "system virtualized" when using FreeBSD 8
 - Replace carp in kernel by ucarp (userland carp)
 - Add vrrp (using FreeVRRPd)
