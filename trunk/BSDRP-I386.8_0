@@ -390,6 +390,6 @@ options		ZERO_COPY_SOCKETS
 # Name are relative to /usr/src/sys/modules
 makeoptions    MODULES_OVERRIDE="acpi netgraph if_ef if_bridge bridgestp if_lagg if_vlan ipfw pf"
 
-# Enable VIMAGE
-options     VIMAGE
+# Don't use VIMAGE, the multiple route table should be enough
+#options     VIMAGE
 
