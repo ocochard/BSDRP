@@ -103,7 +103,7 @@ usage () {
 	echo "  - rollback : Revert to previous config"
 	echo "  - put      : Put config to a remote server"
 	echo "  - get      : Get config from remote server"
-	echo "  - reset  : Return to default configuration"
+	echo "  - reset    : Return to default configuration"
 	echo "  - help (h) [option]  : Display this help message. "
 	echo "		  	If [option] given, display more detail about the option"
 	exit 0

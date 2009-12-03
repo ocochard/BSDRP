@@ -44,6 +44,8 @@ CONF_INSTALL=''
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options for details
 # WITHOUT_INFO= incompatible for installing a dependency of Quagga
+# WITHOUT_FORTH= incompatible with boot flags (to be confirm).
+
 CONF_WORLD='
 WITHOUT_ACCT=
 WITHOUT_APM=

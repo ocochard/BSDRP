@@ -16,8 +16,8 @@ umask 22
 
 set path = (/sbin /bin /usr/sbin /usr/bin /usr/games /usr/local/sbin /usr/local/bin $HOME/bin)
 
-setenv  EDITOR  vim
-setenv  PAGER   more
+setenv  EDITOR  'vim -i /tmp/viminfo'
+setenv  PAGER   less
 setenv  BLOCKSIZE       K
 
 if ($?prompt) then
@@ -53,7 +53,7 @@ alias include grep
 alias reload 'system reboot'
 alias halt 'system halt'
 alias reboot 'system reboot'
-alias vim 'vim -i /tmp/viminfo'
+#alias vim 'vim -i /tmp/viminfo'
 alias wr 'config save'
 
 #Load command complete file
