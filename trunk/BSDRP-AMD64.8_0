@@ -135,6 +135,9 @@ device		atadisk		# ATA disk drives
 #device		atapist		# ATAPI tape drives
 options 	ATA_STATIC_ID	# Static device numbering
 
+# Experimental AHCI drivers
+device      ahci        # Serial ATA Advanced Host Controller Interface driver
+
 # SCSI Controllers
 #device		ahc		# AHA2940 and onboard AIC7xxx devices
 #options 	AHC_REG_PRETTY_PRINT	# Print register bitfields in debug
