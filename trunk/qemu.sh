@@ -103,7 +103,21 @@ create_interfaces_shared () {
             exit 1
         fi
     else
-        echo "Need to found the bridge number configured with 10.0.0.254"
+        # Need to check if it's a bridge interface that is allready configured with 10.0.0.254"
+        DETECTED_NIC=`ifconfig -l`
+        for NIC in $DETECTED_NIC
+        do
+           if `ifconfig $NIC | /usr/bin/grep -q 10.0.0.254`; then 
+                if `echo $NIC | /usr/bin/grep -q bridge`; then
+                    BRIDGE_IF="$NIC"
+                else
+                    echo "ERROR: Interface $NIC is allready configured with 10.0.0.254"
+                    echo "I cant' configure this IP on interface $BRIDGE_IF"
+                    exit 1
+                fi
+            fi 
+        done
+
     fi
     #Shared TAP interface for communicating with the host
     echo "Creating admin tap interface..."
@@ -112,6 +126,7 @@ create_interfaces_shared () {
     # Link bridge with tap
     ifconfig ${BRIDGE_IF} addm ${TAP_IF} up
     ifconfig ${TAP_IF} up
+    QEMU_NIC="-net nic -net tap,ifname=${TAP_IF}"
 }
 
 # Creating interfaces for lAB mode
@@ -177,13 +192,14 @@ parse_filename () {
         SERIAL=true
         echo "filename guests a serial image"
         echo "Will use standard console as input/output"
+        echo "Guest VM configured without vga card"
     fi
     if echo "${FILENAME}" | grep -q "vga"; then
         QEMU_OUTPUT="-vnc :0 -serial none"
         SERIAL=false
         echo "filename guests a vga image"
         echo "Will start a VNC server on :0 for input/output"
-        echo "DEBUG: BSDRP bug with no serial port"
+        echo "Guest VM configured without serial port"
     fi
     if [ "$QEMU_OUTPUT" = "0" ]; then
         echo "WARNING: Can't suppose default console of this image"
@@ -248,7 +264,7 @@ start_lab_vm () {
             QEMU_OUTPUT="-vnc :${i}"
             echo "Connect to the router ${i} by VNC client on display ${i}"
         fi
-        ${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} ${QEMU_LAN_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
+        ${QEMU_ARCH} -enable-kqemu -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} ${QEMU_LAN_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
         i=`expr $i + 1`
     done
 
@@ -366,6 +382,8 @@ check_user
 check_image
 parse_filename
 
+QEMU_NIC="-net nic -net usr"
+
 if ($SHARED_WITH_HOST); then
     if ($LAB_MODE); then
         create_interfaces_lab
@@ -380,7 +398,7 @@ if ($LAB_MODE); then
     start_lab_vm    
 else
     echo "Starting qemu..."
-    ${QEMU_ARCH} -hda ${FILENAME} -net nic -net tap,ifname=tap0 -localtime \
+    ${QEMU_ARCH} -hda ${FILENAME} ${QEMU_NIC} -localtime \
     ${QEMU_OUTPUT} -k fr
 fi
 echo "...qemu stoped"
