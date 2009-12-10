@@ -382,7 +382,7 @@ check_user
 check_image
 parse_filename
 
-QEMU_NIC="-net nic -net usr"
+QEMU_NIC="-net nic -net user"
 
 if ($SHARED_WITH_HOST); then
     if ($LAB_MODE); then
