@@ -254,17 +254,18 @@ add_port () {
 		fi
 }
 
+#### Add routing related ports #####
 # Add libdlmalloc lib: Make BGP in Quagga more faster
-add_port "devel/libdlmalloc"
+add_port "devel/libdlmalloc" "-DNOPORTDOCS -DNO_INSTALL_MANPAGES"
 
 # Quagga and net-snmp need perl for building
-add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT -DNO_INSTALL_MANPAGES"
+add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT -DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 # Then we need to install net-snmp without perl modules
 add_port "net-mgmt/net-snmp" "-DNOPORTDOCS -DNO_INSTALL_MANPAGES -DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
 
 # Quagga installation
-add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
+add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Nod enabled:
@@ -272,21 +273,27 @@ add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DWITH_ISISD -DWITH_OSPF_NSSA -DWIT
 #add_port "devel/libevent"
 #add_port "net/openospfd"
 
+
+### Extra stuf ###
 # Libiconv is needed by vim-lite, but the package is not automaticaly generated, then force it:
-add_port "converters/libiconv" "-DNO_INSTALL_MANPAGES -DFORCE_PKG_REGISTER"
+add_port "converters/libiconv" "-DNO_INSTALL_MANPAGES -DFORCE_PKG_REGISTER -DNOPORTDOCS"
 # Add a text editor that support syntax colorization (usefull for edit shell script)
-add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES"
+add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 # Add XORP
 #add_port "net/xorp" "-DWITH_ADVMCAST -DWITH_IPV6 -DWITH_SNMP -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 # Xorp wants stupidly start snmpd for testing it before to compile!!!!.... disable it:
-add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
+add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 
 # Add FreeVRRPd: using XORP only for VRRP is too memory/CPU hungry:
-add_port "net/freevrrpd" "-DNO_INSTALL_MANPAGES"
+add_port "net/freevrrpd" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
-add_port "net/ucarp" "-DNO_INSTALL_MANPAGES"
+add_port "net/ucarp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+
+# Add fprobe: Netflow probe
+add_port "net-mgmt/fprobe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+
 
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.

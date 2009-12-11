@@ -2,6 +2,7 @@ Release 0.32 (not released)
 - Based on FreeBSD 8.0-Release
 - Add "show memory" option
 - Add tool: rvi , that use RCS revisionning for editing file
+- Add fprobe (NetFlow probes)
 - Disable "system virtualized" when using FreeBSD 8
 - Replace carp in kernel by ucarp (userland carp)
 - Add VRRP (using FreeVRRPd)
