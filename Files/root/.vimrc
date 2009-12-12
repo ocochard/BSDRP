@@ -59,8 +59,11 @@ filetype indent off
 filetype plugin indent off
 
 " Default Shell
-set shell=/bin/sh
+set shell=/bin/csh
 
 " disable the use of swap file
 set noswapfile
+
+"disable the use of viminfo file
+set viminfo=""
 
