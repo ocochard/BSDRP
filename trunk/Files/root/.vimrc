@@ -27,7 +27,7 @@ set showcmd
 " use 4 spaces instead of tabs
 set tabstop=4
 set shiftwidth=4
-set expandtab "replace tab by space
+"set expandtab "Do not replace tab by space!
 set softtabstop=4
 
 set nowrapscan
