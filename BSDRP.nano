@@ -294,6 +294,8 @@ add_port "net/ucarp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 # Add fprobe: Netflow probe
 add_port "net-mgmt/fprobe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
+# Add OpenLLDP: Link-Layer Discovery protocols
+add_port "net-mgmt/openlldp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.
