@@ -63,6 +63,9 @@ getoption () {
 		packages|package)
 			packages
 			;;
+		traffic)
+			traffic
+			;;
 		*)
 			echo "illegal option: $FIRST_OPTION"
 			usage
@@ -74,7 +77,7 @@ getoption () {
 usage () {
 	echo "BSD Router Project show tool"
 	case "$SECOND_OPTION" in
-                route)
+        route)
 			echo "Options for route:"
 	                echo " - ipv4/4 : Display only IPv4 routes"
 			echo " - ipv6/6 : Display only IPv6 routes" 
@@ -88,13 +91,14 @@ usage () {
 		*)
 # value $0 is the name of the called script
 		echo "Usage: $0 option"
+        echo "  - authors      : Display authors and contributors list"
 		echo "  - route    : Display routes"
 		echo "  - process/proc  : Display process information"
 		echo "  - version/ver  : Display BSDRP version"
 		echo "  - license/lic  : Display BSDRP license"
 		echo "  - memory/mem   : Display general memory usage"
+		echo "  - traffic      : Display extensive IP traffic statistics"
 		echo "  - packages     : Display lists of installed packages"
-		echo "  - authors      : Display authors and contributors list"
 		echo "  - help/h [option]  : Display this help message. "
 		echo "		 If [option] given, display more detail about"
 			;;	
@@ -111,6 +115,12 @@ license () {
 # Display AUTHORS
 authors () {
 	cat /root/AUTHORS
+	exit 0
+}
+
+# Display traffic
+traffic() {
+	netstat -s -s
 	exit 0
 }
 
