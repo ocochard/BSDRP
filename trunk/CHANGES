@@ -12,12 +12,10 @@ Release 0.32 (not released)
 - Upgrade to Quagga 0.99.15
 - Kernel: Disable audit, MAC, Gjournal
 
-Bug fixes:
+Bugs fixes:
 - Remove vm-check in /root/.cshrc that prevent use of scp
-
-Know bug:
-- Keyboard input don't works under VirtualBox (#2840062)
-- BSDRP don't start if no serial port present
+- Serial port no more mandatory for vga release (#2857424)
+- Keyboard works under Virtualbox (#2840062)
 
 ------------
 Release 0.31
