@@ -289,6 +289,8 @@ if [ $# -gt 0 ] ; then
         usage
 fi
 
+NANOBSD_OBJ=/usr/obj/nanobsd.BSDRP.${TARGET_ARCH}
+
 check_current_dir
 check_system
 check_clean
@@ -370,9 +372,9 @@ export TARGET_ARCH
 
 # Delete the destination dir
 if ($DELETE_ALL); then
-	if [ -d /usr/obj/nanobsd.BSDRP ]; then
-		pprint 1 "Delete existing /usr/obj/nanobsd.BSRP directory"
-		rm -rf /usr/obj/nanobsd.BSDRP
+	if [ -d ${NANOBSD_OBJ} ]; then
+		pprint 1 "Delete existing ${NANOBSD_OBJ} directory"
+		rm -rf ${NANOBSD_OBJ}
 	fi
 fi
 # Start nanobsd using the BSDRP configuration file
@@ -384,7 +386,7 @@ if [ $? -eq 0 ]; then
 	pprint 1 "NanoBSD build seems finish successfully."
 else
 	pprint 1 "ERROR: NanoBSD meet an error, check the log files here:"
-	pprint 1 "/usr/obj/nanobsd.BSDRP/"	
+	pprint 1 "${NANOBSD_OBJ}/"	
 	pprint 1 "An error during the build world or kernel can be caused by"
 	pprint 1 "a bug in the FreeBSD-current code"	
 	pprint 1 "try to re-sync your code" 
@@ -392,39 +394,39 @@ else
 fi
 
 # The exit code on NanoBSD doesn't work for port compilation/installation
-if [ ! -f /usr/obj/nanobsd.BSDRP/_.disk.image ]; then
+if [ ! -f ${NANOBSD_OBJ}/_.disk.image ]; then
 	pprint 1 "ERROR: NanoBSD meet an error (port installation/compilation ?)"
 	exit 1
 fi
 
 BSDRP_FILENAME="BSDRP_${BSDRP_VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
-if [ -f /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2 ]; then
+if [ -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 ]; then
 	pprint 1 "Backuping old BSDRP upgrade image..."
-	mv -f /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2 /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2.bak
+	mv -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2.bak
 fi 
 pprint 1 "Zipping the BSDRP upgrade image..."
-mv /usr/obj/nanobsd.BSDRP/_.disk.image /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
-bzip2 -9vf /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
+mv ${NANOBSD_OBJ}/_.disk.image ${NANOBSD_OBJ}/${BSDRP_FILENAME}
+bzip2 -9vf ${NANOBSD_OBJ}/${BSDRP_FILENAME}
 pprint 1 "You will found the zipped BSDRP upgrade image file here:"
-pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2"
+pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2"
 
 BSDRP_FILENAME="BSDRP_${BSDRP_VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
 if [ "$ZIP_IMAGE" = "y" ]; then
-	if [ -f /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME} ]; then
+	if [ -f ${NANOBSD_OBJ}/${BSDRP_FILENAME} ]; then
 		pprint 1 "Backuping old BSDRP full zipped image..."
-		mv -f /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2 /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2.bak
+		mv -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2.bak
 	fi 
 	pprint 1 "Zipping the BSDRP full image..." 
-	bzip2 -9vf /usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}
+	bzip2 -9vf ${NANOBSD_OBJ}/${BSDRP_FILENAME}
    	pprint 1 "You will found the zipped BSDRP full image file here:"
-   	pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}.bz2"
+   	pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2"
 else
 	pprint 1 "You will found the BSDRP full image file here:"
-   	pprint 1 "/usr/obj/nanobsd.BSDRP/${BSDRP_FILENAME}"
+   	pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}"
 fi
 pprint 1 "Generating checksum..."
-date >> /usr/obj/nanobsd.BSDRP/checksums.txt
-md5 /usr/obj/nanobsd.BSDRP/BSDRP_${BSDRP_VERSION}* >> /usr/obj/nanobsd.BSDRP/checksums.txt
-sha256 /usr/obj/nanobsd.BSDRP/BSDRP_${BSDRP_VERSION}* >> /usr/obj/nanobsd.BSDRP/checksums.txt
+date >> ${NANOBSD_OBJ}/checksums.txt
+md5 ${NANOBSD_OBJ}/BSDRP_${BSDRP_VERSION}* >> ${NANOBSD_OBJ}/checksums.txt
+sha256 ${NANOBSD_OBJ}/BSDRP_${BSDRP_VERSION}* >> ${NANOBSD_OBJ}/checksums.txt
 pprint 1 "Done !"
 exit 0

@@ -21,7 +21,7 @@ NANO_PACKAGE_LIST="*"
 # default is subdir of /usr/obj
 # XXX: MAKEOBJDIRPREFIX handling... ?
 # Need to configure this variable because it's used in the pkg_add function
-NANO_OBJ=/usr/obj/nanobsd.${NANO_NAME}
+NANO_OBJ=/usr/obj/nanobsd.${NANO_NAME}.${TARGET_ARCH}
 
 # The directory to put the final images
 # default is ${NANO_OBJ}
