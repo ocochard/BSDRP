@@ -2,7 +2,7 @@
 #
 # VirtualBox lab and start script for BSD Router Project
 #
-# Copyright (c) 2009, The BSDRP Development Team
+# Copyright (c) 2009-2010, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -44,14 +44,6 @@ check_system_freebsd () {
         echo "ERROR: Virtualbox not installed ?"
         echo "Install qemu with: pkg_add -r virtualbox"
         exit 1
-    fi
-
-    if ! `mount | grep -q ^procfs`; then
-        echo "procfs not mounted, mounting it..."
-        if mount -t procfs proc /proc; then
-            echo "ERROR: Can't mount /proc"
-            exit 1
-        fi
     fi
 
     if ! kldstat -m vboxdrv; then
@@ -163,8 +155,6 @@ create_vm () {
     VBoxManage modifyvm $1 --biosbootmenu disabled 
     if ($SERIAL); then
         VBoxManage modifyvm $1 --uart1 0x3F8 4 --uartmode1 server $WORKING_DIR/$1.serial
-    else
-        VBoxManage modifyvm $1 --vrdp on --vrdpauthtype null --vrdpport 330$1
     fi
 }
 
@@ -192,8 +182,6 @@ parse_filename () {
     if echo "${FILENAME}" | grep -q "vga"; then
         SERIAL=false
         echo "filename guests a vga image"
-        echo "Will start a RDP server on :0 for input/output"
-        echo "DEBUG: BSDRP bug with no serial port"
     fi
     echo "VM_ARCH=$VM_ARCH" > ${WORKING_DIR}/image.info
     echo "SERIAL=$SERIAL" >> ${WORKING_DIR}/image.info
@@ -245,17 +233,13 @@ start_vm () {
     #Enter the main loop for each VM
     while [ $i -le $NUMBER_VM ]; do
         # OSE version of VB doesn't support --vrdp option
-        if ($OSE); then
-            VBoxHeadless --startvm BSDRP_lab_R$i &
-        else
-            VBoxHeadless --vrdp config --startvm BSDRP_lab_R$i &
-        fi
+        nohup VBoxHeadless --vnc on --vncport 590${i} --startvm BSDRP_lab_R$i &
         sleep 2
         if ($SERIAL); then
             socat UNIX-CONNECT:$WORKING_DIR/BSDRP_lab_R$i.serial TCP-LISTEN:800$i &
             echo "Connect to the router ${i} by telneting to localhost on port 800${i}"
         else
-            echo "Connect to the router ${i} by RDP client on port 330${i}"
+            echo "Connect to the router ${i} by VNC client on port 590${i}"
         fi
         i=`expr $i + 1`
     done
@@ -414,6 +398,7 @@ case "$OS_DETECTED" in
         ;;
 esac
 
+# This is an old test, should no used since we use VNC
 if VBoxManage -v | grep -q "OSE"; then
     OSE=true
 else

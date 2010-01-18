@@ -2,7 +2,7 @@
 #
 # Qemu test script for BSD Router Project
 #
-# Copyright (c) 2009, The BSDRP Development Team
+# Copyright (c) 2009-2010, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
