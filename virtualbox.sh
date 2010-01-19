@@ -54,11 +54,12 @@ check_system_freebsd () {
 }
 
 check_system_common () {
+	echo "Checking if VirtualBox installed..." >> ${LOG_FILE}
     if ! `VBoxManage -v >> ${LOG_FILE} 2>&1`; then
         echo "ERROR: Is VirtualBox installed ?"
         exit 1
     fi
-    
+   	echo "Checking if socat installed..." >> ${LOG_FILE} 
     if ! `socat -V >> ${LOG_FILE} 2>&1`; then
         echo "WARNING: Is socat installed ?"
 		echo "socat is mandatory for using the serial release"
@@ -105,20 +106,32 @@ check_image () {
     
 }
 
-# Convert image into Virtualbox format and copy it to working dir
+# Convert image into Virtualbox format and compress it
+# It's not very simple to compress a VDI !
 
 convert_image () {
     if [ -f ${WORKING_DIR}/BSDRP_lab.vdi ]; then
         mv ${WORKING_DIR}/BSDRP_lab.vdi ${WORKING_DIR}/BSDRP_lab.vdi.bak
     fi
+	echo "Convert raw2vdi..." >> ${LOG_FILE}
     VBoxManage convertfromraw ${FILENAME} ${WORKING_DIR}/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
-    # BUG: Need to check existing BSDRP_lap_tempo vm before to register it!
+    # Check existing BSDRP_lap_tempo vm before to register it!
+	echo "Check if VM allready exist..." >> ${LOG_FILE}
+	if `VBoxManage showvminfo BSDRP_lab_tempo >> ${LOG_FILE} 2>&1`; then
+		VBoxManage unregistervm BSDRP_lab_tempo --delete >> ${LOG_FILE} 2>&1
+   	fi
 	# Now compress the image
+	echo "Create a VM..." >> ${LOG_FILE}
     VBoxManage createvm --name BSDRP_lab_tempo --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1
+	echo "Add the VDI to the VM..." >> ${LOG_FILE}
     VBoxManage modifyvm BSDRP_lab_tempo --memory 16 --vram 1 --hda $WORKING_DIR/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
+	echo "Compress the VDI..." >> ${LOG_FILE}
     VBoxManage modifyvdi $WORKING_DIR/BSDRP_lab.vdi --compact >> ${LOG_FILE} 2>&1
+	echo "Remove the harddrive configuration..." >> ${LOG_FILE}
     VBoxManage modifyvm BSDRP_lab_tempo --hda none >> ${LOG_FILE} 2>&1
+	echo "Unregister the VDI..." >> ${LOG_FILE}
     VBoxManage unregisterimage disk $WORKING_DIR/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
+	echo "Delete the tempory VM..." >> ${LOG_FILE}
     VBoxManage unregistervm BSDRP_lab_tempo --delete >> ${LOG_FILE} 2>&1
 }
 
