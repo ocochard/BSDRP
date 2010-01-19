@@ -33,6 +33,9 @@
 # Global variable
 WORKING_DIR="/tmp/$USER/BSDRP-lab"
 MAX_VM=9
+LOG_FILE="BSDRP_lab.log"
+
+#> ${NANO_OBJ}/_.di 2>&1
 
 if [ ! -d $WORKING_DIR ]; then
     mkdir -p $WORKING_DIR
@@ -40,12 +43,6 @@ fi
 # Check system pre-requise for starting virtualbox
 
 check_system_freebsd () {
-    if ! `pkg_info -q -E -x virtualbox  > /dev/null 2>&1`; then
-        echo "ERROR: Virtualbox not installed ?"
-        echo "Install qemu with: pkg_add -r virtualbox"
-        exit 1
-    fi
-
     if ! kldstat -m vboxdrv; then
         echo "vboxdrv module not loaded, loading it..."
         if kldload /boot/modules/vboxdrv.ko; then
@@ -56,16 +53,22 @@ check_system_freebsd () {
 
 }
 
-check_system_linux () {
-    if ! `VBoxManage -v > /dev/null 2>&1`; then
+check_system_common () {
+    if ! `VBoxManage -v >> ${LOG_FILE} 2>&1`; then
         echo "ERROR: Is VirtualBox installed ?"
         exit 1
     fi
     
-    if ! `socat -V > /dev/null 2>&1`; then
-        echo "ERROR: Is socat installed ?"
+    if ! `socat -V >> ${LOG_FILE} 2>&1`; then
+        echo "WARNING: Is socat installed ?"
+		echo "socat is mandatory for using the serial release"
         exit 1
     fi
+}
+
+check_system_linux () {
+	echo "TODO: check VB module loaded"
+
 }
 
 # Check user
@@ -88,14 +91,14 @@ check_image () {
         exit 1
     fi
 
-    if `file -b ${FILENAME} | grep -q "bzip2 compressed data"  > /dev/null 2>&1`; then
+    if `file -b ${FILENAME} | grep -q "bzip2 compressed data"  >> ${LOG_FILE} 2>&1`; then
         echo "Bzipped image detected, unzip it..."
         bunzip2 -k ${FILENAME}
         # change FILENAME by removing the last.bz2"
         FILENAME=`echo ${FILENAME} | sed -e 's/.bz2//g'`
     fi
 
-    if ! `file -b ${FILENAME} | grep -q "boot sector"  > /dev/null 2>&1`; then
+    if ! `file -b ${FILENAME} | grep -q "boot sector"  >> ${LOG_FILE} 2>&1`; then
         echo "ERROR: Not a BSDRP image??"
         exit 1
     fi
@@ -108,20 +111,21 @@ convert_image () {
     if [ -f ${WORKING_DIR}/BSDRP_lab.vdi ]; then
         mv ${WORKING_DIR}/BSDRP_lab.vdi ${WORKING_DIR}/BSDRP_lab.vdi.bak
     fi
-    VBoxManage convertfromraw ${FILENAME} ${WORKING_DIR}/BSDRP_lab.vdi > /dev/null 2>&1
-    # Now compress the image
-    VBoxManage createvm --name BSDRP_lab_tempo --ostype $VM_ARCH --register > /dev/null 2>&1
-    VBoxManage modifyvm BSDRP_lab_tempo --memory 16 --vram 1 --hda $WORKING_DIR/BSDRP_lab.vdi > /dev/null 2>&1
-    VBoxManage modifyvdi $WORKING_DIR/BSDRP_lab.vdi --compact > /dev/null 2>&1
-    VBoxManage modifyvm BSDRP_lab_tempo --hda none > /dev/null 2>&1
-    VBoxManage unregisterimage disk $WORKING_DIR/BSDRP_lab.vdi > /dev/null 2>&1
-    VBoxManage unregistervm BSDRP_lab_tempo --delete > /dev/null 2>&1
+    VBoxManage convertfromraw ${FILENAME} ${WORKING_DIR}/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
+    # BUG: Need to check existing BSDRP_lap_tempo vm before to register it!
+	# Now compress the image
+    VBoxManage createvm --name BSDRP_lab_tempo --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1
+    VBoxManage modifyvm BSDRP_lab_tempo --memory 16 --vram 1 --hda $WORKING_DIR/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
+    VBoxManage modifyvdi $WORKING_DIR/BSDRP_lab.vdi --compact >> ${LOG_FILE} 2>&1
+    VBoxManage modifyvm BSDRP_lab_tempo --hda none >> ${LOG_FILE} 2>&1
+    VBoxManage unregisterimage disk $WORKING_DIR/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
+    VBoxManage unregistervm BSDRP_lab_tempo --delete >> ${LOG_FILE} 2>&1
 }
 
 # Check if VM allready exist
 
 check_vm () {
-   if `VBoxManage showvminfo $1 > /dev/null 2>&1`; then
+   if `VBoxManage showvminfo $1 >> ${LOG_FILE} 2>&1`; then
         return 1 # false
    else
         return 0 # true
@@ -138,12 +142,12 @@ create_vm () {
     fi
     # Check if the vm allready exist
     if check_vm $1; then
-        VBoxManage createvm --name $1 --ostype $VM_ARCH --register
+        VBoxManage createvm --name $1 --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1
         if [ -f $WORKING_DIR/$1.vdi ]; then
             rm $WORKING_DIR/$1.vdi
         fi
-        VBoxManage clonehd $WORKING_DIR/BSDRP_lab.vdi $1.vdi
-        VBoxManage modifyvm $1 --hda $1.vdi
+        VBoxManage clonehd $WORKING_DIR/BSDRP_lab.vdi $1.vdi >> ${LOG_FILE} 2>&1
+        VBoxManage modifyvm $1 --hda $1.vdi  >> ${LOG_FILE} 2>&1
     else
         # if existing: Is running ?
         if `VBoxManage showvminfo $1 | grep -q "running"`; then
@@ -151,10 +155,10 @@ create_vm () {
             sleep 5
         fi
     fi
-    VBoxManage modifyvm $1 --audio none --memory 92 --vram 1 --boot1 disk --floppy disabled
-    VBoxManage modifyvm $1 --biosbootmenu disabled 
+    VBoxManage modifyvm $1 --audio none --memory 92 --vram 1 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1
+    VBoxManage modifyvm $1 --biosbootmenu disabled >> ${LOG_FILE} 2>&1
     if ($SERIAL); then
-        VBoxManage modifyvm $1 --uart1 0x3F8 4 --uartmode1 server $WORKING_DIR/$1.serial
+        VBoxManage modifyvm $1 --uart1 0x3F8 4 --uartmode1 server $WORKING_DIR/$1.serial >> ${LOG_FILE} 2>&1
     fi
 }
 
@@ -208,9 +212,9 @@ clone_vm () {
                 echo "em${NIC_NUMBER} connected to Router${j}."
                 NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
                 if [ $i -le $j ]; then
-                    VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${i}${j} --macaddress${NIC_NUMBER} AAAA00000${i}${i}${j}
+                    VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${i}${j} --macaddress${NIC_NUMBER} AAAA00000${i}${i}${j} >> ${LOG_FILE} 2>&1
                 else
-                    VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${j}${i} --macaddress${NIC_NUMBER} AAAA00000${i}${j}${i}
+                    VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${j}${i} --macaddress${NIC_NUMBER} AAAA00000${i}${j}${i} >> ${LOG_FILE} 2>&1
                 fi
             fi
             j=`expr $j + 1` 
@@ -220,7 +224,7 @@ clone_vm () {
         while [ $j -le $NUMBER_LAN ]; do
             echo "em${NIC_NUMBER} connected to LAN number ${j}."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-            VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC00000${j}0${i}
+            VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC00000${j}0${i} >> ${LOG_FILE} 2>&1
             j=`expr $j + 1`
         done
     i=`expr $i + 1`
@@ -233,10 +237,10 @@ start_vm () {
     #Enter the main loop for each VM
     while [ $i -le $NUMBER_VM ]; do
         # OSE version of VB doesn't support --vrdp option
-        nohup VBoxHeadless --vnc on --vncport 590${i} --startvm BSDRP_lab_R$i &
+        nohup VBoxHeadless --vnc on --vncport 590${i} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
         sleep 2
         if ($SERIAL); then
-            socat UNIX-CONNECT:$WORKING_DIR/BSDRP_lab_R$i.serial TCP-LISTEN:800$i &
+            socat UNIX-CONNECT:$WORKING_DIR/BSDRP_lab_R$i.serial TCP-LISTEN:800$i >> ${LOG_FILE} 2>&1 &
             echo "Connect to the router ${i} by telneting to localhost on port 800${i}"
         else
             echo "Connect to the router ${i} by VNC client on port 590${i}"
@@ -251,7 +255,7 @@ delete_all_vm () {
     #Enter the main loop for each VM
     while [ $i -le $MAX_VM ]; do
         if check_vm BSDRP_lab_R1; then
-            VBoxManage unregistervm BSDRP_lab_R$i --delete
+            VBoxManage unregistervm BSDRP_lab_R$i --delete >> ${LOG_FILE} 2>&1
         fi 
         i=`expr $i + 1`
     done
@@ -267,7 +271,7 @@ stop_all_vm () {
         if ! check_vm BSDRP_lab_R$i; then
             # if existing: Is running ?
             if `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "running"`; then
-                VBoxManage controlvm BSDRP_lab_R$i poweroff
+                VBoxManage controlvm BSDRP_lab_R$i poweroff >> ${LOG_FILE} 2>&1
                 sleep 5
             fi
         fi
@@ -381,7 +385,11 @@ fi
 
 echo "BSD Router Project VirtualBox lab script"
 
+echo "BSD Router Virtualbox lab script log file" > ${LOG_FILE}
+
 OS_DETECTED=`uname -s`
+
+check_system_common
 
 case "$OS_DETECTED" in
     "FreeBSD")
