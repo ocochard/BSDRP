@@ -110,6 +110,7 @@ check_image () {
 # It's not very simple to compress a VDI !
 
 convert_image () {
+	echo "Converting given image name into VDI disk..."
     if [ -f ${WORKING_DIR}/BSDRP_lab.vdi ]; then
         mv ${WORKING_DIR}/BSDRP_lab.vdi ${WORKING_DIR}/BSDRP_lab.vdi.bak
     fi
@@ -118,19 +119,31 @@ convert_image () {
     # Check existing BSDRP_lap_tempo vm before to register it!
 	echo "Check if VM allready exist..." >> ${LOG_FILE}
 	if `VBoxManage showvminfo BSDRP_lab_tempo >> ${LOG_FILE} 2>&1`; then
+		echo "Detecting existing tempo VM, deleting it..." >> ${LOG_FILE}
+		echo "step 1: Unregister the VDI..." >> ${LOG_FILE}
+		VBoxManage storagectl BSDRP_lab_tempo --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1	
+		echo "step 2: Delete it..." >> ${LOG_FILE}
 		VBoxManage unregistervm BSDRP_lab_tempo --delete >> ${LOG_FILE} 2>&1
    	fi
 	# Now compress the image
 	echo "Create a VM..." >> ${LOG_FILE}
     VBoxManage createvm --name BSDRP_lab_tempo --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1
+	echo "Add SATA controller to the VM..." >> ${LOG_FILE}
+	VBoxManage storagectl BSDRP_lab_tempo --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE} 2>&1
 	echo "Add the VDI to the VM..." >> ${LOG_FILE}
-    VBoxManage modifyvm BSDRP_lab_tempo --memory 16 --vram 1 --hda $WORKING_DIR/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
+	VBoxManage storageattach BSDRP_lab_tempo --storagectl "SATA Controller" \
+    --port 0 --device 0 --type hdd \
+    --medium $WORKING_DIR/BSDRP_lab.vdi >> ${LOG_FILE}
+	#echo "Set the UUID of this disk..." >> ${LOG_FILE}
+	#VBoxManage internalcommands sethduuid $WORKING_DIR/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
+	echo "Reduce VM requierement..." >> ${LOG_FILE}
+    VBoxManage modifyvm BSDRP_lab_tempo --memory 16 --vram 1 >> ${LOG_FILE} 2>&1
 	echo "Compress the VDI..." >> ${LOG_FILE}
     VBoxManage modifyvdi $WORKING_DIR/BSDRP_lab.vdi --compact >> ${LOG_FILE} 2>&1
 	echo "Remove the harddrive configuration..." >> ${LOG_FILE}
     VBoxManage modifyvm BSDRP_lab_tempo --hda none >> ${LOG_FILE} 2>&1
 	echo "Unregister the VDI..." >> ${LOG_FILE}
-    VBoxManage unregisterimage disk $WORKING_DIR/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
+	VBoxManage storagectl BSDRP_lab_tempo --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1	
 	echo "Delete the tempory VM..." >> ${LOG_FILE}
     VBoxManage unregistervm BSDRP_lab_tempo --delete >> ${LOG_FILE} 2>&1
 }
@@ -138,9 +151,12 @@ convert_image () {
 # Check if VM allready exist
 
 check_vm () {
+	echo "Check if $1 exist..." >> ${LOG_FILE}
    if `VBoxManage showvminfo $1 >> ${LOG_FILE} 2>&1`; then
+		echo "Found it..." >> ${LOG_FILE}
         return 1 # false
    else
+		echo "Didn't found it..." >> ${LOG_FILE}
         return 0 # true
    fi
  
@@ -155,12 +171,20 @@ create_vm () {
     fi
     # Check if the vm allready exist
     if check_vm $1; then
+		echo "Create VM $1..." >> ${LOG_FILE}
         VBoxManage createvm --name $1 --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1
         if [ -f $WORKING_DIR/$1.vdi ]; then
             rm $WORKING_DIR/$1.vdi
         fi
         VBoxManage clonehd $WORKING_DIR/BSDRP_lab.vdi $1.vdi >> ${LOG_FILE} 2>&1
-        VBoxManage modifyvm $1 --hda $1.vdi  >> ${LOG_FILE} 2>&1
+		echo "Add SATA controller to the VM..." >> ${LOG_FILE}
+    	VBoxManage storagectl $1 --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE}
+    	echo "Add the controller and disk to the VM..." >> ${LOG_FILE}
+    	VBoxManage storageattach $1 --storagectl "SATA Controller" \
+    	--port 0 --device 0 --type hdd \
+    	--medium $1.vdi >> ${LOG_FILE}
+    	#echo "Set the UUID of this disk..." >> ${LOG_FILE}
+    	#VBoxManage internalcommands sethduuid $1.vdi >> ${LOG_FILE} 2>&1
     else
         # if existing: Is running ?
         if `VBoxManage showvminfo $1 | grep -q "running"`; then
@@ -173,6 +197,7 @@ create_vm () {
     if ($SERIAL); then
         VBoxManage modifyvm $1 --uart1 0x3F8 4 --uartmode1 server $WORKING_DIR/$1.serial >> ${LOG_FILE} 2>&1
     fi
+	echo "VM $1 done!" >> ${LOG_FILE}
 }
 
 # Parse filename for detecting ARCH and console
