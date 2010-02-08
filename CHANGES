@@ -4,13 +4,13 @@ Release 0.32 (not released)
 - Add tool: rvi , that use RCS revisionning for editing file
 - Add fprobe (NetFlow probes)
 - Add OpenLLDP (Link-Layer Discovery Protocol)
-- Disable "system virtualized" when using FreeBSD 8
+- Disable "system virtualized" tuning tool when detecting FreeBSD 8
 - Replace carp in kernel by ucarp (userland carp)
 - Add VRRP (using FreeVRRPd)
 - Move packet filter from kernel to a module (disable pfsync and pflog)
-- Provide Qemu and Virtualbox lab scripts (see http://bsdrp.net)
+- Provide Qemu and Virtualbox lab scripts (see http://bsdrp.net for more information)
 - Upgrade to Quagga 0.99.15
-- Kernel: Disable audit, MAC, Gjournal
+- Kernel more smaller: Disable audit, MAC, Gjournal
 
 Bugs fixes:
 - Remove vm-check in /root/.cshrc that prevent use of scp
