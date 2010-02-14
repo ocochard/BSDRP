@@ -2,7 +2,7 @@
 #
 # Configuration tool for BSD Router Project 
 #
-# Copyright (c) 2009, The BSDRP Development Team 
+# Copyright (c) 2009-2010, The BSDRP Development Team 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -89,10 +89,16 @@ usage () {
 		exit 0
 		;;
 	diff)
-		echo "Option fo diff:"
+		echo "Option for diff:"
 		echo " - quiet : Don't display file (return 1 if changes found, 0 otherwise)"
 		exit 0
 		;;
+	put)
+		echo "Options for put:"
+		echo " - SCP username@host:filename"
+		echo "	 send the configuration to the host as filename using the username"
+	exit 0
+	;;
 	esac
 
 # value $0 is the name of the called script
@@ -101,7 +107,7 @@ usage () {
 	echo "  - save     : Save current config"
 	echo "  - apply    : Apply current config"
 	echo "  - rollback : Revert to previous config"
-	echo "  - put      : Put config to a remote server"
+	echo "  - put      : Put the saved config to a remote server"
 	echo "  - get      : Get config from remote server"
 	echo "  - reset    : Return to default configuration"
 	echo "  - help (h) [option]  : Display this help message. "
@@ -216,11 +222,8 @@ apply_cfg () {
 			echo "TO DO: Cancel in and at apply"
 			;;
 		*)
-		echo "This function will force routing process to reload the configuration files"
-		echo "Need to add a sub option: apply secure timeout"
-		echo "this option will wait for the new command: apply confirm before the end of the timeout (in minutes)"
-		echo "If the admin don't use this command: BSDRP will rollback the configuration automatically"	
-		;;	
+			echo "This function will force routing process to reload the configuration files"
+			;;	
 	esac
 	exit 0
 }
@@ -277,20 +280,8 @@ rollback () {
 	echo "Rollback the archived configuration"
 	mount_data
 	# Check if archive exist
-	if [ -f /mnt/archives/rollback.tar.bz2 ]
-	then
-		# Backup fstab file
-		cp /etc/fstab /tmp
-		# Unzip the archive to /etc
-		tar -x -C /etc/ -f /mnt/archives/rollback.tar.bz2
-		if [ ! $? -eq 0 ]	
-		then
-			echo "Error during restoring previous configuration."
-			umount_data
-			exit 1
-		fi
-		# Restore fstab file
-		cp /tmp/fstab /etc/fstab
+	if [ -f /mnt/archives/rollback.tar.bz2 ]; then
+		restore_cfg /mnt/archives/rollback.tar.bz2 /etc
 	else
 		echo "No archive file found."
 		echo "You need to save your configuration once before to rollback it"
@@ -303,18 +294,115 @@ rollback () {
 	exit 0
 }
 
+# Restore the ARCHIVE configuration to DEST
+# $1 = Source archive filename (.tar.bz2)
+# $2 = Destination directory
+restore_cfg ( ) {
+	if [ $1 = '' ]; then
+		echo "ERROR: Bug meet when calling restore_cfg in config"
+		echo "No argument given"
+		exit 1
+	elif [ $2 = '' ]; then
+		echo "ERROR: Bug meet when calling restore_cfg in config"
+        echo "No second argument given"
+		exit 1
+	fi
+	if [ ! -f $1 ]; then
+		echo "ERROR: $1 doesn't exist or isn't a file"
+		exit 1
+	elif [ ! -d $2 ]; then
+		echo "ERROR: $2 doesn't exist or isn't a directory"
+		exit 1
+	fi
+    # Unzip the archive $1 to $2/
+    tar -x -C $2/ --exclude 'fstab' -f $1
+    if [ ! $? -eq 0 ]; then
+    	echo "ERROR: during restoring file."
+        exit 1
+    fi
+}
+	
 # Send configuration to an svn/cvs/scp server ?
 put () {
-	echo "TO DO"
-	echo "Send configuration to an svn/cvs/scp server"
+	# option: protocol username@host <filename>
+	# example: scp admin@backup.host.fr:filename
+	case "$SECOND_OPTION" in
+        scp)
+			put_parse_input $THIRD_OPTION
+			echo "Send saved configuration by SCP to ${REMOTEHOST}"
+			if [ -f /tmp/cfg_archive.tar.bz2 ]; then
+				rm /tmp/cfg_archive.tar.bz2	
+			fi
+			mount_cfg
+			tar -cjvpf /tmp/cfg_archive.tar.bz2 -C /cfg/ . 2>/dev/null
+			umount_cfg
+			scp /tmp/cfg_archive.tar.bz2 ${USERNAME}@${REMOTEHOST}:${FILENAME}
+			if [ -f /tmp/cfg_archive.tar.bz2 ]; then
+                rm /tmp/cfg_archive.tar.bz2
+            fi
+            ;;
+        cvs)
+            echo "TO DO: CVS commit to $THIRD_OPTION"
+            ;;
+        svn)
+            echo "TO DO: SVN commit to $THIRD_OPTION"
+            ;;
+        *)
+        echo "Bad arguments, see 'config help put' for usage"
+        ;;
+    esac
+
 	exit 0
 }
 
+# Check the user input for put options
+
+put_parse_input () {
+	if [ $1 = "" ]; then
+		echo "Bad arguments, see 'config help put' for usage"
+		exit 0
+	fi
+	USERNAME=$(echo $1 | cut -d @ -f1)
+	REMOTEHOST=$(echo $1 | cut -d @ -f2 | cut -d : -f1)
+	FILENAME=$(echo $1 | cut -d @ -f2 | cut -d : -f2)
+	if [ $USERNAME = "" ]; then
+		echo "No Username given, see 'config help put' for usage"
+		exit 0
+	elif [ $REMOTEHOST = "" ]; then
+		echo "No Hostname given, see 'config help put' for usage"
+        exit 0
+	elif [ $FILENAME = $REMOTEHOST ]; then
+		FILENAME=$(hostname).tar.bz2
+	fi
+}
+	
 # Get configuration from an svn/cvs/scp server
 get () {
-	echo "TO DO"
-	echo "Get configuration from an svn/cvs/scp server"
-	exit 0
+    # option: protocol username@host <filename>
+    # example: scp admin@backup.host.fr:filename
+    case "$SECOND_OPTION" in
+        scp)
+            put_parse_input $THIRD_OPTION
+			echo "Get configuration archive SCP from ${REMOTEHOST}"
+			if [ -f /tmp/cfg_archive.tar.bz2 ]; then
+                rm /tmp/cfg_archive.tar.bz2
+            fi
+            scp ${USERNAME}@${REMOTEHOST}:${FILENAME} /tmp/cfg_archive.tar.bz2
+			restore_cfg /tmp/cfg_archive.tar.bz2 /etc
+			echo "Configuration restored"
+			echo "TO DO: Need to force process to reload config"
+            ;;
+        cvs)
+            echo "TO DO: CVS commit to $THIRD_OPTION"
+            ;;
+        svn)
+            echo "TO DO: SVN commit to $THIRD_OPTION"
+            ;;
+        *)
+        echo "Bad arguments, see 'config help get' for usage"
+        ;;
+    esac
+    exit 0
 }
 	
 

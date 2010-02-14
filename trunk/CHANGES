@@ -1,7 +1,9 @@
 Release 0.32 (not released)
 - Based on FreeBSD 8.0-Release
-- Add "show memory" and "show traffic" options
-- Add tool: rvi , that use RCS revisionning for editing file
+- Add tools:
+	- "show memory" and "show traffic" options
+	- "rvi" , that use RCS revisionning for editing file
+	- "config put" / "config get" , permit to send/download config file (SCP)
 - Add fprobe (NetFlow probes)
 - Add OpenLLDP (Link-Layer Discovery Protocol)
 - Disable "system virtualized" tuning tool when detecting FreeBSD 8
@@ -11,6 +13,7 @@ Release 0.32 (not released)
 - Provide Qemu and Virtualbox lab scripts (see http://bsdrp.net for more information)
 - Upgrade to Quagga 0.99.15
 - Kernel more smaller: Disable audit, MAC, Gjournal
+- Increase /var to 10Mb
 
 Bugs fixes:
 - Remove vm-check in /root/.cshrc that prevent use of scp
@@ -18,6 +21,9 @@ Bugs fixes:
 - Keyboard works under Virtualbox (#2840062)
 - nsswitch error messages in /var/log/cron
 - Bad xorp default configuration file 
+
+Know bugs:
+- Quagga: Can't set IPv6 address on interface (https://bugzilla.quagga.net/show_bug.cgi?id=408)
 
 ------------
 Release 0.31

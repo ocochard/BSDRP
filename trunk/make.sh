@@ -162,6 +162,14 @@ system_patch() {
 
 }
 
+#### Port patch
+
+ports_patch()
+{
+	echo "patching ports..."
+	cp -v patches/quagga/*.* /usr/ports/net/quagga/files/
+}
+
 ##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount
 # exit with 0 if no problem detected
 # exit with 1 if problem detected, but clean it
@@ -310,6 +318,7 @@ else
 fi
 
 system_patch
+ports_patch
 
 # Copy the common nanobsd configuration file to /tmp
 cp -v BSDRP.nano /tmp/BSDRP.nano
