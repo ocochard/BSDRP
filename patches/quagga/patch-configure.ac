@@ -1,0 +1,26 @@
+--- configure.ac.old	2010-01-16 11:08:12.000000000 +0000
++++ configure.ac	2010-01-16 11:08:34.000000000 +0000
+@@ -443,9 +443,21 @@
+ #endif /* TIME_WITH_SYS_TIME */
+ ])dnl
+ 
+-AC_CHECK_HEADERS([sys/un.h net/if.h netinet/in_systm.h netinet/in_var.h \
++dnl net/if.h specific to make FreeBSD detection ok
++dnl MUST Be checked before others !!
++
++AC_CHECK_HEADERS([net/if.h],
++	[], [], QUAGGA_INCLUDES)
++m4_define([QUAGGA_INCLUDES],
++QUAGGA_INCLUDES
++[#if HAVE_NET_IF_H
++# include <net/if.h>
++#endif
++])dnl
++
++AC_CHECK_HEADERS([sys/un.h netinet/in_systm.h netinet/in_var.h \
+ 	net/if_dl.h net/if_var.h net/netopt.h net/route.h \
+-	inet/nd.h arpa/inet.h netinet/ip_icmp.h \
++	inet/nd.h net/if.h arpa/inet.h netinet/ip_icmp.h \
+ 	fcntl.h stddef.h sys/ioctl.h syslog.h wchar.h wctype.h \
+ 	sys/sysctl.h sys/sockio.h kvm.h sys/conf.h],
+ 	[], [], QUAGGA_INCLUDES)

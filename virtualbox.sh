@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# VirtualBox lab and start script for BSD Router Project
+# VirtualBox lab script for BSD Router Project
 #
 # Copyright (c) 2009-2010, The BSDRP Development Team
 # All rights reserved.
@@ -421,9 +421,9 @@ if [ $# -gt 0 ] ; then
     usage
 fi
 
-echo "BSD Router Project VirtualBox lab script"
+echo "BSD Router Project: VirtualBox lab script"
 
-echo "BSD Router Virtualbox lab script log file" > ${LOG_FILE}
+echo "BSD Router Project: Virtualbox lab script, log file" > ${LOG_FILE}
 
 OS_DETECTED=`uname -s`
 
