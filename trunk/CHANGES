@@ -16,6 +16,8 @@ Bugs fixes:
 - Remove vm-check in /root/.cshrc that prevent use of scp
 - Serial port no more mandatory for vga release (#2857424)
 - Keyboard works under Virtualbox (#2840062)
+- nsswitch error messages in /var/log/cron
+- Bad xorp default configuration file 
 
 ------------
 Release 0.31
