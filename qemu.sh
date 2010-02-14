@@ -30,6 +30,18 @@
 #Uncomment for debug
 #set -x
 
+check_user () {
+    if [ ! $(whoami) = "root" ]; then
+		NOT_ROOT=true
+		echo "Info: Starting this script as a simple user have some limitation"
+        if ($SHARED_WITH_HOST); then
+            echo "Warning: You need to be root for creating the shared LAN interfaces with the hosts"
+            echo "Shared LAN disabled"
+            SHARED_WITH_HOST=false
+        fi
+    fi  
+}
+
 check_system () {
     if ! `uname -s | grep -q FreeBSD`; then
         echo "Error: This script was wrote for a FreeBSD only"
@@ -49,28 +61,28 @@ check_system () {
     fi
 
     if ! kldstat -m kqemu; then
-        echo "Loading kqemu"
-        if kldload kqemu; then
-            echo "Can't load kqemu"
-        fi
+		if $NOT_ROOT; then
+			echo "Warning: kqemu module not loaded"
+			echo "You need to be root for loading this module"
+		else
+        	echo "Loading kqemu"
+        	if kldload kqemu; then
+            	echo "Can't load kqemu"
+        	fi
+		fi
     fi
     if ! kldstat -m aio; then
-        echo "Loading aio"
-        if kldload aio; then
-            echo "Can't load aio"
-        fi
+		if $NOT_ROOT; then
+			echo "Error: aio module not loaded (mandatory for qemu)"
+			echo "You need to be root for loading this module"
+		else
+        	echo "Loading aio"
+        	if kldload aio; then
+            	echo "Can't load aio"
+        	fi
+		fi
     fi
 
-}
-
-check_user () {
-    if [ ! $(whoami) = "root" ]; then
-        if ($SHARED_WITH_HOST); then
-            echo "Warning: You need to be root for creating the shared LAN interfaces with the hosts"
-            echo "Disable the shared LAN"
-            SHARED_WITH_HOST=false
-        fi
-    fi  
 }
 
 check_image () {
@@ -377,8 +389,8 @@ if [ $# -gt 0 ] ; then
 fi
 
 echo "BSD Router Project Qemu script"
-check_system
 check_user
+check_system
 check_image
 parse_filename
 
