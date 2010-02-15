@@ -65,11 +65,24 @@ check_system_common () {
 		echo "socat is mandatory for using the serial release"
         exit 1
     fi
+	VBVERSION=`VBoxManage -v`
+	VBVERSION_MAJ=`echo $VBVERSION|cut -d . -f 1`
+	VBVERSION_MIN=`echo $VBVERSION|cut -d . -f 2`
+	if [ $VBVERSION_MAJ -lt 3 ]; then
+		echo "Error: Need Virtualbox 3.1 minimum"
+		exit 1
+	fi
+	if [ $VBVERSION_MAJ = 3 ] AND [ $VBVERSION_MIN -lt 1 ]; then
+        echo "Error: Need Virtualbox 3.1 minimum"
+        exit 1
+    fi
+
 }
 
 check_system_linux () {
-	echo "TODO: check VB module loaded"
-
+	if ! `modprobe -a vboxdrv`; then
+		echo "VirtualBox module not loaded ?"
+	fi
 }
 
 # Check user
@@ -275,7 +288,12 @@ start_vm () {
     #Enter the main loop for each VM
     while [ $i -le $NUMBER_VM ]; do
         # OSE version of VB doesn't support --vrdp option
-        nohup VBoxHeadless --vnc on --vncport 590${i} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
+		# Official OSE version of VB doesn't support --vnc option (need a patch)
+		if ! ($SERIAL); then
+        	nohup VBoxHeadless --vnc on --vncport 590${i} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
+		else
+			nohup VBoxHeadless --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
+		fi
         sleep 2
         if ($SERIAL); then
             socat UNIX-CONNECT:$WORKING_DIR/BSDRP_lab_R$i.serial TCP-LISTEN:800$i >> ${LOG_FILE} 2>&1 &
@@ -292,12 +310,11 @@ delete_all_vm () {
     i=1
     #Enter the main loop for each VM
     while [ $i -le $MAX_VM ]; do
-        if check_vm BSDRP_lab_R1; then
+        if check_vm BSDRP_lab_R$i; then
             VBoxManage unregistervm BSDRP_lab_R$i --delete >> ${LOG_FILE} 2>&1
         fi 
         i=`expr $i + 1`
     done
-
 }
 
 # Stop All VM
@@ -307,9 +324,12 @@ stop_all_vm () {
     while [ $i -le $MAX_VM ]; do
         # Check if the vm allready exist
         if ! check_vm BSDRP_lab_R$i; then
-            # if existing: Is running ?
+            # if existing: Is running or in Guru meditation state ?
             if `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "running"`; then
                 VBoxManage controlvm BSDRP_lab_R$i poweroff >> ${LOG_FILE} 2>&1
+                sleep 5
+			elif `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "meditation"`; then
+				VBoxManage controlvm BSDRP_lab_R$i poweroff >> ${LOG_FILE} 2>&1
                 sleep 5
             fi
         fi
@@ -357,8 +377,7 @@ do
                 ;;
         -d)
                 delete_all_vm
-                shift
-                shift
+				exit 0
                 ;;
         -l)
                 NUMBER_LAN=$2
@@ -375,8 +394,7 @@ do
                 ;;
         -s)
                 stop_all_vm
-                shift
-                shift
+				exit 0
                 ;;
         --)
                 shift
