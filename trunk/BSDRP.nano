@@ -299,6 +299,9 @@ add_port "net-mgmt/fprobe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 # Add OpenLLDP: Link-Layer Discovery protocols
 add_port "net-mgmt/openlldp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
+# Add dhcprelya: A DHCP relay client
+add_port "net/dhcprelya" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.
 		# Need to prevent auto exist of this script
