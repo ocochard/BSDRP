@@ -124,7 +124,7 @@ create_interfaces_shared () {
                     BRIDGE_IF="$NIC"
                 else
                     echo "ERROR: Interface $NIC is allready configured with 10.0.0.254"
-                    echo "I cant' configure this IP on interface $BRIDGE_IF"
+                    echo "Cant' configure this IP on interface $BRIDGE_IF"
                     exit 1
                 fi
             fi 
@@ -138,7 +138,7 @@ create_interfaces_shared () {
     # Link bridge with tap
     ifconfig ${BRIDGE_IF} addm ${TAP_IF} up
     ifconfig ${TAP_IF} up
-    QEMU_NIC="-net nic,model=i82557b -net tap,ifname=${TAP_IF}"
+    QEMU_NIC="-net nic,model=${NIC_MODEL} -net tap,ifname=${TAP_IF}"
 }
 
 # Creating interfaces for lAB mode
@@ -239,7 +239,7 @@ start_lab_vm () {
             NIC_NUMBER=0
             echo "ed${NIC_NUMBER} connected to shared with host LAN, configure IP 10.0.0.${i}/8 on this."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-            QEMU_ADMIN_NIC="-net nic,macaddr=AA:AA:00:00:00:0${i},vlan=0,model=i82557b -net tap,vlan=0,ifname=${TAP_IF}"
+            QEMU_ADMIN_NIC="-net nic,macaddr=AA:AA:00:00:00:0${i},vlan=0,model=${NIC_MODEL} -net tap,vlan=0,ifname=${TAP_IF}"
         else
             QEMU_ADMIN_NIC=""
             NIC_NUMBER=0
@@ -253,9 +253,9 @@ start_lab_vm () {
                 echo "ed${NIC_NUMBER} connected to Router${j}."
                 NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
                 if [ $i -le $j ]; then
-                    QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=AA:AA:00:00:0${i}:${i}${j},vlan=${i}${j},model=i82557b -net socket,mcast=230.0.0.1:100${i}${j},vlan=${i}${j}"
+                    QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=AA:AA:00:00:0${i}:${i}${j},vlan=${i}${j},model=${NIC_MODEL} -net socket,mcast=230.0.0.1:100${i}${j},vlan=${i}${j}"
                 else
-                    QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=AA:AA:00:00:0${i}:${j}${i},vlan=${j}${i},model=i82557b -net socket,mcast=230.0.0.1:100${j}${i},vlan=${j}${i}"
+                    QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=AA:AA:00:00:0${i}:${j}${i},vlan=${j}${i},model=${NIC_MODEL} -net socket,mcast=230.0.0.1:100${j}${i},vlan=${j}${i}"
                 fi
             fi
             j=`expr $j + 1` 
@@ -266,7 +266,7 @@ start_lab_vm () {
         while [ $j -le $NUMBER_LAN ]; do
             echo "ed${NIC_NUMBER} connected to LAN number ${j}."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-            QEMU_LAN_NIC="${QEMU_LAN_NIC} -net nic,macaddr=CC:CC:00:00:0${j}:0${i},vlan=10${j} -net socket,mcast=230.0.0.1:1000${j},vlan=10${j},model=i82557b"
+            QEMU_LAN_NIC="${QEMU_LAN_NIC} -net nic,macaddr=CC:CC:00:00:0${j}:0${i},vlan=10${j} -net socket,mcast=230.0.0.1:1000${j},vlan=10${j},model=${NIC_MODEL}"
             j=`expr $j + 1`
         done
         if ($SERIAL); then
@@ -312,6 +312,11 @@ usage () {
 ###############
 # Main script #
 ###############
+
+### Variables
+
+# ed(4) drivers
+NIC_MODEL=ne2k_pci
 
 ### Parse argument
 
