@@ -72,7 +72,7 @@ check_system_common () {
 		echo "Error: Need Virtualbox 3.1 minimum"
 		exit 1
 	fi
-	if [ $VBVERSION_MAJ = 3 ] AND [ $VBVERSION_MIN -lt 1 ]; then
+	if [ $VBVERSION_MAJ -eq 3 -a $VBVERSION_MIN -lt 1 ]; then
         echo "Error: Need Virtualbox 3.1 minimum"
         exit 1
     fi
@@ -125,7 +125,7 @@ check_image () {
 convert_image () {
 	echo "Converting given image name into VDI disk..."
     if [ -f ${WORKING_DIR}/BSDRP_lab.vdi ]; then
-        mv ${WORKING_DIR}/BSDRP_lab.vdi ${WORKING_DIR}/BSDRP_lab.vdi.bak
+        rm ${WORKING_DIR}/BSDRP_lab.vdi
     fi
 	echo "Convert raw2vdi..." >> ${LOG_FILE}
     VBoxManage convertfromraw ${FILENAME} ${WORKING_DIR}/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
@@ -150,12 +150,6 @@ convert_image () {
 	echo "Compress the VDI..." >> ${LOG_FILE}
     VBoxManage modifyvdi $WORKING_DIR/BSDRP_lab.vdi --compact >> ${LOG_FILE} 2>&1
     delete_vm BSDRP_lab_tempo
-	#echo "Remove the harddrive configuration..." >> ${LOG_FILE}
-    #VBoxManage modifyvm BSDRP_lab_tempo --hda none >> ${LOG_FILE} 2>&1
-	#echo "Unregister the VDI..." >> ${LOG_FILE}
-	#VBoxManage storagectl BSDRP_lab_tempo --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1	
-	#echo "Delete the tempory VM..." >> ${LOG_FILE}
-    #VBoxManage unregistervm BSDRP_lab_tempo --delete >> ${LOG_FILE} 2>&1
 }
 
 # Check if VM allready exist
@@ -181,7 +175,7 @@ create_vm () {
         exit 1
     fi
     # Check if the vm allready exist
-    if check_vm $1; then
+    if ! check_vm $1; then
 		echo "Create VM $1..." >> ${LOG_FILE}
         VBoxManage createvm --name $1 --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1
         if [ -f $WORKING_DIR/$1.vdi ]; then
@@ -315,8 +309,8 @@ delete_vm () {
     VBoxManage storagectl $1 --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1
     echo "step 2: Unregister the VDI..." >> ${LOG_FILE}
     VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1
-    echo "step 3: Delete the hard-drive image..."
-    VBoxManage closemedium disk $1.vdi --delete
+    #echo "step 3: Delete the hard-drive image..."
+    #VBoxManage closemedium disk $WORKING_DIR/$1.vdi --delete
 }
 delete_all_vm () {
     stop_all_vm
