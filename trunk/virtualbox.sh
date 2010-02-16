@@ -131,12 +131,8 @@ convert_image () {
     VBoxManage convertfromraw ${FILENAME} ${WORKING_DIR}/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
     # Check existing BSDRP_lap_tempo vm before to register it!
 	echo "Check if VM allready exist..." >> ${LOG_FILE}
-	if `VBoxManage showvminfo BSDRP_lab_tempo >> ${LOG_FILE} 2>&1`; then
-		echo "Detecting existing tempo VM, deleting it..." >> ${LOG_FILE}
-		echo "step 1: Unregister the VDI..." >> ${LOG_FILE}
-		VBoxManage storagectl BSDRP_lab_tempo --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1	
-		echo "step 2: Delete it..." >> ${LOG_FILE}
-		VBoxManage unregistervm BSDRP_lab_tempo --delete >> ${LOG_FILE} 2>&1
+	if check_vm BSDRP_lab_tempo; then
+        delete_vm BSDRP_lab_tempo
    	fi
 	# Now compress the image
 	echo "Create a VM..." >> ${LOG_FILE}
@@ -153,24 +149,26 @@ convert_image () {
     VBoxManage modifyvm BSDRP_lab_tempo --memory 16 --vram 1 >> ${LOG_FILE} 2>&1
 	echo "Compress the VDI..." >> ${LOG_FILE}
     VBoxManage modifyvdi $WORKING_DIR/BSDRP_lab.vdi --compact >> ${LOG_FILE} 2>&1
-	echo "Remove the harddrive configuration..." >> ${LOG_FILE}
-    VBoxManage modifyvm BSDRP_lab_tempo --hda none >> ${LOG_FILE} 2>&1
-	echo "Unregister the VDI..." >> ${LOG_FILE}
-	VBoxManage storagectl BSDRP_lab_tempo --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1	
-	echo "Delete the tempory VM..." >> ${LOG_FILE}
-    VBoxManage unregistervm BSDRP_lab_tempo --delete >> ${LOG_FILE} 2>&1
+    delete_vm BSDRP_lab_tempo
+	#echo "Remove the harddrive configuration..." >> ${LOG_FILE}
+    #VBoxManage modifyvm BSDRP_lab_tempo --hda none >> ${LOG_FILE} 2>&1
+	#echo "Unregister the VDI..." >> ${LOG_FILE}
+	#VBoxManage storagectl BSDRP_lab_tempo --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1	
+	#echo "Delete the tempory VM..." >> ${LOG_FILE}
+    #VBoxManage unregistervm BSDRP_lab_tempo --delete >> ${LOG_FILE} 2>&1
 }
 
 # Check if VM allready exist
-
+# Return 0 (true) if exist
+# Returen 1 (false) if doesn't exist
 check_vm () {
 	echo "Check if $1 exist..." >> ${LOG_FILE}
    if `VBoxManage showvminfo $1 >> ${LOG_FILE} 2>&1`; then
 		echo "Found it..." >> ${LOG_FILE}
-        return 1 # false
+        return 0 # true
    else
 		echo "Didn't found it..." >> ${LOG_FILE}
-        return 0 # true
+        return 1 # false
    fi
  
 }
@@ -305,16 +303,35 @@ start_vm () {
     done
 }
 
+# Delete VM
+# $1: name of the VM
+delete_vm () {
+    if [ "$1" = "" ]; then
+        echo "BUG: In delete_vm (), no argument given"
+        exit 1
+    fi
+    echo "Delete VM: $1" >> ${LOG_FILE} 2>&1
+    echo "step 1: Unlinking the disk controller..." >> ${LOG_FILE}
+    VBoxManage storagectl $1 --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1
+    echo "step 2: Unregister the VDI..." >> ${LOG_FILE}
+    VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1
+    echo "step 3: Delete the hard-drive image..."
+    VBoxManage closemedium disk $1.vdi --delete
+}
 delete_all_vm () {
     stop_all_vm
     i=1
     #Enter the main loop for each VM
     while [ $i -le $MAX_VM ]; do
         if check_vm BSDRP_lab_R$i; then
-            VBoxManage unregistervm BSDRP_lab_R$i --delete >> ${LOG_FILE} 2>&1
+            delete_vm BSDRP_lab_R$i 
         fi 
         i=`expr $i + 1`
     done
+	if check_vm BSDRP_lab_tempo; then
+            delete_vm BSDRP_lab_tempo
+    fi
+	
 }
 
 # Stop All VM
@@ -323,7 +340,7 @@ stop_all_vm () {
     #Enter the main loop for each VM
     while [ $i -le $MAX_VM ]; do
         # Check if the vm allready exist
-        if ! check_vm BSDRP_lab_R$i; then
+        if check_vm BSDRP_lab_R$i; then
             # if existing: Is running or in Guru meditation state ?
             if `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "running"`; then
                 VBoxManage controlvm BSDRP_lab_R$i poweroff >> ${LOG_FILE} 2>&1
