@@ -1,4 +1,4 @@
-Release 0.32 (not released)
+Release 0.32
 - Based on FreeBSD 8.0-Release-p2
 - Add tools:
 	- "show memory" and "show traffic" options
