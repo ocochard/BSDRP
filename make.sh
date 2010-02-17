@@ -434,7 +434,7 @@ else
    	pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}"
 fi
 pprint 1 "Generating checksum..."
-date >> ${NANOBSD_OBJ}/checksums.txt
+date > ${NANOBSD_OBJ}/checksums.txt
 md5 ${NANOBSD_OBJ}/BSDRP_${BSDRP_VERSION}* >> ${NANOBSD_OBJ}/checksums.txt
 sha256 ${NANOBSD_OBJ}/BSDRP_${BSDRP_VERSION}* >> ${NANOBSD_OBJ}/checksums.txt
 pprint 1 "Done !"
