@@ -55,12 +55,12 @@ check_system_freebsd () {
 
 check_system_common () {
 	echo "Checking if VirtualBox installed..." >> ${LOG_FILE}
-    if ! `VBoxManage -v >> ${LOG_FILE} 2>&1`; then
+    if ! `VBoxManage -v > /dev/null 2>&1`; then
         echo "ERROR: Is VirtualBox installed ?"
         exit 1
     fi
    	echo "Checking if socat installed..." >> ${LOG_FILE} 
-    if ! `socat -V >> ${LOG_FILE} 2>&1`; then
+    if ! `socat -V > /dev/null 2>&1`; then
         echo "WARNING: Is socat installed ?"
 		echo "socat is mandatory for using the serial release"
         exit 1
@@ -157,14 +157,13 @@ convert_image () {
 # Returen 1 (false) if doesn't exist
 check_vm () {
 	echo "Check if $1 exist..." >> ${LOG_FILE}
-   if `VBoxManage showvminfo $1 >> ${LOG_FILE} 2>&1`; then
+   if `VBoxManage showvminfo $1 > /dev/null 2>&1`; then
 		echo "Found it..." >> ${LOG_FILE}
         return 0 # true
    else
 		echo "Didn't found it..." >> ${LOG_FILE}
         return 1 # false
    fi
- 
 }
 
 # Create VM
@@ -336,10 +335,14 @@ stop_all_vm () {
         # Check if the vm allready exist
         if check_vm BSDRP_lab_R$i; then
             # if existing: Is running or in Guru meditation state ?
+			echo "Testing state of BSDRP_lab_R$i..." >> ${LOG_FILE}
             if `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "running"`; then
+				echo "BSDRP_lab_R$i is in running state: Stopping it..." >> ${LOG_FILE}
                 VBoxManage controlvm BSDRP_lab_R$i poweroff >> ${LOG_FILE} 2>&1
                 sleep 5
 			elif `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "meditation"`; then
+				echo "BSDRP_lab_R$i is in Guru meditation state: Stopping it..." >> ${LOG_FILE}
+
 				VBoxManage controlvm BSDRP_lab_R$i poweroff >> ${LOG_FILE} 2>&1
                 sleep 5
             fi
@@ -473,7 +476,7 @@ case "$OS_DETECTED" in
         ;;
 esac
 
-# This is an old test, should no used since we use VNC
+# This is an old test, should no used since we use patched VNC version
 if VBoxManage -v | grep -q "OSE"; then
     OSE=true
 else
