@@ -1,5 +1,5 @@
 Release 0.32 (not released)
-- Based on FreeBSD 8.0-Release
+- Based on FreeBSD 8.0-Release-p2
 - Add tools:
 	- "show memory" and "show traffic" options
 	- "rvi" , that use RCS revisionning for editing file
