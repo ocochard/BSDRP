@@ -17,6 +17,7 @@ BSD Router Project is based upon/includes various free software packages, listed
 * Idea of using glabel for disk type absraction: Scott Ullrich (pfSense)
 * "show memory" is a shell port of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
 * FreeVRRPd : VRRP daemon
+* uCARP: userland CARP daemon
 * fprobe: Slava Astashonok
 * OpenLLDP: Terry Simons and Jason Peterson 
 * dhcprelya: Sergey Matveychuk
