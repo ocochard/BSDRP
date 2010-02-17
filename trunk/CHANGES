@@ -1,5 +1,5 @@
 Release 0.32 (not released)
-- Based on FreeBSD 8.0-Release (Warning: Lot's of regression in 8.0-Release, 8.1 should be better)
+- Based on FreeBSD 8.0-Release
 - Add tools:
 	- "show memory" and "show traffic" options
 	- "rvi" , that use RCS revisionning for editing file
@@ -26,7 +26,8 @@ Bugs fixes:
 Know bugs:
 - Quagga: Can't set IPv6 address on interface (https://bugzilla.quagga.net/show_bug.cgi?id=408)
 - Virtualbox lab script: TAB and arrows key didn't works using the serial release (socat problem ?)
-
+- There are lot's of regression in FreeBSD 8.0-Release, will release a new as soon as 8.1-Release
+  will be available
 ------------
 Release 0.31
 - Add Virtualbox detection on "system check-vm" (thanks to Baptiste Chaussade)
