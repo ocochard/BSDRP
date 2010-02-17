@@ -25,6 +25,7 @@ Bugs fixes:
 
 Know bugs:
 - Quagga: Can't set IPv6 address on interface (https://bugzilla.quagga.net/show_bug.cgi?id=408)
+- Virtualbox lab script: TAB and arrows key didn't works using the serial release (socat problem ?)
 
 ------------
 Release 0.31
