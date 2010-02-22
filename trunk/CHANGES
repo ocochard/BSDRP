@@ -1,5 +1,6 @@
 Release 0.33 (not released)
-- Adding bird ????
+- Replace dhcprelya by isc-dhcp-relay
+- Add isc-dhcp-server
 
 Release 0.32
 - Based on FreeBSD 8.0-Release-p2
