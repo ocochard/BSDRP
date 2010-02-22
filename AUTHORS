@@ -20,4 +20,4 @@ BSD Router Project is based upon/includes various free software packages, listed
 * uCARP: userland CARP daemon
 * fprobe: Slava Astashonok
 * OpenLLDP: Terry Simons and Jason Peterson 
-* dhcprelya: Sergey Matveychuk
+* DHCP server and relay: Internet Systems Consortium

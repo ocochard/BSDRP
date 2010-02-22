@@ -45,7 +45,7 @@ CONF_INSTALL=''
 # See the file /usr/src/tools/build/options for details
 # WITHOUT_INFO= incompatible for installing a dependency of Quagga
 # WITHOUT_FORTH= incompatible with boot flags (to be confirm).
-
+# WITHOUT_GROFF= incompatible with isc-dhcp-server (needed for build man page)
 CONF_WORLD='
 WITHOUT_ACCT=
 WITHOUT_APM=
@@ -72,7 +72,6 @@ WITHOUT_GAMES=
 WITHOUT_GCOV=
 WITHOUT_GDB=
 WITHOUT_GPIB=
-WITHOUT_GROFF=
 WITHOUT_HTML=
 WITHOUT_IPFILTER=
 WITHOUT_IPFW=
@@ -287,6 +286,9 @@ add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 # Xorp wants stupidly start snmpd for testing it before to compile!!!!.... disable it:
 add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 
+# Add Bird: doesn't build, port marked as broken
+#add_port "net/bird" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+
 # Add FreeVRRPd: using XORP only for VRRP is too memory/CPU hungry:
 add_port "net/freevrrpd" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
@@ -300,14 +302,18 @@ add_port "net-mgmt/fprobe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 add_port "net-mgmt/openlldp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 # Add dhcprelya: A DHCP relay client
-add_port "net/dhcprelya" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+#add_port "net/dhcprelya" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+
+# Add DHCP server and client
+add_port "net/isc-dhcp31-server" "-DWITHOUT_DHCP_PARANOIA -DWITHOUT_DHCP_JAIL -DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "net/isc-dhcp31-relay" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.
 		# Need to prevent auto exist of this script
 		set +e
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'pkg_delete gmake* libtool* gawk* perl* '
+        'pkg_delete gmake* libtool* gawk* perl* gettext*'
 		set -e
 }
 

@@ -46,6 +46,7 @@ set colorcat
 alias ls ls -G
 alias ll ls -hl
 set noclobber
+set watch=(0 any any)
 
 # Some BSDRP aliases:
 alias cli vtysh
