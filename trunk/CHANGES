@@ -1,6 +1,7 @@
 Release 0.33 (not released)
 - Replace dhcprelya by isc-dhcp-relay
 - Add isc-dhcp-server
+- Add GRE module (GRE and MOBILE encapsulation)
 
 Release 0.32
 - Based on FreeBSD 8.0-Release-p2

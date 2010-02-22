@@ -375,5 +375,5 @@ options		ZERO_COPY_SOCKETS
 
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules
-makeoptions    MODULES_OVERRIDE="acpi netgraph if_ef if_bridge bridgestp if_lagg if_vlan ipfw pf"
+makeoptions    MODULES_OVERRIDE="acpi netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw pf"
 
