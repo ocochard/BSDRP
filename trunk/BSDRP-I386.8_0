@@ -1,5 +1,5 @@
 #
-# GENERIC -- Generic kernel configuration file for FreeBSD/i386
+# BSDRP-I386 -- BSD Router Project kernel configuration file for FreeBSD/i386
 #
 # For more information on this file, please read the config(5) manual page,
 # and/or the handbook section on Kernel Configuration Files:
