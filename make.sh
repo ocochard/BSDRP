@@ -313,6 +313,14 @@ if [ $# -gt 0 ] ; then
         usage
 fi
 
+# Cambria is not compatible with vga output
+if [ "${NANO_KERNEL}" = "BSDRP-CAMBRIA" ] ; then
+	if [ "${INPUT_CONSOLE}" = "vga" ] ; then
+		pprint 1 "Gateworks Cambria platform didn't have vga board: Changing console to serial"
+	fi
+	INPUT_CONSOLE="serial"
+fi
+
 NANOBSD_OBJ=/usr/obj/nanobsd.BSDRP.${TARGET_ARCH}
 
 check_current_dir
