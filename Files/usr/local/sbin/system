@@ -199,13 +199,13 @@ check_vm () {
 sys_virtualized () {
 
 	# Check if FreeBSD 8 detected
-	set +e
-	uname -r | grep -q 8.0
-    if [ $? -eq 0 ]; then
-		echo "There is no need of tuning BSDRP based on FreeBSD 8.0 for being use as a VM"
-		exit 0
-    fi
-	set -e
+	#set +e
+	#uname -r | grep -q 8.0
+    #if [ $? -eq 0 ]; then
+		#echo "There is no need of tuning BSDRP based on FreeBSD 8.0 for being use as a VM"
+		#exit 0
+    #fi
+	#set -e
 
 	echo "This step will configure BSDRP for being use as a VM"
 	echo "A reboot is needed"
