@@ -24,7 +24,7 @@ alias wr 'config save'
 # A righteous umask
 umask 22
 
-set path = (/sbin /bin /usr/sbin /usr/bin /usr/games /usr/local/sbin /usr/local/bin $HOME/bin)
+set path = (/sbin /bin /usr/sbin /usr/bin /usr/local/sbin /usr/local/bin $HOME/bin)
 
 #setenv  EDITOR  'vim -i /tmp/viminfo'
 setenv  EDITOR  vi
@@ -61,7 +61,7 @@ if ($?prompt) then
 	limit coredumpsize 0
 
 	#Check the VM usage and kern.hz problem
-	/usr/local/sbin/system check-vm
+	/usr/local/sbin/system check-vm quiet
 
 endif
 
