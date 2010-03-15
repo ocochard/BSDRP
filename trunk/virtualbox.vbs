@@ -30,11 +30,11 @@ Option Explicit
 
 Main()
 
-Public VB_EXE, WORKING_DIR, TEXT, RELEASE, VM_ARCH, VM_CONSOLE, BSDRP_FILENAME, RETURN_CODE, NUMBER_VM, NUMBER_LAN
+Public VB_EXE, VB_HEADLESS, WORKING_DIR, BSDRP_VDI, TEXT, RELEASE, VM_ARCH, VM_CONSOLE, BSDRP_FILENAME, RETURN_CODE, NUMBER_VM, NUMBER_LAN
 
 Sub Main()
 	' Variables used
-	Dim WshShell, WshProcessEnv, fso,InitFSO
+	Dim WshShell, WshProcessEnv
 	
     ' Get environmeent Variables
 	Set WshShell = WScript.CreateObject("WScript.Shell")
@@ -43,6 +43,7 @@ Sub Main()
 	
 	' Define variables
     VB_EXE = WshProcessEnv("VBOX_INSTALL_PATH") & "VBoxManage.exe"
+	VB_HEADLESS = Chr(34) & WshProcessEnv("VBOX_INSTALL_PATH") & "VBoxHeadless.exe" & Chr(34)
 	WORKING_DIR = WshProcessEnv("USERPROFILE") & "\.VirtualBox"
 	
 	Set WshShell = Nothing
@@ -52,511 +53,121 @@ Sub Main()
     VB_EXE=check_VB(VB_EXE)
     
     'Wscript.Echo "DEBUG, You are using the VB in : " & VB_EXE
-    
-	' TO DO: selecting image is only usefull if no previous base VM exist !
 	
-    TEXT = "Please select a unzipped BSDRP image file" & vbCrLf & vbCrLf
-    RETURN_CODE = MsgBox (TEXT,vbOkCancel,RELEASE)
-    If RETURN_CODE = 2 Then
-        wscript.quit
-    End If
-
-    ' Ask for the BSDRP image file
-   
-   Set fso = CreateObject("UserAccounts.CommonDialog") 
-   fso.Filter = "All BSDRP images file (*.img)|*.img|"
-   InitFSO = fso.ShowOpen
-
-   If InitFSO = False Then
-        Wscript.Echo "Script Error: Please select a file!"
-        Wscript.Quit
-    End If
-    
-	BSDRP_FILENAME=Chr(34) & fso.FileName & Chr(34)
-	
-	set fso = Nothing
-	
-    'Wscript.Echo "DEBUG: You selected the file: " & ObjFSO.FileName
-	
-	VM_ARCH=image_arch(BSDRP_FILENAME)
-	VM_CONSOLE=image_console(BSDRP_FILENAME)
+	BSDRP_VDI=check_existing_VDI()
 	
 	'Wscript.Echo "DEBUG: ARCH is " & VM_ARCH & " CONSOLE is " & VM_CONSOLE
 	
-	NUMBER_VM = InputBox( "How many routers do you want to use ? (between 2 and 9)" )
+	Do
+		NUMBER_VM = InputBox( "How many routers do you want to use ? (between 2 and 9)" )
 
-	if NUMBER_VM < 2 then
-		Wscript.Echo "Warning, incorrect user input: Will use 2 routers"
-	end if
+		'if NUMBER_VM < 2 then
+		'	Wscript.Echo "Warning, incorrect user input: Will use 2 routers"
+		'end if
 	
-	if NUMBER_VM > 9 then
-		Wscript.Echo "Warning, incorrect user input: Will use 9 routers"
-	end if
+		'if NUMBER_VM > 9 then
+		'	Wscript.Echo "Warning, incorrect user input: Will use 9 routers"
+		'end if
 	
-	NUMBER_LAN = InputBox( "How many shared LAN between your routers do you want to have ? (between 0 and 9)" )
+	Loop While ((NUMBER_VM < 2) OR (NUMBER_VM > 9))
 	
-	if NUMBER_LAN < 0 then
-		Wscript.Echo "Warning, incorrect user input: Will use 0 shared LAN"
-	end if
+	Do
+		NUMBER_LAN = InputBox( "How many shared LAN between your routers do you want to have ? (between 0 and 4)" )
 	
-	if NUMBER_LAN > 9 then
-		Wscript.Echo "Warning, incorrect user input: Will use 9 shared LAN"
-	end if
+		'if NUMBER_LAN < 0 then
+		'	Wscript.Echo "Warning, incorrect user input: Will use 0 shared LAN"
+		'end if
+		
+		'if NUMBER_LAN > 9 then
+		'	Wscript.Echo "Warning, incorrect user input: Will use 9 shared LAN"
+		'end if
 	
-    convert_image(BSDRP_FILENAME)
+	Loop While ((NUMBER_LAN < 0) OR (NUMBER_LAN > 4))
+	
+	Wscript.Quit
 	
     clone_vm()
 	
 	call MsgBox (TEXT,vbOk,RELEASE)
 	
-	Wscript.Quit
-	
     start_vm()
    
-    TEXT = "Now, we will check IP connectivity by pinging the standby ISG card" & vbCrLf
-    TEXT = TEXT & "Click OK for send a ping to the Standby ISG card"
-    RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-    If RESPONSE = 2 Then
-        wscript.quit
-    End If
-   
-    Set WshShell = WScript.CreateObject("WScript.Shell")
-
-    RETURNCODE = WshShell.Run("ping 172.16.255.1 -n 1", 1, True)
-    if RETURNCODE > 0 then
-        TEXT = "ERROR for ping the Standby ISG card!" & vbCrLf
-        TEXT = TEXT & "Check your workstation IP configuration and cabling!" & vbCrLf
-        RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-        If RESPONSE = 2 Then
-            wscript.quit
-        End If
-    end if
-   
-    TEXT = "IP Connectivty is OK" & vbCrLf & vbCrLf
-    TEXT = TEXT & "Step 3: Sending firmware file into the Standby ISG card." & vbCrLf
-    TEXT = TEXT & "Click OK for proceding to files transfert"
-    RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-    If RESPONSE = 2 Then
-        wscript.quit
-    End If
-   
-    FTP_isg()
-   
-    TEXT = "File should be transferted on the Standby ISG card" & vbCrLf & vbCrLf
-    TEXT = TEXT & "Step 4: Sending initial configurations and hosts file into the ISG card." & vbCrLf & vbCrLf
-    TEXT = TEXT & "1. Power off the ATM switch" & vbCrLf & vbCrLf
-    TEXT = TEXT & "2. Unplug your workstation Ethernet cable from the standby ISG card and plug it on the ISG card" & vbCrLf & vbCrLf
-    TEXT = TEXT & "3. Extract the Standby ISG card and change the rotary switch position to 4 but do not re-insert it!: This card will be insered only at the end of this procedure" & vbCrLf & vbCrLf
-    TEXT = TEXT & "4. Re-insert all other cards with the expection of the Standby ISG card" & vbCrLf & vbCrLf
-    TEXT = TEXT & "5. Power on the ATM switch" & vbCrLf & vbCrLf
-    TEXT = TEXT & "6. Wait until the ATM switch is running:" & vbCrLf & vbCrLf
-    TEXT = TEXT & "- LED Status for ISG card: FLT and RUN are alternatively blinking" & vbCrLf & vbCrLf
-    TEXT = TEXT & "Click OK only when ATM switch is ready"
-    RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-    If RESPONSE = 2 Then
-        wscript.quit
-    End If
-   
-    TEXT = "Now, we will check IP connectivity by pinging ISG card" & vbCrLf
-    TEXT = TEXT & "Click OK for send a ping to the ISG"
-    RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-    If RESPONSE = 2 Then
-        wscript.quit
-    End If
-
-    RETURNCODE = WshShell.Run("ping 172.16.255.1 -n 1", 1, True)
-    if RETURNCODE > 0 then
-        TEXT = "ERROR for ping the ISG card!" & vbCrLf
-        TEXT = TEXT & "Check your workstation IP configuration and cabling!" & vbCrLf
-        RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-        If RESPONSE = 2 Then
-            wscript.quit
-        End If
-    end if
-   
-    TEXT = "IP Connectivty is OK" & vbCrLf & vbCrLf
-    TEXT = TEXT & "Step 5: Sending firmware and initial configuration files into the ISG." & vbCrLf
-    TEXT = TEXT & "Click OK for proceding to files transfert"
-    RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-    If RESPONSE = 2 Then
-        wscript.quit
-    End If
-   
-    FTP_isg()
-   
-    TEXT = "Step 6: Change the rotary switch of the ISG card (slot0) to 0"  & vbCrLf  & vbCrLf
-    TEXT = TEXT & "1. Extract the ISG card (slot0) and put the rotary swith in position 0"  & vbCrLf & vbCrLf
-    TEXT = TEXT & "2. Re-insert the ISG card (slot0)"  & vbCrLf & vbCrLf
-    TEXT = TEXT & "3. Click OK ONLY when (after about 5 minutes):"  & vbCrLf & vbCrLf
-    TEXT = TEXT & " - ISG card: The RUN led is solid green, and FLT led is off"  & vbCrLf
-    TEXT = TEXT & " - XH cards: All RX leds are flashing orange"  & vbCrLf
-    TEXT = TEXT & " - EC2 card (if present): Link Fault led is blinking"  & vbCrLf
-    RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-    If RESPONSE = 2 Then
-        wscript.quit
-    End If
-   
-    TEXT = "Now, we will check IP connectivity for each slot"  & vbCrLf
-    TEXT = TEXT & "Click OK for send the ping of the death"  & vbCrLf
-    RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-    If RESPONSE = 2 Then
-        wscript.quit
-    End If
-   
-    RETURNCODE=ping_internal()
-    if RETURNCODE > 0 then
-        TEXT = "ERROR: Can't ping all slots!"  & vbCrLf
-        TEXT = TEXT & "Use the procedure for a manual transfer :-("  & vbCrLf
-        RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-        If RESPONSE = 2 Then
-            wscript.quit
-        End If
-    end if
-   
-    TEXT = "Successfull ping all slots"  & vbCrLf & vbCrLf
-    TEXT = TEXT & "Step 7: Sending all firmware and configuration files to each slot"  & vbCrLf
-    TEXT = TEXT & "Click OK for starting the process"  & vbCrLf
-    RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-    If RESPONSE = 2 Then
-        wscript.quit
-    End If
-   
-    RETURNCODE=files_upload()
-   
-    if RETURNCODE <> 0 then
-        TEXT = "Error meet during file transfer!"  & vbCrLf
-        TEXT = TEXT & "Use the procedure for a manual transfer :-("  & vbCrLf
-        RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-        If RESPONSE = 2 Then
-            wscript.quit
-        End If
-    end if
-   
-    TEXT = "Step 8: Setting definitive rotary switch parameter"  & vbCrLf & vbCrLf
-    TEXT = TEXT & " 1. power off the ATM switch"  & vbCrLf  & vbCrLf
-    TEXT = TEXT & " 2. Extract each card (with the exeption of ISG card that is allready in good boot mode, standby ISG card that is allready extracted and XH cards)" & vbCrLf  & vbCrLf
-    TEXT = TEXT & " 3. Change Rotary switch position to 8 for each extracted card (with the expection of Standby ISG card that is keept in position 4 and ISG card keept in position 0)"  & vbCrLf  & vbCrLf
-    TEXT = TEXT & " 4. Re-insert ALL cards (with the exeption of ISG and XH cards that are allready insered)"  & vbCrLf  & vbCrLf
-    TEXT = TEXT & " 5. Power on your ATM switch"  & vbCrLf  & vbCrLf
-    TEXT = TEXT & " 6. Wait until the switch has started (ISG card with green RUN LED, and Standby ISG with slowly blink RUN LED)"  & vbCrLf  & vbCrLf
-    RESPONSE = MsgBox (TEXT,vbOk,RELEASE)
-   
-    clean()
-   
 End Sub
 
-Sub FTP_isg()
-
-    Set WshShell = WScript.CreateObject("WScript.Shell")
-    Set objFSO = CreateObject("Scripting.FileSystemObject")
-
-    If (objFSO.FileExists("hosts")) Then
-        objFSO.DeleteFile("hosts")
-    end if
-
-    Set HOSTSFILE = objFSO.CreateTextFile("hosts")
-    HOSTSFILE.WriteLine ("ipaddress=10.10.10.10")
-    HOSTSFILE.Close
-   
-    If (objFSO.FileExists("ftpcommands.txt")) Then
-        objFSO.DeleteFile("ftpcommands.txt")
-    end if
-
-    Set objFile = objFSO.CreateTextFile("ftpcommands.txt")
-    objFile.WriteLine ("root")
-    objFile.WriteLine ("MANAGER")
-    objFile.WriteLine ("bin")
-    objFile.WriteLine ("hash")
-    objFile.WriteLine ("get vconfig")
-    objFile.WriteLine ("cd /mnt/flash0")
-    objFile.WriteLine ("put slot0\startup_isg.tz")
-    objFile.WriteLine ("put hosts")
-    objFile.WriteLine ("bye")
-    objFile.Close
-
-   
-    RETURNCODE = WshShell.Run("ftp -s:ftpcommands.txt 172.16.255.1", 1, True)
-
-    If (objFSO.FileExists("vconfig")) Then
-        objFSO.DeleteFile("vconfig")
-    else
-        RETURNCODE = RETURNCODE + 1
-    end if
-
-    if RETURNCODE > 0 then
-        TEXT = "Error meet during the FTP transfert to the ISG card!" & vbCrLf
-        TEXT = TEXT & "Use the procedure for a manual transfer :-("
-        RESPONSE = MsgBox (TEXT,vbOkCancel,RELEASE)
-        If RESPONSE = 2 Then
-            wscript.quit
-        End If
-    end if
-   
-
-End Sub
-
-Sub Generate_ftp_script()
-    Set objFSO = CreateObject("Scripting.FileSystemObject")
-
-    If (objFSO.FileExists("ftpslot0.txt")) Then
-        objFSO.DeleteFile("ftpslot0.txt")
-    end if
-   
-    Set objFile = objFSO.CreateTextFile("ftpslot0.txt")
-    objFile.WriteLine ("root")
-    objFile.WriteLine ("MANAGER")
-    objFile.WriteLine ("bin")
-    objFile.WriteLine ("hash")
-    objFile.WriteLine ("get vconfig")
-    objFile.WriteLine ("cd /mnt/flash0")
-   
-    set fso = CreateObject("Scripting.FileSystemObject")
-    Set WshShell = WScript.CreateObject("WScript.Shell")
-    'Get the sub folder list
-    set SUBDIR_LIST =  fso.GetFolder(".").SubFolders
-  
-    For Each SUBDIR In SUBDIR_LIST
-        set OBJ_FILE_LIST =  fso.GetFolder(SUBDIR.Path).Files
-       
-        if SUBDIR.Name = "slot0" then
-            For Each OBJ_FILE In OBJ_FILE_LIST
-                'Skip the startup file: Allready uploaded
-                if OBJ_FILE.Name <> "startup_isg.tz" then
-                    objFile.WriteLine ("put slot0\" & OBJ_FILE.Name)   
-                end if
-           
-            Next
-       
-        end if
-   
-    next
-   
-    objFile.WriteLine ("bye")
-    objFile.Close
-   
-End Sub
-
-Sub Check_file()
-
-   ' Create the object
-   TEXT = "Step 1: Checking firmware and configuration files presence and validity:" & vbCrLf
-   TEXT = TEXT & "Check if your hardware ATM switch correspond to this configuration:" & vbCrLf & vbCrLf
-    set fso = CreateObject("Scripting.FileSystemObject")
-    'Get the sub folder list
-    set SUBDIR_LIST =  fso.GetFolder(".").SubFolders
-   
-    If SUBDIR_LIST.Count = 0 Then
-
-       MsgBox  "No slot directories found in script directory!" & vbCrLf & "There must be slot0, slot1, slot2, etc... directories that contain firmware and configurations files!"
+Function check_existing_VDI()
+	
+	dim fso, InitFSO, FILENAME
+	
+	Set fso = CreateObject("Scripting.FileSystemObject") 
+	
+	FILENAME= WORKING_DIR & "\BSDRP_FreeBSD_64_vga.vdi" 
+	
+    If (fso.FileExists(FILENAME)) Then
+		VM_ARCH="FreeBSD_64"
+		VM_CONSOLE="vga"
+		check_existing_VDI=Chr(34) & FILENAME & Chr(34)
+		Exit Function
+	End if 
+	
+	FILENAME=WORKING_DIR & "\BSDRP_FreeBSD_vga.vdi"
+	
+    If (fso.FileExists(FILENAME)) Then
+		VM_ARCH="FreeBSD"
+		VM_CONSOLE="vga"
+		check_existing_VDI=Chr(34) & FILENAME & Chr(34)
+		Exit Function
+	End if 
+    
+    FILENAME=WORKING_DIR & "\BSDRP_FreeBSD_64_serial.vdi"
+	
+    If (fso.FileExists(FILENAME)) Then
+		VM_ARCH="FreeBSD_64"
+		VM_CONSOLE="serial"
+		check_existing_VDI=Chr(34) & FILENAME & Chr(34)
+		Exit Function
+	End if
+	
+	FILENAME=WORKING_DIR & "\BSDRP_FreeBSD_serial.vdi"
+	
+    If (fso.FileExists(FILENAME)) Then
+		VM_ARCH="FreeBSD"
+		VM_CONSOLE="serial"
+		check_existing_VDI=Chr(34) & FILENAME & Chr(34)
+		Exit Function
+	End if 
+    
+    TEXT = "Please select a unzipped and unrenamed BSDRP image file" & vbCrLf & vbCrLf
+    RETURN_CODE = MsgBox (TEXT,vbOkCancel,RELEASE)
+    If RETURN_CODE = 2 Then
         wscript.quit
-    Else
-  
-        For Each SUBDIR In SUBDIR_LIST
-            TEXT = TEXT & "- " & SUBDIR.Name & " "
-            'Get the list of file in this sub folder
-            set OBJ_FILE_LIST =  fso.GetFolder(SUBDIR.Path).Files
-           
-            FILE_CONFIG = 0
-            FILE_STARTUP = 0
-            FILE_HOSTS = 0
-            FILE_VSM = 0
-            FILE_MPRO = 0
-            FILE_SLAVE = 0
-            FILE_LCA = 0
-            FILE_CE_LCA = 0
-            FILE_ECC = 0
-            FILE_EONE= 0
-            FILE_OC= 0
-           
-            For Each OBJ_FILE In OBJ_FILE_LIST
-           
-                Select Case (OBJ_FILE.Name)
-
-                Case "vsm.bin":
-                    FILE_VSM = 1
-
-                Case "mpro1.cod":
-                    FILE_MPRO = 1
-
-                Case "slave.cod":
-                    FILE_SLAVE = 1
-               
-                Case "ce_lca.bin":
-                    FILE_LCA = 1
-                   
-                Case "ecc.cod":
-                    FILE_ECC = 1
-                   
-                Case "e1ds1.cod":
-                    FILE_EONE = 1
-               
-                Case "oc3.cod":
-                    FILE_OC = 1
-               
-                Case "hosts":
-                    FILE_HOSTS = 1
-               
-                Case "startup_isg.tz":
-                    FILE_STARTUP = 1
-                   
-                Case "config.cfg":
-                    FILE_CONFIG = 1
-
-                End Select
-               
-            Next
-       
-            if FILE_CONFIG = 1 then
-                if FILE_HOSTS=1 and FILE_STARTUP=1 then
-                    TEXT = TEXT & "front: ISG, back: Empty" & vbCrLf
-                elseif FILE_CONFIG=1 and FILE_VSM=1 and FILE_MPRO=1 then
-                    TEXT = TEXT & "front: VSM, back: DS1-4CS" & vbCrLf
-                elseif FILE_CONFIG=1 and FILE_MPRO=1 then
-                    TEXT = TEXT & "front: ACP, back: E3-2C" & vbCrLf
-                elseif FILE_CONFIG=1 and FILE_ECC=1 and FILE_EONE=1 then
-                    TEXT = TEXT & "front: ECC/EC2, back: E1-IMA" & vbCrLf
-                elseif FILE_CONFIG=1 and FILE_ECC=1 and FILE_OC=1 then
-                    TEXT = TEXT & "front: ECC/EC2, back: 155I/M/H-2" & vbCrLf
-                elseif FILE_CONFIG=1 and FILE_SLAVE=1 and FILE_LCA=1 then
-                    TEXT = TEXT & "front: CE, back: SI-4C" & vbCrLf
-                else
-                    TEXT = TEXT & "Unknown!" & vbCrLf
-                end if
-            else
-                TEXT = TEXT & "Missing config.cfg file!" & vbCrLf
-            end if
-       
-        Next
-
-        RESPONSE = MsgBox (TEXT,vbOkCancel,"Checking Switch Files presence")
-       
-        If RESPONSE = 2 Then
-            wscript.quit
-        End If
-       
     End If
+
+	set fso = Nothing
+	
+    ' Ask user for the BSDRP image file
    
-End Sub
+	Set fso = CreateObject("UserAccounts.CommonDialog") 
+	fso.Filter = "All BSDRP images file (*.img)|*.img|"
+	InitFSO = fso.ShowOpen
 
-Function files_upload()
-    files_upload=0
-    ' Create the object
-    set fso = CreateObject("Scripting.FileSystemObject")
-    Set WshShell = WScript.CreateObject("WScript.Shell")
-    'Get the sub folder list
-    set SUBDIR_LIST =  fso.GetFolder(".").SubFolders
-  
-    For Each SUBDIR In SUBDIR_LIST
-        set OBJ_FILE_LIST =  fso.GetFolder(SUBDIR.Path).Files
-       
-        if SUBDIR.Name = "slot0" then
-            ' Do not transfert slot0 in the begining, keept it for the last transfert
-            'Must includ and loop exit here
-            WScript.Sleep 1
-           
-        else
-            'Extract the number of the folder name: slot1
-            'create a 2 element array cuting using the 't'
-            TEMPO = Split(SUBDIR.Name, "t", -1, 1)
-            SLOT_IP = 10 + TEMPO(1)
-            For Each OBJ_FILE In OBJ_FILE_LIST
-                RETURNCODE = WshShell.Run("tftp -i 10.10.10." & SLOT_IP &" put " & SUBDIR.Name & "\" & OBJ_FILE.Name, 1, True)
-                if RETURNCODE > 0 then
-
-                    WScript.Sleep 1000
-                    RETURNCODE = WshShell.Run("tftp -i 10.10.10." & SLOT_IP &" put " & SUBDIR.Name & "\" & OBJ_FILE.Name, 1, True)
-                    if RETURNCODE > 0 then
-                        TEXT = "Error for TFTP transfer file: " & OBJ_FILE.Name
-                        TEXT = TEXT & " into slot IP 10.10.10." & SLOT_IP
-                        MsgBox TEXT
-                    end if
-                end if
-                WScript.Sleep 1000
-                files_upload = files_upload + RETURNCODE
-            Next
-       
-        end if
-       
-    next
-   
-    'After all card, we upload to the ISG card
-    Generate_ftp_script()
-   
-    ' The return code is allways 0 (good) with FTP
-    RETURNCODE = WshShell.Run("ftp -s:ftpslot0.txt 10.10.10.10", 1, True)
-
-    ' the FTP script download the vconfig file, this permit to check if FTP connection works
-
-    If (fso.FileExists("vconfig")) Then
-        fso.DeleteFile("vconfig")
-    else
-        RETURNCODE = RETURNCODE + 1
-    end if
-
-    files_upload = files_upload + RETURNCODE
-
-
-End Function
-
-Function Ping_Internal()
-    Ping_Internal=0
-    ' Create the object
-    set fso = CreateObject("Scripting.FileSystemObject")
-    Set WshShell = WScript.CreateObject("WScript.Shell")
-    'Get the sub folder list
-    set SUBDIR_LIST =  fso.GetFolder(".").SubFolders
-  
-    For Each SUBDIR In SUBDIR_LIST
-        set OBJ_FILE_LIST =  fso.GetFolder(SUBDIR.Path).Files   
-        'Extract the number of the folder name: slot1
-        'create a 2 element array cuting using the 't'
-        TEMPO = Split(SUBDIR.Name, "t", -1, 1)
-        SLOT_IP = 10 + TEMPO(1)
-       
-        RETURNCODE = WshShell.Run("ping 10.10.10." & SLOT_IP & " -n 1", 1, True)
-        Ping_Internal= Ping_Internal + RETURNCODE       
-    next
-   
-End Function
-
-Function check_file(byval BSDRP_filename)
-
-    strComputer = "."
-    Set objWMIService = GetObject("winmgmts:" _
-    & "{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2")
-
-    Set IPConfigSet = objWMIService.ExecQuery _
-    ("Select * from Win32_NetworkAdapterConfiguration Where IPEnabled=TRUE")
- 
-    foundip=0
-    foundmask=0
-    foundgw=0
-
-    For Each IPConfig in IPConfigSet
-        If Not IsNull(IPConfig.IPAddress) Then
-            For i=LBound(IPConfig.IPAddress) to UBound(IPConfig.IPAddress)
-                if IPConfig.IPAddress(i)=ipaddress then
-                    foundip=1
-                end if
-                'WScript.Echo "DEBUG IP: " & IPConfig.IPAddress(i)
-            Next
-        End If
-        If Not IsNull(IPConfig.DefaultIPGateway) Then
-            For i=LBound(IPConfig.DefaultIPGateway) to UBound(IPConfig.DefaultIPGateway)
-                if IPConfig.DefaultIPGateway(i)=defaultipgateway then
-                    foundgw=1
-                end if
-                'WScript.Echo "DEBUG GW : " & IPConfig.DefaultIPGateway(i)
-            Next
-        End If
-    Next
-   
-    check_ip = 0
-   
-    if foundip=1 and foundgw=1 then
-        check_ip = 1
-    end if
-
+	If InitFSO = False Then
+		Wscript.Echo "Script Error: Please select a file!"
+        Wscript.Quit
+    End If
+    
+	FILENAME=fso.FileName
+	
+	set fso = Nothing
+	
+	' Getting ARCH and Console type for
+	
+	VM_ARCH=image_arch_detect(FILENAME)
+	VM_CONSOLE=image_console_detect(FILENAME)
+	
+	convert_image_to_vdi(FILENAME)
+	
+	check_existing_VDI= Chr(34) & WORKING_DIR & "\BSDRP_" & VM_ARCH & "_" & VM_CONSOLE & ".vdi" & Chr(34)
+	
 End Function
 
 Function check_VB(ByVal VB_EXE)
@@ -586,59 +197,54 @@ Function check_VB(ByVal VB_EXE)
    
 End Function
 
-
-Function image_arch(ByVal BSDRP_FileName)
-	image_arch=""
+Function image_arch_detect(ByVal BSDRP_FileName)
 	if InStr(BSDRP_FileName, "amd64") then
-		image_arch="FreeBSD_64"
+		image_arch_detect="FreeBSD_64"
+		Exit Function
 	end if
 	
 	if InStr(BSDRP_FileName, "i386") then
-		image_arch="FreeBSD"
+		image_arch_detect="FreeBSD"
+		Exit Function
 	end if
 	
-    if image_arch = "" then
-		Wscript.Echo "WARNING: Can't guests arch of this image, will use i386" & vbCrLf & "Did you rename the file ?"
-        image_arch="FreeBSD"
-    end if
+	MsgBox  "Can't guests arch of this image: BSDRP file renamed ?",vbCritical,"Error"
+	Wscript.Quit
    
 End Function
 
-Function image_console(ByVal BSDRP_FileName)
-	image_console=""
+Function image_console_detect(ByVal BSDRP_FileName)
 	if InStr(BSDRP_FileName, "serial") then
-		image_console="serial"
+		image_console_detect="serial"
+		Exit Function
 	end if
 	
 	if InStr(BSDRP_FileName, "vga") then
-		image_console="vga"
+		image_console_detect="vga"
+		Exit Function
 	end if
 	
-	if image_console = "" then
-		Wscript.Echo "WARNING: Can't guests console type of this image, will use vga" & vbCrLf & "Did you rename the file ?"
-        image_console="vga"
-    end if
-	
+	MsgBox  "Can't guests console of this image: BSDRP file renamed ?",vbCritical,"Error"
+	Wscript.Quit
    
 End Function
 
-Function convert_image (ByVal BSDRP_FileName)
+Function convert_image_to_vdi (ByVal BSDRP_FileName)
 	dim fso, CMD, FILE
 	Set fso = CreateObject("Scripting.FileSystemObject")
 	FILE=WORKING_DIR & "\BSDRP_lab.vdi"
-	If (fso.FileExists(FILE)) Then
-			CMD=VB_EXE & " closemedium disk " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34) & " --delete"
-			call run (CMD,true)
-			' fso.DeleteFile(FILE)
-    end if
+	'If (fso.FileExists(FILE)) Then
+	'		CMD=VB_EXE & " closemedium disk " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34) & " --delete"
+	'		call run (CMD,true)
+	'		' fso.DeleteFile(FILE)
+    'end if
 	
 	set fso = Nothing 
 	
 	' Convert the IMG file into a VDI file
 	
-	CMD=VB_EXE & " convertfromraw " & BSDRP_FileName & " " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34)
+	CMD=VB_EXE & " convertfromraw " & Chr(34) & BSDRP_FileName & Chr(34) & " " & Chr(34) & WORKING_DIR & "\BSDRP_" & VM_ARCH & "_" & VM_CONSOLE & ".vdi" & Chr(34)
 	
-	'run(CMD,true)
 	call run (CMD,true)
 	
 	' Now, we need to compress this file, but for this action, this file must be a member of an existing VM
@@ -646,50 +252,50 @@ Function convert_image (ByVal BSDRP_FileName)
 	
 	' Check existing BSDRP_lap_tempo vm before to register it!
 	
-	if check_vm("BSDRP_Lab_Template") = 0 then
-		if delete_vm("BSDRP_Lab_Template") > 0 then
-			TEXT = "Can't delete the existing BSDRP_Lab_Template VM !"
-			MsgBox  TEXT,vbCritical,"Error"
-			wscript.quit
-		end if
-	end if
+	'if check_vm("BSDRP_Lab_Template") = 0 then
+	'	if delete_vm("BSDRP_Lab_Template") > 0 then
+	'		TEXT = "Can't delete the existing BSDRP_Lab_Template VM !"
+	'		MsgBox  TEXT,vbCritical,"Error"
+	'		wscript.quit
+	'	end if
+	'end if
 	
 	' Create the VM
-	CMD=VB_EXE & " createvm --name BSDRP_Lab_Template --ostype " & VM_ARCH & " --register"
+	'CMD=VB_EXE & " createvm --name BSDRP_Lab_Template --ostype " & VM_ARCH & " --register"
 	
-	call run(CMD,true)
+	'call run(CMD,true)
 	
 	' Add a storage controller
 	
-	CMD=VB_EXE & " storagectl BSDRP_Lab_Template --name " & Chr(34) & "SATA Controller" & Chr(34) & " --add sata --controller IntelAhci"
+	'CMD=VB_EXE & " storagectl BSDRP_Lab_Template --name " & Chr(34) & "SATA Controller" & Chr(34) & " --add sata --controller IntelAhci"
 	
-	call run(CMD,true)
+	'call run(CMD,true)
 	
 	' Add the VDI image disk
 	
-	CMD=VB_EXE & " storageattach BSDRP_Lab_Template --storagectl " & Chr(34) & "SATA Controller" & Chr(34) & " --port 0 --device 0 --type hdd --medium " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34)
+	'CMD=VB_EXE & " storageattach BSDRP_Lab_Template --storagectl " & Chr(34) & "SATA Controller" & Chr(34) & " --port 0 --device 0 --type hdd --medium " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34)
 	
-	call run(CMD,true)
+	'call run(CMD,true)
 	
 	' Reduce the VM Requirement
 	
-	CMD=VB_EXE & " modifyvm BSDRP_Lab_Template --memory 16 --vram 1 "
+	'CMD=VB_EXE & " modifyvm BSDRP_Lab_Template --memory 16 --vram 1 "
 	
-	call run(CMD,true)
+	'call run(CMD,true)
 	
 	' Compress the VDI…
 	
-	CMD=VB_EXE & " modifyvdi " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34) & " --compact"
+	'CMD=VB_EXE & " modifyvdi " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34) & " --compact"
 	
-	call run(CMD,true)
+	'call run(CMD,true)
 	
 	' Delete the VM
 	
-	if delete_vm ("BSDRP_Lab_Template") > 0 then
-		TEXT = "Error trying to delet the BSDRP_Lab_Template after image compression" & vbCrLf & vbCrLf
-		MsgBox  TEXT,vbCritical,"Error"
-		wscript.quit
-	end if
+	'if delete_vm ("BSDRP_Lab_Template") > 0 then
+	'	TEXT = "Error trying to delet the BSDRP_Lab_Template after image compression" & vbCrLf & vbCrLf
+	'	MsgBox  TEXT,vbCritical,"Error"
+	'	wscript.quit
+	'end if
 	
 
 End Function
@@ -747,8 +353,8 @@ End Function
 ' This function generate the clones
 Function clone_vm ()
 	Dim i,j,NIC_NUMBER,ERRTEXT,CMD
-    TEXT = "Creating lab with $NUMBER_VM routers:" & vbCrLf
-    TEXT = TEXT & "- $NUMBER_LAN LAN between all routers" & vbCrLf
+    TEXT = "Creating lab with " & NUMBER_VM & " routers:" & vbCrLf
+    TEXT = TEXT & "- " & NUMBER_LAN & " LAN between all routers" & vbCrLf
     TEXT = TEXT &  "- Full mesh ethernet point-to-point link between each routers" & vbCrLf & vbCrLf
     i=1
     'Enter the main loop for each VM
