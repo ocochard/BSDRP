@@ -164,12 +164,20 @@ check_vm () {
         	echo "VM environnement detected"
 		fi
     fi
-	grep -q kern.hz=50 /boot/loader.conf
-    if [ $? -eq 0 ]; then
-        NOT_TUNED=false
-    else
-        NOT_TUNED=true
-    fi
+	
+	KERN_HZ=`sysctl -n kern.hz`
+	if [ ${KERN_HZ} -gt 51 ]; then
+		NOT_TUNED=true
+	else
+		NOT_TUNED=false
+	fi
+
+	#grep -q kern.hz=50 /boot/loader.conf
+    #if [ $? -eq 0 ]; then
+    #    NOT_TUNED=false
+    #else
+    #    NOT_TUNED=true
+    #fi
 	
 	# Since FreeBSD 8, the kernel automatically detect the VM presence and lower the kern.hz
 	# Not true in FBSD 8.0 stable
@@ -187,8 +195,10 @@ check_vm () {
 		#	exit 0
 		#fi
 		if (${NOT_TUNED}); then
-        	echo "Warning: default kern.hz not lowered!"
-        	echo 'Use "system virtualized" for tuning your system for a VM usage'
+        	echo "Warning: default kern.hz too high for a VM use!"
+        	echo 'Use "system virtualized" for lower it'
+			#echo 'Actual kern.hz value: ${KERN_HZ}'
+			#echo 'Recommended kern.hz value in a VM: 50'
    		fi 
 	fi
 	set -e

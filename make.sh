@@ -206,7 +206,7 @@ usage () {
         echo "  -c      specify console type: vga (default) or serial"
         echo "  -a      specify target architecture: i386 or amd64"
 		echo "          if not specified, use local system arch (`uname -m`)"
-		echo "			cambria (arm) targe is a work in progress"	
+		echo "          cambria (arm) target is in work-in-progress state"	
         echo "  -b      suppress buildworld and buildkernel"
 		echo "  -k      suppress buildkernel"
 		echo "  -w      suppress buildworld"
