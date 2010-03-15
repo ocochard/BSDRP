@@ -274,9 +274,9 @@ add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ISISD -DWITH_OS
 
 ### Extra stuf ###
 # Libiconv is needed by vim-lite, but the package is not automaticaly generated, then force it:
-add_port "converters/libiconv" "-DNO_INSTALL_MANPAGES -DFORCE_PKG_REGISTER -DNOPORTDOCS"
+#add_port "converters/libiconv" "-DNO_INSTALL_MANPAGES -DFORCE_PKG_REGISTER -DNOPORTDOCS"
 # Add a text editor that support syntax colorization (usefull for edit shell script)
-add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+#add_port "editors/vim-lite" "-DWITHOUT_X11 -DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 # Add XORP
 #add_port "net/xorp" "-DWITH_ADVMCAST -DWITH_IPV6 -DWITH_SNMP -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"

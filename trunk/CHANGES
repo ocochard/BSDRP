@@ -4,6 +4,9 @@ Release 0.33 (not released)
 - Add GRE module (GRE and MOBILE encapsulation)
 - Sysctl: Do not generate core files
 - Re-enable kern.hz reducing in VM (seem that FBSD 8.0-stable didn't auto-adapt)
+- Removed VIM-lite: Ratio size/feature (syntaxe colorization) not interesting
+
+TODO: utf-8 support for console
 
 Release 0.32
 - Based on FreeBSD 8.0-Release-p2
