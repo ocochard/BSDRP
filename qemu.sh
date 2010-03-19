@@ -276,6 +276,9 @@ start_lab_vm () {
             QEMU_OUTPUT="-vnc :${i}"
             echo "Connect to the router ${i} by VNC client on display ${i}"
         fi
+		if ($VERBOSE); then
+			echo ${QEMU_ARCH} -enable-kqemu -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} ${QEMU_LAN_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
+		fi
         ${QEMU_ARCH} -enable-kqemu -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} ${QEMU_LAN_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
         i=`expr $i + 1`
     done
@@ -294,12 +297,13 @@ start_lab_vm () {
 
 usage () {
         (
-        echo "Usage: $0 [-s] -i BSDRP-full.img [-n router-number] [-l LAN-number]"
+        echo "Usage: $0 [-shv] -i BSDRP-full.img [-n router-number] [-l LAN-number]"
         echo "  -i filename     BSDRP file image path"
         echo "  -n X            Lab mode: start X routers (between 2 and 9) full meshed"
         echo "  -l Y            Number of LAN between 0 and 9 (in lab mode only)"
         echo "  -s              Enable a shared LAN with Qemu host"
         echo "  -h              Display this help"
+		echo "  -v              Verbose (debug) mode"
         echo ""
         echo "Note: In lab mode, the qemu process are started in snapshot mode,"
         echo "this mean that all modifications to disks are lose after quitting the lab"
@@ -317,11 +321,13 @@ usage () {
 
 # ed(4) drivers
 NIC_MODEL=ne2k_pci
+# fxp drivers:
+#NIC_MODEL=i82551
 
 ### Parse argument
 
 set +e
-args=`getopt i:hl:n:s $*`
+args=`getopt i:hvl:n:s $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
@@ -331,6 +337,7 @@ set -e
 set -- $args
 LAB_MODE=false
 SHARED_WITH_HOST=false
+VERBOSE=false
 for i
 do
         case "$i" 
@@ -346,6 +353,10 @@ do
                 shift
                 shift
                 ;;
+		-v)
+				VERBOSE=true
+				shift
+				;;
         -s)
                 SHARED_WITH_HOST=true
                 shift
