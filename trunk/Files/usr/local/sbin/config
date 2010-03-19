@@ -97,6 +97,7 @@ usage () {
 		echo "Options for put:"
 		echo " - SCP username@host:filename"
 		echo "	 send the configuration to the host as filename using the username"
+		echo "  if no filename given, the destination file will be named: hostname.tar.bz2"
 	exit 0
 	;;
 	esac
@@ -330,15 +331,15 @@ put () {
         scp)
 			put_parse_input $THIRD_OPTION
 			echo "Send saved configuration by SCP to ${REMOTEHOST}"
-			if [ -f /tmp/cfg_archive.tar.bz2 ]; then
-				rm /tmp/cfg_archive.tar.bz2	
+			if [ -f /tmp/${FILENAME} ]; then
+				rm /tmp/${FILENAME}	
 			fi
 			mount_cfg
-			tar -cjvpf /tmp/cfg_archive.tar.bz2 -C /cfg/ . 2>/dev/null
+			tar -cjvpf /tmp/${FILENAME} -C /cfg/ . 2>/dev/null
 			umount_cfg
-			scp /tmp/cfg_archive.tar.bz2 ${USERNAME}@${REMOTEHOST}:${FILENAME}
-			if [ -f /tmp/cfg_archive.tar.bz2 ]; then
-                rm /tmp/cfg_archive.tar.bz2
+			scp /tmp/${FILENAME} ${USERNAME}@${REMOTEHOST}:${FILENAME}
+			if [ -f /tmp/${FILENAME} ]; then
+                rm /tmp/${FILENAME}
             fi
             ;;
         cvs)

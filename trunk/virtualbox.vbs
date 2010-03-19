@@ -61,26 +61,10 @@ Sub Main()
 	Do
 		NUMBER_VM = InputBox( "How many routers do you want to use ? (between 2 and 9)" )
 
-		'if NUMBER_VM < 2 then
-		'	Wscript.Echo "Warning, incorrect user input: Will use 2 routers"
-		'end if
-	
-		'if NUMBER_VM > 9 then
-		'	Wscript.Echo "Warning, incorrect user input: Will use 9 routers"
-		'end if
-	
 	Loop While ((NUMBER_VM < 2) OR (NUMBER_VM > 9))
 	
 	Do
 		NUMBER_LAN = InputBox( "How many shared LAN between your routers do you want to have ? (between 0 and 4)" )
-	
-		'if NUMBER_LAN < 0 then
-		'	Wscript.Echo "Warning, incorrect user input: Will use 0 shared LAN"
-		'end if
-		
-		'if NUMBER_LAN > 9 then
-		'	Wscript.Echo "Warning, incorrect user input: Will use 9 shared LAN"
-		'end if
 	
 	Loop While ((NUMBER_LAN < 0) OR (NUMBER_LAN > 4))
 	
