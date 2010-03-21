@@ -25,7 +25,7 @@
 ' SUCH DAMAGE.
 '
 
-' Force declaration of variables before use
+'Force declaration of variables before use
 Option Explicit
 
 Main()
@@ -43,38 +43,30 @@ Sub Main()
 	
 	' Define variables
     VB_EXE = WshProcessEnv("VBOX_INSTALL_PATH") & "VBoxManage.exe"
-	VB_HEADLESS = Chr(34) & WshProcessEnv("VBOX_INSTALL_PATH") & "VBoxHeadless.exe" & Chr(34)
+	VB_HEADLESS = WshProcessEnv("VBOX_INSTALL_PATH") & "VBoxHeadless.exe"
 	WORKING_DIR = WshProcessEnv("USERPROFILE") & "\.VirtualBox"
 	
 	Set WshShell = Nothing
 	
     RELEASE = "BSD Router Project: VirtualBox lab VBscript"
 
-    VB_EXE=check_VB(VB_EXE)
-    
-    'Wscript.Echo "DEBUG, You are using the VB in : " & VB_EXE
-	
+    VB_EXE=check_VB_EXE(VB_EXE)  
+	VB_HEADLESS=check_VB_HEADLESS(VB_HEADLESS)
 	BSDRP_VDI=check_existing_VDI()
-	
-	'Wscript.Echo "DEBUG: ARCH is " & VM_ARCH & " CONSOLE is " & VM_CONSOLE
 	
 	Do
 		NUMBER_VM = InputBox( "How many routers do you want to use ? (between 2 and 9)" )
-
 	Loop While ((NUMBER_VM < 2) OR (NUMBER_VM > 9))
 	
 	Do
 		NUMBER_LAN = InputBox( "How many shared LAN between your routers do you want to have ? (between 0 and 4)" )
-	
 	Loop While ((NUMBER_LAN < 0) OR (NUMBER_LAN > 4))
-	
-	Wscript.Quit
 	
     clone_vm()
 	
-	call MsgBox (TEXT,vbOk,RELEASE)
-	
     start_vm()
+	
+	call MsgBox (TEXT,vbOk,RELEASE)
    
 End Sub
 
@@ -154,14 +146,14 @@ Function check_existing_VDI()
 	
 End Function
 
-Function check_VB(ByVal VB_EXE)
+Function check_VB_EXE(ByVal VB_EXE)
 	dim fso, ObjFSO, InitFSO
 	
     Set fso = CreateObject("Scripting.FileSystemObject")
    
     If Not (fso.FileExists(VB_EXE)) Then
         TEXT = "Can't found VirtualBox in " & vbCrLf & VB_EXE & vbCrLf
-        TEXT = TEXT & "Please, select the VBmanager.exe location" & vbCrLf
+        TEXT = TEXT & "Please, select the VBoxManage.exe location" & vbCrLf
         MsgBox  TEXT,vbCritical,"Error"
         
         Set ObjFSO = CreateObject("UserAccounts.CommonDialog") 
@@ -171,10 +163,37 @@ Function check_VB(ByVal VB_EXE)
             Wscript.Echo "Script Error: Please select a file!"
             Wscript.Quit
         Else
-            check_VB=Chr(34) & ObjFSO.FileName & Chr(34)
+            check_VB_EXE=Chr(34) & ObjFSO.FileName & Chr(34)
         End If
     else
-        check_VB=Chr(34) & VB_EXE & Chr(34)
+        check_VB_EXE=Chr(34) & VB_EXE & Chr(34)
+    end if
+	
+	set fso = Nothing
+   
+End Function
+
+Function check_VB_HEADLESS(ByVal VB_EXE)
+	dim fso, ObjFSO, InitFSO
+	
+    Set fso = CreateObject("Scripting.FileSystemObject")
+   
+    If Not (fso.FileExists(VB_EXE)) Then
+        TEXT = "Can't found VirtualBox in " & vbCrLf & VB_EXE & vbCrLf
+        TEXT = TEXT & "Please, select the VBoxHeadless.exe location" & vbCrLf
+        MsgBox  TEXT,vbCritical,"Error"
+        
+        Set ObjFSO = CreateObject("UserAccounts.CommonDialog") 
+        InitFSO = ObjFSO.ShowOpen
+
+       If InitFSO = False Then
+            Wscript.Echo "Script Error: Please select a file!"
+            Wscript.Quit
+        Else
+            check_VB_HEADLESS=Chr(34) & ObjFSO.FileName & Chr(34)
+        End If
+    else
+        check_VB_HEADLESS=Chr(34) & VB_EXE & Chr(34)
     end if
 	
 	set fso = Nothing
@@ -232,7 +251,7 @@ Function convert_image_to_vdi (ByVal BSDRP_FileName)
 	call run (CMD,true)
 	
 	' Now, we need to compress this file, but for this action, this file must be a member of an existing VM
-	' *********** IS THE COMPRESSION VERY USEFULL ??? *************************
+	' *********** IS THE COMPRESSION VERY?USEFULL ??? *************************
 	
 	' Check existing BSDRP_lap_tempo vm before to register it!
 	
@@ -267,7 +286,7 @@ Function convert_image_to_vdi (ByVal BSDRP_FileName)
 	
 	'call run(CMD,true)
 	
-	' Compress the VDI…
+	' Compress the VDI?
 	
 	'CMD=VB_EXE & " modifyvdi " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34) & " --compact"
 	
@@ -280,12 +299,11 @@ Function convert_image_to_vdi (ByVal BSDRP_FileName)
 	'	MsgBox  TEXT,vbCritical,"Error"
 	'	wscript.quit
 	'end if
-	
 
 End Function
 
-Function Run(ByVal CMD, ByVal MANAGE_ERROR)
-' This function run the command CMD
+Function run(ByVal CMD, ByVal MANAGE_ERROR)
+' This function run the command CMD, and wait the execution before continue
 ' if MANAGE_ERROR is true, then this command manage error (display error and exit)
 ' if RETURNVAL is false, then this command silenty return RETURN_CODE
 
@@ -293,7 +311,7 @@ Function Run(ByVal CMD, ByVal MANAGE_ERROR)
 
     Set shell = CreateObject("WScript.Shell")
 	'Wscript.Echo "DEBUG:" &  CMD
-	Run = Shell.Run(CMD,1,True)
+	Run = Shell.Run(CMD,2,True)
 	if MANAGE_ERROR then
 		if Run > 0 then
 			ERRTEXT = "Error with this command" & vbCrLf & CMD & vbCrLf
@@ -306,32 +324,28 @@ Function Run(ByVal CMD, ByVal MANAGE_ERROR)
 	
 End Function
 
+Function run_bg(ByVal CMD)
+' This function run the command CMD in background
+	Dim Shell
+    Set Shell = CreateObject("WScript.Shell")
+	run_bg = Shell.Run(CMD,2,False)
+End Function
+
+'This function check if the given VM exist
 Function check_vm(ByVal VM_NAME)
 	Dim CMD
-	
 	CMD=VB_EXE & " showvminfo " & VM_NAME
-		
 	check_vm=run(CMD,false)
-
 End Function
 
 Function delete_vm(ByVal VM_NAME)
-	Dim CMD
-	
+	Dim CMD	
 	CMD=VB_EXE & " storagectl " & VM_NAME & " --name " & Chr(34) & "SATA Controller" & Chr(34) & " --remove"
-	
 	delete_vm=run(CMD,false)
-	
 	CMD=VB_EXE & " unregistervm " & VM_NAME & " --delete"
-
 	delete_vm=delete_vm + run(CMD,false)
-	
 	'CMD=VB_EXE & " closemedium disk " & Chr(34) & WORKING_DIR & "\" & VM_NAME & ".vdi" & Chr(34) " --delete
-	
 	'delete_vm=delete_vm + run(CMD,false)
-	
-
-	
 End Function
 
 ' This function generate the clones
@@ -340,18 +354,17 @@ Function clone_vm ()
     TEXT = "Creating lab with " & NUMBER_VM & " routers:" & vbCrLf
     TEXT = TEXT & "- " & NUMBER_LAN & " LAN between all routers" & vbCrLf
     TEXT = TEXT &  "- Full mesh ethernet point-to-point link between each routers" & vbCrLf & vbCrLf
-    i=1
     'Enter the main loop for each VM
-    Do while i <= NUMBER_VM
+	For i = 1 To NUMBER_VM
         create_vm ("BSDRP_lab_R" & i)
         NIC_NUMBER=0
         TEXT = TEXT & "Router" & i & " have the folllowing NIC:" & vbCrLf
         'Enter in the Cross-over (Point-to-Point) NIC loop
         'Now generate X x (X-1)/2 full meshed link
-        j=1
-        Do while j <= NUMBER_VM
+		For j = 1 to NUMBER_VM
+			'Wscript.Echo "[DEBUG] Inside Loop for VM" & i & "/" & NUMBER_VM & " interface full mesh number " & j
             if i <> j then
-                TEXT = TEXT & "em" & NIC_NUMBER & " connected to Router" & j & vbCrLf
+                TEXT = TEXT & "- em" & NIC_NUMBER & " connected to Router" & j & vbCrLf
                 NIC_NUMBER=NIC_NUMBER + 1
 				if i <= j then
 					CMD=VB_EXE & " modifyvm BSDRP_lab_R" & i & " --nic" & NIC_NUMBER & " intnet --nictype" & NIC_NUMBER & " 82540EM --intnet" & NIC_NUMBER & "  LAN" & i & j & " --macaddress" & NIC_NUMBER & " AAAA00000" & i & i & j
@@ -361,23 +374,20 @@ Function clone_vm ()
 					call run(CMD,true)
                 End if
             End if
-			j = j + 1
-        Loop
+		Next
         'Enter in the LAN NIC loop
-        j=1
-        Do while j <= NUMBER_LAN
-            TEXT = TEXT & "em" & NIC_NUMBER & " connected to LAN number " & j & vbCrLf
+		for j = 1 to NUMBER_LAN
+            TEXT = TEXT & "- em" & NIC_NUMBER & " connected to LAN number " & j & vbCrLf
             NIC_NUMBER=NIC_NUMBER + 1
 			CMD=VB_EXE & " modifyvm BSDRP_lab_R" & i & " --nic" & NIC_NUMBER & " intnet --nictype" & NIC_NUMBER & " 82540EM --intnet" & NIC_NUMBER & "  LAN10" & j & " --macaddress" & NIC_NUMBER & " CCCC00000" & j & "0" & i
 			call run(CMD,true)			
-            j = j + 1
-        Loop
-		i = i + 1
-    Loop
+		Next
+		TEXT = TEXT & vbCrLf
+    Next
 End Function
 
 Function create_vm (ByVal VM_NAME)
-	dim ERRTEXT, fso, WshShell,CMD
+	dim ERRTEXT, fso, WshShell,CMD,i
     ' Check if the vm allready exist
     if check_vm (VM_NAME) > 0 then		
 		
@@ -386,7 +396,9 @@ Function create_vm (ByVal VM_NAME)
 		call run(CMD,true)
 		
 		' Clone the Template vdi
-		CMD=VB_EXE & " clonehd " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34) & " " & VM_NAME & ".vdi"
+		'CMD=VB_EXE & " clonehd " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34) & " " & VM_NAME & ".vdi"
+		CMD=VB_EXE & " clonehd " & BSDRP_VDI & " " & VM_NAME & ".vdi"
+		
 		call run(CMD,true)
 		
 		' Add SATA controller to the VM
@@ -410,9 +422,16 @@ Function create_vm (ByVal VM_NAME)
 		Set WshShell = WScript.CreateObject("WScript.Shell")
         WScript.Sleep 5
 		
+		'Delete all NIC configured on existing VM !
+		'It seems that VBox under Windows didn't support more than 9 NIC on a VM
+		for i = 1 to 9
+			CMD=VB_EXE & " modifyvm " & VM_NAME & " --nic" & i & " none"
+			call run(CMD,false)
+		next
+		
     End if
 	
-	CMD=VB_EXE & " modifyvm " & VM_NAME & " --audio none --memory 92 --vram 1 --boot1 disk --floppy disabled --biosbootmenu disabled"
+	CMD=VB_EXE & " modifyvm " & VM_NAME & " --audio none --memory 92 --vram 5 --boot1 disk --floppy disabled --biosbootmenu disabled"
 	call run(CMD,true)
 
     if VM_CONSOLE="serial" then
@@ -421,3 +440,20 @@ Function create_vm (ByVal VM_NAME)
     End if
 
 End Function
+
+'Start each vm
+Sub start_vm ()
+    dim i,CMD
+    'Enter the main loop for each VM
+	for i=1 to NUMBER_VM
+		if VM_CONSOLE="vga" then
+			CMD = VB_HEADLESS & " -vrdp on --vrdpport 339" & i & " --startvm " & "BSDRP_lab_R" & i
+			TEXT = TEXT & "Connect to the router " & i & " by an RDP client on port 339" & i & vbCrLf
+		else
+			CMD = VB_HEADLESS & " -vrdp off --startvm " & "BSDRP_lab_R" & i
+			TEXT = "Connect to the router " & i & " with Putty configured as:" & vbCrLf
+			TEXT = TEXT & "(Con type: serial, baud: 115200, serial line:" & WORKING_DIR & "\" & "BSDRP_lab_R" & i & ".serial"  & vbCrLf
+		End if
+		call run_bg(CMD)
+    next
+End Sub
