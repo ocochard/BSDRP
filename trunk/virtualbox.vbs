@@ -435,7 +435,7 @@ Function create_vm (ByVal VM_NAME)
 	call run(CMD,true)
 
     if VM_CONSOLE="serial" then
-		CMD=VB_EXE & " modifyvm " & VM_NAME & " --uart1 0x3F8 4 --uartmode1 server " & Chr(34) & WORKING_DIR & "\" & VM_NAME & ".serial" & Chr(34)
+		CMD=VB_EXE & " modifyvm " & VM_NAME & " --uart1 0x3F8 4 --uartmode1 server " & "\\.\pipe\" & VM_NAME
 		call run(CMD,true)
     End if
 
@@ -447,12 +447,12 @@ Sub start_vm ()
     'Enter the main loop for each VM
 	for i=1 to NUMBER_VM
 		if VM_CONSOLE="vga" then
-			CMD = VB_HEADLESS & " -vrdp on --vrdpport 339" & i & " --startvm " & "BSDRP_lab_R" & i
+			CMD = VB_HEADLESS & " -vrdp on --vrdpport 339" & i & " --startvm " & "BSDRP_lab_R" & i & vbCrLf
 			TEXT = TEXT & "Connect to the router " & i & " by an RDP client on port 339" & i & vbCrLf
 		else
 			CMD = VB_HEADLESS & " -vrdp off --startvm " & "BSDRP_lab_R" & i
-			TEXT = "Connect to the router " & i & " with Putty configured as:" & vbCrLf
-			TEXT = TEXT & "(Con type: serial, baud: 115200, serial line:" & WORKING_DIR & "\" & "BSDRP_lab_R" & i & ".serial"  & vbCrLf
+			TEXT = TEXT & "Connect to the router " & i & " with Putty configured as:" & vbCrLf
+			TEXT = TEXT & "-Con type: serial, baud: 115200, serial line:" & "\\.\pipe\" & "BSDRP_lab_R" & i & vbCrLf
 		End if
 		call run_bg(CMD)
     next
