@@ -1,6 +1,7 @@
 #!/bin/sh
 #
 # Image manipulation tool for BSDRP 
+# http://bsdrp.net
 #
 # Copyright (c) 2009-2010, The BSDRP Development Team 
 # All rights reserved.

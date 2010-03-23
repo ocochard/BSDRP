@@ -1,4 +1,5 @@
 # BSD Router Project NanoBSD configuration file
+# http://bsdrp.net
 #
 # NanoBSD port support added from Gitoyen:
 # http://www.gitoyen.net/Howto-NanoBSD-quagga-router 
