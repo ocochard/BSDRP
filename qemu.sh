@@ -266,7 +266,7 @@ start_lab_vm () {
         while [ $j -le $NUMBER_LAN ]; do
             echo "ed${NIC_NUMBER} connected to LAN number ${j}."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-            QEMU_LAN_NIC="${QEMU_LAN_NIC} -net nic,macaddr=CC:CC:00:00:0${j}:0${i},vlan=10${j} -net socket,mcast=230.0.0.1:1000${j},vlan=10${j},model=${NIC_MODEL}"
+            QEMU_LAN_NIC="${QEMU_LAN_NIC} -net nic,macaddr=CC:CC:00:00:0${j}:0${i},vlan=10${j},model=${NIC_MODEL} -net socket,mcast=230.0.0.1:1000${j},vlan=10${j}"
             j=`expr $j + 1`
         done
         if ($SERIAL); then
