@@ -2,9 +2,11 @@ Release 0.33 (not released)
 - Replace dhcprelya by isc-dhcp-relay
 - Add isc-dhcp-server
 - Add GRE module (GRE and MOBILE encapsulation)
+- Add multiple VHID support for CARP script
 - Sysctl: Do not generate core files
-- Re-enable kern.hz reducing in VM (seem that FBSD 8.0-stable didn't auto-adapt)
-- Removed VIM-lite: Ratio size/feature (syntaxe colorization) not interesting
+- Re-enable "system virtualize" for FreeBSD 8
+    reduce kern.hz in VM (seem that FBSD 8.0-stable didn't auto-adapt anymore)
+- Removed VIM-lite: Ratio size/feature (syntaxe colorization) not enough usefull
 - Add a MS Windows VBScript for BSDRP VirtualBox lab
 
 Release 0.32

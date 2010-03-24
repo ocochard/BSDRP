@@ -1,0 +1,149 @@
+#!/bin/sh
+#
+# BSD Router Project: ucarp Init script with multiple VHID support
+# http://bsdrp.net
+#
+# Based on the FreeBSD ucarp script from Nico <nico@rottenbytes.info>
+#
+# Copyright (c) 2010, The BSDRP Development Team 
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE PROJECT ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE PROJECT BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# PROVIDE: ucarp
+# REQUIRE: DAEMON
+# KEYWORD: shutdown
+#
+# Add the following lines to /etc/rc.conf to enable & configure ucarp:
+#
+# ucarp_enable (bool):		Set it to "YES" to enable ucarp
+#				Default is "NO".
+# For all others variable, VHID is the Virtual IP identifier number (1-255)
+# ucarp_VHID_if:			Set interface to use for ucarp checks
+#				Default is "eth0"
+# ucarp_VHID_src:			Set source (real) IP address of that host
+# ucarp_VHID_pass:			Set password
+#				Default is "dumbp4ss"
+# ucarp_VHID_preempt (bool):		Set it to "YES" to become a master as soon as possible
+#				Default is "NO"
+# ucarp_VHID_addr:			Set virtual shared IP address
+# ucarp_VHID_advbase:		Set advertisement frequency (seconds)
+# ucarp_VHID_advskew:		Set advertisement skew (0-255)
+# ucarp_VHID_upscript:		Run <file> to become a master
+# ucarp_VHID_downscript:		Run <file> to become a backup
+# ucarp_VHID_deadratio:		Set ratio to consider a host as dead
+# ucarp_VHID_shutdown (bool):	Set it to "YES"  to call shutdown script at exit
+#				Default is "YES"
+# ucarp_VHID_facility:		Set syslog facility
+#				Default is "daemon"
+# ucarp_VHID_broadcast (bool):   Set it to "YES" to use Broadcast in place of multicast
+#               Default is "NO"
+
+
+. /etc/rc.subr
+
+name="ucarp"
+rcvar=`set_rcvar`
+
+load_rc_config $name
+
+command=/usr/local/sbin/ucarp
+
+start_cmd="${name}_start"
+#stop_cmd="${name}_stop"
+
+ucarp_start ()
+{
+
+for i in `jot - 1 4`; do
+	# Now we need to use a variable-variable name :-(
+	# eval will help us, but all:
+	# -  non-variable-variable name
+	# - " 
+	# must be escaped with \
+	eval "
+		if ! [ -z \$ucarp_${i}_if ]; then
+			if [ -z \$ucarp_${i}_pass ]; then
+				ucarp_${i}_pass=\"dumbp4ss\"
+			fi
+			if [ -z \$ucarp_${i}_preempt ]; then
+           		ucarp_${i}_preempt=\"NO\"
+           	fi
+			if [ -z \$ucarp_${i}_shutdown ]; then
+           		ucarp_${i}_shutdown=\"NO\"
+           	fi
+			if [ -z \$ucarp_${i}_facility ]; then
+           		ucarp_${i}_facility=\"daemon\"
+           	fi
+			if [ -z \$ucarp_${i}_broadcast ]; then
+                ucarp_${i}_facility=\"NO\"
+            fi
+			
+			command_args=\"-i \$ucarp_${i}_if -v $i -p \$ucarp_${i}_pass -f \$ucarp_${i}_facility -B \"
+
+			if [ \$ucarp_${i}_preempt = \"YES\" ]; then
+        		command_args=\${command_args}\"-P \"
+    		fi
+
+			if [ \$ucarp_${i}_shutdown = \"YES\" ]; then
+           		command_args=\${command_args}\"-z \"
+           	fi
+
+			if [ \$ucarp_${i}_broadcast = \"YES\" ]; then
+                command_args=\${command_args}\"-M \"
+            fi
+
+			# Mandatory arguments
+    		if [ -z \$ucarp_${i}_src ]; then
+        		echo \"source address is not set for VHID $i ! please set it\"
+        		exit 1
+    		fi
+
+    		if [ -z \$ucarp_${i}_addr ]; then
+        		echo \"virtual address is not set for VHID $i ! please set it\"
+        		exit 1
+    		fi
+	
+			command_args=\${command_args}\"-s \$ucarp_${i}_src -a \$ucarp_${i}_addr \"
+	
+			# Optional args
+			if ! [ -z \$ucarp_${i}_upscript ]; then
+				command_args=\${command_args}\"-u \$ucarp_${i}_upscript \"
+			fi
+			if ! [ -z \$ucarp_${i}_downscript ]; then
+				command_args=\${command_args}\"-d \$ucarp_${i}_downscript \"
+			fi
+			if ! [ -z \$ucarp_${i}_deadratio ]; then
+				command_args=\${command_args}\"-r \$ucarp_${i}_deadratio \"
+			fi
+			if ! [ -z \$ucarp_${i}_advbase ]; then
+				command_args=\${command_args}\"-b \$ucarp_${i}_advbase \"
+			fi
+			if ! [ -z \$ucarp_${i}_advskew ]; then
+				command_args=\${command_args}\"-k \$ucarp_${i}_advskew \"
+			fi
+		${command} $command_args
+	fi
+	"
+done
+}
+
+run_rc_command "$1"
