@@ -36,7 +36,7 @@
 #set -x
 
 # Exit if error
-#set -e
+set -e
 
 FREEBSD_SRC=/usr/src
 NANOBSD_DIR=/usr/src/tools/tools/nanobsd
@@ -69,11 +69,12 @@ check_current_dir() {
 check_system() {
 	pprint 3 "Checking if FreeBSD sources are installed..."
 	SRC_VERSION=0
-	if [ ! -f ${FREEBSD_SRC}/sys/conf/newvers.sh ]; then
+	if ! [ -f ${FREEBSD_SRC}/sys/conf/newvers.sh ]; then
 		pprint 1 "ERROR: Can't found FreeBSD sources!"
 		exit 1
 	fi
-		
+	
+	set +e	
 	grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh
 	if [ $? -eq 0 ]; then
 		SRC_VERSION="8.0"
@@ -82,6 +83,8 @@ check_system() {
 	if [ $? -eq 0 ]; then
     	SRC_VERSION="7.2"
 	fi
+
+	set -e
 
 	if [ ${SRC_VERSION} = 0 ]; then
 		pprint 1 "ERROR: BSDRP need FreeBSD 8.0 or 7.2 sources"
@@ -183,7 +186,9 @@ ports_patch()
 # exit with 1 if problem detected, but clean it
 # exit with 2 if problem detected and can't clean it
 check_clean() {
-	if [ ! `mount | grep -q '<above>'` ]; then 
+	set +e
+	mount | grep -q '<above>'
+	if [ $? -eq 0 ]; then 
 		pprint 1 "WARNING: Unmounted NanoBSD works directory found!"
 		pprint 1 "This can create a bug that delete all your /usr/src directory"
 		for d in `mount | grep '<above>' | cut -d ' ' -f 3`
@@ -199,6 +204,7 @@ check_clean() {
 	else
 		return 0
 	fi
+	set -e
 }
 
 usage () {
@@ -228,6 +234,17 @@ pprint 1 ""
 #Get argument
 
 TARGET_ARCH=`uname -m`
+case "$TARGET_ARCH" in
+	amd64)
+		NANO_KERNEL="BSDRP-AMD64"
+		;;
+	i386)
+		NANO_KERNEL="BSDRP-I386"
+		;;
+	arm)
+		NANO_KERNEL="BSDRP-CAMBRIA"
+		;;
+esac
 DEBUG=""
 SKIP_REBUILD=""
 INPUT_CONSOLE="vga"
@@ -248,17 +265,17 @@ do
                 case "$2" in
 				amd64)
 					TARGET_ARCH="amd64"
-					NANO_KERNEL=BSDRP-AMD64
+					NANO_KERNEL="BSDRP-AMD64"
 					;;
 				i386)
 					TARGET_ARCH="i386"
-					NANO_KERNEL=BSDRP-I386
+					NANO_KERNEL="BSDRP-I386"
 					;;
 				cambria)
 					TARGET_ARCH="arm"
 					TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
 					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
-					NANO_KERNEL=BSDRP-CAMBRIA
+					NANO_KERNEL="BSDRP-CAMBRIA"
 					;;
 				esac
 				shift
