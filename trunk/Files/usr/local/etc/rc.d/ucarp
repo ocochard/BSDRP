@@ -73,7 +73,7 @@ start_cmd="${name}_start"
 ucarp_start ()
 {
 
-for i in `jot - 1 4`; do
+for i in `jot - 1 255`; do
 	# Now we need to use a variable-variable name :-(
 	# eval will help us, but all:
 	# -  non-variable-variable name
