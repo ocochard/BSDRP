@@ -94,7 +94,7 @@ for i in `jot - 1 255`; do
            		ucarp_${i}_facility=\"daemon\"
            	fi
 			if [ -z \$ucarp_${i}_broadcast ]; then
-                ucarp_${i}_facility=\"NO\"
+                ucarp_${i}_broadcast=\"NO\"
             fi
 			
 			command_args=\"-i \$ucarp_${i}_if -v $i -p \$ucarp_${i}_pass -f \$ucarp_${i}_facility -B \"
@@ -140,8 +140,8 @@ for i in `jot - 1 255`; do
 			if ! [ -z \$ucarp_${i}_advskew ]; then
 				command_args=\${command_args}\"-k \$ucarp_${i}_advskew \"
 			fi
-		${command} $command_args
-	fi
+			\$command \$command_args
+		fi
 	"
 done
 }

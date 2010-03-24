@@ -6,5 +6,5 @@ And store the result on a reference website, then create a script that download 
 mtree -f /path/to/mtree.txt -K sha256digest
 
 - utf-8 support for console ?
-- Improve ucarp startup script for supporting X instance of ucarp
+- Check if ucarp is allready started when ucarp start is invoked
 
