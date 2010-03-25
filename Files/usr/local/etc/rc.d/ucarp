@@ -1,7 +1,6 @@
 #!/bin/sh
 #
-# BSD Router Project:	ucarp Init script with multiple VHID support
-# 						and FIB supprt
+# BSD Router Project:	ucarp Init script with multiple VHID and FIB support 
 # http://bsdrp.net
 #
 # Based on the FreeBSD ucarp script from Nico <nico@rottenbytes.info>
