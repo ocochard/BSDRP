@@ -62,13 +62,11 @@
 
 name="ucarp"
 rcvar=`set_rcvar`
+command="/usr/local/sbin/$name"
 
 load_rc_config $name
 
-command=/usr/local/sbin/ucarp
-
 start_cmd="${name}_start"
-#stop_cmd="${name}_stop"
 
 ucarp_start ()
 {
@@ -79,23 +77,15 @@ for i in `jot - 1 255`; do
 	# -  non-variable-variable name
 	# - " 
 	# must be escaped with \
+
 	eval "
 		if ! [ -z \$ucarp_${i}_if ]; then
-			if [ -z \$ucarp_${i}_pass ]; then
-				ucarp_${i}_pass=\"dumbp4ss\"
-			fi
-			if [ -z \$ucarp_${i}_preempt ]; then
-           		ucarp_${i}_preempt=\"NO\"
-           	fi
-			if [ -z \$ucarp_${i}_shutdown ]; then
-           		ucarp_${i}_shutdown=\"NO\"
-           	fi
-			if [ -z \$ucarp_${i}_facility ]; then
-           		ucarp_${i}_facility=\"daemon\"
-           	fi
-			if [ -z \$ucarp_${i}_broadcast ]; then
-                ucarp_${i}_broadcast=\"NO\"
-            fi
+			# override these variables in /etc/rc.conf
+			ucarp_${i}_pass=\${ucarp_${i}_pass:-\"dumbp4ss\"}
+			ucarp_${i}_preempt=\${ucarp_${i}_preempt:-\"NO\"}
+           	ucarp_${i}_shutdown=\${ucarp_${i}_shutdown:-\"NO\"}
+           	ucarp_${i}_facility=\${ucarp_${i}_facility:-\"daemon\"}
+            ucarp_${i}_broadcast=\${ucarp_${i}_broadcast:-\"NO\"}
 			
 			command_args=\"-i \$ucarp_${i}_if -v $i -p \$ucarp_${i}_pass -f \$ucarp_${i}_facility -B \"
 
