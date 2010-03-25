@@ -1,6 +1,7 @@
 #!/bin/sh
 #
-# BSD Router Project: ucarp Init script with multiple VHID support
+# BSD Router Project:	ucarp Init script with multiple VHID support
+# 						and FIB supprt
 # http://bsdrp.net
 #
 # Based on the FreeBSD ucarp script from Nico <nico@rottenbytes.info>
@@ -35,15 +36,15 @@
 # Add the following lines to /etc/rc.conf to enable & configure ucarp:
 #
 # ucarp_enable (bool):		Set it to "YES" to enable ucarp
-#				Default is "NO".
+#		Default is "NO".
 # For all others variable, VHID is the Virtual IP identifier number (1-255)
 # ucarp_VHID_if:			Set interface to use for ucarp checks
-#				Default is "eth0"
+#		Default is "eth0"
 # ucarp_VHID_src:			Set source (real) IP address of that host
 # ucarp_VHID_pass:			Set password
-#				Default is "dumbp4ss"
+#		Default is "dumbp4ss"
 # ucarp_VHID_preempt (bool):		Set it to "YES" to become a master as soon as possible
-#				Default is "NO"
+#		Default is "NO"
 # ucarp_VHID_addr:			Set virtual shared IP address
 # ucarp_VHID_advbase:		Set advertisement frequency (seconds)
 # ucarp_VHID_advskew:		Set advertisement skew (0-255)
@@ -51,11 +52,13 @@
 # ucarp_VHID_downscript:		Run <file> to become a backup
 # ucarp_VHID_deadratio:		Set ratio to consider a host as dead
 # ucarp_VHID_shutdown (bool):	Set it to "YES"  to call shutdown script at exit
-#				Default is "YES"
+#		Default is "YES"
 # ucarp_VHID_facility:		Set syslog facility
-#				Default is "daemon"
+#		Default is "daemon"
 # ucarp_VHID_broadcast (bool):   Set it to "YES" to use Broadcast in place of multicast
-#               Default is "NO"
+#       Default is "NO"
+# ucarp_VHID_fib:    		The alternative routing table id that ucarp should use
+#       Default is "NONE"
 
 
 . /etc/rc.subr
@@ -86,6 +89,16 @@ for i in `jot - 1 255`; do
            	ucarp_${i}_shutdown=\${ucarp_${i}_shutdown:-\"NO\"}
            	ucarp_${i}_facility=\${ucarp_${i}_facility:-\"daemon\"}
             ucarp_${i}_broadcast=\${ucarp_${i}_broadcast:-\"NO\"}
+			ucarp_${i}_fib=\${ucarp_${i}_fib:-\"NONE\"}
+
+    		if [ \"\${ucarp_${i}_fib}\" != \"NONE\" ]; then
+				if ! [ `sysctl net.fibs >/dev/null 2>&1` ]; then
+        			command=\"setfib -F \${ucarp_${i}_fib} /usr/local/sbin/$name\"
+    			else
+					echo \"FIB configured for VHID $i but FIB not enabled ! please enable it\"
+                	exit 1
+    			fi
+			fi
 			
 			command_args=\"-i \$ucarp_${i}_if -v $i -p \$ucarp_${i}_pass -f \$ucarp_${i}_facility -B \"
 
