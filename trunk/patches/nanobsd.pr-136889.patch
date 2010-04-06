@@ -1,5 +1,5 @@
---- nanobsd.sh.BSDRP	2009-07-19 21:11:42.000000000 +0200
-+++ nanobsd.sh	2009-07-19 21:39:59.000000000 +0200
+--- nanobsd.sh.orig	2010-04-06 22:15:08.000000000 +0200
++++ nanobsd.sh	2010-04-06 22:16:42.000000000 +0200
 @@ -124,10 +124,17 @@
  NANO_BOOT0CFG="-o packet -s 1 -m 3"
  NANO_BOOTLOADER="boot/boot0sio"
@@ -42,30 +42,32 @@
  		while read d
  		do
  			rmdir $d > /dev/null 2>&1 || true 
-@@ -491,13 +506,20 @@
+@@ -491,8 +506,14 @@
  	fi
  
  	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
 -		echo "Writing out ${NANO_IMGNAME}..."
 -		dd if=/dev/${MD} of=${IMG} bs=64k
-+		if [ ${NANO_IMAGE_MBRONLY} ]; then
-+			echo "Writing out _.disk.mbr..."
-+			dd if=/dev/${MD} of=${NANO_DISKIMGDIR}/_.disk.mbr bs=512 count=1
-+		else
++       if [ ${NANO_IMAGE_MBRONLY} ]; then
++           echo "Writing out _.disk.mbr..."
++           dd if=/dev/${MD} of=${NANO_DISKIMGDIR}/_.disk.mbr bs=512 count=1
++       else
 +            echo "Writing out ${NANO_IMGNAME}..."
 +            dd if=/dev/${MD} of=${IMG} bs=64k
 +        fi
++
  	fi
  
  	echo "Writing out _.disk.image..."
- 	dd if=/dev/${MD}s1 of=${NANO_DISKIMGDIR}/_.disk.image bs=64k
+@@ -500,6 +521,7 @@
  	mdconfig -d -u $MD
-+	trap - 1 2 15
+ 
+ 	trap - 1 2 15 EXIT
 +	trap "nano_cleanup" EXIT
+ 
  	) > ${NANO_OBJ}/_.di 2>&1
  )
- 
-@@ -581,8 +603,8 @@
+@@ -584,8 +606,8 @@
  	# Disable getty on syscons devices
  	sed -i "" -e '/^ttyv[0-8]/s/	on/	off/' ${NANO_WORLDDIR}/etc/ttys
  
@@ -76,7 +78,7 @@
  )
  
  #######################################################################
-@@ -687,7 +709,7 @@
+@@ -690,7 +712,7 @@
  	echo "	-i	suppress disk image build"
  	echo "	-k	suppress buildkernel"
  	echo "	-n	add -DNO_CLEAN to buildworld, buildkernel, etc"
@@ -85,7 +87,7 @@
  	echo "	-v	make output more verbose"
  	echo "	-w	suppress buildworld"
  	echo "	-c	specify config file"
-@@ -763,6 +785,7 @@
+@@ -766,6 +788,7 @@
  	echo "$0: Extraneous arguments supplied"
  	usage
  fi
