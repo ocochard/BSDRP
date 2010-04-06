@@ -218,7 +218,7 @@ add_port () {
 					fi
                		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
 					mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
-               		mount -t unionfs -o noatime /usr/src \
+               		mount -t unionfs -o noatime \${NANO_SRC} \
                        \${NANO_WORLDDIR}/usr/src
                		mount -t unionfs -o noatime /usr/ports \
                        \${NANO_WORLDDIR}/usr/ports
