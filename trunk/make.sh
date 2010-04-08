@@ -434,7 +434,7 @@ pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2"
 
 BSDRP_FILENAME="BSDRP_${BSDRP_VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
 if [ "$ZIP_IMAGE" = "y" ]; then
-	if [ -f ${NANOBSD_OBJ}/${BSDRP_FILENAME} ]; then
+	if [ -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 ]; then
 		pprint 1 "Backuping old BSDRP full zipped image..."
 		mv -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2.bak
 	fi 
