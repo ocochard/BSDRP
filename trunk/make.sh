@@ -120,7 +120,7 @@ system_patch() {
 			pprint 3 "Backup old nanobsd.sh"
 			mv nanobsd.sh nanobsd.bak.7_2
 			pprint 3 "Download new nanobsd.sh script"
-				if [ ! `fetch -o nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.28.2.4"` ]; then
+				if [ ! `fetch -o nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh"` ]; then
 				pprint 3 "Restoring original nanobsd.sh"	
 				mv nanobsd.bak.7_2 nanobsd.sh
 				pprint 3 "ERROR: Can't download latest nanobsd.sh script"
@@ -130,8 +130,7 @@ system_patch() {
 		fi
 	fi
 	pprint 3 "Checking in NanoBSD allready glabel patched"
-	grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh
-	if [ $? -eq 0 ]; then
+	if [ `grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh` ]; then
 		pprint 3 "NanoBSD allready glabel patched"
 	else
 		pprint 3 "Patching NanoBSD with glabel support"
@@ -141,8 +140,7 @@ system_patch() {
 	# Adding amd64 support to NanoBSD:
 	if [ "$TARGET_ARCH" = "amd64"  ]; then
 		pprint 3 "Checking in NanoBSD allready amd64 patched"
-		grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh
-		if [ $? -eq 0 ]; then 
+		if [ `grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
 			pprint 3 "NanoBSD allready amd64 patched"
 		else
 			pprint 3 "Patching NanoBSD with amd64 support"
@@ -153,8 +151,7 @@ system_patch() {
 	# Adding another cool patch that fix a lot's of problem
 	# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
 	pprint 3 "Checking in NanoBSD allready PR-136889 patched"
-	grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh
-	if [ $? -eq 0 ]; then 
+	if [ `grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
 		pprint 3 "NanoBSD allready PR-136889 patched"
 	else
 		pprint 3 "Patching NanoBSD with some fixes (PR-136889)"
@@ -163,8 +160,7 @@ system_patch() {
 
 	# Adding arm support to NanoBSD
     pprint 3 "Checking in NanoBSD allready arm patched"
-    grep -q 'create_arm_diskimage' ${NANOBSD_DIR}/nanobsd.sh
-    if [ $? -eq 0 ]; then
+    if [ `grep -q 'create_arm_diskimage' ${NANOBSD_DIR}/nanobsd.sh` ]; then
         pprint 3 "NanoBSD allready arm patched"
     else
         pprint 3 "Patching NanoBSD with arm support"
@@ -186,25 +182,12 @@ ports_patch()
 # exit with 1 if problem detected, but clean it
 # exit with 2 if problem detected and can't clean it
 check_clean() {
-	set +e
-	mount | grep -q '<above>'
-	if [ $? -eq 0 ]; then 
-		pprint 1 "WARNING: Unmounted NanoBSD works directory found!"
-		pprint 1 "This can create a bug that delete all your /usr/src directory"
-		for d in `mount | grep '<above>' | cut -d ' ' -f 3`
-		do
-			echo "Try to unmount: $d"
-			umount $d
-			if [ $? -ne 0 ]; then
-      				exit 2 
-    			fi
-
-		done
-		return 1
-	else
-		return 0
+	# Patch from Warner Losh (imp@)
+	__a=`mount | grep /usr/obj/ | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}`
+	if [ -n "$__a" ]; then
+		echo "unmounting $__a"
+		umount $__a
 	fi
-	set -e
 }
 
 usage () {

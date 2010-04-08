@@ -1,6 +1,6 @@
---- configure.ac.old	2010-01-16 11:08:12.000000000 +0000
-+++ configure.ac	2010-01-16 11:08:34.000000000 +0000
-@@ -443,9 +443,21 @@
+--- configure.ac.orig	2010-04-08 10:01:58.000000000 +0200
++++ configure.ac	2010-04-08 10:05:40.000000000 +0200
+@@ -443,9 +443,17 @@
  #endif /* TIME_WITH_SYS_TIME */
  ])dnl
  
@@ -12,10 +12,6 @@
 +	[], [], QUAGGA_INCLUDES)
 +m4_define([QUAGGA_INCLUDES],
 +QUAGGA_INCLUDES
-+[#if HAVE_NET_IF_H
-+# include <net/if.h>
-+#endif
-+])dnl
 +
 +AC_CHECK_HEADERS([sys/un.h netinet/in_systm.h netinet/in_var.h \
  	net/if_dl.h net/if_var.h net/netopt.h net/route.h \
