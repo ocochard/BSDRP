@@ -74,17 +74,12 @@ check_system() {
 		exit 1
 	fi
 	
-	set +e	
-	grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh
-	if [ $? -eq 0 ]; then
+	if `grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
 		SRC_VERSION="8.0"
 	fi
-	grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh
-	if [ $? -eq 0 ]; then
+	if `grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
     	SRC_VERSION="7.2"
 	fi
-
-	set -e
 
 	if [ ${SRC_VERSION} = 0 ]; then
 		pprint 1 "ERROR: BSDRP need FreeBSD 8.0 or 7.2 sources"
@@ -130,7 +125,7 @@ system_patch() {
 		fi
 	fi
 	pprint 3 "Checking in NanoBSD allready glabel patched"
-	if [ `grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh` ]; then
+	if `grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh`; then
 		pprint 3 "NanoBSD allready glabel patched"
 	else
 		pprint 3 "Patching NanoBSD with glabel support"
@@ -140,7 +135,7 @@ system_patch() {
 	# Adding amd64 support to NanoBSD:
 	if [ "$TARGET_ARCH" = "amd64"  ]; then
 		pprint 3 "Checking in NanoBSD allready amd64 patched"
-		if [ `grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
+		if `grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh`; then 
 			pprint 3 "NanoBSD allready amd64 patched"
 		else
 			pprint 3 "Patching NanoBSD with amd64 support"
@@ -151,7 +146,7 @@ system_patch() {
 	# Adding another cool patch that fix a lot's of problem
 	# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
 	pprint 3 "Checking in NanoBSD allready PR-136889 patched"
-	if [ `grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh` ]; then 
+	if `grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh`; then 
 		pprint 3 "NanoBSD allready PR-136889 patched"
 	else
 		pprint 3 "Patching NanoBSD with some fixes (PR-136889)"
@@ -160,7 +155,7 @@ system_patch() {
 
 	# Adding arm support to NanoBSD
     pprint 3 "Checking in NanoBSD allready arm patched"
-    if [ `grep -q 'create_arm_diskimage' ${NANOBSD_DIR}/nanobsd.sh` ]; then
+    if `grep -q 'create_arm_diskimage' ${NANOBSD_DIR}/nanobsd.sh`; then
         pprint 3 "NanoBSD allready arm patched"
     else
         pprint 3 "Patching NanoBSD with arm support"
