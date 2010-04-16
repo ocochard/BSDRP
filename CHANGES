@@ -3,7 +3,7 @@ Release 0.33 (not released)
 - Add isc-dhcp-server
 - Add GRE module (GRE and MOBILE encapsulation)
 - Add multiple VHID support for CARP script
-- Quagga: fix bug 408 (IPv6 addresses cannot be assigned to interfaces by Quagga)
+- !!! TO DO!!! Quagga: fix bug 408 (IPv6 addresses cannot be assigned to interfaces by Quagga)
 - Sysctl: Do not generate core files
 - Re-enable "system virtualize" for FreeBSD 8
     reduce kern.hz in VM (seem that FBSD 8.0-stable didn't auto-adapt anymore)

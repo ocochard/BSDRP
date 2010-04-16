@@ -28,7 +28,7 @@ then
 from depot ($USER@`uname -n`:$PWD) \
 Backup : $file.$date"
 	logger -s -t rvi -p user.notice $msg
-	echo $msg | mail -s "## rvi" -E netadmin@example.com
+#	echo $msg | mail -s "## rvi" -E netadmin@example.com
 	cp $dir/$file $dir/$file.$date
 	co -l -f $dir/$file
 	cp $dir/$file.$date $dir/$file
