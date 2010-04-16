@@ -270,12 +270,13 @@ add_port "net-mgmt/net-snmp" "-DNOPORTDOCS -DNO_INSTALL_MANPAGES -DWITH_IPV6 -DW
 #         you modified `acinclude.m4' or `configure.ac'.  You might want
 #         to install the `Automake' and `Perl' packages.  Grab them from
 #         any GNU archive site.
-# Then, need to install devel/automake110 before compiling Quagga:
-add_port "devel/m4" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-add_port "devel/automake-wrapper" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-add_port "devel/autoconf-wrapper" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-add_port "devel/autoconf262" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-add_port "devel/automake110" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+# Then, need to install devel/automake111 before compiling Quagga
+# But Automake 1.11 is not available, only 1.10 is:
+#add_port "devel/m4" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+#add_port "devel/automake-wrapper" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+#add_port "devel/autoconf-wrapper" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+#add_port "devel/autoconf262" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+#add_port "devel/automake110" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
