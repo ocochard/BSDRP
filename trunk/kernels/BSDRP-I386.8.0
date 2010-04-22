@@ -55,11 +55,11 @@ options 	PROCFS			# Process filesystem (requires PSEUDOFS)
 options 	PSEUDOFS		# Pseudo-filesystem framework
 options 	GEOM_PART_GPT		# GUID Partition Tables.
 options 	GEOM_LABEL		# Provides labelization
-options 	COMPAT_43TTY		# BSD 4.3 TTY compat (sgtty)
+#options 	COMPAT_43TTY		# BSD 4.3 TTY compat (sgtty)
 #options 	COMPAT_FREEBSD4		# Compatible with FreeBSD4
 #options 	COMPAT_FREEBSD5		# Compatible with FreeBSD5
 #options 	COMPAT_FREEBSD6		# Compatible with FreeBSD6
-options 	COMPAT_FREEBSD7		# Compatible with FreeBSD7
+#options 	COMPAT_FREEBSD7		# Compatible with FreeBSD7
 options 	SCSI_DELAY=5000		# Delay (in ms) before probing SCSI
 #options 	KTRACE			# ktrace(1) support
 #options 	STACK			# stack(9) support
@@ -79,7 +79,7 @@ options 	HWPMC_HOOKS		# Necessary kernel hooks for hwpmc(4)
 # options		FLOWTABLE		# per-cpu routing cache
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
 
-# Enable Packet Filter (moved as modules)
+# Packet Filter: moved as modules
 #device pf
 #device pflog
 #device pfsync
