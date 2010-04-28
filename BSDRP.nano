@@ -338,6 +338,9 @@ bsdrp_custom () {
 	cp -v ${NANO_TOOLS}/LICENSE ${NANO_WORLDDIR}/root/
 	# Disable reverse DNS in sshd:
 	echo "UseDNS no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
+	# Update login.conf db
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+	'cap_mkdb /etc/login.conf'
 	# Set Quagga permission
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'chown -R quagga:quagga /usr/local/etc/quagga'
