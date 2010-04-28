@@ -8,7 +8,8 @@ Release 0.33 (not released)
 - Re-enable "system virtualize" for FreeBSD 8
     reduce kern.hz in VM (seem that FBSD 8.0-stable didn't auto-adapt anymore)
 - Removed VIM-lite: Ratio size/feature (syntaxe colorization) not enough usefull
-- Add a MS Windows VBScript for BSDRP VirtualBox lab
+- Use UTF-8 for console
+- Add a MS Windows VBScript for BSDRP VirtualBox lab (see http://bsdrp.svn.sourceforge.net/viewvc/bsdrp/)
 
 Release 0.32
 - Based on FreeBSD 8.0-Release-p2
