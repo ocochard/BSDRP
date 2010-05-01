@@ -137,6 +137,7 @@ options 	ATA_STATIC_ID	# Static device numbering
 
 # Experimental AHCI drivers
 device      ahci        # Serial ATA Advanced Host Controller Interface driver
+device		siis		# SiliconImage Serial ATA Host Controller driver
 
 # SCSI Controllers
 #device		ahc		# AHA2940 and onboard AIC7xxx devices
@@ -318,6 +319,7 @@ device		firmware	# firmware assist module
 device		bpf		# Berkeley packet filter
 
 # USB support
+#options		USB_DEBUG	# enable debug msgs
 device		uhci		# UHCI PCI->USB interface
 device		ohci		# OHCI PCI->USB interface
 device		ehci		# EHCI PCI->USB interface (USB 2.0)

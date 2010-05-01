@@ -1,4 +1,5 @@
 Release 0.33 (not released)
+- Kernel: Add siis drivers (SiliconImage Serial ATA Host Controller)
 - Replace dhcprelya by isc-dhcp-relay
 - Add isc-dhcp-server
 - Add GRE module (GRE and MOBILE encapsulation)
@@ -9,6 +10,7 @@ Release 0.33 (not released)
     reduce kern.hz in VM (seem that FBSD 8.0-stable didn't auto-adapt anymore)
 - Removed VIM-lite: Ratio size/feature (syntaxe colorization) not enough usefull
 - Use UTF-8 for console
+- Disable ATA DMA in loader.conf for fix Soekris boot
 - Add a MS Windows VBScript for BSDRP VirtualBox lab (see http://bsdrp.svn.sourceforge.net/viewvc/bsdrp/)
 
 Release 0.32
