@@ -1,11 +1,12 @@
 Release 0.33 (not released)
 - Kernel: Add siis drivers (SiliconImage Serial ATA Host Controller)
 - Replace dhcprelya by isc-dhcp-relay
+- Add Bird (another routing sofware suite)
 - Add isc-dhcp-server
 - Add GRE module (GRE and MOBILE encapsulation)
 - Add multiple VHID support for CARP script
 - !!! TO DO!!! Quagga: fix bug 408 (IPv6 addresses cannot be assigned to interfaces by Quagga)
-- Sysctl: Do not generate core files
+- Sysctl: Do not generate core files, enable zerocopy for bpf by default
 - Re-enable "system virtualize" for FreeBSD 8
     reduce kern.hz in VM (seem that FBSD 8.0-stable didn't auto-adapt anymore)
 - Removed VIM-lite: Ratio size/feature (syntaxe colorization) not enough usefull
