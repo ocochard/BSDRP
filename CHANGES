@@ -1,8 +1,9 @@
 Release 0.33 (not released)
 - Kernel: Add siis drivers (SiliconImage Serial ATA Host Controller)
 - Replace dhcprelya by isc-dhcp-relay
-- Add Bird (another routing sofware suite)
+- Replace Xorp by Bird (another routing sofware suite)
 - Add isc-dhcp-server
+- Add IPv6 multicast routing daemons and tools
 - Add GRE module (GRE and MOBILE encapsulation)
 - Add multiple VHID support for CARP script
 - !!! TO DO!!! Quagga: fix bug 408 (IPv6 addresses cannot be assigned to interfaces by Quagga)

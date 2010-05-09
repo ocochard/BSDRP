@@ -6,6 +6,9 @@
 	And store the result on a reference website, then create a script that download it and compare it:
 	mtree -f /path/to/mtree.txt -K sha256digest
 
+* Multicast *
+	- Need to found IPv4 PIM-dm/sm daemon
+
 * misc *
 	- utf-8 support for console ?
 	- Check if ucarp is allready started when ucarp start is invoked

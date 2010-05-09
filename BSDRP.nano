@@ -296,7 +296,7 @@ add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ISISD -DWITH_OS
 # Add XORP
 #add_port "net/xorp" "-DWITH_ADVMCAST -DWITH_IPV6 -DWITH_SNMP -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 # Xorp wants stupidly start snmpd for testing it before to compile!!!!.... disable it:
-add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
+#add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 
 # Add Bird: doesn't build, port marked as broken
 add_port "net/bird" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
@@ -306,6 +306,9 @@ add_port "net/freevrrpd" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
 add_port "net/ucarp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+
+# Add IPv6 multicast routing daemons and tools
+add_port "net/mcast-tools" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 # Add fprobe: Netflow probe
 add_port "net-mgmt/fprobe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
@@ -345,13 +348,13 @@ bsdrp_custom () {
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'chown -R quagga:quagga /usr/local/etc/quagga'
 	# Put root in xorp group
-	chroot ${NANO_WORLDDIR} /bin/sh -exc \
-    'pw groupmod xorp -M root'
+	#chroot ${NANO_WORLDDIR} /bin/sh -exc \
+    #'pw groupmod xorp -M root'
 	# Put the xorp config file in xorp group
-	chroot ${NANO_WORLDDIR} /bin/sh -exc \
-    'chown root:xorp /usr/local/etc/xorp.conf'
-	chroot ${NANO_WORLDDIR} /bin/sh -exc \
-    'chmod g+w /usr/local/etc/xorp.conf'
+	#chroot ${NANO_WORLDDIR} /bin/sh -exc \
+    #'chown root:xorp /usr/local/etc/xorp.conf'
+	#chroot ${NANO_WORLDDIR} /bin/sh -exc \
+    #'chmod g+w /usr/local/etc/xorp.conf'
 
 	# Compress the kernel (save 3Mb)
 	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]
