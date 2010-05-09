@@ -299,7 +299,7 @@ add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ISISD -DWITH_OS
 add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 
 # Add Bird: doesn't build, port marked as broken
-#add_port "net/bird" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "net/bird" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 # Add FreeVRRPd: using XORP only for VRRP is too memory/CPU hungry:
 add_port "net/freevrrpd" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
@@ -325,7 +325,7 @@ cleanup_ports () {
 		# Need to prevent auto exist of this script
 		set +e
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'pkg_delete auto* m4* gmake* libtool* gawk* perl* gettext*'
+        'pkg_delete auto* m4* gmake* libtool* gawk* perl* gettext* bison*'
 		set -e
 }
 
