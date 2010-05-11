@@ -1,7 +1,7 @@
 Release 0.33 (not released)
 - Kernel: Add siis drivers (SiliconImage Serial ATA Host Controller)
 - Replace dhcprelya by isc-dhcp-relay
-- Replace Xorp by Bird (another routing sofware suite)
+- Replace Xorp by BIRD (BIRD is more used and lighter)
 - Add isc-dhcp-server
 - Add IPv6 multicast routing daemons and tools
 - Add GRE module (GRE and MOBILE encapsulation)
