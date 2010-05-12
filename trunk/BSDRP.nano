@@ -310,6 +310,9 @@ add_port "net/ucarp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 # Add IPv6 multicast routing daemons and tools
 add_port "net/mcast-tools" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
+# Add IPv4 DVMRP (multicast) routing daemon
+add_port "net/mrouted" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+
 # Add fprobe: Netflow probe
 add_port "net-mgmt/fprobe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 

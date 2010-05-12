@@ -3,7 +3,8 @@ Release 0.33 (not released)
 - Replace dhcprelya by isc-dhcp-relay
 - Replace Xorp by BIRD (BIRD is more used and lighter)
 - Add isc-dhcp-server
-- Add IPv6 multicast routing daemons and tools
+- Add IPv6 multicast PIM routing daemons and tools
+- Add IPv4 DVMRP (multicast) routing daemon: mrouted
 - Add GRE module (GRE and MOBILE encapsulation)
 - Add multiple VHID support for CARP script
 - !!! TO DO!!! Quagga: fix bug 408 (IPv6 addresses cannot be assigned to interfaces by Quagga)
