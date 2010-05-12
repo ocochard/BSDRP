@@ -12,7 +12,6 @@ BSD Router Project is based upon/includes various free software packages, listed
 * FreeBSD:  Copyright (c) 1995-2009 The FreeBSD Project. All rights reserved.
 * Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support.
 * Quagga routing software.
-* XORP eXtensible Open Router Platform: Copyright (c) 2001-2009 XORP, Inc.
 * The BIRD Internet Routing Daemon 
 * Net-SNMP 
 * Idea of using glabel for disk type absraction: Scott Ullrich (pfSense)
