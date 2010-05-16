@@ -1,5 +1,11 @@
 Release 0.33 (not released)
 - Kernel: Add siis drivers (SiliconImage Serial ATA Host Controller)
+- Kernel modules: 	Hifn 7751/7951/7811/7955/7956 crypto accelerator
+					padlock (cryptographic functions and RNG in VIA C3, C7
+						and Eden processors)
+					safe (SafeNet crypto accelerator)
+					ubsec (SafeNet crypto accelerator)
+					glxsb (i386 only: Geode LX Security Block crypto accelerator)
 - Replace dhcprelya by isc-dhcp-relay
 - Replace Xorp by BIRD (BIRD is more used and lighter)
 - Add isc-dhcp-server
