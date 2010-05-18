@@ -74,15 +74,15 @@ check_system() {
 		exit 1
 	fi
 	
-	if `grep -q 'REVISION="8.0"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
-		SRC_VERSION="8.0"
+	if `grep -q 'REVISION="8.1"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
+		SRC_VERSION="8.1"
 	fi
 	if `grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
     	SRC_VERSION="7.2"
 	fi
 
 	if [ ${SRC_VERSION} = 0 ]; then
-		pprint 1 "ERROR: BSDRP need FreeBSD 8.0 or 7.2 sources"
+		pprint 1 "ERROR: BSDRP need FreeBSD 8.1 or 7.2 sources"
 		pprint 1 "Read HOW TO here:"
 		pprint 1 "http://bsdrp.net/documentation/technical_docs"
 		exit 1
