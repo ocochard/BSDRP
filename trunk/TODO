@@ -13,7 +13,6 @@
 	- utf-8 support for console ?
 	- Check if ucarp is allready started when ucarp start is invoked
     - Install ssmtp ??
-	- rc script for pim6 and bird
 
 * Provisionning *
 	- Be compatible with a provisionning tools that generate lot's of configuration
