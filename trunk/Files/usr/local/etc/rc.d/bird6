@@ -34,6 +34,8 @@
 # Add the following to /etc/rc.conf[.local] to enable this service
 #
 # bird6_enable="YES"
+# You may also wish to use the following variables to fine-tune startup:
+#  bird6_flags="-d"
 #
 
 . /etc/rc.subr
@@ -47,4 +49,5 @@ required_files="/usr/local/etc/${name}.conf"
 extra_commands=reload
 
 load_rc_config $name
+
 run_rc_command "$1"
