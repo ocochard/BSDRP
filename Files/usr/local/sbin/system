@@ -120,14 +120,16 @@ check_cfg () {
 sys_reboot () {
 	check_cfg
 	echo "Rebooting..."
-	reboot
+	# Never use reboot under FreeBSD !
+	shutdown -r now
 }
 
 # Halt
 sys_halt () {
 	check_cfg
 	echo "Power halting..."
-	halt -p
+	# Never use halt under FreeBSD !
+	shutdown -p now
 }
 
 # Check if system is under a VM
