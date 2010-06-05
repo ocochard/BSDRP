@@ -1,5 +1,5 @@
 Release 0.33 (not released)
-- Based on FreeBSD 8.1 PRERELEASE
+- Based on FreeBSD 8.1-PRERELEASE
 - Kernel: Add siis drivers (SiliconImage Serial ATA Host Controller)
 - Kernel modules: 	Hifn 7751/7951/7811/7955/7956 crypto accelerator
 					padlock (cryptographic functions and RNG in VIA C3, C7
@@ -16,11 +16,11 @@ Release 0.33 (not released)
 - Add multiple VHID support for CARP script
 - !!! TO DO!!! Quagga: fix bug 408 (IPv6 addresses cannot be assigned to interfaces by Quagga)
 - Sysctl: Do not generate core files, enable zerocopy for bpf by default
-- Re-enable "system virtualize" for FreeBSD 8
-    reduce kern.hz in VM (seem that FBSD 8.0-stable didn't auto-adapt anymore)
+- Re-enable "system virtualize" for FreeBSD 8.1
+    reduce kern.hz in VM (seem that FBSD 8.1 didn't auto-adapt anymore)
 - Removed VIM-lite: Ratio size/feature (syntaxe colorization) not enough usefull
 - Use UTF-8 for console
-- Disable ATA DMA in loader.conf for fix Soekris boot
+- Disable ATA DMA in loader.conf for fixing Soekris boot
 - Add a MS Windows VBScript for BSDRP VirtualBox lab (see http://bsdrp.svn.sourceforge.net/viewvc/bsdrp/)
 
 Release 0.32
