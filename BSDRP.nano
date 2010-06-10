@@ -235,7 +235,7 @@ add_port () {
 					# Improvement: Don't know why package-recursive don't works here
                		chroot \${NANO_WORLDDIR} /bin/sh -exc \
                         'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} MACHINE=${NANO_ARCH} UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} make WRKDIRPREFIX=/usr/workdir -C /usr/ports/$1 \
-                        package BATCH=yes $2 clean'
+                        package BATCH=yes -DWITHOUT_X11 $2 clean'
                		rm \${NANO_WORLDDIR}/etc/resolv.conf
                		rm -rf \${NANO_WORLDDIR}/usr/obj
                		rm -rf \${NANO_WORLDDIR}/usr/pobj
