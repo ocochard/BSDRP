@@ -78,6 +78,20 @@ check_system_common () {
         exit 1
     fi
 
+	if ! `VBoxHeadless | grep -q vrdp`; then
+		if ! `VBoxHeadless | grep -q vnc`; then
+			echo "No Virtualbox VRDP/VNC support detected:"
+			echo "BSDRP vga images will not be supported (only serial)"
+			echo "VRDP: Supported by Virtualbox release"
+			echo "VNC: Supported by patched VirtualBox-OSE release"
+			VBOX_VGA=false
+		else
+			VBOX_OUTPUT="vnc"
+		fi
+	else
+		VBOX_OUTPUT="vrdp"
+    fi
+
 }
 
 check_system_linux () {
@@ -121,36 +135,39 @@ check_image () {
 }
 
 # Convert image into Virtualbox format and compress it
-# It's not very simple to compress a VDI !
+# It's not very simple to compress a VDI : We need to create a full VM!
 
 convert_image () {
-	echo "Converting given image name into VDI disk..."
-    if [ -f ${WORKING_DIR}/BSDRP_lab.vdi ]; then
-        rm ${WORKING_DIR}/BSDRP_lab.vdi
-    fi
-	echo "Convert raw2vdi..." >> ${LOG_FILE}
-    VBoxManage convertfromraw ${FILENAME} ${WORKING_DIR}/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
-    # Check existing BSDRP_lap_tempo vm before to register it!
+	echo "Image file given… rebuilding BSDRP router template"
 	echo "Check if VM allready exist..." >> ${LOG_FILE}
-	if check_vm BSDRP_lab_tempo; then
-        delete_vm BSDRP_lab_tempo
-   	fi
+    if check_vm BSDRP_lab_template; then
+		echo "Delete the template VM"
+        delete_vm BSDRP_lab_template
+    fi
+
+	echo "Converting BSRP image into VDI disk..."
+    #if [ -f ${WORKING_DIR}/BSDRP_lab_template.vdi ]; then
+	#	echo "Router template disk file still exist!"
+	#	exit 1
+    #fi
+	echo "Convert raw2vdi..." >> ${LOG_FILE}
+    VBoxManage convertfromraw ${FILENAME} ${WORKING_DIR}/BSDRP_lab_template.vdi >> ${LOG_FILE} 2>&1
 	# Now compress the image
 	echo "Create a VM..." >> ${LOG_FILE}
-    VBoxManage createvm --name BSDRP_lab_tempo --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1
+    VBoxManage createvm --name BSDRP_lab_template --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1
 	echo "Add SATA controller to the VM..." >> ${LOG_FILE}
-	VBoxManage storagectl BSDRP_lab_tempo --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE} 2>&1
+	VBoxManage storagectl BSDRP_lab_template --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE} 2>&1
 	echo "Add the VDI to the VM..." >> ${LOG_FILE}
-	VBoxManage storageattach BSDRP_lab_tempo --storagectl "SATA Controller" \
+	VBoxManage storageattach BSDRP_lab_template --storagectl "SATA Controller" \
     --port 0 --device 0 --type hdd \
-    --medium $WORKING_DIR/BSDRP_lab.vdi >> ${LOG_FILE}
+    --medium $WORKING_DIR/BSDRP_lab_template.vdi >> ${LOG_FILE} 2>&1
 	#echo "Set the UUID of this disk..." >> ${LOG_FILE}
 	#VBoxManage internalcommands sethduuid $WORKING_DIR/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
 	echo "Reduce VM requierement..." >> ${LOG_FILE}
-    VBoxManage modifyvm BSDRP_lab_tempo --memory 16 --vram 1 >> ${LOG_FILE} 2>&1
+    VBoxManage modifyvm BSDRP_lab_template --memory 16 --vram 1 >> ${LOG_FILE} 2>&1
 	echo "Compress the VDI..." >> ${LOG_FILE}
-    VBoxManage modifyvdi $WORKING_DIR/BSDRP_lab.vdi --compact >> ${LOG_FILE} 2>&1
-    delete_vm BSDRP_lab_tempo
+    VBoxManage modifyvdi $WORKING_DIR/BSDRP_lab_template.vdi --compact >> ${LOG_FILE} 2>&1
+    #delete_vm BSDRP_lab_template
 }
 
 # Check if VM allready exist
@@ -181,13 +198,13 @@ create_vm () {
         if [ -f $WORKING_DIR/$1.vdi ]; then
             rm $WORKING_DIR/$1.vdi
         fi
-        VBoxManage clonehd $WORKING_DIR/BSDRP_lab.vdi $1.vdi >> ${LOG_FILE} 2>&1
+        VBoxManage clonehd $WORKING_DIR/BSDRP_lab_template.vdi $1.vdi >> ${LOG_FILE} 2>&1
 		echo "Add SATA controller to the VM..." >> ${LOG_FILE}
     	VBoxManage storagectl $1 --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE}
     	echo "Add the controller and disk to the VM..." >> ${LOG_FILE}
     	VBoxManage storageattach $1 --storagectl "SATA Controller" \
     	--port 0 --device 0 --type hdd \
-    	--medium $1.vdi >> ${LOG_FILE}
+    	--medium $1.vdi >> ${LOG_FILE} 2>&1
     	#echo "Set the UUID of this disk..." >> ${LOG_FILE}
     	#VBoxManage internalcommands sethduuid $1.vdi >> ${LOG_FILE} 2>&1
     else
@@ -229,6 +246,10 @@ parse_filename () {
     if echo "${FILENAME}" | grep -q "vga"; then
         SERIAL=false
         echo "filename guests a vga image"
+		if ! VBOX_VGA; then
+		echo "You can't use BSDRP vga release with a Virtualbox that didn't support RDP or VNC"
+		exit 1
+		fi
     fi
     echo "VM_ARCH=$VM_ARCH" > ${WORKING_DIR}/image.info
     echo "SERIAL=$SERIAL" >> ${WORKING_DIR}/image.info
@@ -282,7 +303,7 @@ start_vm () {
         # OSE version of VB doesn't support --vrdp option
 		# Official OSE version of VB doesn't support --vnc option (need a patch)
 		if ! ($SERIAL); then
-        	nohup VBoxHeadless --vnc on --vncport 590${i} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
+        	nohup VBoxHeadless --${VBOX_OUTPUT} on --${VBOX_OUTPUT}port 590${i} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
 		else
 			nohup VBoxHeadless --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
 		fi
@@ -309,8 +330,8 @@ delete_vm () {
     VBoxManage storagectl $1 --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1
     echo "step 2: Unregister the VDI..." >> ${LOG_FILE}
     VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1
-    #echo "step 3: Delete the hard-drive image..."
-    #VBoxManage closemedium disk $WORKING_DIR/$1.vdi --delete
+    echo "step 3: Delete the hard-drive image..."
+    VBoxManage closemedium disk $WORKING_DIR/$1.vdi --delete
 }
 delete_all_vm () {
     stop_all_vm
