@@ -21,6 +21,7 @@ Release 0.33 (not released)
 - Removed VIM-lite: Ratio size/feature (syntaxe colorization) not enough usefull
 - Use UTF-8 for console
 - Disable ATA DMA in loader.conf for fixing Soekris boot
+- Remove sendmail error message during bootup (Nugroho Atmotaruno patch)
 - Add a MS Windows VBScript for BSDRP VirtualBox lab (see http://bsdrp.svn.sourceforge.net/viewvc/bsdrp/)
 
 Release 0.32
