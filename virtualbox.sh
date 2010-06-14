@@ -342,8 +342,8 @@ delete_all_vm () {
         fi 
         i=`expr $i + 1`
     done
-	if check_vm BSDRP_lab_tempo; then
-            delete_vm BSDRP_lab_tempo
+	if check_vm BSDRP_lab_template; then
+            delete_vm BSDRP_lab_template
     fi
 	
 }
