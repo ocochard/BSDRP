@@ -320,12 +320,14 @@ add_port "net-mgmt/fprobe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 # Add OpenLLDP: Link-Layer Discovery protocols
 add_port "net-mgmt/openlldp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
-# Add dhcprelya: A DHCP relay client
-#add_port "net/dhcprelya" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-
 # Add DHCP server and client
 add_port "net/isc-dhcp31-server" "-DWITHOUT_DHCP_PARANOIA -DWITHOUT_DHCP_JAIL -DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 add_port "net/isc-dhcp31-relay" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+
+# Add sstmp, a simple MTA to get mail off the system
+# Can't compile with TARGET_ARCH variable set, error message:
+# Bug triggered: ports/147853
+#add_port "mail/ssmtp" "replace -DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.
