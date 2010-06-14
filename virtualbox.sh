@@ -32,17 +32,11 @@
 #set -x
 
 # Global variable
-WORKING_DIR="/tmp/$USER/BSDRP-lab"
+WORKING_DIR="$HOME/.VirtualBox/HardDisks"
 MAX_VM=9
 LOG_FILE="BSDRP_lab.log"
 
-#> ${NANO_OBJ}/_.di 2>&1
-
-if [ ! -d $WORKING_DIR ]; then
-    mkdir -p $WORKING_DIR
-fi
-# Check system pre-requise for starting virtualbox
-
+# Check FreeBSD system pre-requise for starting virtualbox
 check_system_freebsd () {
     if ! kldstat -m vboxdrv; then
         echo "vboxdrv module not loaded, loading it..."
@@ -55,7 +49,15 @@ check_system_freebsd () {
 }
 
 check_system_common () {
+	
 	echo "Checking if VirtualBox installed..." >> ${LOG_FILE}
+
+	if [ ! -d $WORKING_DIR ]; then
+    	echo "Don't find $WORKING_DIR"
+    	echo "Is Virtualbox installed ?"
+    	exit 1
+	fi
+
     if ! `VBoxManage -v > /dev/null 2>&1`; then
         echo "ERROR: Is VirtualBox installed ?"
         exit 1
@@ -82,14 +84,16 @@ check_system_common () {
 		if ! `VBoxHeadless | grep -q vnc`; then
 			echo "No Virtualbox VRDP/VNC support detected:"
 			echo "BSDRP vga images will not be supported (only serial)"
-			echo "VRDP: Supported by Virtualbox release"
-			echo "VNC: Supported by patched VirtualBox-OSE release"
+			echo "VRDP: Supported by Virtualbox closed source release"
+			echo "VNC:  Supported by FreeBSD VirtualBox-OSE (if enabled during make config)"
 			VBOX_VGA=false
 		else
 			VBOX_OUTPUT="vnc"
+			VBOX_VGA=true
 		fi
 	else
 		VBOX_OUTPUT="vrdp"
+		VBOX_VGA=true
     fi
 
 }
@@ -134,26 +138,19 @@ check_image () {
     
 }
 
-# Convert image into Virtualbox format and compress it
-# It's not very simple to compress a VDI : We need to create a full VM!
-
-convert_image () {
+# Create BSDRP template VM by converting BSDRP image disk into Virtualbox format and compress it
+# This template is used only for the image disk
+create_template_vm () {
 	echo "Image file given… rebuilding BSDRP router template"
-	echo "Check if VM allready exist..." >> ${LOG_FILE}
+	echo "Check if BSDRP template VM exist..." >> ${LOG_FILE}
     if check_vm BSDRP_lab_template; then
-		echo "Delete the template VM"
+		echo "Found: Deleting the template VM..."
         delete_vm BSDRP_lab_template
     fi
 
-	echo "Converting BSRP image into VDI disk..."
-    #if [ -f ${WORKING_DIR}/BSDRP_lab_template.vdi ]; then
-	#	echo "Router template disk file still exist!"
-	#	exit 1
-    #fi
-	echo "Convert raw2vdi..." >> ${LOG_FILE}
+	echo "Convert BSDRP image disk to VDI..." >> ${LOG_FILE}
     VBoxManage convertfromraw ${FILENAME} ${WORKING_DIR}/BSDRP_lab_template.vdi >> ${LOG_FILE} 2>&1
-	# Now compress the image
-	echo "Create a VM..." >> ${LOG_FILE}
+	echo "Create BSDRP template VM..." >> ${LOG_FILE}
     VBoxManage createvm --name BSDRP_lab_template --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1
 	echo "Add SATA controller to the VM..." >> ${LOG_FILE}
 	VBoxManage storagectl BSDRP_lab_template --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE} 2>&1
@@ -161,13 +158,10 @@ convert_image () {
 	VBoxManage storageattach BSDRP_lab_template --storagectl "SATA Controller" \
     --port 0 --device 0 --type hdd \
     --medium $WORKING_DIR/BSDRP_lab_template.vdi >> ${LOG_FILE} 2>&1
-	#echo "Set the UUID of this disk..." >> ${LOG_FILE}
-	#VBoxManage internalcommands sethduuid $WORKING_DIR/BSDRP_lab.vdi >> ${LOG_FILE} 2>&1
-	echo "Reduce VM requierement..." >> ${LOG_FILE}
+	echo "Reduce Template VM requierement..." >> ${LOG_FILE}
     VBoxManage modifyvm BSDRP_lab_template --memory 16 --vram 1 >> ${LOG_FILE} 2>&1
 	echo "Compress the VDI..." >> ${LOG_FILE}
     VBoxManage modifyvdi $WORKING_DIR/BSDRP_lab_template.vdi --compact >> ${LOG_FILE} 2>&1
-    #delete_vm BSDRP_lab_template
 }
 
 # Check if VM allready exist
@@ -205,8 +199,6 @@ create_vm () {
     	VBoxManage storageattach $1 --storagectl "SATA Controller" \
     	--port 0 --device 0 --type hdd \
     	--medium $1.vdi >> ${LOG_FILE} 2>&1
-    	#echo "Set the UUID of this disk..." >> ${LOG_FILE}
-    	#VBoxManage internalcommands sethduuid $1.vdi >> ${LOG_FILE} 2>&1
     else
         # if existing: Is running ?
         if `VBoxManage showvminfo $1 | grep -q "running"`; then
@@ -246,7 +238,7 @@ parse_filename () {
     if echo "${FILENAME}" | grep -q "vga"; then
         SERIAL=false
         echo "filename guests a vga image"
-		if ! VBOX_VGA; then
+		if ! $VBOX_VGA; then
 		echo "You can't use BSDRP vga release with a Virtualbox that didn't support RDP or VNC"
 		exit 1
 		fi
@@ -261,6 +253,9 @@ clone_vm () {
     echo "Creating lab with $NUMBER_VM routers:"
     echo "- $NUMBER_LAN LAN between all routers"
     echo "- Full mesh ethernet point-to-point link between each routers"
+	if ($HOSTONLY_NIC); then
+		echo "- An NIC connected to the shared LAN with the host"
+	fi
     echo ""
     i=1
     #Enter the main loop for each VM
@@ -291,6 +286,10 @@ clone_vm () {
             VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC00000${j}0${i} >> ${LOG_FILE} 2>&1
             j=`expr $j + 1`
         done
+		if ($HOSTONLY_NIC); then
+			NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
+			VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --nictype${NIC_NUMBER} 82540EM --macaddress${NIC_NUMBER} DDDD0000000${i} >> ${LOG_FILE} 2>&1
+		fi
     i=`expr $i + 1`
     done
 }
@@ -312,7 +311,7 @@ start_vm () {
             socat UNIX-CONNECT:$WORKING_DIR/BSDRP_lab_R$i.serial TCP-LISTEN:800$i >> ${LOG_FILE} 2>&1 &
             echo "Connect to the router ${i} by telneting to localhost on port 800${i}"
         else
-            echo "Connect to the router ${i} by VNC client on port 590${i}"
+            echo "Connect to the router ${i} by ${VBOX_OUTPUT} client on port 590${i}"
         fi
         i=`expr $i + 1`
     done
@@ -330,8 +329,8 @@ delete_vm () {
     VBoxManage storagectl $1 --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1
     echo "step 2: Unregister the VDI..." >> ${LOG_FILE}
     VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1
-    echo "step 3: Delete the hard-drive image..."
-    VBoxManage closemedium disk $WORKING_DIR/$1.vdi --delete
+    echo "step 3: Delete the hard-drive image..." >> ${LOG_FILE}
+    VBoxManage closemedium disk $WORKING_DIR/$1.vdi --delete >> ${LOG_FILE} 2>&1
 }
 delete_all_vm () {
     stop_all_vm
@@ -373,13 +372,26 @@ stop_all_vm () {
     done
 }
 
+# Get Virtualbox hostonly adapter informatiom
+vbox_hostonly () {
+	if ! `VBoxManage list hostonlyifs | grep "^Name:"  >> ${LOG_FILE} 2>&1`; then
+        echo "ERROR: Not VBox hostonly NIC, you need to create one:"
+		echo "VBoxManage hostonlyif ipconfig vboxnet0 --ip 192.168.1.30 --netmask 255.255.255.0"
+		echo "VBoxManage dhcpserver remove --ifname vboxnet0"
+        exit 1
+    fi
+
+	HOSTONLY_NIC=`VBoxManage list hostonlyifs | grep "^Name:" | cut -d ':' -f 2 | sed 's/^[ \t]*//;s/[ \t]*$//'`
+}
+
 usage () {
         (
-        echo "Usage: $0 [-hds] -i BSDRP-full.img [-n router-number] [-l LAN-number]"
+        echo "Usage: $0 [-hds] [-i BSDRP_image_file.img] [-n router-number] [-l LAN-number]"
         echo "  -i filename     BSDRP image file name (to be used the first time only)"
         echo "  -d delete       Delete all BSDRP VM and disks"
         echo "  -n X            Number of router (between 2 and 9) full meshed"
         echo "  -l Y            Number of LAN between 0 and 9"
+		echo "  -c              Enable internal NIC shared with host for each routers"
         echo "  -h              Display this help"
         echo "  -s              Stop all VM"
         echo ""
@@ -394,12 +406,14 @@ usage () {
 ### Parse argument
 
 set +e
-args=`getopt i:dhl:n:s $*`
+args=`getopt i:dhcl:n:s $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
 fi
 set -e
+
+HOSTONLY_NIC=false
 
 set -- $args
 for i
@@ -411,6 +425,10 @@ do
                 shift
                 shift
                 ;;
+		-c)
+				HOSTONLY_NIC=true
+				shift
+				;;
         -d)
                 delete_all_vm
 				exit 0
@@ -463,7 +481,7 @@ else
 fi
 
 if [ "$FILENAME" = "" ]; then
-    if [ ! -f ${WORKING_DIR}/BSDRP_lab.vdi ]; then
+    if [ ! -f ${WORKING_DIR}/BSDRP_lab_template.vdi ]; then
         echo "ERROR: No existing base disk lab detected."
         echo "You need to enter an image filename for creating the VM."
         exit 1
@@ -473,6 +491,10 @@ fi
 if [ $# -gt 0 ] ; then
     echo "$0: Extraneous arguments supplied"
     usage
+fi
+
+if ($HOSTONLY_NIC); then
+	vbox_hostonly
 fi
 
 echo "BSD Router Project: VirtualBox lab script"
@@ -510,7 +532,7 @@ check_user
 if [ "$FILENAME" != "" ]; then
     check_image
     parse_filename
-    convert_image
+	create_template_vm
 else
     if [ -f ${WORKING_DIR}/image.info ]; then 
         . ${WORKING_DIR}/image.info
