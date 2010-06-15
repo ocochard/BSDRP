@@ -262,7 +262,7 @@ clone_vm () {
     while [ $i -le $NUMBER_VM ]; do
         create_vm BSDRP_lab_R$i
         NIC_NUMBER=0
-        echo "Router$i have the folllowing NIC:"
+        echo "Router$i have the following NIC:"
         #Enter in the Cross-over (Point-to-Point) NIC loop
         #Now generate X x (X-1)/2 full meshed link
         j=1
@@ -287,8 +287,9 @@ clone_vm () {
             j=`expr $j + 1`
         done
 		if ($HOSTONLY_NIC); then
+			echo "em${NIC_NUMBER} connected to shared-with-host LAN."
 			NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-			VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --nictype${NIC_NUMBER} 82540EM --macaddress${NIC_NUMBER} DDDD0000000${i} >> ${LOG_FILE} 2>&1
+			VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --hostonlyadapter${NIC_NUMBER} ${HOSTONLY_NIC_NAME} --nictype${NIC_NUMBER} 82540EM --macaddress${NIC_NUMBER} 00bbbb00000${i} >> ${LOG_FILE} 2>&1
 		fi
     i=`expr $i + 1`
     done
@@ -381,7 +382,7 @@ vbox_hostonly () {
         exit 1
     fi
 
-	HOSTONLY_NIC=`VBoxManage list hostonlyifs | grep "^Name:" | cut -d ':' -f 2 | sed 's/^[ \t]*//;s/[ \t]*$//'`
+	HOSTONLY_NIC_NAME=`VBoxManage list hostonlyifs | grep "^Name:" | cut -d ':' -f 2 | sed 's/^[ \t]*//;s/[ \t]*$//'`
 }
 
 usage () {
