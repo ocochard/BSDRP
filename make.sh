@@ -170,6 +170,9 @@ ports_patch()
 {
 	echo "patching ports..."
 	cp -v patches/quagga/*.* /usr/ports/net/quagga/files/
+	if ! `grep -q 'TARGET_ARCH' /usr/ports/mail/ssmtp/Makefile`; then
+		patch /usr/ports/mail/ssmtp/Makefile patches/ssmtp/Makefile.diff
+	fi
 }
 
 ##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount

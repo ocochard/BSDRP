@@ -21,3 +21,4 @@ BSD Router Project is based upon/includes various free software packages, listed
 * fprobe: Slava Astashonok
 * OpenLLDP: Terry Simons and Jason Peterson 
 * DHCP server and relay: Internet Systems Consortium
+* ssmtp: extremely simple MTA to get mail off the system to a mail hub

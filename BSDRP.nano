@@ -327,7 +327,7 @@ add_port "net/isc-dhcp31-relay" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 # Add sstmp, a simple MTA to get mail off the system
 # Can't compile with TARGET_ARCH variable set, error message:
 # Bug triggered: ports/147853
-#add_port "mail/ssmtp" "replace -DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "mail/ssmtp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.

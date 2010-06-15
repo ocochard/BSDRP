@@ -10,6 +10,7 @@ Release 0.33 (not released)
 - Replace dhcprelya by isc-dhcp-relay
 - Replace Xorp by BIRD (BIRD is more used and lighter)
 - Add isc-dhcp-server
+- Add ssmtp
 - Add IPv6 multicast PIM routing daemons and tools
 - Add IPv4 DVMRP (multicast) routing daemon: mrouted
 - Add GRE module (GRE and MOBILE encapsulation)
