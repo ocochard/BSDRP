@@ -3,6 +3,8 @@
 #
 # NanoBSD port support added from Gitoyen:
 # http://www.gitoyen.net/Howto-NanoBSD-quagga-router 
+# Some cleanup idea taken from imp@ nanoBSD script
+#
 ################## Common section #################
 
 # Name of this NanoBSD build.  (Used to construct workdir names)
@@ -37,13 +39,16 @@ CONF_BUILD=''
 
 # Options to put in make.conf during installworld only
 # Do not use: WITHOUT_TOOLCHAIN=YES, because installing port need it
-CONF_INSTALL=''
+CONF_INSTALL='
+WITHOUT_INSTALLLIB
+'
 
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options for details
 # WITHOUT_INFO= incompatible for installing a dependency of Quagga
-# WITHOUT_FORTH= incompatible with boot flags (to be confirm).
-# WITHOUT_GROFF= incompatible with isc-dhcp-server (needed for build man page)
+# WITHOUT_FORTH= incompatible with boot flags (need to be confirmed).
+# WITHOUT_GROFF= incompatible with isc-dhcp-server (needed for build unused man page)
+# WITHOUT_BSNMP= prevent the buildworld to complete (don't know why) 
 CONF_WORLD='
 WITHOUT_ACCT=
 WITHOUT_APM=
@@ -78,13 +83,13 @@ WITHOUT_IPX_SUPPORT=
 WITHOUT_JAIL=
 WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
+WITHOUT_KVM=
+WITHOUT_KVM_SUPPORT=
 WITHOUT_LEGACY_CONSOLE=
 WITHOUT_LIB32=
 WITHOUT_LOCALES=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
-WITHOUT_MAIL=
-WITHOUT_MAILWRAPPER=
 WITHOUT_MAN=
 WITHOUT_MAN_UTILS=
 WITHOUT_NCP=
@@ -109,6 +114,7 @@ WITHOUT_WIRELESS=
 WITHOUT_WIRELESS_SUPPORT=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
 WITHOUT_ZFS=
+WITH_IDEA=
 '
 
 # Customize commands.
@@ -367,49 +373,33 @@ bsdrp_custom () {
 	then
 		gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel
 	fi
-	# Remove info and man pages
-	if [ -d ${NANO_WORLDDIR}/usr/local/info ]
-	then
-		rm -f ${NANO_WORLDDIR}/usr/local/info/*.*
-	fi
-	if [ -d ${NANO_WORLDDIR}/usr/local/man ]
-	then
-		rm -f ${NANO_WORLDDIR}/usr/local/man/man1/*.gz
-		rm -f ${NANO_WORLDDIR}/usr/local/man/man3/*.gz
-	fi
-	# Remove doc folder
-	DOCS_TO_REMOVE='
-doc/gettext
-doc/libasprintf
-doc/libiconv
-doc/snmp
-examples/quagga
+	# Remove some of the folders (without share/snmp)
+	FOLDERS_TO_REMOVE='
+usr/local/include
+usr/local/man
+usr/local/info
+usr/local/share/doc/gettext
+usr/local/share/doc/libasprintf
+usr/local/share/doc/libiconv
+usr/local/share/doc/snmp
+usr/local/share/examples/quagga
+usr/share/groff_font
+usr/share/tmac
+usr/share/me
+usr/share/info
 '
-	for c in $DOCS_TO_REMOVE
+	for c in $FOLDERS_TO_REMOVE
 	do	
-		if [ -d ${NANO_WORLDDIR}/usr/local/share/$c ]
+		if [ -d ${NANO_WORLDDIR}/$c ]
 		then
-			rm -rf ${NANO_WORLDDIR}/usr/local/share/$c
+			rm -rf ${NANO_WORLDDIR}/$c
 		fi
 	done
 
-	# Remove info files (save 2 Mb)
-	if [ -d ${NANO_WORLDDIR}/usr/share/info ]
-	then
-		rm -f ${NANO_WORLDDIR}/usr/share/info/*.gz
-	fi
-
-	# Remove all include files (16Mb)
-	if [ -d ${NANO_WORLDDIR}/usr/include ]
-	then
-		rm -rf ${NANO_WORLDDIR}/usr/include/*
-		rm -rf ${NANO_WORLDDIR}/usr/include/dlmalloc
-		rm -rf ${NANO_WORLDDIR}/usr/include/net-snmp
-		rm -rf ${NANO_WORLDDIR}/usr/include/quagga
-	fi
 	# Remove some files
     FILES_TO_REMOVE='
 usr/sbin/config
+usr/local/etc/rc.d/freevrrpd.sh.sample
 '
     for c in $FILES_TO_REMOVE
     do
@@ -419,6 +409,9 @@ usr/sbin/config
         fi
     done
 
+	# Kill all .a's that are installed (15MB)
+    find ${NANO_WORLDDIR} -name \*.a | xargs rm
+	
 	# About removing all gcc suite
 	# How to found the list of all binary files members of gcc suite ?
 	# This do not prevent to rebuild a BSDRP image easly because there is 
