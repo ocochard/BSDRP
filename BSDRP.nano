@@ -126,7 +126,10 @@ NANO_LATE_CUSTOMIZE=""
 NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -m 0"
 
 # Target media size in 512 bytes sectors
-NANO_MEDIASIZE=1200000
+# For calculating:
+# Size in MB * 1024 * 1024 / 512 = The value to be used
+# 
+NANO_MEDIASIZE=1048576
 
 # Number of code images on media (1 or 2)
 NANO_IMAGES=2
@@ -141,14 +144,15 @@ NANO_CODESIZE=0
 
 # Size of configuration file system in 512 bytes sectors
 # Cannot be zero.
-NANO_CONFSIZE=2048
+# 10MB = 2048
+NANO_CONFSIZE=20480
 
 # Size of data file system in 512 bytes sectors
 # If zero: no partition configured.
 # If negative: max size possible
 # This filesystem is used for archive configuration and
 # for user customized scripts or tool
-NANO_DATASIZE=2048
+NANO_DATASIZE=20480
 
 # Size of the /etc ramdisk in 512 bytes sectors
 # 10240=5Mb
