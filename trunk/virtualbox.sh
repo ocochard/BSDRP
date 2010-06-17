@@ -309,13 +309,24 @@ start_vm () {
 		fi
         sleep 2
         if ($SERIAL); then
-            socat UNIX-CONNECT:$WORKING_DIR/BSDRP_lab_R$i.serial TCP-LISTEN:800$i >> ${LOG_FILE} 2>&1 &
-            echo "Connect to the router ${i} by telneting to localhost on port 800${i}"
+            socat -s UNIX-CONNECT:$WORKING_DIR/BSDRP_lab_R$i.serial TCP-LISTEN:800$i >> ${LOG_FILE} 2>&1 &
+            echo "Connect to the router ${i} by TCP-connecting socat on port 800${i}"
         else
-            echo "Connect to the router ${i} by ${VBOX_OUTPUT} client on port 590${i}"
+            echo "Connect to the router ${i} by ${VBOX_OUTPUT} client on port 800${i}"
         fi
         i=`expr $i + 1`
     done
+	if ($SERIAL); then
+		echo "Here is how to use a serial terminal software for connecting to the routers:"
+		echo "1. Create a bridge between the socat port and a local PTY link"
+		echo "   socat TCP-CONNECT:${HOSTNAME}:8001 PTY,link=/tmp/router1 &"
+		echo "2. Open your serial terminal software using the local PTY link just created"
+		echo "   Using screen:"
+		echo "       screen /tmp/router1 9600"
+		echo "   Or using tip (FreeBSD): "
+		echo '       echo "router1:dv=/tmp/router1:br#9600:pa=none:" >> /etc/remote'
+		echo "       tip router1"
+	fi
 }
 
 # Delete VM
@@ -371,6 +382,8 @@ stop_all_vm () {
         fi
         i=`expr $i + 1`
     done
+	# Close socat process
+	pkill socat
 }
 
 # Get Virtualbox hostonly adapter informatiom
