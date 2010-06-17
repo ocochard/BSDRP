@@ -38,10 +38,9 @@ NANO_ARCH=${TARGET_ARCH}
 CONF_BUILD=''
 
 # Options to put in make.conf during installworld only
-# Do not use: WITHOUT_TOOLCHAIN=YES, because installing port need it
-CONF_INSTALL='
-WITHOUT_INSTALLLIB=
-'
+# Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
+# Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
+CONF_INSTALL=''
 
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options or man src.conf for details
