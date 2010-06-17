@@ -40,15 +40,16 @@ CONF_BUILD=''
 # Options to put in make.conf during installworld only
 # Do not use: WITHOUT_TOOLCHAIN=YES, because installing port need it
 CONF_INSTALL='
-WITHOUT_INSTALLLIB
+WITHOUT_INSTALLLIB=
 '
 
 # Options to put in make.conf during both build- & installworld.
-# See the file /usr/src/tools/build/options for details
+# See the file /usr/src/tools/build/options or man src.conf for details
 # WITHOUT_INFO= incompatible for installing a dependency of Quagga
 # WITHOUT_FORTH= incompatible with boot flags (need to be confirmed).
 # WITHOUT_GROFF= incompatible with isc-dhcp-server (needed for build unused man page)
-# WITHOUT_BSNMP= prevent the buildworld to complete (don't know why) 
+# WITHOUT_KVM= and WITHOUT_KVM_SUPPORT= prevent buildworld to complet (don't know why)
+
 CONF_WORLD='
 WITHOUT_ACCT=
 WITHOUT_APM=
@@ -64,6 +65,7 @@ WITHOUT_BIND_MTREE=
 WITHOUT_BIND_NAMED=
 WITHOUT_BIND_UTILS=
 WITHOUT_BLUETOOTH=
+WITHOUT_BSNMP=
 WITHOUT_CALENDAR=
 WITHOUT_CTM=
 WITHOUT_CVS=
@@ -83,8 +85,6 @@ WITHOUT_IPX_SUPPORT=
 WITHOUT_JAIL=
 WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
-WITHOUT_KVM=
-WITHOUT_KVM_SUPPORT=
 WITHOUT_LEGACY_CONSOLE=
 WITHOUT_LIB32=
 WITHOUT_LOCALES=
