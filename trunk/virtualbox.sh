@@ -319,13 +319,14 @@ start_vm () {
 	if ($SERIAL); then
 		echo "Here is how to use a serial terminal software for connecting to the routers:"
 		echo "1. Create a bridge between the socat port and a local PTY link"
-		echo "   socat TCP-CONNECT:${HOSTNAME}:8001 PTY,link=/tmp/router1 &"
+		echo "   socat TCP-CONNECT:localhost:8001 PTY,link=/tmp/router1 &"
 		echo "2. Open your serial terminal software using the local PTY link just created"
 		echo "   Using screen:"
 		echo "       screen /tmp/router1 9600"
 		echo "   Or using tip (FreeBSD): "
 		echo '       echo "router1:dv=/tmp/router1:br#9600:pa=none:" >> /etc/remote'
 		echo "       tip router1"
+		echo "Warning: Closing your session will close socat on both end"
 	fi
 }
 
@@ -375,15 +376,12 @@ stop_all_vm () {
                 sleep 5
 			elif `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "meditation"`; then
 				echo "BSDRP_lab_R$i is in Guru meditation state: Stopping it..." >> ${LOG_FILE}
-
 				VBoxManage controlvm BSDRP_lab_R$i poweroff >> ${LOG_FILE} 2>&1
                 sleep 5
             fi
         fi
         i=`expr $i + 1`
     done
-	# Close socat process
-	pkill socat
 }
 
 # Get Virtualbox hostonly adapter informatiom
@@ -495,7 +493,7 @@ else
 fi
 
 if [ "$FILENAME" = "" ]; then
-    if [ ! -f ${WORKING_DIR}/BSDRP_lab_template.vdi ]; then
+	if ! check_vm BSDRP_lab_template; then
         echo "ERROR: No existing base disk lab detected."
         echo "You need to enter an image filename for creating the VM."
         exit 1
@@ -533,13 +531,6 @@ case "$OS_DETECTED" in
         exit 1
         ;;
 esac
-
-# This is an old test, should no used since we use patched VNC version
-if VBoxManage -v | grep -q "OSE"; then
-    OSE=true
-else
-    OSE=false
-fi
 
 check_user
 

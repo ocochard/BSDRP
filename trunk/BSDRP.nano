@@ -125,11 +125,9 @@ NANO_LATE_CUSTOMIZE=""
 # Newfs paramters to use
 NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -m 0"
 
-# Target media size in 512 bytes sectors
-# For calculating:
-# Size in MB * 1024 * 1024 / 512 = The value to be used
-# 
-NANO_MEDIASIZE=1048576
+# Set physical disk layout for generic USB of 256Mb
+# This function will set the variable NANO_MEDIASIZE, NANO_SECTS, NANO_HEADS
+UsbDevice Generic 256
 
 # Number of code images on media (1 or 2)
 NANO_IMAGES=2
@@ -161,10 +159,6 @@ NANO_RAM_ETCSIZE=10240
 # Size of the /tmp+/var ramdisk in 512 bytes sectors
 # 20480=10Mb (usefull for log files)
 NANO_RAM_TMPVARSIZE=20480
-
-# Media geometry, only relevant if bios doesn't understand LBA.
-NANO_SECTS=63
-NANO_HEADS=16
 
 # Boot0cfg configuration mode
 NANO_BOOT0CFG="-o packet -s 1 -m 3"
@@ -372,9 +366,10 @@ bsdrp_custom () {
     #'chmod g+w /usr/local/etc/xorp.conf'
 
 	# Compress the kernel (save 3Mb)
-	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]
-	then
-		gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel
+	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
+		if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
+			echo "Error during zipping the kernel"
+		fi
 	fi
 	# Remove some of the folders (without share/snmp)
 	FOLDERS_TO_REMOVE='
@@ -395,7 +390,10 @@ usr/share/info
 	do	
 		if [ -d ${NANO_WORLDDIR}/$c ]
 		then
-			rm -rf ${NANO_WORLDDIR}/$c
+			echo "Removing ${NANO_WORLDDIR}/$c"
+			if ! rm -rf ${NANO_WORLDDIR}/$c ; then
+				echo "Error: Can't remove it!"
+			fi
 		fi
 	done
 
@@ -403,16 +401,24 @@ usr/share/info
     FILES_TO_REMOVE='
 usr/sbin/config
 usr/local/etc/rc.d/freevrrpd.sh.sample
+usr/share/misc/magic.mgc
+usr/share/misc/termcap.db
 '
     for c in $FILES_TO_REMOVE
     do
         if [ -f ${NANO_WORLDDIR}/$c ]
         then
-            rm -rf ${NANO_WORLDDIR}/$c
+			echo "Removing ${NANO_WORLDDIR}/$c"
+            if ! rm -rf ${NANO_WORLDDIR}/$c ; then
+				echo "Error: Can't remove it!"
+			fi
         fi
     done
 
-	# Kill all .a's that are installed (15MB)
+	# Move termcap.small file
+	mv ${NANO_WORLDDIR}/etc/termcap.small ${NANO_WORLDDIR}/usr/share/misc/termcap.db
+
+	# Kill all .a's that are installed (remove 33MB)
     find ${NANO_WORLDDIR} -name \*.a | xargs rm
 	
 	# About removing all gcc suite
@@ -465,9 +471,6 @@ bsdrp_console_vga () {
 	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 }
-
-# Set physical disk layout for generic USB of 1Gb
-UsbDevice Generic 500
 
 # Install Custom scripts and config files
 customize_cmd cust_install_files
