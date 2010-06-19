@@ -515,11 +515,6 @@ usr/share/tmac/tmac.vgrind
 
 	# Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
     find ${NANO_WORLDDIR} -name \*.a | xargs rm
-	
-	# About removing all gcc suite
-	# How to found the list of all binary files members of gcc suite ?
-	# This do not prevent to rebuild a BSDRP image easly because there is 
-	# an installworld that is done before to (re)build ports
 }
 
 # Enable only serial system only
