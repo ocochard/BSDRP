@@ -1,13 +1,13 @@
-Release 0.33 (not released)
-- Target Media size reduced from 512MB to 256MB
+Release 0.33 (not released… Waiting for FreeBSD 8.1-Release)
+- Media size needs reduce from 512MB to 256MB (Thanks Warner Losh)
 - Based on FreeBSD 8.1-RC1
 - Kernel: Add siis drivers (SiliconImage Serial ATA Host Controller)
 - Kernel modules: 	Hifn 7751/7951/7811/7955/7956 crypto accelerator
-				padlock (cryptographic functions and RNG in VIA C3, C7
-				and Eden processors)
-			safe (SafeNet crypto accelerator)
-			ubsec (SafeNet crypto accelerator)
-			glxsb (i386 only: Geode LX Security Block crypto accelerator)
+					padlock (cryptographic functions and RNG in VIA C3, C7
+						and Eden processors)
+					safe (SafeNet crypto accelerator)
+					ubsec (SafeNet crypto accelerator)
+					glxsb (i386 only: Geode LX Security Block crypto accelerator)
 - Replace dhcprelya by isc-dhcp-relay
 - Replace Xorp by BIRD (BIRD is more used and lighter)
 - Add isc-dhcp-server
@@ -15,16 +15,28 @@ Release 0.33 (not released)
 - Add IPv6 multicast PIM routing daemons and tools
 - Add IPv4 DVMRP (multicast) routing daemon: mrouted
 - Add GRE module (GRE and MOBILE encapsulation)
-- Add multiple VHID support for CARP script
-- !!! TO DO!!! Quagga: fix bug 408 (IPv6 addresses cannot be assigned to interfaces by Quagga)
+- Add multiple VHID support on rc CARP script
 - Sysctl: Do not generate core files, enable zerocopy for bpf by default
 - Re-enable "system virtualize" for FreeBSD 8.1
     reduce kern.hz in VM (seem that FBSD 8.1 didn't auto-adapt anymore)
 - Removed VIM-lite: Ratio size/feature (syntaxe colorization) not enough usefull
 - Use UTF-8 for console
 - Disable ATA DMA in loader.conf for fixing Soekris boot
-- Remove sendmail error message during bootup (Nugroho Atmotaruno patch)
-- Add a MS Windows VBScript for BSDRP VirtualBox lab (see http://bsdrp.svn.sourceforge.net/viewvc/bsdrp/)
+- Remove sendmail error message during bootup (thanks Nugroho Atmotaruno)
+
+Related:
+- Add a MS Windows VBScript for BSDRP VirtualBox lab:
+  http://bsdrp.svn.sourceforge.net/viewvc/bsdrp/trunk/virtualbox.vbs
+
+TO DO:
+- Add mail program, without it ssmtp is useless :-)
+
+Bugs fixes:
+- Virtual box lab script: Fix problem with use of serial line terminal emulation (thanks to Baptiste Daroussin)
+
+Know bugs:
+- Quagga Can't set IPv6 address on interface
+  https://bugzilla.quagga.net/show_bug.cgi?id=408
 
 Release 0.32
 - Based on FreeBSD 8.0-Release-p2
