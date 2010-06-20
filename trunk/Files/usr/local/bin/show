@@ -40,33 +40,37 @@ getoption () {
 	SECOND_OPTION="$2"
 	THIRD_OPTION="$3"
 	case "$FIRST_OPTION" in
-		version|ver)
-			version
-			;;
-		route)
-			route 
-			;;
-		process|proc)
-			process
-			;;
-		help|h)
-			usage
-			;;
-		license|lic)
-			license
-			;;
-		memory|mem)
-			memory
-			;;
 		authors|author)
 			authors
 			;;
+        help|h)
+            usage
+            ;;
+        license|lic)
+            license
+            ;;
+        memory|mem)
+            memory
+            ;;
 		packages|package)
 			packages
+			;;
+        process|proc)
+            process
+            ;;
+        route)
+            route
+            ;;
+		tech-support)
+			tech-support
 			;;
 		traffic)
 			traffic
 			;;
+		version|ver)
+            version
+            ;;
+
 		*)
 			echo "illegal option: $FIRST_OPTION"
 			usage
@@ -93,30 +97,31 @@ usage () {
 # value $0 is the name of the called script
 		echo "Usage: $0 option"
         echo "  - authors      : Display authors and contributors list"
-		echo "  - route    : Display routes"
-		echo "  - process/proc  : Display process information"
-		echo "  - version/ver  : Display BSDRP version"
+		echo "  - help/h [option]  : Display this help message. "
+        echo "       If [option] given, display more detail about"
 		echo "  - license/lic  : Display BSDRP license"
 		echo "  - memory/mem   : Display general memory usage"
-		echo "  - traffic      : Display extensive IP traffic statistics"
 		echo "  - packages     : Display lists of installed packages"
-		echo "  - help/h [option]  : Display this help message. "
-		echo "		 If [option] given, display more detail about"
+		echo "  - process/proc  : Display process information"
+		echo "  - route    : Display routes"
+		echo "  - traffic      : Display extensive IP traffic statistics"
+		echo "  - tech-support : Display Lot's of information"
+		echo "  - version/ver  : Display BSDRP version"
 			;;	
 	esac	
 	exit 0
 }
 
-# Display LICENSE
-license () {
-	cat /root/LICENSE
-	exit 0
-} 
-
 # Display AUTHORS
 authors () {
 	cat /root/AUTHORS
 	exit 0
+}
+
+# Display LICENSE
+license () {
+    cat /root/LICENSE
+    exit 0
 }
 
 # Display traffic
@@ -252,6 +257,25 @@ process () {
         exit 0
 }
 
+
+# Display tech support
+tech-support () {
+	echo "============ BSD Router Project Tech-support output ============"
+	echo "==== show version ===="
+	show version
+	echo "==== uname -a ===="
+	uname -a
+	echo "==== ifconfig -a ===="
+	ifconfig -a
+	echo "==== pciconf -lv ===="
+	pciconf -lv
+	echo "==== vmstat -h -i (show process int) ===="
+	show process int
+	echo "==== vmstat -h -m (show memory) ===="
+	show memory
+	echo "==== pkg_info (show packages) ===="
+	show packages
+}
 
 ###################
 ## Main function ##

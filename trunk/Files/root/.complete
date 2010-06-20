@@ -1,6 +1,6 @@
 # Some BSDRP command complete
 complete config  'p/1/(save diff apply rollback put get reset password help )/'
-complete show  'p/1/(memory route process version license authors packages help traffic )/'
+complete show  'p/1/(memory route process version license authors packages help traffic tech-support )/'
 complete route 'p/1/(add flush del change get monitor )/'
 complete system 'p/1/(reboot halt virtualized check-vm help )/'
 complete ifconfig 'p/1/`ifconfig -l`/'
