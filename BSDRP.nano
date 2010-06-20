@@ -425,6 +425,9 @@ usr/share/misc/termcap.db
 	# (cd /tmp/with; find . > /tmp/with.list)
 	# (cd /tmp/without; find . > /tmp/without.list)
 	# diff -u /tmp/with.list /tmp/without.list
+	# the tools/knob.sh script generate a list for all files not installed using knobs
+	# Result are here: http://bsdrp.net/buildoptions
+	# There are more details here, but don't know if there are up-to-date: http://phk.freebsd.dk/misc/build_options/
 
 TOOLCHAIN_TO_REMOVE='
 usr/bin/addr2line

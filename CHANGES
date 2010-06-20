@@ -10,6 +10,9 @@ Release 0.33 (not released… Waiting for FreeBSD 8.1-Release)
 					glxsb (i386 only: Geode LX Security Block crypto accelerator)
 - Replace dhcprelya by isc-dhcp-relay
 - Replace Xorp by BIRD (BIRD is more used and lighter)
+- Upgraded ports:
+	- quagga from quagga-0.99.15_5 to 0.99.16
+	- ucarp from 1.5.1 to 1.5.2
 - Add isc-dhcp-server: Permit to use BSDRP as a DHCP server
 - Add ssmtp: Permit to send mail from BSDRP
 - Add IPv6 multicast PIM routing daemons and tools
