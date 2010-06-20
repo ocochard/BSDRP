@@ -64,7 +64,7 @@ do
 	fi
 	# Generate a more readable file list that show file removed:
 	if ! diff -u ${WORKING_DIR}/WITH_ALL.list ${WORKING_DIR}/${KNOB}.list | grep -e '-./' > ${WORKING_DIR}/${KNOB}.txt; then
-		echo "Not difference detected: knobs related to a make buildworld or kernel" >> ${WORKING_DIR}/${KNOB}.txt	
+		echo "No difference detected: knobs related to a make buildworld, kernel or doesn' have effect yet" >> ${WORKING_DIR}/${KNOB}.txt	
 	fi
 done;
 
