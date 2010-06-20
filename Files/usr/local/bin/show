@@ -49,6 +49,9 @@ getoption () {
         license|lic)
             license
             ;;
+		mbuf)
+			mbuf
+			;;
         memory|mem)
             memory
             ;;
@@ -124,9 +127,15 @@ license () {
     exit 0
 }
 
+# Display mbuf usag
+mbuf () {
+	netstat -m
+	exit 0
+}
+
 # Display traffic
 traffic() {
-	netstat -s -s
+	netstat -s
 	exit 0
 }
 
@@ -271,8 +280,14 @@ tech-support () {
 	pciconf -lv
 	echo "==== vmstat -h -i (show process int) ===="
 	show process int
+	echo "==== top -b (show process cpu) ===="
+	show process cpu
 	echo "==== vmstat -h -m (show memory) ===="
 	show memory
+	echo "==== netstat -s (show traffic) ===="
+    show traffic
+	echo "==== netstat -m (show mbuf) ===="
+	show mbuf
 	echo "==== pkg_info (show packages) ===="
 	show packages
 }
