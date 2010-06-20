@@ -10,11 +10,12 @@ Release 0.33 (not released… Waiting for FreeBSD 8.1-Release)
 					glxsb (i386 only: Geode LX Security Block crypto accelerator)
 - Replace dhcprelya by isc-dhcp-relay
 - Replace Xorp by BIRD (BIRD is more used and lighter)
-- Add isc-dhcp-server
-- Add ssmtp
+- Add isc-dhcp-server: Permit to use BSDRP as a DHCP server
+- Add ssmtp: Permit to send mail from BSDRP
 - Add IPv6 multicast PIM routing daemons and tools
 - Add IPv4 DVMRP (multicast) routing daemon: mrouted
 - Add GRE module (GRE and MOBILE encapsulation)
+- Add "show tech-support"
 - Add multiple VHID support on rc CARP script
 - Sysctl: Do not generate core files, enable zerocopy for bpf by default
 - Re-enable "system virtualize" for FreeBSD 8.1
