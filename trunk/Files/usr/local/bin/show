@@ -103,6 +103,7 @@ usage () {
 		echo "  - help/h [option]  : Display this help message. "
         echo "       If [option] given, display more detail about"
 		echo "  - license/lic  : Display BSDRP license"
+		echo "  - mbuf         : Display network memory management routine stats"
 		echo "  - memory/mem   : Display general memory usage"
 		echo "  - packages     : Display lists of installed packages"
 		echo "  - process/proc  : Display process information"
@@ -117,13 +118,13 @@ usage () {
 
 # Display AUTHORS
 authors () {
-	cat /root/AUTHORS
+	$PAGER /root/AUTHORS
 	exit 0
 }
 
 # Display LICENSE
 license () {
-    cat /root/LICENSE
+    $PAGER /root/LICENSE
     exit 0
 }
 
