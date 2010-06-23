@@ -358,6 +358,7 @@ delete_all_vm () {
 	if check_vm BSDRP_lab_template; then
             delete_vm BSDRP_lab_template
     fi
+	echo "All VMs deleted"
 	
 }
 
@@ -372,10 +373,12 @@ stop_all_vm () {
 			echo "Testing state of BSDRP_lab_R$i..." >> ${LOG_FILE}
             if `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "running"`; then
 				echo "BSDRP_lab_R$i is in running state: Stopping it..." >> ${LOG_FILE}
+				echo "BSDRP_lab_R$i is in running state: Stopping it..."
                 VBoxManage controlvm BSDRP_lab_R$i poweroff >> ${LOG_FILE} 2>&1
                 sleep 5
 			elif `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "meditation"`; then
 				echo "BSDRP_lab_R$i is in Guru meditation state: Stopping it..." >> ${LOG_FILE}
+				echo "BSDRP_lab_R$i is in Guru meditation state: Stopping it..."
 				VBoxManage controlvm BSDRP_lab_R$i poweroff >> ${LOG_FILE} 2>&1
                 sleep 5
             fi

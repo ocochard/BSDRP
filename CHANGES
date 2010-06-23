@@ -32,15 +32,9 @@ Related:
 - Add a MS Windows VBScript for BSDRP VirtualBox lab:
   http://bsdrp.svn.sourceforge.net/viewvc/bsdrp/trunk/virtualbox.vbs
 
-TO DO:
-- Add mail program, without it ssmtp is useless :-)
-
 Bugs fixes:
+- Quagga IPv6 address on interface (quagga bug id 408)
 - Virtual box lab script: Fix problem with use of serial line terminal emulation (thanks to Baptiste Daroussin)
-
-Know bugs:
-- Quagga Can't set IPv6 address on interface
-  https://bugzilla.quagga.net/show_bug.cgi?id=408
 
 Release 0.32
 - Based on FreeBSD 8.0-Release-p2
