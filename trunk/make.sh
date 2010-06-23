@@ -169,7 +169,12 @@ system_patch() {
 ports_patch()
 {
 	echo "patching ports..."
-	#cp -v patches/quagga/*.* /usr/ports/net/quagga/files/
+	echo "Quagga IPv6 bug id 408"
+	cp patches/quagga/patch-configure.ac /usr/ports/net/quagga/files/
+	if ! `grep -q 'autoconf' /usr/ports/net/quagga/Makefile`; then
+		patch /usr/ports/net/quagga/Makefile patches/quagga/Makefile.diff
+	fi	
+	echo "SSMTP"
 	if ! `grep -q 'TARGET_ARCH' /usr/ports/mail/ssmtp/Makefile`; then
 		patch /usr/ports/mail/ssmtp/Makefile patches/ssmtp/Makefile.diff
 	fi
