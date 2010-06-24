@@ -1,6 +1,7 @@
 Release 0.33 (not released… Waiting for FreeBSD 8.1-Release)
-- Media size needs reduce from 512MB to 256MB (Thanks Warner Losh)
+- Media size needs reduced from 512MB to 256MB (Thanks Warner Losh)
 - Based on FreeBSD 8.1-RC1
+- Reference file available for security check (mtree)
 - Kernel: Add siis drivers (SiliconImage Serial ATA Host Controller)
 - Kernel modules: 	Hifn 7751/7951/7811/7955/7956 crypto accelerator
 					padlock (cryptographic functions and RNG in VIA C3, C7

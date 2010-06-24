@@ -397,6 +397,10 @@ case ${INPUT_CONSOLE} in
 ;;
 esac
 
+# Add the latest customized function: mtree
+echo "#Generate the mtree: NEED TO BE THE LATEST function" >> /tmp/BSDRP.nano
+echo "customize_cmd bsdrp_mtree" >> /tmp/BSDRP.nano
+
 # Export some variables for using them under nanobsd
 export TARGET_ARCH
 
@@ -454,9 +458,17 @@ else
 	pprint 1 "You will found the BSDRP full image file here:"
    	pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}"
 fi
-pprint 1 "Generating checksum..."
+pprint 1 "Generating image checksum..."
 date > ${NANOBSD_OBJ}/checksums.txt
 md5 ${NANOBSD_OBJ}/BSDRP_${BSDRP_VERSION}* >> ${NANOBSD_OBJ}/checksums.txt
 sha256 ${NANOBSD_OBJ}/BSDRP_${BSDRP_VERSION}* >> ${NANOBSD_OBJ}/checksums.txt
+
+pprint 1 "Zipping mtree..."
+if [ -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2 ]; then
+	rm ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2
+fi
+mv ${NANOBSD_OBJ}/mtree ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree
+bzip2 -9vf ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree
+
 pprint 1 "Done !"
 exit 0
