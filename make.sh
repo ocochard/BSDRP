@@ -203,7 +203,7 @@ usage () {
         echo "  -b      suppress buildworld and buildkernel"
 		echo "  -k      suppress buildkernel"
 		echo "  -w      suppress buildworld"
-        echo "  -z      prevent to bzip the full image"
+        echo "  -f      fast mode, skip: mtree, images compression and checksums"
         echo "  -d      Enable debug"
 		echo "  -h      Display this help message"
         ) 1>&2
@@ -234,8 +234,8 @@ esac
 DEBUG=""
 SKIP_REBUILD=""
 INPUT_CONSOLE="vga"
-ZIP_IMAGE="y"
-args=`getopt c:a:zbdhkw $*`
+FAST="n"
+args=`getopt c:a:fbdhkw $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
@@ -299,8 +299,8 @@ do
                 DEBUG="-x"
                 shift
                 ;;
-		-z)
-				ZIP_IMAGE="n"
+		-f)
+				FAST="y"
 				shift
 				;;
         -h)
@@ -339,10 +339,10 @@ if [ "${SKIP_REBUILD}" = "" ]; then
 else
 	pprint 1 "- Build the full world (take about 2 hours): NO"
 fi
-if [ "${ZIP_IMAGE}" = "y" ]; then
-	pprint 1 "- Zip the final full image: YES"
+if [ "${FAST}" = "y" ]; then
+	pprint 1 "- FAST mode (skip compression and checksumming): YES"
 else
-	pprint 1 "- Zip the final full image: NO"
+	pprint 1 "- FAST mode (skip compression and checksumming): NO"
 fi
 
 system_patch
@@ -397,9 +397,11 @@ case ${INPUT_CONSOLE} in
 ;;
 esac
 
-# Add the latest customized function: mtree
-echo "#Generate the mtree: NEED TO BE THE LATEST function" >> /tmp/BSDRP.nano
-echo "customize_cmd bsdrp_mtree" >> /tmp/BSDRP.nano
+if [ "$FAST" = "n" ]; then
+	# Add the latest customized function: mtree
+	echo "#Generate the mtree: NEED TO BE THE LATEST function" >> /tmp/BSDRP.nano
+	echo "customize_cmd bsdrp_mtree" >> /tmp/BSDRP.nano
+fi
 
 # Export some variables for using them under nanobsd
 export TARGET_ARCH
@@ -434,41 +436,55 @@ if [ ! -f ${NANOBSD_OBJ}/_.disk.image ]; then
 fi
 
 BSDRP_FILENAME="BSDRP_${BSDRP_VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
+
 if [ -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 ]; then
-	pprint 1 "Backuping old BSDRP upgrade image..."
-	mv -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2.bak
-fi 
-pprint 1 "Zipping the BSDRP upgrade image..."
+	rm ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2
+fi
+
 mv ${NANOBSD_OBJ}/_.disk.image ${NANOBSD_OBJ}/${BSDRP_FILENAME}
-bzip2 -9vf ${NANOBSD_OBJ}/${BSDRP_FILENAME}
-pprint 1 "You will found the zipped BSDRP upgrade image file here:"
-pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2"
+
+if [ "$FAST" = "n" ]; then
+	pprint 1 "Compressing BSDRP upgrade image..."
+	bzip2 -9vf ${NANOBSD_OBJ}/${BSDRP_FILENAME}
+	pprint 1 "Generating checksum for BSDRP upgrade image..."
+	md5 ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 > ${NANOBSD_OBJ}/${BSDRP_FILENAME}.md5
+	sha256 ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 > ${NANOBSD_OBJ}/${BSDRP_FILENAME}.sha256
+	pprint 1 "BSDRP upgrade image file here:"
+	pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2"
+else
+	pprint 1 "Uncompressed BSDRP upgrade image file here:"
+	pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}"
+fi
 
 BSDRP_FILENAME="BSDRP_${BSDRP_VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
-if [ "$ZIP_IMAGE" = "y" ]; then
+
+if [ "$FAST" = "n" ]; then
 	if [ -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 ]; then
-		pprint 1 "Backuping old BSDRP full zipped image..."
-		mv -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2.bak
+		rm ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2
 	fi 
-	pprint 1 "Zipping the BSDRP full image..." 
+	pprint 1 "Compressing BSDRP full image..." 
 	bzip2 -9vf ${NANOBSD_OBJ}/${BSDRP_FILENAME}
-   	pprint 1 "You will found the zipped BSDRP full image file here:"
+	pprint 1 "Generating checksum for BSDRP full image..."
+	md5 ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 > ${NANOBSD_OBJ}/${BSDRP_FILENAME}.md5
+	sha256 ${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2 > ${NANOBSD_OBJ}/${BSDRP_FILENAME}.sha256
+
+   	pprint 1 "Zipped BSDRP full image file here:"
    	pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}.bz2"
 else
-	pprint 1 "You will found the BSDRP full image file here:"
+	pprint 1 "Unzipped BSDRP full image file here:"
    	pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}"
 fi
-pprint 1 "Generating image checksum..."
-date > ${NANOBSD_OBJ}/checksums.txt
-md5 ${NANOBSD_OBJ}/BSDRP_${BSDRP_VERSION}* >> ${NANOBSD_OBJ}/checksums.txt
-sha256 ${NANOBSD_OBJ}/BSDRP_${BSDRP_VERSION}* >> ${NANOBSD_OBJ}/checksums.txt
 
-pprint 1 "Zipping mtree..."
-if [ -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2 ]; then
-	rm ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2
+if [ "$FAST" = "n" ]; then
+	pprint 1 "Zipping mtree..."
+	if [ -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2 ]; then
+		rm ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2
+	fi
+	mv ${NANOBSD_OBJ}/mtree ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree
+	bzip2 -9vf ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree
+	pprint 1 "Security reference mtree file here:"
+	pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2"
 fi
-mv ${NANOBSD_OBJ}/mtree ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree
-bzip2 -9vf ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree
 
 pprint 1 "Done !"
 exit 0
