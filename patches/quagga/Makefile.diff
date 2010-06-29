@@ -5,7 +5,7 @@
  CONFLICTS=	openbgpd-[0-9]* zebra-0*
  
 -USE_AUTOTOOLS=	libtool:22
-+USE_AUTOTOOLS=	libtool:22 autoheader:262 autoconf:262
++USE_AUTOTOOLS=	libtool:22 autoheader:262 autoconf:262 automake:19
  USE_GMAKE=		yes
  USE_LDCONFIG=		yes
  USE_PERL5_BUILD=	yes
