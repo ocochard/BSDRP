@@ -304,6 +304,7 @@ add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ISISD -DWITH_OS
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:
 add_port "net/bird" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "net/bird6" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 # Add FreeVRRPd: using XORP only for VRRP is too memory/CPU hungry:
 add_port "net/freevrrpd" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
