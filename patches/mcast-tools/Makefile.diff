@@ -1,0 +1,11 @@
+--- Makefile.orig	2010-06-29 15:19:50.000000000 +0200
++++ Makefile	2010-06-29 15:20:16.000000000 +0200
+@@ -15,7 +15,7 @@
+ COMMENT=	IPv6 multicast routing daemons and tools
+ 
+ GNU_CONFIGURE=	yes
+-
++USE_AUTOTOOLS=	automake:19 aclocal:19 autoconf:262
+ CONFIGURE_ARGS=
+ CONFIGURE_ENV=
+ 
