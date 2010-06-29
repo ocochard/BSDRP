@@ -111,10 +111,10 @@ check_user () {
         exit 1
     fi
 
-    if [ ! $(whoami) = "root" ]; then
-        echo "Disable the shared LAN"
-            SHARED_WITH_HOST=false
-    fi  
+    #if [ ! $(whoami) = "root" ]; then
+    #    echo "Disable the shared LAN"
+    #        SHARED_WITH_HOST=false
+    #fi  
 }
 
 # Check filename, and unzip it
@@ -211,7 +211,15 @@ create_vm () {
     if ($SERIAL); then
         VBoxManage modifyvm $1 --uart1 0x3F8 4 --uartmode1 server $WORKING_DIR/$1.serial >> ${LOG_FILE} 2>&1
     fi
-	echo "VM $1 done!" >> ${LOG_FILE}
+    
+	#Delete all NIC
+	local i=1
+    while [ $i -le 8 ]; do
+		VBoxManage modifyvm $1 --nic$i none >> ${LOG_FILE} 2>&1
+        i=`expr $i + 1`
+    done
+
+	echo "VM $1 Created/Reseted" >> ${LOG_FILE}
 }
 
 # Parse filename for detecting ARCH and console
@@ -250,14 +258,14 @@ parse_filename () {
 
 # This function generate the clones
 clone_vm () {
-    echo "Creating lab with $NUMBER_VM routers:"
+    echo "Creating lab with $NUMBER_VM router(s):"
     echo "- $NUMBER_LAN LAN between all routers"
     echo "- Full mesh ethernet point-to-point link between each routers"
 	if ($HOSTONLY_NIC); then
-		echo "- An NIC connected to the shared LAN with the host"
+		echo "- One NIC connected to the shared LAN with the host"
 	fi
     echo ""
-    i=1
+    local i=1
     #Enter the main loop for each VM
     while [ $i -le $NUMBER_VM ]; do
         create_vm BSDRP_lab_R$i
@@ -265,7 +273,7 @@ clone_vm () {
         echo "Router$i have the following NIC:"
         #Enter in the Cross-over (Point-to-Point) NIC loop
         #Now generate X x (X-1)/2 full meshed link
-        j=1
+        local j=1
         while [ $j -le $NUMBER_VM ]; do
             if [ $i -ne $j ]; then
                 echo "em${NIC_NUMBER} connected to Router${j}."
@@ -279,7 +287,7 @@ clone_vm () {
             j=`expr $j + 1` 
         done
         #Enter in the LAN NIC loop
-        j=1
+        local j=1
         while [ $j -le $NUMBER_LAN ]; do
             echo "em${NIC_NUMBER} connected to LAN number ${j}."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
@@ -297,7 +305,7 @@ clone_vm () {
 
 # Start each vm
 start_vm () {
-    i=1
+    local i=1
     #Enter the main loop for each VM
     while [ $i -le $NUMBER_VM ]; do
         # OSE version of VB doesn't support --vrdp option
@@ -308,6 +316,12 @@ start_vm () {
 			nohup VBoxHeadless --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
 		fi
         sleep 2
+
+		if ($HOSTONLY_NIC); then
+        	echo "You need to configure an IP address in these range for communicating with the host:"
+        	ifconfig ${HOSTONLY_NIC_NAME} | grep "inet"
+    	fi
+
         if ($SERIAL); then
             socat -s UNIX-CONNECT:$WORKING_DIR/BSDRP_lab_R$i.serial TCP-LISTEN:800$i >> ${LOG_FILE} 2>&1 &
             echo "Connect to the router ${i} by TCP-connecting socat on port 800${i}"
@@ -316,6 +330,7 @@ start_vm () {
         fi
         i=`expr $i + 1`
     done
+	
 	if ($SERIAL); then
 		echo "Here is how to use a serial terminal software for connecting to the routers:"
 		echo "1. Create a bridge between the socat port and a local PTY link"
@@ -347,7 +362,7 @@ delete_vm () {
 }
 delete_all_vm () {
     stop_all_vm
-    i=1
+    local i=1
     #Enter the main loop for each VM
     while [ $i -le $MAX_VM ]; do
         if check_vm BSDRP_lab_R$i; then
@@ -364,7 +379,7 @@ delete_all_vm () {
 
 # Stop All VM
 stop_all_vm () {
-    i=1
+    local i=1
     #Enter the main loop for each VM
     while [ $i -le $MAX_VM ]; do
         # Check if the vm allready exist
@@ -404,9 +419,9 @@ usage () {
         echo "Usage: $0 [-hds] [-i BSDRP_image_file.img] [-n router-number] [-l LAN-number]"
         echo "  -i filename     BSDRP image file name (to be used the first time only)"
         echo "  -d delete       Delete all BSDRP VM and disks"
-        echo "  -n X            Number of router (between 2 and 9) full meshed"
-        echo "  -l Y            Number of LAN between 0 and 9"
-		echo "  -c              Enable internal NIC shared with host for each routers"
+        echo "  -n X            Number of router (between 1 and 9) full meshed (default: 1)"
+        echo "  -l Y            Number of LAN between 0 and 9 (default: 0)"
+		echo "  -c              Enable internal NIC shared with host for each routers (default: Disable)"
         echo "  -h              Display this help"
         echo "  -s              Stop all VM"
         echo ""
@@ -473,21 +488,25 @@ done
 
 if [ "$NUMBER_VM" != "" ]; then
     if [ $NUMBER_VM -lt 1 ]; then
-        echo "Error: Use a minimal of 2 routers in your lab."
+        echo "Error: Use a minimal of 1 router in your lab."
         exit 1
     fi
 
-    if [ $NUMBER_VM -ge $MAX_VM ]; then
+    if [ $NUMBER_VM -gt $MAX_VM ]; then
         echo "ERROR: Use a maximum of $MAX_VM routers in your lab."
         exit 1
     fi
 else
-    echo "ERROR: Missing -n number-router"
-    usage
+    NUMBER_VM=1
+fi
+
+if [ $NUMBER_VM -eq 1 ]; then
+	# Impose shared-with-host NIC if only one router started
+	HOSTONLY_NIC=true
 fi
 
 if [ "$NUMBER_LAN" != "" ]; then
-    if [ $NUMBER_LAN -ge 9 ]; then
+    if [ $NUMBER_LAN -gt 9 ]; then
         echo "ERROR: Use a maximum of 9 LAN in your lab."
         exit 1
     fi
