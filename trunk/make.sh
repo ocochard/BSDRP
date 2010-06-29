@@ -179,7 +179,7 @@ ports_patch()
 		patch /usr/ports/mail/ssmtp/Makefile patches/ssmtp/Makefile.diff
 	fi
 	echo "mcast-tools"
-	if ! `grep -q 'TARGET_ARCH' /usr/ports/net/mcast-tools/Makefile`; then
+	if ! `grep -q 'automake' /usr/ports/net/mcast-tools/Makefile`; then
 		patch /usr/ports/net/mcast-tools/Makefile patches/mcast-tools/Makefile.diff
 	fi
 
