@@ -268,20 +268,6 @@ add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT -DNO_INSTALL
 add_port "net-mgmt/net-snmp" "-DNOPORTDOCS -DNO_INSTALL_MANPAGES -DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
 
 # Quagga installation
-# We use a special configure.ac patched file for quagga
-# and during quagga compilation, there is this message:
-#WARNING: `aclocal-1.11' is missing on your system.  You should only need it if
-#         you modified `acinclude.m4' or `configure.ac'.  You might want
-#         to install the `Automake' and `Perl' packages.  Grab them from
-#         any GNU archive site.
-# Then, need to install devel/automake111 before compiling Quagga
-# But Automake 1.11 is not available, only 1.10 is:
-#add_port "devel/m4" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-#add_port "devel/automake-wrapper" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-#add_port "devel/autoconf-wrapper" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-#add_port "devel/autoconf262" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-#add_port "devel/automake110" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-
 add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
@@ -338,7 +324,7 @@ cleanup_ports () {
 		# Need to prevent auto exist of this script
 		set +e
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'pkg_delete auto* m4* gmake* libtool* gawk* perl* gettext* bison*'
+        'pkg_delete auto* m4* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* p5-gettext*'
 		set -e
 }
 
