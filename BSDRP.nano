@@ -563,23 +563,6 @@ bsdrp_secure () {
 	chflags -R schg ${NANO_WORLDDIR}/lib	
 }
 
-# Generate reference mtree file for security check
-# This must be the last function called
-# This why it's the job of the make.sh to add the call 
-# to this function at the end
-bsdrp_mtree () {
-		echo "./etc" > ${NANO_WORLDDIR}/mtree-exclude
-		echo "./var" >> ${NANO_WORLDDIR}/mtree-exclude
-		echo "./tmp" >> ${NANO_WORLDDIR}/mtree-exclude
-		echo "./dev" >> ${NANO_WORLDDIR}/mtree-exclude
-		echo "./mtree" >> ${NANO_WORLDDIR}/mtree-exclude
-		echo "./mtree-exclude" >> ${NANO_WORLDDIR}/mtree-exclude
-        chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,md5digest,sha256digest -p / -X /mtree-exclude > /mtree'
-		rm ${NANO_WORLDDIR}/mtree-exclude
-		mv ${NANO_WORLDDIR}/mtree ${NANO_OBJ}
-}
-
 # Install Custom scripts and config files
 customize_cmd cust_install_files
 
@@ -590,5 +573,5 @@ customize_cmd bsdrp_custom
 customize_cmd cust_allow_ssh_root
 
 # Secure BSDRP
-# To be enabled when function we ready
+# TO DO: secure the BSDRP (chflags)
 #customize_cmd bsdrp_secure

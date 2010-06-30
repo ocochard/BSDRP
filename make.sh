@@ -162,6 +162,15 @@ system_patch() {
         patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.arm.patch
     fi
 
+	# Patching mtree generation mode for more security
+    pprint 3 "Checking in NanoBSD allready arm patched"
+    if `grep -q 'sha256digest' ${NANOBSD_DIR}/nanobsd.sh`; then
+        pprint 3 "NanoBSD allready mtree patched"
+    else
+        pprint 3 "Patching NanoBSD with mtree support"
+        patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.mtree.patch
+    fi
+
 }
 
 #### Port patch
@@ -208,7 +217,7 @@ usage () {
         echo "  -b      suppress buildworld and buildkernel"
 		echo "  -k      suppress buildkernel"
 		echo "  -w      suppress buildworld"
-        echo "  -f      fast mode, skip: mtree, images compression and checksums"
+        echo "  -f      fast mode, skip: images compression and checksums"
         echo "  -d      Enable debug"
 		echo "  -h      Display this help message"
         ) 1>&2
@@ -268,6 +277,9 @@ do
 					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
 					NANO_KERNEL="BSDRP-CAMBRIA"
 					;;
+				*)
+					echo "Bad arch type"
+					exit 1
 				esac
 				shift
 				shift
@@ -280,6 +292,9 @@ do
                 serial)
                     INPUT_CONSOLE="serial"
                     ;;
+				*)
+					echo "Bad console type"
+					exit 1
                 esac
 				shift
 				shift
@@ -402,12 +417,6 @@ case ${INPUT_CONSOLE} in
 ;;
 esac
 
-if [ "$FAST" = "n" ]; then
-	# Add the latest customized function: mtree
-	echo "#Generate the mtree: NEED TO BE THE LATEST function" >> /tmp/BSDRP.nano
-	echo "customize_cmd bsdrp_mtree" >> /tmp/BSDRP.nano
-fi
-
 # Export some variables for using them under nanobsd
 export TARGET_ARCH
 
@@ -480,16 +489,14 @@ else
    	pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}"
 fi
 
-if [ "$FAST" = "n" ]; then
-	pprint 1 "Zipping mtree..."
-	if [ -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2 ]; then
-		rm ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2
-	fi
-	mv ${NANOBSD_OBJ}/mtree ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree
-	bzip2 -9vf ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree
-	pprint 1 "Security reference mtree file here:"
-	pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2"
+pprint 1 "Zipping mtree..."
+if [ -f ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2 ]; then
+	rm ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2
 fi
+mv ${NANOBSD_OBJ}/_.mtree ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree
+bzip2 -9vf ${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree
+pprint 1 "Security reference mtree file here:"
+pprint 1 "${NANOBSD_OBJ}/${BSDRP_FILENAME}.mtree.bz2"
 
 pprint 1 "Done !"
 exit 0
