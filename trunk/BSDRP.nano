@@ -573,9 +573,9 @@ bsdrp_mtree () {
 		echo "./tmp" >> ${NANO_WORLDDIR}/mtree-exclude
 		echo "./dev" >> ${NANO_WORLDDIR}/mtree-exclude
 		echo "./mtree" >> ${NANO_WORLDDIR}/mtree-exclude
-		echo "./mtree-exclude " >> ${NANO_WORLDDIR}/mtree-exclude
+		echo "./mtree-exclude" >> ${NANO_WORLDDIR}/mtree-exclude
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'mtree -x -ic -K cksum -K md5digest -K sha256digest -p / -X /mtree-exclude > /mtree'
+        'mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,md5digest,sha256digest -p / -X /mtree-exclude > /mtree'
 		rm ${NANO_WORLDDIR}/mtree-exclude
 		mv ${NANO_WORLDDIR}/mtree ${NANO_OBJ}
 }
