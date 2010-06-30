@@ -359,6 +359,7 @@ bsdrp_custom () {
 		fi
 	fi
 	# Remove some of the folders (without share/snmp)
+	# usr/include : 15MB
 	FOLDERS_TO_REMOVE='
 usr/local/include
 usr/local/man
@@ -368,11 +369,13 @@ usr/local/share/doc/libasprintf
 usr/local/share/doc/libiconv
 usr/local/share/doc/snmp
 usr/local/share/examples/quagga
+usr/include
 usr/share/groff_font
 usr/share/tmac
 usr/share/me
 usr/share/info
 usr/share/man
+usr/share/openssl
 usr/libdata/lint
 usr/libdata/ldscripts
 '
