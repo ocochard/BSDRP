@@ -393,7 +393,7 @@ usr/local/etc/rc.d/freevrrpd.sh.sample
 usr/share/misc/magic.mgc
 usr/share/misc/termcap.db
 '
-    for c in $FILES_TO_REMOVE
+    for c in ${FILES_TO_REMOVE}
     do
         if [ -f ${NANO_WORLDDIR}/$c ]
         then
@@ -553,7 +553,6 @@ bsdrp_console_vga () {
 }
 
 # Secure BSDRP by using schg flag
-
 bsdrp_secure () {
 	# TODO: Need to check if flag allready set,
 	#		otherwise it will disable it
@@ -563,7 +562,8 @@ bsdrp_secure () {
 	chflags -R schg ${NANO_WORLDDIR}/libexec
 	chflags -R schg ${NANO_WORLDDIR}/lib	
 }
-# Generate reference mtree file for referenc
+
+# Generate reference mtree file for security check
 # This must be the last function called
 # This why it's the job of the make.sh to add the call 
 # to this function at the end
