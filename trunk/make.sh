@@ -424,6 +424,7 @@ export TARGET_ARCH
 if ($DELETE_ALL); then
 	if [ -d ${NANOBSD_OBJ} ]; then
 		pprint 1 "Delete existing ${NANOBSD_OBJ} directory"
+		chflags -R noschg ${NANOBSD_OBJ}
 		rm -rf ${NANOBSD_OBJ}
 	fi
 fi
