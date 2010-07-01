@@ -52,7 +52,9 @@ getoption () {
 	check-vm)
         check_vm
         ;;
-
+	integrity)
+		integrity
+		;;
 	help|h)
 		usage
 		;;
@@ -81,16 +83,49 @@ usage () {
 		echo "Optimize the system for running as a VM"
 		exit 0
 		;;
+	integrity)
+		echo "Check system integrity using a reference mtree file"
+		echo "The given file can be .mtree or .mtree.bz2"
+		echo "Note: Do not keep the reference mtree file on the router!"
+		exit 0
+		;;
 	esac
 	# value $0 is the name of the called script
 	echo "Usage: $0 option"
-    echo "  - reboot/reload   : Restart the system"
-	echo "  - halt/stop       : Poweroff the system"
-	echo "  - virtualized     : Configure for usage as a VM"
-	echo "  - check-vm        : Try to detect if use in VM"
-	echo "  - help/h [option] : Display this help message. "
+    echo "  - reboot/reload       : Restart the system"
+	echo "  - integrity filename  : Check system integrity using the given reference file"
+	echo "  - halt/stop           : Poweroff the system"
+	echo "  - virtualized         : Optimize for a VM use"
+	echo "  - check-vm            : Try to detect if used in a VM"
+	echo "  - help/h [option]     : Display this help message. "
 	echo "		if [option] given, display more detail about the option"
 	exit 0
+}
+
+# Check system integrity
+integrity () {
+	if [ "${SECOND_OPTION}" = "" ]; then
+		echo "ERROR: Reference mtree filename missing"
+		exit 1
+	fi
+	if [ ! -f ${SECOND_OPTION} ]; then
+		echo "ERROR: File ${SECOND_OPTION} didn't exist."
+		exit 1 
+	fi
+	FILE_TYPE=`file ${SECOND_OPTION} | cut -d : -f 2`
+	
+	if [ `echo ${FILE_TYPE} | grep "ASCII TEXT"` ]; then
+		cmd="mtree -f ${SECOND_OPTION} -p /"
+	elif [ `echo ${FILE_TYPE} | grep "bzip"` ]; then
+		# Warning, the bzipped file can be any type of file!
+		cmd="bzcat ${SECOND_OPTION} | mtree -p /"
+	else
+		echo "Is the given reference mtree file a good mtree file ?"
+		exit 1
+	fi
+	echo "Here is the modified files comparing to the reference mtree file:"
+	$cmd
+	
 }
 
 #ask to save configuration
