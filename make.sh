@@ -183,10 +183,10 @@ ports_patch()
 	if ! `grep -q 'autoconf' /usr/ports/net/quagga/Makefile`; then
 		patch /usr/ports/net/quagga/Makefile patches/quagga/Makefile.diff
 	fi	
-	echo "SSMTP"
-	if ! `grep -q 'TARGET_ARCH' /usr/ports/mail/ssmtp/Makefile`; then
-		patch /usr/ports/mail/ssmtp/Makefile patches/ssmtp/Makefile.diff
-	fi
+	#echo "SSMTP"
+	#if ! `grep -q 'TARGET_ARCH' /usr/ports/mail/ssmtp/Makefile`; then
+	#	patch /usr/ports/mail/ssmtp/Makefile patches/ssmtp/Makefile.diff
+	#fi
 	echo "mcast-tools"
 	if ! `grep -q 'automake' /usr/ports/net/mcast-tools/Makefile`; then
 		patch /usr/ports/net/mcast-tools/Makefile patches/mcast-tools/Makefile.diff
