@@ -114,9 +114,9 @@ integrity () {
 	fi
 	FILE_TYPE=`file ${SECOND_OPTION} | cut -d : -f 2`
 	
-	if [ `echo ${FILE_TYPE} | grep "ASCII TEXT"` ]; then
+	if echo "${FILE_TYPE}" | grep -q "ASCII text"; then
 		cmd="mtree -f ${SECOND_OPTION} -p /"
-	elif [ `echo ${FILE_TYPE} | grep "bzip"` ]; then
+	elif echo "${FILE_TYPE}" | grep -q bzip; then
 		# Warning, the bzipped file can be any type of file!
 		cmd="bzcat ${SECOND_OPTION} | mtree -p /"
 	else
@@ -124,7 +124,7 @@ integrity () {
 		exit 1
 	fi
 	echo "Here is the modified files comparing to the reference mtree file:"
-	$cmd
+	eval $cmd
 	
 }
 
@@ -169,19 +169,15 @@ sys_halt () {
 
 # Check if system is under a VM
 check_vm () {
-	#Don't know how to use the pipe in a if
-	set +e
 	# Look for Qemu
-	sysctl -q dev.acpi.0.%desc | grep -q QEMU
-	if [ $? -eq 0 ]; then
+	if sysctl -q dev.acpi.0.%desc | grep -q QEMU; then
        	VM_FOUND=true
 	else
 		VM_FOUND=false
     	fi
 	# Look for VMware
 	if ! (${VM_FOUND}); then
-		sysctl -q dev.ad.0.%desc | grep -q VMware
-		if [ $? -eq 0 ]; then
+		if sysctl -q dev.ad.0.%desc | grep -q VMware; then
        		VM_FOUND=true
     	else
         	VM_FOUND=false
@@ -189,8 +185,7 @@ check_vm () {
 	fi
 	# Look for Virtualbox
 	if ! (${VM_FOUND}); then
-		sysctl -q dev.acpi.0.%desc | grep -q VBOX
-		if [ $? -eq 0 ]; then
+		if sysctl -q dev.acpi.0.%desc | grep -q VBOX; then
        		VM_FOUND=true
     	else
         	VM_FOUND=false
@@ -220,8 +215,7 @@ check_vm () {
 	# Since FreeBSD 8, the kernel automatically detect the VM presence and lower the kern.hz
 	# Not true in FBSD 8.0 stable
 
-	uname -r | grep -q 8.0
-	if [ $? -eq 0 ]; then
+	if uname -r | grep -q 8.0; then
 		FREEBSD_8=true
 	else
 		FREEBSD_8=false
@@ -239,7 +233,6 @@ check_vm () {
 			#echo 'Recommended kern.hz value in a VM: 50'
    		fi 
 	fi
-	set -e
     exit 0
 }
 
@@ -247,13 +240,10 @@ check_vm () {
 sys_virtualized () {
 
 	# Check if FreeBSD 8 detected
-	#set +e
-	#uname -r | grep -q 8.0
-    #if [ $? -eq 0 ]; then
+	#if uname -r | grep -q 8.0; then
 		#echo "There is no need of tuning BSDRP based on FreeBSD 8.0 for being use as a VM"
 		#exit 0
     #fi
-	#set -e
 
 	echo "This step will configure BSDRP for being use as a VM"
 	echo "Do you want to continue ? (y/n)"
