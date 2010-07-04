@@ -283,7 +283,9 @@ tech-support () {
 	show process int
 	echo "==== top -b (show process cpu) ===="
 	show process cpu
-	echo "==== vmstat -h -m (show memory) ===="
+	echo "==== vmstat -h -m ===="
+	vmstat -h -m
+	echo "==== show memory ===="
 	show memory
 	echo "==== netstat -s (show traffic) ===="
     show traffic
