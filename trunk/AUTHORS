@@ -9,9 +9,9 @@ Reuse of existing softwares/patches:
 
 BSD Router Project is based upon/includes various free software packages, listed below. The authors of BSDRP would like to thank the authors of these software packages for their efforts.
 
-* FreeBSD:  Copyright (c) 1995-2009 The FreeBSD Project. All rights reserved.
-* Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support.
-* Quagga routing software.
+* FreeBSD:  Copyright (c) 1995-2009 The FreeBSD Project. All rights reserved
+* Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support
+* Quagga routing software
 * The BIRD Internet Routing Daemon 
 * Net-SNMP 
 * Idea of using glabel for disk type absraction: Scott Ullrich (pfSense)
@@ -22,3 +22,5 @@ BSD Router Project is based upon/includes various free software packages, listed
 * OpenLLDP: Terry Simons and Jason Peterson 
 * DHCP server and relay: Internet Systems Consortium
 * ssmtp: extremely simple MTA to get mail off the system to a mail hub
+* mcast-tools
+* mrouted
