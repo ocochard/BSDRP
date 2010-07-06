@@ -127,7 +127,7 @@ NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -m 0"
 
 # Set physical disk layout for generic USB of 256Mb
 # This function will set the variable NANO_MEDIASIZE, NANO_SECTS, NANO_HEADS
-UsbDevice Generic 256
+UsbDevice generic-fdd 256
 
 # Number of code images on media (1 or 2)
 NANO_IMAGES=2
