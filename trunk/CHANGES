@@ -3,7 +3,7 @@ Release 0.33 (not released… Waiting for FreeBSD 8.1-Release)
 - Based on FreeBSD 8.1-RC2
 - Security: Reference file available for integrity check (mtree with sha256 and md5 hash)
 - Kernel:
-	Dirty patch that fix boot from USB (known FreeBSD 8.0/8.1 bug)
+	Dirty patch that fix boot from USB (FreeBSD 8.0/8.1 bug: usb/143790)
 	CPU support: Geode, Soekris, Elan
 	siis drivers (SiliconImage Serial ATA Host Controller)
 - Kernel modules added:
