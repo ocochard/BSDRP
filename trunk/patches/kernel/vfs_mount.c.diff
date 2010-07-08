@@ -1,0 +1,14 @@
+--- vfs_mount.c.orig	2010-07-09 00:19:15.000000000 +0200
++++ vfs_mount.c	2010-07-09 00:20:54.000000000 +0200
+@@ -1652,6 +1652,11 @@
+ 
+ 	options = NULL;
+ 
++	/*
++	 * This is a dirty patch that fix the boot from USB device
++     */
++	pause("usbwait", hz * 10);
++
+ 	root_mount_prepare();
+ 
+ 	mount_zone = uma_zcreate("Mountpoints", sizeof(struct mount),
