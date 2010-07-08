@@ -100,7 +100,7 @@ check_system() {
 }
 
 ###### Adding patch to NanoBSD
-system_patch() {
+nanobsd_patches() {
 	# Adding BSDRP label patch to NanoBSD
 	# NanoBSD image use fixed boot disk: ad0, da0, etc...
 	# This is a big limitation for a "generic" image that can be installed
@@ -173,9 +173,18 @@ system_patch() {
 
 }
 
-#### Port patch
+#### Kernel patches
+kernel_patches ()
+{
+	echo "patching the kernel..."
+	if ! `grep -q 'usbwait' /usr/src/sys/kern/vfs_mount.c`; then
+        patch /usr/src/sys/kern/vfs_mount.c patches/kernel/vfs_mount.c.diff
+    fi
+}
 
-ports_patch()
+#### Port patches
+
+ports_patches()
 {
 	echo "patching ports..."
 	echo "Quagga IPv6 bug id 408"
@@ -365,8 +374,9 @@ else
 	pprint 1 "- FAST mode (skip compression and checksumming): NO"
 fi
 
-system_patch
-ports_patch
+nanobsd_patches
+kernel_patches
+ports_patches
 
 # Copy the common nanobsd configuration file to /tmp
 cp -v BSDRP.nano /tmp/BSDRP.nano

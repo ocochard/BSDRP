@@ -2,7 +2,8 @@ Release 0.33 (not released… Waiting for FreeBSD 8.1-Release)
 - Media size needs reduced from 512MB to 256MB (Thanks Warner Losh)
 - Based on FreeBSD 8.1-RC2
 - Security: Reference file available for integrity check (mtree with sha256 and md5 hash)
-- Kernel drivers:
+- Kernel:
+	Dirty patch that fix boot from USB (known FreeBSD 8.0/8.1 bug)
 	CPU support: Geode, Soekris, Elan
 	siis drivers (SiliconImage Serial ATA Host Controller)
 - Kernel modules added:
