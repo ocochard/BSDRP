@@ -2,13 +2,16 @@ Release 0.33 (not released… Waiting for FreeBSD 8.1-Release)
 - Media size needs reduced from 512MB to 256MB (Thanks Warner Losh)
 - Based on FreeBSD 8.1-RC2
 - Security: Reference file available for integrity check (mtree with sha256 and md5 hash)
-- Kernel: Add siis drivers (SiliconImage Serial ATA Host Controller)
-- Kernel modules: 	Hifn 7751/7951/7811/7955/7956 crypto accelerator
-					padlock (cryptographic functions and RNG in VIA C3, C7
-						and Eden processors)
-					safe (SafeNet crypto accelerator)
-					ubsec (SafeNet crypto accelerator)
-					glxsb (i386 only: Geode LX Security Block crypto accelerator)
+- Kernel drivers:
+	CPU support: Geode, Soekris, Elan
+	siis drivers (SiliconImage Serial ATA Host Controller)
+- Kernel modules added:
+	GRE module (GRE and MOBILE encapsulation)
+	Hifn 7751/7951/7811/7955/7956 crypto accelerator padlock
+		(cryptographic functions and RNG in VIA C3, C7 and Eden processors)
+	safe (SafeNet crypto accelerator)
+	ubsec (SafeNet crypto accelerator)
+	glxsb (i386 only: Geode LX Security Block crypto accelerator)
 - Replace dhcprelya by isc-dhcp-relay
 - Replace XORP by BIRD (BIRD is more used and lighter)
 - Upgraded ports:
@@ -18,7 +21,6 @@ Release 0.33 (not released… Waiting for FreeBSD 8.1-Release)
 - Add ssmtp: Permit to send mail from BSDRP
 - Add IPv6 multicast PIM routing daemons and tools
 - Add IPv4 DVMRP (multicast) routing daemon: mrouted
-- Add GRE module (GRE and MOBILE encapsulation)
 - Add "show tech-support"
 - Add multiple VHID support on rc CARP script
 - Sysctl: Do not generate core files, enable zerocopy for bpf by default
