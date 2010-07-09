@@ -513,19 +513,20 @@ usr/share/tmac/tmac.vgrind
 
 # Enable only serial system only
 bsdrp_console_serial () {
-# Enable getty on console
-    sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+	# Enable getty on console
+	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/9600/38400/ ${NANO_WORLDDIR}/etc/ttys
 
     # Disable getty on syscons devices
     sed -i "" -e '/^ttyv[0-8]/s/    on/     off/' ${NANO_WORLDDIR}/etc/ttys
 
     # Tell loader to use serial console early.
-    echo " -h" > ${NANO_WORLDDIR}/boot.config
+    echo "-h" > ${NANO_WORLDDIR}/boot.config
 
 	# Customize loader.conf file:
 	echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'comconsole_speed="9600"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'comconsole_speed="38400"' >> ${NANO_WORLDDIR}/boot/loader.conf
 	echo 'console="comconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 
 }
@@ -545,7 +546,7 @@ bsdrp_console_dual () {
 	# Customize loader.conf file:
 	echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
 	echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'comconsole_speed="9600"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'comconsole_speed="38400"' >> ${NANO_WORLDDIR}/boot/loader.conf
 	echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 
 }
