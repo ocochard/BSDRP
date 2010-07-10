@@ -277,8 +277,8 @@ tech-support () {
 	uname -a
 	echo "==== ifconfig -a ===="
 	ifconfig -a
-	echo "==== pciconf -lv ===="
-	pciconf -lv
+	echo "==== pciconf -lvc ===="
+	pciconf -lvc
 	echo "==== vmstat -h -i (show process int) ===="
 	show process int
 	echo "==== top -b (show process cpu) ===="
