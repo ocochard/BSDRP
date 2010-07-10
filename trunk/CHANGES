@@ -4,7 +4,6 @@ Release 0.33 (not released… Waiting for FreeBSD 8.1-Release)
 - Security: Reference file available for integrity check (mtree with sha256 and md5 hash)
 - Change serial port default speed to 38400 baud (8 bits, no parity, and 1 stop bit)
 - Kernel:
-	Dirty patch that fix boot from USB (FreeBSD 8.0/8.1 bug: usb/143790)
 	CPU support: Geode, Soekris, Elan
 	siis drivers (SiliconImage Serial ATA Host Controller)
 - Kernel modules added:
@@ -40,6 +39,9 @@ Related:
 Bugs fixes:
 - Quagga IPv6 address on interface (quagga bug id 408)
 - Virtual box lab script: Fix problem with use of serial line terminal emulation (thanks to Baptiste Daroussin)
+- Add a delay during boot sequence for permit to boot from USB device (FreeBSD 8.0/8.1 bug: usb/143790)
+- Fix RC polling script that display inversed result
+- vga consoles are disabled on the serial release (prevent to display getty errors messages)
 
 Installed packages and their versions:
 - bird-1.2.3, Dynamic IP routing daemon (IPv4 version) 

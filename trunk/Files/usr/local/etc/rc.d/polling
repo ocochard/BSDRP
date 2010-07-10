@@ -51,16 +51,16 @@ DETECTED_DEVICES=`ifconfig -l`
 polling_start()
 {
 	# If the device support it, enable polling:
-	for DETECTED in $DETECTED_DEVICES
+	for DETECTED in ${DETECTED_DEVICES}
 	do
-		for SUPPORTED in $SUPPORTED_DEVICES
+		for SUPPORTED in ${SUPPORTED_DEVICES}
 		do
-			if [ `echo $DETECTED | /usr/bin/grep "$SUPPORTED"` ]; then 	
-				echo "Try to enable polling for: $DETECTED"
-				if [ `ifconfig $DETECTED polling` ]; then
-					echo "done"
+			if echo ${DETECTED} | /usr/bin/grep -q "${SUPPORTED}"; then 	
+				echo "Try to enable polling for: ${DETECTED}"
+				if ifconfig ${DETECTED} polling; then
+					echo "Done"
 				else
-					echo "can't enable polling on $DETECTED"
+					echo "Can't enable polling on ${DETECTED}"
 				fi
 			fi
 		done
@@ -71,16 +71,16 @@ exit 0
 polling_stop()
 {
 	# Disable polling on all interface that support it:
-	for DETECTED in $DETECTED_DEVICES
+	for DETECTED in ${DETECTED_DEVICES}
 	do
-		for SUPPORTED in $SUPPORTED_DEVICES
+		for SUPPORTED in ${SUPPORTED_DEVICES}
 		do
-			if [ `echo $DETECTED | /usr/bin/grep "$SUPPORTED"` ]; then 	
-				echo "Try to disable polling for: $DETECTED"
-				if [ `ifconfig $DETECTED -polling` ]; then
+			if echo ${DETECTED} | /usr/bin/grep -q "${SUPPORTED}"; then 	
+				echo "Try to disable polling for: ${DETECTED}"
+				if ifconfig ${DETECTED} -polling; then
 					echo "done"
 				else
-					echo "can't stop polling on $DETECTED"
+					echo "can't stop polling on ${DETECTED}"
 				fi
 			fi
 		done

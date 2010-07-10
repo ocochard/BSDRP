@@ -143,24 +143,19 @@ umount_data () {
 # Archive cfg
 archive_cfg () {
 	mount_data
-	echo "Archive configuration files..."
-	if [ ! -d /mnt/archives ]
-	then
+	echo "Archiving configuration files..."
+	if [ ! -d /mnt/archives ]; then
 		mkdir /mnt/archives
 	else
-		if [ -f /mnt/archives/rollback.tar.bz2 ]
-		then
+		if [ -f /mnt/archives/rollback.tar.bz2 ]; then
 			rm /mnt/archives/rollback.tar.bz2
 		fi
 	fi
-	tar -cjvpf /mnt/archives/rollback.tar.bz2 -C /cfg/ . 2>/dev/null
 
-	if [ $? -eq 0 ]	
-	then
-		echo "Archive done."
-	else
-		echo "Meet an error."
-		umount_data	
+	if ! tar -cjvpf /mnt/archives/rollback.tar.bz2 -C /cfg/ . 2>/dev/null; then
+		echo "ERROR: Can't generate tar archive."
+		umount_data
+		umount_cfg
 		exit 1
 	fi
 	umount_data
@@ -174,8 +169,7 @@ save_cfg () {
 	cd /etc
 	for i in "$@" `find * -depth`
 	do
-		if [ -f /cfg/$i ]
-		then
+		if [ -f /cfg/$i ]; then
 			cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i 2>/dev/null
 		else
 			cmp -s /conf/base/etc/$i /etc/$i || (find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
@@ -184,8 +178,7 @@ save_cfg () {
 	)	
 
 	# save ssh keys
-	if [ -d /cfg/ssh ]
-	then
+	if [ -d /cfg/ssh ]; then
 		cd /etc/ssh
 		for i in "$@" `find ssh_host_* -type f`
         	do
@@ -317,9 +310,8 @@ restore_cfg ( ) {
 		exit 1
 	fi
     # Unzip the archive $1 to $2/
-    tar -x -C $2/ --exclude 'fstab' -f $1
-    if [ ! $? -eq 0 ]; then
-    	echo "ERROR: during restoring file."
+    if ! tar -x -C $2/ --exclude 'fstab' -f $1; then
+    	echo "ERROR: untaring file failed."
         exit 1
     fi
 }
