@@ -173,15 +173,6 @@ nanobsd_patches() {
 
 }
 
-#### Kernel patches
-kernel_patches ()
-{
-	echo "patching the kernel..."
-	if ! `grep -q 'usbwait' /usr/src/sys/kern/vfs_mount.c`; then
-        patch /usr/src/sys/kern/vfs_mount.c patches/kernel/vfs_mount.c.diff
-    fi
-}
-
 #### Port patches
 
 ports_patches()
@@ -375,7 +366,7 @@ else
 fi
 
 nanobsd_patches
-kernel_patches
+#kernel_patches
 ports_patches
 
 # Copy the common nanobsd configuration file to /tmp
