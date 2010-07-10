@@ -35,7 +35,9 @@ NANO_OBJ=/usr/obj/nanobsd.${NANO_NAME}.${TARGET_ARCH}
 NANO_ARCH=${TARGET_ARCH}
 
 # Options to put in make.conf during buildworld only
-CONF_BUILD=''
+CONF_BUILD='
+BOOT_COMCONSOLE_SPEED=38400
+'
 
 # Options to put in make.conf during installworld only
 # Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
@@ -519,7 +521,7 @@ bsdrp_console_serial () {
 	sed -i "" -e /tty[du]0/s/9600/38400/ ${NANO_WORLDDIR}/etc/ttys
 
     # Disable getty on syscons devices
-    sed -i "" -e '/^ttyv[0-8]/s/    on/     off/' ${NANO_WORLDDIR}/etc/ttys
+    sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
 
     # Tell loader to use serial console early.
     echo "-h" > ${NANO_WORLDDIR}/boot.config
@@ -534,11 +536,12 @@ bsdrp_console_serial () {
 # Enable use of keyboard/vga and serial
 #
 ###### Warning ####
-# BUG TO FIX: Don't boot if no serial port available!
+# BUG TO FIX: Don't boot if no serial port available!
 #
 bsdrp_console_dual () {
     sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/9600/38400/ ${NANO_WORLDDIR}/etc/ttys
 
     # Tell loader to use serial and vga console.
     echo " -D" > ${NANO_WORLDDIR}/boot.config
@@ -551,10 +554,13 @@ bsdrp_console_dual () {
 
 }
 
-# Standard vga console, with serial port configured as vt100 console
+# Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
 	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/9600/38400/ ${NANO_WORLDDIR}/etc/ttys
+	
+	echo 'comconsole_speed="38400"' >> ${NANO_WORLDDIR}/boot/loader.conf
 }
 
 # Secure BSDRP by using schg flag
