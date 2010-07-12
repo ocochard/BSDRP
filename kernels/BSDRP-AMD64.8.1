@@ -78,8 +78,9 @@ options 	HWPMC_HOOKS		# Necessary kernel hooks for hwpmc(4)
 # options		FLOWTABLE		# per-cpu routing cache
 #options 	KDTRACE_FRAME		# Ensure frames are compiled in
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
+options     INCLUDE_CONFIG_FILE     # Include this file in kernel
 
-# Packet Filter:  moved as modules
+# Packet Filter: moved as modules
 #device pf
 #device pflog
 #device pfsync
