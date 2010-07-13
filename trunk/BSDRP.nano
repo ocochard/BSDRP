@@ -318,9 +318,11 @@ add_port "net/isc-dhcp31-server" "-DWITHOUT_DHCP_PARANOIA -DWITHOUT_DHCP_JAIL -D
 add_port "net/isc-dhcp31-relay" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 # Add sstmp, a simple MTA to get mail off the system
-# Can't compile with TARGET_ARCH variable set, error message:
-# Bug triggered: ports/147853
 add_port "mail/ssmtp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+
+# Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
+add_port "benchmarks/netpipe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS" 
+add_port "benchmarks/iperf" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
 
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.
