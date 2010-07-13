@@ -163,13 +163,13 @@ nanobsd_patches() {
     fi
 
 	# Adding sparc64 support to NanoBSD
-    pprint 3 "Checking if NanoBSD allready sparc64 patched"
-    if `grep -q 'create_sparc64_diskimage' ${NANOBSD_DIR}/nanobsd.sh`; then
-        pprint 3 "NanoBSD allready sparc64 patched"
-    else
-        pprint 3 "Patching NanoBSD with sparc64 support"
-        patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
-    fi
+    #pprint 3 "Checking if NanoBSD allready sparc64 patched"
+    #if `grep -q 'create_sparc64_diskimage' ${NANOBSD_DIR}/nanobsd.sh`; then
+    #    pprint 3 "NanoBSD allready sparc64 patched"
+    #else
+    #    pprint 3 "Patching NanoBSD with sparc64 support"
+    #    patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
+    #fi
 
 	# Patching mtree generation mode for more security
     pprint 3 "Checking in NanoBSD allready arm patched"
@@ -282,6 +282,13 @@ do
 					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
 					NANO_KERNEL="BSDRP-CAMBRIA"
 					;;
+				sparc64)
+					TARGET_ARCH="sparc64"
+					TARGET_CPUTYPE=sun4u; export TARGET_CPUTYPE
+					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
+					NANO_KERNEL="BSDRP-SPARC64"
+					;;
+
 				*)
 					pprint 1 "ERROR: Bad arch type"
 					exit 1
@@ -403,7 +410,7 @@ case ${TARGET_ARCH} in
     -o bsize=4096,fsize=512,density=8192,optimization=space"
 	export NANO_MAKEFS
 	;;
-	"sparc64") echo 'NANO_PMAKE="make -j 4"' >> /tmp/BSDRP.nano
+	"sparc64") echo 'NANO_PMAKE="make -j 8"' >> /tmp/BSDRP.nano
 	;;
 esac
 
