@@ -124,7 +124,7 @@ nanobsd_patches() {
 			)
 		fi
 	fi
-	pprint 3 "Checking in NanoBSD allready glabel patched"
+	pprint 3 "Checking if NanoBSD allready glabel patched"
 	if `grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh`; then
 		pprint 3 "NanoBSD allready glabel patched"
 	else
@@ -134,7 +134,7 @@ nanobsd_patches() {
 
 	# Adding amd64 support to NanoBSD:
 	if [ "$TARGET_ARCH" = "amd64"  ]; then
-		pprint 3 "Checking in NanoBSD allready amd64 patched"
+		pprint 3 "Checking if NanoBSD allready amd64 patched"
 		if `grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh`; then 
 			pprint 3 "NanoBSD allready amd64 patched"
 		else
@@ -145,7 +145,7 @@ nanobsd_patches() {
 
 	# Adding another cool patch that fix a lot's of problem
 	# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
-	pprint 3 "Checking in NanoBSD allready PR-136889 patched"
+	pprint 3 "Checking if NanoBSD allready PR-136889 patched"
 	if `grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh`; then 
 		pprint 3 "NanoBSD allready PR-136889 patched"
 	else
@@ -154,12 +154,21 @@ nanobsd_patches() {
 	fi
 
 	# Adding arm support to NanoBSD
-    pprint 3 "Checking in NanoBSD allready arm patched"
+    pprint 3 "Checking if NanoBSD allready arm patched"
     if `grep -q 'create_arm_diskimage' ${NANOBSD_DIR}/nanobsd.sh`; then
         pprint 3 "NanoBSD allready arm patched"
     else
         pprint 3 "Patching NanoBSD with arm support"
         patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.arm.patch
+    fi
+
+	# Adding sparc64 support to NanoBSD
+    pprint 3 "Checking if NanoBSD allready sparc64 patched"
+    if `grep -q 'create_sparc64_diskimage' ${NANOBSD_DIR}/nanobsd.sh`; then
+        pprint 3 "NanoBSD allready sparc64 patched"
+    else
+        pprint 3 "Patching NanoBSD with sparc64 support"
+        patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
     fi
 
 	# Patching mtree generation mode for more security
@@ -393,6 +402,8 @@ case ${TARGET_ARCH} in
 	NANO_MAKEFS="makefs -B big \
     -o bsize=4096,fsize=512,density=8192,optimization=space"
 	export NANO_MAKEFS
+	;;
+	"sparc64") echo 'NANO_PMAKE="make -j 4"' >> /tmp/BSDRP.nano
 	;;
 esac
 
