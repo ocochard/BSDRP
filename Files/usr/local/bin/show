@@ -49,6 +49,9 @@ getoption () {
         license|lic)
             license
             ;;
+		zone)
+			zone
+			;;
 		mbuf)
 			mbuf
 			;;
@@ -111,6 +114,7 @@ usage () {
 		echo "  - traffic      : Display extensive IP traffic statistics"
 		echo "  - tech-support : Display Lot's of information"
 		echo "  - version/ver  : Display BSDRP version"
+		echo "  - zone         : Display memory used by the kernel zone allocator"
 			;;	
 	esac	
 	exit 0
@@ -133,6 +137,13 @@ mbuf () {
 	netstat -m
 	exit 0
 }
+
+# Display memory used by the kernel zone allocator
+zone () {
+	vmstat -z
+	exit 0
+}
+
 
 # Display traffic
 traffic() {
@@ -291,6 +302,8 @@ tech-support () {
     show traffic
 	echo "==== netstat -m (show mbuf) ===="
 	show mbuf
+	echo "==== Zone allocator (vmstat -z) ===="
+	show zone
 	echo "==== pkg_info (show packages) ===="
 	show packages
 }

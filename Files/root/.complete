@@ -2,7 +2,7 @@
 complete config  'p/1/(save diff apply rollback put get reset password help )/'
 complete show  'p/1/(memory route process version license authors mbuf packages help traffic tech-support )/'
 complete route 'p/1/(add flush del change get monitor )/'
-complete system 'p/1/(integrity reboot halt virtualized check-vm help )/'
+complete system 'p/1/(integrity reboot halt virtualized check-vm endpoint help )/'
 complete ifconfig 'p/1/`ifconfig -l`/'
 complete sysctl 'n/*/`sysctl -Na`/'
 complete ifconfig   'p@1@`ifconfig -l`@' 'n/*/(add anycast arp staticarp broadcast debug \

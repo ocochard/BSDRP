@@ -55,6 +55,9 @@ getoption () {
 	integrity)
 		integrity
 		;;
+	endpoint)
+		endpoint
+		;;
 	help|h)
 		usage
 		;;
@@ -97,6 +100,7 @@ usage () {
 	echo "  - halt/stop           : Poweroff the system"
 	echo "  - virtualized         : Optimize for a VM use"
 	echo "  - check-vm            : Try to detect if used in a VM"
+	echo "  - endpoint            : Tune for endpoint usage, permit to do bench from BSDRP (not persistent)"
 	echo "  - help/h [option]     : Display this help message. "
 	echo "		if [option] given, display more detail about the option"
 	exit 0
@@ -139,6 +143,34 @@ ask_save () {
 		config save	
 	fi
 }
+
+# Tune system for endpoint usage
+endpoint () {
+	echo "Tune system for TCP/UDP endpoint"
+	echo "This is a mandatory step before using BSDRP as TCP/UDP host for bench"
+	sysctl kern.ipc.somaxconn=2048
+	set +e
+	sysctl kern.ipc.nmbclusters=32768
+	set -e
+	sysctl kern.ipc.maxsockbuf=8388608
+	sysctl net.inet.tcp.sendbuf_max=16777216
+	sysctl net.inet.tcp.recvbuf_max=16777216
+	sysctl net.inet.tcp.inflight.enable=0
+	sysctl net.inet.tcp.sendspace=65536
+	sysctl net.inet.tcp.recvspace=65536
+	sysctl net.inet.udp.recvspace=65536
+	sysctl net.inet.tcp.sendbuf_inc=16384
+	sysctl net.inet.tcp.recvbuf_inc=524288
+	sysctl net.inet.tcp.inflight.enable=0
+	sysctl net.inet.tcp.rfc1323=1
+	sysctl net.inet.tcp.sack.enable=1
+	sysctl net.inet.tcp.path_mtu_discovery=1
+	sysctl net.inet.tcp.sendbuf_auto=1
+	sysctl net.inet.tcp.hostcache.expire=1
+	sysctl net.inet.tcp.delayed_ack=0
+	echo "Done, but warning: Theses change are not persistent !"
+}
+
 # Check if cfg was modified
 check_cfg () {
 	echo "Checking if configuration is saved."
