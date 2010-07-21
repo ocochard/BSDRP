@@ -40,7 +40,7 @@ fi
 
 co -l -f $1
 chown $OWNER $1 && chmod $RIGHTS $1
-${EDITOR:=vim} $1
+${EDITOR:=vi} $1
 rcsdiff -u $1
 ci -u -m"rvi" $1
 chown $OWNER $1 && chmod $RIGHTS $1
