@@ -1,3 +1,6 @@
+Release 0.34 (Not released)
+- Fix root ssh keys backup (moved to /etc/dot.ssh.root), move crontab to /etc for being permanent, mount /cfg with noatime (Thanks to Christian Degen)
+
 Release 0.33
 - Media size needs reduced from 512MB to 256MB (Thanks Warner Losh)
 - Based on FreeBSD 8.1-Release
