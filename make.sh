@@ -438,6 +438,16 @@ export TARGET_ARCH
 # Delete the destination dir
 if ($DELETE_ALL); then
 	if [ -d ${NANOBSD_OBJ} ]; then
+		pprint 1 "Existing working directory detected,"
+		pprint 1 "but you asked for rebuild all (no -b neither -k option given)"
+		pprint 1 "Do you want to continue ? (y/n)"
+        while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
+        	read USER_CONFIRM <&1
+        done
+        if [ "$USER_CONFIRM" = "n" ]; then
+               exit 0     
+        fi
+
 		pprint 1 "Delete existing ${NANOBSD_OBJ} directory"
 		chflags -R noschg ${NANOBSD_OBJ}
 		rm -rf ${NANOBSD_OBJ}
