@@ -345,6 +345,21 @@ bsdrp_custom () {
 	# Update login.conf db
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'cap_mkdb /etc/login.conf'
+
+	# relocate /root/.ssh to /etc/dot.root.ssh
+	# This permit to save ssh keys
+	mkdir -p ${NANO_WORLDDIR}/etc/dot.ssh.root
+	ln -s ../etc/dot.ssh.root ${NANO_WORLDDIR}/root/.ssh
+
+	# turn on noatime for /cfg
+	sed -i "" -e "/cfg/s/rw/rw,noatime/" ${NANO_WORLDDIR}/etc/fstab
+
+	# relocate /var/cron to /etc/cron
+	# This permit to save crontab (only /etc and /usr/local/etc are saved)
+	mkdir -p ${NANO_WORLDDIR}/etc/cron
+	rm -rf ${NANO_WORLDDIR}/var/cron
+	ln -s ../etc/cron ${NANO_WORLDDIR}/var/cron	
+
 	# Set Quagga permission
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'chown -R quagga:quagga /usr/local/etc/quagga'
