@@ -1,4 +1,5 @@
 Release 0.34 (Not released)
+- Add "system endpoint" that tune BSDRP for being use as TCP/UDP endpoint for bench
 - Fix root ssh keys backup (moved to /etc/dot.ssh.root), move crontab to /etc for being permanent, mount /cfg with noatime (Thanks to Christian Degen)
 
 Release 0.33
