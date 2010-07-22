@@ -164,12 +164,12 @@ nanobsd_patches() {
 
 	# Adding sparc64 support to NanoBSD
     #pprint 3 "Checking if NanoBSD allready sparc64 patched"
-    #if `grep -q 'create_sparc64_diskimage' ${NANOBSD_DIR}/nanobsd.sh`; then
-    #    pprint 3 "NanoBSD allready sparc64 patched"
-    #else
-    #    pprint 3 "Patching NanoBSD with sparc64 support"
-    #    patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
-    #fi
+    if `grep -q 'create_sparc64_diskimage' ${NANOBSD_DIR}/nanobsd.sh`; then
+        pprint 3 "NanoBSD allready sparc64 patched"
+    else
+        pprint 3 "Patching NanoBSD with sparc64 support"
+        patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
+    fi
 
 	# Patching mtree generation mode for more security
     pprint 3 "Checking in NanoBSD allready arm patched"
@@ -249,6 +249,9 @@ case "$TARGET_ARCH" in
 	arm)
 		NANO_KERNEL="BSDRP-CAMBRIA"
 		;;
+	sparc64)
+		NANO_KERNEL="BSDRP-SPARC64"
+		;;
 esac
 DEBUG=""
 SKIP_REBUILD=""
@@ -269,22 +272,40 @@ do
         -a)
                 case "$2" in
 				amd64)
+					if [ $TARGET_ARCH != "amd64" || $TARGET_ARCH != "i386" ]; then
+						pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
+						exit 1
+					fi
 					TARGET_ARCH="amd64"
 					NANO_KERNEL="BSDRP-AMD64"
 					;;
 				i386)
+					if [ $TARGET_ARCH != "amd64" || $TARGET_ARCH != "i386" ]; then
+                        pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
+                        exit 1
+                    fi
 					TARGET_ARCH="i386"
 					NANO_KERNEL="BSDRP-I386"
 					;;
 				cambria)
+					if [ $TARGET_ARCH != "arm" ]; then
+                        pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
+                        exit 1
+                    fi
+
 					TARGET_ARCH="arm"
 					TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
 					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
 					NANO_KERNEL="BSDRP-CAMBRIA"
 					;;
 				sparc64)
+					if [ $TARGET_ARCH != "sparc64" ]; then
+                        pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
+                        exit 1
+                    fi
+
 					TARGET_ARCH="sparc64"
-					TARGET_CPUTYPE=sun4u; export TARGET_CPUTYPE
+					TARGET_CPUTYPE=sparc64; export TARGET_CPUTYPE
 					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
 					NANO_KERNEL="BSDRP-SPARC64"
 					;;
@@ -349,12 +370,22 @@ if [ $# -gt 0 ] ; then
         usage
 fi
 
+# Cross compilation is not possible for the ports
+
 # Cambria is not compatible with vga output
 if [ "${NANO_KERNEL}" = "BSDRP-CAMBRIA" ] ; then
 	if [ "${INPUT_CONSOLE}" = "vga" ] ; then
 		pprint 1 "Gateworks Cambria platform didn't have vga board: Changing console to serial"
 	fi
 	INPUT_CONSOLE="serial"
+fi
+
+# Sparc64 is not compatible with vga output
+if [ "${NANO_KERNEL}" = "BSDRP-SPARC64" ] ; then
+    if [ "${INPUT_CONSOLE}" = "vga" ] ; then
+        pprint 1 "Sparc64 platform didn't have vga board: Changing console to serial"
+    fi
+    INPUT_CONSOLE="serial"
 fi
 
 NANOBSD_OBJ=/usr/obj/nanobsd.BSDRP.${TARGET_ARCH}

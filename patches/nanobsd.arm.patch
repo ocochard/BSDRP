@@ -115,7 +115,7 @@
 +    echo ""; echo "Create first image ${IMG1} ..."
 +    SIZE=`awk '/^p 1/ { print $5 "b" }' ${FDISK}`
 +    pprint 2 "${NANO_MAKEFS} -s ${SIZE} ${IMG1} ${NANO_WORLDDIR}"
-+	# NEED TO SET THE LABEL !!!!
++	# TO DO: glabel patch !!!!
 +    ${NANO_MAKEFS} -s ${SIZE} ${IMG1} ${NANO_WORLDDIR}
 +    pprint 2 "dd if=${IMG1} of=/dev/${MD}s1 bs=${BS}"
 +    dd if=${IMG1} of=/dev/${MD}s1 bs=${BS}
