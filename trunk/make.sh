@@ -162,15 +162,6 @@ nanobsd_patches() {
         patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.arm.patch
     fi
 
-	# Adding sparc64 support to NanoBSD
-    #pprint 3 "Checking if NanoBSD allready sparc64 patched"
-    if `grep -q 'create_sparc64_diskimage' ${NANOBSD_DIR}/nanobsd.sh`; then
-        pprint 3 "NanoBSD allready sparc64 patched"
-    else
-        pprint 3 "Patching NanoBSD with sparc64 support"
-        patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
-    fi
-
 	# Patching mtree generation mode for more security
     pprint 3 "Checking in NanoBSD allready arm patched"
     if `grep -q 'sha256digest' ${NANOBSD_DIR}/nanobsd.sh`; then
@@ -178,6 +169,15 @@ nanobsd_patches() {
     else
         pprint 3 "Patching NanoBSD with mtree support"
         patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.mtree.patch
+    fi
+
+	# Adding sparc64 support to NanoBSD
+    #pprint 3 "Checking if NanoBSD allready sparc64 patched"
+    if `grep -q 'create_sparc64_diskimage' ${NANOBSD_DIR}/nanobsd.sh`; then
+        pprint 3 "NanoBSD allready sparc64 patched"
+    else
+        pprint 3 "Patching NanoBSD with sparc64 support"
+        patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
     fi
 
 }
