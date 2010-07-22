@@ -1,0 +1,89 @@
+--- nanobsd.sh.orig	2010-07-22 13:43:40.000000000 +0200
++++ nanobsd.sh	2010-07-22 14:18:46.000000000 +0200
+@@ -480,7 +480,11 @@
+ 	( cd ${NANO_WORLDDIR} && find . -print | cpio -dump ${MNT} )
+ 	df -i ${MNT}
+ 	echo "Generating mtree..."
+-	( cd ${MNT} && mtree -c ) > ${NANO_OBJ}/_.mtree
++	echo "./etc" > ${NANO_OBJ}/mtree-exclude
++    echo "./var" >> ${NANO_OBJ}/mtree-exclude
++    echo "./tmp" >> ${NANO_OBJ}/mtree-exclude
++    echo "./dev" >> ${NANO_OBJ}/mtree-exclude
++	( cd ${MNT} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,md5digest,sha256digest -X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
+ 	( cd ${MNT} && du -k ) > ${NANO_OBJ}/_.du
+ 	umount ${MNT}
+ 
+@@ -540,9 +544,6 @@
+ 	# Using sparc bootloader
+ 	NANO_BOOTLOADER="boot/boot1"
+ 
+-	# There is no MBR on sparc, only label
+-	
+-
+     (
+     echo $NANO_MEDIASIZE $NANO_IMAGES \
+         $NANO_SECTS $NANO_HEADS \
+@@ -634,23 +635,32 @@
+ 	sunlabel ${MD} > ${NANO_OBJ}/_.sunlabel
+ 
+ 	# Generate partition on the prototype file
++	# Need to calc the NANO_CODESIZE, reuse awk
++	if [ ${NANO_CODESIZE} == "0" ]; then
++		NANO_CODESIZE = `expr \( $NANO_MEDIASIZE - $NANO_CONFSIZE - $NANO_DATASIZE \) / 2`
++	fi	
+ 	echo "a: ${NANO_CODESIZE} 0" >> ${NANO_OBJ}/_.sunlabel
+-	echo "d: ${NANO_CODESIZE} 0" >> ${NANO_OBJ}/_.sunlabel
+-	echo "e: ${NANO_CONFSIZE} 0" >> ${NANO_OBJ}/_.sunlabel
+-	echo "f: ${NANO_DATASIZE} 0" >> ${NANO_OBJ}/_.sunlabel
++	echo "d: ${NANO_CODESIZE} *" >> ${NANO_OBJ}/_.sunlabel
++	echo "e: ${NANO_CONFSIZE} *" >> ${NANO_OBJ}/_.sunlabel
++	echo "f: ${NANO_DATASIZE} *" >> ${NANO_OBJ}/_.sunlabel
+ 
+ 	# Apply the label prototype file to the md disk
+ 	sunlabel -R ${MD} ${NANO_OBJ}/_.sunlabel
+ 
+  # Create first image
+-    newfs ${NANO_NEWFS} /dev/${MD}a
++    newfs -L ${NANO_GLABEL_SYS}1 ${NANO_NEWFS} /dev/${MD}a
+     mount /dev/${MD}a ${MNT}
+     df -i ${MNT}
+     echo "Copying worlddir..."
+     ( cd ${NANO_WORLDDIR} && find . -print | cpio -dump ${MNT} )
+     df -i ${MNT}
+     echo "Generating mtree..."
+-    ( cd ${MNT} && mtree -c ) > ${NANO_OBJ}/_.mtree
++    echo "./etc" > ${NANO_OBJ}/mtree-exclude
++    echo "./var" >> ${NANO_OBJ}/mtree-exclude
++    echo "./tmp" >> ${NANO_OBJ}/mtree-exclude
++    echo "./dev" >> ${NANO_OBJ}/mtree-exclude
++    ( cd ${MNT} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,md5digest,sha256digest -X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
++
+     ( cd ${MNT} && du -k ) > ${NANO_OBJ}/_.du
+     umount ${MNT}
+ 
+@@ -667,12 +677,12 @@
+     fi
+ 
+     # Create Config slice
+-    newfs ${NANO_NEWFS} /dev/${MD}e
++    newfs -L ${NANO_GLABEL_CFG} ${NANO_NEWFS} /dev/${MD}e
+     # XXX: fill from where ?
+ 
+     # Create Data slice, if any.
+     if [ $NANO_DATASIZE -ne 0 ] ; then
+-        newfs ${NANO_NEWFS} /dev/${MD}f
++        newfs  -L ${NANO_GLABEL_DATA} ${NANO_NEWFS} /dev/${MD}f
+         # XXX: fill from where ?
+     fi
+ 
+@@ -690,10 +700,6 @@
+     ) > ${NANO_OBJ}/_.di 2>&1
+ )
+ 
+-create_amd64_diskimage ( ) (
+-	create_i386_diskimage $@
+-)
+-
+ create_arm_diskimage()
+ {
+     pprint 2 "build diskimage"
