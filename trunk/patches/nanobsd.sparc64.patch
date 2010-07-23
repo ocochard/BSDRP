@@ -1,89 +1,171 @@
---- nanobsd.sh.orig	2010-07-22 13:43:40.000000000 +0200
-+++ nanobsd.sh	2010-07-22 14:18:46.000000000 +0200
-@@ -480,7 +480,11 @@
- 	( cd ${NANO_WORLDDIR} && find . -print | cpio -dump ${MNT} )
- 	df -i ${MNT}
- 	echo "Generating mtree..."
--	( cd ${MNT} && mtree -c ) > ${NANO_OBJ}/_.mtree
-+	echo "./etc" > ${NANO_OBJ}/mtree-exclude
-+    echo "./var" >> ${NANO_OBJ}/mtree-exclude
-+    echo "./tmp" >> ${NANO_OBJ}/mtree-exclude
-+    echo "./dev" >> ${NANO_OBJ}/mtree-exclude
-+	( cd ${MNT} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,md5digest,sha256digest -X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
- 	( cd ${MNT} && du -k ) > ${NANO_OBJ}/_.du
- 	umount ${MNT}
+--- nanobsd.sh.orig	2010-07-23 10:53:51.000000000 +0200
++++ nanobsd.sh	2010-07-23 10:54:47.000000000 +0200
+@@ -538,6 +538,168 @@
+ 	create_i386_diskimage
+ )
  
-@@ -540,9 +544,6 @@
- 	# Using sparc bootloader
- 	NANO_BOOTLOADER="boot/boot1"
- 
--	# There is no MBR on sparc, only label
--	
--
-     (
-     echo $NANO_MEDIASIZE $NANO_IMAGES \
-         $NANO_SECTS $NANO_HEADS \
-@@ -634,23 +635,32 @@
- 	sunlabel ${MD} > ${NANO_OBJ}/_.sunlabel
- 
- 	# Generate partition on the prototype file
++create_sparc64_diskimage ( ) (
++    pprint 2 "build diskimage"
++    pprint 3 "log: ${NANO_OBJ}/_.di"
++	# Using sparc bootloader
++	NANO_BOOTLOADER="boot/boot1"
++
++    (
++    echo $NANO_MEDIASIZE $NANO_IMAGES \
++        $NANO_SECTS $NANO_HEADS \
++        $NANO_CODESIZE $NANO_CONFSIZE $NANO_DATASIZE |
++    awk '
++    {
++        printf "# %s\n", $0
++
++        # size of cylinder in sectors
++        cs = $3 * $4
++
++        # number of full cylinders on media
++        cyl = int ($1 / cs)
++
++        # output fdisk geometry spec, truncate cyls to 1023
++        if (cyl <= 1023)
++            print "g c" cyl " h" $4 " s" $3
++        else
++            print "g c" 1023 " h" $4 " s" $3
++
++        if ($7 > 0) {
++            # size of data partition in full cylinders
++            dsl = int (($7 + cs - 1) / cs)
++        } else {
++            dsl = 0;
++        }
++
++        # size of config partition in full cylinders
++        csl = int (($6 + cs - 1) / cs)
++
++        if ($5 == 0) {
++            # size of image partition(s) in full cylinders
++            isl = int ((cyl - dsl - csl) / $2)
++        } else {
++            isl = int (($5 + cs - 1) / cs)
++        }
++
++        # First image partition start at second track
++        print "p 1 165 " $3, isl * cs - $3
++        c = isl * cs;
++
++        # Second image partition (if any) also starts offset one
++        # track to keep them identical.
++        if ($2 > 1) {
++            print "p 2 165 " $3 + c, isl * cs - $3
++            c += isl * cs;
++        }
++        # Config partition starts at cylinder boundary.
++        print "p 3 165 " c, csl * cs
++        c += csl * cs
++
++        # Data partition (if any) starts at cylinder boundary.
++        if ($7 > 0) {
++            print "p 4 165 " c, dsl * cs
++        } else if ($7 < 0 && $1 > c) {
++            print "p 4 165 " c, $1 - c
++        } else if ($1 < c) {
++            print "Disk space overcommitted by", \
++                c - $1, "sectors" > "/dev/stderr"
++            exit 2
++        }
++
++        # Force slice 1 to be marked active. This is necessary
++        # for booting the image from a USB device to work.
++        print "a 1"
++    }
++    ' > ${NANO_OBJ}/_.fdisk
++
++    IMG=${NANO_DISKIMGDIR}/${NANO_IMGNAME}
++    MNT=${NANO_OBJ}/_.mnt
++    mkdir -p ${MNT}
++
++    if [ "${NANO_MD_BACKING}" = "swap" ] ; then
++        MD=`mdconfig -a -t swap -s ${NANO_MEDIASIZE} -x ${NANO_SECTS} \
++            -y ${NANO_HEADS}`
++    else
++        echo "Creating md backing file..."
++        dd if=/dev/zero of=${IMG} bs=${NANO_SECTS}b \
++            count=`expr ${NANO_MEDIASIZE} / ${NANO_SECTS}`
++        MD=`mdconfig -a -t vnode -f ${IMG} -x ${NANO_SECTS} \
++            -y ${NANO_HEADS}`
++    fi
++
++    trap "echo 'Running exit trap code' ; df -i ${MNT} ; umount ${MNT} || true ; mdconfig -d -u $MD" 1 2 15 EXIT
++	# Create initial bootable label:
++	sunlabel -w -B -b ${NANO_WORLDDIR}/${NANO_BOOTLOADER} ${MD}
++	
++	# Extracting label prototype	
++	sunlabel ${MD} > ${NANO_OBJ}/_.sunlabel
++
++	# Generate partition on the prototype file
 +	# Need to calc the NANO_CODESIZE, reuse awk
 +	if [ ${NANO_CODESIZE} == "0" ]; then
 +		NANO_CODESIZE = `expr \( $NANO_MEDIASIZE - $NANO_CONFSIZE - $NANO_DATASIZE \) / 2`
 +	fi	
- 	echo "a: ${NANO_CODESIZE} 0" >> ${NANO_OBJ}/_.sunlabel
--	echo "d: ${NANO_CODESIZE} 0" >> ${NANO_OBJ}/_.sunlabel
--	echo "e: ${NANO_CONFSIZE} 0" >> ${NANO_OBJ}/_.sunlabel
--	echo "f: ${NANO_DATASIZE} 0" >> ${NANO_OBJ}/_.sunlabel
++	echo "a: ${NANO_CODESIZE} 0" >> ${NANO_OBJ}/_.sunlabel
 +	echo "d: ${NANO_CODESIZE} *" >> ${NANO_OBJ}/_.sunlabel
 +	echo "e: ${NANO_CONFSIZE} *" >> ${NANO_OBJ}/_.sunlabel
 +	echo "f: ${NANO_DATASIZE} *" >> ${NANO_OBJ}/_.sunlabel
- 
- 	# Apply the label prototype file to the md disk
- 	sunlabel -R ${MD} ${NANO_OBJ}/_.sunlabel
- 
-  # Create first image
--    newfs ${NANO_NEWFS} /dev/${MD}a
++
++	# Apply the label prototype file to the md disk
++	sunlabel -R ${MD} ${NANO_OBJ}/_.sunlabel
++
++ # Create first image
 +    newfs -L ${NANO_GLABEL_SYS}1 ${NANO_NEWFS} /dev/${MD}a
-     mount /dev/${MD}a ${MNT}
-     df -i ${MNT}
-     echo "Copying worlddir..."
-     ( cd ${NANO_WORLDDIR} && find . -print | cpio -dump ${MNT} )
-     df -i ${MNT}
-     echo "Generating mtree..."
--    ( cd ${MNT} && mtree -c ) > ${NANO_OBJ}/_.mtree
++    mount /dev/${MD}a ${MNT}
++    df -i ${MNT}
++    echo "Copying worlddir..."
++    ( cd ${NANO_WORLDDIR} && find . -print | cpio -dump ${MNT} )
++    df -i ${MNT}
++    echo "Generating mtree..."
 +    echo "./etc" > ${NANO_OBJ}/mtree-exclude
 +    echo "./var" >> ${NANO_OBJ}/mtree-exclude
 +    echo "./tmp" >> ${NANO_OBJ}/mtree-exclude
 +    echo "./dev" >> ${NANO_OBJ}/mtree-exclude
 +    ( cd ${MNT} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,md5digest,sha256digest -X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
 +
-     ( cd ${MNT} && du -k ) > ${NANO_OBJ}/_.du
-     umount ${MNT}
- 
-@@ -667,12 +677,12 @@
-     fi
- 
-     # Create Config slice
--    newfs ${NANO_NEWFS} /dev/${MD}e
++    ( cd ${MNT} && du -k ) > ${NANO_OBJ}/_.du
++    umount ${MNT}
++
++    if [ $NANO_IMAGES -gt 1 -a $NANO_INIT_IMG2 -gt 0 ] ; then
++        # Duplicate to second image (if present)
++        echo "Duplicating to second image..."
++        dd if=/dev/${MD}a of=/dev/${MD}d bs=64k
++        mount /dev/${MD}d ${MNT}
++        for f in ${MNT}/etc/fstab ${MNT}/conf/base/etc/fstab
++        do
++            sed -i "" "s/${NANO_DRIVE}a/${NANO_DRIVE}d/g" $f
++        done
++        umount ${MNT}
++    fi
++
++    # Create Config slice
 +    newfs -L ${NANO_GLABEL_CFG} ${NANO_NEWFS} /dev/${MD}e
-     # XXX: fill from where ?
- 
-     # Create Data slice, if any.
-     if [ $NANO_DATASIZE -ne 0 ] ; then
--        newfs ${NANO_NEWFS} /dev/${MD}f
++    # XXX: fill from where ?
++
++    # Create Data slice, if any.
++    if [ $NANO_DATASIZE -ne 0 ] ; then
 +        newfs  -L ${NANO_GLABEL_DATA} ${NANO_NEWFS} /dev/${MD}f
-         # XXX: fill from where ?
-     fi
- 
-@@ -690,10 +700,6 @@
-     ) > ${NANO_OBJ}/_.di 2>&1
- )
- 
--create_amd64_diskimage ( ) (
--	create_i386_diskimage $@
--)
--
++        # XXX: fill from where ?
++    fi
++
++    if [ "${NANO_MD_BACKING}" = "swap" ] ; then
++        echo "Writing out ${NANO_IMGNAME}..."
++        dd if=/dev/${MD} of=${IMG} bs=64k
++    fi
++
++    echo "Writing out _.disk.image..."
++    dd if=/dev/${MD}a of=${NANO_DISKIMGDIR}/_.disk.image bs=64k
++    mdconfig -d -u $MD
++
++    trap - 1 2 15 EXIT
++
++    ) > ${NANO_OBJ}/_.di 2>&1
++)
++
  create_arm_diskimage()
  {
      pprint 2 "build diskimage"
