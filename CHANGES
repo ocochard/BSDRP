@@ -47,6 +47,7 @@ Bugs fixes:
 - Add a delay during boot sequence for permit to boot from USB device (FreeBSD 8.0/8.1 bug: usb/143790)
 - Fix RC polling script that display inversed result
 - vga consoles are disabled on the serial release (prevent to display getty errors messages)
+- Fix upgrade script that can't change the active partition
 
 Installed packages and their versions:
 - bird-1.2.3, Dynamic IP routing daemon (IPv4 version) 
