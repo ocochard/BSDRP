@@ -114,8 +114,8 @@ nanobsd_patches() {
 			cd ..
 			pprint 3 "Backup old nanobsd.sh"
 			mv nanobsd.sh nanobsd.bak.7_2
-			pprint 3 "Download new nanobsd.sh script"
-				if [ ! `fetch -o nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh"` ]; then
+			pprint 3 "Download nanobsd.sh script from FreeBSD 8.1"
+				if [ ! `fetch -o nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.51.2.3.2.1;content-type=text%2Fplain;only_with_tag=RELENG_8_1_0_RELEASE"` ]; then
 				pprint 3 "Restoring original nanobsd.sh"	
 				mv nanobsd.bak.7_2 nanobsd.sh
 				pprint 3 "ERROR: Can't download latest nanobsd.sh script"
@@ -130,17 +130,6 @@ nanobsd_patches() {
 	else
 		pprint 3 "Patching NanoBSD with glabel support"
 		patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.glabel.patch
-	fi
-
-	# Adding amd64 support to NanoBSD:
-	if [ "$TARGET_ARCH" = "amd64"  ]; then
-		pprint 3 "Checking if NanoBSD allready amd64 patched"
-		if `grep -q 'amd64' ${NANOBSD_DIR}/nanobsd.sh`; then 
-			pprint 3 "NanoBSD allready amd64 patched"
-		else
-			pprint 3 "Patching NanoBSD with amd64 support"
-			patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.amd64.patch
-		fi
 	fi
 
 	# Adding another cool patch that fix a lot's of problem
