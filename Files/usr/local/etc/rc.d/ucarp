@@ -48,7 +48,9 @@
 # ucarp_VHID_advbase:		Set advertisement frequency (seconds)
 # ucarp_VHID_advskew:		Set advertisement skew (0-255)
 # ucarp_VHID_upscript:		Run <file> to become a master
+#		Default is "vip-up.sh"
 # ucarp_VHID_downscript:		Run <file> to become a backup
+#		Default is "vip-down.sh"
 # ucarp_VHID_deadratio:		Set ratio to consider a host as dead
 # ucarp_VHID_shutdown (bool):	Set it to "YES"  to call shutdown script at exit
 #		Default is "YES"
@@ -58,7 +60,13 @@
 #       Default is "NO"
 # ucarp_VHID_fib:    		The alternative routing table id that ucarp should use
 #       Default is "NONE"
-
+# ucarp_VHID_xparam:		Send extra parameters to the vip-up/down script
+#		ucarp send allready the $ucarp_VHID_if as $1 and $ucarp_VHID_addr as $2
+#		this extra parameters is to be used as $3 in the vip-up/down.sh script
+# ucarp_VHID_ignoreifstate (bool): Set to ignore the physical state of interface
+#		Default is "NO"
+# ucarp_VHID_neutral (bool): don't run downscript at start if backup
+#		Default is "NO"
 
 . /etc/rc.subr
 
@@ -85,10 +93,14 @@ for i in `jot - 1 255`; do
 			# override these variables in /etc/rc.conf
 			ucarp_${i}_pass=\${ucarp_${i}_pass:-\"dumbp4ss\"}
 			ucarp_${i}_preempt=\${ucarp_${i}_preempt:-\"NO\"}
-           	ucarp_${i}_shutdown=\${ucarp_${i}_shutdown:-\"NO\"}
+			ucarp_${i}_upscript=\${ucarp_${i}_upscript:-\"/usr/local/bin/vip-up.sh\"}
+			ucarp_${i}_downscript=\${ucarp_${i}_downscript:-\"/usr/local/bin/vip-down.sh\"}
+           	ucarp_${i}_shutdown=\${ucarp_${i}_shutdown:-\"YES\"}
            	ucarp_${i}_facility=\${ucarp_${i}_facility:-\"daemon\"}
             ucarp_${i}_broadcast=\${ucarp_${i}_broadcast:-\"NO\"}
 			ucarp_${i}_fib=\${ucarp_${i}_fib:-\"NONE\"}
+			ucarp_${i}_ignoreifstate=\${ucarp_${i}_ignoreifstate:-\"NO\"}
+			ucarp_${i}_neutral=\${ucarp_${i}_neutral:-\"NO\"}
 
     		if [ \"\${ucarp_${i}_fib}\" != \"NONE\" ]; then
 				if ! [ `sysctl net.fibs >/dev/null 2>&1` ]; then
@@ -142,6 +154,16 @@ for i in `jot - 1 255`; do
 			if ! [ -z \$ucarp_${i}_advskew ]; then
 				command_args=\${command_args}\"-k \$ucarp_${i}_advskew \"
 			fi
+			if ! [ -z \$ucarp_${i}_xparam ]; then	
+				command_args=\${command_args}\"-x \$ucarp_${i}_xparam \"
+			fi
+			if [ \$ucarp_${i}_ignoreifstate = \"YES\" ]; then
+                command_args=\${command_args}\"-S \"
+            fi
+			if [ \$ucarp_${i}_neutral = \"YES\" ]; then
+                command_args=\${command_args}\"-n \"
+            fi
+	
 			\$command \$command_args
 		fi
 	"

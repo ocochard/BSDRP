@@ -14,7 +14,6 @@ alias lf        ls -FA
 alias ls ls -G
 alias ll ls -hAl
 alias cli vtysh
-alias xorp xorpsh
 alias include grep
 alias reload 'system reboot'
 alias halt 'system halt'
@@ -26,7 +25,6 @@ umask 22
 
 set path = (/sbin /bin /usr/sbin /usr/bin /usr/local/sbin /usr/local/bin $HOME/bin)
 
-#setenv  EDITOR  'vim -i /tmp/viminfo'
 setenv  EDITOR  vi
 setenv  PAGER   less
 setenv  BLOCKSIZE       K
