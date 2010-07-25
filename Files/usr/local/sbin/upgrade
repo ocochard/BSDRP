@@ -108,8 +108,5 @@ umount /cfg
 boot0cfg -s ${DST_SLICE} -v ${NANO_DRIVE}
 # Special bug fix for FreeBSD 7.2 and 8.0-current:
 # boot0cfg don't update the MBR active slice!
-# Need to use fdisk, but before need to enable geom debug
-# prevent "fdisk: Failed to write sector zero" message
-sysctl kern.geom.debugflags=16
-echo "a ${DST_SLICE}" | fdisk -f /dev/stdin ${NANO_DRIVE}
-sysctl kern.geom.debugflags=0
+# Need to use gpart for modify the "active" state
+gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}
