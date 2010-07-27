@@ -2,10 +2,11 @@ Release 0.34 (Not released)
 - Add "system endpoint" that tune BSDRP for being use as TCP/UDP endpoint for doing bench
 
 Bug fix:
-- Fix ucarp comportement by using vip-up.sh/vip-down.sh script that create an alias on the master interface
+- Fix ucarp comportement by using carp-up/carp-down script that create an alias for the virtual IP on the master host
 - Fix writing ssh keys for root (Thanks to Christian Degen)
 - Fix crontab backup (Thanks to Christian Degen)
 - Fix the problem of "Device not configured." after an upgrade (using gpart in place of fdisk)
+- Fix error message "blanktimevidcontrol: not found" (Thanks to Nugroho Atmotaruno)
 
 TO DO:
 - "system endpoint" seams to decrease TCP performance in place of increase them :-(

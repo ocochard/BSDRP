@@ -86,13 +86,19 @@ fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a
 # Set Label into the new slice
 tunefs -L ${NANO_GLABEL_SYS}${DST_SLICE} /dev/${NANO_DRIVE}s${DST_SLICE}a
 
-# Adapt fstab of the new system
+# Need to compare some files between the old and new partition
 mkdir /tmp/upgrade
 mount /dev/ufs/${NANO_GLABEL_SYS}${DST_SLICE} /tmp/upgrade
+# 	Adapt fstab of the new system
 for f in /tmp/upgrade/etc/fstab /tmp/upgrade/conf/base/etc/fstab /etc/fstab
 	do
 	    sed -i "" "s/${NANO_GLABEL_SYS}${SRC_SLICE}/${NANO_GLABEL_SYS}${DST_SLICE}/g" $f
     done
+#	Compare the loader.conf, and include the diff into the new partition
+#	This file is modify with "system virtualized"
+diff -ruN /boot/loader.conf /tmp/upgrade/boot/loader.conf > /tmp/loader.conf.patch
+patch /tmp/upgrade/boot/loader.conf /tmp/loader.conf.patch
+
 umount /tmp/upgrade
 
 # Save the config file that include the fstab
@@ -110,3 +116,6 @@ boot0cfg -s ${DST_SLICE} -v ${NANO_DRIVE}
 # boot0cfg don't update the MBR active slice!
 # Need to use gpart for modify the "active" state
 gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}
+
+# Log
+logger Upgrade complete

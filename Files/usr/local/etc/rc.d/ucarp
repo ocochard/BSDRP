@@ -93,8 +93,8 @@ for i in `jot - 1 255`; do
 			# override these variables in /etc/rc.conf
 			ucarp_${i}_pass=\${ucarp_${i}_pass:-\"dumbp4ss\"}
 			ucarp_${i}_preempt=\${ucarp_${i}_preempt:-\"NO\"}
-			ucarp_${i}_upscript=\${ucarp_${i}_upscript:-\"/usr/local/bin/vip-up.sh\"}
-			ucarp_${i}_downscript=\${ucarp_${i}_downscript:-\"/usr/local/bin/vip-down.sh\"}
+			ucarp_${i}_upscript=\${ucarp_${i}_upscript:-\"/usr/local/sbin/ucarp-up\"}
+			ucarp_${i}_downscript=\${ucarp_${i}_downscript:-\"/usr/local/sbin/ucarp-down\"}
            	ucarp_${i}_shutdown=\${ucarp_${i}_shutdown:-\"YES\"}
            	ucarp_${i}_facility=\${ucarp_${i}_facility:-\"daemon\"}
             ucarp_${i}_broadcast=\${ucarp_${i}_broadcast:-\"NO\"}
