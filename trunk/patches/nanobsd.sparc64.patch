@@ -1,6 +1,6 @@
 --- nanobsd.sh.bsdrp	2010-07-23 10:53:51.000000000 +0200
-+++ nanobsd.sh	2010-07-23 16:32:52.000000000 +0200
-@@ -538,6 +538,105 @@
++++ nanobsd.sh	2010-07-29 15:59:18.000000000 +0200
+@@ -538,6 +538,111 @@
  	create_i386_diskimage
  )
  
@@ -31,24 +31,30 @@
 +	echo "Creating initial empty but bootable sunlabel..."
 +	sunlabel -w -B ${MD} auto
 +	
-+	# Extracting label prototype	
-+	sunlabel ${MD} > ${NANO_OBJ}/_.sunlabel
++	# Extracting label prototype in cylinder unit
++	sunlabel -c ${MD} > ${NANO_OBJ}/_.sunlabel
 +
 +	# Generate partition on the prototype file
 +	# Need to calc the NANO_CODESIZE and the media size that is smaller than given (why??)
++	# Warning, from sunlabel man page  : "partitions in the Sun OpenBoot PROM
++    # must always start at a cylinder boundary (for whatever geometry emulation
++    # has been chosen)."
++
 +	if [ ${NANO_CODESIZE} = 0 ]; then
-+		MESURED_MEDIASIZE=`grep "sectors/unit" ${NANO_OBJ}/_.sunlabel | cut -d' ' -f 2`
-+		echo "Debug MESURED_MEDIASIZE: $MESURED_MEDIASIZE"
-+		NANO_CODESIZE=`expr \( $MESURED_MEDIASIZE - $NANO_CONFSIZE - $NANO_DATASIZE \) / 2`
-+		echo "Debug NANO_CODESIZE: $NANO_CODESIZE"
++		#MESURED_MEDIASIZE=`grep "sectors/unit" ${NANO_OBJ}/_.sunlabel | cut -d' ' -f 2`
++ 	MESURED_MEDIASIZE_CYL=`grep "text" ${NANO_OBJ}/_.sunlabel| cut -d' ' -f 4`
++	SEC_PER_CYL=`grep "sectors/cylinder" ${NANO_OBJ}/_.sunlabel | cut -d' ' -f 2`
++	NANO_CONFSIZE_CYL=`expr $NANO_CONFSIZE / $SEC_PER_CYL`
++	NANO_DATASIZE_CYL=`expr $NANO_DATASIZE / $SEC_PER_CYL`
++	NANO_CODESIZE_CYL=`expr \( $MESURED_MEDIASIZE_CYL - $NANO_CONFSIZE_CYL - $NANO_DATASIZE_CYL \) / 2`
 +	fi	
-+	echo "a: ${NANO_CODESIZE} 0" >> ${NANO_OBJ}/_.sunlabel
-+	echo "d: ${NANO_CODESIZE} *" >> ${NANO_OBJ}/_.sunlabel
-+	echo "e: ${NANO_CONFSIZE} *" >> ${NANO_OBJ}/_.sunlabel
-+	echo "f: ${NANO_DATASIZE} *" >> ${NANO_OBJ}/_.sunlabel
++	echo "a: ${NANO_CODESIZE_CYL} 0" >> ${NANO_OBJ}/_.sunlabel
++	echo "d: ${NANO_CODESIZE_CYL} *" >> ${NANO_OBJ}/_.sunlabel
++	echo "e: ${NANO_CONFSIZE_CYL} *" >> ${NANO_OBJ}/_.sunlabel
++	echo "f: ${NANO_DATASIZE_CYL} *" >> ${NANO_OBJ}/_.sunlabel
 +
 +	# Apply the label prototype file to the md disk
-+	sunlabel -R ${MD} ${NANO_OBJ}/_.sunlabel
++	sunlabel -c -R ${MD} ${NANO_OBJ}/_.sunlabel
 +
 + # Create first image
 +    newfs -L ${NANO_GLABEL_SYS}1 ${NANO_NEWFS} /dev/${MD}a
