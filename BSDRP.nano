@@ -264,16 +264,16 @@ add_port () {
 
 #### Add routing related ports #####
 # Add libdlmalloc lib: Make BGP in Quagga more faster
-add_port "devel/libdlmalloc" "-DNOPORTDOCS -DNO_INSTALL_MANPAGES"
+add_port "devel/libdlmalloc" "-DNOPORTDOCS -DNO_INSTALL_MANPAGES -DNOPORTEXAMPLES"
 
 # Quagga and net-snmp need perl for building
-add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT -DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT -DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Then we need to install net-snmp without perl modules
-add_port "net-mgmt/net-snmp" "-DNOPORTDOCS -DNO_INSTALL_MANPAGES -DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
+add_port "net-mgmt/net-snmp" "-DNOPORTDOCS -DNO_INSTALL_MANPAGES -DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL -DNOPORTEXAMPLES"
 
 # Quagga installation
-add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
+add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH -DNOPORTEXAMPLES"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Nod enabled:
@@ -294,37 +294,40 @@ add_port "net/quagga" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ISISD -DWITH_OS
 #add_port "net/xorp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:
-add_port "net/bird" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-add_port "net/bird6" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "net/bird" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
+add_port "net/bird6" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add FreeVRRPd: using XORP only for VRRP is too memory/CPU hungry:
-add_port "net/freevrrpd" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "net/freevrrpd" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
-add_port "net/ucarp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "net/ucarp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add IPv6 multicast routing daemons and tools
-add_port "net/mcast-tools" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "net/mcast-tools" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add IPv4 DVMRP (multicast) routing daemon
-add_port "net/mrouted" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "net/mrouted" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add fprobe: Netflow probe
-add_port "net-mgmt/fprobe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "net-mgmt/fprobe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add OpenLLDP: Link-Layer Discovery protocols
-add_port "net-mgmt/openlldp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "net-mgmt/openlldp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add DHCP server and client
-add_port "net/isc-dhcp31-server" "-DWITHOUT_DHCP_PARANOIA -DWITHOUT_DHCP_JAIL -DNO_INSTALL_MANPAGES -DNOPORTDOCS"
-add_port "net/isc-dhcp31-relay" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "net/isc-dhcp31-server" "-DWITHOUT_DHCP_PARANOIA -DWITHOUT_DHCP_JAIL -DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
+add_port "net/isc-dhcp31-relay" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add sstmp, a simple MTA to get mail off the system
-add_port "mail/ssmtp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "mail/ssmtp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
+
+# Add tmux (screen equivalent, but better because BSD)
+add_port "sysutils/tmux" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
-add_port "benchmarks/netpipe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS" 
-add_port "benchmarks/iperf" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS"
+add_port "benchmarks/netpipe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES" 
+add_port "benchmarks/iperf" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.

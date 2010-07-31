@@ -1,5 +1,6 @@
 Release 0.34 (Not released)
 - Add "system endpoint" that tune BSDRP for being use as TCP/UDP endpoint for doing bench
+- Add tmux (terminal multiplexer)
 
 Bug fix:
 - Fix ucarp comportement by using carp-up/carp-down script that create an alias for the virtual IP on the master host
