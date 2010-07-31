@@ -207,7 +207,7 @@ usage () {
         pprint 1 "  -c      specify console type: vga (default) or serial"
         pprint 1 "  -a      specify target architecture: i386 or amd64"
 		pprint 1 "          if not specified, use local system arch (`uname -m`)"
-		pprint 1 "          cambria (arm) target is in work-in-progress state"	
+		pprint 1 "          cambria (arm) and sparc64 targets are in work-in-progress state"	
         pprint 1 "  -b      suppress buildworld and buildkernel"
 		pprint 1 "  -k      suppress buildkernel"
 		pprint 1 "  -w      suppress buildworld"
