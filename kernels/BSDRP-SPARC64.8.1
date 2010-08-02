@@ -99,9 +99,10 @@ options     MROUTING        # Multicast routing
 # This is enabled on a per-socket basis using the TCP_MD5SIG socket option. 
 # This requires the use of 'device crypto', 'options IPSEC' 
 # or 'device cryptodev'. 
-device 		crypto 
-options 	IPSEC 
-options 	TCP_SIGNATURE		#include support for RFC 2385
+### DO NOT ENABLE THESE 3 LINES ON SPARC64, it will crash at boot
+#device 		crypto 
+#options 	IPSEC 
+#options 	TCP_SIGNATURE		#include support for RFC 2385
 
 # Make an SMP-capable kernel by default
 options 	SMP			# Symmetric MultiProcessor Kernel
@@ -162,7 +163,7 @@ device		atkbd		# AT keyboard
 device		sc
 device		creator		# Creator, Creator3D and Elite3D framebuffers
 device		machfb		# ATI Mach64 framebuffers
-device		splash		# Splash screen and screen saver support
+#device		splash		# Splash screen and screen saver support
 options 	KBD_INSTALL_CDEV # install a CDEV entry in /dev
 
 # Builtin hardware
@@ -252,7 +253,7 @@ device		firmware	# firmware assist module
 device		bpf		# Berkeley packet filter
 
 # USB support
-options 	USB_DEBUG	# enable debug msgs
+#options 	USB_DEBUG	# enable debug msgs
 device		uhci		# UHCI PCI->USB interface
 device		ohci		# OHCI PCI->USB interface
 device		ehci		# EHCI PCI->USB interface (USB 2.0)
@@ -296,9 +297,9 @@ device		uvscom		# USB serial support for DDI pocket's PHS
 #device		dcons_crom	# Configuration ROM for dcons
 
 # Add device Polling
-options		DEVICE_POLLING
+#options		DEVICE_POLLING
 # Increase HZ for optimizing polling
-options		HZ=2000
+#options		HZ=2000
 
 # Add multiple route table support
 options		ROUTETABLES=16
