@@ -323,6 +323,7 @@ add_port "net/isc-dhcp31-relay" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAM
 add_port "mail/ssmtp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add tmux (screen equivalent, but better because BSD)
+add_port "devel/libevent" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 add_port "sysutils/tmux" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
