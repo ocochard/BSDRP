@@ -185,9 +185,6 @@ ports_patches()
 	if ! `grep -q 'automake' /usr/ports/net/mcast-tools/Makefile`; then
 		patch /usr/ports/net/mcast-tools/Makefile patches/mcast-tools/Makefile.diff
 	fi
-	pprint 3 "net/bird and net/bird6 (sparc compilation fix)"
-	cp patches/bird/patch-tools-Rules.in /usr/ports/net/bird/files/
-	cp patches/bird/patch-tools-Rules.in /usr/ports/net/bird6/files/
 
 }
 
