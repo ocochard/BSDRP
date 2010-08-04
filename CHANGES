@@ -1,6 +1,8 @@
 Release 0.34 (Not released)
 - Add "system endpoint" that tune BSDRP for being use as TCP/UDP endpoint for doing bench
 - Add tmux (terminal multiplexer)
+- Add patch that permit to compile net/bird and net/bird6 on sparc64
+- Secure quagga VTY by listenning to localhost only (thankt to Nugroho Atmotaruno)
 
 Bug fix:
 - Fix ucarp comportement by using carp-up/carp-down script that create an alias for the virtual IP on the master host

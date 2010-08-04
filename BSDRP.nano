@@ -313,7 +313,7 @@ add_port "net/mrouted" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 add_port "net-mgmt/fprobe" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add OpenLLDP: Link-Layer Discovery protocols
-add_port "net-mgmt/openlldp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
+#add_port "net-mgmt/openlldp" "-DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
 
 # Add DHCP server and client
 add_port "net/isc-dhcp31-server" "-DWITHOUT_DHCP_PARANOIA -DWITHOUT_DHCP_JAIL -DNO_INSTALL_MANPAGES -DNOPORTDOCS -DNOPORTEXAMPLES"
