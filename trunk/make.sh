@@ -176,15 +176,18 @@ nanobsd_patches() {
 ports_patches()
 {
 	pprint 2 "patching ports..."
-	pprint 3 "Quagga IPv6 bug id 408"
+	pprint 3 "net/quagga (IPv6 bug id 408)"
 	cp patches/quagga/patch-configure.ac /usr/ports/net/quagga/files/
 	if ! `grep -q 'autoconf' /usr/ports/net/quagga/Makefile`; then
 		patch /usr/ports/net/quagga/Makefile patches/quagga/Makefile.diff
 	fi	
-	pprint 3 "mcast-tools"
+	pprint 3 "net/mcast-tools (missing pre-requiered in makefile)"
 	if ! `grep -q 'automake' /usr/ports/net/mcast-tools/Makefile`; then
 		patch /usr/ports/net/mcast-tools/Makefile patches/mcast-tools/Makefile.diff
 	fi
+	pprint 3 "net/bird and net/bird6 (sparc compilation fix)"
+	cp patches/bird/patch-tools-Rules.in /usr/ports/net/bird/files/
+	cp patches/bird/patch-tools-Rules.in /usr/ports/net/bird6/files/
 
 }
 
@@ -213,7 +216,7 @@ usage () {
 		pprint 1 "  -w      suppress buildworld"
         pprint 1 "  -f      fast mode, skip: images compression and checksums"
         pprint 1 "  -d      Enable debug"
-		ppirnt 1 "  -h      Display this help message"
+		pprint 1 "  -h      Display this help message"
         ) 1>&2
         exit 2
 }
