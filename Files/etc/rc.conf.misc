@@ -1,0 +1,34 @@
+###### BSD Router Project - Misc configuration ########
+
+#No keymap
+keymap="NO"
+
+#No blanktime (suppress blanktimevidcontrol not found message)
+blanktime="NO"
+
+#Disable moused
+moused_enable="NO"
+
+#Disable sendmail
+sendmail_enable="NONE"
+
+#Disable dump device
+dumpdev="NO"
+
+#Increase the kernel secure level
+kern_securelevel_enable="YES"
+kern_securelevel="1"
+
+#Decrease the randomness of random(4), but should increase performance
+harvest_interrupt="NO"  # Entropy device harvests interrupt randomness
+harvest_ethernet="NO"   # Entropy device harvests ethernet randomness
+harvest_p_to_p="NO"     # Entropy device harvests point-to-point randomness
+
+# Prevent syslog to bind a network socket
+syslogd_flags="-ss"
+
+# Enable polling: Improve performance on NIC that support it
+polling_enable="YES"
+
+# Enable RFC1323 extensions
+tcp_extensions="YES"

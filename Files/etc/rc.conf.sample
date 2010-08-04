@@ -1,0 +1,133 @@
+###### BSD Router Project Base Configuration ########
+
+## Global system parameters ##
+
+# Hostname
+hostname="router.bsdrp.net"
+
+# Enable SSHd
+sshd_enable="YES"
+
+## System routing parameters ##
+
+# Enable routing
+gateway_enable="YES"
+ipv6_gateway_enable="YES"
+# Enable IPv6
+ipv6_enable="YES"
+# Enable Router Advertisment:
+rtadvd_enable="NO"
+
+# Default route: Mandatory to set to "NO" for quagga and XORP
+defaultrouter="NO"
+#defaultrouter="10.0.0.254"
+
+#Waiting for a default route
+defaultroute_delay="5"
+
+# FreeBSD static routes (but you can configure them under quagga or xorp too)
+# Add Internal Net 2 as a static route
+#static_routes="internalnet2"
+#route_internalnet2="-net 192.168.2.0/24 192.168.1.2"
+
+## Interfaces configuration ##
+
+# Enable polling: Improve performance on NIC that support it
+polling_enable="YES"
+
+# Configure NIC
+ifconfig_em0="inet 10.0.0.2 netmask 255.255.255.0"
+# Anoter example with modified MTU:
+# ifconfig_em0="inet x.x.x.x netmask y.y.y.y mtu 9000"
+# Manually assign address:
+#ipv6_ifconfig_ed0="fec0:0:0:5::1 prefixlen 64"
+
+# vlan creation
+#cloned_interfaces="vlan2"
+#ifconfig_vlan2="inet x.x.x.x netmask y.y.y.y vlan 2 vlandev ed0"
+
+# lagg creation
+#cloned_interfaces="lagg0"
+#ifconfig_lagg0="laggproto lacp laggport bge0 laggport bge1 192.168.9.5 netmask 255.255.255.0"
+
+## Services configuration ##
+#NTP client
+ntpdate_enable="NO"             # Run ntpdate to sync time on boot (or NO).
+ntpdate_program="/usr/sbin/ntpdate"     # path to ntpdate, if you want a different one.
+ntpdate_flags="-b"              # Flags to ntpdate (if enabled).
+ntpdate_config="/etc/ntp.conf"  # ntpdate(8) configuration file
+ntpdate_hosts=""                # Whitespace-separated list of ntpdate(8) servers.
+
+# VRRP
+freevrrpd_enable="NO"
+
+# uCarp
+# Virtual IP identifier range is 1-255
+ucarp_enable="NO"			# Enable ucarp
+# Here are an exemple for VHID number 1:
+ucarp_1_if="em0"			# Set interface to use for ucarp checks
+ucarp_1_src="192.168.1.2"	# Set source (real) IP address of that host
+ucarp_1_pass="passcarp"    	# Set password
+ucarp_1_preempt="NO"        # Set it to "YES" to become a master as soon as possible
+ucarp_1_addr="192.168.1.1"  # Set virtual shared IP address
+# ucarp_1_upscript="/usr/local/sbin/ucarp-up"         # Create an alias on virtual IP when become a master
+# ucarp_1_downscript="/usr/local/sbin/ucarp-down"       # Remove the alias on virtual IP when become a backup
+# ucarp_1_advbase:          # Set advertisement frequency (seconds)
+# ucarp_1_advskew:          # Set advertisement skew (0-255)
+# ucarp_1_deadratio:        # Set ratio to consider a host as dead
+# ucarp_1_shutdown="YES"       # Set it to "YES"  to call shutdown script at exit
+# ucarp_1_facility="daemon"   # Set syslog facility
+# ucarp_1_broadcast="NO"      # Set it to "YES"  to use broadcast in place of multicast
+# ucarp_1_fib="NONE"       # set the alternative routing table id that ucarp should use
+# ucarp_1_xparam=""		# Set extra parameter to be send to the up/down script
+# ucarp_1_ignoreifstate="NO"	# Set it to "YES" to ignore physical interface state
+
+# LLDP
+lldpd_enable="NO"
+lldp_flags="-i em0"
+
+## Packet filter Firewall ##
+pf_enable="NO"                  # Set to YES to enable packet filter (pf)
+pf_rules="/etc/pf.conf"         # rules definition file for pf
+
+# Start Quagga and all routings daemons
+quagga_enable="YES"
+quagga_flags="-d -A 127.0.0.1"
+quagga_daemons="zebra ripd ripngd ospfd ospf6d bgpd isisd"
+
+# Set to YES if you want to enable Bird
+bird_enable="NO"
+bird6_enable="NO"
+
+# Set to Yes if you want to start Multicast IPv4 DVMRP
+mrouted_enable="NO"             # Do IPv4 multicast routing.
+mrouted_program="/usr/local/sbin/mrouted"
+mrouted_flags=""                # Flags for multicast routing daemon.
+
+# Set to YES if you want to enable IPv6 PIM Dense Mode or Sparse Mode daemon
+pim6dd_enable="NO"
+pim6sd_enable="NO"
+
+#For enabling SNMPD, you need to enable snmpd and snmptrapd:
+snmpd_enable="NO"
+snmpd_flags="-a"
+snmpd_conffile="/usr/local/etc/snmpd.conf"
+snmptrapd_enable="NO"
+snmptrapd_flags="-a -p /var/run/snmptrapd.pid"
+
+# Fprobe (Netflow)
+fprobe_enable="NO"
+
+# DHCP server
+dhcpd_enable="NO"              # dhcpd enabled?
+dhcpd_flags="-q"                # command option(s)
+dhcpd_conf="/usr/local/etc/dhcpd.conf"  # configuration file
+dhcpd_ifaces="em0"             # ethernet interface(s)
+dhcpd_withumask="022"           # file creation mask
+
+# DHCP relay
+dhcrelay_enable="NO"
+dhcrelay_flags=""       # command option(s)
+dhcrelay_servers="10.0.0.1"     # dhcrelay server(s)
+dhcrelay_ifaces="em0"      # ethernet interface(s)
+

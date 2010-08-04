@@ -1,8 +1,11 @@
 Release 0.34 (Not released)
 - Add "system endpoint" that tune BSDRP for being use as TCP/UDP endpoint for doing bench
+- Clean the default /etc/rc.conf, put special BSDRP parameters in /etc/rc.conf.misc
 - Add tmux (terminal multiplexer)
 - Add patch that permit to compile net/bird and net/bird6 on sparc64
 - Secure quagga VTY by listenning to localhost only (thankt to Nugroho Atmotaruno)
+- Updated ports:
+	- Bird to 1.2.4
 
 Bug fix:
 - Fix ucarp comportement by using carp-up/carp-down script that create an alias for the virtual IP on the master host
@@ -14,6 +17,27 @@ Bug fix:
 TO DO:
 - "system endpoint" seams to decrease TCP performance in place of increase them :-(
 
+Installed packages and their versions:
+
+NetPIPE-3.7.1       A self-scaling network benchmark
+bird-1.2.4          Dynamic IP routing daemon (IPv4 version)
+bird6-1.2.4         Dynamic IP routing daemon (IPv6 version)
+dlmalloc-2.8.4      Small, fast malloc library by Doug Lea
+fprobe-1.1_1        Tool that collects network traffic data
+freevrrpd-0.9.3     This a VRRP RFC2338 Compliant implementation under FreeBSD
+iperf-2.0.4         A tool to measure maximum TCP and UDP bandwidth
+isc-dhcp31-relay-3.1.3_1 The ISC Dynamic Host Configuration Protocol relay
+isc-dhcp31-server-3.1.3_1 The ISC Dynamic Host Configuration Protocol server
+libevent-1.4.14b_1  Provides an API to execute callback functions on certain ev
+mcast-tools-20061214 IPv6 multicast routing daemons and tools
+mrouted-3.9_1       Multicast routing daemon providing DVMRP for IPv4
+net-snmp-5.5_3      An extendable SNMP implementation
+quagga-0.99.16      Free RIPv1, RIPv2, OSPFv2, BGP4, IS-IS route software
+ssmtp-2.62.3        Extremely simple MTA to get mail off the system to a mail h
+tmux-1.2_3          A Terminal Multiplexer
+ucarp-1.5.2_1       Userlevel Common Address Redundancy Protocol
+
+=====================================================================================================
 Release 0.33
 - Media size needs reduced from 512MB to 256MB (Thanks Warner Losh)
 - Based on FreeBSD 8.1-Release

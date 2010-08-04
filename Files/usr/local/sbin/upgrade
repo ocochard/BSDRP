@@ -41,6 +41,13 @@
 # Exit script if error meet
 set -e
 
+ARCH=`uname -m`
+
+if [ "${ARCH}" = "sparc64" ]; then
+	echo "ERROR: upgrade script not adapted to ${ARCH}"
+	exit 1
+fi
+
 # Get the NANO_GLABEL_SYS variable
 # (get the name from mount output, and remove the last character)
 NANO_GLABEL_SYS=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1 | sed 's/\(.*\)./\1/'`
@@ -87,7 +94,9 @@ fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a
 tunefs -L ${NANO_GLABEL_SYS}${DST_SLICE} /dev/${NANO_DRIVE}s${DST_SLICE}a
 
 # Need to compare some files between the old and new partition
-mkdir /tmp/upgrade
+if [ ! -d /tmp/upgrade ]; then
+	mkdir /tmp/upgrade
+fi
 mount /dev/ufs/${NANO_GLABEL_SYS}${DST_SLICE} /tmp/upgrade
 # 	Adapt fstab of the new system
 for f in /tmp/upgrade/etc/fstab /tmp/upgrade/conf/base/etc/fstab /etc/fstab
@@ -100,6 +109,7 @@ diff -ruN /boot/loader.conf /tmp/upgrade/boot/loader.conf > /tmp/loader.conf.pat
 patch /tmp/upgrade/boot/loader.conf /tmp/loader.conf.patch
 
 umount /tmp/upgrade
+rm -r /tmp/upgrade
 
 # Save the config file that include the fstab
 # Don't know if it's usefull
@@ -107,15 +117,20 @@ mount /cfg
 cp /etc/fstab /cfg
 umount /cfg
 
-# Changing bootloader
-# some man page say that is better to use debugflag before modifying MBR
-# But this remove all geom UFS label, and let the system in ustable state
-# (the / use an UFS label, then it's not more useable after boot0tcf)
-boot0cfg -s ${DST_SLICE} -v ${NANO_DRIVE}
-# Special bug fix for FreeBSD 7.2 and 8.0-current:
-# boot0cfg don't update the MBR active slice!
-# Need to use gpart for modify the "active" state
-gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}
+case "${ARCH}" in
+        i386|amd64)
+                NANO_KERNEL="BSDRP-I386"
+				boot0cfg -s ${DST_SLICE} -v ${NANO_DRIVE}
+				gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}
+                ;;
+        arm)
+				echo "arm upgrade script not tested!"	
+				gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}
+                ;;
+        sparc64)
+                echo "You need to configure OBP for booting on"
+                ;;
+esac
 
 # Log
-logger Upgrade complete
+logger BSDRP Upgrade complete
