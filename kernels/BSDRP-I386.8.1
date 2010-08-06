@@ -143,9 +143,10 @@ device		ataraid		# ATA RAID drives
 #device		atapist		# ATAPI tape drives
 options 	ATA_STATIC_ID	# Static device numbering
 
-# Experimental AHCI drivers
+# New AHCI drivers
 device      ahci        # Serial ATA Advanced Host Controller Interface driver
 device      siis        # SiliconImage Serial ATA Host Controller driver
+device      mvs         # Marvell Serial ATA Host Controller driver
 
 # SCSI Controllers
 #device		ahb		# EISA AHA1742 family

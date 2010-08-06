@@ -19,6 +19,7 @@ alias reload 'system reboot'
 alias halt 'system halt'
 alias reboot 'system reboot'
 alias wr 'config save'
+alias tmux	tmux -u
 
 # A righteous umask
 umask 22
