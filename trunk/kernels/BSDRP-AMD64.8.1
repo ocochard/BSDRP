@@ -136,9 +136,10 @@ device		atadisk		# ATA disk drives
 #device		atapist		# ATAPI tape drives
 options 	ATA_STATIC_ID	# Static device numbering
 
-# Experimental AHCI drivers
+# New AHCI drivers
 device      ahci        # Serial ATA Advanced Host Controller Interface driver
 device		siis		# SiliconImage Serial ATA Host Controller driver
+device		mvs			# Marvell Serial ATA Host Controller driver
 
 # SCSI Controllers
 #device		ahc		# AHA2940 and onboard AIC7xxx devices
