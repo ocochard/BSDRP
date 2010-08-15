@@ -106,7 +106,7 @@ for f in /tmp/upgrade/etc/fstab /tmp/upgrade/conf/base/etc/fstab /etc/fstab
 #	Compare the loader.conf, and include the diff into the new partition
 #	This file is modify with "system virtualized"
 diff -ruN /boot/loader.conf /tmp/upgrade/boot/loader.conf > /tmp/loader.conf.patch
-patch /tmp/upgrade/boot/loader.conf /tmp/loader.conf.patch
+patch -s /tmp/upgrade/boot/loader.conf /tmp/loader.conf.patch
 
 umount /tmp/upgrade
 rm -r /tmp/upgrade
