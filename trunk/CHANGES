@@ -1,6 +1,9 @@
 Release 0.34 (Not released)
-- Add "system endpoint" that tune BSDRP for being use as TCP/UDP endpoint for doing bench
-- Clean the default /etc/rc.conf, put special BSDRP parameters in /etc/rc.conf.misc
+- Kernel:
+	Add ipdivert module 
+	Re-enable kbd-mux that permit to use USB keyboard
+- Add "system endpoint" that tune BSDRP for being use as TCP/UDP endpoint for doing bench (but have worst TCP performance... need to works on it)
+- Clean the default /etc/rc.conf, put special BSDRP parameters in /etc/rc.conf.misc 
 - Add tmux (terminal multiplexer)
 - Add patch that permit to compile net/bird and net/bird6 on sparc64
 - Secure quagga VTY by listenning to localhost only (thankt to Nugroho Atmotaruno)
@@ -8,6 +11,7 @@ Release 0.34 (Not released)
 	- Bird to 1.2.4
 
 Bug fix:
+- Fix ipfw module load by adding libalias module 
 - Fix ucarp comportement by using carp-up/carp-down script that create an alias for the virtual IP on the master host
 - Fix writing ssh keys for root (Thanks to Christian Degen)
 - Fix crontab backup (Thanks to Christian Degen)

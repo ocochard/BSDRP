@@ -16,6 +16,8 @@ sendmail_enable="NONE"
 dumpdev="NO"
 
 #Increase the kernel secure level
+#Warning: This prevent to load module when entering in multi-user state!
+#http://www.freebsd.org/doc/handbook/securing-freebsd.html
 kern_securelevel_enable="YES"
 kern_securelevel="1"
 
