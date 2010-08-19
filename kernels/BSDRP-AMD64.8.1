@@ -381,7 +381,7 @@ options		ZERO_COPY_SOCKETS
 
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules
-makeoptions    MODULES_OVERRIDE="netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw pf hifn padlock safe ubsec"
+makeoptions    MODULES_OVERRIDE="netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf hifn padlock safe ubsec"
 
 # Don't use VIMAGE, the multiple route table should be enough
 #options     VIMAGE
