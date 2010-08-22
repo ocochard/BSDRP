@@ -31,8 +31,9 @@
 # Uncomment for enable the debug mode:
 # set -xv
 
-# Stop the script automatically on error
+# Strict script
 set -e
+set -u
 
 echo "Man pages are not included in BSD Router Project"
 echo "For FreeBSD related man pages: http://www.freebsd.org/cgi/man.cgi"

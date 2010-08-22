@@ -38,8 +38,9 @@
 # ssh my-user@my-server cat _.disk.image.bz2 | bzcat | upgrade
 
 
-# Exit script if error meet
+# Strict script
 set -e
+set -u
 
 ARCH=`uname -m`
 
