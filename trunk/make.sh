@@ -38,6 +38,9 @@
 # Exit if error
 set -e
 
+# Force check variable definition
+set -u
+
 FREEBSD_SRC=/usr/src
 NANOBSD_DIR=/usr/src/tools/tools/nanobsd
 BSDRP_VERSION=`cat ${NANOBSD_DIR}/BSDRP/Files/etc/BSDRP.version`

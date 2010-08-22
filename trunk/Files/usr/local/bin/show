@@ -31,8 +31,9 @@
 # Uncomment for enable the debug mode:
 # set -xv
 
-# Stop the script automatically on error
+# Scrict script
 set -e
+set -u
 
 # Get options passed by user
 getoption () {

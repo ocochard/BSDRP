@@ -31,8 +31,9 @@
 # Uncomment for enable the debug mode:
 # set -xv
 
-# Stop the script automatically on error
+# Strict script
 set -e
+set -u
 
 echo "Welcome to BSD Router Project (BSDRP) help"
 echo ""
