@@ -65,6 +65,7 @@ options 	ADAPTIVE_GIANT		# Giant mutex is adaptive.
 options 	STOP_NMI		# Stop CPUS using NMI instead of IPI
 #options 	AUDIT			# Security event auditing
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
+options		INCLUDE_CONFIG_FILE	# Include this file in kernel
 
 # Enable Packet Filter (moved as modules)
 #device pf
@@ -238,6 +239,8 @@ device		vx		# 3Com 3c590, 3c595 (``Vortex'')
 # NOTE: Be sure to keep the 'device miibus' line in order to use these NICs!
 device		miibus		# MII bus support
 device		age		# Attansic/Atheros L1 Gigabit Ethernet
+device		alc		# Atheros AR8131/AR8132 Ethernet
+d
 device		ale		# Atheros AR8121/AR8113/AR8114 Ethernet
 device		bce		# Broadcom BCM5706/BCM5708 Gigabit Ethernet
 device		bfe		# Broadcom BCM440x 10/100 Ethernet
@@ -331,16 +334,16 @@ device		umass		# Disks/Mass storage - Requires scbus and da
 #device		urio		# Diamond Rio 500 MP3 player
 #device		uscanner	# Scanners
 # USB Serial devices
-device		ucom		# Generic com ttys
-device		uark		# Technologies ARK3116 based serial adapters
-device		ubsa		# Belkin F5U103 and compatible serial adapters
-device		ubser		# BWCT console serial adapters
-device		uftdi		# For FTDI usb serial adapters
-device		uipaq		# Some WinCE based devices
-device		uplcom		# Prolific PL-2303 serial adapters
-device		uslcom		# SI Labs CP2101/CP2102 serial adapters
-device		uvisor		# Visor and Palm devices
-device		uvscom		# USB serial support for DDI pocket's PHS
+#device		ucom		# Generic com ttys
+#device		uark		# Technologies ARK3116 based serial adapters
+#device		ubsa		# Belkin F5U103 and compatible serial adapters
+#device		ubser		# BWCT console serial adapters
+#device		uftdi		# For FTDI usb serial adapters
+#device		uipaq		# Some WinCE based devices
+#device		uplcom		# Prolific PL-2303 serial adapters
+#device		uslcom		# SI Labs CP2101/CP2102 serial adapters
+#device		uvisor		# Visor and Palm devices
+#device		uvscom		# USB serial support for DDI pocket's PHS
 # USB Ethernet, requires miibus
 #device		aue		# ADMtek USB Ethernet
 #device		axe		# ASIX Electronics USB Ethernet
@@ -363,7 +366,7 @@ options     DEVICE_POLLING
 options     HZ=2000
 
 # Add multiple route table support
-options     ROUTETABLES=4
+options     ROUTETABLES=16
 
 # eliminating data copies on socket reads and writes.
 # man 9 zero_copy
@@ -375,5 +378,4 @@ options		ZERO_COPY_SOCKETS
 
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules
-makeoptions    MODULES_OVERRIDE="acpi netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw pf"
-
+makeoptions    MODULES_OVERRIDE="netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf hifn padlock safe ubsec"

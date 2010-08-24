@@ -80,12 +80,12 @@ check_system() {
 	if `grep -q 'REVISION="8.1"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
 		SRC_VERSION="8.1"
 	fi
-	if `grep -q 'REVISION="7.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
-    	SRC_VERSION="7.2"
+	if `grep -q 'REVISION="7.3"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
+    	SRC_VERSION="7.3"
 	fi
 
 	if [ ${SRC_VERSION} = 0 ]; then
-		pprint 1 "ERROR: BSDRP need FreeBSD 8.1 or 7.2 sources"
+		pprint 1 "ERROR: BSDRP need FreeBSD 8.1 or 7.3 sources"
 		pprint 1 "Read HOW TO here:"
 		pprint 1 "http://bsdrp.net/documentation/technical_docs"
 		exit 1
@@ -110,17 +110,17 @@ nanobsd_patches() {
 	# on a USB (da0) or on an hard drive (ad0).
 	# If FreeBSD 7.2 source code detected, download latest nanobsd.sh script
 
-	if [ "${SRC_VERSION}" = "7.2" ]; then
-		if [ ! -f ../nanobsd.bak.7_2 ]; then
-			pprint 3 "FreeBSD 7.2 source detected"
+	if [ "${SRC_VERSION}" = "7.3" ]; then
+		if [ ! -f ../nanobsd.bak.7_3 ]; then
+			pprint 3 "FreeBSD 7.3 source detected"
 			(
 			cd ..
 			pprint 3 "Backup old nanobsd.sh"
-			mv nanobsd.sh nanobsd.bak.7_2
+			mv nanobsd.sh nanobsd.bak.7_3
 			pprint 3 "Download nanobsd.sh script from FreeBSD 8.1"
-				if [ ! `fetch -o nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.51.2.3.2.1;content-type=text%2Fplain;only_with_tag=RELENG_8_1_0_RELEASE"` ]; then
+				if ! fetch -o nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.51.2.3.2.1;content-type=text%2Fplain;only_with_tag=RELENG_8_1_0_RELEASE"; then
 				pprint 3 "Restoring original nanobsd.sh"	
-				mv nanobsd.bak.7_2 nanobsd.sh
+				mv nanobsd.bak.7_3 nanobsd.sh
 				pprint 3 "ERROR: Can't download latest nanobsd.sh script"
 				exit 1
 			fi
