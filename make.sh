@@ -232,16 +232,16 @@ pprint 1 ""
 
 TARGET_ARCH=`uname -m`
 case "$TARGET_ARCH" in
-	amd64)
+	"amd64")
 		NANO_KERNEL="BSDRP-AMD64"
 		;;
-	i386)
+	"i386")
 		NANO_KERNEL="BSDRP-I386"
 		;;
-	arm)
+	"arm")
 		NANO_KERNEL="BSDRP-CAMBRIA"
 		;;
-	sparc64)
+	"sparc64")
 		NANO_KERNEL="BSDRP-SPARC64"
 		;;
 esac
@@ -263,24 +263,24 @@ do
         in
         -a)
                 case "$2" in
-				amd64)
-					if [ $TARGET_ARCH != "amd64" || $TARGET_ARCH != "i386" ]; then
+				"amd64")
+					if ! [ "${TARGET_ARCH}" != "amd64" -o "${TARGET_ARCH}" != "i386" ]; then
 						pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
 						exit 1
 					fi
 					TARGET_ARCH="amd64"
 					NANO_KERNEL="BSDRP-AMD64"
 					;;
-				i386)
-					if [ $TARGET_ARCH != "amd64" || $TARGET_ARCH != "i386" ]; then
+				"i386")
+					if ! [ "${TARGET_ARCH}" != "amd64" -o "${TARGET_ARCH}" != "i386" ]; then
                         pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
                         exit 1
                     fi
 					TARGET_ARCH="i386"
 					NANO_KERNEL="BSDRP-I386"
 					;;
-				cambria)
-					if [ $TARGET_ARCH != "arm" ]; then
+				"cambria")
+					if [ "${TARGET_ARCH}" != "arm" ]; then
                         pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
                         exit 1
                     fi
@@ -290,8 +290,8 @@ do
 					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
 					NANO_KERNEL="BSDRP-CAMBRIA"
 					;;
-				sparc64)
-					if [ $TARGET_ARCH != "sparc64" ]; then
+				"sparc64")
+					if [ "${TARGET_ARCH}" != "sparc64" ]; then
                         pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
                         exit 1
                     fi
@@ -464,6 +464,7 @@ if ($DELETE_ALL); then
 		pprint 1 "Existing working directory detected,"
 		pprint 1 "but you asked for rebuild all (no -b neither -k option given)"
 		pprint 1 "Do you want to continue ? (y/n)"
+		USER_CONFIRM=""
         while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
         	read USER_CONFIRM <&1
         done
