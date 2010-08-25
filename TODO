@@ -1,21 +1,19 @@
+* Arch *
+	- Sparc64: Need to fix the login bug, and add arch support to the update script
+	- arm: Need to found an arm for working on
+
 * Security *
-	- Need to test upgrade after raising secure level to 1 (direct access to /dev)
-	- System fingerprint:
-	Use mtree for generate the fingerprint of the base system
-	mtree -c -K sha256digest > mtree.txt
-	And store the result on a reference website, then create a script that download it and compare it:
-	mtree -f /path/to/mtree.txt -K sha256digest
+	- Need to wrote sample configuration file for pf and other
 
 * Multicast *
 	- Need to found IPv4 PIM-dm/sm daemon
 
 * misc *
 	- utf-8 support for console ?
-	- Check if ucarp is allready started when ucarp start is invoked
-    - Install ssmtp ??
 
-* Provisionning *
-	- Be compatible with a provisionning tools that generate lot's of configuration
+* Central configuration management / Provisionning *
+	- Use cvs or subversion for maintain central management of configuration files
+	- Be compatible with a provisionning tools that generate lot's of configuration (subversion copy?)
 
     
 
