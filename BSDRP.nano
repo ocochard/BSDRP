@@ -528,7 +528,9 @@ usr/share/tmac/tmac.vgrind
     done
 	
 	# Move termcap.small file
-	mv ${NANO_WORLDDIR}/etc/termcap.small ${NANO_WORLDDIR}/usr/share/misc/termcap.db
+	if [ -f ${NANO_WORLDDIR}/etc/termcap.small ]; then
+		mv ${NANO_WORLDDIR}/etc/termcap.small ${NANO_WORLDDIR}/usr/share/misc/termcap.db
+	fi
 
 	# Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
     find ${NANO_WORLDDIR} -name \*.a | xargs rm
