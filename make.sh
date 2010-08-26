@@ -111,8 +111,8 @@ nanobsd_patches() {
 	# If FreeBSD 7.2 source code detected, download latest nanobsd.sh script
 
 	if [ "${SRC_VERSION}" = "7.3" ]; then
-		if [ ! -f ../nanobsd.bak.7_3 ]; then
-			pprint 3 "FreeBSD 7.3 source detected"
+		if [ `sha256 -q ../nanobsd.sh` = "6e9714f43a75c19174c9ba492b6985c4aa27e382b95130043448a30d6c98f8cd" ]; then
+			pprint 3 "nanobsd-FreeBSD 7.3 detected, need to download nanobsd-FreeBSD 8.1"
 			(
 			cd ..
 			pprint 3 "Backup old nanobsd.sh"
