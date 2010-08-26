@@ -226,6 +226,8 @@ pprint 1 ""
 #Get argument
 
 TARGET_ARCH=`uname -m`
+MACHINE_ARCH=${TARGET_ARCH}
+
 case "$TARGET_ARCH" in
 	"amd64")
 		NANO_KERNEL="BSDRP-AMD64"
@@ -259,24 +261,24 @@ do
         -a)
                 case "$2" in
 				"amd64")
-					if ! [ "${TARGET_ARCH}" != "amd64" -o "${TARGET_ARCH}" != "i386" ]; then
-						pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
+					if [ "${MACHINE_ARCH}" != "amd64" -o "${MACHINE_ARCH}" != "i386" ]; then
+						pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
 						exit 1
 					fi
 					TARGET_ARCH="amd64"
 					NANO_KERNEL="BSDRP-AMD64"
 					;;
 				"i386")
-					if ! [ "${TARGET_ARCH}" != "amd64" -o "${TARGET_ARCH}" != "i386" ]; then
-                        pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
+					if [ "${MACHINE_ARCH}" != "amd64" -o "${MACHINE_ARCH}" != "i386" ]; then
+                        pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
                         exit 1
                     fi
 					TARGET_ARCH="i386"
 					NANO_KERNEL="BSDRP-I386"
 					;;
 				"cambria")
-					if [ "${TARGET_ARCH}" != "arm" ]; then
-                        pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
+					if [ "${MACHINE_ARCH}" != "arm" ]; then
+                        pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
                         exit 1
                     fi
 
@@ -286,8 +288,8 @@ do
 					NANO_KERNEL="BSDRP-CAMBRIA"
 					;;
 				"sparc64")
-					if [ "${TARGET_ARCH}" != "sparc64" ]; then
-                        pprint 1 "Cross compiling is not possible in your case: $TARGET_ARCH => $2"
+					if [ "${MACHINE_ARCH}" != "sparc64" ]; then
+                        pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
                         exit 1
                     fi
 
