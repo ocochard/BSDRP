@@ -179,11 +179,6 @@ nanobsd_patches() {
 ports_patches()
 {
 	pprint 2 "patching ports..."
-	pprint 3 "net/quagga (IPv6 bug id 408)"
-	cp patches/quagga/patch-configure.ac /usr/ports/net/quagga/files/
-	if ! `grep -q 'autoconf' /usr/ports/net/quagga/Makefile`; then
-		patch /usr/ports/net/quagga/Makefile patches/quagga/Makefile.diff
-	fi	
 	pprint 3 "net/mcast-tools (missing pre-requiered in makefile)"
 	if ! `grep -q 'automake' /usr/ports/net/mcast-tools/Makefile`; then
 		patch /usr/ports/net/mcast-tools/Makefile patches/mcast-tools/Makefile.diff

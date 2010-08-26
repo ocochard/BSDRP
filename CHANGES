@@ -9,6 +9,7 @@ Release 0.34 (Not released)
 - Secure quagga VTY by listenning to localhost only (thankt to Nugroho Atmotaruno)
 - Updated ports:
 	- Bird to 1.2.4
+	- Quagga to 0.99.17
 
 Bug fix:
 - Fix ipfw module load by adding libalias module 
