@@ -261,42 +261,44 @@ do
         -a)
                 case "$2" in
 				"amd64")
-					if [ "${MACHINE_ARCH}" != "amd64" -o "${MACHINE_ARCH}" != "i386" ]; then
+					if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
+						TARGET_ARCH="amd64"
+                    	NANO_KERNEL="BSDRP-AMD64"
+					else
 						pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
 						exit 1
 					fi
-					TARGET_ARCH="amd64"
-					NANO_KERNEL="BSDRP-AMD64"
 					;;
 				"i386")
-					if [ "${MACHINE_ARCH}" != "amd64" -o "${MACHINE_ARCH}" != "i386" ]; then
+					if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
+						TARGET_ARCH="i386"
+                    	NANO_KERNEL="BSDRP-I386"
+					else
                         pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
                         exit 1
                     fi
-					TARGET_ARCH="i386"
-					NANO_KERNEL="BSDRP-I386"
 					;;
 				"cambria")
-					if [ "${MACHINE_ARCH}" != "arm" ]; then
+					if [ "${MACHINE_ARCH}" = "arm" ]; then
+						TARGET_ARCH="arm"
+                    	TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
+                    	TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
+                    	NANO_KERNEL="BSDRP-CAMBRIA"
+					else
                         pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
                         exit 1
                     fi
-
-					TARGET_ARCH="arm"
-					TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
-					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
-					NANO_KERNEL="BSDRP-CAMBRIA"
 					;;
 				"sparc64")
-					if [ "${MACHINE_ARCH}" != "sparc64" ]; then
+					if [ "${MACHINE_ARCH}" = "sparc64" ]; then
+						TARGET_ARCH="sparc64"
+                    	TARGET_CPUTYPE=sparc64; export TARGET_CPUTYPE
+                    	TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
+                    	NANO_KERNEL="BSDRP-SPARC64"
+					else
                         pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
                         exit 1
                     fi
-
-					TARGET_ARCH="sparc64"
-					TARGET_CPUTYPE=sparc64; export TARGET_CPUTYPE
-					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
-					NANO_KERNEL="BSDRP-SPARC64"
 					;;
 
 				*)
