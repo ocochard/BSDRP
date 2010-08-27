@@ -33,13 +33,27 @@
 
 # Strict script
 set -e
-set -u
+# Didn't know how to use * in case with set -u
+#set -u
 
 # Get options passed by user
 getoption () {
-	FIRST_OPTION="$1"
-	SECOND_OPTION="$2"
-	THIRD_OPTION="$3"
+	if [ $# -eq 1 ]; then
+        FIRST_OPTION="$1"
+    else
+        FIRST_OPTION=""
+    fi
+    if [ $# -eq 2 ]; then
+        SECOND_OPTION="$2"
+    else
+        SECOND_OPTION=""
+    fi
+    if [ $# -eq 3 ]; then
+        THIRD_OPTION="$3"
+    else
+        THIRD_OPTION=""
+    fi
+
 	case "$FIRST_OPTION" in
 	save)
 		save_cfg

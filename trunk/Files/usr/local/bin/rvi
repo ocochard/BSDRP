@@ -6,6 +6,10 @@
 # 	Universite Paris Diderot
 # TO DO: Add sudo and syslog for notify changes
 
+if [ $# -eq 0 ]; then
+	echo "Missing input file"
+	exit 1
+fi
 RIGHTS=`stat -f %Op $1 | cut -c3-`
 OWNER=`stat -f %u:%g $1`
 
