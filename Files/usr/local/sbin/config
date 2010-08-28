@@ -35,61 +35,6 @@
 set -e
 set -u
 
-# Get options passed by user
-getoption () {
-	if [ $# -eq 1 ]; then
-        FIRST_OPTION="$1"
-    else
-        FIRST_OPTION=""
-    fi
-    if [ $# -eq 2 ]; then
-        SECOND_OPTION="$2"
-    else
-        SECOND_OPTION=""
-    fi
-    if [ $# -eq 3 ]; then
-        THIRD_OPTION="$3"
-    else
-        THIRD_OPTION=""
-    fi
-
-	case "$FIRST_OPTION" in
-	save)
-		save_cfg
-		;;
-	apply)
-		apply_cfg 
-		;;
-	diff)
-		diff
-		;;
-	rollback)
-		rollback
-		;;
-	put)
-		put
-		;;
-	get)
-		get
-		;;
-	reset)
-		reset
-		;;
-	help|h)
-		usage
-		;;
-	*)
-		if [ "${FIRST_OPTION}" = "" ];
-		then
-			echo "missing option"
-		else	
-			echo "illegal option: $FIRST_OPTION"
-		fi
-		usage
-		;;
-	esac
-}
-
 # Display help
 usage () {
 	echo "BSD Router Project configuration tool"
@@ -426,4 +371,55 @@ reset () {
 ## Main function ##
 ###################
 
-getoption $*
+# Get options passed by user
+if [ $# -eq 1 ]; then
+	FIRST_OPTION="$1"
+else
+	FIRST_OPTION=""
+fi
+if [ $# -eq 2 ]; then
+   SECOND_OPTION="$2"
+else
+   SECOND_OPTION=""
+fi
+if [ $# -eq 3 ]; then
+   THIRD_OPTION="$3"
+else
+  THIRD_OPTION=""
+fi
+
+case "$FIRST_OPTION" in
+	save)
+		save_cfg
+		;;
+	apply)
+		apply_cfg 
+		;;
+	diff)
+		diff
+		;;
+	rollback)
+		rollback
+		;;
+	put)
+		put
+		;;
+	get)
+		get
+		;;
+	reset)
+		reset
+		;;
+	help|h)
+		usage
+		;;
+	*)
+		if [ "${FIRST_OPTION}" = "" ];
+		then
+			echo "missing option"
+		else	
+			echo "illegal option: $FIRST_OPTION"
+		fi
+		usage
+		;;
+esac
