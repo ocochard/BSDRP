@@ -33,8 +33,7 @@
 
 # Strict script
 set -e
-# Didn't know how to use * in a case
-#set -u
+set -u
 
 # Get options passed by user
 getoption () {
