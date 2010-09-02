@@ -3,11 +3,12 @@ complete config  'p/1/(save diff apply rollback put get reset password help )/'
 complete show  'p/1/(memory route process version license authors mbuf packages help traffic tech-support )/'
 complete route 'p/1/(add flush del change get monitor )/'
 complete system 'p/1/(integrity reboot halt virtualized check-vm endpoint help )/'
-complete ifconfig 'p/1/`ifconfig -l`/'
 complete sysctl 'n/*/`sysctl -Na`/'
-complete ifconfig   'p@1@`ifconfig -l`@' 'n/*/(add anycast arp staticarp broadcast debug \
-                    promisc delete down media mediaopt name polling create destroy metric \
-                    mtu netmask prefixlen link monitor up)/'
+complete ifconfig   'p/1/`ifconfig -l`/' 'n/*/(add alias -alias anycast arp -ar staticarp -staticarp \
+	broadcast debug -debug promisc -promisc description group -group eui64 ipdst maclabel media mediaopt \
+	mode inst name rxsum -rxsum txsum -txsum tso -tso lro -lro wol vlanmtu vlanhwtag vlanhwfilter vlanhwtso \
+	-vlanmtu -vlanhwtag -vlanhwfilter -vlanhwtso vnet -vnet polling -polling create destroy metric mtu netmask \
+	prefixlen phase monitor -monitor up)/'
 # Others Command complete
 # Lot's of these command complete were found here:
 # http://hea-www.harvard.edu/~fine/Tech/tcsh.html
@@ -21,7 +22,7 @@ complete rmdir 'C/*/d/'
 # also note that the initial - can be created with the first completion
 # but without appending a space (note the extra slash with no
 # append character specified)
-complete kill 'c/-/S/' 'p/1/(-)//'
+complete kill 'c/-/S/' 'p/*/`ps -ax | grep -v PID | awk \{print\ \$1\}`/'
 
 # use available commands as arguments for which, where, and man
 complete which 'p/1/c/'
@@ -59,3 +60,33 @@ complete passwd 'p/1/u/'
 
 # commands
 complete trace      p/1/c/
+
+# Virtualbox: VBoxManage
+complete VBoxManage \
+	'n/list/(vms runningvms ostypes hostdvds hostfloppies bridgedifs hostonlyifs dhcpservers hostinfo \
+	hostcpuids hddbackends hdds dvds floppies usbhost usbfilters systemproperties)/' \
+	'n/showvminfo/`VBoxManage -q list vms | cut -d \" -f 2`/' \
+	'n/registervm/f/' \
+	'n/createvm/(--name --ostype --register --basefolder --settingsfile --uuid)/' \
+	'n/modifyvm/(--ostype --memory --pagefusion --vram --acpi --ioapic --pae --hpet --hwvirtex \
+	--nestedpaging --largepages --vtxvpid --synthcpu --cpuidset --cpuidremove --cpuidremoveall --hardwareuuid \
+	--cpus --cpuhotplug --plugcpu --unplugcpu --rtcuseutc --monitorcount --accelerate3d --firmware bios)/' \
+	'n/--ostype/`VBoxManage -q list ostypes | grep ID | cut -d : -f 2`/' \
+	'n/--pagefusion/(on off)/' \
+	'n/--acpi/(on off)/' \
+	'n/--ioapic/(on off)/' \
+	'n/--pae/(on off)/' \
+	'n/--hpet/(on off)/' \
+	'n/--hwvirtex/(on off)/' \
+	'n/--nestedpaging/(on off)/' \
+	'n/--largepages/(on off)/' \
+	'n/--vtxvpid/(on off)/' \
+	'n/--synthcpu/(on off)/' \
+	'n/--cpuhotplug/(on off)/' \
+	'n/--rtcuseutc/(on off)/' \
+	'n/--accelerate3d/(on off)/' \
+	'n/--firmware/(bios efi efi32 efi64)/' \
+	'p/1/(list showvminfo registervm unregistervm createvm modifyvm import export startvm \
+	controlvm discardstate adoptstate snapshot openmedium closemedium storageattach storagectl showhdinfo \
+	createhd modifyhd clonehd convertfromraw addiscsidisk getextradata setextradata setproperty usbfilter \
+	sharedfolder vmstatistics guestproperty guestcontrol metrics hostonlyif dhcpserver)/'

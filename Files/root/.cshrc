@@ -43,14 +43,15 @@ if ($?prompt) then
 		bindkey -k up history-search-backward
 		bindkey -k down history-search-forward
 	endif
-	
+	# command complete with TAB	
 	set autolist
+	# Disable beep
 	set nobeep
 	set color
 	set colorcat
-	alias ls ls -G
-	alias ll ls -hl
+	# Prevent overwritting existing file
 	set noclobber
+	# Display user login
 	set watch=(0 any any)
 
 	#Load command complete file

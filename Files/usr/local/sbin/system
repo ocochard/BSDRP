@@ -123,7 +123,6 @@ endpoint () {
 	sysctl net.inet.udp.recvspace=65536
 	sysctl net.inet.tcp.sendbuf_inc=16384
 	sysctl net.inet.tcp.recvbuf_inc=524288
-	sysctl net.inet.tcp.inflight.enable=0
 	sysctl net.inet.tcp.rfc1323=1
 	sysctl net.inet.tcp.sack.enable=1
 	sysctl net.inet.tcp.path_mtu_discovery=1
