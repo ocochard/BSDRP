@@ -70,7 +70,22 @@ complete VBoxManage \
 	'n/createvm/(--name --ostype --register --basefolder --settingsfile --uuid)/' \
 	'n/modifyvm/(--ostype --memory --pagefusion --vram --acpi --ioapic --pae --hpet --hwvirtex \
 	--nestedpaging --largepages --vtxvpid --synthcpu --cpuidset --cpuidremove --cpuidremoveall --hardwareuuid \
-	--cpus --cpuhotplug --plugcpu --unplugcpu --rtcuseutc --monitorcount --accelerate3d --firmware bios)/' \
+	--cpus --cpuhotplug --plugcpu --unplugcpu --rtcuseutc --monitorcount --accelerate3d --firmware --bioslogofadein \
+	--bioslogofadeout --bioslogodisplaytime --bioslogoimagepath --biosbootmenu --biossystemtimeoffset --biospxedebug \
+	--boot1 --boot2 --boot3 --boot4 --nic1 --nic2 --nic3 --nic4 --nictype1 --nictype2 --nictype3 --nictype4 \
+	--cableconnected1 --cableconnected2 --cableconnected3 --cableconnected4 --nictrace1 --nictrace2 --nictrace3 \
+	--nictrace4 --nictracefile1 --nictracefile2 --nictracefile3 --nictracefile4 --nicspeed1 --nicspeed2 --nicspeed3 --nicspeed4 \
+	--nicbootprio1 --nicbootprio2 --nicbootprio3 --nicbootprio4 --bridgeadapter1 --bridgeadapter2 --bridgeadapter3 --bridgeadapter4 \
+	--hostonlyadapter1 --hostonlyadapter2 --hostonlyadapter3 --hostonlyadapter4 --intnet1 --intnet2 --intnet3 --intnet4 --natnet1 \
+	--natnet2 --natnet3 --natnet4 --vdenet1 --vdenet2 --vdenet3 --vdenet4 --natsettings1 --natsettings2 --natsettings3 \
+	--natsettings4 --natpf1 --natpf2 --natpf3 --natpf4 --nattftpprefix1 --nattftpprefix2 --nattftpprefix3 --nattftpprefix4 \
+	--nattftpfile1 --nattftpfile2 --nattftpfile3 --nattftpfile4 --nattftpserver1 --nattftpserver2 --nattftpserver3 \
+	--nattftpserver4 --natdnspassdomain1 --natdnspassdomain2 --natdnspassdomain3 --natdnspassdomain4 --natdnsproxy1 \
+	--natdnsproxy2 --natdnsproxy3 --natdnsproxy4 --natdnshostresolver1 --natdnshostresolver2 --natdnshostresolver3 \
+	--natdnshostresolver4 --nataliasmode1 --nataliasmode2 --nataliasmode3 --nataliasmode4 --macaddress1 --macaddress2 \
+	--macaddress3 --macaddress4 --mouse --keyboard --uart1 --uart2 --uart3 --uart4 --uartmode1 --uartmode2 --uartmode3 \
+	--uartmode4 --guestmemoryballoon --gueststatisticsinterval --audio --audiocontroller --clipboard --usb --usbehci \
+	--snapshotfolder --teleporter --teleporterport --teleporteraddress --teleporterpassword)/' \
 	'n/--ostype/`VBoxManage -q list ostypes | grep ID | cut -d : -f 2`/' \
 	'n/--pagefusion/(on off)/' \
 	'n/--acpi/(on off)/' \
@@ -86,6 +101,43 @@ complete VBoxManage \
 	'n/--rtcuseutc/(on off)/' \
 	'n/--accelerate3d/(on off)/' \
 	'n/--firmware/(bios efi efi32 efi64)/' \
+	'n/--bioslogofadein/(on off)/' \
+	'n/--bioslogofadeout/(on off)/' \
+	'n/--biosbootmenu/(on off)/' \
+	'n/--biospxedebug/(on off)/' \
+	'n/--boot*/(none floppy dvd disk net)/' \
+	'n/--nic*/(none null nat bridged intnet hostonly vde)/' \
+	'n/--nictype*/(Am79C970A Am79C973 82540EM 82543GC 82545EM virtio)/' \
+	'n/--cableconnected*/(on off)/' \
+	'n/--bridgeadapter*/`VBoxManage -q list bridgedifs | grep -w Name: | cut -d : -f 2`/' \
+	'n/--hostonlyadapter*/`VBoxManage -q list hostonlyifs | grep -w Name: | cut -d : -f 2`/' \
+	'n/--natdnspassdomain*/(on off)/' \
+	'n/--natdnsproxy*/(on off)/' \
+	'n/--natdnshostresolver*/(on off)/' \
+	'n/--mouse/(ps2 usb usbtablet)/' \
+	'n/--keyboard/(ps2 usb)/' \
+	'n/--uartmode/(disconnected server client file)/' \
+	'n/--audio/(none null oss)/' \
+	'n/--audiocontroller/(ac97 sb16)/' \
+	'n/--clipboard/(disabled hosttoguest guesttohost bidirectional)/' \
+	'n/--usb/(on off)/' \
+	'n/--usbehci/(on off)/' \
+	'n/--teleporter/(on off)/' \
+	'n/startvm/`VBoxManage -q list vms | cut -d \" -f 2`/' \
+	'n/controlvm/`VBoxManage -q list vms | cut -d \" -f 2`/' \
+	'n/discardstate/`VBoxManage -q list vms | cut -d \" -f 2`/' \
+	'n/adoptstate/`VBoxManage -q list vms | cut -d \" -f 2`/' \
+	'n/snapshot/`VBoxManage -q list vms | cut -d \" -f 2`/' \
+	'n/openmedium/(disk dvd floppy)/' \
+	'n/closemedium/(disk dvd floppy)/' \
+	'n/storageattach/`VBoxManage -q list vms | cut -d \" -f 2`/' \
+	'n/storagectl/`VBoxManage -q list vms | cut -d \" -f 2`/' \
+	'n/showhdinfo/`VBoxManage -q list vms | cut -d \" -f 2`/' \
+	'n/createhd/(--filename --size --format --variant --type --comment --remember)/' \
+	'n/--filename/f/' \
+	'n/--format/(VDI VMDK VHD RAW)/' \
+	'n/--variant/(Standard Fixed Split2G Stream ESX)/' \
+	'n/--type/(normal writethrough shareable)/' \
 	'p/1/(list showvminfo registervm unregistervm createvm modifyvm import export startvm \
 	controlvm discardstate adoptstate snapshot openmedium closemedium storageattach storagectl showhdinfo \
 	createhd modifyhd clonehd convertfromraw addiscsidisk getextradata setextradata setproperty usbfilter \

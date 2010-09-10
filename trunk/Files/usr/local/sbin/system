@@ -277,6 +277,14 @@ sys_virtualized () {
 ###################
 
 # Get options passed by user
+if [ $# -eq 0 ]; then
+	FIRST_OPTION=""
+	SECOND_OPTION=""
+	THIRD_OPTION=""
+	usage
+	exit 0
+fi
+
 if [ $# -eq 1 ]; then
     FIRST_OPTION="$1"
 else
