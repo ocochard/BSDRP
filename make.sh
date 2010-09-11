@@ -247,11 +247,6 @@ SKIP_REBUILD=""
 INPUT_CONSOLE="vga"
 FAST="n"
 
-if [ $? -eq 0 ] ; then
-        usage
-        exit 2
-fi
-
 args=`getopt c:a:fbdhkw $*`
 
 set -- $args
