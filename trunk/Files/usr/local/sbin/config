@@ -33,7 +33,7 @@
 
 # Strict script
 set -e
-set -u
+#set -u
 
 # Display help
 usage () {
@@ -379,17 +379,17 @@ if [ $# -eq 0 ]; then
 	usage
 	exit 0	
 fi
-if [ $# -eq 1 ]; then
+if [ $# -le 1 ]; then
 	FIRST_OPTION="$1"
 else
 	FIRST_OPTION=""
 fi
-if [ $# -eq 2 ]; then
+if [ $# -le 2 ]; then
    SECOND_OPTION="$2"
 else
    SECOND_OPTION=""
 fi
-if [ $# -eq 3 ]; then
+if [ $# -le 3 ]; then
    THIRD_OPTION="$3"
 else
   THIRD_OPTION=""
@@ -421,12 +421,6 @@ case "$FIRST_OPTION" in
 		usage
 		;;
 	*)
-		if [ "${FIRST_OPTION}" = "" ];
-		then
-			echo "missing option"
-		else	
-			echo "illegal option: $FIRST_OPTION"
-		fi
 		usage
 		;;
 esac

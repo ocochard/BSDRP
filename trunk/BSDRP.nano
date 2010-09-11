@@ -267,7 +267,7 @@ add_port () {
 add_port "devel/libdlmalloc"
 
 # Quagga and net-snmp need perl for building
-add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT"
+#add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT"
 
 # Then we need to install net-snmp without perl modules
 add_port "net-mgmt/net-snmp" "-DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
