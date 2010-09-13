@@ -379,17 +379,15 @@ if [ $# -eq 0 ]; then
 	usage
 	exit 0	
 fi
-if [ $# -le 1 ]; then
-	FIRST_OPTION="$1"
-else
-	FIRST_OPTION=""
-fi
-if [ $# -le 2 ]; then
+
+FIRST_OPTION="$1"
+
+if [ $# -ge 2 ]; then
    SECOND_OPTION="$2"
 else
    SECOND_OPTION=""
 fi
-if [ $# -le 3 ]; then
+if [ $# -ge 3 ]; then
    THIRD_OPTION="$3"
 else
   THIRD_OPTION=""
