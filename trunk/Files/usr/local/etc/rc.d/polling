@@ -36,6 +36,8 @@
 
 . /etc/rc.subr
 
+polling_enable=${polling_enable-"NO"}
+
 name="polling"
 rcvar=`set_rcvar`
 

@@ -37,6 +37,8 @@
 
 . /etc/rc.subr
 
+freevrrpd_enable=${freevrrpd_enable-"NO"}
+
 name="freevrrpd"
 rcvar=`set_rcvar`
 
