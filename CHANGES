@@ -1,3 +1,14 @@
+Release 0.35 (not released)
+
+Bug fix:
+
+Know bug:
+- "system endpoint" seams to decrease TCP performance in place of increase them
+
+Installed packages and their versions:
+
+
+=====================================================================================================
 Release 0.34
 - Kernel:
 	Add ipdivert module 
