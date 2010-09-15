@@ -40,6 +40,8 @@
 
 . /etc/rc.subr
 
+bird6_enable=${bird6_enable-"NO"}
+
 name="bird6"
 rcvar=`set_rcvar`
 

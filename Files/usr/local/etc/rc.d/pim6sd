@@ -38,6 +38,8 @@
 
 . /etc/rc.subr
 
+pim6sd_enable=${pim6sd_enable-"NO"}
+
 name="pim6sd"
 rcvar=`set_rcvar`
 
