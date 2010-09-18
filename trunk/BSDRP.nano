@@ -166,7 +166,7 @@ NANO_RAM_ETCSIZE=10240
 NANO_RAM_TMPVARSIZE=20480
 
 # Boot0cfg configuration mode
-NANO_BOOT0CFG="-o packet -s 1 -m 3"
+NANO_BOOT0CFG="-o packet -s 1 -m 3 -t 18"
 
 # Backing type of md(4) device
 # Can be "file" or "swap"
