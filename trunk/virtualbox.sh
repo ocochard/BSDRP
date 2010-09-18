@@ -124,12 +124,17 @@ check_image () {
         exit 1
     fi
 
-    if `file -b ${FILENAME} | grep -q "bzip2 compressed data"  >> ${LOG_FILE} 2>&1`; then
-        echo "Bzipped image detected, unzip it..."
+    if echo ${FILENAME} | grep -q bz2  >> ${LOG_FILE} 2>&1; then
+        echo "Bzip2 compressed image detected, unzip it..."
         bunzip2 -k ${FILENAME}
         # change FILENAME by removing the last.bz2"
         FILENAME=`echo ${FILENAME} | sed -e 's/.bz2//g'`
-    fi
+    elif echo ${FILENAME} | grep -q xz  >> ${LOG_FILE} 2>&1; then
+        echo "xz compressed image detected, unzip it..."
+        xz -dk ${FILENAME}
+        # change FILENAME by removing the last.lzma"
+        FILENAME=`echo ${FILENAME} | sed -e 's/.xz//g'`
+	fi
 
     if ! `file -b ${FILENAME} | grep -q "boot sector"  >> ${LOG_FILE} 2>&1`; then
         echo "ERROR: Not a BSDRP image??"
