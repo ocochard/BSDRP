@@ -50,7 +50,7 @@ usage () {
 		;;
 	integrity)
 		echo "Check system integrity using a reference mtree file"
-		echo "The given file can be .mtree or .mtree.bz2"
+		echo "The given file can be .mtree, .mtree.bz2 or .mtree.xz"
 		echo "Note: Do not keep the reference mtree file on the router!"
 		exit 0
 		;;
@@ -85,6 +85,8 @@ integrity () {
 	elif echo "${FILE_TYPE}" | grep -q bzip; then
 		# Warning, the bzipped file can be any type of file!
 		cmd="bzcat ${SECOND_OPTION} | mtree -p /"
+	elif echo "${FILE_TYPE}" | grep -q xz; then
+		cmd="xz -dc ${SECOND_OPTION} | mtree -p /"
 	else
 		echo "Is the given reference mtree file a good mtree file ?"
 		exit 1

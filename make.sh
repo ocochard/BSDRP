@@ -497,20 +497,20 @@ fi
 
 FILENAME="${NAME}_${VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
 
-if [ -f ${NANOBSD_OBJ}/${FILENAME}.bz2 ]; then
-	rm ${NANOBSD_OBJ}/${FILENAME}.bz2
+if [ -f ${NANOBSD_OBJ}/${FILENAME}.xz ]; then
+	rm ${NANOBSD_OBJ}/${FILENAME}.xz
 fi
 
 mv ${NANOBSD_OBJ}/_.disk.image ${NANOBSD_OBJ}/${FILENAME}
 
 if [ "$FAST" = "n" ]; then
 	pprint 1 "Compressing ${NAME} upgrade image..."
-	bzip2 -9vf ${NANOBSD_OBJ}/${FILENAME}
+	xz -vf ${NANOBSD_OBJ}/${FILENAME}
 	pprint 1 "Generating checksum for ${NAME} upgrade image..."
-	md5 ${NANOBSD_OBJ}/${FILENAME}.bz2 > ${NANOBSD_OBJ}/${FILENAME}.md5
-	sha256 ${NANOBSD_OBJ}/${FILENAME}.bz2 > ${NANOBSD_OBJ}/${FILENAME}.sha256
+	md5 ${NANOBSD_OBJ}/${FILENAME}.xz > ${NANOBSD_OBJ}/${FILENAME}.md5
+	sha256 ${NANOBSD_OBJ}/${FILENAME}.xz > ${NANOBSD_OBJ}/${FILENAME}.sha256
 	pprint 1 "${NAME} upgrade image file here:"
-	pprint 1 "${NANOBSD_OBJ}/${FILENAME}.bz2"
+	pprint 1 "${NANOBSD_OBJ}/${FILENAME}.xz"
 else
 	pprint 1 "Uncompressed ${NAME} upgrade image file here:"
 	pprint 1 "${NANOBSD_OBJ}/${FILENAME}"
@@ -519,30 +519,30 @@ fi
 FILENAME="${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
 
 if [ "$FAST" = "n" ]; then
-	if [ -f ${NANOBSD_OBJ}/${FILENAME}.bz2 ]; then
-		rm ${NANOBSD_OBJ}/${FILENAME}.bz2
+	if [ -f ${NANOBSD_OBJ}/${FILENAME}.xz ]; then
+		rm ${NANOBSD_OBJ}/${FILENAME}.xz
 	fi 
 	pprint 1 "Compressing ${NAME} full image..." 
-	bzip2 -9vf ${NANOBSD_OBJ}/${FILENAME}
+	xz -vf ${NANOBSD_OBJ}/${FILENAME}
 	pprint 1 "Generating checksum for ${NAME} full image..."
-	md5 ${NANOBSD_OBJ}/${FILENAME}.bz2 > ${NANOBSD_OBJ}/${FILENAME}.md5
-	sha256 ${NANOBSD_OBJ}/${FILENAME}.bz2 > ${NANOBSD_OBJ}/${FILENAME}.sha256
+	md5 ${NANOBSD_OBJ}/${FILENAME}.xz > ${NANOBSD_OBJ}/${FILENAME}.md5
+	sha256 ${NANOBSD_OBJ}/${FILENAME}.xz > ${NANOBSD_OBJ}/${FILENAME}.sha256
 
    	pprint 1 "Zipped ${NAME} full image file here:"
-   	pprint 1 "${NANOBSD_OBJ}/${FILENAME}.bz2"
+   	pprint 1 "${NANOBSD_OBJ}/${FILENAME}.xz"
 else
 	pprint 1 "Unzipped ${NAME} full image file here:"
    	pprint 1 "${NANOBSD_OBJ}/${FILENAME}"
 fi
 
 pprint 1 "Zipping mtree..."
-if [ -f ${NANOBSD_OBJ}/${FILENAME}.mtree.bz2 ]; then
-	rm ${NANOBSD_OBJ}/${FILENAME}.mtree.bz2
+if [ -f ${NANOBSD_OBJ}/${FILENAME}.mtree.xz ]; then
+	rm ${NANOBSD_OBJ}/${FILENAME}.mtree.xz
 fi
 mv ${NANOBSD_OBJ}/_.mtree ${NANOBSD_OBJ}/${FILENAME}.mtree
-bzip2 -9vf ${NANOBSD_OBJ}/${FILENAME}.mtree
+xz -vf ${NANOBSD_OBJ}/${FILENAME}.mtree
 pprint 1 "Security reference mtree file here:"
-pprint 1 "${NANOBSD_OBJ}/${FILENAME}.mtree.bz2"
+pprint 1 "${NANOBSD_OBJ}/${FILENAME}.mtree.xz"
 
 pprint 1 "Done !"
 exit 0
