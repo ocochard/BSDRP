@@ -80,53 +80,93 @@ if [ $DST_SLICE = 0 ]; then
 fi
 
 # Blow away old system.
-dd if=/dev/zero of=/dev/${NANO_DRIVE}s${DST_SLICE} bs=1m count=1 > /dev/null 2>&1
-
-# This message disturb the ask for password from SSH
-#echo "Upgrading... Please wait."
+if ! dd if=/dev/zero of=/dev/${NANO_DRIVE}s${DST_SLICE} bs=1m count=1 > /dev/null 2>&1; then
+	echo "ERROR: Can't initialize destination partition"
+	exit 1
+fi
 
 # Copy in new system
-dd of=/dev/${NANO_DRIVE}s${DST_SLICE} obs=64k
+if ! dd of=/dev/${NANO_DRIVE}s${DST_SLICE} obs=64k; then
+	echo "ERROR: Can't install the upgrade on /dev/${NANO_DRIVE}s${DST_SLICE}"
+	exit 1
+fi
 
 # Check that it worked
-fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a
+if ! fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a; then
+	echo "ERROR: New file system check failed"
+	exit 1
+fi
 
 # Set Label into the new slice
-tunefs -L ${NANO_GLABEL_SYS}${DST_SLICE} /dev/${NANO_DRIVE}s${DST_SLICE}a
+if ! tunefs -L ${NANO_GLABEL_SYS}${DST_SLICE} /dev/${NANO_DRIVE}s${DST_SLICE}a; then
+	echo "ERROR: Can't put label on the new filesystem"
+	exit 1
+fi
 
 # Need to compare some files between the old and new partition
-if [ ! -d /tmp/upgrade ]; then
-	mkdir /tmp/upgrade
+if [ ! -d /tmp/sysupgrade ]; then
+	mkdir /tmp/sysupgrade
 fi
-mount /dev/ufs/${NANO_GLABEL_SYS}${DST_SLICE} /tmp/upgrade
+
+if ! mount /dev/ufs/${NANO_GLABEL_SYS}${DST_SLICE} /tmp/sysupgrade; then
+	echo "ERROR: Can't mount new upgrade image"
+	exit 1
+fi
 # 	Adapt fstab of the new system
-for f in /tmp/upgrade/etc/fstab /tmp/upgrade/conf/base/etc/fstab /etc/fstab
+for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab
 	do
 	    sed -i "" "s/${NANO_GLABEL_SYS}${SRC_SLICE}/${NANO_GLABEL_SYS}${DST_SLICE}/g" $f
     done
 #	Compare the loader.conf, and include the diff into the new partition
 #	This file is modify with "system virtualized"
-diff -ruN /boot/loader.conf /tmp/upgrade/boot/loader.conf > /tmp/loader.conf.patch
-patch -s /tmp/upgrade/boot/loader.conf /tmp/loader.conf.patch
+if ! diff -ruN /tmp/sysupgrade/boot/loader.conf /boot/loader.conf > /tmp/loader.conf.patch; then
+	if patch -s /tmp/sysupgrade/boot/loader.conf /tmp/loader.conf.patch; then
+		echo "WARNING: Can't patch upgraded /boot/loader.conf"
+	fi
+fi
+if ! umount /tmp/sysupgrade; then
+	echo "ERROR: Can't umount new image"
+	exit 1
+fi 
 
-umount /tmp/upgrade
-rm -r /tmp/upgrade
+if ! rm -r /tmp/sysupgrade; then
+	echo "WARNING: Can't remove tempdir"
+fi
 
 # Save the config file that include the fstab
 # Don't know if it's usefull
-mount /cfg
-cp /etc/fstab /cfg
-umount /cfg
+if ! mount /cfg; then
+	echo "ERROR: Cant't mount /cfg"
+	exit 1
+fi
+if ! cp /etc/fstab /cfg; then
+	echo "ERROR: Can't save fstab"
+	umount /cfg
+	exit 1
+fi
+if ! umount /cfg; then
+	echo "ERROR: Can't umount /cfg"
+	exit 1
+fi
 
 case "${ARCH}" in
         i386|amd64)
                 NANO_KERNEL="BSDRP-I386"
-				boot0cfg -s ${DST_SLICE} -t 18 -v ${NANO_DRIVE}
-				gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}
+				if ! boot0cfg -s ${DST_SLICE} -t 18 -v ${NANO_DRIVE}; then
+					echo "ERROR: Can't update FreeBSD bootloader"
+					exit 1
+				fi
+				if ! gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}; then
+					echo "ERROR: Can't update active partition"
+					exit 1
+				fi
                 ;;
         arm)
 				echo "arm upgrade script not tested!"	
-				gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}
+				if ! gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}; then
+					echo "ERROR: Can't update active partition"
+					exit 1
+				fi
                 ;;
         sparc64)
                 echo "You need to configure OBP for booting on"
