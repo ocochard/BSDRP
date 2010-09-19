@@ -3,6 +3,7 @@ Release 0.35 (not released)
 - Use xz in place of bzip2 for files
 
 Bug fix:
+- Hardened the upgrade script and add lot's of fix
 
 Know bug:
 - "system endpoint" seams to decrease TCP performance in place of increase them
