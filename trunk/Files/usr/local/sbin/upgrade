@@ -121,7 +121,7 @@ umount /cfg
 case "${ARCH}" in
         i386|amd64)
                 NANO_KERNEL="BSDRP-I386"
-				boot0cfg -s ${DST_SLICE} -v ${NANO_DRIVE}
+				boot0cfg -s ${DST_SLICE} -t 18 -v ${NANO_DRIVE}
 				gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}
                 ;;
         arm)
