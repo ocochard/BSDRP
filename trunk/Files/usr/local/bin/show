@@ -318,6 +318,8 @@ tech-support () {
 	show mbuf
 	echo "==== Zone allocator (vmstat -z) ===="
 	show zone
+	echo "==== Geom stats ===="
+	gstat -b
 	echo "==== pkg_info (show packages) ===="
 	show packages
 }
