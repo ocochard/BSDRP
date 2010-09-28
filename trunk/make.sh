@@ -507,7 +507,6 @@ if [ "$FAST" = "n" ]; then
 	pprint 1 "Compressing ${NAME} upgrade image..."
 	xz -vf ${NANOBSD_OBJ}/${FILENAME}
 	pprint 1 "Generating checksum for ${NAME} upgrade image..."
-	md5 ${NANOBSD_OBJ}/${FILENAME}.xz > ${NANOBSD_OBJ}/${FILENAME}.md5
 	sha256 ${NANOBSD_OBJ}/${FILENAME}.xz > ${NANOBSD_OBJ}/${FILENAME}.sha256
 	pprint 1 "${NAME} upgrade image file here:"
 	pprint 1 "${NANOBSD_OBJ}/${FILENAME}.xz"
@@ -525,7 +524,6 @@ if [ "$FAST" = "n" ]; then
 	pprint 1 "Compressing ${NAME} full image..." 
 	xz -vf ${NANOBSD_OBJ}/${FILENAME}
 	pprint 1 "Generating checksum for ${NAME} full image..."
-	md5 ${NANOBSD_OBJ}/${FILENAME}.xz > ${NANOBSD_OBJ}/${FILENAME}.md5
 	sha256 ${NANOBSD_OBJ}/${FILENAME}.xz > ${NANOBSD_OBJ}/${FILENAME}.sha256
 
    	pprint 1 "Zipped ${NAME} full image file here:"
