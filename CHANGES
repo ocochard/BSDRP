@@ -8,6 +8,7 @@ Bug fix:
 
 Know bug:
 - "system endpoint" seams to decrease TCP performance in place of increase them
+- FreeBSD Bootloader (boot0) didn't support serial speed value more than 9600 baud
 
 Installed packages and their versions:
 
