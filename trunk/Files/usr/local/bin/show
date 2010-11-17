@@ -295,6 +295,7 @@ process () {
 
 # Display tech support
 tech-support () {
+	set +e
 	echo "============ BSD Router Project Tech-support output ============"
 	echo "==== show version ===="
 	show version

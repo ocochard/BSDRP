@@ -12,6 +12,23 @@ Know bug:
 
 Installed packages and their versions:
 
+NetPIPE-3.7.1       A self-scaling network benchmark
+bird-1.2.4          Dynamic IP routing daemon (IPv4 version)
+bird6-1.2.4         Dynamic IP routing daemon (IPv6 version)
+dlmalloc-2.8.4      Small, fast malloc library by Doug Lea
+fprobe-1.1_1        Tool that collects network traffic data
+freevrrpd-0.9.3     This a VRRP RFC2338 Compliant implementation under FreeBSD
+iperf-2.0.5         A tool to measure maximum TCP and UDP bandwidth
+isc-dhcp31-relay-3.1.ESV,1 The ISC Dynamic Host Configuration Protocol relay
+isc-dhcp31-server-3.1.ESV,1 The ISC Dynamic Host Configuration Protocol server
+libevent-1.4.14b_1  Provides an API to execute callback functions on certain ev
+mcast-tools-20061214_1 IPv6 multicast routing daemons and tools
+mrouted-3.9_1       Multicast routing daemon providing DVMRP for IPv4
+net-snmp-5.5_4      An extendable SNMP implementation
+quagga-0.99.17_3    Free RIPv1, RIPv2, OSPFv2, BGP4, IS-IS route software
+ssmtp-2.62.3        Extremely simple MTA to get mail off the system to a mail h
+tmux-1.3            A Terminal Multiplexer
+ucarp-1.5.2_1       Userlevel Common Address Redundancy Protocol
 
 =====================================================================================================
 Release 0.34
