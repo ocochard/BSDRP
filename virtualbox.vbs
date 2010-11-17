@@ -249,56 +249,6 @@ Function convert_image_to_vdi (ByVal BSDRP_FileName)
 	CMD=VB_EXE & " convertfromraw " & Chr(34) & BSDRP_FileName & Chr(34) & " " & Chr(34) & WORKING_DIR & "\BSDRP_" & VM_ARCH & "_" & VM_CONSOLE & ".vdi" & Chr(34)
 	
 	call run (CMD,true)
-	
-	' Now, we need to compress this file, but for this action, this file must be a member of an existing VM
-	' *********** IS THE COMPRESSION VERY?USEFULL ??? *************************
-	
-	' Check existing BSDRP_lap_tempo vm before to register it!
-	
-	'if check_vm("BSDRP_Lab_Template") = 0 then
-	'	if delete_vm("BSDRP_Lab_Template") > 0 then
-	'		TEXT = "Can't delete the existing BSDRP_Lab_Template VM !"
-	'		MsgBox  TEXT,vbCritical,"Error"
-	'		wscript.quit
-	'	end if
-	'end if
-	
-	' Create the VM
-	'CMD=VB_EXE & " createvm --name BSDRP_Lab_Template --ostype " & VM_ARCH & " --register"
-	
-	'call run(CMD,true)
-	
-	' Add a storage controller
-	
-	'CMD=VB_EXE & " storagectl BSDRP_Lab_Template --name " & Chr(34) & "SATA Controller" & Chr(34) & " --add sata --controller IntelAhci"
-	
-	'call run(CMD,true)
-	
-	' Add the VDI image disk
-	
-	'CMD=VB_EXE & " storageattach BSDRP_Lab_Template --storagectl " & Chr(34) & "SATA Controller" & Chr(34) & " --port 0 --device 0 --type hdd --medium " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34)
-	
-	'call run(CMD,true)
-	
-	' Reduce the VM Requirement
-	
-	'CMD=VB_EXE & " modifyvm BSDRP_Lab_Template --memory 16 --vram 1 "
-	
-	'call run(CMD,true)
-	
-	' Compress the VDI?
-	
-	'CMD=VB_EXE & " modifyvdi " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34) & " --compact"
-	
-	'call run(CMD,true)
-	
-	' Delete the VM
-	
-	'if delete_vm ("BSDRP_Lab_Template") > 0 then
-	'	TEXT = "Error trying to delet the BSDRP_Lab_Template after image compression" & vbCrLf & vbCrLf
-	'	MsgBox  TEXT,vbCritical,"Error"
-	'	wscript.quit
-	'end if
 
 End Function
 
@@ -344,8 +294,6 @@ Function delete_vm(ByVal VM_NAME)
 	delete_vm=run(CMD,false)
 	CMD=VB_EXE & " unregistervm " & VM_NAME & " --delete"
 	delete_vm=delete_vm + run(CMD,false)
-	'CMD=VB_EXE & " closemedium disk " & Chr(34) & WORKING_DIR & "\" & VM_NAME & ".vdi" & Chr(34) " --delete
-	'delete_vm=delete_vm + run(CMD,false)
 End Function
 
 ' This function generate the clones
@@ -391,12 +339,11 @@ Function create_vm (ByVal VM_NAME)
     ' Check if the vm allready exist
     if check_vm (VM_NAME) > 0 then		
 		
-		' Create the VM (HOW VM_ARCH is define if re-using existing lab ??)
+		' Create the VM
 		CMD=VB_EXE & " createvm --name " & VM_NAME & " --ostype " & VM_ARCH & " --register"
 		call run(CMD,true)
 		
 		' Clone the Template vdi
-		'CMD=VB_EXE & " clonehd " & Chr(34) & WORKING_DIR & "\BSDRP_lab.vdi" & Chr(34) & " " & VM_NAME & ".vdi"
 		CMD=VB_EXE & " clonehd " & BSDRP_VDI & " " & VM_NAME & ".vdi"
 		
 		call run(CMD,true)
