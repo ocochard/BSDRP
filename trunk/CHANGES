@@ -1,5 +1,5 @@
 Release 0.35 (not released)
-- Fix FreeBSD-SA-10:08.bzip2 (potential security problem)
+- Update to FreeBSD 8.1-p2
 - Reduce bootloader timeout to 1 second
 - Use xz in place of bzip2 for files
 
