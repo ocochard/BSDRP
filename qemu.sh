@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Qemu lab test script for BSD Router Project
+# Qemu/kvm lab test script for BSD Router Project
 # http://bsdrp.net
 #
 # Copyright (c) 2009-2010, The BSDRP Development Team
@@ -43,12 +43,7 @@ check_user () {
     fi  
 }
 
-check_system () {
-    if ! `uname -s | grep -q FreeBSD`; then
-        echo "Error: This script was wrote for a FreeBSD only"
-        echo "You need to adapt it for other system"
-        exit 1
-    fi
+check_system_freebsd () {
     if ! `pkg_info -q -E -x qemu  > /dev/null 2>&1`; then
         echo "Error: qemu not found"
         echo "Install qemu with: pkg_add -r qemu"
@@ -86,6 +81,28 @@ check_system () {
 
 }
 
+check_system_linux () {
+	if ! which kvm; then
+		if ! which qemu; then
+        	echo "ERROR: kvm/qemu is not installed"
+			echo "You need to install kvm"
+			exit 1
+		fi
+	fi
+
+	if ! which tunctl; then
+    	echo "ERROR: uml-utilities is not installed (tunctl)"
+        echo "You need to install tunctl: sudo apt-get -y install uml-utilities"
+        exit 1
+    fi
+
+	if ! which brctl; then
+		echo "ERROR: bridge-utils is not installed (brctl)"
+		echo "You need to install brctl: sudo apt-get install bridge-utils "
+		exit 1
+	fi
+}
+
 check_image () {
     if [ ! -f ${FILENAME} ]; then
         echo "ERROR: Can't found the file ${FILENAME}"
@@ -112,6 +129,23 @@ check_image () {
 
 # Creating interfaces
 create_interfaces_shared () {
+case "$OS_DETECTED" in
+	"FreeBSD")
+        create_interfaces_shared_freebsd
+        break
+         ;;
+    "Linux")
+         create_interfaces_shared_linux
+         break
+         ;;
+     *)
+         echo "BUG: Function create_interfaces_shared can't be called on $OS_DETECTED system"
+         exit 1
+         ;;
+esac
+}
+
+create_interfaces_shared_freebsd () {
     if ! `ifconfig | grep -q 10.0.0.254`; then
         echo "Creating admin bridge interface..."
         BRIDGE_IF=`ifconfig bridge create`
@@ -146,8 +180,63 @@ create_interfaces_shared () {
     QEMU_NIC="-net nic,model=${NIC_MODEL} -net tap,ifname=${TAP_IF}"
 }
 
+create_interfaces_shared_linux () {
+	BRIDGE_IF="bsdrp-admin-bridge"
+	TAP_IF="bsdrp-admin-tap"
+    if ! ifconfig $BRIDGE_IF; then
+        echo "Creating admin bridge interface..."
+		if ! brctl addbr $BRIDGE_IF; then
+			echo "Can't create bridge admin interface"
+			exit 1
+		fi
+		if ! ifconfig $BRIDGE_IF up; then
+			echo "Can't put $BRIDGE_IF in up state"
+			exit 1
+		fi
+        if ! ifconfig ${BRIDGE_IF} 10.0.0.254/24; then
+            echo "Can't set IP address on ${BRIDGE_IF}"
+            exit 1
+        fi
+    fi
+    #Shared TAP interface for communicating with the host
+    echo "Creating admin tap interface..."
+	if ! tunctl -t $TAP_IF; then
+		echo "ERROR: Can't create tap $TAP_IF interface"
+		exit 1
+	fi
+
+	if ! brctl addif $BRIDGE_IF $TAP_IF; then
+		echo "ERROR: Can't add $TAP_IF to bridge $BRIDGE_IF"
+		exit 1
+	fi
+	
+    if ! ifconfig ${TAP_IF} up; then
+		echo "ERROR: Can't enable up ${TAP_IF}"
+		exit 1
+	fi
+    QEMU_NIC="-net nic,model=${NIC_MODEL} -net tap,ifname=${TAP_IF}"
+}
+
+
 # Creating interfaces for lAB mode
 create_interfaces_lab () {
+case "$OS_DETECTED" in
+	"FreeBSD")
+        create_interfaces_lab_freebsd
+        break
+         ;;
+    "Linux")
+         create_interfaces_lab_linux
+         break
+         ;;
+     *)
+         echo "BUG: Function create_interfaces_lab can't be called on $OS_DETECTED system"
+         exit 1
+         ;;
+esac
+}
+
+create_interfaces_lab_freebsd () {
     if ! `ifconfig | grep -q 10.0.0.254`; then
         echo "Creating admin bridge interface..."
         BRIDGE_IF=`ifconfig bridge create`
@@ -175,34 +264,130 @@ create_interfaces_lab () {
     done
 }
 
-# Delete all admin interfaces create for lab mode
-delete_interface_lab () {
+create_interfaces_lab_linux () {
+	BRIDGE_IF="bsdrp-admin-bridge"
+	TAP_IF="bsdrp-admin-tap"
+    if ! ifconfig $BRIDGE_IF; then
+        echo "Creating admin bridge interface..."
+		if ! brctl addbr $BRIDGE_IF; then
+			echo "Can't create bridge admin interface"
+			exit 1
+		fi
+		if ! ifconfig $BRIDGE_IF up; then
+			echo "Can't put $BRIDGE_IF in up state"
+			exit 1
+		fi
+        if ! ifconfig ${BRIDGE_IF} 10.0.0.254/24; then
+            echo "Can't set IP address on ${BRIDGE_IF}"
+            exit 1
+        fi
+    fi
+
+    #Shared TAP interface for communicating with the host
+    echo "Creating the $NUMBER_VM tap interfaces that be shared with host"
     i=1
     while [ $i -le $NUMBER_VM ]; do
+        echo "Creating admin tap interface..."
+        eval TAP_IF_${i}=`tunctl -b`
+        # Link bridge with tap
         TAP_IF="TAP_IF_$i"
         TAP_IF=`eval echo $"${TAP_IF}"`
-        ifconfig ${TAP_IF} destroy
+        ifconfig ${BRIDGE_IF} addm ${TAP_IF} up
+		if ! brctl addif ${BRIDGE_IF} ${TAP_IF}; then
+			echo "ERROR: Can't add ${TAP_IF} to bridge ${BRIDGE_IF}"
+			exit 1
+		fi
+		if ! ifconfig ${TAP_IF} up; then
+			echo "ERROR: Can't enable ${TAP_IF}"
+			exit 1
+		fi
         i=`expr $i + 1`
     done
-    ifconfig ${BRIDGE_IF} destroy
+}
 
+
+# Delete all admin interfaces create for lab mode
+
+delete_interface_lab () {
+case "$OS_DETECTED" in
+	"FreeBSD")
+        delete_interface_lab_freebsd
+        break
+         ;;
+    "Linux")
+         delete_interface_lab_linux
+         break
+         ;;
+     *)
+         echo "BUG: Function delete_interface_lab can't be called on $OS_DETECTED system"
+         exit 1
+         ;;
+esac
+}
+
+delete_interface_lab_freebsd () {
+    i=1
+    while [ $i -le ${NUMBER_VM} ]; do
+        TAP_IF="TAP_IF_$i"
+        TAP_IF=`eval echo $"${TAP_IF}"`
+        if ! ifconfig ${TAP_IF} destroy; then
+			echo "WARNING: Can't destroy ${TAP_IF}"
+		fi
+        i=`expr $i + 1`
+    done
+    if ! ifconfig ${BRIDGE_IF} destroy; then
+		echo "WARNING: Can't destroy ${BRIDGE_IF}"
+	fi
 } 
+
+delete_interface_lab_linux () {
+    i=1
+    while [ $i -le ${NUMBER_VM} ]; do
+        TAP_IF="TAP_IF_$i"
+        TAP_IF=`eval echo $"${TAP_IF}"`
+        tunctl -d ${TAP_IF}
+        i=`expr $i + 1`
+    done
+    if ! ifconfig ${BRIDGE_IF} down; then
+        echo "WARNING: Can't disable ${BRIDGE_IF}"
+    fi
+
+    if ! brctl delbr ${BRIDGE_IF}; then
+        echo "WARNING: Can't delete lab bridge!"
+    fi
+}
+
 # Parse filename for detecting ARCH and console
 parse_filename () {
     QEMU_ARCH=0
-    if echo "${FILENAME}" | grep -q "amd64"; then
-        QEMU_ARCH="qemu-system-x86_64 -m 96"
-        echo "filename guest a x86-64 image"
-    fi
-    if echo "${FILENAME}" | grep -q "i386"; then
-        QEMU_ARCH="qemu -m 96"
-        echo "filename guests a i386 image"
-    fi
-    if [ "$QEMU_ARCH" = "0" ]; then
-        echo "WARNING: Can't guests arch of this image"
-        echo "Will use as default i386"
-        QEMU_ARCH="qemu"
-    fi
+	case "$OS_DETECTED" in
+	"FreeBSD")
+    	if echo "${FILENAME}" | grep -q "amd64"; then
+        	QEMU_ARCH="qemu-system-x86_64 -m 96 -enable-kqemu"
+        	echo "filename guest a x86-64 image"
+   		fi
+    	if echo "${FILENAME}" | grep -q "i386"; then
+        	QEMU_ARCH="qemu -m 96 -enable-kqemu"
+        	echo "filename guests a i386 image"
+    	fi
+    	if [ "$QEMU_ARCH" = "0" ]; then
+        	echo "WARNING: Can't guests arch of this image"
+        	echo "Will use as default i386"
+        	QEMU_ARCH="qemu -m 96 -enable-kqemu"
+    	fi
+ 
+        break
+         ;;
+    "Linux")
+		QEMU_ARCH="kvm -m 96"
+         break
+         ;;
+     *)
+         echo "BUG: Function parse_filename can't be called on $OS_DETECTED system"
+         exit 1
+         ;;
+	esac
+
     QEMU_OUTPUT=0
     if echo "${FILENAME}" | grep -q "serial"; then
         QEMU_OUTPUT="-nographic -vga none"
@@ -282,9 +467,9 @@ start_lab_vm () {
             echo "Connect to the router ${i} by VNC client on display ${i}"
         fi
 		if ($VERBOSE); then
-			echo ${QEMU_ARCH} -enable-kqemu -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} ${QEMU_LAN_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
+			echo ${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} ${QEMU_LAN_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
 		fi
-        ${QEMU_ARCH} -enable-kqemu -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} ${QEMU_LAN_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
+        ${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} ${QEMU_LAN_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
         i=`expr $i + 1`
     done
 
@@ -411,7 +596,24 @@ fi
 
 echo "BSD Router Project: Qemu lab script"
 check_user
-check_system
+
+OS_DETECTED=`uname -s`
+ 
+case "$OS_DETECTED" in
+	"FreeBSD")
+        check_system_freebsd
+        break
+         ;;
+    "Linux")
+         check_system_linux
+         break
+         ;;
+     *)
+         echo "ERROR: This script doesn't support $OS_DETECTED"
+         exit 1
+         ;;
+esac
+
 check_image
 parse_filename
 
