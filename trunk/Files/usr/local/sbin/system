@@ -164,15 +164,16 @@ sys_halt () {
 
 # Check if system is under a VM
 check_vm () {
+	ACPI=`sysctl -q dev.acpi.0.%desc`
 	# Look for Qemu
-	if sysctl -q dev.acpi.0.%desc | grep -q QEMU; then
+	if echo $ACPI | grep -q QEMU; then
        	VM_FOUND=true
 	else
 		VM_FOUND=false
     	fi
 	# Look for VMware
 	if ! (${VM_FOUND}); then
-		if sysctl -q dev.ad.0.%desc | grep -q VMware; then
+		if echo $ACPI | grep -q VMware; then
        		VM_FOUND=true
     	else
         	VM_FOUND=false
@@ -180,13 +181,24 @@ check_vm () {
 	fi
 	# Look for Virtualbox
 	if ! (${VM_FOUND}); then
-		if sysctl -q dev.acpi.0.%desc | grep -q VBOX; then
+		if echo $ACPI | grep -q VBOX; then
        		VM_FOUND=true
     	else
         	VM_FOUND=false
     	fi
 	fi
-    # Need to add virtualbox, virtualpc, etc...
+
+	# Look for KVM/Bochs
+
+	if ! (${VM_FOUND}); then
+		if echo $ACPI | grep -q BOCHS; then
+       		VM_FOUND=true
+    	else
+        	VM_FOUND=false
+    	fi
+	fi
+
+    # Need to add virtualpc, etc...
     if (${VM_FOUND}); then
 		if [ "${SECOND_OPTION}" != "quiet" ]; then
         	echo "VM environnement detected"
