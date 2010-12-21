@@ -46,35 +46,42 @@ check_user () {
 check_system_freebsd () {
     if ! `pkg_info -q -E -x qemu  > /dev/null 2>&1`; then
         echo "Error: qemu not found"
-        echo "Install qemu with: pkg_add -r qemu"
+        echo "Install qemu from ports and enable kqemu"
+		echo "Installing qemu with: pkg_add -r qemu, will not enable kqemu"
         exit 1
     fi
 
+	KQEMU=true
     if ! `pkg_info -q -E -x kqemu  > /dev/null 2>&1`; then
-        echo "Warning: kqemu not found"
+        echo "WARNING: kqemu not found"
         echo "kqemu is not mandatory, but improve a lot the speed"
         echo "Install kqemu with: pkg_add -r kqemu"
+		KQEMU=false
     fi
-
+	
     if ! kldstat -m kqemu; then
 		if $NOT_ROOT; then
-			echo "Warning: kqemu module not loaded"
+			echo "WARNING: kqemu module not loaded"
 			echo "You need to be root for loading this module"
+			KQEMU=false
 		else
         	echo "Loading kqemu"
         	if kldload kqemu; then
-            	echo "Can't load kqemu"
+            	echo "WARNING: Can't load kqemu"
+				KQEMU=false
         	fi
 		fi
     fi
     if ! kldstat -m aio; then
 		if $NOT_ROOT; then
-			echo "Error: aio module not loaded (mandatory for qemu)"
+			echo "ERROR: aio module not loaded (mandatory for qemu)"
 			echo "You need to be root for loading this module"
+			exit 1
 		else
-        	echo "Loading aio"
+        	echo "Loading module aio"
         	if kldload aio; then
-            	echo "Can't load aio"
+            	echo "ERROR Can't load module aio"
+				exit 1
         	fi
 		fi
     fi
@@ -82,6 +89,7 @@ check_system_freebsd () {
 }
 
 check_system_linux () {
+	KQEMU=false
 	if ! which kvm; then
 		if ! which qemu; then
         	echo "ERROR: kvm/qemu is not installed"
@@ -154,7 +162,7 @@ create_interfaces_shared_freebsd () {
             exit 1
         fi
     else
-        # Need to check if it's a bridge interface that is allready configured with 10.0.0.254"
+        # Need to check if it's a bridge interface that is allready configured with 10.0.0.254"
         DETECTED_NIC=`ifconfig -l`
         for NIC in $DETECTED_NIC
         do
@@ -363,19 +371,21 @@ parse_filename () {
 	case "$OS_DETECTED" in
 	"FreeBSD")
     	if echo "${FILENAME}" | grep -q "amd64"; then
-        	QEMU_ARCH="qemu-system-x86_64 -m 96 -enable-kqemu"
+        	QEMU_ARCH="qemu-system-x86_64 -m 96"
         	echo "filename guest a x86-64 image"
    		fi
     	if echo "${FILENAME}" | grep -q "i386"; then
-        	QEMU_ARCH="qemu -m 96 -enable-kqemu"
+        	QEMU_ARCH="qemu -m 96"
         	echo "filename guests a i386 image"
     	fi
     	if [ "$QEMU_ARCH" = "0" ]; then
         	echo "WARNING: Can't guests arch of this image"
         	echo "Will use as default i386"
-        	QEMU_ARCH="qemu -m 96 -enable-kqemu"
+        	QEMU_ARCH="qemu -m 96"
     	fi
- 
+		if $KQEMU; then
+			QEMU_ARCH="${QEMU_ARCH} -enable-kqemu"
+		fi 
         break
          ;;
     "Linux")
