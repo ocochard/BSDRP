@@ -1,39 +1,30 @@
---- nanobsd.sh.orig	2010-04-06 22:15:08.000000000 +0200
-+++ nanobsd.sh	2010-04-06 22:16:42.000000000 +0200
-@@ -124,10 +124,17 @@
- NANO_BOOT0CFG="-o packet -s 1 -m 3"
- NANO_BOOTLOADER="boot/boot0sio"
- 
-+# boot2 flags/options
-+# default force serial console
-+NANO_BOOT2CFG=" -h"
-+
- # Backing type of md(4) device
+--- nanobsd.sh.orig	2010-12-31 15:38:56.000000000 +0100
++++ nanobsd.sh	2010-12-31 15:48:14.000000000 +0100
+@@ -135,6 +135,9 @@
  # Can be "file" or "swap"
  NANO_MD_BACKING="file"
  
 +# for swap type md(4) backing, write out the mbr only
 +NANO_IMAGE_MBRONLY=true
 +
- # Label name
- # Alphacharacter only
- NANO_GLABEL_SYS="nanobsd"
-@@ -149,6 +156,14 @@
+ # Progress Print level
+ PPLEVEL=3
+ 
+@@ -166,6 +169,13 @@
  #
  #######################################################################
  
 +nano_cleanup() {
-+	if [ $? -ne 0 ]; then
-+    	echo "Error encountered.  Check for errors in last log file." 1>&2
++   if [ $? -ne 0 ]; then
++       echo "Error encountered.  Check for errors in last log file." 1>&2
 +    fi
 +    exit $?
 +}
 +
-+
  clean_build ( ) (
  	pprint 2 "Clean and create object directory (${MAKEOBJDIRPREFIX})"
  
-@@ -349,7 +364,7 @@
+@@ -390,7 +400,7 @@
  prune_usr() (
  
  	# Remove all empty directories in /usr 
@@ -42,7 +33,7 @@
  		while read d
  		do
  			rmdir $d > /dev/null 2>&1 || true 
-@@ -491,8 +506,14 @@
+@@ -563,8 +573,13 @@
  	fi
  
  	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
@@ -55,11 +46,10 @@
 +            echo "Writing out ${NANO_IMGNAME}..."
 +            dd if=/dev/${MD} of=${IMG} bs=64k
 +        fi
-+
  	fi
  
  	echo "Writing out _.disk.image..."
-@@ -500,6 +521,7 @@
+@@ -572,6 +587,7 @@
  	mdconfig -d -u $MD
  
  	trap - 1 2 15 EXIT
@@ -67,27 +57,25 @@
  
  	) > ${NANO_OBJ}/_.di 2>&1
  )
-@@ -584,8 +606,8 @@
- 	# Disable getty on syscons devices
+@@ -658,7 +674,7 @@
  	sed -i "" -e '/^ttyv[0-8]/s/	on/	off/' ${NANO_WORLDDIR}/etc/ttys
  
--	# Tell loader to use serial console early.
+ 	# Tell loader to use serial console early.
 -	echo " -h" > ${NANO_WORLDDIR}/boot.config
-+   echo ${NANO_BOOT2CFG} > ${NANO_WORLDDIR}/boot.config
-+
++	echo ${NANO_BOOT2CFG} > ${NANO_WORLDDIR}/boot.config
  )
  
  #######################################################################
-@@ -690,7 +712,7 @@
+@@ -763,7 +779,7 @@
  	echo "	-i	suppress disk image build"
  	echo "	-k	suppress buildkernel"
  	echo "	-n	add -DNO_CLEAN to buildworld, buildkernel, etc"
--	echo "	-q	make output more quite"
-+	echo "	-q	make output quiter"
+-	echo "	-q	make output more quiet"
++	echo "	-q	make output quieter"
  	echo "	-v	make output more verbose"
  	echo "	-w	suppress buildworld"
  	echo "	-c	specify config file"
-@@ -766,6 +788,7 @@
+@@ -839,6 +855,7 @@
  	echo "$0: Extraneous arguments supplied"
  	usage
  fi

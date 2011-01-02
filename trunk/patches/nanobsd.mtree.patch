@@ -1,8 +1,8 @@
---- nanobsd.sh.orig	2010-06-30 23:13:33.000000000 +0200
-+++ nanobsd.sh	2010-06-30 23:17:53.000000000 +0200
-@@ -460,7 +460,11 @@
- 	( cd ${NANO_WORLDDIR} && find . -print | cpio -dump ${MNT} )
- 	df -i ${MNT}
+--- nanobsd.sh.pr.patched	2010-12-31 15:51:17.000000000 +0100
++++ nanobsd.sh	2010-12-31 15:52:58.000000000 +0100
+@@ -543,7 +543,11 @@
+ 	populate_slice /dev/${MD}s1a ${NANO_WORLDDIR} ${MNT} "s1a"
+ 	mount /dev/${MD}s1a ${MNT}
  	echo "Generating mtree..."
 -	( cd ${MNT} && mtree -c ) > ${NANO_OBJ}/_.mtree
 +	echo "./etc" > ${NANO_OBJ}/mtree-exclude

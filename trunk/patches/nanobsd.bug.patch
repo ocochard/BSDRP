@@ -1,0 +1,11 @@
+--- nanobsd.sh.patched.buggy	2011-01-02 10:59:17.000000000 +0100
++++ nanobsd.sh	2011-01-02 10:50:09.000000000 +0100
+@@ -255,7 +255,7 @@
+ 
+ 	echo "${CONF_WORLD}" > ${NANO_MAKE_CONF_INSTALL}
+ 	echo "${CONF_INSTALL}" >> ${NANO_MAKE_CONF_INSTALL}
+-	echo "_WITHOUT_SRCCONF=t" >> ${NANO_MAKE_CONF_INSTALL}
++	#echo "_WITHOUT_SRCCONF=t" >> ${NANO_MAKE_CONF_INSTALL}
+ )
+ 
+ install_world ( ) (

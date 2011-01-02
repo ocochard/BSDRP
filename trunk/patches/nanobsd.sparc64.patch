@@ -1,14 +1,15 @@
---- nanobsd.sh.bsdrp	2010-07-23 10:53:51.000000000 +0200
-+++ nanobsd.sh	2010-07-29 15:59:18.000000000 +0200
-@@ -538,6 +538,111 @@
- 	create_i386_diskimage
- )
+--- nanobsd.sh.arm.patched	2010-12-31 16:03:56.000000000 +0100
++++ nanobsd.sh	2010-12-31 16:12:46.000000000 +0100
+@@ -783,6 +783,111 @@
+     ) > ${MAKEOBJDIRPREFIX}/_.di 2>&1
+ }
  
++# Need to adapt NANO_LABEL variable with the old use ! 
 +create_sparc64_diskimage ( ) (
 +    pprint 2 "build diskimage"
 +    pprint 3 "log: ${NANO_OBJ}/_.di"
-+	# Using sparc bootloader
-+	NANO_BOOTLOADER="boot/boot1"
++   # Using sparc bootloader
++   NANO_BOOTLOADER="boot/boot1"
 +
 +    (
 +    IMG=${NANO_DISKIMGDIR}/${NANO_IMGNAME}
@@ -27,34 +28,33 @@
 +    fi
 +
 +    trap "echo 'Running exit trap code' ; df -i ${MNT} ; umount ${MNT} || true ; mdconfig -d -u $MD" 1 2 15 EXIT
-+	# Create initial bootable label:
-+	echo "Creating initial empty but bootable sunlabel..."
-+	sunlabel -w -B ${MD} auto
-+	
-+	# Extracting label prototype in cylinder unit
-+	sunlabel -c ${MD} > ${NANO_OBJ}/_.sunlabel
++   # Create initial bootable label:
++   echo "Creating initial empty but bootable sunlabel..."
++   sunlabel -w -B ${MD} auto
++   
++   # Extracting label prototype in cylinder unit
++   sunlabel -c ${MD} > ${NANO_OBJ}/_.sunlabel
 +
-+	# Generate partition on the prototype file
-+	# Need to calc the NANO_CODESIZE and the media size that is smaller than given (why??)
-+	# Warning, from sunlabel man page  : "partitions in the Sun OpenBoot PROM
++   # Generate partition on the prototype file
++   # Need to calc the NANO_CODESIZE and the media size that is smaller than given (why??)
++   # Warning, from sunlabel man page  : "partitions in the Sun OpenBoot PROM
 +    # must always start at a cylinder boundary (for whatever geometry emulation
 +    # has been chosen)."
++   if [ ${NANO_CODESIZE} = 0 ]; then
++       #MESURED_MEDIASIZE=`grep "sectors/unit" ${NANO_OBJ}/_.sunlabel | cut -d' ' -f 2`
++   MESURED_MEDIASIZE_CYL=`grep "text" ${NANO_OBJ}/_.sunlabel| cut -d' ' -f 4`
++   SEC_PER_CYL=`grep "sectors/cylinder" ${NANO_OBJ}/_.sunlabel | cut -d' ' -f 2`
++   NANO_CONFSIZE_CYL=`expr $NANO_CONFSIZE / $SEC_PER_CYL`
++   NANO_DATASIZE_CYL=`expr $NANO_DATASIZE / $SEC_PER_CYL`
++   NANO_CODESIZE_CYL=`expr \( $MESURED_MEDIASIZE_CYL - $NANO_CONFSIZE_CYL - $NANO_DATASIZE_CYL \) / 2`
++   fi  
++   echo "a: ${NANO_CODESIZE_CYL} 0" >> ${NANO_OBJ}/_.sunlabel
++   echo "d: ${NANO_CODESIZE_CYL} *" >> ${NANO_OBJ}/_.sunlabel
++   echo "e: ${NANO_CONFSIZE_CYL} *" >> ${NANO_OBJ}/_.sunlabel
++   echo "f: ${NANO_DATASIZE_CYL} *" >> ${NANO_OBJ}/_.sunlabel
 +
-+	if [ ${NANO_CODESIZE} = 0 ]; then
-+		#MESURED_MEDIASIZE=`grep "sectors/unit" ${NANO_OBJ}/_.sunlabel | cut -d' ' -f 2`
-+ 	MESURED_MEDIASIZE_CYL=`grep "text" ${NANO_OBJ}/_.sunlabel| cut -d' ' -f 4`
-+	SEC_PER_CYL=`grep "sectors/cylinder" ${NANO_OBJ}/_.sunlabel | cut -d' ' -f 2`
-+	NANO_CONFSIZE_CYL=`expr $NANO_CONFSIZE / $SEC_PER_CYL`
-+	NANO_DATASIZE_CYL=`expr $NANO_DATASIZE / $SEC_PER_CYL`
-+	NANO_CODESIZE_CYL=`expr \( $MESURED_MEDIASIZE_CYL - $NANO_CONFSIZE_CYL - $NANO_DATASIZE_CYL \) / 2`
-+	fi	
-+	echo "a: ${NANO_CODESIZE_CYL} 0" >> ${NANO_OBJ}/_.sunlabel
-+	echo "d: ${NANO_CODESIZE_CYL} *" >> ${NANO_OBJ}/_.sunlabel
-+	echo "e: ${NANO_CONFSIZE_CYL} *" >> ${NANO_OBJ}/_.sunlabel
-+	echo "f: ${NANO_DATASIZE_CYL} *" >> ${NANO_OBJ}/_.sunlabel
-+
-+	# Apply the label prototype file to the md disk
-+	sunlabel -c -R ${MD} ${NANO_OBJ}/_.sunlabel
++   # Apply the label prototype file to the md disk
++   sunlabel -c -R ${MD} ${NANO_OBJ}/_.sunlabel
 +
 + # Create first image
 +    newfs -L ${NANO_GLABEL_SYS}1 ${NANO_NEWFS} /dev/${MD}a
@@ -72,7 +72,6 @@
 +
 +    ( cd ${MNT} && du -k ) > ${NANO_OBJ}/_.du
 +    umount ${MNT}
-+
 +    if [ $NANO_IMAGES -gt 1 -a $NANO_INIT_IMG2 -gt 0 ] ; then
 +        # Duplicate to second image (if present)
 +        echo "Duplicating to second image..."
@@ -105,10 +104,11 @@
 +    mdconfig -d -u $MD
 +
 +    trap - 1 2 15 EXIT
++	trap "nano_cleanup" EXIT
 +
 +    ) > ${NANO_OBJ}/_.di 2>&1
 +)
 +
- create_arm_diskimage()
- {
-     pprint 2 "build diskimage"
+ last_orders () (
+ 	# Redefine this function with any last orders you may have
+ 	# after the build completed, for instance to copy the finished

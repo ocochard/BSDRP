@@ -174,7 +174,7 @@ device		da		# Direct Access (disks)
 #device		wlan_amrr
 
 # Add multiple route table support
-options     ROUTETABLES=4
+options     ROUTETABLES=16
 
 # eliminating data copies on socket reads and writes.
 # man 9 zero_copy
@@ -182,5 +182,5 @@ options     ZERO_COPY_SOCKETS
 
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules
-makeoptions    MODULES_OVERRIDE="netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw pf"
+makeoptions    MODULES_OVERRIDE="netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf"
 
