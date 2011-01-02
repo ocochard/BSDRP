@@ -1,9 +1,10 @@
---- nanobsd.sh.orig	2010-02-25 22:27:29.000000000 +0100
-+++ nanobsd.sh	2010-02-25 23:32:40.000000000 +0100
-@@ -501,6 +501,187 @@
- 	) > ${NANO_OBJ}/_.di 2>&1
+--- nanobsd.sh.mtree.patched	2010-12-31 15:55:13.000000000 +0100
++++ nanobsd.sh	2010-12-31 16:02:17.000000000 +0100
+@@ -601,6 +601,188 @@
+ 	create_i386_diskimage
  )
  
++# This function need to be adapted to the new nanobsd !!
 +create_arm_diskimage()
 +{
 +    pprint 2 "build diskimage"
@@ -142,7 +143,7 @@
 +    SIZE=`awk '/^p 3/ { print $5 "b" }' ${FDISK}`
 +    # XXX: fill from where ?
 +    pprint 2 "${NANO_MAKEFS} -s ${SIZE} ${CFG} ${NANO_CFGDIR}"
-+	# NEED TO SET THE LABEL !!!!!
++	# NEED TO SET THE LABEL !!!!!
 +    ${NANO_MAKEFS} -s ${SIZE} ${CFG} ${NANO_CFGDIR}
 +    pprint 2 "dd if=${CFG} of=/dev/${MD}s3 bs=${BS}"
 +    dd if=${CFG} of=/dev/${MD}s3 bs=${BS}

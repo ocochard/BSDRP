@@ -78,15 +78,16 @@ check_system() {
 		exit 1
 	fi
 	
-	if `grep -q 'REVISION="8.1"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
-		SRC_VERSION="8.1"
+	if `grep -q 'REVISION="8.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
+		SRC_VERSION="8.2"
 	fi
-	if `grep -q 'REVISION="7.3"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
-    	SRC_VERSION="7.3"
+
+	if `grep -q 'REVISION="7.4"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
+    	SRC_VERSION="7.4"
 	fi
 
 	if [ ${SRC_VERSION} = 0 ]; then
-		pprint 1 "ERROR: ${NAME} need FreeBSD 8.1 or 7.3 sources"
+		pprint 1 "ERROR: ${NAME} need FreeBSD 8.2 or 7.4 sources"
 		pprint 1 "Read BSDRP HOW TO here:"
 		pprint 1 "http://bsdrp.net/documentation/technical_docs"
 		exit 1
@@ -105,73 +106,39 @@ check_system() {
 
 ###### Adding patch to NanoBSD
 nanobsd_patches() {
-	# Adding BSDRP label patch to NanoBSD
-	# NanoBSD image use fixed boot disk: ad0, da0, etc...
-	# This is a big limitation for a "generic" image that can be installed
-	# on a USB (da0) or on an hard drive (ad0).
-	# If FreeBSD 7.2 source code detected, download latest nanobsd.sh script
-
-	if [ "${SRC_VERSION}" = "7.3" ]; then
-		if [ `sha256 -q ../nanobsd.sh` = "6e9714f43a75c19174c9ba492b6985c4aa27e382b95130043448a30d6c98f8cd" ]; then
-			pprint 3 "nanobsd-FreeBSD 7.3 detected, need to download nanobsd-FreeBSD 8.1"
-			(
-			cd ..
-			pprint 3 "Backup old nanobsd.sh"
-			mv nanobsd.sh nanobsd.bak.7_3
-			pprint 3 "Download nanobsd.sh script from FreeBSD 8.1"
-				if ! fetch -o nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.51.2.3.2.1;content-type=text%2Fplain;only_with_tag=RELENG_8_1_0_RELEASE"; then
-				pprint 3 "Restoring original nanobsd.sh"	
-				mv nanobsd.bak.7_3 nanobsd.sh
-				pprint 3 "ERROR: Can't download latest nanobsd.sh script"
-				exit 1
-			fi
-			)
+	# Using up-to-date nanobsd script and patch it
+	if [ `sha256 -q ../nanobsd.sh` != "06c23d3bcb720aad4e129626d0a7b21caaded77e7b11098a77c6a6b4a3b6945d" ]; then
+		pprint 3 "Download up-to-date nanobsd release"
+		if ! mv ../nanobsd.sh ../nanobsd.original.bak; then	
+			pprint 3 "ERROR: Can't backup original nanobsd.sh script"
 		fi
-	fi
-	pprint 3 "Checking if NanoBSD allready glabel patched"
-	if `grep -q 'GLABEL' ${NANOBSD_DIR}/nanobsd.sh`; then
-		pprint 3 "NanoBSD allready glabel patched"
-	else
-		pprint 3 "Patching NanoBSD with glabel support"
-		patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.glabel.patch
-	fi
+		if ! fetch -o ../nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.68"; then
+				mv ../nanobsd.original.bak ../nanobsd.sh
+				pprint 3 "ERROR: Can't download up-to-date nanobsd.sh script"
+				exit 1
+		fi
 
-	# Adding another cool patch that fix a lot's of problem
-	# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
-	pprint 3 "Checking if NanoBSD allready PR-136889 patched"
-	if `grep -q 'NANO_BOOT2CFG' ${NANOBSD_DIR}/nanobsd.sh`; then 
-		pprint 3 "NanoBSD allready PR-136889 patched"
-	else
+		# Adding another cool patch that fix a lot's of problem
+		# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
 		pprint 3 "Patching NanoBSD with some fixes (PR-136889)"
 		patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.pr-136889.patch
+
+		# Patching mtree generation mode for be usable as security audit reference
+       	pprint 3 "Patching NanoBSD with mtree support"
+       	patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.mtree.patch
+
+		# Adding arm support to NanoBSD
+       	pprint 3 "Patching NanoBSD with arm support"
+       	patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.arm.patch
+
+		# Adding sparc64 support to NanoBSD
+       	pprint 3 "Patching NanoBSD with sparc64 support"
+       	patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
+
+		# And fixing a bug in the up-to-date nanobsd.sh
+		pprint 3 "Fixing bug (make.conf.install) in up-to-date nanobsd"
+		patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.bug.patch
 	fi
-
-	# Adding arm support to NanoBSD
-    pprint 3 "Checking if NanoBSD allready arm patched"
-    if `grep -q 'create_arm_diskimage' ${NANOBSD_DIR}/nanobsd.sh`; then
-        pprint 3 "NanoBSD allready arm patched"
-    else
-        pprint 3 "Patching NanoBSD with arm support"
-        patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.arm.patch
-    fi
-
-	# Patching mtree generation mode for more security
-    pprint 3 "Checking in NanoBSD allready arm patched"
-    if `grep -q 'sha256digest' ${NANOBSD_DIR}/nanobsd.sh`; then
-        pprint 3 "NanoBSD allready mtree patched"
-    else
-        pprint 3 "Patching NanoBSD with mtree support"
-        patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.mtree.patch
-    fi
-
-	# Adding sparc64 support to NanoBSD
-    #pprint 3 "Checking if NanoBSD allready sparc64 patched"
-    if `grep -q 'create_sparc64_diskimage' ${NANOBSD_DIR}/nanobsd.sh`; then
-        pprint 3 "NanoBSD allready sparc64 patched"
-    else
-        pprint 3 "Patching NanoBSD with sparc64 support"
-        patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
-    fi
 
 }
 
@@ -180,10 +147,10 @@ nanobsd_patches() {
 ports_patches()
 {
 	pprint 2 "patching ports..."
-	pprint 3 "net/mcast-tools (missing pre-requiered in makefile)"
-	if ! `grep -q 'automake' /usr/ports/net/mcast-tools/Makefile`; then
-		patch /usr/ports/net/mcast-tools/Makefile patches/mcast-tools/Makefile.diff
-	fi
+	#pprint 3 "net/mcast-tools (missing pre-requiered in makefile)"
+	#if ! `grep -q 'automake' /usr/ports/net/mcast-tools/Makefile`; then
+	#	patch /usr/ports/net/mcast-tools/Makefile patches/mcast-tools/Makefile.diff
+	#fi
 
 }
 
@@ -397,7 +364,7 @@ else
 	pprint 1 "- FAST mode (skip compression and checksumming): NO"
 fi
 
-nanobsd_patches
+########nanobsd_patches
 #kernel_patches
 ports_patches
 
@@ -412,6 +379,9 @@ echo "NANO_IMGNAME=\"${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img
 
 echo "# Kernel config file to use" >> /tmp/${NAME}.nano
 echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${NAME}.nano
+
+echo "# Glabel to use" >> /tmp/${NAME}.nano
+echo "NANO_LABEL=\"BSDRP\"" >> /tmp/${NAME}.nano
 
 pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
 

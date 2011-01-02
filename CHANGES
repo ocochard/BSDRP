@@ -1,7 +1,9 @@
 Release 0.35 (not released)
-- Update to FreeBSD 8.1-p2
+- Update to FreeBSD 8.2
+- Use the latest nanobsd script (from FreeBSD-current): NEED TO TEST THE UPDATE SCRIPT (glabel change)
 - Reduce bootloader timeout to 1 second
-- Use xz in place of bzip2 for files
+- Use xz in place of bzip2 for BSDRP images files
+- Add the possibility to start a post-upgrade script included in new image
 
 Bug fix:
 - Hardened the upgrade script and add lot's of fix

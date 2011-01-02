@@ -118,12 +118,21 @@ for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fsta
 	    sed -i "" "s/${NANO_GLABEL_SYS}${SRC_SLICE}/${NANO_GLABEL_SYS}${DST_SLICE}/g" $f
     done
 #	Compare the loader.conf, and include the diff into the new partition
-#	This file is modify with "system virtualized"
+#	This file is for example, modified with "system virtualized"
 if ! diff -ruN /tmp/sysupgrade/boot/loader.conf /boot/loader.conf > /tmp/loader.conf.patch; then
 	if patch -s /tmp/sysupgrade/boot/loader.conf /tmp/loader.conf.patch; then
 		echo "WARNING: Can't patch upgraded /boot/loader.conf"
+		echo "YOU NEED to re-adapbt your /boot/loader.conf manually"
 	fi
 fi
+
+#	Check if their is a post-upgrade script on the newimage (This script will be start at the end of the upgrade process)
+if [ -f /tmp/sysupgrade/usr/local/sbin/post-upgrade.sh ]; then
+	if ! cp /tmp/sysupgrade/usr/local/sbin/post-upgrade.sh /tmp/post-upgrade.sh; then
+		echo "WARNING: Can't copy post-upgrade script!"
+	fi
+fi
+
 if ! umount /tmp/sysupgrade; then
 	echo "ERROR: Can't umount new image"
 	exit 1
@@ -175,3 +184,9 @@ esac
 
 # Log
 logger BSDRP Upgrade complete
+
+if [ -f /tmp/post-upgrade.sh ]; then
+	logger Starting pre-upgrade script
+	chmod +x /tmp/post-upgrade.sh
+	/tmp/post-upgrade.sh
+fi
