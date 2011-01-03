@@ -107,12 +107,12 @@ check_system() {
 ###### Adding patch to NanoBSD
 nanobsd_patches() {
 	# Using up-to-date nanobsd script and patch it
-	if [ `sha256 -q ../nanobsd.sh` != "06c23d3bcb720aad4e129626d0a7b21caaded77e7b11098a77c6a6b4a3b6945d" ]; then
+	if [ `sha256 -q ../nanobsd.sh` != "bf2bfaf68faa060ef60dd4e896e4b994c9ac374a58714962b79d1a8e7068a0f4" ]; then
 		pprint 3 "Download up-to-date nanobsd release"
 		if ! mv ../nanobsd.sh ../nanobsd.original.bak; then	
 			pprint 3 "ERROR: Can't backup original nanobsd.sh script"
 		fi
-		if ! fetch -o ../nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.68"; then
+		if ! fetch -o ../nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.70"; then
 				mv ../nanobsd.original.bak ../nanobsd.sh
 				pprint 3 "ERROR: Can't download up-to-date nanobsd.sh script"
 				exit 1
@@ -135,9 +135,6 @@ nanobsd_patches() {
        	pprint 3 "Patching NanoBSD with sparc64 support"
        	patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
 
-		# And fixing a bug in the up-to-date nanobsd.sh
-		pprint 3 "Fixing bug (make.conf.install) in up-to-date nanobsd"
-		patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.bug.patch
 	fi
 
 }
