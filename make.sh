@@ -3,7 +3,7 @@
 # Make script for BSD Router Project 
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2010, The BSDRP Development Team 
+# Copyright (c) 2009-2011, The BSDRP Development Team 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -376,9 +376,6 @@ echo "NANO_IMGNAME=\"${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img
 
 echo "# Kernel config file to use" >> /tmp/${NAME}.nano
 echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${NAME}.nano
-
-echo "# Glabel to use" >> /tmp/${NAME}.nano
-echo "NANO_LABEL=\"BSDRP\"" >> /tmp/${NAME}.nano
 
 pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
 
