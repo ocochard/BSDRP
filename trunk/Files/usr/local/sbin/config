@@ -91,27 +91,35 @@ umount_cfg () {
 # Mount data
 mount_data () {
 	trap "umount /data" 1 2 15 EXIT
-	mount /dev/ufs/data /mnt
+	# Old BSDRP (previous to 0.54) didn't have /data directory neither fstab adapted
+	# Fix this problem
+	if [ ! -d /data ]; then
+		mount -o rw -u /
+		mkdir /data
+		echo "/dev/BSDRPs4 /data ufs rw,noauto 2 2" >> etc/fstab
+		mount -o ro -u /
+	fi
+	mount /data
 }
 
 # umount data
 umount_data () {
-	umount /mnt
+	umount /data
 	trap 1 2 15 EXIT
 }
 # Archive cfg
 archive_cfg () {
 	mount_data
 	echo "Archiving configuration files..."
-	if [ ! -d /mnt/archives ]; then
-		mkdir /mnt/archives
+	if [ ! -d /data/archives ]; then
+		mkdir /data/archives
 	else
-		if [ -f /mnt/archives/rollback.tar.bz2 ]; then
-			rm /mnt/archives/rollback.tar.bz2
+		if [ -f /data/archives/rollback.tar.bz2 ]; then
+			rm /data/archives/rollback.tar.bz2
 		fi
 	fi
 
-	if ! tar -cjvpf /mnt/archives/rollback.tar.bz2 -C /cfg/ . 2>/dev/null; then
+	if ! tar -cjvpf /data/archives/rollback.tar.bz2 -C /cfg/ . 2>/dev/null; then
 		echo "ERROR: Can't generate tar archive."
 		umount_data
 		umount_cfg
@@ -234,8 +242,8 @@ rollback () {
 	echo "Rollback the archived configuration"
 	mount_data
 	# Check if archive exist
-	if [ -f /mnt/archives/rollback.tar.bz2 ]; then
-		restore_cfg /mnt/archives/rollback.tar.bz2 /etc
+	if [ -f /data/archives/rollback.tar.bz2 ]; then
+		restore_cfg /data/archives/rollback.tar.bz2 /etc
 	else
 		echo "No archive file found."
 		echo "You need to save your configuration once before to rollback it"
