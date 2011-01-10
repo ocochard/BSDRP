@@ -4,6 +4,7 @@ Release 0.35 (not released)
 - Reduce bootloader timeout to 1 second
 - Use xz in place of bzip2 for BSDRP images files
 - Add the possibility to start a post-upgrade script included in new image
+- Detect KVM guest usage
 
 Bug fix:
 - Hardened the upgrade script and add lot's of fix

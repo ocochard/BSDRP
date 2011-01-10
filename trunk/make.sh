@@ -361,7 +361,7 @@ else
 	pprint 1 "- FAST mode (skip compression and checksumming): NO"
 fi
 
-########nanobsd_patches
+nanobsd_patches
 #kernel_patches
 ports_patches
 
