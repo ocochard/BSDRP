@@ -82,9 +82,9 @@ check_system() {
 		SRC_VERSION="8.2"
 	fi
 
-	if `grep -q 'REVISION="7.4"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
-    	SRC_VERSION="7.4"
-	fi
+	#if `grep -q 'REVISION="7.4"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
+    # 	SRC_VERSION="7.4"
+	#fi
 
 	if [ ${SRC_VERSION} = 0 ]; then
 		pprint 1 "ERROR: ${NAME} need FreeBSD 8.2 or 7.4 sources"
@@ -385,15 +385,19 @@ echo "# Parallel Make" >> /tmp/${NAME}.nano
 # Special ARCH commands
 case ${TARGET_ARCH} in
 	"i386") echo 'NANO_PMAKE="make -j 3"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="acpi netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf hifn padlock safe ubsec glxsb"' >> /tmp/${NAME}.nano
 	;;
 	"amd64") echo 'NANO_PMAKE="make -j 3"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf hifn padlock safe ubsec"' >> /tmp/${NAME}.nano
 	;;
 	"arm") echo 'NANO_PMAKE="make"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES=""' >> /tmp/${NAME}.nano
 	NANO_MAKEFS="makefs -B big \
     -o bsize=4096,fsize=512,density=8192,optimization=space"
 	export NANO_MAKEFS
 	;;
 	"sparc64") echo 'NANO_PMAKE="make -j 8"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf"' >> /tmp/${NAME}.nano
 	;;
 esac
 
