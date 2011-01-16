@@ -3,7 +3,7 @@
 # Qemu/kvm lab test script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2010, The BSDRP Development Team
+# Copyright (c) 2009-2011, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

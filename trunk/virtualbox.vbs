@@ -1,6 +1,6 @@
 ' VirtualBox lab VBscript for BSD Router Project
 '
-' Copyright (c) 2010, The BSDRP Development Team
+' Copyright (c) 2010-2011, The BSDRP Development Team
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@ Option Explicit
 
 Main()
 
-Public VB_EXE, VB_HEADLESS, WORKING_DIR, BSDRP_VDI, TEXT, RELEASE, VM_ARCH, VM_CONSOLE, BSDRP_FILENAME, RETURN_CODE, NUMBER_VM, NUMBER_LAN
+Public VB_EXE, VB_HEADLESS, WORKING_DIR, BSDRP_VDI, TEXT, RELEASE, VM_ARCH, VM_CONSOLE, BSDRP_FILENAME, RETURN_CODE, NUMBER_VM, NUMBER_LAN, SHARED_LAN
 
 Sub Main()
 	' Variables used
@@ -55,12 +55,24 @@ Sub Main()
 	BSDRP_VDI=check_existing_VDI()
 	
 	Do
-		NUMBER_VM = InputBox( "How many routers do you want to use ? (between 2 and 9)" )
+		NUMBER_VM = InputBox( "How many routers do you want to use ? (between 2 and 9)",RELEASE)
+		if NUMBER_VM = "" Then
+			WScript.Quit
+		End If
 	Loop While ((NUMBER_VM < 2) OR (NUMBER_VM > 9))
 	
 	Do
-		NUMBER_LAN = InputBox( "How many shared LAN between your routers do you want to have ? (between 0 and 4)" )
+		NUMBER_LAN = InputBox( "How many shared LAN between your routers do you want ? (between 0 and 4)",RELEASE)
+		if NUMBER_LAN = "" Then
+			WScript.Quit
+		End If
 	Loop While ((NUMBER_LAN < 0) OR (NUMBER_LAN > 4))
+	
+	SHARED_LAN = MsgBox("Do you want a shared LAN between your routers and the host ? (Usefull for IP access to the routers from your host, can be used as shared LAN between routers too)", vbYesNoCancel, RELEASE)
+	' SHARED_LAN should contain vbYES or vbNO, if empty "", mean that it's cancelled
+	if SHARED_LAN = vbCancel Then
+		WScript.Quit
+    End If
 	
     clone_vm()
 	
@@ -307,6 +319,14 @@ Function clone_vm ()
         create_vm ("BSDRP_lab_R" & i)
         NIC_NUMBER=0
         TEXT = TEXT & "Router" & i & " have the folllowing NIC:" & vbCrLf
+		'First step: Shared with host NIC
+		if SHARED_LAN = vbYES Then
+			TEXT = TEXT & "- em" & NIC_NUMBER & " connected to Host" & vbCrLf
+                NIC_NUMBER=NIC_NUMBER + 1
+				CMD=VB_EXE & " modifyvm BSDRP_lab_R" & i & " --nic" & NIC_NUMBER & " hostonly --nictype" & NIC_NUMBER & " 82540EM " & " --hostonlyadapter1 ""VirtualBox Host-Only Ethernet Adapter"" --macaddress" & NIC_NUMBER & " 00AA0000000" & i 
+					call run(CMD,true)
+		End if
+		
         'Enter in the Cross-over (Point-to-Point) NIC loop
         'Now generate X x (X-1)/2 full meshed link
 		For j = 1 to NUMBER_VM
