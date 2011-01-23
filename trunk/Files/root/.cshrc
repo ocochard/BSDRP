@@ -50,7 +50,8 @@ if ($?prompt) then
 	set color
 	set colorcat
 	# Prevent overwritting existing file
-	set noclobber
+	# (disabled because prevent to use >> in script)
+	#set noclobber
 	# Display user login
 	set watch=(0 any any)
 
