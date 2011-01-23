@@ -5,6 +5,7 @@ Release 0.35 (not released)
 - Use xz in place of bzip2 for BSDRP images files
 - Add the possibility to start a post-upgrade script included in new image
 - Detect KVM guest usage
+- Add missing kernel modules and binary: ipfw_nat, pflog, tap
 - MS Windows Virtualbox script improvement: Permit to use a 'shared with host (hostonly)' interface
 
 Bug fix:
