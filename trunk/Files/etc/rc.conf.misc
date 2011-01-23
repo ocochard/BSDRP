@@ -18,8 +18,9 @@ dumpdev="NO"
 #Increase the kernel secure level
 #Warning: This prevent to load module when entering in multi-user state!
 #http://www.freebsd.org/doc/handbook/securing-freebsd.html
-kern_securelevel_enable="YES"
-kern_securelevel="1"
+## DISABLED because too lot's of user didn't understand this behavior
+#kern_securelevel_enable="YES"
+#kern_securelevel="1"
 
 #Decrease the randomness of random(4), but should increase performance
 harvest_interrupt="NO"  # Entropy device harvests interrupt randomness
