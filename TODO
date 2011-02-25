@@ -1,6 +1,6 @@
 * Arch *
 	- Sparc64: Need to fix the login bug, and add arch support to the update script
-	- arm: Need to found an arm for working on
+	- arm: Need to found an arm devices for working on
 
 * Security *
 	- Need to wrote sample configuration file for pf and other
@@ -10,10 +10,14 @@
 
 * misc *
 	- utf-8 support for console ?
+	- replacing netpipe and iperf by netblast (more FreeBSD optimized)
 
 * Central configuration management / Provisionning *
 	- Use cvs or subversion for maintain central management of configuration files
 	- Be compatible with a provisionning tools that generate lot's of configuration (subversion copy?)
+
+* Lab script *
+	- VirtualBox/Windows: Need to fix the limited size of the final text box.
 
     
 

@@ -8,6 +8,7 @@ Release 0.35 (not released)
 - Detect KVM guest usage
 - Add missing kernel modules and binary: ipfw_nat, pflog, tap
 - MS Windows Virtualbox script improvement: Permit to use a 'shared with host (hostonly)' interface
+- freevrrpd was updated (Need TO TEST the new version because netgraph dependent)
 
 Bug fix:
 - Hardened the upgrade script and add lot's of fix
