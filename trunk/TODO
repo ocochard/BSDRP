@@ -11,6 +11,7 @@
 * misc *
 	- utf-8 support for console ?
 	- replacing netpipe and iperf by netblast (more FreeBSD optimized)
+	- Quagga rc script: limit all quagga process message when quagga is disabled
 
 * Central configuration management / Provisionning *
 	- Use cvs or subversion for maintain central management of configuration files
