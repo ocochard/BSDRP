@@ -61,27 +61,6 @@ ntpdate_hosts=""                # Whitespace-separated list of ntpdate(8) server
 # VRRP
 freevrrpd_enable="NO"
 
-# uCarp
-# Virtual IP identifier range is 1-255
-ucarp_enable="NO"			# Enable ucarp
-# Here are an exemple for VHID number 1:
-ucarp_1_if="em0"			# Set interface to use for ucarp checks
-ucarp_1_src="192.168.1.2"	# Set source (real) IP address of that host
-ucarp_1_pass="passcarp"    	# Set password
-ucarp_1_preempt="NO"        # Set it to "YES" to become a master as soon as possible
-ucarp_1_addr="192.168.1.1"  # Set virtual shared IP address
-# ucarp_1_upscript="/usr/local/sbin/ucarp-up"         # Create an alias on virtual IP when become a master
-# ucarp_1_downscript="/usr/local/sbin/ucarp-down"       # Remove the alias on virtual IP when become a backup
-# ucarp_1_advbase:          # Set advertisement frequency (seconds)
-# ucarp_1_advskew:          # Set advertisement skew (0-255)
-# ucarp_1_deadratio:        # Set ratio to consider a host as dead
-# ucarp_1_shutdown="YES"       # Set it to "YES"  to call shutdown script at exit
-# ucarp_1_facility="daemon"   # Set syslog facility
-# ucarp_1_broadcast="NO"      # Set it to "YES"  to use broadcast in place of multicast
-# ucarp_1_fib="NONE"       # set the alternative routing table id that ucarp should use
-# ucarp_1_xparam=""		# Set extra parameter to be send to the up/down script
-# ucarp_1_ignoreifstate="NO"	# Set it to "YES" to ignore physical interface state
-
 # LLDP
 lldpd_enable="NO"
 lldp_flags="-i em0"

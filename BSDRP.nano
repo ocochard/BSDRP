@@ -304,6 +304,7 @@ add_port "net/bird6"
 add_port "net/freevrrpd"
 
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
+# UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
 add_port "net/ucarp"
 
 # Add IPv6 multicast routing daemons and tools

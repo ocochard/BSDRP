@@ -206,38 +206,17 @@ check_vm () {
     fi
 	
 	KERN_HZ=`sysctl -n kern.hz`
-	if [ ${KERN_HZ} -gt 51 ]; then
+	if [ ${KERN_HZ} -gt 100 ]; then
 		NOT_TUNED=true
 	else
 		NOT_TUNED=false
 	fi
 
-	#grep -q kern.hz=50 /boot/loader.conf
-    #if [ $? -eq 0 ]; then
-    #    NOT_TUNED=false
-    #else
-    #    NOT_TUNED=true
-    #fi
-	
-	# Since FreeBSD 8, the kernel automatically detect the VM presence and lower the kern.hz
-	# Not true in FBSD 8.0 stable
-
-	if uname -r | grep -q 8.0; then
-		FREEBSD_8=true
-	else
-		FREEBSD_8=false
-	fi
 	# Stupid if, but don't know how to use an "add" condition in the if
     if (${VM_FOUND}); then
-		#if (${FREEBSD_8}); then
-		#	echo "VM usage detected, but since FreeBSD 8 there is no need to tune the system"
-		#	exit 0
-		#fi
 		if (${NOT_TUNED}); then
         	echo "WARNING: Current (Default) kern.hz value too high for a VM use!"
         	echo 'Use "system virtualized" for lower it'
-			#echo 'Actual kern.hz value: ${KERN_HZ}'
-			#echo 'Recommended kern.hz value in a VM: 50'
    		fi 
 	fi
     exit 0
@@ -245,12 +224,6 @@ check_vm () {
 
 # Create a new image with acceptable performance under virtualization (quemu, vmware, virtualbox, etc...)
 sys_virtualized () {
-
-	# Check if FreeBSD 8 detected
-	#if uname -r | grep -q 8.0; then
-		#echo "There is no need of tuning BSDRP based on FreeBSD 8.0 for being use as a VM"
-		#exit 0
-    #fi
 
 	echo "This step will configure BSDRP for being use as a VM"
 	echo "Do you want to continue ? (y/n)"
@@ -269,7 +242,7 @@ sys_virtualized () {
 		exit 1
 	fi
 	
-	if [ `echo kern.hz=50 >> /boot/loader.conf` ]; then
+	if [ `echo kern.hz=100 >> /boot/loader.conf` ]; then
 		echo "Error: Can't modify loader.conf"
 		exit 1
 	fi
@@ -304,10 +277,10 @@ FIRST_OPTION="$1"
 if [ $# -ge 2 ]; then
 	SECOND_OPTION="$2"
 else
-   SECOND_OPTION=""
+	SECOND_OPTION=""
 fi
 if [ $# -ge 3 ]; then
-   THIRD_OPTION="$3"
+	THIRD_OPTION="$3"
 else
 	THIRD_OPTION=""
 fi

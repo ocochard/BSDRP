@@ -385,10 +385,10 @@ echo "# Parallel Make" >> /tmp/${NAME}.nano
 # Special ARCH commands
 case ${TARGET_ARCH} in
 	"i386") echo 'NANO_PMAKE="make -j 3"' >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="acpi netgraph if_ef if_tap if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog hifn padlock safe ubsec glxsb"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="acpi netgraph if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog hifn padlock safe ubsec glxsb"' >> /tmp/${NAME}.nano
 	;;
 	"amd64") echo 'NANO_PMAKE="make -j 3"' >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="netgraph if_ef if_tap if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog hifn padlock safe ubsec"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="netgraph if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog hifn padlock safe ubsec"' >> /tmp/${NAME}.nano
 	;;
 	"arm") echo 'NANO_PMAKE="make"' >> /tmp/${NAME}.nano
 	echo 'NANO_MODULES=""' >> /tmp/${NAME}.nano
@@ -397,7 +397,7 @@ case ${TARGET_ARCH} in
 	export NANO_MAKEFS
 	;;
 	"sparc64") echo 'NANO_PMAKE="make -j 8"' >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="netgraph if_ef if_tap if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="netgraph if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog"' >> /tmp/${NAME}.nano
 	;;
 esac
 
