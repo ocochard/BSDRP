@@ -300,7 +300,7 @@ add_port "net/quagga" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWI
 add_port "net/bird"
 add_port "net/bird6"
 
-# Add FreeVRRPd: using XORP only for VRRP is too memory/CPU hungry:
+# Add FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
 
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
@@ -332,6 +332,11 @@ add_port "mail/ssmtp"
 # Add tmux (screen equivalent, but better because BSD)
 add_port "devel/libevent"
 add_port "sysutils/tmux"
+
+# Add mpd5, a multi-link PPP protocol server (netgraph dependent)
+add_port "textproc/expat2"
+add_port "devel/libpdel"
+add_port "net/mpd5"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netpipe" 

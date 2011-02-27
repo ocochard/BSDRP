@@ -96,8 +96,10 @@ mount_data () {
 	if [ ! -d /data ]; then
 		mount -o rw -u /
 		mkdir /data
-		echo "/dev/BSDRPs4 /data ufs rw,noauto 2 2" >> etc/fstab
 		mount -o ro -u /
+	fi
+	if ! grep -q "/data" /etc/fstab; then
+		echo "/dev/ufs/BSDRPs4 /data ufs rw,noauto 2 2" >> etc/fstab
 	fi
 	mount /data
 }

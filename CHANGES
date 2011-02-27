@@ -10,6 +10,7 @@ Release 0.35 (not released)
 - Add missing kernel modules and binary: ipfw_nat, pflog, tap interface
 - MS Windows Virtualbox lab script improvement: Permit to use a 'shared with host (hostonly)' interface
 - freevrrpd was updated (Need TO TEST the new version because netgraph dependent)
+- Added: net/mpd5, a PPP daemon (multilink, PAP, CHAP, MS-CHAP and EAP authentication, PPTP, L2TP, PPPoE, etc…)
 
 Bug fix:
 - Hardened the upgrade script and add lot's of fix
@@ -31,6 +32,7 @@ isc-dhcp31-relay-3.1.ESV,1 The ISC Dynamic Host Configuration Protocol relay
 isc-dhcp31-server-3.1.ESV,1 The ISC Dynamic Host Configuration Protocol server
 libevent-1.4.14b_2  Provides an API to execute callback functions on certain ev
 mcast-tools-20061214_1 IPv6 multicast routing daemons and tools
+mpd5				Multi-link PPP daemon based on netgraph(4)
 mrouted-3.9_1       Multicast routing daemon providing DVMRP for IPv4
 net-snmp-5.5_4      An extendable SNMP implementation
 quagga-0.99.17_5    Free RIPv1, RIPv2, OSPFv2, BGP4, IS-IS route software
