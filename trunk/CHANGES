@@ -4,20 +4,27 @@ Release 0.35 (not released)
 - Reduce bootloader timeout to 1 second
 - Reduce the security level of the kernel to default value
 - Use xz in place of bzip2 for BSDRP images files
-- Install kernel carp module (still not remove ucarp): FreeBSD 8.2 permit to use carp as kernel module, there is no more conflict with freeVRRPd and carp
+- Install kernel carp module (still not remove ucarp): FreeBSD 8.2 permit to use carp as kernel module
 - Possibility to use a post-upgrade script included in the new image during upgrade
 - Detect KVM guest usage
 - Add missing kernel modules and binary: ipfw_nat, pflog, tap interface
 - MS Windows Virtualbox lab script improvement: Permit to use a 'shared with host (hostonly)' interface
-- freevrrpd was updated (Need TO TEST the new version because netgraph dependent)
 - Added: net/mpd5, a PPP daemon (multilink, PAP, CHAP, MS-CHAP and EAP authentication, PPTP, L2TP, PPPoE, etc…)
+- Disable polling: Modern NIC didn't have IRQ problem, and enabling polling on this modern NIC can reduce performance
 
 Bug fix:
 - Hardened the upgrade script and add lot's of fix
 
+Updated packages:
+- freeVRRPd: It need netgraph module now
+- Quagga
+- Bird
+- tmux
+- ssmtp
+
 Know bugs:
 - "system endpoint" seams to decrease TCP performance in place of increase them
-- FreeBSD Bootloader (boot0) didn't support serial speed value more than 9600 baud
+- FreeBSD Bootloader manager (boot0) didn't support serial speed value more than 9600 baud (kernel and console use 38400)
 
 Installed packages and their versions:
 
@@ -25,19 +32,22 @@ NetPIPE-3.7.1       A self-scaling network benchmark
 bird-1.2.5          Dynamic IP routing daemon (IPv4 version)
 bird6-1.2.5         Dynamic IP routing daemon (IPv6 version)
 dlmalloc-2.8.4      Small, fast malloc library by Doug Lea
+expat-2.0.1_1       XML 1.0 parser written in C
 fprobe-1.1_1        Tool that collects network traffic data
 freevrrpd-1.0       This a VRRP RFC2338 Compliant implementation under FreeBSD
 iperf-2.0.5         A tool to measure maximum TCP and UDP bandwidth
 isc-dhcp31-relay-3.1.ESV,1 The ISC Dynamic Host Configuration Protocol relay
 isc-dhcp31-server-3.1.ESV,1 The ISC Dynamic Host Configuration Protocol server
 libevent-1.4.14b_2  Provides an API to execute callback functions on certain ev
+libpdel-0.5.3_4     Packet Design multi-purpose C library for embedded applicat
 mcast-tools-20061214_1 IPv6 multicast routing daemons and tools
-mpd5				Multi-link PPP daemon based on netgraph(4)
+mpd-5.5             Multi-link PPP daemon based on netgraph(4)
 mrouted-3.9_1       Multicast routing daemon providing DVMRP for IPv4
 net-snmp-5.5_4      An extendable SNMP implementation
 quagga-0.99.17_5    Free RIPv1, RIPv2, OSPFv2, BGP4, IS-IS route software
-ssmtp-2.62.3        Extremely simple MTA to get mail off the system to a mail h
-tmux-1.4_3          A Terminal Multiplexer
+ssmtp-2.64          Extremely simple MTA to get mail off the system to a mail h
+tmux-1.4_4          A Terminal Multiplexer
+ucarp-1.5.2_1       Userlevel Common Address Redundancy Protocol
 
 =====================================================================================================
 Release 0.34

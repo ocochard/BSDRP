@@ -355,7 +355,7 @@ customize_cmd cleanup_ports
 
 # BSDRP custom function
 bsdrp_custom () {
-	# Copy BSDRP information files
+	# Copy BSDRP license and authors files
 	cp -v ${NANO_TOOLS}/AUTHORS ${NANO_WORLDDIR}/root/
 	cp -v ${NANO_TOOLS}/LICENSE ${NANO_WORLDDIR}/root/
 	# Disable reverse DNS in sshd:

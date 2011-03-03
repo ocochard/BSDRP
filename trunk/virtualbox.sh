@@ -80,9 +80,9 @@ check_system_common () {
         exit 1
     fi
 
-	if ! `VBoxHeadless | grep -q vrdp`; then
+	if ! `VBoxHeadless | grep -q vrd`; then
 		if ! `VBoxHeadless | grep -q vnc`; then
-			echo "No Virtualbox VRDP/VNC support detected:"
+			echo "No Virtualbox VRD/VNC support detected:"
 			echo "BSDRP vga images will not be supported (only serial)"
 			echo "VRDP: Supported by Virtualbox closed source release"
 			echo "VNC:  Supported by FreeBSD VirtualBox-OSE (if enabled during make config)"
@@ -343,7 +343,7 @@ start_vm () {
 		echo "2. Open your serial terminal software using the local PTY link just created"
 		echo "   Using screen:"
 		echo "       screen /tmp/router1 9600"
-		echo "   Or using tip (FreeBSD): "
+		echo "   Or using tip (FreeBSD):"
 		echo '       echo "router1:dv=/tmp/router1:br#9600:pa=none:" >> /etc/remote'
 		echo "       tip router1"
 		echo "Warning: Closing your session will close socat on both end"
@@ -358,9 +358,9 @@ delete_vm () {
         exit 1
     fi
     echo "Delete VM: $1" >> ${LOG_FILE} 2>&1
-    echo "step 1: Unlinking the disk controller..." >> ${LOG_FILE}
+    echo "step 1: Unlinking the disk controller..." >> ${LOG_FILE}
     VBoxManage storagectl $1 --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1
-    echo "step 2: Unregister the VDI..." >> ${LOG_FILE}
+    echo "step 2: Unregister the VDI..." >> ${LOG_FILE}
     VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1
     echo "step 3: Delete the hard-drive image..." >> ${LOG_FILE}
     VBoxManage closemedium disk $WORKING_DIR/$1.vdi --delete >> ${LOG_FILE} 2>&1
@@ -423,7 +423,7 @@ usage () {
         (
         echo "Usage: $0 [-hds] [-i BSDRP_image_file.img] [-n router-number] [-l LAN-number]"
         echo "  -i filename     BSDRP image file name (to be used the first time only)"
-        echo "  -d delete       Delete all BSDRP VM and disks"
+        echo "  -d       		Delete all BSDRP VM and disks"
         echo "  -n X            Number of router (between 1 and 9) full meshed (default: 1)"
         echo "  -l Y            Number of LAN between 0 and 9 (default: 0)"
 		echo "  -c              Enable internal NIC shared with host for each routers (default: Disable)"
