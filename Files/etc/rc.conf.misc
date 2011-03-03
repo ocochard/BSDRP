@@ -30,8 +30,11 @@ harvest_p_to_p="NO"     # Entropy device harvests point-to-point randomness
 # Prevent syslog to bind a network socket
 syslogd_flags="-ss"
 
-# Enable polling: Improve performance on NIC that support it
-polling_enable="YES"
+# Polling can improve performance on old NIC that support it.
+# But because modern Ethernet controllers include intelligent IRQ management,
+# enabling polling on this modern controller can reduce performance.
+# Advice: Enable for i386 arch, disable for amd64 arch.
+polling_enable="NO"
 
 # Enable RFC1323 extensions
 tcp_extensions="YES"

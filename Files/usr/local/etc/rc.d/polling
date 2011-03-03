@@ -2,7 +2,7 @@
 #
 # BSD Router Project: Auto enable polling for interface that support it
 #
-# Copyright (c) 2009-2010, The BSDRP Development Team 
+# Copyright (c) 2009-2011, The BSDRP Development Team 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -57,12 +57,11 @@ polling_start()
 	do
 		for SUPPORTED in ${SUPPORTED_DEVICES}
 		do
-			if echo ${DETECTED} | /usr/bin/grep -q "${SUPPORTED}"; then 	
-				echo "Try to enable polling for: ${DETECTED}"
+			if echo ${DETECTED} | /usr/bin/grep -q "${SUPPORTED}"; then 
 				if ifconfig ${DETECTED} polling; then
-					echo "Done"
+					echo "Polling enabled for ${DETECTED}"
 				else
-					echo "Can't enable polling on ${DETECTED}"
+					echo "Polling not enabled for ${DETECTED}"
 				fi
 			fi
 		done
