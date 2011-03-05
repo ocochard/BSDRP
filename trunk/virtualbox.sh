@@ -40,7 +40,7 @@ LOG_FILE="BSDRP_lab.log"
 
 # Check FreeBSD system pre-requise for starting virtualbox
 check_system_freebsd () {
-    if ! kldstat -m vboxdrv; then
+    if ! kldstat -m vboxdrv > /dev/null 2>&1; then
         echo "vboxdrv module not loaded, loading it..."
         if kldload /boot/modules/vboxdrv.ko; then
             echo "ERROR: Can't load vboxdrv"
@@ -242,7 +242,7 @@ create_vm () {
             if ! VBoxManage controlvm $1 poweroff; then
 				echo "ERROR: Can't poweroff running $1"
 			fi
-            sleep 5
+            #sleep 5
         fi
     fi
     if ! VBoxManage modifyvm $1 --audio none --memory 92 --vram 1 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1; then
@@ -375,28 +375,32 @@ start_vm () {
     #Enter the main loop for each VM
     while [ $i -le $NUMBER_VM ]; do
         # OSE version of VB doesn't support --vrdp option
-		# Official OSE version of VB doesn't support --vnc option (need a patch)
+		# FreeBSD OSE version of VB support only --vnc option
 		if ! ($SERIAL); then
-        	nohup VBoxHeadless --${VBOX_OUTPUT} on --${VBOX_OUTPUT}port 590${i} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
+			if [ "${VBOX_OUTPUT}" = "vnc" ]; then
+        		nohup VBoxHeadless --vnc --${VBOX_OUTPUT}port 590${i} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
+			else
+				nohup VBoxHeadless --${VBOX_OUTPUT} on --${VBOX_OUTPUT}port 590${i} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
+			fi
 		else
 			nohup VBoxHeadless --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
 		fi
         sleep 2
 
-		if ($HOSTONLY_NIC); then
-        	echo "You need to configure an IP address in these range for communicating with the host:"
-        	ifconfig ${HOSTONLY_NIC_NAME} | grep "inet"
-    	fi
-
         if ($SERIAL); then
             socat -s UNIX-CONNECT:$WORKING_DIR/BSDRP_lab_R$i.serial TCP-LISTEN:800$i >> ${LOG_FILE} 2>&1 &
             echo "Connect to the router ${i} by TCP-connecting socat on port 800${i}"
         else
-            echo "Connect to the router ${i} by ${VBOX_OUTPUT} client on port 800${i}"
+            echo "Connect to the router ${i} by ${VBOX_OUTPUT} client on port 590${i}"
         fi
         i=`expr $i + 1`
     done
-	
+
+	if ($HOSTONLY_NIC); then
+		echo "You need to configure an IP address in these range for communicating with the host:"
+		ifconfig ${HOSTONLY_NIC_NAME} | grep "inet"
+    fi
+
 	if ($SERIAL); then
 		echo "Here is how to use a serial terminal software for connecting to the routers:"
 		echo "1. Create a bridge between the socat port and a local PTY link"
@@ -427,10 +431,10 @@ delete_vm () {
     if ! VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1; then
 		echo "ERROR: Can't unregister the VDI for VM $1."
 	fi
-    #echo "step 3: Delete the hard-drive image..." >> ${LOG_FILE}
-    #if ! VBoxManage closemedium disk $WORKING_DIR/$1.vdi --delete >> ${LOG_FILE} 2>&1; then
-	#	echo "ERROR: Can't delete hard-drive image for VM $1."
-	#fi
+    echo "step 3: Delete the hard-drive image..." >> ${LOG_FILE}
+    if ! VBoxManage closemedium disk $WORKING_DIR/$1.vdi --delete >> ${LOG_FILE} 2>&1; then
+		echo "NOTE: Can't delete hard-drive image for VM $1."
+	fi
 }
 delete_all_vm () {
     stop_all_vm
@@ -440,6 +444,15 @@ delete_all_vm () {
     for i in ${LIST_VM}; do
             delete_vm $i 
     done
+
+	#Check if harddrive file still present
+	LIST_VM=`VBoxManage list hdds | grep BSDRP_lab | tr -s ' ' | cut -d ' ' -f 2`
+	for i in ${LIST_VM}; do
+		echo "Note: There is still some hard disk image, deleting it..." >> ${LOG_FILE}
+		if ! VBoxManage closemedium disk $i --delete >> ${LOG_FILE} 2>&1; then
+        	echo "ERROR: Can't delete hard-drive image $i."
+    	fi	
+	done
 	echo "All VMs deleted"
 	
 }
@@ -460,7 +473,7 @@ stop_all_vm () {
 						echo "WARNING Can't kill socat process ${PROC_NUM}"
 					fi
 				fi
-                sleep 5
+                #sleep 5
     done
 }
 
