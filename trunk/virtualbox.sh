@@ -245,7 +245,7 @@ create_vm () {
             #sleep 5
         fi
     fi
-    if ! VBoxManage modifyvm $1 --audio none --memory 92 --vram 1 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1; then
+    if ! VBoxManage modifyvm $1 --audio none --memory 128 --vram 1 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1; then
 		echo "ERROR: Can't customize $1"
 		exit 1
 	fi

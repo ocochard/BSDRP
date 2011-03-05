@@ -371,17 +371,17 @@ parse_filename () {
 	case "$OS_DETECTED" in
 	"FreeBSD")
     	if echo "${FILENAME}" | grep -q "amd64"; then
-        	QEMU_ARCH="qemu-system-x86_64 -m 96"
+        	QEMU_ARCH="qemu-system-x86_64 -m 128"
         	echo "filename guest a x86-64 image"
    		fi
     	if echo "${FILENAME}" | grep -q "i386"; then
-        	QEMU_ARCH="qemu -m 96"
+        	QEMU_ARCH="qemu -m 128"
         	echo "filename guests a i386 image"
     	fi
     	if [ "$QEMU_ARCH" = "0" ]; then
         	echo "WARNING: Can't guests arch of this image"
         	echo "Will use as default i386"
-        	QEMU_ARCH="qemu -m 96"
+        	QEMU_ARCH="qemu -m 128"
     	fi
 		if $KQEMU; then
 			QEMU_ARCH="${QEMU_ARCH} -enable-kqemu"
@@ -389,7 +389,7 @@ parse_filename () {
         break
          ;;
     "Linux")
-		QEMU_ARCH="kvm -m 96"
+		QEMU_ARCH="kvm -m 128"
          break
          ;;
      *)
