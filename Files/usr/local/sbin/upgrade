@@ -39,8 +39,7 @@
 # ssh my-user@my-server cat _.disk.image.xz | xzcat | upgrade
 
 # Strict script
-set -e
-set -u
+set -eu
 
 ARCH=`uname -m`
 
@@ -50,8 +49,9 @@ if [ "${ARCH}" = "sparc64" ]; then
 fi
 
 # Get the NANO_GLABEL_SYS variable
-# (get the name from mount output, and remove the last character)
-NANO_GLABEL_SYS=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1 | sed 's/\(.*\)./\1/'`
+# (get the name from mount output, and remove the last 3 characters: s1a or s2a)
+#NANO_GLABEL_SYS=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1 | sed 's/\(.*\)./\1/'`
+NANO_GLABEL_SYS=`cut -d '/' -f 2 /etc/nanobsd.conf`
 # Get the NANO_GLABEL_SYS_FULL variable
 # (kept the last 1 or 2 number)
 NANO_GLABEL_SYS_FULL=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1`
@@ -98,7 +98,7 @@ if ! fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a; then
 fi
 
 # Set Label into the new slice
-if ! tunefs -L ${NANO_GLABEL_SYS}${DST_SLICE} /dev/${NANO_DRIVE}s${DST_SLICE}a; then
+if ! tunefs -L ${NANO_GLABEL_SYS}s${DST_SLICE}a /dev/${NANO_DRIVE}s${DST_SLICE}a; then
 	echo "ERROR: Can't put label on the new filesystem"
 	exit 1
 fi
@@ -108,19 +108,19 @@ if [ ! -d /tmp/sysupgrade ]; then
 	mkdir /tmp/sysupgrade
 fi
 
-if ! mount /dev/ufs/${NANO_GLABEL_SYS}${DST_SLICE} /tmp/sysupgrade; then
+if ! mount /dev/ufs/${NANO_GLABEL_SYS}s${DST_SLICE}a /tmp/sysupgrade; then
 	echo "ERROR: Can't mount new upgrade image"
 	exit 1
 fi
 # 	Adapt fstab of the new system
 for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab
 	do
-	    sed -i "" "s/${NANO_GLABEL_SYS}${SRC_SLICE}/${NANO_GLABEL_SYS}${DST_SLICE}/g" $f
+	    sed -i "" "s/${NANO_GLABEL_SYS}s${SRC_SLICE}a/${NANO_GLABEL_SYS}s${DST_SLICE}a/g" $f
     done
 #	Compare the loader.conf, and include the diff into the new partition
 #	This file is for example, modified by "system virtualized"
-if ! diff -ruN /tmp/sysupgrade/boot/loader.conf /boot/loader.conf > /tmp/loader.conf.patch; then
-	if patch -s /tmp/sysupgrade/boot/loader.conf /tmp/loader.conf.patch; then
+if diff -ruN /tmp/sysupgrade/boot/loader.conf /boot/loader.conf > /tmp/loader.conf.patch; then
+	if ! patch -s /tmp/sysupgrade/boot/loader.conf /tmp/loader.conf.patch; then
 		echo "WARNING: Can't patch upgraded /boot/loader.conf"
 		echo "YOU NEED to manually merge your /boot/loader.conf"
 	fi
@@ -160,7 +160,6 @@ fi
 
 case "${ARCH}" in
         i386|amd64)
-                NANO_KERNEL="BSDRP-I386"
 				if ! boot0cfg -s ${DST_SLICE} -t 18 -v ${NANO_DRIVE}; then
 					echo "ERROR: Can't update FreeBSD bootloader"
 					exit 1
