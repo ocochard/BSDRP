@@ -7,7 +7,7 @@ Release 0.35 (not released)
 - Install kernel carp module (still not remove ucarp): FreeBSD 8.2 permit to use carp as kernel module
 - Possibility to use a post-upgrade script included in the new image during upgrade
 - Detect KVM guest usage
-- Add missing kernel modules and binary: ipfw_nat, pflog, tap interface
+- Add missing kernel modules and binary: ipfw_nat, libaliase, pflog, tap interface
 - MS Windows Virtualbox lab script improvement: Permit to use a 'shared with host (hostonly)' interface
 - Added: net/mpd5, a PPP daemon (multilink, PAP, CHAP, MS-CHAP and EAP authentication, PPTP, L2TP, PPPoE, etc…)
 - Disable polling: Modern NIC didn't have IRQ problem, and enabling polling on this modern NIC can reduce performance
