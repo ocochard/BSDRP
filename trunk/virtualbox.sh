@@ -31,6 +31,8 @@
 #Uncomment for debug
 #set -x
 
+set -eu
+
 # Global variable
 WORKING_DIR="$HOME/.VirtualBox/HardDisks"
 MAX_VM=9
@@ -126,12 +128,18 @@ check_image () {
 
     if echo ${FILENAME} | grep -q bz2  >> ${LOG_FILE} 2>&1; then
         echo "Bzip2 compressed image detected, unzip it..."
-        bunzip2 -k ${FILENAME}
+        if ! bunzip2 -k ${FILENAME}; then
+			echo "ERROR: Can't bunzip2 image file!"
+			exit 1
+		fi
         # change FILENAME by removing the last.bz2"
         FILENAME=`echo ${FILENAME} | sed -e 's/.bz2//g'`
     elif echo ${FILENAME} | grep -q xz  >> ${LOG_FILE} 2>&1; then
         echo "xz compressed image detected, unzip it..."
-        xz -dk ${FILENAME}
+        if ! xz -dk ${FILENAME}; then
+			echo "ERROR: Can't unxz image file!"
+			exit 1
+		fi
         # change FILENAME by removing the last.lzma"
         FILENAME=`echo ${FILENAME} | sed -e 's/.xz//g'`
 	fi
@@ -154,19 +162,37 @@ create_template_vm () {
     fi
 
 	echo "Convert BSDRP image disk to VDI..." >> ${LOG_FILE}
-    VBoxManage convertfromraw ${FILENAME} ${WORKING_DIR}/BSDRP_lab_template.vdi >> ${LOG_FILE} 2>&1
+    if ! VBoxManage convertfromraw ${FILENAME} ${WORKING_DIR}/BSDRP_lab_template.vdi >> ${LOG_FILE} 2>&1; then
+		echo "ERROR: Can't convert BSDRP image disk!"
+		exit 1
+	fi
 	echo "Create BSDRP template VM..." >> ${LOG_FILE}
-    VBoxManage createvm --name BSDRP_lab_template --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1
+    if ! VBoxManage createvm --name BSDRP_lab_template --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1; then
+		echo "Can't create template VM!"
+		exit 1
+	fi
 	echo "Add SATA controller to the VM..." >> ${LOG_FILE}
-	VBoxManage storagectl BSDRP_lab_template --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE} 2>&1
+	if ! VBoxManage storagectl BSDRP_lab_template --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE} 2>&1; then
+		echo "Can't add SATA controller to the VM!"
+		exit 1
+	fi
 	echo "Add the VDI to the VM..." >> ${LOG_FILE}
-	VBoxManage storageattach BSDRP_lab_template --storagectl "SATA Controller" \
+	if ! VBoxManage storageattach BSDRP_lab_template --storagectl "SATA Controller" \
     --port 0 --device 0 --type hdd \
-    --medium $WORKING_DIR/BSDRP_lab_template.vdi >> ${LOG_FILE} 2>&1
+    --medium $WORKING_DIR/BSDRP_lab_template.vdi >> ${LOG_FILE} 2>&1; then
+		echo "Can't add VDI to the VM!"
+		exit 1
+	fi
 	echo "Reduce Template VM requierement..." >> ${LOG_FILE}
-    VBoxManage modifyvm BSDRP_lab_template --memory 16 --vram 1 >> ${LOG_FILE} 2>&1
+    if ! VBoxManage modifyvm BSDRP_lab_template --memory 16 --vram 1 >> ${LOG_FILE} 2>&1; then
+		echo "Can't modify VM (reduce requierement)!"
+		exit 1
+	fi
 	echo "Compress the VDI..." >> ${LOG_FILE}
-    VBoxManage modifyvdi $WORKING_DIR/BSDRP_lab_template.vdi --compact >> ${LOG_FILE} 2>&1
+    if ! VBoxManage modifyvdi $WORKING_DIR/BSDRP_lab_template.vdi --compact >> ${LOG_FILE} 2>&1; then
+		echo "Can't compres the VDI!"
+		exit 1
+	fi
 }
 
 # Check if VM allready exist
@@ -193,35 +219,60 @@ create_vm () {
     # Check if the vm allready exist
     if ! check_vm $1; then
 		echo "Create VM $1..." >> ${LOG_FILE}
-        VBoxManage createvm --name $1 --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1
+        if ! VBoxManage createvm --name $1 --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1; then
+			echo "ERROR: Can't create $1"
+			exit 1
+		fi
         if [ -f $WORKING_DIR/$1.vdi ]; then
             rm $WORKING_DIR/$1.vdi
         fi
-        VBoxManage clonehd $WORKING_DIR/BSDRP_lab_template.vdi $1.vdi >> ${LOG_FILE} 2>&1
+        if ! VBoxManage clonehd $WORKING_DIR/BSDRP_lab_template.vdi $1.vdi >> ${LOG_FILE} 2>&1; then
+			echo "ERROR: Can't clone hard-drive for $1"
+			exit 1
+		fi
 		echo "Add SATA controller to the VM..." >> ${LOG_FILE}
-    	VBoxManage storagectl $1 --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE}
+		if ! VBoxManage storagectl $1 --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE}; then
+			echo "ERROR: Can't add SATA controler to $1"
+			exit 1
+		fi
     	echo "Add the controller and disk to the VM..." >> ${LOG_FILE}
-    	VBoxManage storageattach $1 --storagectl "SATA Controller" \
+    	if ! VBoxManage storageattach $1 --storagectl "SATA Controller" \
     	--port 0 --device 0 --type hdd \
-    	--medium $1.vdi >> ${LOG_FILE} 2>&1
+    	--medium $1.vdi >> ${LOG_FILE} 2>&1; then
+			echo "ERROR: Can't attach disk to the VM!"
+			exit 1
+		fi
     else
         # if existing: Is running ?
         if `VBoxManage showvminfo $1 | grep -q "running"`; then
-            VBoxManage controlvm $1 poweroff
+            if ! VBoxManage controlvm $1 poweroff; then
+				echo "ERROR: Can't poweroff running $1"
+			fi
             sleep 5
         fi
     fi
-    VBoxManage modifyvm $1 --audio none --memory 92 --vram 1 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1
-    VBoxManage modifyvm $1 --biosbootmenu disabled >> ${LOG_FILE} 2>&1
+    if ! VBoxManage modifyvm $1 --audio none --memory 92 --vram 1 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1; then
+		echo "ERROR: Can't customize $1"
+		exit 1
+	fi
+    if ! VBoxManage modifyvm $1 --biosbootmenu disabled >> ${LOG_FILE} 2>&1; then
+		echo "ERROR Can't disable bootmenu for $1"
+		exit 1
+	fi
     if ($SERIAL); then
-        VBoxManage modifyvm $1 --uart1 0x3F8 4 --uartmode1 server $WORKING_DIR/$1.serial >> ${LOG_FILE} 2>&1
+        if ! VBoxManage modifyvm $1 --uart1 0x3F8 4 --uartmode1 server $WORKING_DIR/$1.serial >> ${LOG_FILE} 2>&1; then
+			echo "ERROR: Can't configure serial port for $1"
+			exit 1
+		fi
     fi
     
 	#Delete all NIC
-	local i=1
-    while [ $i -le 8 ]; do
-		VBoxManage modifyvm $1 --nic$i none >> ${LOG_FILE} 2>&1
-        i=`expr $i + 1`
+	local NIC_LIST=""
+	NIC_lIST=`VBoxManage showvminfo $1 | grep MAC | cut -d ' ' -f 2 | cut -d ':' -f 1`
+    for i in ${NIC_LIST}; do
+		if ! VBoxManage modifyvm $1 --nic$i none >> ${LOG_FILE} 2>&1; then
+			echo "Warning: Can't unconfigure NIC $i"
+		fi
     done
 
 	echo "VM $1 Created/Reseted" >> ${LOG_FILE}
@@ -284,9 +335,15 @@ clone_vm () {
                 echo "em${NIC_NUMBER} connected to Router${j}."
                 NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
                 if [ $i -le $j ]; then
-                    VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${i}${j} --macaddress${NIC_NUMBER} AAAA00000${i}${i}${j} >> ${LOG_FILE} 2>&1
+                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${i}${j} --macaddress${NIC_NUMBER} AAAA00000${i}${i}${j} >> ${LOG_FILE} 2>&1; then
+						echo "ERROR: Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
+						exit 1
+					fi
                 else
-                    VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${j}${i} --macaddress${NIC_NUMBER} AAAA00000${i}${j}${i} >> ${LOG_FILE} 2>&1
+                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${j}${i} --macaddress${NIC_NUMBER} AAAA00000${i}${j}${i} >> ${LOG_FILE} 2>&1; then
+						echo "ERROR: Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
+						exit 1
+					fi
                 fi
             fi
             j=`expr $j + 1` 
@@ -296,13 +353,17 @@ clone_vm () {
         while [ $j -le $NUMBER_LAN ]; do
             echo "em${NIC_NUMBER} connected to LAN number ${j}."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-            VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC00000${j}0${i} >> ${LOG_FILE} 2>&1
+            if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC00000${j}0${i} >> ${LOG_FILE} 2>&1; then
+				echo "WARNING: Can't add NIC ${NIC_NUMBER} (LAN) to VM $i"
+			fi
             j=`expr $j + 1`
         done
 		if ($HOSTONLY_NIC); then
 			echo "em${NIC_NUMBER} connected to shared-with-host LAN."
 			NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-			VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --hostonlyadapter${NIC_NUMBER} ${HOSTONLY_NIC_NAME} --nictype${NIC_NUMBER} 82540EM --macaddress${NIC_NUMBER} 00bbbb00000${i} >> ${LOG_FILE} 2>&1
+			if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --hostonlyadapter${NIC_NUMBER} ${HOSTONLY_NIC_NAME} --nictype${NIC_NUMBER} 82540EM --macaddress${NIC_NUMBER} 00bbbb00000${i} >> ${LOG_FILE} 2>&1; then
+				echo "WARNING: Can't add NIC ${NIC_NUMBER} (Host only) to VM $i"
+			fi
 		fi
     i=`expr $i + 1`
     done
@@ -359,51 +420,47 @@ delete_vm () {
     fi
     echo "Delete VM: $1" >> ${LOG_FILE} 2>&1
     echo "step 1: Unlinking the disk controller..." >> ${LOG_FILE}
-    VBoxManage storagectl $1 --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1
-    echo "step 2: Unregister the VDI..." >> ${LOG_FILE}
-    VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1
-    echo "step 3: Delete the hard-drive image..." >> ${LOG_FILE}
-    VBoxManage closemedium disk $WORKING_DIR/$1.vdi --delete >> ${LOG_FILE} 2>&1
+    if ! VBoxManage storagectl $1 --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1; then
+		echo "ERROR: Can't unlink disk controller for VM $1."
+	fi
+    echo "step 2: Unregister the VDI and delete it..." >> ${LOG_FILE}
+    if ! VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1; then
+		echo "ERROR: Can't unregister the VDI for VM $1."
+	fi
+    #echo "step 3: Delete the hard-drive image..." >> ${LOG_FILE}
+    #if ! VBoxManage closemedium disk $WORKING_DIR/$1.vdi --delete >> ${LOG_FILE} 2>&1; then
+	#	echo "ERROR: Can't delete hard-drive image for VM $1."
+	#fi
 }
 delete_all_vm () {
     stop_all_vm
-    local i=1
+    local LIST_VM=""
+	LIST_VM=`VBoxManage list vms | grep BSDRP_lab | cut -d "\"" -f 2`
     #Enter the main loop for each VM
-    while [ $i -le $MAX_VM ]; do
-        if check_vm BSDRP_lab_R$i; then
-            delete_vm BSDRP_lab_R$i 
-        fi 
-        i=`expr $i + 1`
+    for i in ${LIST_VM}; do
+            delete_vm $i 
     done
-	if check_vm BSDRP_lab_template; then
-            delete_vm BSDRP_lab_template
-    fi
 	echo "All VMs deleted"
 	
 }
 
 # Stop All VM
 stop_all_vm () {
-    local i=1
+    local LIST_RUNNING_VM=""
+	LIST_RUNNING_VM=`VBoxManage list runningvms | grep BSDRP_lab | cut -d "\"" -f 2`
     #Enter the main loop for each VM
-    while [ $i -le $MAX_VM ]; do
-        # Check if the vm allready exist
-        if check_vm BSDRP_lab_R$i; then
-            # if existing: Is running or in Guru meditation state ?
-			echo "Testing state of BSDRP_lab_R$i..." >> ${LOG_FILE}
-            if `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "running"`; then
-				echo "BSDRP_lab_R$i is in running state: Stopping it..." >> ${LOG_FILE}
-				echo "BSDRP_lab_R$i is in running state: Stopping it..."
-                VBoxManage controlvm BSDRP_lab_R$i poweroff >> ${LOG_FILE} 2>&1
+	for i in ${LIST_RUNNING_VM}; do
+                if ! VBoxManage controlvm $i poweroff >> ${LOG_FILE} 2>&1; then
+					echo "WARNING: Can't poweroff $i"
+				fi
+				if ps auxww | grep socat | grep $i; then
+					local PROC_NUM=""
+					PROC_NUM=`ps auxww | grep socat | grep $i | tr -s ' ' | cut -d ' ' -f 2`
+					if ! kill ${PROC_NUM}; then
+						echo "WARNING Can't kill socat process ${PROC_NUM}"
+					fi
+				fi
                 sleep 5
-			elif `VBoxManage showvminfo BSDRP_lab_R$i | grep -q "meditation"`; then
-				echo "BSDRP_lab_R$i is in Guru meditation state: Stopping it..." >> ${LOG_FILE}
-				echo "BSDRP_lab_R$i is in Guru meditation state: Stopping it..."
-				VBoxManage controlvm BSDRP_lab_R$i poweroff >> ${LOG_FILE} 2>&1
-                sleep 5
-            fi
-        fi
-        i=`expr $i + 1`
     done
 }
 
@@ -440,15 +497,18 @@ usage () {
 
 ### Parse argument
 
-set +e
+#set +e
 args=`getopt i:dhcl:n:s $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
 fi
-set -e
+#set -e
 
+NUMBER_VM=""
 HOSTONLY_NIC=false
+NUMBER_LAN=""
+FILENAME=""
 
 set -- $args
 for i
