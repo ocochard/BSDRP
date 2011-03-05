@@ -54,12 +54,6 @@ check_system_common () {
 	
 	echo "Checking if VirtualBox installed..." >> ${LOG_FILE}
 
-	if [ ! -d $WORKING_DIR ]; then
-    	echo "Don't find $WORKING_DIR"
-    	echo "Is Virtualbox installed ?"
-    	exit 1
-	fi
-
     if ! `VBoxManage -v > /dev/null 2>&1`; then
         echo "ERROR: Is VirtualBox installed ?"
         exit 1
@@ -108,7 +102,7 @@ check_system_linux () {
 
 # Check user
 check_user () {
-    if ! `groups | grep -q vboxusers`; then
+    if ! `id ${USER} | grep -q vboxusers`; then
         echo "Your users is not in the vboxusers group"
         exit 1
     fi
@@ -307,6 +301,12 @@ parse_filename () {
 		exit 1
 		fi
     fi
+	if [ ! -d ${WORKING_DIR} ]; then
+		if ! mkdir -p ${WORKING_DIR}; then
+			echo "ERROR: Can't create ${WORKING_DIR}"
+			exit 1
+		fi
+	fi
     echo "VM_ARCH=$VM_ARCH" > ${WORKING_DIR}/image.info
     echo "SERIAL=$SERIAL" >> ${WORKING_DIR}/image.info
 

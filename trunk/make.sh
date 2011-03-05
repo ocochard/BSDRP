@@ -343,6 +343,12 @@ fi
 
 NANOBSD_OBJ=/usr/obj/nanobsd.${NAME}.${TARGET_ARCH}
 
+if [ ${SKIP_REBUILD} = "-b" ]; then
+	if [ ! -d {NANOBSD_OBJ} ]; then
+		echo "ERROR: No previous object directory found, you can't use -b option"
+		exit 1
+	fi
+fi
 check_current_dir
 check_system
 check_clean
