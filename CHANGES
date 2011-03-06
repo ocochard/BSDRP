@@ -37,7 +37,8 @@ You need to use a special upgrade script, that will convert partition name.
 As example, using fetch:
 cd /tmp
 fetch http://bsdrp.net/tools/upgrade-to-035
-2. Upgrade BSDRP using the special upgrade script only
+chmod +x /tmp/upgrade-to-035
+2. Launch the upgrade using this newly downloaded upgrade script
 As example, from a SSH server:
 ssh username@ssh-sever-name cat /directory-to/BSDRP_0.35_upgrade_i386_serial.img.xz | unxz | /tmp/upgrade-to-035
 3. Once done, reboot and answer "no" to the question "Do you want to save your configuration?"
