@@ -1,22 +1,24 @@
-Release 0.35 (not released)
+Release 0.35
+
+**** WARNING: Special upgrade procedure is needed for this release ! ****
+
 - Update to FreeBSD 8.2-RELEASE
-- Use the latest nanobsd script (from FreeBSD-current): NEED TO TEST THE UPDATE SCRIPT (glabel change)
+- BSDRP's nanobsd patches were include to FreeBSD-current, then replace BSDRP's nanobsd by FreeBSD's nanobsd
 - Reduce bootloader timeout to 1 second
-- Reduce the security level of the kernel to default value
-- Use xz in place of bzip2 for BSDRP images files
-- Install kernel carp module (still not remove ucarp): FreeBSD 8.2 permit to use carp as kernel module
+- Reduce the security level of the kernel to default value (loading kernel module is easiest)
+- Use xz in place of bzip2 for BSDRP files (images, mtree)
 - Possibility to use a post-upgrade script included in the new image during upgrade
 - Detect KVM guest usage
-- Add missing kernel modules and binary: ipfw_nat, libaliase, pflog, tap interface
 - MS Windows Virtualbox lab script improvement: Permit to use a 'shared with host (hostonly)' interface
-- Added: net/mpd5, a PPP daemon (multilink, PAP, CHAP, MS-CHAP and EAP authentication, PPTP, L2TP, PPPoE, etc…)
-- Disable polling: Modern NIC didn't have IRQ problem, and enabling polling on this modern NIC can reduce performance
+- Added: net/mpd5, a PPP Multilink daemon (multilink, PAP, CHAP, MS-CHAP and EAP authentication, PPTP, L2TP, PPPoE, etc...)
+- Disable polling by default: Modern NIC include interrupt management and enabling polling on this modern NIC can reduce performance
 
-Bug fix:
-- Hardened the upgrade script and add lot's of fix
+Bug fixes:
+- Hardened the upgrade and config scripts
+- Add missing kernel modules and binary: ipfw_nat, libaliase, pflog, tap interface
 
 Updated packages:
-- freeVRRPd: It need netgraph module now
+- freeVRRPd (It depends of some netgraph modules now)
 - Quagga
 - Bird
 - tmux
@@ -25,6 +27,20 @@ Updated packages:
 Know bugs:
 - "system endpoint" seams to decrease TCP performance in place of increase them
 - FreeBSD Bootloader manager (boot0) didn't support serial speed value more than 9600 baud (kernel and console use 38400)
+
+*** Upgrade procedure ***
+The new nanobsd script change the glabel name scheme of the partition, then the embedded upgrade script can't manage
+theses new names.
+You need to use a special upgrade script, that will convert partition name.
+
+1. Download the special upgrade script to your router in /tmp
+As example, using fetch:
+cd /tmp
+fetch http://bsdrp.net/tools/upgrade-to-035
+2. Upgrade BSDRP using the special upgrade script only
+As example, from a SSH server:
+ssh username@ssh-sever-name cat /directory-to/BSDRP_0.35_upgrade_i386_serial.img.xz | unxz | /tmp/upgrade-to-035
+3. Once done, reboot and answer "no" to the question "Do you want to save your configuration?"
 
 Installed packages and their versions:
 

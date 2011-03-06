@@ -94,19 +94,32 @@ mount_data () {
 	# Old BSDRP (previous to 0.54) didn't have /data directory neither fstab adapted
 	# Fix this problem
 	if [ ! -d /data ]; then
-		mount -o rw -u /
-		mkdir /data
-		mount -o ro -u /
+		if ! mount -o rw -u /; then
+			echo "ERROR: Can't remount root filesystem in read-write mode"
+			exit 1
+		fi
+		if ! mkdir /data; then
+			echo "ERROR: Can't create /data"
+			exit
+		fi
+		if ! mount -o ro -u /; then
+			echo "WARNING: Can't remount root filesystem in read-only mode"
+		fi
 	fi
 	if ! grep -q "/data" /etc/fstab; then
 		echo "/dev/ufs/BSDRPs4 /data ufs rw,noauto 2 2" >> /etc/fstab
 	fi
-	mount /data
+	if ! mount /data; then
+		echo "ERROR: Can't mount /data"
+		exit 1
+	fi
 }
 
 # umount data
 umount_data () {
-	umount /data
+	if ! umount /data; then
+		echo "WARNING: Can't umount /data"
+	fi
 	trap 1 2 15 EXIT
 }
 # Archive cfg
@@ -114,10 +127,15 @@ archive_cfg () {
 	mount_data
 	echo "Archiving configuration files..."
 	if [ ! -d /data/archives ]; then
-		mkdir /data/archives
+		if ! mkdir /data/archives; then
+			echo "ERROR: Can't create /data/archives"
+			exit 1
+		fi
 	else
 		if [ -f /data/archives/rollback.tar.bz2 ]; then
-			rm /data/archives/rollback.tar.bz2
+			if ! rm /data/archives/rollback.tar.bz2; then
+				echo "WARNING: Can't delete /data/archives/rollback.tar.bz2"
+			fi
 		fi
 	fi
 
@@ -154,7 +172,9 @@ save_cfg () {
          		cmp -s /etc/ssh/$i /cfg/ssh/$i || cp -pfv /etc/ssh/$i /cfg/ssh/$i 2>/dev/null
         	done
 	else
-		mkdir -p /cfg/ssh
+		if ! mkdir -p /cfg/ssh; then
+			echo "ERROR: Can't create /cfg/ssh"
+		fi
 		(
 		cd /etc/ssh
 		cp ssh_host_* /cfg/ssh 2>/dev/null
@@ -200,7 +220,9 @@ diff () {
 	# Don't know how to exchange variable with the subshell
 	# Then using a file in /tmp
 	if [ -f /tmp/DIFF_FOUND ]; then
-		rm /tmp/DIFF_FOUND
+		if ! rm /tmp/DIFF_FOUND; then
+			echo "WARNING: Can't delete /tmp/DIFF_FOUND"
+		fi
 	fi
 	if [ ! "$SECOND_OPTION" = "quiet" ]; then
 		echo "Looking for differences between running and saved configuration files..."
@@ -229,7 +251,9 @@ diff () {
 	)
 	umount_cfg
 	if [ -f /tmp/DIFF_FOUND ]; then
-		rm /tmp/DIFF_FOUND
+		if ! rm /tmp/DIFF_FOUND; then
+			echo "WARNING: Can't delete /tmp/DIFF_FOUND"
+		fi
 		exit 1
 	else
 		if [ ! "$SECOND_OPTION" = "quiet" ]; then
@@ -294,14 +318,24 @@ put () {
 			put_parse_input $THIRD_OPTION
 			echo "Send saved configuration by SCP to ${REMOTEHOST}"
 			if [ -f /tmp/${FILENAME} ]; then
-				rm /tmp/${FILENAME}	
+				if ! rm /tmp/${FILENAME}; then
+					echo "WARNING: Can't delete /tmp/${FILENAME}"
+				fi
 			fi
 			mount_cfg
-			tar -cjvpf /tmp/${FILENAME} -C /cfg/ . 2>/dev/null
+			if ! tar -cjvpf /tmp/${FILENAME} -C /cfg/ . 2>/dev/null; then
+				echo "ERROR: Can't tar /cfg to /tmp/${FILENAME}"
+				umount_cfg
+				exit 1
+			fi
 			umount_cfg
-			scp /tmp/${FILENAME} ${USERNAME}@${REMOTEHOST}:${FILENAME}
+			if ! scp /tmp/${FILENAME} ${USERNAME}@${REMOTEHOST}:${FILENAME}; then
+				echo "ERROR: Can't scp configuration to ${USERNAME}@${REMOTEHOST}:${FILENAME}"
+			fi
 			if [ -f /tmp/${FILENAME} ]; then
-                rm /tmp/${FILENAME}
+                if ! rm /tmp/${FILENAME}; then
+					echo "WARNING: Can't delete /tmp/${FILENAME}"
+				fi
             fi
             ;;
         cvs)
@@ -348,9 +382,14 @@ get () {
             put_parse_input $THIRD_OPTION
 			echo "Get configuration archive SCP from ${REMOTEHOST}"
 			if [ -f /tmp/cfg_archive.tar.bz2 ]; then
-                rm /tmp/cfg_archive.tar.bz2
+                if ! rm /tmp/cfg_archive.tar.bz2; then
+					echo "WARNING: Can't delete /tmp/cfg_archive.tar.bz2"
+				fi
             fi
-            scp ${USERNAME}@${REMOTEHOST}:${FILENAME} /tmp/cfg_archive.tar.bz2
+            if ! scp ${USERNAME}@${REMOTEHOST}:${FILENAME} /tmp/cfg_archive.tar.bz2; then
+				echo "ERROR: Can't download ${USERNAME}@${REMOTEHOST}:${FILENAME}"
+				exit 1
+			fi
 			restore_cfg /tmp/cfg_archive.tar.bz2 /etc
 			echo "Configuration restored"
 			echo "TO DO: Need to force process to reload config"
