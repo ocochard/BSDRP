@@ -24,3 +24,5 @@ BSD Router Project is based upon/includes various free software packages, listed
 * ssmtp: extremely simple MTA to get mail off the system to a mail hub
 * mcast-tools
 * mrouted
+* mpd: Multi-link PPP Daemon, Copyright (c) 2003-2004, Archie L. Cobbs, Michael Bretterklieber, Alexander Motin
+
