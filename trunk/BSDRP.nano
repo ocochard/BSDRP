@@ -522,7 +522,6 @@ usr/libexec/lint2
 usr/sbin/btxld
 usr/sbin/config
 usr/sbin/i2c
-usr/sbin/ndp
 usr/sbin/rmt
 usr/share/misc/gprof.flat
 usr/share/misc/gprof.callg

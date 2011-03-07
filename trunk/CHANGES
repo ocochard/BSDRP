@@ -1,3 +1,9 @@
+Release 0.36 (not released)
+
+Bug fixes:
+- ndp tools was not installed
+
+=====================================================================================================
 Release 0.35
 
 **** WARNING: Special upgrade procedure is needed for this release ! ****
