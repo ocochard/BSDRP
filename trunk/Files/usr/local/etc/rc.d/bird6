@@ -47,7 +47,7 @@ rcvar=`set_rcvar`
 
 command="/usr/local/sbin/${name}"
 required_files="/usr/local/etc/${name}.conf"
-
+command_args="-s /var/run/bird6.ctl"
 extra_commands=reload
 
 load_rc_config $name
