@@ -2,6 +2,7 @@ Release 0.36 (not released)
 
 Bug fixes:
 - ndp tools was not installed
+- Default bird startup scripts use bad folder for control socket
 
 =====================================================================================================
 Release 0.35
