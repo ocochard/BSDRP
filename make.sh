@@ -145,10 +145,12 @@ ports_patches()
 {
 	pprint 2 "patching ports..."
 	pprint 3 "net/bird (incorrect interface name)"
-	if ! [ -f /usr/ports/net/bird/files/patch-ifname.in; then
-		cp patches/bird/patch/patch-ifnane.in /usr/ports/net/bird/files/patch-ifname.in
+	if ! [ -f /usr/ports/net/bird/files/patch-ifname.in ] ; then
+		cp patches/bird/patch-ifname.in /usr/ports/net/bird/files/patch-ifname.in
 	fi
-
+	if ! [ -f /usr/ports/net/bird6/files/patch-ifname.in ] ; then
+		cp patches/bird/patch-ifname.in /usr/ports/net/bird6/files/patch-ifname.in
+	fi
 }
 
 ##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount
