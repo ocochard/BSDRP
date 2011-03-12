@@ -1,0 +1,32 @@
+--- sysdep/bsd/krt-sock.c
++++ sysdep/bsd/krt-sock.c
+@@ -412,7 +412,6 @@ krt_read_ifinfo(struct ks_msg *msg)
+   struct sockaddr_dl *dl = NULL;
+   unsigned int i;
+   struct iface *iface = NULL, f;
+-  char *ifname = "(none)";
+   int fl = ifm->ifm_flags;
+ 
+   for(i = 1; i!=0; i <<= 1)
+@@ -434,18 +433,17 @@ krt_read_ifinfo(struct ks_msg *msg)
+     return;
+   }
+ 
+-  if(dl) ifname = dl->sdl_data;
+-
+   iface = if_find_by_index(ifm->ifm_index);
+ 
+   if(!iface)
+   {
+     /* New interface */
+     if(!dl) return;	/* No interface name, ignoring */
+-    DBG("New interface \"%s\" found", ifname);
++
+     bzero(&f, sizeof(f));
+     f.index = ifm->ifm_index;
+-    strncpy(f.name, ifname, sizeof(f.name) -1);
++    memcpy(f.name, dl->sdl_data, MIN(sizeof(f.name)-1, dl->sdl_nlen));
++    DBG("New interface '%s' found", f.name);
+   }
+   else
+   {

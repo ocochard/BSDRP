@@ -144,10 +144,10 @@ nanobsd_patches() {
 ports_patches()
 {
 	pprint 2 "patching ports..."
-	#pprint 3 "net/mcast-tools (missing pre-requiered in makefile)"
-	#if ! `grep -q 'automake' /usr/ports/net/mcast-tools/Makefile`; then
-	#	patch /usr/ports/net/mcast-tools/Makefile patches/mcast-tools/Makefile.diff
-	#fi
+	pprint 3 "net/bird (incorrect interface name)"
+	if ! [ -f /usr/ports/net/bird/files/patch-ifname.in; then
+		cp patches/bird/patch/patch-ifnane.in /usr/ports/net/bird/files/patch-ifname.in
+	fi
 
 }
 
