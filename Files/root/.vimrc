@@ -67,3 +67,6 @@ set noswapfile
 "disable the use of viminfo file
 set viminfo=""
 
+" Display insecable space
+highlight NbSp ctermbg=lightgray guibg=lightred
+match NbSp /\%xa0/
