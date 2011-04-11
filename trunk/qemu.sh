@@ -32,6 +32,7 @@
 #set -x
 
 check_user () {
+	NOT_ROOT=false
     if [ ! $(whoami) = "root" ]; then
 		NOT_ROOT=true
 		echo "Info: Starting this script as a simple user have some limitation"

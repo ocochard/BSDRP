@@ -151,7 +151,7 @@ archive_cfg () {
 save_cfg () {
 	mount_cfg
 	archive_cfg
-	echo "Saving configuration..."
+	echo -n "Saving configuration..."
 	(
 	cd /etc
 	for i in "$@" `find * -depth`
