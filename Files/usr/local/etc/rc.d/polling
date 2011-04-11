@@ -57,11 +57,12 @@ polling_start()
 	do
 		for SUPPORTED in ${SUPPORTED_DEVICES}
 		do
-			if echo ${DETECTED} | /usr/bin/grep -q "${SUPPORTED}"; then 
+			if echo ${DETECTED} | /usr/bin/grep -q "${SUPPORTED}"; then
+				echo -n "Try to enable polling for: ${DETECTED}..."
 				if ifconfig ${DETECTED} polling; then
-					echo "Polling enabled for ${DETECTED}"
+					echo "done"
 				else
-					echo "Polling not enabled for ${DETECTED}"
+					echo "failed"
 				fi
 			fi
 		done
@@ -77,11 +78,11 @@ polling_stop()
 		for SUPPORTED in ${SUPPORTED_DEVICES}
 		do
 			if echo ${DETECTED} | /usr/bin/grep -q "${SUPPORTED}"; then 	
-				echo "Try to disable polling for: ${DETECTED}"
+				echo -n "Try to disable polling for: ${DETECTED}..."
 				if ifconfig ${DETECTED} -polling; then
 					echo "done"
 				else
-					echo "can't stop polling on ${DETECTED}"
+					echo "failed"
 				fi
 			fi
 		done

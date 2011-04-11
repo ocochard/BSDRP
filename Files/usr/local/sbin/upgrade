@@ -49,11 +49,9 @@ if [ "${ARCH}" = "sparc64" ]; then
 fi
 
 # Get the NANO_GLABEL_SYS variable
-# (get the name from mount output, and remove the last 3 characters: s1a or s2a)
-#NANO_GLABEL_SYS=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1 | sed 's/\(.*\)./\1/'`
 NANO_GLABEL_SYS=`cut -d '/' -f 2 /etc/nanobsd.conf`
 # Get the NANO_GLABEL_SYS_FULL variable
-# (kept the last 1 or 2 number)
+# (kept the last number: 1 or 2)
 NANO_GLABEL_SYS_FULL=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1`
 
 # Get the disk name using its label
