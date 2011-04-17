@@ -22,8 +22,8 @@ alias wr 'config save'
 alias tmux	tmux -u
 
 #Ugly patch because birdc is compiled for using /usr/local/var/run
-alias birdc -s /var/run/bird.ctl
-alias birdc6 -s /var/run/bird6.ctl
+alias birdc 'birdc -s /var/run/bird.ctl'
+alias birdc6 'birdc6 -s /var/run/bird6.ctl'
 
 # A righteous umask
 umask 22
