@@ -181,15 +181,26 @@ PPLEVEL=3
 # Add netblast/netrecieve tools
 add_netrate () {
 	TOOLS_LIST="netrate/netblast netrate/netreceive netrate/netsend"
-	for TOOLS in ${TOOLS_LIST}; do
-		env  MAKEOBJDIRPREFIX=${NANO_OBJ} TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-		MACHINE=${NANO_ARCH} UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-		make -C ${NANO_SRC}/tools/tools/${TOOLS}
-		FILENAME=`echo ${TOOLS} | cut -f 2 -d "/"`
-		mv ${NANO_SRC}/tools/tools/${TOOLS}/${FILENAME}	${NANO_WORLDDIR}/usr/local/bin
-		rm ${NANO_SRC}/tools/tools/${TOOLS}/${FILENAME}.o 
+	mkdir -p ${NANO_WORLDDIR}/dev
+	mount -t devfs devfs ${NANO_WORLDDIR}/dev
+	mount -t unionfs -o noatime ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
+	mkdir -p ${NANO_WORLDDIR}/usr/pobj
+	mkdir -p ${NANO_WORLDDIR}/usr/workdir
+	for TOOL in ${TOOLS_LIST}; do
+		export TOOL
+		chroot ${NANO_WORLDDIR} /bin/sh -exc \
+			'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+			MACHINE=${NANO_ARCH} UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
+		FILENAME=`echo ${TOOL} | cut -f 2 -d "/"`
+		mv ${NANO_WORLDDIR}/usr/src/tools/tools/${TOOL}/${FILENAME} ${NANO_WORLDDIR}/usr/local/bin
+		rm ${NANO_WORLDDIR}/usr/src/tools/tools/${TOOL}/${FILENAME}.o 
 	done
-
+	rm -rf ${NANO_WORLDDIR}/usr/obj
+	rm -rf ${NANO_WORLDDIR}/usr/pobj
+	rm -rf ${NANO_WORLDDIR}/usr/workdir
+	umount ${NANO_WORLDDIR}/usr/src
+	umount ${NANO_WORLDDIR}/dev
 }
 # Need to check if this function works with cross-compiling architecture!!!!
 # Recursive complex fonction: Generate one function for each ports
