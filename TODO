@@ -5,12 +5,14 @@
 * Security *
 	- Need to wrote sample configuration file for pf and other
 
+* Authentication *
+	- Need to test PAM (Radius, TACAS+) modules
+
 * Multicast *
 	- Need to found IPv4 PIM-dm/sm daemon
 
 * misc *
 	- utf-8 support for console ?
-	- replacing netpipe and iperf by netblast (more FreeBSD optimized)
 	- Quagga rc script: limit all quagga process message when quagga is disabled
 
 * Central configuration management / Provisionning *
