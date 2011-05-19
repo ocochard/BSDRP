@@ -178,6 +178,19 @@ NANO_LABEL=${NANO_NAME}
 # Progress Print level
 PPLEVEL=3
 
+# Add netblast/netrecieve tools
+add_netrate () {
+	TOOLS_LIST="netrate/netblast netrate/netreceive netrate/netsend"
+	for TOOLS in ${TOOLS_LIST}; do
+		env  MAKEOBJDIRPREFIX=${NANO_OBJ} TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+		MACHINE=${NANO_ARCH} UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+		make -C ${NANO_SRC}/tools/tools/${TOOLS}
+		FILENAME=`echo ${TOOLS} | cut -f 2 -d "/"`
+		mv ${NANO_SRC}/tools/tools/${TOOLS}/${FILENAME}	${NANO_WORLDDIR}/usr/local/bin
+		rm ${NANO_SRC}/tools/tools/${TOOLS}/${FILENAME}.o 
+	done
+
+}
 # Need to check if this function works with cross-compiling architecture!!!!
 # Recursive complex fonction: Generate one function for each ports
 add_port () {
@@ -341,6 +354,9 @@ add_port "net/mpd5"
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netpipe" 
 add_port "benchmarks/iperf"
+
+# Add netrate tools
+customize_cmd add_netrate
 
 cleanup_ports () {
 		# The build tools are installed only if ports are compiled, then don't exist otherwize.
