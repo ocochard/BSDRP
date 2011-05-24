@@ -76,19 +76,19 @@ check_system_common () {
         exit 1
     fi
 
-	if ! `VBoxHeadless | grep -q vrd`; then
-		if ! `VBoxHeadless | grep -q vnc`; then
+	if ! `VBoxHeadless | grep -q vnc`; then
+		if ! `VBoxHeadless | grep -q vrd`; then
 			echo "No Virtualbox VRD/VNC support detected:"
 			echo "BSDRP vga images will not be supported (only serial)"
 			echo "VRDP: Supported by Virtualbox closed source release"
 			echo "VNC:  Supported by FreeBSD VirtualBox-OSE (if enabled during make config)"
 			VBOX_VGA=false
 		else
-			VBOX_OUTPUT="vnc"
+			VBOX_OUTPUT="vrdp"
 			VBOX_VGA=true
 		fi
 	else
-		VBOX_OUTPUT="vrdp"
+		VBOX_OUTPUT="vnc"
 		VBOX_VGA=true
     fi
 
