@@ -55,11 +55,18 @@ usage () {
 		;;
 	put)
 		echo "Options for put:"
-		echo " - SCP username@host:filename"
-		echo "	 send the configuration to the host as filename using the username"
-		echo "  if no filename given, the destination file will be named: hostname.tar.bz2"
-	exit 0
-	;;
+		echo " - scp username@host:filename"
+		echo "	 send the configuration to a remote host"
+		echo "  if no filename given, the destination file will be named: hostname.tar.xz"
+		exit 0
+		;;
+	get)
+		echo "Options for get:"
+		echo " - scp username@host:filename"
+		echo "	 retrieve the configuration from a remote host"
+		echo "  if no filename given, it will try to download a file named: hostname.tar.xz"
+		exit 0
+		;;
 	esac
 
 # value $0 is the name of the called script
@@ -132,14 +139,14 @@ archive_cfg () {
 			exit 1
 		fi
 	else
-		if [ -f /data/archives/rollback.tar.bz2 ]; then
-			if ! rm /data/archives/rollback.tar.bz2; then
-				echo "WARNING: Can't delete /data/archives/rollback.tar.bz2"
-			fi
-		fi
+		if [ -f /data/archives/rollback.tar.xz ]; then
+            if ! rm /data/archives/rollback.tar.xz; then
+                echo "WARNING: Can't delete /data/archives/rollback.tar.xz"
+            fi
+        fi
 	fi
 
-	if ! tar -cjvpf /data/archives/rollback.tar.bz2 -C /cfg/ . 2>/dev/null; then
+	if ! tar -cJvpf /data/archives/rollback.tar.xz -C /cfg/ . 2>/dev/null; then
 		echo "ERROR: Can't generate tar archive."
 		umount_data
 		umount_cfg
@@ -268,8 +275,8 @@ rollback () {
 	echo "Rollback the archived configuration"
 	mount_data
 	# Check if archive exist
-	if [ -f /data/archives/rollback.tar.bz2 ]; then
-		restore_cfg /data/archives/rollback.tar.bz2 /etc
+	if [ -f /data/archives/rollback.tar.xz ]; then
+		restore_cfg /data/archives/rollback.tar.xz /etc
 	else
 		echo "No archive file found."
 		echo "You need to save your configuration once before to rollback it"
@@ -283,7 +290,7 @@ rollback () {
 }
 
 # Restore the ARCHIVE configuration to DEST
-# $1 = Source archive filename (.tar.bz2)
+# $1 = Source archive filename (.tar.xz)
 # $2 = Destination directory
 restore_cfg ( ) {
 	if [ $1 = '' ]; then
@@ -323,7 +330,7 @@ put () {
 				fi
 			fi
 			mount_cfg
-			if ! tar -cjvpf /tmp/${FILENAME} -C /cfg/ . 2>/dev/null; then
+			if ! tar -cJvpf /tmp/${FILENAME} -C /cfg/ . 2>/dev/null; then
 				echo "ERROR: Can't tar /cfg to /tmp/${FILENAME}"
 				umount_cfg
 				exit 1
@@ -369,7 +376,7 @@ put_parse_input () {
 		echo "No Hostname given, see 'config help put' for usage"
         exit 0
 	elif [ $FILENAME = $REMOTEHOST ]; then
-		FILENAME=$(hostname).tar.bz2
+		FILENAME=$(hostname).tar.xz
 	fi
 }
 	
@@ -381,16 +388,16 @@ get () {
         scp)
             put_parse_input $THIRD_OPTION
 			echo "Get configuration archive SCP from ${REMOTEHOST}"
-			if [ -f /tmp/cfg_archive.tar.bz2 ]; then
-                if ! rm /tmp/cfg_archive.tar.bz2; then
-					echo "WARNING: Can't delete /tmp/cfg_archive.tar.bz2"
+			if [ -f /tmp/cfg_archive.tar.xz ]; then
+                if ! rm /tmp/cfg_archive.tar.xz; then
+					echo "WARNING: Can't delete /tmp/cfg_archive.tar.xz"
 				fi
             fi
-            if ! scp ${USERNAME}@${REMOTEHOST}:${FILENAME} /tmp/cfg_archive.tar.bz2; then
+            if ! scp ${USERNAME}@${REMOTEHOST}:${FILENAME} /tmp/cfg_archive.tar.xz; then
 				echo "ERROR: Can't download ${USERNAME}@${REMOTEHOST}:${FILENAME}"
 				exit 1
 			fi
-			restore_cfg /tmp/cfg_archive.tar.bz2 /etc
+			restore_cfg /tmp/cfg_archive.tar.xz /etc
 			echo "Configuration restored"
 			echo "TO DO: Need to force process to reload config"
             ;;
