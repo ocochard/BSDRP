@@ -1,0 +1,26 @@
+graph BSDRP {
+	label = "BSD Router Project lab";
+	overlap = "scale";
+	ratio = "fill";
+	labelfloat = "true";
+	size = "8.0,8.0" 
+	node [shape=circle];
+		R1;
+		R2;
+		R3;
+		R4;
+	node [shape=plaintext];
+		LAN1;
+	edge [fontsize=10, labeldistance=3.0];
+	R1 -- R2 [taillabel="em0", headlabel="em1"];
+	R1 -- R3 [headlabel="em1", taillabel="em0"];
+	R1 -- R4 [headlabel="em1", taillabel="em0"];
+	R2 -- R3 [headlabel="em2", taillabel="em2"];
+	R2 -- R4 [headlabel="em2", taillabel="em2"];
+	R3 -- R4 [headlabel="em2", taillabel="em2"];
+	R1 -- LAN1 [taillabel="em2"];
+	R2 -- LAN1 [taillabel="em2"];
+	R3 -- LAN1 [taillabel="em2"];
+	R4 -- LAN1 [taillabel="em2"];
+
+}
