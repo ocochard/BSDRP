@@ -28,6 +28,10 @@
 # SUCH DAMAGE.
 #
 
+
+### TODO ###
+# Add multithread feature
+
 set -e
 
 ### Functions ###
@@ -61,7 +65,7 @@ DEVICES_LIST_FILE=""
 LOGIN=""
 PASSWORD=""
 SSH_OPTION=""
-DEVICE_PROMPT="~#"
+DEVICE_PROMPT='#'
 
 if [ $# -eq 0 ] ; then
         usage
@@ -140,43 +144,31 @@ read PASSWORD
 stty echo
 echo ""
 
+IFS="
+"
+
 for DEVICE in `cat ${DEVICES_LIST_FILE}`; do
 	echo "Sending commands to ${DEVICE}..."
 	if empty -f -i ${DEVICE}.input -o ${DEVICE}.output -p ${DEVICE}.pid -L ${DEVICE}.log ssh ${SSH_OPTION} ${LOGIN}@${DEVICE}; then
 		# WARNING: Security problem here, because PASSWORD is visible in the output of ps (need to use idea from empty man page)
-
-		# Can't use empty as I would like, this mean like that (didn't works with multi send/expect on the same line):
-		#if ! empty -w -i ${DEVICE}.output -o ${DEVICE}.input 'no)?' 'yes\n' 'assword:' '${PASSWORD}\n'; then
-		#	echo "ERROR: Can't logon to ${DEVICE}"
-		#	empty -k `cat ${DEVICE}.pid`
-		#	exit 1
-		#fi
-
-		# In place, use the last line of log file
-		tail -n 1 ${DEVICE}.log > ${DEVICE}.last
-		if grep -q '(yes/no)?' ${DEVICE}.last; then
-			# Ask for saving SSH key, answer yes:
-			echo "Answering yes to ssh key save..."
-			empty -s -o ${DEVICE}.input 'yes\n'
-		elif grep -q 'assword:' ${DEVICE}.last; then
-			# Ask fof a password
-			echo "password input..."
-			empty -s -o ${DEVICE}.input "${PASSWORD}\n"
+		set +e
+		empty -w -i ${DEVICE}.output -o ${DEVICE}.input "no)?" "yes\n" "assword:" "${PASSWORD}\n"
+		RETURN_CODE=$?
+		# If first value returned, need to enter the password new
+		if [ ${RETURN_CODE} -eq 1 ]; then
+			empty -w -i ${DEVICE}.output -o ${DEVICE}.input "assword:" "${PASSWORD}\n"
+		elif [ ${RETURN_CODE} -ne 2 ]; then	
+			echo "ERROR: Bad password"
+			empty -k `cat ${DEVICE}.pid`
+			exit
 		fi
-		tail -n 1 ${DEVICE}.log > ${DEVICE}.last
-			for CMD in `cat ${COMMANDS_LIST_FILE}`; do
-				echo "debug device.last"
-				cat ${DEVICE}.last
-				if  grep -q '${DEVICE_PROMPT}' ${DEVICE}.last; then
-					echo "debug: sent ${CMD}"
-					if ! empty -s -o ${DEVICE}.input "${CMD}\n"; then
-						echo "ERROR: Can't send ${CMD} to ${DEVICE}"
-					fi
-				else
-					echo "No prompt detected"
-					break
-				fi
-			done
+		for CMD in `cat ${COMMANDS_LIST_FILE}`; do
+			empty -w -i ${DEVICE}.output -o ${DEVICE}.input "${DEVICE_PROMPT}" "${CMD}\n"
+			RETURN_CODE=$?
+			if [ ${RETURN_CODE} -ne 1 ]; then
+				echo "ERROR: Can't send ${CMD} to ${DEVICE}"
+            fi
+		done
 		if ! empty -k `cat ${DEVICE}.pid`; then
 			echo "ERROR: Can't kill process for ${DEVICE}"
 		fi
