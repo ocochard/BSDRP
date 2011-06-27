@@ -28,10 +28,6 @@
 # SUCH DAMAGE.
 #
 
-
-### TODO ###
-# Add multithread feature
-
 set -e
 
 ### Functions ###
@@ -47,12 +43,45 @@ system_check () {
 	fi
 }
 
+# Send command to given host
+put_cmd () {
+    echo "Sending commands to $1..." >> ${LOG_FILE}
+	local DEVICE=$1
+	local RETURN_CODE=1
+    set +e
+    empty -f -i ${DEVICE}.input -o ${DEVICE}.output -p ${DEVICE}.pid -L ${DEVICE}.log ssh ${SSH_OPTION} ${LOGIN}@${DEVICE} > /dev/null 2>&1
+    # empty return code is true (0) even if ssh connection failed
+    # WARNING: Security problem here, because PASSWORD is visible in the output of ps (need to use idea from empty man page)
+    empty -t ${TIMEOUT} -w -i ${DEVICE}.output -o ${DEVICE}.input "no)?" "yes\n" "assword:" "${PASSWORD}\n" > /dev/null 2>&1
+    RETURN_CODE=$?
+    # If first value returned, need to enter the password new
+    if [ ${RETURN_CODE} -eq 1 ]; then
+        empty -t ${TIMEOUT} -w -i ${DEVICE}.output -o ${DEVICE}.input "assword:" "${PASSWORD}\n" > /dev/null 2>&1
+    elif [ ${RETURN_CODE} -ne 2 ]; then
+        echo "ERROR: Bad password or connection error for ${DEVICE}" >> ${LOG_FILE}
+        empty -k `cat ${DEVICE}.pid` > /dev/null 2>&1
+        exit
+    fi
+    for CMD in `cat ${COMMANDS_LIST_FILE}`; do
+        empty -t ${TIMEOUT} -w -i ${DEVICE}.output -o ${DEVICE}.input "${DEVICE_PROMPT}" "${CMD}\n" > /dev/null 2>&1
+        RETURN_CODE=$?
+        if [ ${RETURN_CODE} -ne 1 ]; then
+            echo "ERROR: Can't send ${CMD} to ${DEVICE}" >> ${LOG_FILE}
+           fi
+    done
+    if ! empty -k `cat ${DEVICE}.pid` > /dev/null 2>&1; then
+        echo "ERROR: Can't kill process for ${DEVICE}" >> ${LOG_FILE}
+    fi
+	set -e
+	return 0
+}
 # usage: Display command line help
 usage () {
-	echo "$0 -h -c commands_list_file -l device_list_file -e extra_ssh_option"
+	echo "$0 -h -c commands_list_file -l device_list_file [-e extra_ssh_option] [-t parrallel_threads]"
 	echo "  -c commands_list_file : Text file that contains list of commands to be send to remote device"
 	echo "  -l device_list_file : Text file that contains list of device hostname or IP addresses"
 	echo "  -x extra option: for adding one SSH command line option (like -p for changing default port)"
+	echo "  -t number_of_parrallel_threads: 5 by default"
 	echo "  -h                  : Display usage guide"		
 	exit 1
 }
@@ -66,6 +95,9 @@ LOGIN=""
 PASSWORD=""
 SSH_OPTION=""
 DEVICE_PROMPT='#'
+LOG_FILE="mputconfig.log"
+TIMEOUT="5"
+THREADS="5"
 
 if [ $# -eq 0 ] ; then
         usage
@@ -96,7 +128,11 @@ for i do
             shift
             shift
             ;;
-
+		-t)
+			THREADS=$2
+			shift
+            shift
+            ;;
 		--)
             shift
             break
@@ -147,32 +183,11 @@ echo ""
 IFS="
 "
 
+date >> ${LOG_FILE}
+
 for DEVICE in `cat ${DEVICES_LIST_FILE}`; do
-	echo "Sending commands to ${DEVICE}..."
-	if empty -f -i ${DEVICE}.input -o ${DEVICE}.output -p ${DEVICE}.pid -L ${DEVICE}.log ssh ${SSH_OPTION} ${LOGIN}@${DEVICE}; then
-		# WARNING: Security problem here, because PASSWORD is visible in the output of ps (need to use idea from empty man page)
-		set +e
-		empty -w -i ${DEVICE}.output -o ${DEVICE}.input "no)?" "yes\n" "assword:" "${PASSWORD}\n"
-		RETURN_CODE=$?
-		# If first value returned, need to enter the password new
-		if [ ${RETURN_CODE} -eq 1 ]; then
-			empty -w -i ${DEVICE}.output -o ${DEVICE}.input "assword:" "${PASSWORD}\n"
-		elif [ ${RETURN_CODE} -ne 2 ]; then	
-			echo "ERROR: Bad password"
-			empty -k `cat ${DEVICE}.pid`
-			exit
-		fi
-		for CMD in `cat ${COMMANDS_LIST_FILE}`; do
-			empty -w -i ${DEVICE}.output -o ${DEVICE}.input "${DEVICE_PROMPT}" "${CMD}\n"
-			RETURN_CODE=$?
-			if [ ${RETURN_CODE} -ne 1 ]; then
-				echo "ERROR: Can't send ${CMD} to ${DEVICE}"
-            fi
-		done
-		if ! empty -k `cat ${DEVICE}.pid`; then
-			echo "ERROR: Can't kill process for ${DEVICE}"
-		fi
-	else
-		echo "ERROR: Can't open SSH to ${DEVICE}"
-	fi
+	while [ `jobs | wc -l` -ge ${THREADS} ]; do
+		sleep 5
+	done
+		put_cmd ${DEVICE} &
 done
