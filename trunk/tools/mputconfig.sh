@@ -43,9 +43,24 @@ system_check () {
 	fi
 }
 
+clean_close () {
+	local DEVICE=$1
+	if [ -f ${DEVICE}.pid ]; then
+        # Empty should close by itself (clean command line have an exit or logout at the end)
+        sleep 5
+    fi
+
+	if [ -f ${DEVICE}.pid ]; then
+        echo "WARNING: Still pid for ${DEVICE}, can be a missing exit/logout commands at the end of commands-list file, or SSH error" >> ${LOG_FILE}
+        if ! empty -k `cat ${DEVICE}.pid` > /dev/null 2>&1; then
+            echo "ERROR: Can't force-kill process for ${DEVICE}" >> ${LOG_FILE}
+        fi
+    fi
+
+}
 # Send command to given host
 put_cmd () {
-    echo "Sending commands to $1..." >> ${LOG_FILE}
+    echo "INFO: Sending commands to $1..." >> ${LOG_FILE}
 	local DEVICE=$1
 	local RETURN_CODE=1
     set +e
@@ -59,19 +74,17 @@ put_cmd () {
         empty -t ${TIMEOUT} -w -i ${DEVICE}.output -o ${DEVICE}.input "assword:" "${PASSWORD}\n" > /dev/null 2>&1
     elif [ ${RETURN_CODE} -ne 2 ]; then
         echo "ERROR: Bad password or connection error for ${DEVICE}" >> ${LOG_FILE}
-        empty -k `cat ${DEVICE}.pid` > /dev/null 2>&1
-        exit
+		clean_close ${DEVICE}
+        return 1
     fi
     for CMD in `cat ${COMMANDS_LIST_FILE}`; do
         empty -t ${TIMEOUT} -w -i ${DEVICE}.output -o ${DEVICE}.input "${DEVICE_PROMPT}" "${CMD}\n" > /dev/null 2>&1
         RETURN_CODE=$?
         if [ ${RETURN_CODE} -ne 1 ]; then
             echo "ERROR: Can't send ${CMD} to ${DEVICE}" >> ${LOG_FILE}
-           fi
+        fi
     done
-    if ! empty -k `cat ${DEVICE}.pid` > /dev/null 2>&1; then
-        echo "ERROR: Can't kill process for ${DEVICE}" >> ${LOG_FILE}
-    fi
+	clean_close ${DEVICE}
 	set -e
 	return 0
 }
@@ -185,9 +198,18 @@ IFS="
 
 date >> ${LOG_FILE}
 
+# Don't know how to do a simple `jobs | wc -l` in sh/tcsh
 for DEVICE in `cat ${DEVICES_LIST_FILE}`; do
-	while [ `jobs | wc -l` -ge ${THREADS} ]; do
+	jobs > dirtyhack
+	while [ `wc -l dirtyhack | tr -s " " | cut -f 2 -d " "` -ge ${THREADS} ]; do
 		sleep 5
+		jobs > dirtyhack
 	done
 		put_cmd ${DEVICE} &
+		jobs > dirtyhack
+done
+jobs > dirtyhack
+while [ `wc -l dirtyhack | tr -s " " | cut -f 2 -d " "` -ne 0 ]; do
+	sleep 5
+	jobs > dirtyhack
 done
