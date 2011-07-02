@@ -9,7 +9,7 @@
 +    echo "./var" >> ${NANO_OBJ}/mtree-exclude
 +    echo "./tmp" >> ${NANO_OBJ}/mtree-exclude
 +    echo "./dev" >> ${NANO_OBJ}/mtree-exclude
-+	( cd ${MNT} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,md5digest,sha256digest -X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
++	( cd ${MNT} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,sha256digest -X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
  	( cd ${MNT} && du -k ) > ${NANO_OBJ}/_.du
  	umount ${MNT}
  
