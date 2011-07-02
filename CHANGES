@@ -2,6 +2,7 @@ Release 0.36 (not released)
 
 - Add FreeBSD network benchmark tools: netblast,netsend and netreceive
 - Use XZ in place of BZIP2 for config files archives
+- mtree: remove md5 checksum
 
 Bug fixes:
 - Fix ndp tools installation
