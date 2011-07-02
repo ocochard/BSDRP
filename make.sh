@@ -107,7 +107,7 @@ check_system() {
 ###### Adding patch to NanoBSD
 nanobsd_patches() {
 	# Using up-to-date nanobsd script and patch it
-	if [ `sha256 -q ../nanobsd.sh` != "bf2bfaf68faa060ef60dd4e896e4b994c9ac374a58714962b79d1a8e7068a0f4" ]; then
+	if [ `sha256 -q ../nanobsd.sh` != "79da010bfc3bfde1268f72666d19bf01c18cc504e4e23693dbb5058af1717059" ]; then
 		pprint 3 "Download up-to-date nanobsd release"
 		if ! mv ../nanobsd.sh ../nanobsd.original.bak; then	
 			pprint 3 "ERROR: Can't backup original nanobsd.sh script"
