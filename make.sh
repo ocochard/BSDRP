@@ -392,10 +392,10 @@ cp kernels/${NANO_KERNEL}.${SRC_VERSION} /usr/src/sys/${TARGET_ARCH}/conf/${NANO
 echo "# Parallel Make" >> /tmp/${NAME}.nano
 # Special ARCH commands
 case ${TARGET_ARCH} in
-	"i386") echo 'NANO_PMAKE="make -j 3"' >> /tmp/${NAME}.nano
+	"i386") echo 'NANO_PMAKE="make -j 8"' >> /tmp/${NAME}.nano
 	echo 'NANO_MODULES="acpi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog hifn padlock safe ubsec glxsb"' >> /tmp/${NAME}.nano
 	;;
-	"amd64") echo 'NANO_PMAKE="make -j 3"' >> /tmp/${NAME}.nano
+	"amd64") echo 'NANO_PMAKE="make -j 8"' >> /tmp/${NAME}.nano
 	echo 'NANO_MODULES="netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog hifn padlock safe ubsec"' >> /tmp/${NAME}.nano
 	;;
 	"arm") echo 'NANO_PMAKE="make"' >> /tmp/${NAME}.nano
