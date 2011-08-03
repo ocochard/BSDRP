@@ -321,7 +321,7 @@ add_port "net/quagga" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWI
 #add_port "net/xorp" "-DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:
-add_port "net/bird"
+add_port "net/bird" "-DWITH_FIBS -DWITH_CONFIG_INCLUDES"
 add_port "net/bird6"
 
 # Add FreeVRRPd (netgraph dependent)

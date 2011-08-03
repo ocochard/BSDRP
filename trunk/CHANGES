@@ -3,16 +3,17 @@ Release 0.36 (not released)
 - Add FreeBSD network benchmark tools: netblast,netsend and netreceive
 - Use XZ in place of BZIP2 for config files archives
 - mtree: remove md5 checksum
+- bird support FIB and include config file
 
 Bug fixes:
 - Fix ndp tools installation
 - Fix default bird startup scripts that used bad folder for control socket
-- Fix Interfaces names in bird
+- Fix Ethernet interfaces names in bird
 - Fix the upgrade script (merge changes in /boot/loader.conf)
 
 Updated packages:
-- Quagga to 0.99.17_7
-- Bird to 1.3.0
+- Quagga to 0.99.17_9
+- Bird to 1.3.1
 
 =====================================================================================================
 Release 0.35
