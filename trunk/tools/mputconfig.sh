@@ -34,7 +34,7 @@ set -e
 
 # system_check: Check if empty is installed
 system_check () {
-	if ! whereis -b empty > /dev/null 2>&1; then
+	if ! which empty > /dev/null 2>&1; then
 		echo "ERROR: empty (http://empty.sourceforge.net/) is a mandatory dependency"
 		echo "Install it under FreeBSD:"
 		echo "   cd /usr/ports/net/empty; make install clean"
