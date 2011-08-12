@@ -27,52 +27,223 @@
 # SUCH DAMAGE.
 #
 
+# Error management
+$error.clear()
+$erroractionpreference = "Stop"
 
-# Test: Is VirtualBox installed ?
-function check_system () {
-    $strComputer = "." 
-    $colItems = get-wmiobject -class "Win32_Product" -namespace "root\CIMV2" -computername $strComputer 
-    $VBOX_FOUND=$false
-    foreach ($objItem in $colItems) { 
-        if ($objItem.Name.Contains("VirtualBox")){
-            $VBOX_FOUND=$true
-            $VBOX_VERSION = $objItem.Version 
-            break
-        }
+#### Variables #####
+$VM_TPL_NAME="BSDRP_lab_template"
+
+#### enumeration types ######
+# PowerShell can't import type library from a COM Object
+# http://msdn.microsoft.com/en-us/library/hh228154.aspx
+# Need to copy/write all enums type
+
+#StorageBus
+$StorageBus_IDE = 1
+$StorageBus_SATA = 2
+$StorageBus_SCSI = 3
+$StorageBus_Floppy = 4
+$StorageBus_SAS = 5
+
+#StorageControllerType
+$StorageControllerType_LsiLogic = 1
+$StorageControllerType_BusLogic = 2
+$StorageControllerType_IntelAhci = 3
+$StorageControllerType_PIIX3 = 4
+$StorageControllerType_PIIX4 = 5
+$StorageControllerType_ICH6 = 6
+$StorageControllerType_I82078 = 7
+$StorageControllerType_LsiLogicSas = 8
+
+#DeviceType
+$DeviceType_Floppy = 1
+$DeviceType_DVD = 2
+$DeviceType_HardDisk = 3
+$DeviceType_Network = 4
+$DeviceType_USB = 5
+$DeviceType_SharedFolder = 6
+
+#AccessMode
+$AccessMode_ReadOnly = 1
+$AccessMode_ReadWrite = 2
+ 
+#LockType
+$LockType_Write = 2
+$LockType_Shared = 1
+
+#### Functions definition
+
+# Is VirtualBox installed ?
+# Return true if yes, and not if not installed, and initialize $VBOX object
+function init_vbox_api () {
+    Write-Host "Initializing VBOX COM API..";
+    #Not a good idea: Only one instance of VirtualBox.VirtualBox can be open
+    #and this test can return $false because .VirtualBox is a singleton
+    try { $global:VBOX = New-Object -ComObject VirtualBox.VirtualBox }
+    catch { 
+        return $false
     }
-    if ($VBOX_FOUND){
-        Write-Host "[DEBUG]VBox found, and have release: $VBOX_VERSION"
-        if ($VBOX_VERSION -lt 3.1) {
-            Write-Host "ERROR: Need VirtualBox 3.1 (minimum)"
-            exit
-        }
-        $global:VB_EXE=($ENV:VBOX_INSTALL_PATH + "VBoxManage.exe")
-        $global:VB_HEADLESS=($ENV:VBOX_INSTALL_PATH + "VBoxHeadless.exe")
-        if (-not (test-path $VB_EXE -PathType leaf)) {
-            Write-Host "ERROR: VBox should be installed, but can't found executable"
-            exit
-        }
-        Write-Host "[DEBUG]vb_exe: $VB_EXE"
-        Write-Host "[DEBUG]vb_headless: $VB_HEADLESS"
-    } else {
-        Write-Host "No VBox found on this computer… exiting"
-        exit
-    }
+    return $true 
 }
 
 # No isNumeric function included in PowerShell
-# Got from http://rosettacode.org/wiki/Determine_if_a_string_is_numeric#PowerShell
+# Function from http://rosettacode.org/wiki/Determine_if_a_string_is_numeric#PowerShell
 function isNumeric ($x) {
     $x2 = 0
     $isNum = [System.Int32]::TryParse($x, [ref]$x2)
     return $isNum
 }
 
-# Check if base BSDRP VDI file is available()
-Function check_base_vdi () {
-    # TO DO
-    Write-Host "[TODO]Check if base VDI exist, and ask user for it if not present"
-    return $true
+# Create the template
+Function create_vm_template () {
+    $error.clear()
+    Write-Host "Generate BSDRP Lab Template VM..."
+    parse_filename
+
+    #Create VM
+    try {$global:VBOX_VM_TPL=$VBOX.createMachine("",$VM_TPL_NAME,$VM_ARCH,"",$false)}
+    catch {
+        Write-Host "[ERROR] Can't create BSDRP_lab_template VM"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    
+    #Configure the VM
+	#try { $VBOX_VM_TPL_CTRL = $VBOX_VM_TPL.addStorageController("PATA Controller",$StorageBus_IDE) }
+    try { $VBOX_VM_TPL_CTRL = $VBOX_VM_TPL.addStorageController("SATA Controller",$StorageBus_SATA) }
+	catch {
+        Write-Host "[ERROR] Can't Add a Storage Controller to BSDRP_lab_template VM "
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    #try {$VBOX_VM_TPL_CTRL.controllerType = $StorageControllerType_IntelAhci}
+    #catch {
+    #    Write-Host "[ERROR] Can't set Storage Controller type to $VM_TPL_NAME VM"
+    #    Write-Host "Detail: " $($error)
+    #    clean_exit
+    #}
+    #$VBOX_VM_TPL_CTRL.portCount=1
+    $VBOX_VM_TPL.MemorySize=128
+    $VBOX_VM_TPL.VRAMSize=6
+    $VBOX_VM_TPL.Description="BSD Router Project Template VM"
+    $VBOX_VM_TPL.setExtraData("uart1","0x3F8 4")
+    #$VBOX_VM_TMPL_SERIAL=$VBOX_VM_TPL.getSerialPort(0)
+    
+    try { $VBOX_VM_TPL.saveSettings }
+    catch {
+        Write-Host "[ERROR] Can't save $VM_TPL_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    
+  
+    
+    #Now, Convert the disk-img to VDI
+    
+    # check if there allready exist a VDI in the folder, and delete it
+    # Case where there allready a VDI : Script break between converting RAW to VDI and registering the VDI, 
+    # then deleting the template from the manager
+    $DST_VDI_FILE=$VBOX.SystemProperties.DefaultMachineFolder + "\$VM_TPL_NAME\$VM_TPL_NAME.vdi"
+    
+    if (test-path $DST_VDI_FILE -PathType leaf) {
+    	Write-Host "[WARNING]: Existing old VDI found, delete it"
+        Remove-Item -path $DST_VDI_FILE -force
+    }
+
+    #Call VBoxManage for converting the given .img to VDI.
+    $CMD="convertfromraw " + '"' + $FILENAME +'" "' + $DST_VDI_FILE + '"'
+    try { invoke-expression "& $VB_MANAGE $CMD" }
+    catch {
+        Write-Host "[BUG] Return $?, but error catch triggered"
+        Write-Host "Will continue without managing this error"
+        #Write-Host "Detail: " $($error)
+        Write-Host "Result is $?."
+    }
+    
+    $error.clear()
+    
+    # Need to register the VM before attaching disk to it
+    try { $VBOX.registerMachine($VBOX_VM_TPL) }
+    catch {
+        Write-Host "[ERROR] Can't register $VM_TPL_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    
+    # Need to register the VDI before using it
+    try {
+        $VBOX_VM_TPL_VDI=$VBOX.openMedium($DST_VDI_FILE,$DeviceType_HardDisk,$AccessMode_ReadWrite,$true)
+    } catch {
+        Write-Host "[ERROR] Can't Open/register $DST_VDI_FILE"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    
+    # Need to unclock the VM (put it in "mutable" state) before modifying it
+
+    #  === More I'm using VirtualBox, more I love qemu ! ====
+    
+    try { $VBOX_VM_TPL.lockMachine($SESSION,$LockType_Write) }
+    catch {
+        Write-Host "[ERROR] Can't lock $VM_TPL_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    
+    # At last ! Attach the disk to unlocked-copy-object of the VM
+    
+    try {
+        $SESSION.machine.attachDevice("SATA Controller",0,0,$DeviceType_HardDisk,$VBOX_VM_TPL_VDI)
+    } catch {
+        Write-Host "[ERROR] Can't attach $DST_VDI_FILE to $VM_TPL_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    
+    try { $VBOX_VM_TPL.saveSettings }
+    catch {
+        Write-Host "[ERROR] Can't save $VM_TPL_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    
+    try { $SESSION.unlockMachine() }
+    catch {
+        Write-Host "[ERROR] Can't unlock $VM_TPL_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    $VBOX_VM_TPL
+    $VBOX_VM_TPL_VDI
+    $VBOX_VM_TPL_CTR
+    write-host "[DEBUG]SUCCESS... exit!"
+   	clean_exit
+}
+
+# Parse the BSDRP filename given (is a i386 or amd64, is a vga or serial)
+Function parse_filename () {
+    Write-Host "Parsing filename given for guesing ARCH and CONSOLE values:"
+    if ($FILENAME.Contains("_amd64")) {
+        $global:VM_ARCH="FreeBSD_64"
+        Write-Host "- ARCH: x86-64"
+    } elseif ($FILENAME.Contains("_i386")) {
+        $global:VM_ARCH="FreeBSD"
+        Write-Host "- ARCH: i386"
+    } else {
+        Write-Host "[ERROR] Can't guests arch of this image"
+        clean_exit
+    }
+    if ($FILENAME.Contains("_serial")) {
+        $global:SERIAL=$true
+        Write-Host "- CONSOLE: serial" 
+    } elseif ($FILENAME.Contains("_vga")) {
+        $global:SERIAL=$false
+        Write-Host "- CONSOLE: vga"
+    } else {
+        Write-Host "ERROR: Can't guests arch of this image"
+        clean_exit
+    }
 }
 
 # Clone a new VM based on the base BSDRP VDI
@@ -121,7 +292,7 @@ Function generate_vms () {
             Write-Host ("em" + $NIC_NUMBER + " connected to LAN number " + $j)
             $NIC_NUMBER++
             $CMD=($VB_EXE + " modifyvm BSDRP_lab_R" + $i + " --nic" + $NIC_NUMBER + " intnet --nictype" + $NIC_NUMBER + " 82540EM --intnet" + $NIC_NUMBER + " LAN10" + $j + " --macaddress" + $NIC_NUMBER + " CCCC00000" + $j + "0" + $i)
-		    Write-Host "[DEBUG]CMD to run:"
+		    Write-Debug "CMD to run:" $CMD
 			Write-Host $CMD
             $j++
         }
@@ -131,46 +302,91 @@ Function generate_vms () {
 			Write-Host ("em" + $NIC_NUMBER + " connected to shared-with-host LAN.")
             $NIC_NUMBER++
 			$CMD=($VB_EXE + " modifyvm BSDRP_lab_R" + $i + " --nic" + $NIC_NUMBER + ' hostonly --hostonlyadapter1 "VirtualBox Host-Only Ethernet Adapter" --nictype' + $NIC_NUMBER + " 82540EM --macaddress" + $NIC_NUMBER + " 00bbbb00000" + $i)
-		    Write-Host "[DEBUG]CMD to run:"
+		    Write-Debug "CMD to run:" $CMD
 			Write-Host $CMD
 		}
     }
 }
 
+Function clean_exit () {
+	# Cleaning stuff before exiting...
+	exit
+}
 #### Main ####
 
-check_system
+# A powershell script by default is running in mode MTA, but for displaying dialog box, STA mode is needed
+if($host.Runspace.ApartmentState -ne "STA") {
+    Write-Host "Relaunching PowerShell script in STA mode"
+    powershell -NoProfile -Sta -File $MyInvocation.InvocationName
+    return
+}
+
+# Create Window
+
+#$WINDOW=New-Object System.Windows.Forms.Form
+#$WINDOW.ShowDialog()
 
 #Set window title
-$window = (Get-Host).UI.RawUI
-$window.WindowTitle = "BSD Router Project: VirtualBox lab PowerShell script"
+$WINDOW = (Get-Host).UI.RawUI
+$TITLE = "BSD Router Project: VirtualBox lab PowerShell script"
+$WINDOW.WindowTitle = $TITLE
+
+# Stop if vbox is not installed
+if (!(init_vbox_api)) {
+    Write-Host "[ERROR] Can't init vbox COM API...exiting"
+    clean_exit
+}
+
+try { $global:SESSION = New-Object -ComObject VirtualBox.Session }
+catch {
+    Write-Host "[ERROR] Can't create a SESSION object"
+    Write-Host "Detail: " $($error)
+    clean_exit
+}
+
+#Still need to use VboxManage because COM API didn't support all features (like converting RAW)
+#Need to put quote, because there is space in name file
+$global:VB_MANAGE ='"' + $env:VBOX_INSTALL_PATH + "VBoxManage.exe" + '"'
+
+#If BSDRP VM template doesn't exist, ask for a filename
+
+try { $VBOX_VM_TEMPLATE=$VBOX.findMachine($VM_TPL_NAME) }
+catch {
+    Write-Host "No BSDRP VM Template found."
+    [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
+    $objForm = New-Object System.Windows.Forms.OpenFileDialog
+    $objForm.InitialDirectory = "."
+    $objForm.Filter = "BSDRP image Files (*.img)|*.img"
+    $objForm.Title = "Select BSDRP full image disk"
+    $Show = $objForm.ShowDialog()
+    If ($Show -eq "OK") {
+    	$global:FILENAME=$objForm.FileName
+    } Else {
+    	Write-Error "Operation cancelled"
+        Write-Host
+        clean_exit
+    }
+    create_vm_template
+}
 
 do {
-    $NUMBER_VM = Read-Host "How many full-meshed routers do you want to start? (between 2 and 9)"
+    $NUMBER_VM = Read-Host "How many routers to start? (between 2 and 9)"
 } until ((isNumeric $NUMBER_VM) -and ($NUMBER_VM -ge 2) -and ($NUMBER_VM -le 9))
 do {
-    $NUMBER_LAN = Read-Host "How many shared LAN between your routers do you want ? (between 0 and 4)"
+    $NUMBER_LAN = Read-Host "How many shared LAN between all your routers? (between 0 and 4)"
 } until ((isNumeric $NUMBER_LAN) -and ($NUMBER_LAN -ge 0) -and ($NUMBER_LAN -le 4))
 
 $SHARED_LAN=$false
 $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes",""
 $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No",""
-$choices = [System.Management.Automation.Host.ChoiceDescription[]]($yes,$no)
-#$caption = "Warning!"
-$message = "Do you want a shared LAN between your routers and the host ? (Usefull for IP access to the routers from your host, can be used as shared LAN between routers too)"
-$result = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-if($result -eq 0) { $SHARED_LAN=$true }
-
-#[DEBUG]
-Write-Host "[DEBUG]Number of VM: $NUMBER_VM, number of LAN: $NUMBER_LAN"
-if ($SHARED_LAN) {
-    Write-Host "[DEBUG]Shared lan: Enabled"
-} else {
-    Write-Host "[DEBUG]Shared lan: Disabled"
-}
-
-check_base_vdi
+$CHOICES = [System.Management.Automation.Host.ChoiceDescription[]]($yes,$no)
+$MESSAGE = "Enable shared LAN between your routers and the host ? (Permit IP access between the routers and your host)"
+$RESULT = $Host.UI.PromptForChoice($TITLE,$MESSAGE,$CHOICES,0)
+if($RESULT -eq 0) { $SHARED_LAN=$true }
 
 generate_vms
 
+clean_exit
+
+Write-Host "Press a key to continue"
 $x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
