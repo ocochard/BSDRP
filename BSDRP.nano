@@ -574,6 +574,9 @@ usr/share/tmac/tmac.vgrind
 
 	# Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
     find ${NANO_WORLDDIR} -name \*.a | xargs rm
+
+	# strip binaries for ports (tips from FreeNAS)
+	(strip ${NANO_WORLDDIR}/usr/local/*bin/* > /dev/null 2>&1) || true
 }
 
 # Enable only serial system only
