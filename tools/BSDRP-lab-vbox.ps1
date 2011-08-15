@@ -85,6 +85,9 @@ function set_API_enums() {
             CloneOptions_KeepAllMACs = 2;
             CloneOptions_KeepNATMACs = 3;
             CloneOptions_KeepDiskNames = 4;
+            
+            ChipsetType_PIIX3 = 1;
+            ChipsetType_ICH9 = 2;
        
         } #Virtualbox_API_Enums
 
@@ -148,6 +151,10 @@ Function create_template () {
     
     #Configure the VM
     
+    # Chipset PIIX3 support a maximum of 8 NIC
+    # Chipset ICH9 support a maximum of 36 NIC
+    
+    $MACHINE.ChipsetType=$ChipsetType_ICH9
     $MACHINE.MemorySize=128
     $MACHINE.VRAMSize=6
     $MACHINE.Description="BSD Router Project Template VM"
@@ -407,6 +414,12 @@ Function modify_lan () {
     }
     write-Host "[DEBUG] Function CMD to run:"
     write-host $CMD
+    # Virtualbox begin at zero, need to substract 1 to the value
+    #Need to open the machine, and the session
+    $ADAPTER=$MACHINE.getNetworkAdapter($NIC-1)
+    $ADAPTER.internalNetwork=$LAN
+    $ADAPTER.MACAddress=$MAC
+    $ADAPTER.enabled=$true
 }                        
                         
 # Build the lab: Clone and Configure all VMs
@@ -507,6 +520,11 @@ if (!(init_com_api)) {
     clean_exit
 }
 
+#write-host "max NIC for PIIX3:"
+#$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_PIIX3)
+#write-host "max NIC for ICH9:"
+#$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_ICH9)
+
 try { $global:SESSION = New-Object -ComObject VirtualBox.Session }
 catch {
     Write-Host "[ERROR] Can't create a SESSION object"
@@ -522,8 +540,9 @@ catch {
     create_template
 }
 
-Write-Host "Note: VirtualBox is limited to only 8 NIC by VM"
-[int] $MAX_NIC=8
+#Write-Host "Note: VirtualBox is limited to only 8 NIC by VM"
+#[int] $MAX_NIC=8
+[int] $MAX_NIC=36
 
 [bool] $SHARED_WITH_HOST_LAN=$false
 $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes",""
@@ -556,14 +575,41 @@ if ($MAX_NIC -gt 0) {
             5 { $MAX_VM=3 }  
             6 { $MAX_VM=4 }
             7 { $MAX_VM=4 } 
-            8 { $MAX_VM=4 }  
+            8 { $MAX_VM=4 } 
+            9 { $MAX_VM=4 }
+            10 { $MAX_VM=5 }
+            11 { $MAX_VM=5 }
+            12 { $MAX_VM=5 }
+            13 { $MAX_VM=5 }
+            14 { $MAX_VM=5 }
+            15 { $MAX_VM=6 }
+            16 { $MAX_VM=6 }
+            17 { $MAX_VM=6 }
+            18 { $MAX_VM=6 }
+            19 { $MAX_VM=6 }
+            20 { $MAX_VM=6 }
+            21 { $MAX_VM=7 }
+            22 { $MAX_VM=7 }
+            23 { $MAX_VM=7 }
+            24 { $MAX_VM=7 }
+            25 { $MAX_VM=7 }
+            26 { $MAX_VM=7 }
+            27 { $MAX_VM=7 }
+            28 { $MAX_VM=8 }
+            29 { $MAX_VM=8 }
+            30 { $MAX_VM=8 }
+            31 { $MAX_VM=8 }
+            32 { $MAX_VM=8 }
+            33 { $MAX_VM=8 }
+            34 { $MAX_VM=8 }
+            35 { $MAX_VM=8 }
+            36 { $MAX_VM=9 }
             default { write-host "[BUG] MAX_NIC too high"; clean_exit}
         } # switch
     } # Endif FULL_MESH
     
 }# Endif there is still NIC available 
         
-
 do {
     $NUMBER_VM = (Read-Host "How many routers ? (between 2 and $MAX_VM)") -as [int]
 } until (($NUMBER_VM -ne $null) -and ($NUMBER_VM -ge 2) -and ($NUMBER_VM -le $MAX_VM))
