@@ -32,9 +32,9 @@ $error.clear()
 $erroractionpreference = "Stop"
 
 #### Variables #####
-$VM_TPL_NAME="BSDRP_lab_template"
+[string] $VM_TPL_NAME="BSDRP_lab_template"
 
-#### enumeration types ######
+#### enumeration types######
 # PowerShell can't import type library from a COM Object
 # http://msdn.microsoft.com/en-us/library/hh228154.aspx
 # Need to copy/write all enums type used in this script
@@ -89,7 +89,6 @@ function set_API_enums() {
         } #Virtualbox_API_Enums
 
         $Virtualbox_API_Enums.GetEnumerator() | Foreach-Object {
-            Write-Host "tutu: $($_.Key) - $($_.Value)"
             Set-Variable $($_.Key) -value $([int32] $_.Value) -option constant -scope Global
         }
     } # endif
@@ -106,14 +105,6 @@ function init_com_api () {
         return $false
     }
     return $true 
-}
-
-# No isNumeric function included in PowerShell
-# Function from http://rosettacode.org/wiki/Determine_if_a_string_is_numeric#PowerShell
-function isNumeric ($x) {
-    $x2 = 0
-    $isNum = [System.Int32]::TryParse($x, [ref]$x2)
-    return $isNum
 }
 
 # Create the template
@@ -136,7 +127,7 @@ Function create_template () {
     }
 	
 	# Define $VM_ARCH and $SERIAL from the filename
-    $null = parse_filename ($FILENAME)
+    $null = parse_filename $FILENAME
 
     # check if there allready exist folder, and delete it
     # Case where there allready a folder: Script break between converting RAW to VDI and registering the VDI, 
@@ -212,7 +203,7 @@ Function create_template () {
 
     try { invoke-expression "& $VB_MANAGE $CMD" }
     catch {
-        Write-Host "[BUG] invoke-expression Return $?, even if command successfull."
+        Write-Verbose "[BUG] invoke-expression Return $?, even if command successfull."
     }
    
     $error.clear()
@@ -303,6 +294,8 @@ Function create_template () {
 }
 
 # Parse the BSDRP filename given (is a i386 or amd64, is a vga or serial)
+# Modify the global variable:VM_ARCH and CONSOLE
+# TO DO: return the results in place of using global variables
 Function parse_filename () {
 	param ($FILE_NAME)
     Write-Host "Parsing filename given for guesing ARCH and CONSOLE values:"
@@ -398,14 +391,34 @@ Function clone_vm () {
     }
     
 }
-# Build the lab: Clone and Configure all VMs
-Function build_lab () {
-    Write-Host "Creating lab with $NUMBER_VM routers"
-    Write-Host "- All routers will be connected to $NUMBER_LAN common LAN"
-    Write-Host "- Full mesh ethernet point-to-point link between each routers"
-    if ($SHARED_LAN) {
-        Write-Host "- One NIC connected to the shared LAN with the host"
+
+# Modify VM NIC
+# First parameter: (string), VM name
+# Second parameter: (int), NIC number 
+# Third parameter: (string), LAN name
+# Forth parameter: (string), MAC address to use
+# Fifth parameter: (bool), set true for Host Only NIC
+Function modify_lan () {
+    param ([string]$VM_NAME,[int]$NIC,[string]$LAN,[string]$MAC,[bool]$HOST_ONLY=$false)
+    if ($HOST_ONLY) {
+        $CMD=($VB_EXE + " modifyvm $VM_NAME --nic$NIC hostonly --hostonlyadapter1 ""VirtualBox Host-Only Ethernet Adapter"" --nictype$NIC 82540EM --macaddress$NIC $MAC")    
+    } else {
+        $CMD=($VB_EXE + " modifyvm $VM_NAME --nic$NIC intnet --nictype$NIC 82540EM --intnet$NIC LAN$LAN --macaddress$NIC $MAC")
     }
+    write-Host "[DEBUG] Function CMD to run:"
+    write-host $CMD
+}                        
+                        
+# Build the lab: Clone and Configure all VMs
+# First parameter: (int), number of VM to clone/start
+# Second parameter: (int), number of LAN 
+# Third parameter: (bool), Shared with host LAN
+# Forth parameter: (bool), Full Mesh link
+Function build_lab () {
+    param ([int]$NUMBER_VM,[int]$LAN,[bool]$SHARED_WITH_HOST_LAN,[bool]$FULL_MESH)
+    Write-Host "Setting-up a lab with $NUMBER_VM routers"
+    Write-Host "- All routers will be connected to $LAN common LAN"
+    Write-Host "- Full mesh ethernet point-to-point link between each routers"
     
     #Enter the main loop for each VM
     for ($i=1;$i -le $NUMBER_VM;$i++) {
@@ -415,47 +428,43 @@ Function build_lab () {
 			$MACHINE_CLONE=$VIRTUALBOX.findMachine("BSDRP_lab_R$i")
 		}
 		
-		continue
-        $NIC_NUMBER=0
+        [int] $NIC_NUMBER=0
         Write-Host "Router $i have the folllowing NIC:"
         
-        $j=1
-        while ($j -le $NUMBER_VM){
-            if ($i -ne $j) {
-                Write-Host ("em" + $NIC_NUMBER + " connected to Router${j}.")
-                $NIC_NUMBER++
-                if ($i -le $j) {
-                    $CMD=($VB_EXE + " modifyvm BSDRP_lab_R" + $i + "--nic" + $NIC_NUMBER + " intnet --nictype" + $NIC_NUMBER +" 82540EM --intnet" + $NIC_NUMBER + " LAN" + $i + $j + " --macaddress" + $NIC_NUMBER + " AAAA00000" + $i + $i + $j)
-					Write-Host "[DEBUG]CMD to run:"
-                    Write-Host $CMD
-                } else {
-                    $CMD=($VB_EXE + " modifyvm BSDRP_lab_R" + $i + "--nic" + $NIC_NUMBER + " intnet --nictype" + $NIC_NUMBER +" 82540EM --intnet" + $NIC_NUMBER +" LAN" + $j + $i + " --macaddress" + $NIC_NUMBER + " AAAA00000" + $i + $j + $i)
-					Write-Host "[DEBUG]CMD to run:"
-                    Write-Host $CMD
-                }
-            }
-            $j++ 
-        }
+        # Enter the full-mesh links loop
+        
+        if ($FULL_MESH) {
+            $j=1
+            while ($j -le $NUMBER_VM){
+                if ($i -ne $j) {
+                    Write-Host ("em" + $NIC_NUMBER + " connected to Router${j}.")
+                    $NIC_NUMBER++
+                    if ($i -le $j) {
+                        modify_lan "BSDRP_lab_R$i" $NIC_NUMBER ("$i" + "$j") ("AAAA00000" + $i + $i + $j)
+                    } else {
+                        modify_lan "BSDRP_lab_R$i" $NIC_NUMBER ("$j" + "$i") ("AAAA00000" + $i + $j + $i)
+                    }
+                } # endif avoiding himself in compute
+                $j++ 
+            } # end of while NUMBER_VM
+        } #endif of FULL_MESH
         
         #Enter in the LAN NIC loop
         $j=1
         while ($j -le $NUMBER_LAN) {
             Write-Host ("em" + $NIC_NUMBER + " connected to LAN number " + $j)
             $NIC_NUMBER++
-            $CMD=($VB_EXE + " modifyvm BSDRP_lab_R" + $i + " --nic" + $NIC_NUMBER + " intnet --nictype" + $NIC_NUMBER + " 82540EM --intnet" + $NIC_NUMBER + " LAN10" + $j + " --macaddress" + $NIC_NUMBER + " CCCC00000" + $j + "0" + $i)
-		    Write-Debug "CMD to run:" $CMD
-			Write-Host $CMD
+            modify_lan "BSDRP_lab_R$i" $NIC_NUMBER ("10" + $j) ("CCCC00000" + $j + "0" + $i)
             $j++
-        }
+        } #end of while LAN
         
         #Enter the shared with host lan
-		if ($SHARED_LAN) {
+		if ($SHARED_WITH_HOST_LAN) {
+            Write-Host "- One NIC connected to the shared LAN with the host"
 			Write-Host ("em" + $NIC_NUMBER + " connected to shared-with-host LAN.")
             $NIC_NUMBER++
-			$CMD=($VB_EXE + " modifyvm BSDRP_lab_R" + $i + " --nic" + $NIC_NUMBER + ' hostonly --hostonlyadapter1 "VirtualBox Host-Only Ethernet Adapter" --nictype' + $NIC_NUMBER + " 82540EM --macaddress" + $NIC_NUMBER + " 00bbbb00000" + $i)
-		    Write-Debug "CMD to run:" $CMD
-			Write-Host $CMD
-		}
+            modify_lan "BSDRP_lab_R$i" $NIC_NUMBER "" ("00bbbb00000" + $i) $true
+		} #endif Shared_with_host_lan
     }
 }
 
@@ -513,21 +522,52 @@ catch {
     create_template
 }
 
-do {
-    $NUMBER_VM = Read-Host "How many routers to start? (between 2 and 9)"
-} until ((isNumeric $NUMBER_VM) -and ($NUMBER_VM -ge 2) -and ($NUMBER_VM -le 9))
-do {
-    $NUMBER_LAN = Read-Host "How many shared LAN between all your routers? (between 0 and 4)"
-} until ((isNumeric $NUMBER_LAN) -and ($NUMBER_LAN -ge 0) -and ($NUMBER_LAN -le 4))
+Write-Host "Note: VirtualBox is limited to only 8 NIC by VM"
+[int] $MAX_NIC=8
 
-$SHARED_LAN=$false
+[bool] $SHARED_WITH_HOST_LAN=$false
 $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes",""
 $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No",""
 $CHOICES = [System.Management.Automation.Host.ChoiceDescription[]]($yes,$no)
-$MESSAGE = "Enable shared LAN between your routers and the host ? (Permit IP access between the routers and your host)"
+$MESSAGE = "Enabling one LAN between routers and the host ? (Enbale IP access from host to routers)"
 $RESULT = $Host.UI.PromptForChoice($TITLE,$MESSAGE,$CHOICES,0)
-if($RESULT -eq 0) { $SHARED_LAN=$true }
+if($RESULT -eq 0) {
+    $SHARED_WITH_HOST_LAN=$true
+    $MAX_NIC--
+}
 
-build_lab
+do {
+    $LAN = (Read-Host "How many other LAN dedicaced to the lab? (between 0 and $MAX_NIC)") -as [int]
+} until (($LAN -ne $null) -and ($LAN -ge 0) -and ($LAN -le $MAX_NIC))
+$MAX_NIC=$MAX_NIC - $LAN
+
+[int] $MAX_VM=100
+[bool] $FULL_MESH=$false
+if ($MAX_NIC -gt 0) {
+    $MESSAGE = "Enable full mesh links between all routers ?"
+    $RESULT = $Host.UI.PromptForChoice($TITLE,$MESSAGE,$CHOICES,0)
+    if($RESULT -eq 0) {
+        $FULL_MESH=$true
+        switch ($MAX_NIC) {
+            1 { $MAX_VM=2 } 
+            2 { $MAX_VM=2 } 
+            3 { $MAX_VM=3 }  
+            4 { $MAX_VM=3 }  
+            5 { $MAX_VM=3 }  
+            6 { $MAX_VM=4 }
+            7 { $MAX_VM=4 } 
+            8 { $MAX_VM=4 }  
+            default { write-host "[BUG] MAX_NIC too high"; clean_exit}
+        } # switch
+    } # Endif FULL_MESH
+    
+}# Endif there is still NIC available 
+        
+
+do {
+    $NUMBER_VM = (Read-Host "How many routers ? (between 2 and $MAX_VM)") -as [int]
+} until (($NUMBER_VM -ne $null) -and ($NUMBER_VM -ge 2) -and ($NUMBER_VM -le $MAX_VM))
+
+build_lab $NUMBER_VM $LAN $SHARED_WITH_HOST_LAN $FULL_MESH
 
 clean_exit
