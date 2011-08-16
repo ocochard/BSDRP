@@ -88,6 +88,21 @@ function set_API_enums() {
             
             ChipsetType_PIIX3 = 1;
             ChipsetType_ICH9 = 2;
+            
+            NetworkAdapterType_Null = 0;
+            NetworkAdapterType_Am79C970A = 1;
+            NetworkAdapterType_Am79C973 = 2;
+            NetworkAdapterType_I82540EM = 3;
+            NetworkAdapterType_I82543GC = 4;
+            NetworkAdapterType_I82545EM = 5;
+            NetworkAdapterType_Virtio = 6;
+            
+            NetworkAttachmentType_Null = 0;
+            NetworkAttachmentType_NAT = 1;
+            NetworkAttachmentType_Bridged = 2;
+            NetworkAttachmentType_Internal = 3;
+            NetworkAttachmentType_HostOnly = 4;
+            NetworkAttachmentType_Generic = 5;
        
         } #Virtualbox_API_Enums
 
@@ -98,17 +113,6 @@ function set_API_enums() {
 } # function set_API_enum
 
 #### Functions definition
-
-# Initialize VirtualBox COM Object
-# Return true if yes, and not if not installed, and initialize $VIRTUALBOX object
-function init_com_api () {
-    Write-Verbose "Initializing VirtualBox COM API...";
-    try { $global:VIRTUALBOX = New-Object -ComObject VirtualBox.VirtualBox }
-    catch {
-        return $false
-    }
-    return $true 
-}
 
 # Create the template
 Function create_template () {
@@ -144,7 +148,7 @@ Function create_template () {
     #Create VM
     try {$MACHINE=$VIRTUALBOX.createMachine("",$VM_TPL_NAME,$VM_ARCH,"",$false)}
     catch {
-        Write-Host "[ERROR] Can't create $VM_TPL_NAME machine"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't create $VM_TPL_NAME machine"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -152,11 +156,11 @@ Function create_template () {
     #Configure the VM
     
     # Chipset PIIX3 support a maximum of 8 NIC
-    # Chipset ICH9 support a maximum of 36 NIC
+    # Chipset ICH9 support a maximum of 36 NIC... But it's not working (experimental)
     
-    $MACHINE.ChipsetType=$ChipsetType_ICH9
+    $MACHINE.ChipsetType=$ChipsetType_PIIX3
     $MACHINE.MemorySize=128
-    $MACHINE.VRAMSize=6
+    $MACHINE.VRAMSize=8
     $MACHINE.Description="BSD Router Project Template VM"
     $MACHINE.setBootOrder(1,$DeviceType_HardDisk)
     $MACHINE.setBootOrder(2,$DeviceType_Null)
@@ -166,7 +170,7 @@ Function create_template () {
 	# Link the VM serial port to a pipe into the host
 	# You can connect, from the host, to the serial port of the VM 
 	$MACHINE_SERIAL=$MACHINE.getSerialPort(0)
-	$MACHINE_SERIAL.path="\\.\pipe\$MACHINE_NAME"
+	$MACHINE_SERIAL.path="\\.\pipe\$VM_TPL_NAME"
 	$MACHINE_SERIAL.hostMode=$PortMode_HostPipe
 	$MACHINE_SERIAL.server=$true
 	$MACHINE_SERIAL.enabled=$true   
@@ -174,7 +178,7 @@ Function create_template () {
     # Adding a disk controller to the machine
     try { $MACHINE_STORAGECONTROLLER = $MACHINE.addStorageController("SATA Controller",$StorageBus_SATA) }
 	catch {
-        Write-Host "[ERROR] Can't Add a Storage Controller to $VM_TPL_NAME"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't Add a Storage Controller to $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -184,7 +188,7 @@ Function create_template () {
     # Save the VM settings
     try { $MACHINE.saveSettings() }
     catch {
-        Write-Host "[ERROR] Can't save $VM_TPL_NAME"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't save $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -192,7 +196,7 @@ Function create_template () {
     # Need to register the VM (mandatory before attaching disk to it)
     try { $VIRTUALBOX.registerMachine($MACHINE) }
     catch {
-        Write-Host "[ERROR] Can't register $VM_TPL_NAME"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't register $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -217,7 +221,7 @@ Function create_template () {
     
      # Another if $VDI_FILE exist, because I didn't understand the error code of invoke-expression
     if (!(test-path $VDI_FILE -PathType leaf)) {
-    	Write-Host "[ERROR]: RAW to VDI converstion error, no VDI file found"
+    	Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": RAW to VDI converstion error, no VDI file found"
         clean_exit
     }
     
@@ -225,7 +229,7 @@ Function create_template () {
     try {
         $MEDIUM=$VIRTUALBOX.openMedium($VDI_FILE,$DeviceType_HardDisk,$AccessMode_ReadWrite,$true)
     } catch {
-        Write-Host "[ERROR] Can't Open/register $VDI_FILE"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't Open/register $VDI_FILE"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -233,7 +237,7 @@ Function create_template () {
     # Compact the VDI (and create a process object)
     try { $PROGRESS=$MEDIUM.compact() }
     catch {
-        Write-Host "[ERROR] Can't Compact the VDI FILE"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't Compact the VDI FILE"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -241,17 +245,17 @@ Function create_template () {
     # Wait for end of compacting the VDI...
     try { $PROGRESS.waitForCompletion(-1) }
     catch {
-        Write-Host "[ERROR] Wait for end of VDI compact failed"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Wait for end of VDI compact failed"
         Write-Host "Detail: " $($error)
         clean_exit
     }
     
-    # Need to unclock the VM (put it in "mutable" state) before modifying it
+    # Need to lock the VM (put it in "mutable" state) before modifying it
     #  === More I'm using VirtualBox, more I love qemu ! ====
     
     try { $MACHINE.lockMachine($SESSION,$LockType_Write) }
     catch {
-        Write-Host "[ERROR] Can't lock $VM_TPL_NAME"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't lock $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -261,7 +265,7 @@ Function create_template () {
     try {
         $SESSION.machine.attachDevice("SATA Controller",0,0,$DeviceType_HardDisk,$MEDIUM)
     } catch {
-        Write-Host "[ERROR] Can't attach $DST_VDI_FILE to $VM_TPL_NAME"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't attach $DST_VDI_FILE to $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -269,7 +273,7 @@ Function create_template () {
     # Save new settings
     try { $SESSION.machine.saveSettings() }
     catch {
-        Write-Host "[ERROR] Can't save $VM_TPL_NAME"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't save $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -277,7 +281,7 @@ Function create_template () {
     # Create a snapshot (will be mandatory for creating linked type clone)
     try { $PROGRESS=$SESSION.console.takeSnapshot("SNAPSHOT","Initial snapshot used for clone") }
     catch {
-        Write-Host "[ERROR] Can't create a snapshot for $VM_TPL_NAME"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't create a snapshot for $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -285,7 +289,7 @@ Function create_template () {
     # Wait for end of taking the snapshot...
     try { $PROGRESS.waitForCompletion(-1) }
     catch {
-        Write-Host "[ERROR] Wait for end of snapshot failed"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Wait for end of snapshot failed"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -293,12 +297,12 @@ Function create_template () {
     # Unlock the machine
     try { $SESSION.unlockMachine() }
     catch {
-        Write-Host "[ERROR] Can't unlock $VM_TPL_NAME"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't unlock $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
     
-}
+} # End function create_template
 
 # Parse the BSDRP filename given (is a i386 or amd64, is a vga or serial)
 # Modify the global variable:VM_ARCH and CONSOLE
@@ -313,7 +317,7 @@ Function parse_filename () {
         $global:VM_ARCH="FreeBSD"
         Write-Host "- ARCH: i386"
     } else {
-        Write-Host "[ERROR] Can't guests arch of this image"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": parse_filename(): Can't guests arch of this image"
         clean_exit
     }
     if ($FILE_NAME.Contains("_serial")) {
@@ -323,11 +327,11 @@ Function parse_filename () {
         $global:SERIAL=$false
         Write-Host "- CONSOLE: vga"
     } else {
-        Write-Host "ERROR: Can't guests arch of this image"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ":  Can't guests arch of this image"
         clean_exit
     }
 	return $true
-}
+} # End function parse_filename
 
 # Clone a new VM based on the base BSDRP VDI
 Function clone_vm () {
@@ -335,7 +339,7 @@ Function clone_vm () {
 	
 	try {$MACHINE_TEMPLATE=$VIRTUALBOX.findMachine($VM_TPL_NAME)}
 	catch {
-		Write-Host "[BUG] clone_vm didn't found $VM_TPL_NAME"
+		Write-Host "[BUG] " (Get-PSCallStack)[0].Command ": clone_vm didn't found $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
 	}
@@ -345,7 +349,7 @@ Function clone_vm () {
     
     try {$MACHINE_TEMPLATE_SNAPSHOT=$MACHINE_TEMPLATE.findSnapshot($null) }
     catch {
-		Write-Host "[BUG] clone_vm didn't found the snapshot of $VM_TPL_NAME"
+		Write-Host "[BUG] " (Get-PSCallStack)[0].Command ": clone_vm didn't found the snapshot of $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
 	}
@@ -353,7 +357,7 @@ Function clone_vm () {
 	$error.clear()
 	try {$MACHINE_CLONE=$VIRTUALBOX.createMachine("",$CLONE_NAME,$VM_ARCH,"",$false)}
     catch {
-        Write-Host "[ERROR] Can't create $CLONE_NAME clone"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't create $CLONE_NAME clone"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -364,7 +368,7 @@ Function clone_vm () {
 	[Int[]] $CloneOptions=@($CloneOptions_Link)
 	try {$PROGRESS=$MACHINE_TEMPLATE_SNAPSHOT.machine.cloneTo($MACHINE_CLONE,$CloneMode_MachineState,$CloneOptions) }
 	catch {
-		Write-Host "[ERROR] Can't create $CLONE_NAME machine"
+		Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't create $CLONE_NAME machine"
         Write-Host "Detail: " $($error)
         clean_exit
 	}
@@ -372,10 +376,13 @@ Function clone_vm () {
 	 # Wait for end of clonning the VM...
     try { $PROGRESS.waitForCompletion(-1) }
     catch {
-        Write-Host "[ERROR] Wait for end of clonning $CLONE_NAME process failed"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Wait for end of clonning $CLONE_NAME process failed"
         Write-Host "Detail: " $($error)
         clean_exit
     }
+    
+    # Change machine description
+    $MACHINE_CLONE.Description="BSD Router Project, Lab router $CLONE_NAME"
     
     # Change the serial PIPE NAME
     $MACHINE_CLONE_SERIAL=$MACHINE_CLONE.getSerialPort(0)
@@ -384,7 +391,7 @@ Function clone_vm () {
      # Save the VM settings
     try { $MACHINE_CLONE.saveSettings() }
     catch {
-        Write-Host "[ERROR] Can't save $CLONE_NAME"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't save $CLONE_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
@@ -392,12 +399,56 @@ Function clone_vm () {
     # Need to register the clone
     try { $VIRTUALBOX.registerMachine($MACHINE_CLONE) }
     catch {
-        Write-Host "[ERROR] Can't register $CLONE_NAME"
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't register $CLONE_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
     
-}
+} # End function clone_vm
+
+# Delete all LAN interfaces configurations
+# parameter: [string], VM name
+Function delete_all_nic () {
+    param([string]$VM_NAME)
+    $MAX_NIC=$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_PIIX3)
+    
+    try {$MACHINE=$VIRTUALBOX.findMachine($VM_NAME)}
+	catch {
+		Write-Host "[BUG] " (Get-PSCallStack)[0].Command ": Didn't found $VM_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+	}
+    # Lock the MACHINE for modifying it
+    try { $MACHINE.lockMachine($SESSION,$LockType_Write) }
+    catch {
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't lock $VM_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    
+    # Loop for 0 to MAX-1, if interface configured, clean it
+    for ($i=1;$i -le $MAX_NIC;$i++) {
+        $ADAPTER=$SESSION.machine.getNetworkAdapter([int]($i-1))
+        $ADAPTER.attachmentType=$NetworkAttachmentType_Null
+        $ADAPTER.enabled=$false
+    } #End for loop, MAX_NIC
+    
+    # Save new settings
+    try { $SESSION.machine.saveSettings() }
+    catch {
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't save $VM_TPL_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    
+    # Unlock the machine
+    try { $SESSION.unlockMachine() }
+    catch {
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't unlock $VM_TPL_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }  
+} #End Function delete_all_nic
 
 # Modify VM NIC
 # First parameter: (string), VM name
@@ -405,22 +456,57 @@ Function clone_vm () {
 # Third parameter: (string), LAN name
 # Forth parameter: (string), MAC address to use
 # Fifth parameter: (bool), set true for Host Only NIC
-Function modify_lan () {
+Function modify_nic () {
     param ([string]$VM_NAME,[int]$NIC,[string]$LAN,[string]$MAC,[bool]$HOST_ONLY=$false)
-    if ($HOST_ONLY) {
-        $CMD=($VB_EXE + " modifyvm $VM_NAME --nic$NIC hostonly --hostonlyadapter1 ""VirtualBox Host-Only Ethernet Adapter"" --nictype$NIC 82540EM --macaddress$NIC $MAC")    
-    } else {
-        $CMD=($VB_EXE + " modifyvm $VM_NAME --nic$NIC intnet --nictype$NIC 82540EM --intnet$NIC LAN$LAN --macaddress$NIC $MAC")
+    
+    # Open the MACHINE object
+    try {$MACHINE=$VIRTUALBOX.findMachine($VM_NAME)}
+	catch {
+		Write-Host "[BUG] " (Get-PSCallStack)[0].Command ": Didn't found $VM_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+	}
+    # Lock the MACHINE for modifying it
+   try { $MACHINE.lockMachine($SESSION,$LockType_Write) }
+    catch {
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't lock $VM_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
     }
-    write-Host "[DEBUG] Function CMD to run:"
-    write-host $CMD
-    # Virtualbox begin at zero, need to substract 1 to the value
+    
+    # Virtualbox begin to count NIC starting at zero, need to substract 1 to the NIC value
     #Need to open the machine, and the session
-    $ADAPTER=$MACHINE.getNetworkAdapter($NIC-1)
-    $ADAPTER.internalNetwork=$LAN
+    $ADAPTER=$SESSION.machine.getNetworkAdapter($NIC-1)
+    $ADAPTER.adapterType=$NetworkAdapterType_I82540EM
     $ADAPTER.MACAddress=$MAC
+    
+    if ($HOST_ONLY) { 
+        $ADAPTER.attachmentType=$NetworkAttachmentType_HostOnly
+        $ADAPTER.hostOnlyInterface="VirtualBox Host-Only Ethernet Adapter"
+    } else {
+        $ADAPTER.attachmentType=$NetworkAttachmentType_Internal
+        $ADAPTER.internalNetwork=$LAN
+    }
+        
     $ADAPTER.enabled=$true
-}                        
+    
+    # Save new settings
+    try { $SESSION.machine.saveSettings() }
+    catch {
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't save $VM_TPL_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    
+    # Unlock the machine
+    try { $SESSION.unlockMachine() }
+    catch {
+        Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ":Can't unlock $VM_TPL_NAME"
+        Write-Host "Detail: " $($error)
+        clean_exit
+    }
+    
+} # End function modify_nic       
                         
 # Build the lab: Clone and Configure all VMs
 # First parameter: (int), number of VM to clone/start
@@ -430,17 +516,27 @@ Function modify_lan () {
 Function build_lab () {
     param ([int]$NUMBER_VM,[int]$LAN,[bool]$SHARED_WITH_HOST_LAN,[bool]$FULL_MESH)
     Write-Host "Setting-up a lab with $NUMBER_VM routers"
-    Write-Host "- All routers will be connected to $LAN common LAN"
-    Write-Host "- Full mesh ethernet point-to-point link between each routers"
+    if ($SHARED_WITH_HOST_LAN) {
+        Write-Host "- All routers and the host will be connected to a shared LAN"
+    }
+    if ($LAN -gt 0) {
+        Write-Host "- All routers will be connected to $LAN dedicaced LAN"
+    }
+    if ($FULL_MESH) {
+        Write-Host "- Full mesh ethernet point-to-point link between each routers"
+    }
     
     #Enter the main loop for each VM
     for ($i=1;$i -le $NUMBER_VM;$i++) {
 		try { $MACHINE_CLONE=$VIRTUALBOX.findMachine("BSDRP_lab_R$i") }
         catch {
-			clone_vm ("BSDRP_lab_R$i")
+			clone_vm "BSDRP_lab_R$i"
 			$MACHINE_CLONE=$VIRTUALBOX.findMachine("BSDRP_lab_R$i")
 		}
 		
+        # Delete all NIC on this VM
+        delete_all_nic "BSDRP_lab_R$i"
+        
         [int] $NIC_NUMBER=0
         Write-Host "Router $i have the folllowing NIC:"
         
@@ -453,9 +549,9 @@ Function build_lab () {
                     Write-Host ("em" + $NIC_NUMBER + " connected to Router${j}.")
                     $NIC_NUMBER++
                     if ($i -le $j) {
-                        modify_lan "BSDRP_lab_R$i" $NIC_NUMBER ("$i" + "$j") ("AAAA00000" + $i + $i + $j)
+                        modify_nic "BSDRP_lab_R$i" $NIC_NUMBER ("$i" + "$j") ("AAAA00000" + $i + $i + $j)
                     } else {
-                        modify_lan "BSDRP_lab_R$i" $NIC_NUMBER ("$j" + "$i") ("AAAA00000" + $i + $j + $i)
+                        modify_nic "BSDRP_lab_R$i" $NIC_NUMBER ("$j" + "$i") ("AAAA00000" + $i + $j + $i)
                     }
                 } # endif avoiding himself in compute
                 $j++ 
@@ -464,24 +560,23 @@ Function build_lab () {
         
         #Enter in the LAN NIC loop
         $j=1
-        while ($j -le $NUMBER_LAN) {
-            Write-Host ("em" + $NIC_NUMBER + " connected to LAN number " + $j)
+        while ($j -le $LAN) {
+            Write-Host ("em" + $NIC_NUMBER + " connected to dedicated LAN number " + $j)
             $NIC_NUMBER++
-            modify_lan "BSDRP_lab_R$i" $NIC_NUMBER ("10" + $j) ("CCCC00000" + $j + "0" + $i)
+            modify_nic "BSDRP_lab_R$i" $NIC_NUMBER ("10" + $j) ("CCCC00000" + $j + "0" + $i)
             $j++
         } #end of while LAN
         
         #Enter the shared with host lan
 		if ($SHARED_WITH_HOST_LAN) {
-            Write-Host "- One NIC connected to the shared LAN with the host"
-			Write-Host ("em" + $NIC_NUMBER + " connected to shared-with-host LAN.")
+			Write-Host ("em" + $NIC_NUMBER + " connected to the shared-with-host LAN.")
             $NIC_NUMBER++
-            modify_lan "BSDRP_lab_R$i" $NIC_NUMBER "" ("00bbbb00000" + $i) $true
+            modify_nic "BSDRP_lab_R$i" $NIC_NUMBER "" ("00bbbb00000" + $i) $true
 		} #endif Shared_with_host_lan
     }
-}
+} # End Function build_lab
 
-function Pause ($Message="Press any key to continue...") {
+Function Pause ($Message="Press any key to continue...") {
    # The ReadKey functionality is only supported at the console (not is the ISE)
    if (!$psISE) {
        Write-Host -NoNewLine $Message
@@ -489,12 +584,51 @@ function Pause ($Message="Press any key to continue...") {
        Write-Host ""
    }
 
-}
+} # End function Pause
 
 Function clean_exit () {
 	# Cleaning stuff before exiting...
     Pause
 	exit
+} # End Function clean_exit
+
+
+Function start_lab () {
+    # Start all labs
+    param ([int]$NUMBER_VM)
+    for ($i=1;$i -le $NUMBER_VM;$i++) {
+        # Open the MACHINE object
+        try {$MACHINE=$VIRTUALBOX.findMachine("BSDRP_lab_R$i")}
+    	catch {
+    		Write-Host "[BUG] " (Get-PSCallStack)[0].Command ": Didn't found BSDRP_lab_R$i"
+            Write-Host "Detail: " $($error)
+            clean_exit
+    	}
+               
+        # Start the VM
+        try { $PROGRESS=$MACHINE.launchVMProcess($SESSION,"gui","") }
+        catch {
+            Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't start BSDRP_lab_R$i"
+            Write-Host "Detail: " $($error)
+            clean_exit
+        }
+       
+        # Wait for launching process of the VM
+        try { $PROGRESS.waitForCompletion(-1) }
+        catch {
+            Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Wait for endstart BSDRP_lab_R$i"
+            Write-Host "Detail: " $($error)
+            clean_exit
+        }
+        
+         # Unlock the machine
+        try { $SESSION.unlockMachine() }
+        catch {
+            Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't unlock BSDRP_lab_R$i"
+            Write-Host "Detail: " $($error)
+            clean_exit
+        }
+    } # Endfor
 }
 
 #### Main ####
@@ -515,24 +649,24 @@ $TITLE = "BSD Router Project - VirtualBox lab"
 $WINDOW.WindowTitle = $TITLE
 
 # Stop if can't init the VIRTUALBOX COM API
-if (!(init_com_api)) {
-    Write-Host "[ERROR] Can't init VirtualBox COM API...exiting"
+# Initialize VirtualBox COM Object
+
+Write-Verbose "Initializing VirtualBox COM API...";
+try { $global:VIRTUALBOX = New-Object -ComObject VirtualBox.VirtualBox }
+catch {
+    Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't init VirtualBox COM API...exiting"
     clean_exit
 }
 
-#write-host "max NIC for PIIX3:"
-#$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_PIIX3)
-#write-host "max NIC for ICH9:"
-#$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_ICH9)
-
+# Create the SESSION object too
 try { $global:SESSION = New-Object -ComObject VirtualBox.Session }
 catch {
-    Write-Host "[ERROR] Can't create a SESSION object"
+    Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't create a SESSION object"
     Write-Host "Detail: " $($error)
     clean_exit
 }
 
-#If BSDRP VM template doesn't exist, ask for a filename
+#If BSDRP VM template doesn't exist, ask for a filename to user
 Write-Verbose "Looking for allready existing $VM_TPL_NAME machine"
 try { $VIRTUALBOX_VM_TEMPLATE=$VIRTUALBOX.findMachine($VM_TPL_NAME) }
 catch {
@@ -540,9 +674,8 @@ catch {
     create_template
 }
 
-#Write-Host "Note: VirtualBox is limited to only 8 NIC by VM"
-#[int] $MAX_NIC=8
-[int] $MAX_NIC=36
+# API is incomplete: Can't create more than 8 NIC even with an ICH9
+[int] $MAX_NIC=$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_PIIX3)
 
 [bool] $SHARED_WITH_HOST_LAN=$false
 $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes",""
@@ -615,5 +748,7 @@ do {
 } until (($NUMBER_VM -ne $null) -and ($NUMBER_VM -ge 2) -and ($NUMBER_VM -le $MAX_VM))
 
 build_lab $NUMBER_VM $LAN $SHARED_WITH_HOST_LAN $FULL_MESH
+
+start_lab $NUMBER_VM
 
 clean_exit
