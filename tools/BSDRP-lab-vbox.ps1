@@ -103,6 +103,11 @@ function set_API_enums() {
             NetworkAttachmentType_Internal = 3;
             NetworkAttachmentType_HostOnly = 4;
             NetworkAttachmentType_Generic = 5;
+            
+            ProcessorFeature_HWVirtEx = 0;
+            ProcessorFeature_PAE = 1;
+            ProcessorFeature_LongMode = 2;
+            ProcessorFeature_NestedPaging = 3;
        
         } #Virtualbox_API_Enums
 
@@ -313,6 +318,10 @@ Function parse_filename () {
     if ($FILE_NAME.Contains("_amd64")) {
         $global:VM_ARCH="FreeBSD_64"
         Write-Host "- ARCH: x86-64"
+        if (!($VIRTUALBOX.Host.getProcessorFeature($ProcessorFeature_HWVirtEx))) {
+            write-host "[ERROR] : Your processor didn't support 64bit OS"
+            clean_exit
+        }
     } elseif ($FILE_NAME.Contains("_i386")) {
         $global:VM_ARCH="FreeBSD"
         Write-Host "- ARCH: i386"
@@ -629,6 +638,12 @@ Function start_lab () {
             clean_exit
         }
     } # Endfor
+    Write-Host "Machines started"
+    Write-Host "Connect to them using:"
+    Write-Host " - vga/keyboard console: On their corresponding window"
+    write-host " - Serial port console: Configure your putty/kitty to connect to:"
+    write-host "     serial serial line: \\.\pipe\BSDRP_lab_Rx (replacing x by router number)"
+    write-host "     baud : 115200"
 }
 
 #### Main ####
@@ -700,49 +715,14 @@ if ($MAX_NIC -gt 0) {
     $RESULT = $Host.UI.PromptForChoice($TITLE,$MESSAGE,$CHOICES,0)
     if($RESULT -eq 0) {
         $FULL_MESH=$true
-        switch ($MAX_NIC) {
-            1 { $MAX_VM=2 } 
-            2 { $MAX_VM=2 } 
-            3 { $MAX_VM=3 }  
-            4 { $MAX_VM=3 }  
-            5 { $MAX_VM=3 }  
-            6 { $MAX_VM=4 }
-            7 { $MAX_VM=4 } 
-            8 { $MAX_VM=4 } 
-            9 { $MAX_VM=4 }
-            10 { $MAX_VM=5 }
-            11 { $MAX_VM=5 }
-            12 { $MAX_VM=5 }
-            13 { $MAX_VM=5 }
-            14 { $MAX_VM=5 }
-            15 { $MAX_VM=6 }
-            16 { $MAX_VM=6 }
-            17 { $MAX_VM=6 }
-            18 { $MAX_VM=6 }
-            19 { $MAX_VM=6 }
-            20 { $MAX_VM=6 }
-            21 { $MAX_VM=7 }
-            22 { $MAX_VM=7 }
-            23 { $MAX_VM=7 }
-            24 { $MAX_VM=7 }
-            25 { $MAX_VM=7 }
-            26 { $MAX_VM=7 }
-            27 { $MAX_VM=7 }
-            28 { $MAX_VM=8 }
-            29 { $MAX_VM=8 }
-            30 { $MAX_VM=8 }
-            31 { $MAX_VM=8 }
-            32 { $MAX_VM=8 }
-            33 { $MAX_VM=8 }
-            34 { $MAX_VM=8 }
-            35 { $MAX_VM=8 }
-            36 { $MAX_VM=9 }
-            default { write-host "[BUG] MAX_NIC too high"; clean_exit}
-        } # switch
+        # Need to set the maximum VM, regarding of NIC available
+        # MAX_NIC = MAX_VM ( MAX_VM - 1) /2
+        # MAX_VM = (sqrt(8*MAX_NIC+1)+1)/2 
+        $MAX_VM=([System.Math]::Sqrt(8*$MAX_NIC+1)+1)/2
     } # Endif FULL_MESH
     
 }# Endif there is still NIC available 
-        
+
 do {
     $NUMBER_VM = (Read-Host "How many routers ? (between 2 and $MAX_VM)") -as [int]
 } until (($NUMBER_VM -ne $null) -and ($NUMBER_VM -ge 2) -and ($NUMBER_VM -le $MAX_VM))
