@@ -207,7 +207,7 @@ Function create_template () {
     }
     
     #Convert the BSDRP raw image disk to VDI using VIRTUALBOXManage.exe
-    #Still need to use VIRTUALBOXManage because COM API didn't support all features (like converting RAW)
+    #Still need to use VIRTUALBOXManage because COM API didn't support all features (like converting RAW)
     #Need to put quote, because there is space in name file
     
     $VDI_FILE=$VIRTUALBOX.SystemProperties.DefaultMachineFolder + "\$VM_TPL_NAME\$VM_TPL_NAME.vdi"
@@ -648,7 +648,7 @@ Function start_lab () {
 
 #### Main ####
 
-# Settings VirtualBox COM API static variables
+# Settings VirtualBox COM API static variables
 set_API_enums
 
 # A powershell script by default is running in mode MTA, but for displaying dialog box, STA mode is needed
