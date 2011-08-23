@@ -121,22 +121,9 @@ function set_API_enums() {
 
 # Create the template
 Function create_template () {
+	param ([string]$FILENAME)
     $error.clear()
     Write-Host "Generate BSDRP Lab Template VM..."
-	
-	# Ask the user for BSDR full-image
-	[System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
-    $objForm = New-Object System.Windows.Forms.OpenFileDialog
-    $objForm.InitialDirectory = "."
-    $objForm.Filter = "BSDRP image Files (*.img)|*.img"
-    $objForm.Title = "Select BSDRP full image disk"
-    $Show = $objForm.ShowDialog()
-    If ($Show -eq "OK") {
-    	$FILENAME=$objForm.FileName
-    } Else {
-    	Write-Error "Operation cancelled"
-        clean_exit
-    }
 	
 	# Define $VM_ARCH and $SERIAL from the filename
     $null = parse_filename $FILENAME
@@ -313,26 +300,26 @@ Function create_template () {
 # Modify the global variable:VM_ARCH and CONSOLE
 # TO DO: return the results in place of using global variables
 Function parse_filename () {
-	param ($FILE_NAME)
+	param ([string]$FILENAME)
     Write-Host "Parsing filename given for guesing ARCH and CONSOLE values:"
-    if ($FILE_NAME.Contains("_amd64")) {
+    if ($FILENAME.Contains("_amd64")) {
         $global:VM_ARCH="FreeBSD_64"
         Write-Host "- ARCH: x86-64"
         if (!($VIRTUALBOX.Host.getProcessorFeature($ProcessorFeature_HWVirtEx))) {
             write-host "[ERROR] : Your processor didn't support 64bit OS"
             clean_exit
         }
-    } elseif ($FILE_NAME.Contains("_i386")) {
+    } elseif ($FILENAME.Contains("_i386")) {
         $global:VM_ARCH="FreeBSD"
         Write-Host "- ARCH: i386"
     } else {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": parse_filename(): Can't guests arch of this image"
         clean_exit
     }
-    if ($FILE_NAME.Contains("_serial")) {
+    if ($FILENAME.Contains("_serial")) {
         $global:SERIAL=$true
         Write-Host "- CONSOLE: serial" 
-    } elseif ($FILE_NAME.Contains("_vga")) {
+    } elseif ($FILENAME.Contains("_vga")) {
         $global:SERIAL=$false
         Write-Host "- CONSOLE: vga"
     } else {
@@ -343,9 +330,11 @@ Function parse_filename () {
 } # End function parse_filename
 
 # Clone a new VM based on the base BSDRP VDI
+#  first parameter: Name of the cloned machine
+#  second parametre: ostype (VM_ARCH)
 Function clone_vm () {
-    param ($CLONE_NAME)
-	
+    param ([int]$CLONE_ID,[string]$OS_TYPE)
+	$CLONE_NAME="BSDRP_lab_R"+ $CLONE_ID
 	try {$MACHINE_TEMPLATE=$VIRTUALBOX.findMachine($VM_TPL_NAME)}
 	catch {
 		Write-Host "[BUG] " (Get-PSCallStack)[0].Command ": clone_vm didn't found $VM_TPL_NAME"
@@ -364,7 +353,7 @@ Function clone_vm () {
 	}
     
 	$error.clear()
-	try {$MACHINE_CLONE=$VIRTUALBOX.createMachine("",$CLONE_NAME,$VM_ARCH,"",$false)}
+	try {$MACHINE_CLONE=$VIRTUALBOX.createMachine("",$CLONE_NAME,$OS_TYPE,"",$false)}
     catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't create $CLONE_NAME clone"
         Write-Host "Detail: " $($error)
@@ -396,6 +385,11 @@ Function clone_vm () {
     # Change the serial PIPE NAME
     $MACHINE_CLONE_SERIAL=$MACHINE_CLONE.getSerialPort(0)
 	$MACHINE_CLONE_SERIAL.path="\\.\pipe\$CLONE_NAME"
+    
+    # Enable remote desktop
+    $MACHINE_VRDE=$MACHINE_CLONE.VRDEServer
+    $MACHINE_VRDE.enabled=$true
+    $MACHINE_VRDE.setVRDEProperty("TCP/Ports","505" + $CLONE_ID)
     
      # Save the VM settings
     try { $MACHINE_CLONE.saveSettings() }
@@ -535,11 +529,22 @@ Function build_lab () {
         Write-Host "- Full mesh ethernet point-to-point link between each routers"
     }
     
+    if (!($VM_ARCH)) {
+        $VM_ARCH=
+        try {$MACHINE_TEMPLATE=$VIRTUALBOX.findMachine($VM_TPL_NAME)}
+    	catch {
+    		Write-Host "[BUG] " (Get-PSCallStack)[0].Command ": build lab didn't found $VM_TPL_NAME"
+            Write-Host "Detail: " $($error)
+            clean_exit
+    	}
+        $VM_ARCH=$MACHINE_TEMPLATE.OSTypeId
+    }
+    
     #Enter the main loop for each VM
     for ($i=1;$i -le $NUMBER_VM;$i++) {
 		try { $MACHINE_CLONE=$VIRTUALBOX.findMachine("BSDRP_lab_R$i") }
         catch {
-			clone_vm "BSDRP_lab_R$i"
+			clone_vm $i $VM_ARCH
 			$MACHINE_CLONE=$VIRTUALBOX.findMachine("BSDRP_lab_R$i")
 		}
 		
@@ -597,6 +602,8 @@ Function Pause ($Message="Press any key to continue...") {
 
 Function clean_exit () {
 	# Cleaning stuff before exiting...
+	[void] [System.Runtime.Interopservices.Marshal]::ReleaseComObject($SESSION)
+    [void] [System.Runtime.Interopservices.Marshal]::ReleaseComObject($VIRTUALBOX)
     Pause
 	exit
 } # End Function clean_exit
@@ -615,7 +622,7 @@ Function start_lab () {
     	}
                
         # Start the VM
-        try { $PROGRESS=$MACHINE.launchVMProcess($SESSION,"gui","") }
+        try { $PROGRESS=$MACHINE.launchVMProcess($SESSION,"headless","") }
         catch {
             Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't start BSDRP_lab_R$i"
             Write-Host "Detail: " $($error)
@@ -638,12 +645,13 @@ Function start_lab () {
             clean_exit
         }
     } # Endfor
-    Write-Host "Machines started"
-    Write-Host "Connect to them using:"
-    Write-Host " - vga/keyboard console: On their corresponding window"
-    write-host " - Serial port console: Configure your putty/kitty to connect to:"
-    write-host "     serial serial line: \\.\pipe\BSDRP_lab_Rx (replacing x by router number)"
-    write-host "     baud : 115200"
+    Write-Host "All routers started, connect to them using:"
+    Write-Host " - For BSDRP vga release, with mstsc (included in MS Windows): "
+    write-host "     mstsc /v:127.0.0.1:505x (replacing x by router number)"
+    write-host " - For BSDRP serial and vga release: Configure PuTTY to connect to:"
+    write-host "     connection type: Serial"
+    write-host "     serial line: \\.\pipe\BSDRP_lab_Rx (replacing x by router number)"
+    #write-host "     baud : 115200"
 }
 
 #### Main ####
@@ -686,17 +694,30 @@ Write-Verbose "Looking for allready existing $VM_TPL_NAME machine"
 try { $VIRTUALBOX_VM_TEMPLATE=$VIRTUALBOX.findMachine($VM_TPL_NAME) }
 catch {
     Write-Host "No BSDRP VM Template found."
-    create_template
+	# Ask the user for BSDR full-image
+    $FileForm = New-Object System.Windows.Forms.OpenFileDialog
+    $FileForm.InitialDirectory = "."
+    $FileForm.Filter = "BSDRP image Files (*.img)|*.img"
+    $FileForm.Title = "Select BSDRP full image disk"
+    $Show = $FileForm.ShowDialog()
+    If ($Show -eq "OK") {
+    	$FILENAME=$FileForm.FileName
+    } Else {
+    	Write-Error "Operation cancelled"
+        clean_exit
+    }
+    Write-Host "No BSDRP VM Template found."
+    create_template $FILENAME 
 }
 
-# API is incomplete: Can't create more than 8 NIC even with an ICH9
+# Incomplete support of ICH9 chipset: Can't create more than 8 NIC (but report 36)
 [int] $MAX_NIC=$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_PIIX3)
 
 [bool] $SHARED_WITH_HOST_LAN=$false
 $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes",""
 $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No",""
 $CHOICES = [System.Management.Automation.Host.ChoiceDescription[]]($yes,$no)
-$MESSAGE = "Enabling one LAN between routers and the host ? (Enbale IP access from host to routers)"
+$MESSAGE = "Enabling one LAN between routers and the host ? (Permit IP access between host and routers)"
 $RESULT = $Host.UI.PromptForChoice($TITLE,$MESSAGE,$CHOICES,0)
 if($RESULT -eq 0) {
     $SHARED_WITH_HOST_LAN=$true
