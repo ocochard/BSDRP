@@ -12,7 +12,7 @@
 # 1. Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
 # 2. Redistributions in binary form must reproduce the above copyright
-#    Notice, this list of conditions and the following disclaimer in the
+#    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
 #
 # THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
@@ -35,7 +35,6 @@ set -eu
 
 # Global variable
 VM_TPL_NAME="BSDRP_lab_template"
-#WORKING_DIR="$HOME/.VirtualBox/HardDisks"
 LOG_FILE="${HOME}/BSDRP_lab.log"
 
 # Check FreeBSD system pre-requise for starting virtualbox
@@ -152,7 +151,6 @@ create_template () {
 	echo "Check if BSDRP template VM exist..." >> ${LOG_FILE}
     if check_vm ${VM_TPL_NAME}; then
 		echo "Found: Deleting the template VM..."
-		echo "[TODO] Need to delete ALL VM!"
         delete_all_vm
     fi
 
@@ -249,8 +247,7 @@ clone_vm () {
     # Check if the vm allready exist
     if ! check_vm $1; then
 		echo "Create VM $1..." >> ${LOG_FILE}
-		# --options link not available on FReeBSD or on OSE ?
-        if ! VBoxManage clonevm ${VM_TPL_NAME} --name $1 --snapshot SNAPSHOT --register >> ${LOG_FILE} 2>&1; then
+        if ! VBoxManage clonevm ${VM_TPL_NAME} --name $1 --snapshot SNAPSHOT --options link --register >> ${LOG_FILE} 2>&1; then
 			echo "ERROR: Can't create $1"
 			exit 1
 		fi
@@ -258,6 +255,7 @@ clone_vm () {
 			echo "ERROR: Can't configure serial port for $1"
 			exit 1
 		fi
+		echo "VM $1 Created" >> ${LOG_FILE}
     else
         # if existing: Is running ?
         if `VBoxManage showvminfo $1 | grep -q "running"`; then
@@ -266,8 +264,8 @@ clone_vm () {
 			fi
             #sleep 5
         fi
+		delete_all_nic $1
     fi
-    echo "VM $1 Created/Reseted" >> ${LOG_FILE}
 }
 
 delete_all_nic () { 
