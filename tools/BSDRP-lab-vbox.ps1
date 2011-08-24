@@ -729,17 +729,14 @@ do {
 } until (($LAN -ne $null) -and ($LAN -ge 0) -and ($LAN -le $MAX_NIC))
 $MAX_NIC=$MAX_NIC - $LAN
 
-[int] $MAX_VM=100
+[int] $MAX_VM=20
 [bool] $FULL_MESH=$false
 if ($MAX_NIC -gt 0) {
     $MESSAGE = "Enable full mesh links between all routers ?"
     $RESULT = $Host.UI.PromptForChoice($TITLE,$MESSAGE,$CHOICES,0)
     if($RESULT -eq 0) {
         $FULL_MESH=$true
-        # Need to set the maximum VM, regarding of NIC available
-        # MAX_NIC = MAX_VM ( MAX_VM - 1) /2
-        # MAX_VM = (sqrt(8*MAX_NIC+1)+1)/2 
-        $MAX_VM=([System.Math]::Sqrt(8*$MAX_NIC+1)+1)/2
+        $MAX_VM=$MAX_NIC + 1
     } # Endif FULL_MESH
     
 }# Endif there is still NIC available 
