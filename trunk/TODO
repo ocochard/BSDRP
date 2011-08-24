@@ -1,6 +1,7 @@
 * Arch *
 	- Sparc64: Need to fix the login bug, and add arch support to the update script
 	- arm: Need to found an arm devices for working on
+	- vm: Add a "VM" arch, with vm-tools and only limited drivers ? (brings lot's of deps like python and perl)
 
 * Security *
 	- Need to wrote sample configuration file for pf and other
@@ -14,13 +15,14 @@
 * misc *
 	- utf-8 support for console ?
 	- Quagga rc script: limit all quagga process message when quagga is disabled
-	- Lab script:	Generate lab graphic in DOT language, see example in tools/bsdrp.lab.gv
-					Finish the powershell lab script for windows
+	- Lab script: Generate a lab diagram in DOT language, see example in tools/bsdrp.lab.gv
 
 * Central configuration management / Provisionning *
 	- Use cvs or subversion for maintain central management of configuration files
 	- Be compatible with a provisionning tools that generate lot's of configuration (subversion copy?)
 
-* Lab script *
-	- VirtualBox/Windows: Need to fix the limited size of the final text box.
+* Performance *
+	- Need to test Netmap (http://info.iet.unipi.it/~luigi/netmap/)
 
+* API *
+	- Need to check if an API (for usage as a VM in cloud for example) is a good idea

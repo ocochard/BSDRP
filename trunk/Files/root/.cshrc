@@ -38,7 +38,7 @@ if ($?prompt) then
 	# An interactive shell -- set some stuff up
 	set prompt='%B[%n@%m%b]%B%~%b%#'
 	set filec
-	set history = 100
+	set history = 500
 	set savehist = 100
 	set mail = (/var/mail/$USER)
 	if ( $?tcsh ) then
@@ -50,6 +50,8 @@ if ($?prompt) then
 	set autolist
 	# Disable beep
 	set nobeep
+	# Error correction
+	set correct = cmd
 	set color
 	set colorcat
 	# Prevent overwritting existing file

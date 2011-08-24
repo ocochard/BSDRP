@@ -147,7 +147,7 @@ check_image () {
 # Create BSDRP template VM by converting BSDRP image disk file (given in parameter) into Virtualbox format and compress it
 # This template is used only for the image disk
 create_template () {
-	echo "Image file given… rebuilding BSDRP router template and deleting all BSDR routers"
+	echo "Image file given… rebuilding BSDRP router template and deleting all routers"
 	echo "Check if BSDRP template VM exist..." >> ${LOG_FILE}
     if check_vm ${VM_TPL_NAME}; then
 		echo "Found: Deleting the template VM..."
@@ -429,38 +429,23 @@ delete_vm () {
         exit 1
     fi
     echo "Delete VM: $1" >> ${LOG_FILE} 2>&1
-    #echo "step 1: Unlinking the disk controller..." >> ${LOG_FILE}
-    #if ! VBoxManage storagectl $1 --name "SATA Controller" --remove >> ${LOG_FILE} 2>&1; then
-#		echo "ERROR: Can't unlink disk controller for VM $1."
-#	fi
-    echo "step 2: Unregister the VDI and delete it..." >> ${LOG_FILE}
+    
+	echo "Unregister the VDI and delete it..." >> ${LOG_FILE}
     if ! VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1; then
 		echo "ERROR: Can't unregister the VDI for VM $1."
 	fi
-    #echo "step 3: Delete the hard-drive image..." >> ${LOG_FILE}
-    #if ! VBoxManage closemedium disk ${WORKING_DIR}/$1/$1.vdi --delete >> ${LOG_FILE} 2>&1; then
-	#	echo "NOTE: Can't delete hard-drive image for VM $1."
-	#fi
 }
 delete_all_vm () {
     stop_all_vm
     local LIST_VM=""
-	LIST_VM=`VBoxManage list vms | grep BSDRP_lab | cut -d "\"" -f 2`
-    #Enter the main loop for each VM
+	LIST_VM=`VBoxManage list vms | grep BSDRP_lab_R | cut -d "\"" -f 2`
+    #Enter the main loop for each cloned VM
     for i in ${LIST_VM}; do
             delete_vm $i 
     done
-
-	#Check if harddrive file still present
-	LIST_VM=`VBoxManage list hdds | grep BSDRP_lab | tr -s ' ' | cut -d ' ' -f 2`
-	for i in ${LIST_VM}; do
-		echo "Note: There is still some hard disk image, deleting it..." >> ${LOG_FILE}
-		if ! VBoxManage closemedium disk $i --delete >> ${LOG_FILE} 2>&1; then
-        	echo "ERROR: Can't delete hard-drive image $i."
-    	fi	
-	done
+	#And, at last, delete the template
+	delete_vm ${VM_TPL_NAME}
 	echo "All VMs deleted"
-	
 }
 
 # Stop All VM
@@ -528,8 +513,6 @@ NUMBER_VM=""
 HOSTONLY_NIC=false
 LAN=""
 FILENAME=""
-# Virtualbox is limited to 8 VNIC to each machine
-MAX_VM=4
 
 echo "BSD Router Project: VirtualBox lab script"
 
@@ -558,6 +541,9 @@ check_user
 
 WORKING_DIR=`VBoxManage list systemproperties | grep "Default machine folder" | cut -d ":" -f 2 | tr -s " " | sed '1s/^.//'`
 MAX_NIC=`VBoxManage list systemproperties | grep "Maximum PIIX3 Network Adapter count" | cut -d ":" -f 2 | tr -s " " | sed '1s/^.//'`
+# Virtualbox is limited to 8 VNIC to each machine
+# A full mesh network consume, on each machine, N-1 VNIC
+MAX_VM=`expr $MAX_NIC + 1`
 
 set -- $args
 for i
@@ -602,12 +588,13 @@ done
 
 if [ "$NUMBER_VM" != "" ]; then
     if [ $NUMBER_VM -lt 1 ]; then
-        echo "Error: Use a minimal of 1 router in your lab."
+        echo "[ERROR] Use a minimal of 1 router in your lab."
         exit 1
     fi
 
     if [ $NUMBER_VM -gt $MAX_VM ]; then
-        echo "ERROR: Use a maximum of $MAX_VM routers in your lab."
+        echo "[ERROR] Use a maximum of $MAX_VM routers in your lab."
+		echo "		  It's a VirtualBox limitation that didn't permit to add more than $MAX_NIC VNIC to a VM"
         exit 1
     fi
 else
@@ -620,8 +607,9 @@ if [ $NUMBER_VM -eq 1 ]; then
 fi
 
 if [ "$LAN" != "" ]; then
-    if [ $LAN -gt 8 ]; then
-        echo "ERROR: Use a maximum of 8 LAN in your lab."
+    if [ $LAN -gt $MAX_NIC ]; then
+        echo "[ERROR] Use a maximum of $MAX_NIC in your lab."
+		echo "        It's a VirtualBox limitation that didn't permit to add more than $MAX_NIC VNIC to a VM"
         exit 1
     fi
 else
@@ -645,9 +633,9 @@ else
 	TOTAL_NIC=0
 fi
 TOTAL_NIC=`expr $TOTAL_NIC + $LAN`
-TOTAL_NIC=`expr $TOTAL_NIC + \( $NUMBER_VM \* \( $NUMBER_VM - 1 \) / 2 \)`
+TOTAL_NIC=`expr $TOTAL_NIC + $NUMBER_VM - 1`
 if [ $TOTAL_NIC -gt $MAX_NIC ]; then
-	echo "[ERROR]: you can't have more than 8 VNIC by VM"
+	echo "[ERROR] you can't have more than $MAX_NIC VNIC by VM"
 	exit 1
 fi
 
@@ -657,8 +645,8 @@ if ! check_vm ${VM_TPL_NAME}; then
     	#Note: check_image will change the $FILENAME variable...
     	create_template ${FILENAME}
 	else
-		echo "ERROR: No existing base disk lab detected."
-        echo "You need to enter an image filename for creating the VM."
+		echo "[ERROR] No existing base disk lab detected."
+        echo "        You need to enter an image filename for creating the VM."
         exit 1
 	fi
 else
