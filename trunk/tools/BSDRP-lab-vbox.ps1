@@ -165,7 +165,13 @@ Function create_template () {
 	$MACHINE_SERIAL.path="\\.\pipe\$VM_TPL_NAME"
 	$MACHINE_SERIAL.hostMode=$PortMode_HostPipe
 	$MACHINE_SERIAL.server=$true
-	$MACHINE_SERIAL.enabled=$true   
+	$MACHINE_SERIAL.enabled=$true
+    
+    #Enable Page Fusion if 64bit
+    #Because we will start lot's of identical VM, it can be usefull
+    if ( $VM_ARCH = "FreeBSD_64") {
+        $MACHINE.pageFusionEnabled=$true
+    }
     
     # Adding a disk controller to the machine
     try { $MACHINE_STORAGECONTROLLER = $MACHINE.addStorageController("SATA Controller",$StorageBus_SATA) }
