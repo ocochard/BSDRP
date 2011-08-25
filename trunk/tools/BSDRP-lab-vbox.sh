@@ -57,12 +57,6 @@ check_system_common () {
         echo "ERROR: Is VirtualBox installed ?"
         exit 1
     fi
-   	echo "Checking if socat installed..." >> ${LOG_FILE} 
-    if ! `socat -V > /dev/null 2>&1`; then
-        echo "WARNING: Is socat installed ?"
-		echo "socat is mandatory for using the serial release"
-        exit 1
-    fi
 	VBVERSION=`VBoxManage -v`
 	VBVERSION_MAJ=`echo $VBVERSION|cut -d . -f 1`
 	VBVERSION_MIN=`echo $VBVERSION|cut -d . -f 2`
@@ -394,8 +388,8 @@ start_lab () {
         sleep 2
 
         if ($SERIAL); then
-            socat -s UNIX-CONNECT:/tmp/BSDRP_lab_R$i.serial TCP-LISTEN:800$i >> ${LOG_FILE} 2>&1 &
-            echo "Connect to the router ${i} by TCP-connecting socat on port 800${i}"
+            #socat -s UNIX-CONNECT:/tmp/BSDRP_lab_R$i.serial TCP-LISTEN:800$i >> ${LOG_FILE} 2>&1 &
+            echo "Connect to the router ${i} with socat: socat unix-connect:/tmp/BSDRP_lab_R${i}.serial -,raw,echo=0"
         else
             echo "Connect to the router ${i} by ${VBOX_OUTPUT} client on port 590${i}"
         fi
@@ -407,18 +401,18 @@ start_lab () {
 		ifconfig ${HOSTONLY_NIC_NAME} | grep "inet"
     fi
 
-	if ($SERIAL); then 
-		echo "Here is how to use a serial terminal software for connecting to the routers:"
-		echo "1. Create a bridge between the socat port and a local PTY link"
-		echo "   socat TCP-CONNECT:localhost:8001 PTY,link=/tmp/router1 &"
-		echo "2. Open your serial terminal software using the local PTY link just created"
-		echo "   Using screen:"
-		echo "       screen /tmp/router1 9600"
-		echo "   Or using tip (FreeBSD):"
-		echo '       echo "router1:dv=/tmp/router1:br#9600:pa=none:" >> /etc/remote'
-		echo "       tip router1"
-		echo "Warning: Closing your session will close socat on both end"
-	fi
+	#if ($SERIAL); then 
+	#	echo "Here is how to use a serial terminal software for connecting to the routers:"
+	#	echo "1. Create a bridge between the socat port and a local PTY link"
+	#	echo "   socat TCP-CONNECT:localhost:8001 PTY,link=/tmp/router1 &"
+	#	echo "2. Open your serial terminal software using the local PTY link just created"
+	#	echo "   Using screen:"
+	#	echo "       screen /tmp/router1 9600"
+	#	echo "   Or using tip (FreeBSD):"
+	#	echo '       echo "router1:dv=/tmp/router1:br#9600:pa=none:" >> /etc/remote'
+	#	echo "       tip router1"
+	#	echo "Warning: Closing your session will close socat on both end"
+	#fi
 }
 
 # Delete VM
@@ -632,8 +626,8 @@ if ($HOSTONLY_NIC); then
 else
 	TOTAL_NIC=0
 fi
-TOTAL_NIC=`expr $TOTAL_NIC + $LAN`
-TOTAL_NIC=`expr $TOTAL_NIC + $NUMBER_VM - 1`
+TOTAL_NIC=`expr $TOTAL_NIC + $LAN` || true
+TOTAL_NIC=`expr $TOTAL_NIC + $NUMBER_VM - 1` || true
 if [ $TOTAL_NIC -gt $MAX_NIC ]; then
 	echo "[ERROR] you can't have more than $MAX_NIC VNIC by VM"
 	exit 1
