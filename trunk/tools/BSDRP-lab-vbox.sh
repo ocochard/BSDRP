@@ -40,32 +40,26 @@ LOG_FILE="${HOME}/BSDRP_lab.log"
 # Check FreeBSD system pre-requise for starting virtualbox
 check_system_freebsd () {
     if ! kldstat -m vboxdrv > /dev/null 2>&1; then
-        echo "vboxdrv module not loaded, loading it..."
-        if kldload /boot/modules/vboxdrv.ko; then
-            echo "ERROR: Can't load vboxdrv"
-            exit 1
-        fi
+        echo "[WARNING] vboxdrv module not loaded ?"
     fi
-
 }
 
 check_system_common () {
-	echo "[TODO] testing xz and bunzip2"	
 	echo "Checking if VirtualBox installed..." >> ${LOG_FILE}
 
     if ! `VBoxManage -v > /dev/null 2>&1`; then
-        echo "ERROR: Is VirtualBox installed ?"
+        echo "[ERROR] Is VirtualBox installed ?"
         exit 1
     fi
 	VBVERSION=`VBoxManage -v`
 	VBVERSION_MAJ=`echo $VBVERSION|cut -d . -f 1`
 	VBVERSION_MIN=`echo $VBVERSION|cut -d . -f 2`
 	if [ $VBVERSION_MAJ -lt 4 ]; then
-		echo "Error: Need Virtualbox 4.1 minimum"
+		echo "[ERROR] Need Virtualbox 4.1 minimum"
 		exit 1
 	fi
 	if [ $VBVERSION_MAJ -eq 4 -a $VBVERSION_MIN -lt 1 ]; then
-        echo "Error: Need Virtualbox 4.1 minimum"
+        echo "[ERROR] Need Virtualbox 4.1 minimum"
         exit 1
     fi
 
@@ -89,42 +83,45 @@ check_system_common () {
 
 check_system_linux () {
 	if ! `modprobe -a vboxdrv`; then
-		echo "VirtualBox module not loaded ?"
+		echo "[WARNING] VirtualBox module not loaded ?"
 	fi
 }
 
 # Check user
 check_user () {
     if ! `id ${USER} | grep -q vboxusers`; then
-        echo "Your users is not in the vboxusers group"
+        echo "[WARNING] Your user is not in the vboxusers group"
         exit 1
     fi
-
-    #if [ ! $(whoami) = "root" ]; then
-    #    echo "Disable the shared LAN"
-    #        SHARED_WITH_HOST=false
-    #fi  
 }
 
 # Check filename given, and unzip it
 check_image () {
     if [ ! -f $1 ]; then
-        echo "ERROR: Can't found the file $1"
+        echo "[ERROR] Can't found the file $1"
         exit 1
     fi
 
     if echo $1 | grep -q bz2  >> ${LOG_FILE} 2>&1; then
         echo "Bzip2 compressed image detected, unzip it..."
+		if ! which bunzip2 > /dev/null 2>&1; then
+			echo "[ERROR] Need bunzip2 for bunzip the compressed image!"
+            exit 1
+		fi
         if ! bunzip2 -k $1; then
-			echo "ERROR: Can't bunzip2 image file!"
+			echo "[ERROR] Can't bunzip2 image file!"
 			exit 1
 		fi
         # change FILENAME by removing the last.bz2"
         FILENAME=`echo $1 | sed -e 's/.bz2//g'`
     elif echo ${FILENAME} | grep -q xz  >> ${LOG_FILE} 2>&1; then
         echo "xz compressed image detected, unzip it..."
+		if ! which xz > /dev/null 2>&1; then
+            echo "[ERROR] Need xz for unxz the compressed image!"
+            exit 1
+        fi
         if ! xz -dk ${FILENAME}; then
-			echo "ERROR: Can't unxz image file!"
+			echo "[ERROR] Can't unxz image file!"
 			exit 1
 		fi
         # change FILENAME by removing the last.lzma"
@@ -132,7 +129,7 @@ check_image () {
 	fi
 
     if ! `file -b ${FILENAME} | grep -q "boot sector"  >> ${LOG_FILE} 2>&1`; then
-        echo "ERROR: Not a BSDRP image??"
+        echo "[ERROR] Not a BSDRP image??"
         exit 1
     fi
 	
@@ -141,40 +138,41 @@ check_image () {
 # Create BSDRP template VM by converting BSDRP image disk file (given in parameter) into Virtualbox format and compress it
 # This template is used only for the image disk
 create_template () {
-	echo "Image file given… rebuilding BSDRP router template and deleting all routers"
+	echo "Image file given... rebuilding BSDRP router template and deleting all routers"
 	echo "Check if BSDRP template VM exist..." >> ${LOG_FILE}
     if check_vm ${VM_TPL_NAME}; then
-		echo "Found: Deleting the template VM..."
+		echo "Found: Deleting all BSDRP routers VM..."
         delete_all_vm
     fi
 
+	# Generate $VM_ARCH and $CONSOLE from the filename	
 	parse_filename $1
 
 	echo "Create BSDRP template VM..." >> ${LOG_FILE}
     if ! VBoxManage createvm --name ${VM_TPL_NAME} --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1; then
-		echo "Can't create template VM!"
+		echo "[ERROR] Can't create template VM!"
 		exit 1
 	fi
 
     if ! VBoxManage modifyvm ${VM_TPL_NAME} --audio none --memory 128 --vram 8 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1; then
-		echo "ERROR: Can't customize ${VM_TPL_NAME}"
+		echo "[ERROR] Can't customize ${VM_TPL_NAME}"
 		exit 1
 	fi
     if ! VBoxManage modifyvm ${VM_TPL_NAME} --biosbootmenu disabled >> ${LOG_FILE} 2>&1; then
-		echo "ERROR Can't disable bootmenu for $1"
+		echo "[ERROR] Can't disable bootmenu for $1"
 		exit 1
 	fi
 
 
 	echo "Add SATA controller to the VM..." >> ${LOG_FILE}
 	if ! VBoxManage storagectl ${VM_TPL_NAME} --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE} 2>&1; then
-		echo "Can't add SATA controller to the VM!"
+		echo "[ERROR] Can't add SATA controller to the VM!"
 		exit 1
 	fi
 
 	echo "Convert BSDRP image disk to VDI..." >> ${LOG_FILE}
     if ! VBoxManage convertfromraw "$1" "${WORKING_DIR}/${VM_TPL_NAME}/${VM_TPL_NAME}.vdi" >> ${LOG_FILE} 2>&1; then
-		echo "ERROR: Can't convert BSDRP image disk!"
+		echo "[ERROR] Can't convert BSDRP image disk!"
 		exit 1
 	fi
 
@@ -182,24 +180,24 @@ create_template () {
 	if ! VBoxManage storageattach ${VM_TPL_NAME} --storagectl "SATA Controller" \
     --port 0 --device 0 --type hdd \
     --medium "${WORKING_DIR}/${VM_TPL_NAME}/${VM_TPL_NAME}.vdi" >> ${LOG_FILE} 2>&1; then
-		echo "Can't add VDI to the VM!"
+		echo "[ERROR] Can't add VDI to the VM!"
 		exit 1
 	fi
 
     if ! VBoxManage modifyvm ${VM_TPL_NAME} --uart1 0x3F8 4 --uartmode1 server /tmp/${VM_TPL_NAME}.serial >> ${LOG_FILE} 2>&1; then
-		echo "ERROR: Can't configure serial port for ${VM_TPL_NAME}"
+		echo "[ERROR] Can't configure serial port for ${VM_TPL_NAME}"
 		exit 1
 	fi
 
 	echo "Compress the VDI..." >> ${LOG_FILE}
     if ! VBoxManage modifyvdi "${WORKING_DIR}/${VM_TPL_NAME}/${VM_TPL_NAME}.vdi" --compact >> ${LOG_FILE} 2>&1; then
-		echo "Can't compres the VDI!"
+		echo "[ERROR] Can't compres the VDI!"
 		exit 1
 	fi
 	# Enable pagefusion (avoid duplicate RAM use between all routers)
 	if [ "$VM_ARCH" = "FreeBSD_64" ]; then
 		if ! VBoxManage modifyvm ${VM_TPL_NAME} --pagefusion on >> ${LOG_FILE} 2>&1; then
-			echo "Can't enable pagefusion"
+			echo "[WARNING] Can't enable pagefusion"
 		fi
 	fi
 
@@ -210,9 +208,9 @@ create_template () {
 		 VBoxManage setextradata ${VM_TPL_NAME} Console VGA
 	fi
 
-	echo "Take a snapshot (will be the base for linked-vm)..."
+	echo "Take a snapshot (will be the base for linked-vm)..."  >> ${LOG_FILE} 2>&1
 	if ! VBoxManage snapshot ${VM_TPL_NAME} take SNAPSHOT --description  "Snapshot used for linked clone" >> ${LOG_FILE} 2>&1; then
-		echo "Can't take a snapshot"
+		echo "[ERROR] Can't take a snapshot"
 		exit 1
 	fi
 }
@@ -235,28 +233,27 @@ check_vm () {
 # $1 : Name of the VM
 clone_vm () {
     if [ "$1" = "" ]; then
-        echo "BUG: In function clone_vm() that need a vm name"
+        echo "[BUG] In function clone_vm() that need a vm name"
         exit 1
     fi
     # Check if the vm allready exist
     if ! check_vm $1; then
-		echo "Create VM $1..." >> ${LOG_FILE}
+		echo "Clone VM $1..." >> ${LOG_FILE}
         if ! VBoxManage clonevm ${VM_TPL_NAME} --name $1 --snapshot SNAPSHOT --options link --register >> ${LOG_FILE} 2>&1; then
-			echo "ERROR: Can't create $1"
+			echo "[ERROR] Can't clone $1"
 			exit 1
 		fi
 		if ! VBoxManage modifyvm $1 --uartmode1 server /tmp/$1.serial >> ${LOG_FILE} 2>&1; then
-			echo "ERROR: Can't configure serial port for $1"
+			echo "[ERROR] Can't configure serial port for $1"
 			exit 1
 		fi
-		echo "VM $1 Created" >> ${LOG_FILE}
+		echo "VM $1 cloned" >> ${LOG_FILE}
     else
         # if existing: Is running ?
         if `VBoxManage showvminfo $1 | grep -q "running"`; then
             if ! VBoxManage controlvm $1 poweroff; then
-				echo "ERROR: Can't poweroff running $1"
+				echo "[ERROR] Can't poweroff running $1"
 			fi
-            #sleep 5
         fi
 		delete_all_nic $1
     fi
@@ -268,7 +265,7 @@ delete_all_nic () {
 	NIC_lIST=`VBoxManage showvminfo $1 | grep MAC | cut -d ' ' -f 2 | cut -d ':' -f 1`
     for i in ${NIC_LIST}; do
 		if ! VBoxManage modifyvm $1 --nic$i none >> ${LOG_FILE} 2>&1; then
-			echo "Warning: Can't unconfigure NIC $i"
+			echo "[WARNING] Can't unconfigure NIC $i"
 		fi
     done
 }
@@ -278,28 +275,27 @@ parse_filename () {
     VM_ARCH=0
     if echo "$1" | grep -q "amd64"; then
         VM_ARCH="FreeBSD_64"
-        echo "filename guest a x86-64 image"
+        echo "x86-64 image"
 		
     fi
     if echo "$1" | grep -q "i386"; then
         VM_ARCH="FreeBSD"
-        echo "filename guests a i386 image"
+        echo "i386 image"
     fi
     if [ "$VM_ARCH" = "0" ]; then
-        echo "WARNING: Can't guests arch of this image"
-        echo "Will use as default i386"
-        VM_ARCH="FreeBSD"
+        echo "[ERROR] Can't deduce arch type from filename"
+		exit 1
     fi
     VM_OUTPUT=0
     if echo "$1" | grep -q "serial"; then
         SERIAL=true
-        echo "filename guests a serial image"
+        echo "serial image"
     fi
     if echo "$1" | grep -q "vga"; then
         SERIAL=false
-        echo "filename guests a vga image"
+        echo "vga image"
 		if ! $VBOX_VGA; then
-		echo "You can't use BSDRP vga release with a Virtualbox that didn't support RDP or VNC"
+		echo "[ERROR] You can't use BSDRP vga release with a Virtualbox that didn't support RDP or VNC"
 		exit 1
 		fi
     fi
@@ -308,9 +304,9 @@ parse_filename () {
 
 # This function generate the clones
 build_lab () {
-    echo "Creating lab with $NUMBER_VM router(s):"
+    echo "Setting-up a lab with $NUMBER_VM router(s):"
     echo "- $LAN LAN between all routers"
-    echo "- Full mesh ethernet point-to-point link between each routers"
+    echo "- Full mesh Ethernet links between each routers"
 	if ($HOSTONLY_NIC); then
 		echo "- One NIC connected to the shared LAN with the host"
 	fi
@@ -330,12 +326,12 @@ build_lab () {
                 NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
                 if [ $i -le $j ]; then
                     if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${i}${j} --macaddress${NIC_NUMBER} AAAA00000${i}${i}${j} >> ${LOG_FILE} 2>&1; then
-						echo "ERROR: Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
+						echo "[ERROR] Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
 						exit 1
 					fi
                 else
                     if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${j}${i} --macaddress${NIC_NUMBER} AAAA00000${i}${j}${i} >> ${LOG_FILE} 2>&1; then
-						echo "ERROR: Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
+						echo "[ERROR] Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
 						exit 1
 					fi
                 fi
@@ -348,7 +344,8 @@ build_lab () {
             echo "em${NIC_NUMBER} connected to LAN number ${j}."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
             if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC00000${j}0${i} >> ${LOG_FILE} 2>&1; then
-				echo "WARNING: Can't add NIC ${NIC_NUMBER} (LAN) to VM $i"
+				echo "[ERROR] Can't add NIC ${NIC_NUMBER} (LAN) to VM $i"
+				exit 1
 			fi
             j=`expr $j + 1`
         done
@@ -356,7 +353,8 @@ build_lab () {
 			echo "em${NIC_NUMBER} connected to shared-with-host LAN."
 			NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
 			if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --hostonlyadapter${NIC_NUMBER} ${HOSTONLY_NIC_NAME} --nictype${NIC_NUMBER} 82540EM --macaddress${NIC_NUMBER} 00bbbb00000${i} >> ${LOG_FILE} 2>&1; then
-				echo "WARNING: Can't add NIC ${NIC_NUMBER} (Host only) to VM $i"
+				echo "[ERROR] Can't add NIC ${NIC_NUMBER} (Host only) to VM $i"
+				exit 1
 			fi
 		fi
     i=`expr $i + 1`
@@ -366,6 +364,7 @@ build_lab () {
 # Start each vm
 start_lab () {
     local i=1
+	echo "Start the lab..."
 	# Need to look in extrada for getting console type
 	if VBoxManage getextradata ${VM_TPL_NAME} Console | grep -q Serial; then
 		SERIAL=true
@@ -389,9 +388,9 @@ start_lab () {
 
         if ($SERIAL); then
             #socat -s UNIX-CONNECT:/tmp/BSDRP_lab_R$i.serial TCP-LISTEN:800$i >> ${LOG_FILE} 2>&1 &
-            echo "Connect to the router ${i} with socat: socat unix-connect:/tmp/BSDRP_lab_R${i}.serial -,raw,echo=0"
+            echo "Connect to router ${i}: socat unix-connect:/tmp/BSDRP_lab_R${i}.serial STDIO,raw,echo=0"
         else
-            echo "Connect to the router ${i} by ${VBOX_OUTPUT} client on port 590${i}"
+            echo "Connect to router ${i}: connect a ${VBOX_OUTPUT} client on port 590${i}"
         fi
         i=`expr $i + 1`
     done
@@ -400,19 +399,6 @@ start_lab () {
 		echo "You need to configure an IP address in these range for communicating with the host:"
 		ifconfig ${HOSTONLY_NIC_NAME} | grep "inet"
     fi
-
-	#if ($SERIAL); then 
-	#	echo "Here is how to use a serial terminal software for connecting to the routers:"
-	#	echo "1. Create a bridge between the socat port and a local PTY link"
-	#	echo "   socat TCP-CONNECT:localhost:8001 PTY,link=/tmp/router1 &"
-	#	echo "2. Open your serial terminal software using the local PTY link just created"
-	#	echo "   Using screen:"
-	#	echo "       screen /tmp/router1 9600"
-	#	echo "   Or using tip (FreeBSD):"
-	#	echo '       echo "router1:dv=/tmp/router1:br#9600:pa=none:" >> /etc/remote'
-	#	echo "       tip router1"
-	#	echo "Warning: Closing your session will close socat on both end"
-	#fi
 }
 
 # Delete VM
@@ -422,12 +408,20 @@ delete_vm () {
         echo "BUG: In delete_vm (), no argument given"
         exit 1
     fi
-    echo "Delete VM: $1" >> ${LOG_FILE} 2>&1
-    
-	echo "Unregister the VDI and delete it..." >> ${LOG_FILE}
+    echo "Delete VM $1" >> ${LOG_FILE} 2>&1
+   	echo "Delete VM $1" 
     if ! VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1; then
-		echo "ERROR: Can't unregister the VDI for VM $1."
+		echo "[ERROR] Can't delete VM $1."
 	fi
+
+	#Some times, templates is deletet, but there is some file that was not deletet
+	if ! check_vm $1; then
+    	if [ -d "${WORKING_DIR}/$1" ]; then
+			echo "[WARNING] Force deleting directory for $1"
+			rm -rf "${WORKING_DIR}/$1"
+    	fi
+	fi
+
 }
 delete_all_vm () {
     stop_all_vm
@@ -448,17 +442,10 @@ stop_all_vm () {
 	LIST_RUNNING_VM=`VBoxManage list runningvms | grep BSDRP_lab | cut -d "\"" -f 2`
     #Enter the main loop for each VM
 	for i in ${LIST_RUNNING_VM}; do
-                if ! VBoxManage controlvm $i poweroff >> ${LOG_FILE} 2>&1; then
-					echo "WARNING: Can't poweroff $i"
-				fi
-				if ps auxww | grep socat | grep $i; then
-					local PROC_NUM=""
-					PROC_NUM=`ps auxww | grep socat | grep $i | tr -s ' ' | cut -d ' ' -f 2`
-					if ! kill ${PROC_NUM}; then
-						echo "WARNING Can't kill socat process ${PROC_NUM}"
-					fi
-				fi
-                #sleep 5
+		echo "Stopping $i..."
+		if ! VBoxManage controlvm $i poweroff >> ${LOG_FILE} 2>&1; then
+			echo "[WARNING] Can't poweroff $i"
+		fi
     done
 }
 
@@ -508,9 +495,9 @@ HOSTONLY_NIC=false
 LAN=""
 FILENAME=""
 
-echo "BSD Router Project: VirtualBox lab script"
+echo "BSD Router Project (http://bsdrp.net) - VirtualBox lab script"
 
-echo "BSD Router Project: Virtualbox lab script, log file" > ${LOG_FILE}
+echo "BSD Router Project (http://bsdrp.net) - Virtualbox lab script, log file" > ${LOG_FILE}
 
 OS_DETECTED=`uname -s`
 
