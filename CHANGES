@@ -6,6 +6,7 @@ Release 0.36 (not released)
 - bird support FIB and include config file
 
 Bug fixes:
+- fix "config save", that save unmodified files
 - Fix ndp tools installation
 - Fix default bird startup scripts that used bad folder for control socket
 - Fix Ethernet interfaces names in bird
