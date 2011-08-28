@@ -86,7 +86,9 @@ usage () {
 # Mount /cfg
 mount_cfg () {
 	trap "umount /cfg" 1 2 15 EXIT
-	mount /cfg
+	if mount | ! grep -q "/cfg"; then
+		mount /cfg
+	fi
 }
 
 # Umount /cfg
@@ -161,8 +163,7 @@ save_cfg () {
 	echo "Saving configuration..."
 	(
 	cd /etc
-	for i in "$@" `find * -depth`
-	do
+	for i in "$@" `find * -type f`; do
 		if [ -f /cfg/$i ]; then
 			cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i 2>/dev/null
 		else
@@ -174,10 +175,9 @@ save_cfg () {
 	# save ssh keys
 	if [ -d /cfg/ssh ]; then
 		cd /etc/ssh
-		for i in "$@" `find ssh_host_* -type f`
-        	do
-         		cmp -s /etc/ssh/$i /cfg/ssh/$i || cp -pfv /etc/ssh/$i /cfg/ssh/$i 2>/dev/null
-        	done
+		for i in "$@" `find ssh_host_* -type f`; do
+        	cmp -s /etc/ssh/$i /cfg/ssh/$i || cp -pfv /etc/ssh/$i /cfg/ssh/$i 2>/dev/null
+       	done
 	else
 		if ! mkdir -p /cfg/ssh; then
 			echo "ERROR: Can't create /cfg/ssh"
@@ -236,13 +236,11 @@ diff () {
 	fi
 	(
 	cd /etc
-	for i in "$@" `find * -type f`
-	do
-		if [ -f /cfg/$i ]
-		then
+	for i in "$@" `find * -type f`; do
+		if [ -f /cfg/$i ]; then
 			if ! cmp -s /etc/$i /cfg/$i; then
 				if [ ! "$SECOND_OPTION" = "quiet" ]; then
-					echo "/etc/$i"
+					find $i -print
 				fi
 				echo "1" > /tmp/DIFF_FOUND
 			fi
