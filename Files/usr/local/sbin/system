@@ -139,7 +139,7 @@ check_cfg () {
 	echo "Checking if configuration is saved..."
 	# Don't know why I can't test the exist value of config diff quit in my if
 	set +e
-    config diff quiet
+    config diff fast
     if [ $? -eq 1 ]; then
         ask_save
     fi

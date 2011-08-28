@@ -50,7 +50,7 @@ usage () {
 		;;
 	diff)
 		echo "Option for diff:"
-		echo " - quiet : Don't display file (return 1 if changes found, 0 otherwise)"
+		echo " - fast : Return 1 if changes found, 0 otherwise"
 		exit 0
 		;;
 	put)
@@ -231,7 +231,7 @@ diff () {
 			echo "WARNING: Can't delete /tmp/DIFF_FOUND"
 		fi
 	fi
-	if [ ! "$SECOND_OPTION" = "quiet" ]; then
+	if [ ! "$SECOND_OPTION" = "fast" ]; then
 		echo "Looking for differences between running and saved configuration files..."
 	fi
 	(
@@ -239,17 +239,21 @@ diff () {
 	for i in "$@" `find * -type f`; do
 		if [ -f /cfg/$i ]; then
 			if ! cmp -s /etc/$i /cfg/$i; then
-				if [ ! "$SECOND_OPTION" = "quiet" ]; then
-					find $i -print
-				fi
 				echo "1" > /tmp/DIFF_FOUND
+				if [ ! "$SECOND_OPTION" = "fast" ]; then
+					find $i -print
+				else
+					break
+				fi
 			fi
 		else
 			if ! cmp -s /conf/base/etc/$i /etc/$i; then
-				if [ ! "$SECOND_OPTION" = "quiet" ]; then
-					find $i -print
-				fi
 				echo "1" > /tmp/DIFF_FOUND
+				if [ ! "$SECOND_OPTION" = "fast" ]; then
+					find $i -print
+				else 
+					break
+				fi
 			fi
 		fi
 	done
@@ -261,7 +265,7 @@ diff () {
 		fi
 		exit 1
 	else
-		if [ ! "$SECOND_OPTION" = "quiet" ]; then
+		if [ ! "$SECOND_OPTION" = "fast" ]; then
 			echo "None found."
 		fi
 		exit 0
