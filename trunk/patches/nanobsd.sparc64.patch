@@ -57,7 +57,7 @@
 +   sunlabel -c -R ${MD} ${NANO_OBJ}/_.sunlabel
 +
 + # Create first image
-+    newfs -L ${NANO_GLABEL_SYS}1 ${NANO_NEWFS} /dev/${MD}a
++    newfs -L ${NANO_GLABEL_SYS}s1a ${NANO_NEWFS} /dev/${MD}a
 +    mount /dev/${MD}a ${MNT}
 +    df -i ${MNT}
 +    echo "Copying worlddir..."
@@ -85,12 +85,12 @@
 +    fi
 +
 +    # Create Config slice
-+    newfs -L ${NANO_GLABEL_CFG} ${NANO_NEWFS} /dev/${MD}e
++    newfs -L ${NANO_GLABEL_SYS}s3 ${NANO_NEWFS} /dev/${MD}e
 +    # XXX: fill from where ?
 +
 +    # Create Data slice, if any.
 +    if [ $NANO_DATASIZE -ne 0 ] ; then
-+        newfs  -L ${NANO_GLABEL_DATA} ${NANO_NEWFS} /dev/${MD}f
++        newfs  -L ${NANO_GLABEL_SYS}s4 ${NANO_NEWFS} /dev/${MD}f
 +        # XXX: fill from where ?
 +    fi
 +

@@ -104,10 +104,16 @@ check_system() {
 	fi
 }
 
+###### Adding patch to FreeBSD source
+kernel_patches() {
+	if [ `sha256 -q ${FREEBSD_SRC}/tools/tools/netrate/netblast/netblast.c` != "c2f41133030ae149e05732ee22bc6284f339947e0bdedad38ec2fbb41bd68d9e" ]; then
+		(cd ${FREEBSD_SRC}/tools/tools; patch < ${NANOBSD_DIR}/BSDRP/patches/netrate.sparc.patch)
+	fi
+}
 ###### Adding patch to NanoBSD
 nanobsd_patches() {
 	# Using up-to-date nanobsd script and patch it
-	if [ `sha256 -q ../nanobsd.sh` != "79da010bfc3bfde1268f72666d19bf01c18cc504e4e23693dbb5058af1717059" ]; then
+	if [ `sha256 -q ../nanobsd.sh` != "01326347260ad6e6c94c1c77230536481e7a13078b7dfb90203529c4b28d2951" ]; then
 		pprint 3 "Download up-to-date nanobsd release"
 		if ! mv ../nanobsd.sh ../nanobsd.original.bak; then	
 			pprint 3 "ERROR: Can't backup original nanobsd.sh script"
@@ -370,7 +376,7 @@ else
 fi
 
 nanobsd_patches
-#kernel_patches
+kernel_patches
 ports_patches
 
 # Copy the common nanobsd configuration file to /tmp
@@ -405,7 +411,7 @@ case ${TARGET_ARCH} in
 	export NANO_MAKEFS
 	;;
 	"sparc64") echo 'NANO_PMAKE="make -j 8"' >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="netgraph rc4 if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog"' >> /tmp/${NAME}.nano
 	;;
 esac
 

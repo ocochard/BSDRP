@@ -120,7 +120,7 @@
 +    ${NANO_MAKEFS} -s ${SIZE} ${IMG1} ${NANO_WORLDDIR}
 +    pprint 2 "dd if=${IMG1} of=/dev/${MD}s1 bs=${BS}"
 +    dd if=${IMG1} of=/dev/${MD}s1 bs=${BS}
-+	tunefs -L ${NANO_GLABEL_SYS}1 /dev/${MD}s1
++	tunefs -L ${NANO_GLABEL_SYS}s1a /dev/${MD}s1
 +    if [ $NANO_IMAGES -gt 1 -a $NANO_INIT_IMG2 -gt 0 ] ; then
 +        IMG2=${NANO_DISKIMGDIR}/_.disk.image2
 +        echo ""; echo "Create second image ${IMG2}..."
@@ -134,7 +134,7 @@
 +        ${NANO_MAKEFS} -s ${SIZE} ${IMG2} ${NANO_WORLDDIR}
 +        pprint 2 "dd if=${IMG2} of=/dev/${MD}s2 bs=${BS}"
 +        dd if=${IMG2} of=/dev/${MD}s2 bs=${BS}
-+		tunefs -L ${NANO_GLABEL_SYS}2 /dev/${MD}s1
++		tunefs -L ${NANO_GLABEL_SYS}s2a /dev/${MD}s1
 +    fi
 +
 +	# Create Config slice
@@ -147,7 +147,7 @@
 +    ${NANO_MAKEFS} -s ${SIZE} ${CFG} ${NANO_CFGDIR}
 +    pprint 2 "dd if=${CFG} of=/dev/${MD}s3 bs=${BS}"
 +    dd if=${CFG} of=/dev/${MD}s3 bs=${BS}
-+	tunefs -L ${NANO_GLABEL_CFG} /dev/${MD}s3
++	tunefs -L ${NANO_GLABEL_SYS}s3 /dev/${MD}s3
 +    pprint 2 "rm ${CFG}"
 +    rm ${CFG}; CFG=         # NB: disable printing below
 +

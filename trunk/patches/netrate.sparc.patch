@@ -1,0 +1,48 @@
+diff -ruN netrate.orig/netblast/netblast.c netrate/netblast/netblast.c
+--- netrate.orig/netblast/netblast.c	2011-08-29 19:20:21.000000000 +0200
++++ netrate/netblast/netblast.c	2011-08-29 19:19:38.000000000 +0200
+@@ -26,6 +26,7 @@
+  * $FreeBSD: src/tools/tools/netrate/netblast/netblast.c,v 1.3.10.1.6.1 2010/12/21 17:09:25 kensmith Exp $
+  */
+ 
++#include <sys/endian.h>
+ #include <sys/types.h>
+ #include <sys/socket.h>
+ #include <sys/time.h>
+@@ -108,11 +109,9 @@
+ 		 * previous send, the error will turn up the current send
+ 		 * operation, causing the current sequence number also to be
+ 		 * skipped.
+-		 *
+-		 * XXXRW: Note alignment assumption.
+ 		 */
+ 		if (packet_len >= 4) {
+-			*((u_int32_t *)packet) = htonl(counter);
++			be32enc(packet, counter);
+ 			counter++;
+ 		}
+ 		if (send(s, packet, packet_len, 0) < 0)
+diff -ruN netrate.orig/netsend/netsend.c netrate/netsend/netsend.c
+--- netrate.orig/netsend/netsend.c	2011-08-29 19:20:21.000000000 +0200
++++ netrate/netsend/netsend.c	2011-08-29 19:22:16.000000000 +0200
+@@ -26,6 +26,7 @@
+  * $FreeBSD: src/tools/tools/netrate/netsend/netsend.c,v 1.9.10.1.6.1 2010/12/21 17:09:25 kensmith Exp $
+  */
+ 
++#include <sys/endian.h>
+ #include <sys/types.h>
+ #include <sys/socket.h>
+ #include <sys/time.h>
+@@ -164,11 +165,9 @@
+ 		 * previous send, the error will turn up the current send
+ 		 * operation, causing the current sequence number also to be
+ 		 * skipped.
+-		 *
+-		 * XXXRW: Note alignment assumption.
+ 		 */
+ 		if (packet_len >= 4) {
+-			*((u_int32_t *)packet) = htonl(counter);
++			be32enc(packet, counter);
+ 			counter++;
+ 		}
+ 		if (send(s, packet, packet_len, 0) < 0)
