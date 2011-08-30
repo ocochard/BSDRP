@@ -1,5 +1,5 @@
---- nanobsd.sh.orig	2010-12-31 15:38:56.000000000 +0100
-+++ nanobsd.sh	2010-12-31 15:48:14.000000000 +0100
+--- nanobsd.sh.orig	2011-08-30 21:23:05.000000000 +0200
++++ nanobsd.sh	2011-08-30 21:29:32.000000000 +0200
 @@ -135,6 +135,9 @@
  # Can be "file" or "swap"
  NANO_MD_BACKING="file"
@@ -33,23 +33,23 @@
  		while read d
  		do
  			rmdir $d > /dev/null 2>&1 || true 
-@@ -563,8 +573,13 @@
+@@ -567,8 +577,13 @@
  	fi
  
  	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
 -		echo "Writing out ${NANO_IMGNAME}..."
 -		dd if=/dev/${MD} of=${IMG} bs=64k
-+       if [ ${NANO_IMAGE_MBRONLY} ]; then
-+           echo "Writing out _.disk.mbr..."
-+           dd if=/dev/${MD} of=${NANO_DISKIMGDIR}/_.disk.mbr bs=512 count=1
-+       else
-+            echo "Writing out ${NANO_IMGNAME}..."
-+            dd if=/dev/${MD} of=${IMG} bs=64k
-+        fi
++		if [ ${NANO_IMAGE_MBRONLY} ]; then
++			echo "Writing out _.disk.mbr..."
++			dd if=/dev/${MD} of=${NANO_DISKIMGDIR}/_.disk.mbr bs=512 count=1
++		else
++			echo "Writing out ${NANO_IMGNAME}..."
++			dd if=/dev/${MD} of=${IMG} bs=64k
++		fi
  	fi
  
- 	echo "Writing out _.disk.image..."
-@@ -572,6 +587,7 @@
+ 	if ${do_copyout_partition} ; then
+@@ -578,6 +593,7 @@
  	mdconfig -d -u $MD
  
  	trap - 1 2 15 EXIT
@@ -57,16 +57,7 @@
  
  	) > ${NANO_OBJ}/_.di 2>&1
  )
-@@ -658,7 +674,7 @@
- 	sed -i "" -e '/^ttyv[0-8]/s/	on/	off/' ${NANO_WORLDDIR}/etc/ttys
- 
- 	# Tell loader to use serial console early.
--	echo " -h" > ${NANO_WORLDDIR}/boot.config
-+	echo ${NANO_BOOT2CFG} > ${NANO_WORLDDIR}/boot.config
- )
- 
- #######################################################################
-@@ -763,7 +779,7 @@
+@@ -1063,7 +1079,7 @@
  	echo "	-i	suppress disk image build"
  	echo "	-k	suppress buildkernel"
  	echo "	-n	add -DNO_CLEAN to buildworld, buildkernel, etc"
@@ -75,7 +66,7 @@
  	echo "	-v	make output more verbose"
  	echo "	-w	suppress buildworld"
  	echo "	-c	specify config file"
-@@ -839,6 +855,7 @@
+@@ -1144,6 +1160,7 @@
  	echo "$0: Extraneous arguments supplied"
  	usage
  fi
