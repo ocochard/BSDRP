@@ -113,21 +113,16 @@ kernel_patches() {
 ###### Adding patch to NanoBSD
 nanobsd_patches() {
 	# Using up-to-date nanobsd script and patch it
-	if [ `sha256 -q ../nanobsd.sh` != "01326347260ad6e6c94c1c77230536481e7a13078b7dfb90203529c4b28d2951" ]; then
+	if [ `sha256 -q ../nanobsd.sh` != "a81cad7a825a7410b4997d38dfd521c9ee296f733aa2543c452b67646ee8b945" ]; then
 		pprint 3 "Download up-to-date nanobsd release"
 		if ! mv ../nanobsd.sh ../nanobsd.original.bak; then	
 			pprint 3 "ERROR: Can't backup original nanobsd.sh script"
 		fi
-		if ! fetch -o ../nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.70"; then
+		if ! fetch -o ../nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.77"; then
 				mv ../nanobsd.original.bak ../nanobsd.sh
 				pprint 3 "ERROR: Can't download up-to-date nanobsd.sh script"
 				exit 1
 		fi
-
-		# Adding another cool patch that fix a lot's of problem
-		# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
-		pprint 3 "Patching NanoBSD with some fixes (PR-136889)"
-		patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.pr-136889.patch
 
 		# Patching mtree generation mode for be usable as security audit reference
        	pprint 3 "Patching NanoBSD with mtree support"
@@ -140,6 +135,11 @@ nanobsd_patches() {
 		# Adding sparc64 support to NanoBSD
        	pprint 3 "Patching NanoBSD with sparc64 support"
        	patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
+
+		# Adding another cool patch that fix a lot's of problem
+		# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
+		pprint 3 "Patching NanoBSD with some fixes (PR-136889)"
+		patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.pr-136889.patch
 
 	fi
 

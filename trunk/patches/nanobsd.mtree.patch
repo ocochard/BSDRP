@@ -1,6 +1,6 @@
---- nanobsd.sh.pr.patched	2010-12-31 15:51:17.000000000 +0100
-+++ nanobsd.sh	2010-12-31 15:52:58.000000000 +0100
-@@ -543,7 +543,11 @@
+--- nanobsd.sh.orig	2011-08-30 21:11:52.000000000 +0200
++++ nanobsd.sh	2011-08-30 21:12:44.000000000 +0200
+@@ -533,7 +533,11 @@
  	populate_slice /dev/${MD}s1a ${NANO_WORLDDIR} ${MNT} "s1a"
  	mount /dev/${MD}s1a ${MNT}
  	echo "Generating mtree..."
