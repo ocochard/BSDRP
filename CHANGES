@@ -11,6 +11,7 @@ Bug fixes:
 - Fix default bird startup scripts that used bad folder for control socket
 - Fix Ethernet interfaces names in bird
 - Fix the upgrade script (merge changes in /boot/loader.conf)
+- Build tool: Add a check to the FreeBSD source code branch used
 
 Updated packages:
 - Quagga to 0.99.17_9
