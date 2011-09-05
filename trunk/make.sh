@@ -36,7 +36,7 @@
 #set -x
 
 # Exit if error
-set -e
+set -eu
 
 # Force check variable definition
 #set -u
@@ -71,28 +71,33 @@ check_current_dir() {
 
 #### Check prerequisites
 check_system() {
-	pprint 3 "Checking if FreeBSD sources are installed..."
-	SRC_VERSION=0
+	pprint 3 "Checking if FreeBSD 8.2-RELEASE sources are installed..."
+	GOOD_SRC_VERSION=false
+	GOOD_SRC_RELEASE=false
 	if ! [ -f ${FREEBSD_SRC}/sys/conf/newvers.sh ]; then
 		pprint 1 "ERROR: Can't found FreeBSD sources!"
 		exit 1
 	fi
 	
 	if `grep -q 'REVISION="8.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
+		GOOD_SRC_VERSION=true
 		SRC_VERSION="8.2"
 	fi
 
-	#if `grep -q 'REVISION="7.4"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
-    # 	SRC_VERSION="7.4"
-	#fi
-
-	if [ ${SRC_VERSION} = 0 ]; then
-		pprint 1 "ERROR: ${NAME} need FreeBSD 8.2 or 7.4 sources"
+	if `grep -q 'BRANCH="RELEASE' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
+		GOOD_SRC_RELEASE=true
+	fi
+	if [ ! ${GOOD_SRC_VERSION} ]; then
+		pprint 1 "ERROR: ${NAME} need FreeBSD 8.2-RELEASE sources"
 		pprint 1 "Read BSDRP HOW TO here:"
 		pprint 1 "http://bsdrp.net/documentation/technical_docs"
 		exit 1
 	fi
-	pprint 3 "Will generate a ${NAME} image based on FreeBSD ${SRC_VERSION}"
+	if [ ! ${GOOD_SRC_RELEASE} ]; then
+		pprint 1 "ERROR: You have 8.2 source, but not RELEASE"
+		exit 1
+	fi
+	pprint 3 "Will generate a ${NAME} image based on FreeBSD"
 	pprint 3 "Checking if ports sources are installed..."
 
 	if [ ! -d /usr/ports/net/quagga ]; then
