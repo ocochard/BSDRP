@@ -144,6 +144,10 @@ NANO_INIT_IMG2=0
 # If zero, size will be as large as possible.
 NANO_CODESIZE=0
 
+### HOW TO Calculate partition size ###
+# If you want a 5MB partition, do:
+# 5 * 1024 * 1024 / 512 = 10240
+
 # Size of configuration file system in 512 bytes sectors
 # Cannot be zero.
 # 10MB = 2048
@@ -157,11 +161,11 @@ NANO_CONFSIZE=20480
 NANO_DATASIZE=20480
 
 # Size of the /etc ramdisk in 512 bytes sectors
-# 10240=5Mb
+# 10240=5MB
 NANO_RAM_ETCSIZE=10240
 
 # Size of the /tmp+/var ramdisk in 512 bytes sectors
-# 20480=10Mb (usefull for log files)
+# 20480=10MB (usefull for log files)
 NANO_RAM_TMPVARSIZE=20480
 
 # Boot0cfg configuration mode
