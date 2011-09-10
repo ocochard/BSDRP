@@ -1,4 +1,4 @@
-Release 0.36 (not released)
+Release 0.4 (not released)
 
 - Add FreeBSD network benchmark tools: netblast,netsend and netreceive
 - Use XZ in place of BZIP2 for config files archives
@@ -18,6 +18,10 @@ Updated packages:
 - Bird to 1.3.1
 - mrouted to 3.9.5
 - net-snmp to 5.7
+
+TO DO before release:
+- Test FIB with bird
+- Test mtree
 
 Installed packages and their versions:
 
