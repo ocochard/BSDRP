@@ -351,8 +351,8 @@ add_port "net-mgmt/fprobe"
 #add_port "security/openvpn"
 
 # Add DHCP server and client
-add_port "net/isc-dhcp31-server" "-DWITHOUT_DHCP_PARANOIA -DWITHOUT_DHCP_JAIL"
-add_port "net/isc-dhcp31-relay"
+add_port "net/isc-dhcp42-server" "-DWITH_DHCP_IPV6 -DWITHOUT_DHCP_PARANOIA"
+add_port "net/isc-dhcp42-relay"
 
 # Add sstmp, a simple MTA to get mail off the system
 add_port "mail/ssmtp"
