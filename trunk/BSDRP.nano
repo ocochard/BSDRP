@@ -232,7 +232,7 @@ add_port () {
 					mount -t unionfs -o noatime \${NANO_OBJ}/ports/distfiles \
                         \${NANO_WORLDDIR}/usr/ports/distfiles
 					chroot \${NANO_WORLDDIR} /bin/sh -exc \
-                		'cd /usr/ports/packages/All;pkg_add -F ${PKG_NAME}.tbz'
+                		'cd /usr/ports/packages/All;pkg_add -v -F ${PKG_NAME}.tbz'
 					umount \${NANO_WORLDDIR}/usr/ports/packages
 					umount \${NANO_WORLDDIR}/usr/ports/distfiles
 					rmdir \${NANO_WORLDDIR}/usr/ports/packages
@@ -274,8 +274,10 @@ add_port () {
                		chroot \${NANO_WORLDDIR} /bin/sh -exc \
                         'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} MACHINE=${NANO_ARCH} UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 						make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-                        package BATCH=yes -DWITHOUT_X11 -DNOPORTDOCS -DNO_INSTALL_MANPAGES -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
-               		rm \${NANO_WORLDDIR}/etc/resolv.conf
+                        install BATCH=yes -DWITHOUT_X11 -DNOPORTDOCS -DNO_INSTALL_MANPAGES -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
+               		chroot \${NANO_WORLDDIR} /bin/sh -exc \
+						'mkdir -p /usr/ports/packages/All;cd /usr/ports/packages/All;pkg_create -Rxb ${PKG_NAME}'
+					rm \${NANO_WORLDDIR}/etc/resolv.conf
                		rm -rf \${NANO_WORLDDIR}/usr/obj
                		rm -rf \${NANO_WORLDDIR}/usr/pobj
                		rm -rf \${NANO_WORLDDIR}/usr/workdir
@@ -294,11 +296,6 @@ add_port () {
 }
 
 #### Add routing related ports #####
-# Add libdlmalloc lib: Make BGP in Quagga more faster
-add_port "devel/libdlmalloc"
-
-# Quagga and net-snmp need perl for building
-#add_port "lang/perl5.8" "-DWITHOUT_PERL_MALLOC -DWITH_PERL_64BITINT"
 
 # Then we need to install net-snmp without perl modules
 add_port "net-mgmt/net-snmp" "-DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
@@ -306,23 +303,6 @@ add_port "net-mgmt/net-snmp" "-DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -D
 # Quagga installation
 add_port "net/quagga" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
-
-# Nod enabled:
-#add_port "net/openbgpd"
-#add_port "devel/libevent"
-#add_port "net/openospfd"
-
-
-### Extra stuf ###
-# Libiconv is needed by vim-lite, but the package is not automaticaly generated, then force it:
-#add_port "converters/libiconv"
-# text editor that support syntax colorization (usefull for edit shell script)
-#add_port "editors/vim-lite" 
-
-# Disable XORP
-#add_port "net/xorp" "-DWITH_ADVMCAST -DWITH_IPV6 -DWITH_SNMP -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
-# Xorp wants stupidly start snmpd for testing it before to compile!!!!.... disable it:
-#add_port "net/xorp" "-DWITH_ADVMCAST -DWITH_IPV6 -DWITH_OPTIMIZATION -DWITHOUT_CHECK -DWITHOUT_DEBUGGING -DWITHOUT_PROFILING"
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:
 add_port "net/bird" "-DWITH_FIBS -DWITH_CONFIG_INCLUDES"
@@ -344,12 +324,6 @@ add_port "net/mrouted"
 # Add fprobe: Netflow probe
 add_port "net-mgmt/fprobe"
 
-# Add OpenLLDP: Link-Layer Discovery protocols
-#add_port "net-mgmt/openlldp"
-
-# add OpenVPN
-#add_port "security/openvpn"
-
 # Add DHCP server and client
 add_port "net/isc-dhcp42-server" "-DWITH_DHCP_IPV6 -DWITHOUT_DHCP_PARANOIA"
 add_port "net/isc-dhcp42-relay"
@@ -358,12 +332,9 @@ add_port "net/isc-dhcp42-relay"
 add_port "mail/ssmtp"
 
 # Add tmux (screen equivalent, but better because BSD)
-add_port "devel/libevent"
 add_port "sysutils/tmux"
 
 # Add mpd5, a multi-link PPP protocol server (netgraph dependent)
-add_port "textproc/expat2"
-add_port "devel/libpdel"
 add_port "net/mpd5"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
@@ -372,7 +343,6 @@ add_port "benchmarks/iperf"
 
 # VM tools
 # VM tools brings too lot's of deps… Need to delete them all after installing (if there are used for build only)
-#add_port "devel/glib20"
 #add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
 #add_port "emulators/virtualbox-ose-additions/" "-DWITHOUT_X11 -DWITHOUT_HAL"
 
@@ -587,6 +557,11 @@ usr/share/tmac/tmac.vgrind
 
 	# strip binaries for ports (tips from FreeNAS)
 	(strip ${NANO_WORLDDIR}/usr/local/*bin/* > /dev/null 2>&1) || true
+	
+	# Generate package version liste
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+	'pkg_info' > ${NANO_OBJ}/packaqes.info
+
 }
 
 # Enable only serial system only
