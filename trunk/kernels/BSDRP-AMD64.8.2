@@ -137,9 +137,9 @@ device		atadisk		# ATA disk drives
 options 	ATA_STATIC_ID	# Static device numbering
 
 # New AHCI drivers
-device      ahci        # Serial ATA Advanced Host Controller Interface driver
+device		ahci        	# Serial ATA Advanced Host Controller Interface driver
 device		siis		# SiliconImage Serial ATA Host Controller driver
-device		mvs			# Marvell Serial ATA Host Controller driver
+device		mvs		# Marvell Serial ATA Host Controller driver
 
 # SCSI Controllers
 #device		ahc		# AHA2940 and onboard AIC7xxx devices
@@ -384,6 +384,6 @@ options		ZERO_COPY_SOCKETS
 # This line is no more used, check the variable NANO_MODULES in generated nanobsd config files
 #makeoptions    MODULES_OVERRIDE="netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf hifn padlock safe ubsec"
 
-# Don't use VIMAGE, the multiple route table should be enough
+# Don't use VIMAGE, the FIB usage should be enough
 #options     VIMAGE
 
