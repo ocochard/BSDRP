@@ -1,0 +1,309 @@
+Index: sys/netinet/in.c
+===================================================================
+--- sys/netinet/in.c	(revision 224245)
++++ sys/netinet/in.c	(working copy)
+@@ -1009,7 +1009,7 @@
+ 			(struct sockaddr *)&target->ia_addr;
+ 		rt_newaddrmsg(cmd, 
+ 			      (struct ifaddr *)target,
+-			      0, &msg_rt);
++			      0, &msg_rt, -1);
+ 		RTFREE(pfx_ro.ro_rt);
+ 	}
+ 	return;
+Index: sys/net/route.c
+===================================================================
+--- sys/net/route.c	(revision 224245)
++++ sys/net/route.c	(working copy)
+@@ -390,7 +390,7 @@
+ 		 */
+ 		bzero(&info, sizeof(info));
+ 		info.rti_info[RTAX_DST] = dst;
+-		rt_missmsg(msgtype, &info, 0, err);
++		rt_missmsg(msgtype, &info, 0, err, fibnum);
+ 	}	
+ done:
+ 	if (newrt)
+@@ -615,7 +615,7 @@
+ 	info.rti_info[RTAX_GATEWAY] = gateway;
+ 	info.rti_info[RTAX_NETMASK] = netmask;
+ 	info.rti_info[RTAX_AUTHOR] = src;
+-	rt_missmsg(RTM_REDIRECT, &info, flags, error);
++	rt_missmsg(RTM_REDIRECT, &info, flags, error, fibnum);
+ 	if (ifa != NULL)
+ 		ifa_free(ifa);
+ }
+@@ -1527,7 +1527,7 @@
+ 			}
+ 			RT_ADDREF(rt);
+ 			RT_UNLOCK(rt);
+-			rt_newaddrmsg(cmd, ifa, error, rt);
++			rt_newaddrmsg(cmd, ifa, error, rt, fibnum);
+ 			RT_LOCK(rt);
+ 			RT_REMREF(rt);
+ 			if (cmd == RTM_DELETE) {
+Index: sys/net/route.h
+===================================================================
+--- sys/net/route.h	(revision 224245)
++++ sys/net/route.h	(working copy)
+@@ -366,8 +366,8 @@
+ void	 rt_ieee80211msg(struct ifnet *, int, void *, size_t);
+ void	 rt_ifannouncemsg(struct ifnet *, int);
+ void	 rt_ifmsg(struct ifnet *);
+-void	 rt_missmsg(int, struct rt_addrinfo *, int, int);
+-void	 rt_newaddrmsg(int, struct ifaddr *, int, struct rtentry *);
++void	 rt_missmsg(int, struct rt_addrinfo *, int, int, int);
++void	 rt_newaddrmsg(int, struct ifaddr *, int, struct rtentry *, int);
+ void	 rt_newmaddrmsg(int, struct ifmultiaddr *);
+ int	 rt_setgate(struct rtentry *, struct sockaddr *, struct sockaddr *);
+ void 	 rt_maskedcopy(struct sockaddr *, struct sockaddr *, struct sockaddr *);
+Index: sys/net/raw_cb.h
+===================================================================
+--- sys/net/raw_cb.h	(revision 224245)
++++ sys/net/raw_cb.h	(working copy)
+@@ -72,7 +72,7 @@
+  */
+ int	 raw_attach(struct socket *, int);
+ void	 raw_detach(struct rawcb *);
+-void	 raw_input(struct mbuf *, struct sockproto *, struct sockaddr *);
++void	 raw_input(struct mbuf *, struct sockproto *, struct sockaddr *, int);
+ 
+ /*
+  * Generic pr_usrreqs entries for raw socket protocols, usually wrapped so
+Index: sys/net/rtsock.c
+===================================================================
+--- sys/net/rtsock.c	(revision 224245)
++++ sys/net/rtsock.c	(working copy)
+@@ -138,6 +138,11 @@
+ 
+ SYSCTL_NODE(_net, OID_AUTO, route, CTLFLAG_RD, 0, "");
+ 
++struct rt_dispatch_ctx {
++	unsigned short family;  /* Socket family */
++	int            fibnum;  /* FIB for message or -1 for all */
++};	
++
+ struct walkarg {
+ 	int	w_tmemsize;
+ 	int	w_op, w_arg;
+@@ -159,7 +164,7 @@
+ 			struct rt_metrics_lite *out);
+ static void	rt_getmetrics(const struct rt_metrics_lite *in,
+ 			struct rt_metrics *out);
+-static void	rt_dispatch(struct mbuf *, const struct sockaddr *);
++static void	rt_dispatch(struct mbuf *, const struct sockaddr *, int);
+ 
+ static struct netisr_handler rtsock_nh = {
+ 	.nh_name = "rtsock",
+@@ -200,19 +205,21 @@
+ rts_input(struct mbuf *m)
+ {
+ 	struct sockproto route_proto;
+-	unsigned short *family;
++	struct rt_dispatch_ctx *ctx;
+ 	struct m_tag *tag;
++	int fibnum = -1;
+ 
+ 	route_proto.sp_family = PF_ROUTE;
+-	tag = m_tag_find(m, PACKET_TAG_RTSOCKFAM, NULL);
++	tag = m_tag_find(m, PACKET_TAG_RTSOCK, NULL);
+ 	if (tag != NULL) {
+-		family = (unsigned short *)(tag + 1);
+-		route_proto.sp_protocol = *family;
++		ctx = (struct rt_dispatch_ctx*)(tag + 1);
++		route_proto.sp_protocol = ctx->family;
++		fibnum = ctx->fibnum;
+ 		m_tag_delete(m, tag);
+ 	} else
+ 		route_proto.sp_protocol = 0;
+ 
+-	raw_input(m, &route_proto, &route_src);
++	raw_input(m, &route_proto, &route_src, fibnum);
+ }
+ 
+ /*
+@@ -893,10 +900,10 @@
+ 			 */
+ 			unsigned short family = rp->rcb_proto.sp_family;
+ 			rp->rcb_proto.sp_family = 0;
+-			rt_dispatch(m, info.rti_info[RTAX_DST]);
++			rt_dispatch(m, info.rti_info[RTAX_DST], so->so_fibnum);
+ 			rp->rcb_proto.sp_family = family;
+ 		} else
+-			rt_dispatch(m, info.rti_info[RTAX_DST]);
++			rt_dispatch(m, info.rti_info[RTAX_DST], so->so_fibnum);
+ 	}
+     }
+ 	return (error);
+@@ -1125,7 +1132,7 @@
+  * destination.
+  */
+ void
+-rt_missmsg(int type, struct rt_addrinfo *rtinfo, int flags, int error)
++rt_missmsg(int type, struct rt_addrinfo *rtinfo, int flags, int error, int fibnum)
+ {
+ 	struct rt_msghdr *rtm;
+ 	struct mbuf *m;
+@@ -1140,7 +1147,7 @@
+ 	rtm->rtm_flags = RTF_DONE | flags;
+ 	rtm->rtm_errno = error;
+ 	rtm->rtm_addrs = rtinfo->rti_addrs;
+-	rt_dispatch(m, sa);
++	rt_dispatch(m, sa, fibnum);
+ }
+ 
+ /*
+@@ -1165,7 +1172,7 @@
+ 	ifm->ifm_flags = ifp->if_flags | ifp->if_drv_flags;
+ 	ifm->ifm_data = ifp->if_data;
+ 	ifm->ifm_addrs = 0;
+-	rt_dispatch(m, NULL);
++	rt_dispatch(m, NULL, -1);
+ }
+ 
+ /*
+@@ -1177,7 +1184,7 @@
+  * copies of it.
+  */
+ void
+-rt_newaddrmsg(int cmd, struct ifaddr *ifa, int error, struct rtentry *rt)
++rt_newaddrmsg(int cmd, struct ifaddr *ifa, int error, struct rtentry *rt, int fibnum)
+ {
+ 	struct rt_addrinfo info;
+ 	struct sockaddr *sa = NULL;
+@@ -1235,7 +1242,7 @@
+ 			rtm->rtm_errno = error;
+ 			rtm->rtm_addrs = info.rti_addrs;
+ 		}
+-		rt_dispatch(m, sa);
++		rt_dispatch(m, sa, fibnum);
+ 	}
+ }
+ 
+@@ -1271,7 +1278,7 @@
+ 	    __func__));
+ 	ifmam->ifmam_index = ifp->if_index;
+ 	ifmam->ifmam_addrs = info.rti_addrs;
+-	rt_dispatch(m, ifma->ifma_addr);
++	rt_dispatch(m, ifma->ifma_addr, -1);
+ }
+ 
+ static struct mbuf *
+@@ -1331,7 +1338,7 @@
+ 		if (m->m_flags & M_PKTHDR)
+ 			m->m_pkthdr.len += data_len;
+ 		mtod(m, struct if_announcemsghdr *)->ifan_msglen += data_len;
+-		rt_dispatch(m, NULL);
++		rt_dispatch(m, NULL, -1);
+ 	}
+ }
+ 
+@@ -1347,27 +1354,30 @@
+ 
+ 	m = rt_makeifannouncemsg(ifp, RTM_IFANNOUNCE, what, &info);
+ 	if (m != NULL)
+-		rt_dispatch(m, NULL);
++		rt_dispatch(m, NULL, -1);
+ }
+ 
+ static void
+-rt_dispatch(struct mbuf *m, const struct sockaddr *sa)
++rt_dispatch(struct mbuf *m, const struct sockaddr *sa, int fibnum)
+ {
++	struct rt_dispatch_ctx *ctx;
+ 	struct m_tag *tag;
+ 
+ 	/*
+ 	 * Preserve the family from the sockaddr, if any, in an m_tag for
+ 	 * use when injecting the mbuf into the routing socket buffer from
+-	 * the netisr.
++	 * the netisr. Additionally save the fibnum if needed.
+ 	 */
+-	if (sa != NULL) {
+-		tag = m_tag_get(PACKET_TAG_RTSOCKFAM, sizeof(unsigned short),
+-		    M_NOWAIT);
++	if (sa != NULL && fibnum >= 0) {
++		tag = m_tag_get(PACKET_TAG_RTSOCK, 
++		                sizeof(struct rt_dispatch_ctx*), M_NOWAIT);
+ 		if (tag == NULL) {
+ 			m_freem(m);
+ 			return;
+ 		}
+-		*(unsigned short *)(tag + 1) = sa->sa_family;
++		ctx = (struct rt_dispatch_ctx*)(tag + 1);
++		ctx->family = sa->sa_family;
++		ctx->fibnum = fibnum;
+ 		m_tag_prepend(m, tag);
+ 	}
+ #ifdef VIMAGE
+Index: sys/net/raw_usrreq.c
+===================================================================
+--- sys/net/raw_usrreq.c	(revision 224245)
++++ sys/net/raw_usrreq.c	(working copy)
+@@ -69,7 +69,7 @@
+  * Raw protocol interface.
+  */
+ void
+-raw_input(struct mbuf *m0, struct sockproto *proto, struct sockaddr *src)
++raw_input(struct mbuf *m0, struct sockproto *proto, struct sockaddr *src, int fibnum)
+ {
+ 	struct rawcb *rp;
+ 	struct mbuf *m = m0;
+@@ -83,6 +83,9 @@
+ 		if (rp->rcb_proto.sp_protocol  &&
+ 		    rp->rcb_proto.sp_protocol != proto->sp_protocol)
+ 			continue;
++		if (fibnum >= 0 && rp->rcb_socket &&
++		    fibnum != rp->rcb_socket->so_fibnum) 
++			continue; 
+ 		if (last) {
+ 			struct mbuf *n;
+ 			n = m_copy(m, 0, (int)M_COPYALL);
+Index: sys/netinet6/in6.c
+===================================================================
+--- sys/netinet6/in6.c	(revision 224245)
++++ sys/netinet6/in6.c	(working copy)
+@@ -1252,7 +1252,7 @@
+ 	rt_mask(&rt0) = (struct sockaddr *)&mask;
+ 	rt_key(&rt0) = (struct sockaddr *)&addr;
+ 	rt0.rt_flags = RTF_HOST | RTF_STATIC;
+-	rt_newaddrmsg(RTM_DELETE, ifa, 0, &rt0);
++	rt_newaddrmsg(RTM_DELETE, ifa, 0, &rt0, -1);
+ 
+ 	/*
+ 	 * leave from multicast groups we have joined for the interface
+@@ -1830,7 +1830,7 @@
+ 		rt_mask(&rt) = (struct sockaddr *)&mask;
+ 		rt_key(&rt) = (struct sockaddr *)&addr;
+ 		rt.rt_flags = RTF_UP | RTF_HOST | RTF_STATIC;
+-		rt_newaddrmsg(RTM_ADD, &ia->ia_ifa, 0, &rt);
++		rt_newaddrmsg(RTM_ADD, &ia->ia_ifa, 0, &rt, -1);
+ 	}
+ 
+ 	return (error);
+Index: sys/netinet6/nd6_rtr.c
+===================================================================
+--- sys/netinet6/nd6_rtr.c	(revision 224245)
++++ sys/netinet6/nd6_rtr.c	(working copy)
+@@ -450,7 +450,7 @@
+ 	} else
+ 		ifa = NULL;
+ 
+-	rt_missmsg(cmd, &info, rt->rt_flags, 0);
++	rt_missmsg(cmd, &info, rt->rt_flags, 0, -1);
+ 	if (ifa != NULL)
+ 		ifa_free(ifa);
+ }
+Index: sys/sys/mbuf.h
+===================================================================
+--- sys/sys/mbuf.h	(revision 224245)
++++ sys/sys/mbuf.h	(working copy)
+@@ -899,7 +899,7 @@
+ #define	PACKET_TAG_IPFORWARD			18 /* ipforward info */
+ #define	PACKET_TAG_MACLABEL	(19 | MTAG_PERSISTENT) /* MAC label */
+ #define	PACKET_TAG_PF				21 /* PF + ALTQ information */
+-#define	PACKET_TAG_RTSOCKFAM			25 /* rtsock sa family */
++#define PACKET_TAG_RTSOCK			25 /* rtsock extra info */
+ #define	PACKET_TAG_IPOPTIONS			27 /* Saved IP options */
+ #define	PACKET_TAG_CARP				28 /* CARP info */
+ #define	PACKET_TAG_IPSEC_NAT_T_PORTS		29 /* two uint16_t */
