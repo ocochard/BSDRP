@@ -350,11 +350,14 @@ add_port "benchmarks/iperf"
 customize_cmd add_netrate
 
 cleanup_ports () {
-		# The build tools are installed only if ports are compiled, then don't exist otherwize.
-		# Need to prevent auto exist of this script
+		# When port are build, they install build dependency that are not usefull for running the port
+		# The list of build-only package to be delete can be found like this:
+		# Fresh generate a BSDRP image, and copy packages.info to packages.info.first
+		# Restart a BSDRP image build with the "-b" option
+		# diff packages.info.first packages.info
 		set +e
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'pkg_delete auto* m4* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* p5-gettext*'
+        'pkg_delete auto* m4* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* p5-gettext* libsigsegv*'
 		set -e
 }
 

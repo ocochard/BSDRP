@@ -22,7 +22,8 @@ Updated packages:
 
 TO DO before release:
 - Lab with full features test
-- Test FIB with bird
+   + Fix DHCP relay bug
+   + testing FIB with bird
 - Test mtree
 
 Installed packages and their versions:
