@@ -672,6 +672,8 @@ if($host.Runspace.ApartmentState -ne "STA") {
     return
 }
 
+Add-Type -AssemblyName System.windows.forms | Out-Null
+
 #Set window title
 $WINDOW = (Get-Host).UI.RawUI
 $TITLE = "BSD Router Project - VirtualBox lab"
