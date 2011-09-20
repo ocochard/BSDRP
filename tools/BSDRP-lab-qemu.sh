@@ -471,8 +471,9 @@ start_lab_vm () {
             j=`expr $j + 1`
         done
         if ($SERIAL); then
-            QEMU_OUTPUT="-nographic -vga none -serial telnet::800${i},server,nowait"
-            echo "Connect to the router ${i} by telneting to localhost on port 800${i}"
+            QEMU_OUTPUT="-nographic -vga none -serial telnet::800${i},server,nowait -serial mon:telnet::900${i},server,nowait"
+            echo "Connect to the console port of router ${i} by telneting to localhost on port 800${i}"
+			echo "qemu-monitor is on port 900${i} for this router (Ctrl-A + c)"
         else
             QEMU_OUTPUT="-vnc :${i}"
             echo "Connect to the router ${i} by VNC client on display ${i}"
