@@ -163,13 +163,20 @@ save_cfg () {
 	echo "Saving configuration..."
 	(
 	cd /etc
-	# Warning cpio didn't preserve user/group on the main directory (only on file)
-	# BUG TO SOLVE: Need to found a solution for this problem
 	for i in "$@" `find * -type f`; do
 		if [ -f /cfg/$i ]; then
-			cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i 2>/dev/null
+			if ! cmp -s /etc/$i /cfg/$i; then
+				cp -pfv /etc/$i /cfg/$i 2>/dev/null
+			fi
 		else
-			cmp -s /conf/base/etc/$i /etc/$i || (find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
+			if ! cmp -s /conf/base/etc/$i /etc/$i; then
+				#cpio didn't preserve owner/permission on directory
+				#Need to check if destination dir exists, and if not
+				if [ ! -d /cfg/`dirname $i` ]; then
+                	(find `dirname $i`  -print | cpio -dumpv  /cfg/ 2>/dev/null)
+                fi
+				(find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
+			fi
 		fi
 	done
 	)	
@@ -178,7 +185,9 @@ save_cfg () {
 	if [ -d /cfg/ssh ]; then
 		cd /etc/ssh
 		for i in "$@" `find ssh_host_* -type f`; do
-        	cmp -s /etc/ssh/$i /cfg/ssh/$i || cp -pfv /etc/ssh/$i /cfg/ssh/$i 2>/dev/null
+        	if ! cmp -s /etc/ssh/$i /cfg/ssh/$i; then
+				cp -pfv /etc/ssh/$i /cfg/ssh/$i 2>/dev/null
+			fi
        	done
 	else
 		if ! mkdir -p /cfg/ssh; then

@@ -21,7 +21,6 @@ Updated packages:
 - isc-dhcp server/relay to 4.2.2
 
 TO DO before release:
-- BUG TO FIX: config save didn't keept directory owner, and using -depth was a bad idea
 - Lab with full features test
    + Fix DHCP relay bug
    + testing FIB with bird
