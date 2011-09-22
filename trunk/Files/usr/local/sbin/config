@@ -163,7 +163,8 @@ save_cfg () {
 	echo "Saving configuration..."
 	(
 	cd /etc
-	for i in "$@" `find * -type f`; do
+	# Note: don't use ``find * -type f` here because cpio will not preserve user/group on directory
+	for i in "$@" `find * -depth`; do
 		if [ -f /cfg/$i ]; then
 			cmp -s /etc/$i /cfg/$i || cp -pfv /etc/$i /cfg/$i 2>/dev/null
 		else
