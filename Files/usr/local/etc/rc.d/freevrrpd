@@ -3,7 +3,7 @@
 # BSD Router Project: FreeVRRPd startup script
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2010, The BSDRP Development Team 
+# Copyright (c) 2009-2011, The BSDRP Development Team 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -45,5 +45,20 @@ rcvar=`set_rcvar`
 command="/usr/local/sbin/${name}"
 required_files="/usr/local/etc/${name}.conf"
 
-load_rc_config $name
+start_precmd=freevrrpd_precmd
+
+load_rc_config ${name}
+
+freevrrpd_precmd () {
+    if ! kldstat -q -m ng_ether; then
+        kldload ng_ether
+    fi
+    if ! kldstat -q -m ng_bridge; then
+        kldload ng_bridge
+    fi
+    if ! kldstat -q -m ng_eiface; then
+        kldload ng_eiface
+    fi
+}
+
 run_rc_command "$1"
