@@ -5,7 +5,8 @@ Release 0.4 (not released)
 - mtree: remove md5 checksum
 - kernal patched for bird and FIB usage
 - bird support FIB and include config file
-- Freevrrpd rc: Auto-load netgraph modules
+- Freevrrp rc script: Auto-load netgraph modules
+- Add telnet (usefull for connecting local mpd control port)
 
 Bug fixes:
 - fix "config save", that save unmodified files

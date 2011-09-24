@@ -170,10 +170,13 @@ save_cfg () {
 			fi
 		else
 			if ! cmp -s /conf/base/etc/$i /etc/$i; then
-				#cpio didn't preserve owner/permission on directory
-				#Need to check if destination dir exists, and if not
+				#cpio didn't preserve owner/permission on non-existant directory
+				#Need to check if destination dir exists, and if not create it
+				#But this method copy all files in this directory too :-(
 				if [ ! -d /cfg/`dirname $i` ]; then
                 	(find `dirname $i`  -print | cpio -dumpv  /cfg/ 2>/dev/null)
+					# Because the previous cpio copied all files (even unmodified), we need to delete them (dirty hack)
+					rm -rf /cfg/`dirname $i`/*
                 fi
 				(find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
 			fi
