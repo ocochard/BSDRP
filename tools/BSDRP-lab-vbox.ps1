@@ -104,7 +104,11 @@ function set_API_enums() {
             NetworkAttachmentType_HostOnly = 4;
             NetworkAttachmentType_Generic = 5;
             
-            ProcessorFeature_HWVirtEx = 0;
+			NetworkAdapterPromiscModePolicy_Deny = 1;
+			NetworkAdapterPromiscModePolicy_AllowNetwork = 2;
+			NetworkAdapterPromiscModePolicy_AllowAll = 3; 
+            
+			ProcessorFeature_HWVirtEx = 0;
             ProcessorFeature_PAE = 1;
             ProcessorFeature_LongMode = 2;
             ProcessorFeature_NestedPaging = 3;
@@ -488,6 +492,8 @@ Function modify_nic () {
     $ADAPTER=$SESSION.machine.getNetworkAdapter($NIC-1)
     $ADAPTER.adapterType=$NetworkAdapterType_I82540EM
     $ADAPTER.MACAddress=$MAC
+	#Need to permit promiscious mode (for carp or vrrp that use multiple MAC for the same NIC as example)
+	$ADAPTER.promiscModePolicy=$NetworkAdapterPromiscModePolicy_AllowNetwork
     
     if ($HOST_ONLY) { 
         $ADAPTER.attachmentType=$NetworkAttachmentType_HostOnly
