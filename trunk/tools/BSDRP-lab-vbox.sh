@@ -325,12 +325,12 @@ build_lab () {
                 echo "em${NIC_NUMBER} connected to Router${j}."
                 NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
                 if [ $i -le $j ]; then
-                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${i}${j} --macaddress${NIC_NUMBER} AAAA00000${i}${i}${j} >> ${LOG_FILE} 2>&1; then
+                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${i}${j} --macaddress${NIC_NUMBER} AAAA00000${i}${i}${j} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
 						echo "[ERROR] Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
 						exit 1
 					fi
                 else
-                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${j}${i} --macaddress${NIC_NUMBER} AAAA00000${i}${j}${i} >> ${LOG_FILE} 2>&1; then
+                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${j}${i} --macaddress${NIC_NUMBER} AAAA00000${i}${j}${i} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
 						echo "[ERROR] Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
 						exit 1
 					fi
@@ -343,7 +343,7 @@ build_lab () {
         while [ $j -le $LAN ]; do
             echo "em${NIC_NUMBER} connected to LAN number ${j}."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-            if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC00000${j}0${i} >> ${LOG_FILE} 2>&1; then
+            if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC00000${j}0${i} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
 				echo "[ERROR] Can't add NIC ${NIC_NUMBER} (LAN) to VM $i"
 				exit 1
 			fi
@@ -352,7 +352,7 @@ build_lab () {
 		if ($HOSTONLY_NIC); then
 			echo "em${NIC_NUMBER} connected to shared-with-host LAN."
 			NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-			if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --hostonlyadapter${NIC_NUMBER} ${HOSTONLY_NIC_NAME} --nictype${NIC_NUMBER} 82540EM --macaddress${NIC_NUMBER} 00bbbb00000${i} >> ${LOG_FILE} 2>&1; then
+			if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --hostonlyadapter${NIC_NUMBER} ${HOSTONLY_NIC_NAME} --nictype${NIC_NUMBER} 82540EM --macaddress${NIC_NUMBER} 00bbbb00000${i} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
 				echo "[ERROR] Can't add NIC ${NIC_NUMBER} (Host only) to VM $i"
 				exit 1
 			fi
