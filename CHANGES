@@ -1,4 +1,4 @@
-Release 0.4 (not released)
+Release 1.0 (not released)
 
 - Add FreeBSD network benchmark tools: netblast,netsend and netreceive
 - Use XZ in place of BZIP2 for config files archives
@@ -10,6 +10,7 @@ Release 0.4 (not released)
 
 Bug fixes:
 - fix "config save", that save unmodified files
+- fix "show" that didn't support more than 1 option
 - Fix ndp tools installation
 - Fix default bird startup scripts that used bad folder for control socket
 - Fix Ethernet interfaces names in bird
@@ -24,9 +25,9 @@ Updated packages:
 
 TO DO before release:
 - Lab with full features test
-   + Fix DHCP relay bug
+   + fix freevrrpd under VirtualBox (need to test under quemu)
    + testing FIB with bird
-- Test mtree
+   + Test mtree
 
 Installed packages and their versions:
 
