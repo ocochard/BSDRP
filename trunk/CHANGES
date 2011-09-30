@@ -15,6 +15,8 @@ Bug fixes:
 - Fix default bird startup scripts that used bad folder for control socket
 - Fix Ethernet interfaces names in bird
 - Fix the upgrade script (merge changes in /boot/loader.conf)
+- Fix a carp bug when preemption is enabled (kern/161123)
+- Forgot to add the dummynet kernel module
 - Build tool: Add a check to the FreeBSD source code branch used
 
 Updated packages:
