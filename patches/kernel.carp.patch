@@ -1,0 +1,29 @@
+--- sys/netinet/ip_carp.c.orig	2010-12-21 18:09:25.000000000 +0100
++++ sys/netinet/ip_carp.c	2011-09-30 22:36:52.000000000 +0200
+@@ -1390,22 +1390,10 @@
+ 
+ 	switch (sc->sc_state) {
+ 	case INIT:
+-		if (carp_opts[CARPCTL_PREEMPT] && !carp_suppress_preempt) {
+-			carp_send_ad_locked(sc);
+-			carp_send_arp(sc);
+-#ifdef INET6
+-			carp_send_na(sc);
+-#endif /* INET6 */
+-			CARP_LOG("%s: INIT -> MASTER (preempting)\n",
+-			    SC2IFP(sc)->if_xname);
+-			carp_set_state(sc, MASTER);
+-			carp_setroute(sc, RTM_ADD);
+-		} else {
+-			CARP_LOG("%s: INIT -> BACKUP\n", SC2IFP(sc)->if_xname);
+-			carp_set_state(sc, BACKUP);
+-			carp_setroute(sc, RTM_DELETE);
+-			carp_setrun(sc, 0);
+-		}
++        CARP_LOG("%s: INIT -> BACKUP\n", SC2IFP(sc)->if_xname);
++        carp_set_state(sc, BACKUP);
++        carp_setroute(sc, RTM_DELETE);
++        carp_setrun(sc, 0);
+ 		break;
+ 	case BACKUP:
+ 		callout_stop(&sc->sc_ad_tmo);

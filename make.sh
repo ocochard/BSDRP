@@ -120,6 +120,10 @@ kernel_patches() {
 	if [ `sha256 -q ${FREEBSD_SRC}/tools/tools/netrate/netblast/netblast.c` != "c2f41133030ae149e05732ee22bc6284f339947e0bdedad38ec2fbb41bd68d9e" ]; then
 		(cd ${FREEBSD_SRC}/tools/tools; patch < ${NANOBSD_DIR}/BSDRP/patches/netrate.sparc.patch)
 	fi
+	# carp (kern/161123) patch
+	if [ `sha256 -q ${FREEBSD_SRC}/sys/netinet/ip_carp.c` != "bafd2244237b4fd03544f7ad749196962503368b64eb816742f954bffafff15a" ]; then
+		(cd ${FREEBSD_SRC}; patch < ${NANOBSD_DIR}/BSDRP/patches/kernel.carp.patch)
+	fi
 }
 ###### Adding patch to NanoBSD
 nanobsd_patches() {
@@ -362,7 +366,7 @@ fi
 
 NANOBSD_OBJ=/usr/obj/nanobsd.${NAME}.${TARGET_ARCH}
 
-if [ ${SKIP_REBUILD} = "-b" ]; then
+if [ "${SKIP_REBUILD}" = "-b" ]; then
 	if [ ! -d ${NANOBSD_OBJ} ]; then
 		echo "ERROR: No previous object directory found, you can't use -b option"
 		exit 1
@@ -411,10 +415,10 @@ echo "# Parallel Make" >> /tmp/${NAME}.nano
 # Note for modules names: They are relative to /usr/src/sys/modules
 case ${TARGET_ARCH} in
 	"i386") echo 'NANO_PMAKE="make -j 8"' >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="acpi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog hifn padlock safe ubsec glxsb"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="acpi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec glxsb"' >> /tmp/${NAME}.nano
 	;;
 	"amd64") echo 'NANO_PMAKE="make -j 8"' >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog hifn padlock safe ubsec"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec"' >> /tmp/${NAME}.nano
 	;;
 	"arm") echo 'NANO_PMAKE="make"' >> /tmp/${NAME}.nano
 	echo 'NANO_MODULES=""' >> /tmp/${NAME}.nano
@@ -423,7 +427,7 @@ case ${TARGET_ARCH} in
 	export NANO_MAKEFS
 	;;
 	"sparc64") echo 'NANO_PMAKE="make -j 8"' >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="netgraph rc4 if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf pflog"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="netgraph rc4 if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias dummynet pf pflog"' >> /tmp/${NAME}.nano
 	;;
 esac
 
