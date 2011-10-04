@@ -33,7 +33,6 @@
 
 # Strict script
 set -e
-#set -u
 
 # Display help
 usage () {
@@ -55,16 +54,16 @@ usage () {
 		;;
 	put)
 		echo "Options for put:"
-		echo " - scp username@host:filename"
+		echo " - scp username@host:/path/filename.tar.xz"
 		echo "	 send the configuration to a remote host"
-		echo "  if no filename given, the destination file will be named: hostname.tar.xz"
+		echo "  if no /path/filename given, the destination file will be named: hostname.tar.xz"
 		exit 0
 		;;
 	get)
 		echo "Options for get:"
-		echo " - scp username@host:filename"
+		echo " - scp username@host:/path/filename.tar.xz"
 		echo "	 retrieve the configuration from a remote host"
-		echo "  if no filename given, it will try to download a file named: hostname.tar.xz"
+		echo "  if no /path/filename given, it will try to download a file named: hostname.tar.xz"
 		exit 0
 		;;
 	esac
@@ -77,7 +76,7 @@ usage () {
 	echo "  - rollback : Revert to previous config"
 	echo "  - put      : Put the saved config to a remote server"
 	echo "  - get      : Get config from remote server"
-	echo "  - reset    : Return to default configuration"
+	echo "  - factory  : Return to default configuration"
 	echo "  - help (h) [option]  : Display this help message. "
 	echo "		  	If [option] given, display more detail about the option"
 	exit 0
@@ -348,26 +347,31 @@ put () {
 	# example: scp admin@backup.host.fr:filename
 	case "$SECOND_OPTION" in
         scp)
-			put_parse_input $THIRD_OPTION
-			echo "Send saved configuration by SCP to ${REMOTEHOST}"
-			if [ -f /tmp/${FILENAME} ]; then
-				if ! rm /tmp/${FILENAME}; then
-					echo "WARNING: Can't delete /tmp/${FILENAME}"
+			echo "Send saved configuration by SCP to ${THIRD_OPTION}"
+			if [ -f /tmp/config.$$.tar.xz ]; then
+				if ! rm /tmp/config.$$.tar.xz; then
+					echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
 				fi
 			fi
 			mount_cfg
-			if ! tar -cJvpf /tmp/${FILENAME} -C /cfg/ . 2>/dev/null; then
-				echo "ERROR: Can't tar /cfg to /tmp/${FILENAME}"
+			if ! tar -cJvpf /tmp/config.$$.tar.xz -C /cfg/ . 2>/dev/null; then
+				echo "ERROR: Can't tar /cfg to /tmp/config.$$.tar.xz"
 				umount_cfg
 				exit 1
 			fi
 			umount_cfg
-			if ! scp /tmp/${FILENAME} ${USERNAME}@${REMOTEHOST}:${FILENAME}; then
-				echo "ERROR: Can't scp configuration to ${USERNAME}@${REMOTEHOST}:${FILENAME}"
+			if put_check_filename ${THIRD_OPTION}; then
+				if ! scp /tmp/config.$$.tar.xz ${THIRD_OPTION}; then
+					echo "ERROR: Can't scp configuration to ${THIRD_OPTION}"
+				fi
+			else
+				if ! scp /tmp/config.$$.tar.xz ${THIRD_OPTION}:${FILENAME}; then
+                    echo "ERROR: Can't scp configuration to ${THIRD_OPTION}:${FILENAME}"
+                fi
 			fi
-			if [ -f /tmp/${FILENAME} ]; then
-                if ! rm /tmp/${FILENAME}; then
-					echo "WARNING: Can't delete /tmp/${FILENAME}"
+			if [ -f /tmp/config.$$.tar.xz ]; then
+                if ! rm /tmp/config.$$.tar.xz; then
+					echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
 				fi
             fi
             ;;
@@ -386,46 +390,54 @@ put () {
 }
 
 # Check the user input for put options
-
-put_parse_input () {
+# if no filename given return false (1)
+put_check_filename () {
 	if [ $1 = "" ]; then
 		echo "Bad arguments, see 'config help put' for usage"
 		exit 0
 	fi
 	USERNAME=$(echo $1 | cut -d @ -f1)
 	REMOTEHOST=$(echo $1 | cut -d @ -f2 | cut -d : -f1)
-	FILENAME=$(echo $1 | cut -d @ -f2 | cut -d : -f2)
-	if [ $USERNAME = "" ]; then
+	FULLPATH=$(echo $1 | cut -d @ -f2 | cut -d : -f2)
+	if [ "${USERNAME}" = "" ]; then
 		echo "No Username given, see 'config help put' for usage"
 		exit 0
-	elif [ $REMOTEHOST = "" ]; then
+	elif [ ${REMOTEHOST} = "" ]; then
 		echo "No Hostname given, see 'config help put' for usage"
         exit 0
-	elif [ $FILENAME = $REMOTEHOST ]; then
+	# If user enter login@host
+	elif [ "${FULLPATH}" = "${REMOTEHOST}" ]; then
 		FILENAME=$(hostname).tar.xz
+		return 1
+	# if user enter login@host:
+	elif [ "${FULLPATH}" = "" ]; then
+		echo "Check your syntax, see 'config help put' for usage"
+		exit 0
+	# if user enter login@host:something
+	else
+		return 0
 	fi
 }
 	
 # Get configuration from an svn/cvs/scp server
 get () {
     # option: protocol username@host <filename>
-    # example: scp admin@backup.host.fr:filename
+    # example: scp admin@backup.host.fr:/path/filename
     case "$SECOND_OPTION" in
         scp)
-            put_parse_input $THIRD_OPTION
-			echo "Get configuration archive SCP from ${REMOTEHOST}"
-			if [ -f /tmp/cfg_archive.tar.xz ]; then
-                if ! rm /tmp/cfg_archive.tar.xz; then
-					echo "WARNING: Can't delete /tmp/cfg_archive.tar.xz"
+			echo "Get configuration archive SCP from ${THIRD_OPTION}"
+			if [ -f /tmp/config.$$.tar.xz ]; then
+                if ! rm /tmp/config.$$.tar.xz; then
+					echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
 				fi
             fi
-            if ! scp ${USERNAME}@${REMOTEHOST}:${FILENAME} /tmp/cfg_archive.tar.xz; then
-				echo "ERROR: Can't download ${USERNAME}@${REMOTEHOST}:${FILENAME}"
+            if ! scp ${THIRD_OPTION} /tmp/config.$$.tar.xz; then
+				echo "ERROR: Can't download ${THIRD_OPTION}"
 				exit 1
 			fi
-			restore_cfg /tmp/cfg_archive.tar.xz /etc
+			restore_cfg /tmp/config.$$.tar.xz /etc
 			echo "Configuration restored"
-			echo "TO DO: Need to force process to reload config"
+			echo "Don't forget to confirming your restoration by a 'config save'"
             ;;
         cvs)
             echo "TO DO: CVS commit to $THIRD_OPTION"
@@ -442,10 +454,14 @@ get () {
 	
 
 # Clear all existing configuration and return to default setting
-reset () {
-		echo "TO DO"
-        echo "Clear existing configuration and return to default setting"
-		echo "Warning: Kept the fstab!"
+factory () {
+        echo -n "Clear all saved configuration..."
+		mount_cfg
+        rm -rf /cfg/*
+        umount_cfg
+		echo "Done"
+		echo "For confirming this action: Reboot and answer 'no' to the question about saving configuration"
+		echo "For canceling this action: Simply save the running configuration with 'config save'"
         exit 0
 }
 
@@ -475,6 +491,8 @@ else
   THIRD_OPTION=""
 fi
 
+set -u
+
 case "$FIRST_OPTION" in
 	save)
 		save_cfg
@@ -494,8 +512,8 @@ case "$FIRST_OPTION" in
 	get)
 		get
 		;;
-	reset)
-		reset
+	factory)
+		factory
 		;;
 	help|h)
 		usage

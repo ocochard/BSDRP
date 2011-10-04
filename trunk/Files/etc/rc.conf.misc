@@ -1,5 +1,8 @@
 ###### BSD Router Project - Misc configuration ########
 
+#Prevent to update motd
+update_motd=NO
+
 #No keymap
 keymap="NO"
 
