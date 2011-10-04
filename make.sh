@@ -164,8 +164,11 @@ nanobsd_patches() {
 
 ports_patches()
 {
-#	pprint 2 "patching ports..."
-	#pprint 3 "net/bird (incorrect interface name)"
+	pprint 2 "patching ports..."
+	pprint 3 "net/quagga (update to 0.99.20)"
+	if ! grep -q "0.99.20" /usr/ports/net/quagga/Makefile; then
+		(cd /usr/ports/net/; patch < ${NANOBSD_DIR}/BSDRP/patches/quagga.0.99.20.patch)
+	fi
 	#if ! [ -f /usr/ports/net/bird/files/patch-ifname.in ] ; then
 #		cp patches/bird/patch-ifname.in /usr/ports/net/bird/files/patch-ifname.in
 #	fi
