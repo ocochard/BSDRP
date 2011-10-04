@@ -8,7 +8,7 @@ Release 1.0 (not released)
 - Add telnet (usefull for connecting local mpd control port)
 
 Bug fixes:
-- fix "config save", that save unmodified files
+- fix "config save", that save unmodified files and didn't delete old files
 - fix "show" that didn't support more than 1 option
 - Fix ndp tools installation
 - Fix default bird startup scripts that used bad folder for control socket
@@ -49,7 +49,7 @@ mcast-tools-20061214_1 IPv6 multicast routing daemons and tools
 mpd-5.5             Multi-link PPP daemon based on netgraph(4)
 mrouted-3.9.5       Multicast routing daemon providing DVMRP for IPv4
 net-snmp-5.7_3      An extendable SNMP implementation
-quagga-0.99.17_9    Free RIPv1, RIPv2, OSPFv2, BGP4, IS-IS route software
+quagga-0.99.20      Free RIPv1, RIPv2, OSPFv2, BGP4, IS-IS route software
 ssmtp-2.64          Extremely simple MTA to get mail off the system to a mail h
 tmux-1.5            A Terminal Multiplexer
 ucarp-1.5.2_1       Userlevel Common Address Redundancy Protocol
