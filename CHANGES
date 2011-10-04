@@ -1,5 +1,6 @@
 Release 1.0 (not released)
 
+- Upade base to FreeBSD 8.2-RELEASE-p4
 - Add FreeBSD network benchmark tools: netblast,netsend and netreceive
 - Use XZ in place of BZIP2 for config files archives
 - mtree: remove md5 checksum
