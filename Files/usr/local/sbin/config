@@ -184,7 +184,17 @@ save_cfg () {
 	done
 	)	
 
-	# save ssh keys
+	# Deleting file on /cfg that are no more in /etc
+	(
+	cd /cfg
+	for i in "$@" `find * -type f`; do
+		if [ ! -f /etc/$i ]; then
+			rm -rf /cfg/$i
+		fi
+	done
+	)
+
+	# save ssh keys (conrtibution: to be reviewed)
 	if [ -d /cfg/ssh ]; then
 		cd /etc/ssh
 		for i in "$@" `find ssh_host_* -type f`; do

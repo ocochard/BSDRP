@@ -7,7 +7,8 @@ Listed in order of seniority along with date of first contribution.
 
 Reuse of existing softwares/patches:
 
-BSD Router Project is based upon/includes various free software packages, listed below. The authors of BSDRP would like to thank the authors of these software packages for their efforts.
+BSD Router Project (BSDRP) is based upon/includes various free software packages, listed below.
+The authors of BSDRP would like to thank the authors of these software packages for their efforts.
 
 * FreeBSD:  Copyright (c) 1995-2011 The FreeBSD Project. All rights reserved
 * Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support
@@ -16,12 +17,12 @@ BSD Router Project is based upon/includes various free software packages, listed
 * Net-SNMP 
 * Idea of using glabel for disk type absraction: Scott Ullrich (pfSense)
 * "show memory" is a bourn shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
-* FreeVRRPd : VRRP daemon
-* uCARP: userland CARP daemon
-* fprobe: Slava Astashonok
+* FreeVRRPd : Copyright (c) 2001,2002 Sebastien Petit <spe@bsdfr.org>
+* uCARP: Copyright (c) 2004-2010 Frank Denis <j at ucarp.org> 
+* fprobe: Slava Astashonok <sla@0n.ru>
 * DHCP server and relay: Internet Systems Consortium
 * ssmtp: extremely simple MTA to get mail off the system to a mail hub
-* mcast-tools
-* mrouted
+* mcast-tools: Copyright (C) 1999 WIDE Project, Copyright (c) 1998-2001 The University of Southern California/Information Sciences Institute
+* mrouted: Copyright (C) 2002 The Board of Trustees of the Leland Stanford Junior University
 * mpd: Multi-link PPP Daemon, Copyright (c) 2003-2004, Archie L. Cobbs, Michael Bretterklieber, Alexander Motin
 
