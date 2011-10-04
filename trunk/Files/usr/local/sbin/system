@@ -80,12 +80,12 @@ integrity () {
 	fi
 	FILE_TYPE=`file ${SECOND_OPTION} | cut -d : -f 2`
 	
-	if echo "${FILE_TYPE}" | grep -q "ASCII text"; then
+	if echo "${FILE_TYPE}" | grep -qi "ASCII text"; then
 		cmd="mtree -f ${SECOND_OPTION} -p /"
-	elif echo "${FILE_TYPE}" | grep -q bzip; then
+	elif echo "${FILE_TYPE}" | grep -qi bzip; then
 		# Warning, the bzipped file can be any type of file!
 		cmd="bzcat ${SECOND_OPTION} | mtree -p /"
-	elif echo "${FILE_TYPE}" | grep -q xz; then
+	elif echo "${FILE_TYPE}" | grep -qi xz; then
 		cmd="xz -dc ${SECOND_OPTION} | mtree -p /"
 	else
 		echo "Is the given reference mtree file a good mtree file ?"
