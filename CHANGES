@@ -1,4 +1,4 @@
-Release 1.0 (not released)
+Release 1.0
 
 - Upade base to FreeBSD 8.2-RELEASE-p4
 - Add FreeBSD network benchmark tools: netblast,netsend and netreceive
@@ -25,12 +25,6 @@ Updated packages:
 - mrouted to 3.9.5
 - net-snmp to 5.7
 - isc-dhcp server/relay to 4.2.2
-
-TO DO before release:
-- Lab with full features test
-   + fix freevrrpd under VirtualBox (need to test under quemu)
-   + testing FIB with bird
-   + Test mtree
 
 Installed packages and their versions:
 
