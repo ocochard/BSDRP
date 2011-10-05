@@ -534,12 +534,13 @@ else
    	pprint 1 "${NANOBSD_OBJ}/${FILENAME}"
 fi
 
-pprint 1 "Zipping mtree..."
+pprint 1 "Zipping and renaming mtree..."
 if [ -f ${NANOBSD_OBJ}/${FILENAME}.mtree.xz ]; then
 	rm ${NANOBSD_OBJ}/${FILENAME}.mtree.xz
 fi
 mv ${NANOBSD_OBJ}/_.mtree ${NANOBSD_OBJ}/${FILENAME}.mtree
 xz -vf ${NANOBSD_OBJ}/${FILENAME}.mtree
+mv ${NANOBSD_OBJ}/${FILENAME}.mtree.xz ${NANOBSD_OBJ}/${NAME}_${VERSION}_${TARGET_ARCH}_${INPUT_CONSOLE}.mtree.xz
 pprint 1 "Security reference mtree file here:"
 pprint 1 "${NANOBSD_OBJ}/${FILENAME}.mtree.xz"
 
