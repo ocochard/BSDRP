@@ -1,0 +1,284 @@
+diff -ruN netrate.orig/netblast/netblast.c netrate/netblast/netblast.c
+--- netrate.orig/netblast/netblast.c	2011-10-07 11:28:43.000000000 +0200
++++ netrate/netblast/netblast.c	2011-10-07 14:55:49.000000000 +0200
+@@ -143,8 +143,9 @@
+ {
+ 	long payloadsize, port, duration;
+ 	struct sockaddr_in sin;
++	struct sockaddr_in6 sin6;
+ 	char *dummy, *packet;
+-	int s;
++	int s, ipv6;
+ 
+ 	if (argc != 5)
+ 		usage();
+@@ -152,15 +153,38 @@
+ 	bzero(&sin, sizeof(sin));
+ 	sin.sin_len = sizeof(sin);
+ 	sin.sin_family = AF_INET;
+-	if (inet_aton(argv[1], &sin.sin_addr) == 0) {
++
++	bzero(&sin6, sizeof(sin6));
++    sin6.sin6_len = sizeof(sin6);
++    sin6.sin6_family = AF_INET6;
++
++	if (inet_aton(argv[1], &sin.sin_addr) == 1) {
++		ipv6 = 0;
++	} else if (inet_pton(AF_INET6, argv[1], &sin6.sin6_addr) == 1) {
++		ipv6 = 1;
++		char *i;
++
++		i = strchr(argv[1], '%');
++		if (i != NULL) {
++			sin6.sin6_scope_id = if_nametoindex(i + 1);
++		}
++	} else {
+ 		perror(argv[1]);
++		fprintf(stderr, "Can't determine IP address type\n");
+ 		return (-1);
+ 	}
+ 
+ 	port = strtoul(argv[2], &dummy, 10);
+-	if (port < 1 || port > 65535 || *dummy != '\0')
++	if (port < 1 || port > 65535 || *dummy != '\0') {
++		fprintf(stderr, "bad port number\n");
+ 		usage();
+-	sin.sin_port = htons(port);
++	}
++
++	if (ipv6) {
++		sin6.sin6_port = htons(port);
++	} else {
++		sin.sin_port = htons(port);
++	}
+ 
+ 	payloadsize = strtoul(argv[3], &dummy, 10);
+ 	if (payloadsize < 0 || *dummy != '\0')
+@@ -171,25 +195,39 @@
+ 	}
+ 
+ 	duration = strtoul(argv[4], &dummy, 10);
+-	if (duration < 0 || *dummy != '\0')
++	if (duration < 0 || *dummy != '\0') {
++		fprintf(stderr, "bad duration\n");
+ 		usage();
++	}
+ 
+ 	packet = malloc(payloadsize);
+ 	if (packet == NULL) {
+ 		perror("malloc");
+ 		return (-1);
+ 	}
++
+ 	bzero(packet, payloadsize);
++	if (ipv6) {
++		s = socket(PF_INET6, SOCK_DGRAM, 0);
++	} else {
++		s = socket(PF_INET, SOCK_DGRAM, 0);
++	}
+ 
+-	s = socket(PF_INET, SOCK_DGRAM, 0);
+ 	if (s == -1) {
+ 		perror("socket");
+ 		return (-1);
+ 	}
+ 
+-	if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+-		perror("connect");
+-		return (-1);
++	if (ipv6) {
++		if (connect(s, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
++            perror("ipv6 connect");
++            return (-1);
++        }
++	} else {
++		if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
++			perror("ipv4 connect");
++			return (-1);
++		}
+ 	}
+ 
+ 	return (blast_loop(s, duration, packet, payloadsize));
+diff -ruN netrate.orig/netreceive/netreceive.c netrate/netreceive/netreceive.c
+--- netrate.orig/netreceive/netreceive.c	2011-10-07 15:18:48.000000000 +0200
++++ netrate/netreceive/netreceive.c	2011-10-07 15:45:28.000000000 +0200
+@@ -50,9 +50,10 @@
+ main(int argc, char *argv[])
+ {
+ 	struct sockaddr_in sin;
++	struct sockaddr_in6 sin6;
+ 	char *dummy, *packet;
+ 	long port;
+-	int s, v;
++	int s, s6, v;
+ 
+ 	if (argc != 2)
+ 		usage();
+@@ -62,10 +63,16 @@
+ 	sin.sin_family = AF_INET;
+ 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
+ 
++	bzero(&sin6, sizeof(sin6));
++    sin6.sin6_len = sizeof(sin6);
++    sin6.sin6_family = AF_INET6;
++    sin6.sin6_addr = in6addr_any;
++	
+ 	port = strtoul(argv[1], &dummy, 10);
+ 	if (port < 1 || port > 65535 || *dummy != '\0')
+ 		usage();
+ 	sin.sin_port = htons(port);
++	sin6.sin6_port = htons(port);
+ 
+ 	packet = malloc(65536);
+ 	if (packet == NULL) {
+@@ -76,26 +83,43 @@
+ 
+ 	s = socket(PF_INET, SOCK_DGRAM, 0);
+ 	if (s == -1) {
+-		perror("socket");
++		perror("socket (ipv4)");
+ 		return (-1);
+ 	}
+ 
++	s6 = socket(PF_INET6, SOCK_DGRAM, 0);
++    if (s == -1) {
++        perror("socket (ipv6)");
++        return (-1);
++    }
++
+ 	v = 128 * 1024;
+ 	if (setsockopt(s, SOL_SOCKET, SO_RCVBUF, &v, sizeof(v)) < 0) {
+-		perror("SO_RCVBUF");
++		perror("SO_RCVBUF (ipv4)");
+ 		return (-1);
+ 	}
++	if (setsockopt(s6, SOL_SOCKET, SO_RCVBUF, &v, sizeof(v)) < 0) {
++        perror("SO_RCVBUF (ipv6)");
++        return (-1);
++    }
+ 
+ 	if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+-		perror("bind");
++		perror("bind (ipv4)");
+ 		return (-1);
+ 	}
+ 
++	if (bind(s6, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
++        perror("bind (ipv6)");
++        return (-1);
++    }
++
+ 	printf("netreceive listening on UDP port %d\n", (u_short)port);
+ 
+ 	while (1) {
+ 		if (recv(s, packet, 65536, 0) < 0)
+-			perror("recv");
++			perror("recv (ipv4)");
++		if (recv(s6, packet, 65536, 0) < 0)
++            perror("recv (ipv6)");
+ 	}
+ }
+ 
+Files netrate.orig/netsend/netsend and netrate/netsend/netsend differ
+diff -ruN netrate.orig/netsend/netsend.c netrate/netsend/netsend.c
+--- netrate.orig/netsend/netsend.c	2011-10-07 14:48:07.000000000 +0200
++++ netrate/netsend/netsend.c	2011-10-07 15:12:49.000000000 +0200
+@@ -43,10 +43,12 @@
+ /* program arguments */
+ struct _a {
+ 	int s;
++	int ipv6;
+ 	struct timespec interval;
+ 	int port, port_max;
+ 	long duration;
+ 	struct sockaddr_in sin;
++	struct sockaddr_in6 sin6;
+ 	int packet_len;
+ 	void *packet;
+ };
+@@ -179,9 +181,16 @@
+ 	ic = gettimeofday_cycles;
+ 	cur_port = a->port;
+ 	if (a->port == a->port_max) {
+-		if (connect(a->s, (struct sockaddr *)&a->sin, sizeof(a->sin))) {
+-			perror("connect");
+-			return (-1);
++		if (a->ipv6) {
++			if (connect(a->s, (struct sockaddr *)&a->sin6, sizeof(a->sin6))) {
++                perror("connect (ipv6)");
++                return (-1);
++            }
++		} else {
++			if (connect(a->s, (struct sockaddr *)&a->sin, sizeof(a->sin))) {
++				perror("connect (ipv4)");
++				return (-1);
++			}
+ 		}
+ 	}
+ 	while (1) {
+@@ -215,8 +224,13 @@
+ 			a->sin.sin_port = htons(cur_port++);
+ 			if (cur_port > a->port_max)
+ 				cur_port = a->port;
++			if (a->ipv6) {
++			ret = sendto(a->s, a->packet, a->packet_len, 0,
++                (struct sockaddr *)&a->sin6, sizeof(a->sin6));
++			} else {
+ 			ret = sendto(a->s, a->packet, a->packet_len, 0,
+ 				(struct sockaddr *)&a->sin, sizeof(a->sin));
++			}
+ 		}
+ 		if (ret < 0)
+ 			send_errors++;
+@@ -262,8 +276,24 @@
+ 
+ 	a.sin.sin_len = sizeof(a.sin);
+ 	a.sin.sin_family = AF_INET;
+-	if (inet_aton(argv[1], &a.sin.sin_addr) == 0) {
++
++	a.sin6.sin6_len = sizeof(a.sin6);
++    a.sin6.sin6_family = AF_INET6;
++
++	if (inet_aton(argv[1], &a.sin.sin_addr) == 1) {
++		a.ipv6 = 0;
++	} else if (inet_pton(AF_INET6, argv[1], &a.sin6.sin6_addr) == 1) {
++		a.ipv6 = 1;
++		char *i;
++
++        i = strchr(argv[1], '%');
++        if (i != NULL) {
++            a.sin6.sin6_scope_id = if_nametoindex(i + 1);
++        }
++
++	} else {
+ 		perror(argv[1]);
++		fprintf(stderr, "Can't determine IP address type\n");
+ 		return (-1);
+ 	}
+ 
+@@ -272,7 +302,11 @@
+ 		usage();
+ 	if (*dummy != '\0' && *dummy != '-')
+ 		usage();
+-	a.sin.sin_port = htons(port);
++	if (a.ipv6) {
++		a.sin6.sin6_port = htons(port);
++	} else {
++		a.sin.sin_port = htons(port);
++	}
+ 	a.port = a.port_max = port;
+ 	if (*dummy == '-') {	/* set high port */
+ 		port = strtoul(dummy + 1, &dummy, 10);
+@@ -328,7 +362,11 @@
+ 	    "seconds\n", payloadsize, (intmax_t)a.interval.tv_sec,
+ 	    a.interval.tv_nsec, a.duration);
+ 
+-	a.s = socket(PF_INET, SOCK_DGRAM, 0);
++	if (a.ipv6) {
++		a.s = socket(PF_INET6, SOCK_DGRAM, 0);
++	} else {
++		a.s = socket(PF_INET, SOCK_DGRAM, 0);
++	}
+ 	if (a.s == -1) {
+ 		perror("socket");
+ 		return (-1);
