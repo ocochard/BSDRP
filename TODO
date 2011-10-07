@@ -3,9 +3,6 @@
 	- arm: Need to found an arm devices for working on
 	- vm: Add a "VM" arch, with vm-tools and only limited drivers ? (brings lot's of deps like python and perl)
 
-* Security *
-	- Need to wrote sample configuration file for pf and other
-
 * Authentication *
 	- Need to test PAM (Radius, TACAS+) modules
 
@@ -26,3 +23,6 @@
 
 * API *
 	- Need to check if an API (for usage as a VM in cloud for example) is a good idea
+
+* Benchmark *
+	- Need to use -current release of netrate and apply my ipv6 patches
