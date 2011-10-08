@@ -117,7 +117,7 @@ kernel_patches() {
 		(cd ${FREEBSD_SRC}; patch < ${NANOBSD_DIR}/BSDRP/patches/rtsock_82S-20110725.diff)
 	fi
 	# netblast/netrate IPv6 patch
-	if [ `sha256 -q ${FREEBSD_SRC}/tools/tools/netrate/netblast/netblast.c` != "c03fa50e2c675759c369380aa5b1662c8882425fbc08aec712833f6d5964279d" ]; then
+	if [ `sha256 -q ${FREEBSD_SRC}/tools/tools/netrate/netblast/netblast.c` != "3129498dc000bb3af6381df459c0db35c702c6aa65d4cb0e2f4bbb90c640ec50" ]; then
 		for NETTOOLS in netblast netsend netreceive
 		do
 			fetch -o  ${FREEBSD_SRC}/tools/tools/netrate/${NETTOOLS}/${NETTOOLS}.c "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/netrate/${NETTOOLS}/${NETTOOLS}.c"
