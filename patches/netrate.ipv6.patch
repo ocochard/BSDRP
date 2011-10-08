@@ -1,6 +1,15 @@
 diff -ruN netrate.orig/netblast/netblast.c netrate/netblast/netblast.c
 --- netrate.orig/netblast/netblast.c	2011-10-07 11:28:43.000000000 +0200
-+++ netrate/netblast/netblast.c	2011-10-07 14:55:49.000000000 +0200
++++ netrate/netblast/netblast.c	2011-10-08 23:45:58.000000000 +0200
+@@ -32,7 +32,7 @@
+ #include <sys/time.h>
+ 
+ #include <netinet/in.h>
+-
++#include <net/if.h>
+ #include <arpa/inet.h>
+ 
+ #include <signal.h>
 @@ -143,8 +143,9 @@
  {
  	long payloadsize, port, duration;
@@ -182,7 +191,16 @@ diff -ruN netrate.orig/netreceive/netreceive.c netrate/netreceive/netreceive.c
 Files netrate.orig/netsend/netsend and netrate/netsend/netsend differ
 diff -ruN netrate.orig/netsend/netsend.c netrate/netsend/netsend.c
 --- netrate.orig/netsend/netsend.c	2011-10-07 14:48:07.000000000 +0200
-+++ netrate/netsend/netsend.c	2011-10-07 15:12:49.000000000 +0200
++++ netrate/netsend/netsend.c	2011-10-08 23:46:19.000000000 +0200
+@@ -32,7 +32,7 @@
+ #include <sys/time.h>
+ 
+ #include <netinet/in.h>
+-
++#include <net/if.h>
+ #include <arpa/inet.h>
+ 
+ #include <stdio.h>
 @@ -43,10 +43,12 @@
  /* program arguments */
  struct _a {
