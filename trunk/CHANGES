@@ -1,5 +1,7 @@
 Release 1.1 (not released)
 - netblast/netstend/netreceive bench tools now support IPv6 
+- Add a tools for using Quagga as BGP route generator
+- Lab script: Permit to choose RAM available for the routers
 
 =====================================================================================================
 Release 1.0

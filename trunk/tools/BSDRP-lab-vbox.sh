@@ -154,7 +154,7 @@ create_template () {
 		exit 1
 	fi
 
-    if ! VBoxManage modifyvm ${VM_TPL_NAME} --audio none --memory 128 --vram 8 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1; then
+    if ! VBoxManage modifyvm ${VM_TPL_NAME} --audio none --memory $RAM --vram 8 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1; then
 		echo "[ERROR] Can't customize ${VM_TPL_NAME}"
 		exit 1
 	fi
@@ -468,6 +468,7 @@ usage () {
         echo "  -d       		Delete all BSDRP VM and disks"
         echo "  -n X            Number of router (between 1 and 9) full meshed (default: 1)"
         echo "  -l Y            Number of LAN between 0 and 9 (default: 0)"
+		echo "  -m				RAM (in MB) for each VM (default: 128)"
 		echo "  -c              Enable internal NIC shared with host for each routers (default: Disable)"
         echo "  -h              Display this help"
         echo "  -s              Stop all VM"
@@ -483,7 +484,7 @@ usage () {
 ### Parse argument
 
 #set +e
-args=`getopt i:dhcl:n:s $*`
+args=`getopt i:dhcl:m:n:s $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
@@ -494,6 +495,7 @@ NUMBER_VM=""
 HOSTONLY_NIC=false
 LAN=""
 FILENAME=""
+RAM="128"
 
 echo "BSD Router Project (http://bsdrp.net) - VirtualBox lab script"
 
@@ -557,6 +559,11 @@ do
                 shift
                 shift
                 ;;
+		-m)
+				RAM="$2"
+				shift
+				shift
+				;;
         -s)
                 stop_all_vm
 				exit 0
