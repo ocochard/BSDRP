@@ -23,18 +23,18 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $FreeBSD: src/tools/tools/netrate/netblast/netblast.c,v 1.3.10.1.6.1 2010/12/21 17:09:25 kensmith Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
-/* #include <string.h> */
 
 static void
 usage(void)
 {
 
-	fprintf(stderr, "genroute [number] [local-as] [router-id] [remote-as] [remote-peer-ip]\n");
+	fprintf(stderr, "quagga-bgp-netgen [number] [local-as] [router-id] [remote-as] [remote-peer-ip]\n");
+	fprintf(stderr, "example:\n");
+	fprintf(stderr, "quagga-bgp-netgen 400000 100 0.0.0.100 200 10.0.0.2\n");
 	exit(-1);
 }
 
