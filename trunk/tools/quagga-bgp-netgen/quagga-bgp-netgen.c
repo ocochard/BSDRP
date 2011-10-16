@@ -46,7 +46,7 @@ main(int argc, char *argv[])
 	unsigned long networks,i;
 	char *dummy;
 	/* Network IP: a.b.c.0/24 */
-	unsigned short a=1,b=1,c=0;
+	unsigned short a=1,b=0,c=0;
 
 	/* check number of argument */
 	if (argc != 6)
@@ -60,28 +60,28 @@ main(int argc, char *argv[])
 	printf("router bgp %s\n",argv[2]);
 	printf(" bgp router-id %s\n",argv[3]);
 	printf(" neighbor %s remote-as %s\n",argv[5],argv[4]);
-	for (i = 0; i <= networks; i++) {
-		if ( a < 223 ) {
-			if ( a == 127 )
-				a++;
-			if ( b == 255 ) {
-				a++;
-				b=0;
-				c=0;
-			} else if ( b < 255 ) {
-				if ( c == 255 ) {
-					b++;
-					if ( b == 254 )
-						b = 0;
-					c=0;
-				} else if ( c < 255 ) 
-					c++;
-			}
-			printf(" network %u.%i.%i.0/24\n",a,b,c);
-		} else {
-			printf ("Max value reached");
-			break;
+	i=0;
+	while ( i <= networks ) {
+		/* Avoid loopback network */
+		if ( a == 127 ) continue;
+		/* Do not generate invalid networks */
+		if ( a > 223 ) {
+			fprintf(stderr, "Maximum number of valid networks reached: %lu\n", i);
+    		exit(-1);
 		}
+		b = 0;
+		while ( b < 255 ) {
+			c = 0;
+			while ( c < 255 ) {
+				printf(" network %u.%i.%i.0/24\n",a,b,c);
+				c++;
+				i++;
+				if ( i == networks )
+					return (0);
+			}
+			b++;
+		}
+		a++;
 	}
 
 	return (0);
