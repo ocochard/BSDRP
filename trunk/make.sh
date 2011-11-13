@@ -116,13 +116,12 @@ kernel_patches() {
 	if [ `sha256 -q ${FREEBSD_SRC}/sys/netinet/in.c` != "f5ed81a75f5c1666f021a11ffc414d10f5c33c7e78e2a874541857ad90d8a1bc" ]; then
 		(cd ${FREEBSD_SRC}; patch < ${NANOBSD_DIR}/BSDRP/patches/rtsock_82S-20110725.diff)
 	fi
-	# netblast/netrate IPv6 patch
-	if [ `sha256 -q ${FREEBSD_SRC}/tools/tools/netrate/netblast/netblast.c` != "3129498dc000bb3af6381df459c0db35c702c6aa65d4cb0e2f4bbb90c640ec50" ]; then
+	# Up-to-date netblast/netrate release
+	if [ `sha256 -q ${FREEBSD_SRC}/tools/tools/netrate/netblast/netblast.c` != "6a1c33be48c2dd8c0f1e3bb3d8eeeec66305d7d504cd1a61669cf4bed5d43707" ]; then
 		for NETTOOLS in netblast netsend netreceive
 		do
 			fetch -o  ${FREEBSD_SRC}/tools/tools/netrate/${NETTOOLS}/${NETTOOLS}.c "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/netrate/${NETTOOLS}/${NETTOOLS}.c"
 		done
-		(cd ${FREEBSD_SRC}/tools/tools; patch < ${NANOBSD_DIR}/BSDRP/patches/netrate.ipv6.patch)
 	fi
 	# carp (kern/161123) patch
 	if [ `sha256 -q ${FREEBSD_SRC}/sys/netinet/ip_carp.c` != "bafd2244237b4fd03544f7ad749196962503368b64eb816742f954bffafff15a" ]; then
