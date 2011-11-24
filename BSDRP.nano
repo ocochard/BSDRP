@@ -7,15 +7,6 @@
 #
 ################## Common section #################
 
-# Name of this NanoBSD build.  (Used to construct workdir names)
-NANO_NAME=BSDRP
-
-# Source tree directory
-NANO_SRC=/usr/src
-
-# Where nanobsd additional files live under the source tree
-NANO_TOOLS=tools/tools/nanobsd/BSDRP
-
 # Where cust_pkg() finds packages to install
 NANO_PACKAGE_DIR=${NANO_SRC}/${NANO_TOOLS}/Pkg
 NANO_PACKAGE_LIST="*"
@@ -213,7 +204,7 @@ add_port () {
 		# Need to:
 		# 1. check ARCH of this package!
 		# 2. Add a trap
-		cd /usr/ports/$1
+		cd ${NANO_PORTS}/usr/ports/$1
 		PKG_NAME=`make package-name` 
 		if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.tbz ]; then
 		# Pkg file found: Generate add_pkg_NAME function
@@ -253,7 +244,7 @@ add_port () {
 					mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
                		mount -t unionfs -o noatime \${NANO_SRC} \
                        \${NANO_WORLDDIR}/usr/src
-               		mount -t unionfs -o noatime /usr/ports \
+               		mount -t unionfs -o noatime \${NANO_PORTS} \
                        \${NANO_WORLDDIR}/usr/ports
 					mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
 						\${NANO_WORLDDIR}/usr/ports/packages

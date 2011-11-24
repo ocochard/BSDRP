@@ -2,6 +2,7 @@ Release 1.1 (not released)
 - netblast/netstend/netreceive bench tools now support IPv6 
 - Add a tools for using Quagga as BGP route generator
 - Lab script: Permit to choose RAM available for the routers
+- Image generator: Fetch its own FreeBSD source tree (using FreeNAS model)
 
 Updated packages:
 - Bird to 1.3.4
