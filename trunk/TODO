@@ -23,6 +23,3 @@
 
 * API *
 	- Need to check if an API (for usage as a VM in cloud for example) is a good idea
-
-* Build script *
-	- Neet to study FreeNAS 8 build script and the independant source/port source code used feature

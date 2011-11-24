@@ -32,19 +32,35 @@
 ############ Variables definition ###########
 #############################################
 
-# Uncomment for enable debug: 
-#set -x
-
-# Exit if error
+# Exit if error or variable undefined
 set -eu
 
-# Force check variable definition
-#set -u
-
-FREEBSD_SRC=/usr/src
-NANOBSD_DIR=/usr/src/tools/tools/nanobsd
+# Name of the product
 NAME="BSDRP"
-VERSION=`cat ${NANOBSD_DIR}/${NAME}/Files/etc/${NAME}.version`
+
+# CVSUP mirror
+FREEBSD_CVSUP_HOST="cvsup.fr.FreeBSD.org"
+
+# Base (current) folder
+BSDRP_ROOT=`pwd`
+
+# Where the build configuration files used by nanobsd.sh live.
+#NANO_CFG_BASE=${BSDRP_ROOT}/nanobsd
+
+# Where the FreeBSD ports tree lives.
+NANO_PORTS="${BSDRP_ROOT}/FreeBSD/ports"
+
+# Where the FreeBSD source tree lives.
+FREEBSD_SRC="${BSDRP_ROOT}/FreeBSD/src"
+
+# Where the nanobsd tree lives
+NANOBSD_DIR="${FREEBSD_SRC}/tools/tools/nanobsd"
+
+# Product version (need to add SVN versio too)
+VERSION=`cat ${BSDRP_ROOT}/Files/etc/${NAME}.version`
+
+# Number of jobs
+MAKE_JOBS=$(( 2 * $(sysctl -n kern.smp.cpus) + 1 ))
 
 # Progress Print level
 PPLEVEL=3
@@ -67,6 +83,63 @@ check_current_dir() {
 		pprint 1 "You need to install ${NAME} source code in ${NANOBSD_DIR}/${NAME}"
 		exit 1
 	fi
+}
+
+# Update or install src if not installed
+# TO DO: write a small fastest_csvusp 
+update_src () {
+	echo "Updating/Installing FreeBSD and ports source"
+    if [ -z "${FREEBSD_CVSUP_HOST}" ]; then
+        error "No sup host defined, please define FREEBSD_CVSUP_HOST and rerun"
+    fi
+    echo "Checking out tree from ${FREEBSD_CVSUP_HOST}..."
+	if [ ! -d ${BSDRP_ROOT}/FreeBSD ]; then
+    	mkdir -p ${BSDRP_ROOT}/FreeBSD
+	fi
+
+    SUPFILE=${BSDRP_ROOT}/FreeBSD/supfile
+    cat <<EOF > $SUPFILE
+*default host=${FREEBSD_CVSUP_HOST}
+*default base=${BSDRP_ROOT}/FreeBSD/sup
+*default prefix=${BSDRP_ROOT}/FreeBSD
+*default release=cvs
+*default delete use-rel-suffix
+*default compress
+
+src-all tag=RELENG_8_2
+ports-all date=2011.11.23.00.00.00
+EOF
+	csup -L 1 $SUPFILE
+    # Force a repatch because csup pulls pristine sources.
+    : > $BSDRP_ROOT/FreeBSD/src-patches
+    : > $BSDRP_ROOT/FreeBSD/ports-patches
+    # Nuke the newly created files to avoid build errors, as
+    # patch(1) will automatically append to the previously
+    # non-existent file.
+    for file in $(find ${BSDRP_ROOT}/FreeBSD/ -name '*.orig' -size 0); do
+        rm -f "$(echo "$file" | sed -e 's/.orig//')"
+    done
+    : > $BSDRP_ROOT/FreeBSD/.pulled
+
+	for patch in $(cd ${BSDRP_ROOT}/patches && ls freebsd.*.patch); do
+    	if ! grep -q $patch ${BSDRP_ROOT}/FreeBSD/src-patches; then
+        	echo "Applying patch $patch..."
+        	(cd FreeBSD/src &&
+         	patch -C -p0 < $BSDRP_ROOT/patches/$patch &&
+         	patch -E -p0 -s < $BSDRP_ROOT/patches/$patch)
+        	echo $patch >> $BSDRP_ROOT/FreeBSD/src-patches
+    	fi
+	done
+	for patch in $(cd $BSDRP_ROOT/patches && ls ports.*.patch); do
+    	if ! grep -q $patch $BSDRP_ROOT/FreeBSD/ports-patches; then
+        	echo "Applying patch $patch..."
+        	(cd FreeBSD/ports &&
+         	patch -C -p0 < $BSDRP_ROOT/patches/$patch &&
+         	patch -E -p0 -s < $BSDRP_ROOT/patches/$patch)
+        	echo $patch >> $BSDRP_ROOT/FreeBSD/ports-patches
+    	fi
+	done
+
 }
 
 #### Check prerequisites
@@ -109,77 +182,6 @@ check_system() {
 	fi
 }
 
-###### Adding patch to FreeBSD source
-kernel_patches() {
-	# bird and FIB usage patch
-	# http://static.ipfw.ru/patches/rtsock_82S-20110725.diff
-	if [ `sha256 -q ${FREEBSD_SRC}/sys/netinet/in.c` != "f5ed81a75f5c1666f021a11ffc414d10f5c33c7e78e2a874541857ad90d8a1bc" ]; then
-		(cd ${FREEBSD_SRC}; patch < ${NANOBSD_DIR}/BSDRP/patches/rtsock_82S-20110725.diff)
-	fi
-	# Up-to-date netblast/netrate release
-	if [ `sha256 -q ${FREEBSD_SRC}/tools/tools/netrate/netblast/netblast.c` != "6a1c33be48c2dd8c0f1e3bb3d8eeeec66305d7d504cd1a61669cf4bed5d43707" ]; then
-		for NETTOOLS in netblast netsend netreceive
-		do
-			fetch -o  ${FREEBSD_SRC}/tools/tools/netrate/${NETTOOLS}/${NETTOOLS}.c "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/netrate/${NETTOOLS}/${NETTOOLS}.c"
-		done
-	fi
-	# carp (kern/161123) patch
-	if [ `sha256 -q ${FREEBSD_SRC}/sys/netinet/ip_carp.c` != "bafd2244237b4fd03544f7ad749196962503368b64eb816742f954bffafff15a" ]; then
-		(cd ${FREEBSD_SRC}; patch < ${NANOBSD_DIR}/BSDRP/patches/kernel.carp.patch)
-	fi
-}
-###### Adding patch to NanoBSD
-nanobsd_patches() {
-	# Using up-to-date nanobsd script and patch it
-	if [ `sha256 -q ../nanobsd.sh` != "a81cad7a825a7410b4997d38dfd521c9ee296f733aa2543c452b67646ee8b945" ]; then
-		pprint 3 "Download up-to-date nanobsd release"
-		if ! mv ../nanobsd.sh ../nanobsd.original.bak; then	
-			pprint 3 "ERROR: Can't backup original nanobsd.sh script"
-		fi
-		if ! fetch -o ../nanobsd.sh "http://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/tools/tools/nanobsd/nanobsd.sh?rev=1.77"; then
-				mv ../nanobsd.original.bak ../nanobsd.sh
-				pprint 3 "ERROR: Can't download up-to-date nanobsd.sh script"
-				exit 1
-		fi
-
-		# Patching mtree generation mode for be usable as security audit reference
-       	pprint 3 "Patching NanoBSD with mtree support"
-       	patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.mtree.patch
-
-		# Adding arm support to NanoBSD
-       	pprint 3 "Patching NanoBSD with arm support"
-       	patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.arm.patch
-
-		# Adding sparc64 support to NanoBSD
-       	pprint 3 "Patching NanoBSD with sparc64 support"
-       	patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.sparc64.patch
-
-		# Adding another cool patch that fix a lot's of problem
-		# http://www.freebsd.org/cgi/query-pr.cgi?pr=136889
-		pprint 3 "Patching NanoBSD with some fixes (PR-136889)"
-		patch ${NANOBSD_DIR}/nanobsd.sh patches/nanobsd.pr-136889.patch
-
-	fi
-
-}
-
-#### Port patches
-
-ports_patches()
-{
-	pprint 2 "patching ports..."
-	#pprint 3 "net/quagga (update to 0.99.20)"
-	#if ! grep -q "0.99.20" /usr/ports/net/quagga/Makefile; then
-	#	(cd /usr/ports/net/; patch < ${NANOBSD_DIR}/BSDRP/patches/quagga.0.99.20.patch)
-	#fi
-	#if ! [ -f /usr/ports/net/bird/files/patch-ifname.in ] ; then
-#		cp patches/bird/patch-ifname.in /usr/ports/net/bird/files/patch-ifname.in
-#	fi
-#	if ! [ -f /usr/ports/net/bird6/files/patch-ifname.in ] ; then
-#		cp patches/bird/patch-ifname.in /usr/ports/net/bird6/files/patch-ifname.in
-#	fi
-}
-
 ##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount
 # exit with 0 if no problem detected
 # exit with 1 if problem detected, but clean it
@@ -195,17 +197,18 @@ check_clean() {
 
 usage () {
         (
-        pprint 1 "Usage: $0 -bkwzdh [-c vga|serial] [-a i386|amd64]"
-        pprint 1 "  -c      specify console type: vga (default) or serial"
+        pprint 1 "Usage: $0 -bdhkuw [-c vga|serial] [-a i386|amd64]"
         pprint 1 "  -a      specify target architecture: i386 or amd64"
 		pprint 1 "          if not specified, use local system arch (`uname -m`)"
 		pprint 1 "          cambria (arm) and sparc64 targets are in work-in-progress state"	
         pprint 1 "  -b      suppress buildworld and buildkernel"
+		pprint 1 "  -c      specify console type: vga (default) or serial"
+		pprint 1 "  -d      Enable debug"
+		pprint 1 "  -f      fast mode, skip: images compression and checksums"
+		pprint 1 "  -h      Display this help message"
+		pprint 1 "  -u		Update all src (freebsd and ports)"
 		pprint 1 "  -k      suppress buildkernel"
 		pprint 1 "  -w      suppress buildworld"
-        pprint 1 "  -f      fast mode, skip: images compression and checksums"
-        pprint 1 "  -d      Enable debug"
-		pprint 1 "  -h      Display this help message"
         ) 1>&2
         exit 2
 }
@@ -240,8 +243,9 @@ DEBUG=""
 SKIP_REBUILD=""
 INPUT_CONSOLE="vga"
 FAST="n"
+UPDATE_SRC=false
 
-args=`getopt c:a:fbdhkw $*`
+args=`getopt a:bc:dfhkuw $*`
 
 set -- $args
 DELETE_ALL=true
@@ -299,6 +303,11 @@ do
 				shift
 				shift
                 ;;
+		-b)
+                SKIP_REBUILD="-b"
+                DELETE_ALL=false
+                shift
+                ;;
         -c)
                 case "$2" in
                 vga)
@@ -314,32 +323,30 @@ do
 				shift
 				shift
                 ;;
-        -b)
-                SKIP_REBUILD="-b"
-				DELETE_ALL=false
+		-d)
+                DEBUG="-x"
                 shift
+                ;;
+		-f)
+                FAST="y"
+                shift
+                ;;
+		-h)
+                usage
                 ;;
 		-k)
                 SKIP_REBUILD="-k"
 				DELETE_ALL=false
                 shift
                 ;;
+		-u)
+				UPDATE_SRC=true
+				shift
+				;;
 		-w)
                 SKIP_REBUILD="-w"
 				DELETE_ALL=false
                 shift
-                ;;
-
-        -d)
-                DEBUG="-x"
-                shift
-                ;;
-		-f)
-				FAST="y"
-				shift
-				;;
-        -h)
-                usage
                 ;;
         --)
                 shift
@@ -378,17 +385,26 @@ if [ "${SKIP_REBUILD}" = "-b" ]; then
 		exit 1
 	fi
 fi
-check_current_dir
-check_system
+
 check_clean
+
+# If no source installed, force installing them
+if [ ! -d ${BSDRP_ROOT}/FreeBSD ]; then
+	UPDATE_SRC=true
+fi
 
 pprint 1 "Will generate an ${NAME} image with theses values:"
 pprint 1 "- Target architecture: ${TARGET_ARCH}"
 pprint 1 "- Console : ${INPUT_CONSOLE}"
-if [ "${SKIP_REBUILD}" = "" ]; then
-	pprint 1 "- Build the full world (take about 2 hours): YES"
+if ($UPDATE_SRC); then
+	pprint 1 "- Source Updating/installing: YES"
 else
-	pprint 1 "- Build the full world (take about 2 hours): NO"
+	pprint 1 "- Source Updating/installing: NO"
+fi
+if [ "${SKIP_REBUILD}" = "" ]; then
+	pprint 1 "- Build the full world (take about 1 hour): YES"
+else
+	pprint 1 "- Build the full world (take about 1 hour): NO"
 fi
 if [ "${FAST}" = "y" ]; then
 	pprint 1 "- FAST mode (skip compression and checksumming): YES"
@@ -396,12 +412,21 @@ else
 	pprint 1 "- FAST mode (skip compression and checksumming): NO"
 fi
 
-nanobsd_patches
-kernel_patches
-ports_patches
+if ($UPDATE_SRC); then
+	update_src
+fi
+
+##### Generating the nanobsd configuration file ####
+
+# Theses variables must be set on the begining
+echo "# Name of this NanoBSD build.  (Used to construct workdir names)" > /tmp/${NAME}.nano
+echo "NANO_NAME=${NAME}" >> /tmp/${NAME}.nano
+
+echo "# Source tree directory" >> /tmp/${NAME}.nano
+echo "NANO_SRC=\"${FREEBSD_SRC}\"" >> /tmp/${NAME}.nano
 
 # Copy the common nanobsd configuration file to /tmp
-cp ${NAME}.nano /tmp/${NAME}.nano
+cat ${NAME}.nano >> /tmp/${NAME}.nano
 
 # And add the customized variable to the nanobsd configuration file
 echo "############# Variable section (generated by BSDRP make.sh) ###########" >> /tmp/${NAME}.nano
@@ -412,27 +437,33 @@ echo "NANO_IMGNAME=\"${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img
 echo "# Kernel config file to use" >> /tmp/${NAME}.nano
 echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${NAME}.nano
 
+echo "# Where the port tree is"
+echo "NANO_PORTS=${NANO_PORTS}" >> /tmp/${NAME}.nano
+
+echo "# Where nanobsd additional files live under the source tree"
+echo "NANO_TOOLS=\"${BSDRP_ROOT}\"" >> /tmp/${NAME}.nano
+
 pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
 
-cp kernels/${NANO_KERNEL}.${SRC_VERSION} /usr/src/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
+cp ${BSDRP_ROOT}/kernels/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
 
 echo "# Parallel Make" >> /tmp/${NAME}.nano
 # Special ARCH commands
 # Note for modules names: They are relative to /usr/src/sys/modules
 case ${TARGET_ARCH} in
-	"i386") echo 'NANO_PMAKE="make -j 8"' >> /tmp/${NAME}.nano
+	"i386") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
 	echo 'NANO_MODULES="acpi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec glxsb"' >> /tmp/${NAME}.nano
 	;;
-	"amd64") echo 'NANO_PMAKE="make -j 8"' >> /tmp/${NAME}.nano
+	"amd64") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
 	echo 'NANO_MODULES="netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec"' >> /tmp/${NAME}.nano
 	;;
-	"arm") echo 'NANO_PMAKE="make"' >> /tmp/${NAME}.nano
+	"arm") echo "NANO_PMAKE=\"make\"" >> /tmp/${NAME}.nano
 	echo 'NANO_MODULES=""' >> /tmp/${NAME}.nano
 	NANO_MAKEFS="makefs -B big \
     -o bsize=4096,fsize=512,density=8192,optimization=space"
 	export NANO_MAKEFS
 	;;
-	"sparc64") echo 'NANO_PMAKE="make -j 8"' >> /tmp/${NAME}.nano
+	"sparc64") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
 	echo 'NANO_MODULES="netgraph rc4 if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias dummynet pf pflog"' >> /tmp/${NAME}.nano
 	;;
 esac
@@ -477,9 +508,11 @@ if ($DELETE_ALL); then
 		rm -rf ${NANOBSD_OBJ}
 	fi
 fi
+
 # Start nanobsd using the BSDRP configuration file
 pprint 1 "Launching NanoBSD build process..."
-sh ${DEBUG} ../nanobsd.sh ${SKIP_REBUILD} -c /tmp/${NAME}.nano
+cd ${NANOBSD_DIR}
+sh ${DEBUG} ${NANOBSD_DIR}/nanobsd.sh ${SKIP_REBUILD} -c /tmp/${NAME}.nano
 
 # Testing exit code of NanoBSD:
 if [ $? -eq 0 ]; then
