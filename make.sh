@@ -77,14 +77,6 @@ pprint() {
     fi
 }
 
-#### Check current dir
-check_current_dir() {
-	if [ "${NANOBSD_DIR}/${NAME}" != `pwd` ]; then
-		pprint 1 "You need to install ${NAME} source code in ${NANOBSD_DIR}/${NAME}"
-		exit 1
-	fi
-}
-
 # Update or install src if not installed
 # TO DO: write a small fastest_csvusp 
 update_src () {
@@ -142,53 +134,13 @@ EOF
 
 }
 
-#### Check prerequisites
-check_system() {
-	pprint 3 "Checking if FreeBSD 8.2-RELEASE sources are installed..."
-	GOOD_SRC_VERSION=false
-	GOOD_SRC_RELEASE=false
-	if ! [ -f ${FREEBSD_SRC}/sys/conf/newvers.sh ]; then
-		pprint 1 "ERROR: Can't found FreeBSD sources!"
-		exit 1
-	fi
-	
-	if `grep -q 'REVISION="8.2"' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
-		GOOD_SRC_VERSION=true
-		SRC_VERSION="8.2"
-	fi
-
-	if `grep -q 'BRANCH="RELEASE' ${FREEBSD_SRC}/sys/conf/newvers.sh`; then
-		GOOD_SRC_RELEASE=true
-	fi
-	if [ ! ${GOOD_SRC_VERSION} ]; then
-		pprint 1 "ERROR: ${NAME} need FreeBSD 8.2-RELEASE sources"
-		pprint 1 "Read BSDRP HOW TO here:"
-		pprint 1 "http://bsdrp.net/documentation/technical_docs"
-		exit 1
-	fi
-	if [ ! ${GOOD_SRC_RELEASE} ]; then
-		pprint 1 "ERROR: You have 8.2 source, but not RELEASE"
-		exit 1
-	fi
-	pprint 3 "Will generate a ${NAME} image based on FreeBSD"
-	pprint 3 "Checking if ports sources are installed..."
-
-	if [ ! -d /usr/ports/net/quagga ]; then
-		pprint 1 "ERROR: ${NAME} need up-to-date FreeBSD ports sources tree"
-		pprint 1 "And it seems that you didn't install the ports source tree"
-        pprint 1 "Read BSDRP HOW TO here:"
-        pprint 1 "http://bsdrp.net/documentation/technical_docs"
-		exit 1
-	fi
-}
-
 ##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount
 # exit with 0 if no problem detected
 # exit with 1 if problem detected, but clean it
 # exit with 2 if problem detected and can't clean it
 check_clean() {
 	# Patch from Warner Losh (imp@)
-	__a=`mount | grep /usr/obj/ | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}`
+	__a=`mount | grep /usr/obj/ | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}'`
 	if [ -n "$__a" ]; then
 		echo "unmounting $__a"
 		umount $__a
