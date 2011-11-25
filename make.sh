@@ -377,6 +377,9 @@ echo "NANO_NAME=${NAME}" >> /tmp/${NAME}.nano
 echo "# Source tree directory" >> /tmp/${NAME}.nano
 echo "NANO_SRC=\"${FREEBSD_SRC}\"" >> /tmp/${NAME}.nano
 
+echo "# Where the port tree is"
+echo "NANO_PORTS=${NANO_PORTS}" >> /tmp/${NAME}.nano
+
 # Copy the common nanobsd configuration file to /tmp
 cat ${NAME}.nano >> /tmp/${NAME}.nano
 
@@ -388,9 +391,6 @@ echo "NANO_IMGNAME=\"${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img
 
 echo "# Kernel config file to use" >> /tmp/${NAME}.nano
 echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${NAME}.nano
-
-echo "# Where the port tree is"
-echo "NANO_PORTS=${NANO_PORTS}" >> /tmp/${NAME}.nano
 
 echo "# Where nanobsd additional files live under the source tree"
 echo "NANO_TOOLS=\"${BSDRP_ROOT}\"" >> /tmp/${NAME}.nano
