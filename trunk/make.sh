@@ -158,7 +158,7 @@ usage () {
 		pprint 1 "  -d      Enable debug"
 		pprint 1 "  -f      fast mode, skip: images compression and checksums"
 		pprint 1 "  -h      Display this help message"
-		pprint 1 "  -u		Update all src (freebsd and ports)"
+		pprint 1 "  -u      Update all src (freebsd and ports)"
 		pprint 1 "  -k      suppress buildkernel"
 		pprint 1 "  -w      suppress buildworld"
         ) 1>&2
