@@ -1,5 +1,5 @@
---- tools/tools/nanobsd/nanobsd.sh	2010-12-21 18:09:25.000000000 +0100
-+++ tools/tools/nanobsd/nanobsd.sh	2011-11-12 22:44:33.000000000 +0100
+--- nanobsd.sh.orig	2010-12-21 18:09:25.000000000 +0100
++++ nanobsd.sh	2011-12-13 23:56:40.000000000 +0100
 @@ -24,7 +24,7 @@
  # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  # SUCH DAMAGE.
@@ -212,7 +212,7 @@
  	cd ${dir}
  	find . -print | grep -Ev '/(CVS|\.svn)' | cpio -dumpv ${mnt}
  	df -i ${mnt}
-@@ -378,11 +434,11 @@
+@@ -378,11 +434,27 @@
  )
  
  populate_cfg_slice ( ) (
@@ -223,10 +223,26 @@
  populate_data_slice ( ) (
 -	populate_slice "$1" "$2" "$3"
 +	populate_slice "$1" "$2" "$3" "$4"
++)
++
++generating_mtree ( ) (
++	local md mnt
++	md=$1
++	mnt=$2
++	mount ${md}s1a ${mnt}
++    echo "Generating mtree..."
++    echo "./etc" > ${NANO_OBJ}/mtree-exclude
++    echo "./var" >> ${NANO_OBJ}/mtree-exclude
++    echo "./tmp" >> ${NANO_OBJ}/mtree-exclude
++    echo "./dev" >> ${NANO_OBJ}/mtree-exclude
++    ( cd ${mnt} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,sha256digest -X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
++
++    ( cd ${mnt} && du -k ) > ${NANO_OBJ}/_.du
++    umount ${mnt}
  )
  
  create_i386_diskimage ( ) (
-@@ -467,8 +523,8 @@
+@@ -467,8 +539,8 @@
  			-y ${NANO_HEADS}`
  	else
  		echo "Creating md backing file..."
@@ -237,29 +253,28 @@
  		MD=`mdconfig -a -t vnode -f ${IMG} -x ${NANO_SECTS} \
  			-y ${NANO_HEADS}`
  	fi
-@@ -484,15 +540,14 @@
+@@ -484,17 +556,9 @@
  	bsdlabel ${MD}s1
  
  	# Create first image
 -	# XXX: should use populate_slice for easier override
 -	newfs ${NANO_NEWFS} /dev/${MD}s1a
-+	populate_slice /dev/${MD}s1a ${NANO_WORLDDIR} ${MNT} "s1a"
- 	mount /dev/${MD}s1a ${MNT}
+-	mount /dev/${MD}s1a ${MNT}
 -	df -i ${MNT}
 -	echo "Copying worlddir..."
 -	( cd ${NANO_WORLDDIR} && find . -print | cpio -dump ${MNT} )
 -	df -i ${MNT}
- 	echo "Generating mtree..."
+-	echo "Generating mtree..."
 -	( cd ${MNT} && mtree -c ) > ${NANO_OBJ}/_.mtree
-+	echo "./etc" > ${NANO_OBJ}/mtree-exclude
-+    echo "./var" >> ${NANO_OBJ}/mtree-exclude
-+    echo "./tmp" >> ${NANO_OBJ}/mtree-exclude
-+    echo "./dev" >> ${NANO_OBJ}/mtree-exclude
-+	( cd ${MNT} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,sha256digest -X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
- 	( cd ${MNT} && du -k ) > ${NANO_OBJ}/_.du
- 	umount ${MNT}
+-	( cd ${MNT} && du -k ) > ${NANO_OBJ}/_.du
+-	umount ${MNT}
++	populate_slice /dev/${MD}s1a ${NANO_WORLDDIR} ${MNT} "s1a"
++
++	generate_mtree /dev/${MD}s1a ${MNT}
  
-@@ -506,26 +561,39 @@
+ 	if [ $NANO_IMAGES -gt 1 -a $NANO_INIT_IMG2 -gt 0 ] ; then
+ 		# Duplicate to second image (if present)
+@@ -506,26 +570,39 @@
  			sed -i "" "s=${NANO_DRIVE}s1=${NANO_DRIVE}s2=g" $f
  		done
  		umount ${MNT}
@@ -305,7 +320,7 @@
  
  	) > ${NANO_OBJ}/_.di 2>&1
  )
-@@ -535,6 +603,293 @@
+@@ -535,6 +612,306 @@
  	create_i386_diskimage
  )
  
@@ -426,6 +441,9 @@
 +    pprint 2 "dd if=${IMG1} of=/dev/${MD}s1 bs=${BS}"
 +    dd if=${IMG1} of=/dev/${MD}s1 bs=${BS}
 +	tunefs -L ${NANO_GLABEL_SYS}s1a /dev/${MD}s1
++
++	generate_mtree /dev/${MD}s1a ${MNT}
++
 +    if [ $NANO_IMAGES -gt 1 -a $NANO_INIT_IMG2 -gt 0 ] ; then
 +        IMG2=${NANO_DISKIMGDIR}/_.disk.image2
 +        echo ""; echo "Create second image ${IMG2}..."
@@ -543,22 +561,11 @@
 +   # Apply the label prototype file to the md disk
 +   sunlabel -c -R ${MD} ${NANO_OBJ}/_.sunlabel
 +
-+ # Create first image
-+    newfs -L ${NANO_GLABEL_SYS}s1a ${NANO_NEWFS} /dev/${MD}a
-+    mount /dev/${MD}a ${MNT}
-+    df -i ${MNT}
-+    echo "Copying worlddir..."
-+    ( cd ${NANO_WORLDDIR} && find . -print | cpio -dump ${MNT} )
-+    df -i ${MNT}
-+    echo "Generating mtree..."
-+    echo "./etc" > ${NANO_OBJ}/mtree-exclude
-+    echo "./var" >> ${NANO_OBJ}/mtree-exclude
-+    echo "./tmp" >> ${NANO_OBJ}/mtree-exclude
-+    echo "./dev" >> ${NANO_OBJ}/mtree-exclude
-+    ( cd ${MNT} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,md5digest,sha256digest -X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
++	# Create first image
++    populate_slice /dev/${MD}s1a ${NANO_WORLDDIR} ${MNT} "s1a"
 +
-+    ( cd ${MNT} && du -k ) > ${NANO_OBJ}/_.du
-+    umount ${MNT}
++	generate_mtree /dev/${MD}s1a ${MNT}
++
 +    if [ $NANO_IMAGES -gt 1 -a $NANO_INIT_IMG2 -gt 0 ] ; then
 +        # Duplicate to second image (if present)
 +        echo "Duplicating to second image..."
@@ -569,25 +576,46 @@
 +            sed -i "" "s/${NANO_DRIVE}a/${NANO_DRIVE}d/g" $f
 +        done
 +        umount ${MNT}
++		# Override the label from the first partition so we
++        # don't confuse glabel with duplicates.
++        if [ ! -z ${NANO_LABEL} ]; then
++            tunefs -L ${NANO_LABEL}"s2a" /dev/${MD}s2a
++        fi
++
 +    fi
 +
-+    # Create Config slice
-+    newfs -L ${NANO_GLABEL_SYS}s3 ${NANO_NEWFS} /dev/${MD}e
-+    # XXX: fill from where ?
++	# Create Config slice
++    populate_cfg_slice /dev/${MD}s3 "${NANO_CFGDIR}" ${MNT} "s3"
 +
 +    # Create Data slice, if any.
 +    if [ $NANO_DATASIZE -ne 0 ] ; then
-+        newfs  -L ${NANO_GLABEL_SYS}s4 ${NANO_NEWFS} /dev/${MD}f
-+        # XXX: fill from where ?
++        populate_data_slice /dev/${MD}s4 "${NANO_DATADIR}" ${MNT} "s4"
 +    fi
 +
-+    if [ "${NANO_MD_BACKING}" = "swap" ] ; then
-+        echo "Writing out ${NANO_IMGNAME}..."
-+        dd if=/dev/${MD} of=${IMG} bs=64k
++	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
++        if [ ${NANO_IMAGE_MBRONLY} ]; then
++            echo "Writing out _.disk.mbr..."
++            dd if=/dev/${MD} of=${NANO_DISKIMGDIR}/_.disk.mbr bs=512 count=1
++        else
++            echo "Writing out ${NANO_IMGNAME}..."
++            dd if=/dev/${MD} of=${IMG} bs=64k
++        fi
 +    fi
 +
-+    echo "Writing out _.disk.image..."
-+    dd if=/dev/${MD}a of=${NANO_DISKIMGDIR}/_.disk.image bs=64k
++	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
++        if [ ${NANO_IMAGE_MBRONLY} ]; then
++            echo "Writing out _.disk.mbr..."
++            dd if=/dev/${MD} of=${NANO_DISKIMGDIR}/_.disk.mbr bs=512 count=1
++        else
++            echo "Writing out ${NANO_IMGNAME}..."
++            dd if=/dev/${MD} of=${IMG} bs=64k
++        fi
++    fi
++
++    if ${do_copyout_partition} ; then
++        echo "Writing out _.disk.image..."
++        dd if=/dev/${MD}s1 of=${NANO_DISKIMGDIR}/_.disk.image bs=64k
++    fi
 +    mdconfig -d -u $MD
 +
 +    trap - 1 2 15 EXIT
@@ -599,7 +627,7 @@
  last_orders () (
  	# Redefine this function with any last orders you may have
  	# after the build completed, for instance to copy the finished
-@@ -628,7 +983,7 @@
+@@ -628,7 +1005,7 @@
  
  cust_install_files () (
  	cd ${NANO_TOOLS}/Files
@@ -608,7 +636,7 @@
  )
  
  #######################################################################
-@@ -636,12 +991,18 @@
+@@ -636,12 +1013,18 @@
  
  cust_pkg () (
  
@@ -628,7 +656,7 @@
  	)
  
  	# Count & report how many we have to install
-@@ -712,12 +1073,13 @@
+@@ -712,12 +1095,13 @@
  
  usage () {
  	(
@@ -644,7 +672,7 @@
  	echo "	-v	make output more verbose"
  	echo "	-w	suppress buildworld"
  	echo "	-c	specify config file"
-@@ -732,9 +1094,10 @@
+@@ -732,9 +1116,10 @@
  do_kernel=true
  do_world=true
  do_image=true
@@ -656,7 +684,7 @@
  if [ $? -ne 0 ] ; then
  	usage
  	exit 2
-@@ -760,6 +1123,10 @@
+@@ -760,6 +1145,10 @@
  		shift
  		shift
  		;;
@@ -667,7 +695,7 @@
  	-h)
  		usage
  		;;
-@@ -793,6 +1160,7 @@
+@@ -793,6 +1182,7 @@
  	echo "$0: Extraneous arguments supplied"
  	usage
  fi
@@ -675,7 +703,7 @@
  
  #######################################################################
  # Setup and Export Internal variables
-@@ -820,6 +1188,11 @@
+@@ -820,6 +1210,11 @@
  	NANO_PMAKE="${NANO_PMAKE} -DNO_CLEAN"
  fi
  
@@ -687,7 +715,7 @@
  export MAKEOBJDIRPREFIX
  
  export NANO_ARCH
-@@ -844,6 +1217,7 @@
+@@ -844,6 +1239,7 @@
  export NANO_WORLDDIR
  export NANO_BOOT0CFG
  export NANO_BOOTLOADER
@@ -695,7 +723,7 @@
  
  #######################################################################
  # And then it is as simple as that...
-@@ -867,6 +1241,9 @@
+@@ -867,6 +1263,9 @@
  fi
  
  if $do_kernel ; then
