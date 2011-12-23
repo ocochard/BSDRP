@@ -12,7 +12,7 @@ The authors of BSDRP would like to thank the authors of these software packages 
 
 * FreeBSD:  Copyright (c) 1995-2011 The FreeBSD Project. All rights reserved
 * Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support
-* FreeNAS 8 build script: Using its own FreeBSD source tree
+* FreeNAS 8 build script: Using its own FreeBSD source tree, Copyright iXsystems
 * Quagga routing software
 * The BIRD Internet Routing Daemon 
 * Net-SNMP 

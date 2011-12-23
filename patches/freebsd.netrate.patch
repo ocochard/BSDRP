@@ -1,6 +1,5 @@
-diff -ruN tools/tools/netrate.old/netblast/netblast.c tools/tools/netrate/netblast/netblast.c
---- tools/tools/netrate.old/netblast/netblast.c	2011-12-11 11:26:24.000000000 +0100
-+++ tools/tools/netrate/netblast/netblast.c	2011-12-11 11:26:36.000000000 +0100
+--- tools/tools/netrate/netblast/netblast.c.orig	2010-12-21 18:09:25.000000000 +0100
++++ tools/tools/netrate/netblast/netblast.c	2011-12-23 14:13:35.000000000 +0100
 @@ -23,21 +23,22 @@
   * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
   * SUCH DAMAGE.
@@ -40,7 +39,20 @@ diff -ruN tools/tools/netrate.old/netblast/netblast.c tools/tools/netrate/netbla
  			counter++;
  		}
  		if (send(s, packet, packet_len, 0) < 0)
-@@ -142,26 +141,25 @@
+@@ -132,9 +131,12 @@
+ 	    tmptime.tv_nsec);
+ 	printf("send calls:        %d\n", send_calls);
+ 	printf("send errors:       %d\n", send_errors);
++	printf("send success:      %d\n", send_calls - send_errors);
+ 	printf("approx send rate:  %ld\n", (send_calls - send_errors) /
+ 	    duration);
+ 	printf("approx error rate: %d\n", (send_errors / send_calls));
++	printf("approx throughput: %d Mib/s\n", (send_calls - send_errors) * 
++		(packet_len + 30 ) * 8 / 1000 / 1000); 
+ 
+ 	return (0);
+ }
+@@ -142,26 +144,25 @@
  int
  main(int argc, char *argv[])
  {
@@ -78,7 +90,7 @@ diff -ruN tools/tools/netrate.old/netblast/netblast.c tools/tools/netrate/netbla
  
  	payloadsize = strtoul(argv[3], &dummy, 10);
  	if (payloadsize < 0 || *dummy != '\0')
-@@ -169,29 +167,55 @@
+@@ -169,29 +170,55 @@
  	if (payloadsize > 32768) {
  		fprintf(stderr, "payloadsize > 32768\n");
  		return (-1);

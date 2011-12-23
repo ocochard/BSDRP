@@ -99,7 +99,7 @@ update_src () {
 *default compress
 
 src-all tag=RELENG_8_2
-ports-all date=2011.12.13.00.00.00
+ports-all date=2011.12.22.00.00.00
 EOF
 	csup -L 1 $SUPFILE
     # Force a repatch because csup pulls pristine sources.
@@ -380,6 +380,9 @@ echo "NANO_SRC=\"${FREEBSD_SRC}\"" >> /tmp/${NAME}.nano
 echo "# Where the port tree is"
 echo "NANO_PORTS=${NANO_PORTS}" >> /tmp/${NAME}.nano
 
+echo "# Where nanobsd additional files live under the source tree"
+echo "NANO_TOOLS=\"${BSDRP_ROOT}\"" >> /tmp/${NAME}.nano
+
 # Copy the common nanobsd configuration file to /tmp
 cat ${NAME}.nano >> /tmp/${NAME}.nano
 
@@ -391,9 +394,6 @@ echo "NANO_IMGNAME=\"${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img
 
 echo "# Kernel config file to use" >> /tmp/${NAME}.nano
 echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${NAME}.nano
-
-echo "# Where nanobsd additional files live under the source tree"
-echo "NANO_TOOLS=\"${BSDRP_ROOT}\"" >> /tmp/${NAME}.nano
 
 pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
 
