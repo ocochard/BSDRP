@@ -37,13 +37,14 @@ CONF_INSTALL=''
 
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options or man src.conf for details
-# WITHOUT_INFO= incompatible for installing a dependency of Quagga
+# WITHOUT_INFO= incompatible for installing devel/libtool (dependency of Quagga)
 # WITHOUT_FORTH= incompatible with boot flags (need to be confirmed).
 # WITHOUT_GROFF= incompatible with isc-dhcp-server (needed for build unused man page)
 # WITHOUT_KVM= and WITHOUT_KVM_SUPPORT= prevent buildworld to complet (don't know why)
 
 CONF_WORLD='
 WITHOUT_ACCT=
+WITHOUT_AMD=
 WITHOUT_APM=
 WITHOUT_ASSERT_DEBUG=
 WITHOUT_ATM=
@@ -179,7 +180,6 @@ add_netrate () {
 	mkdir -p ${NANO_WORLDDIR}/dev
 	mount -t devfs devfs ${NANO_WORLDDIR}/dev
 	mount -t unionfs -o noatime ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
-	mkdir -p ${NANO_WORLDDIR}/usr/pobj
 	mkdir -p ${NANO_WORLDDIR}/usr/workdir
 	for TOOL in ${TOOLS_LIST}; do
 		export TOOL
@@ -191,99 +191,116 @@ add_netrate () {
 		mv ${NANO_WORLDDIR}/usr/src/tools/tools/${TOOL}/${FILENAME} ${NANO_WORLDDIR}/usr/local/bin
 		rm ${NANO_WORLDDIR}/usr/src/tools/tools/${TOOL}/${FILENAME}.o 
 	done
-	rm -rf ${NANO_WORLDDIR}/usr/obj
-	rm -rf ${NANO_WORLDDIR}/usr/pobj
 	rm -rf ${NANO_WORLDDIR}/usr/workdir
 	umount ${NANO_WORLDDIR}/usr/src
 	umount ${NANO_WORLDDIR}/dev
 }
+
+# Add Quagga routes injector
+add_quagga-bgp-netgen () {
+    mkdir -p ${NANO_WORLDDIR}/dev
+    mount -t devfs devfs ${NANO_WORLDDIR}/dev
+    mount -t unionfs -o noatime ${NANO_TOOLS}/tools/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/src
+    mkdir -p ${NANO_WORLDDIR}/usr/workdir
+    chroot ${NANO_WORLDDIR} /bin/sh -exc \
+            'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+            MACHINE=${NANO_ARCH} UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+            make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
+    mv ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/local/bin
+    rm ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen.o
+    rm -rf ${NANO_WORLDDIR}/usr/workdir
+    umount ${NANO_WORLDDIR}/usr/src
+    umount ${NANO_WORLDDIR}/dev
+}
+
 # Need to check if this function works with cross-compiling architecture!!!!
 # Recursive complex fonction: Generate one function for each ports
 add_port () {
-        port=`echo $1 | sed -e 's/\//_/'`
-		# Check if package allready exist
-		# Need to:
-		# 1. check ARCH of this package!
-		# 2. Add a trap
-		cd ${NANO_PORTS}/$1
-		PKG_NAME=`make package-name`
-		if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.tbz ]; then
-		# Pkg file found: Generate add_pkg_NAME function
-			eval "
-				add_pkg_${port} () {
-					#Need to create ${NANO_OBJ}/ports in this add_pkg_${port} function
-					if [ ! -d \${NANO_OBJ}/ports ]; then
-						mkdir -p \${NANO_OBJ}/ports/distfiles
-						mkdir -p \${NANO_OBJ}/ports/packages
-					fi
-					mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
-					mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
-					mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
-						\${NANO_WORLDDIR}/usr/ports/packages
-					mount -t unionfs -o noatime \${NANO_OBJ}/ports/distfiles \
-                        \${NANO_WORLDDIR}/usr/ports/distfiles
-					chroot \${NANO_WORLDDIR} /bin/sh -exc \
-                		'cd /usr/ports/packages/All;pkg_add -v -F ${PKG_NAME}.tbz'
-					umount \${NANO_WORLDDIR}/usr/ports/packages
-					umount \${NANO_WORLDDIR}/usr/ports/distfiles
-					rmdir \${NANO_WORLDDIR}/usr/ports/packages
-					rmdir \${NANO_WORLDDIR}/usr/ports/distfiles
-					rmdir \${NANO_WORLDDIR}/usr/ports
-				}
-        		customize_cmd add_pkg_${port}
-        	"
-		else
-		# No pkg file: Generate add_port_NAME function
-        	eval "
-        		add_port_${port} () {
-					#Need to create ${NANO_OBJ}/ports in this add_port_${port} function
-					if [ ! -d \${NANO_OBJ}/ports ]; then
-						mkdir -p \${NANO_OBJ}/ports/distfiles
-						mkdir -p \${NANO_OBJ}/ports/packages
-					fi
-               		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
-					mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
-               		mount -t unionfs -o noatime \${NANO_SRC} \
-                       \${NANO_WORLDDIR}/usr/src
-               		mount -t unionfs -o noatime \${NANO_PORTS} \
-                       \${NANO_WORLDDIR}/usr/ports
-					mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
-						\${NANO_WORLDDIR}/usr/ports/packages
-					mount -t unionfs -o noatime \${NANO_OBJ}/ports/distfiles \
-                        \${NANO_WORLDDIR}/usr/ports/distfiles
-               		mkdir -p \${NANO_WORLDDIR}/dev
-               		mount -t devfs devfs \${NANO_WORLDDIR}/dev
-               		mkdir -p \${NANO_WORLDDIR}/usr/pobj
-               		mkdir -p \${NANO_WORLDDIR}/usr/workdir
-               		cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
-					# Improvement: Don't know why package-recursive don't works here
-					# If a port have NO_PACKAGE, comment-it
-                    if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
-                        mv \${NANO_WORLDDIR}/usr/ports/$1/Makefile \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd
-                        sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
-                    fi
-               		chroot \${NANO_WORLDDIR} /bin/sh -exc \
-                        'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} MACHINE=${NANO_ARCH} UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-						make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-                        install BATCH=yes -DWITHOUT_X11 -DNOPORTDOCS -DNO_INSTALL_MANPAGES -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
-               		chroot \${NANO_WORLDDIR} /bin/sh -exc \
-						'mkdir -p /usr/ports/packages/All;cd /usr/ports/packages/All;pkg_create -Rxb ${PKG_NAME}'
-					rm \${NANO_WORLDDIR}/etc/resolv.conf
-               		rm -rf \${NANO_WORLDDIR}/usr/obj
-               		rm -rf \${NANO_WORLDDIR}/usr/pobj
-               		rm -rf \${NANO_WORLDDIR}/usr/workdir
-               		umount \${NANO_WORLDDIR}/dev
-					umount \${NANO_WORLDDIR}/usr/ports/packages
-					umount \${NANO_WORLDDIR}/usr/ports/distfiles
-               		umount \${NANO_WORLDDIR}/usr/ports
-               		umount \${NANO_WORLDDIR}/usr/src
-					rmdir \${NANO_WORLDDIR}/usr/ports/packages
-					rmdir \${NANO_WORLDDIR}/usr/ports/distfiles
-               		rmdir \${NANO_WORLDDIR}/usr/ports
-        		}
-        		customize_cmd add_port_${port}
-        	"
-		fi
+	port=`echo $1 | sed -e 's/\//_/'`
+	# Check if package allready exist
+	# Need to:
+	# 1. check ARCH of this package!
+	# 2. Add a trap
+
+	cd ${NANO_PORTS}/$1
+	PKG_NAME=`make package-name`
+	if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.tbz ]; then
+	# Pkg file found: Generate add_pkg_NAME function
+		eval "
+			add_pkg_${port} () {
+				#Need to create ${NANO_OBJ}/ports in this add_pkg_${port} function
+				if [ ! -d \${NANO_OBJ}/ports ]; then
+					mkdir -p \${NANO_OBJ}/ports/distfiles
+					mkdir -p \${NANO_OBJ}/ports/packages
+				fi
+				mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
+				mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
+				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
+					\${NANO_WORLDDIR}/usr/ports/packages
+				mount -t unionfs -o noatime \${NANO_OBJ}/ports/distfiles \
+                       \${NANO_WORLDDIR}/usr/ports/distfiles
+				chroot \${NANO_WORLDDIR} /bin/sh -exc \
+               		'cd /usr/ports/packages/All;pkg_add -v -F ${PKG_NAME}.tbz'
+				umount \${NANO_WORLDDIR}/usr/ports/packages
+				umount \${NANO_WORLDDIR}/usr/ports/distfiles
+				rmdir \${NANO_WORLDDIR}/usr/ports/packages
+				rmdir \${NANO_WORLDDIR}/usr/ports/distfiles
+				rmdir \${NANO_WORLDDIR}/usr/ports
+			}
+       		customize_cmd add_pkg_${port}
+       	"
+	else
+	# No pkg file: Generate add_port_NAME function
+       	eval "
+       		add_port_${port} () {
+				#Need to create ${NANO_OBJ}/ports in this add_port_${port} function
+				if [ ! -d \${NANO_OBJ}/ports ]; then
+					mkdir -p \${NANO_OBJ}/ports/distfiles
+					mkdir -p \${NANO_OBJ}/ports/packages
+				fi
+           		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
+				mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
+           		mount -t unionfs -o noatime \${NANO_SRC} \
+					\${NANO_WORLDDIR}/usr/src
+           		mount -t unionfs -o noatime \${NANO_PORTS} \
+                     \${NANO_WORLDDIR}/usr/ports
+				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
+					\${NANO_WORLDDIR}/usr/ports/packages
+				mount -t unionfs -o noatime \${NANO_OBJ}/ports/distfiles \
+                    \${NANO_WORLDDIR}/usr/ports/distfiles
+              	mkdir -p \${NANO_WORLDDIR}/dev
+              	mount -t devfs devfs \${NANO_WORLDDIR}/dev
+           		mkdir -p \${NANO_WORLDDIR}/usr/pobj
+               	mkdir -p \${NANO_WORLDDIR}/usr/workdir
+               	cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
+				# Improvement: Don't know why package-recursive don't works here
+				# If a port have NO_PACKAGE, comment-it
+                if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
+                    mv \${NANO_WORLDDIR}/usr/ports/$1/Makefile \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd
+                    sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
+                fi
+               	chroot \${NANO_WORLDDIR} /bin/sh -exc \
+                'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} MACHINE=${NANO_ARCH} UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
+                    install BATCH=yes -DWITHOUT_X11 -DNOPORTDOCS -DNO_INSTALL_MANPAGES -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
+               	chroot \${NANO_WORLDDIR} /bin/sh -exc \
+					'mkdir -p /usr/ports/packages/All;cd /usr/ports/packages/All;pkg_create -Rxb ${PKG_NAME}'
+				rm \${NANO_WORLDDIR}/etc/resolv.conf
+               	rm -rf \${NANO_WORLDDIR}/usr/obj
+               	rm -rf \${NANO_WORLDDIR}/usr/pobj
+               	rm -rf \${NANO_WORLDDIR}/usr/workdir
+               	umount \${NANO_WORLDDIR}/dev
+				umount \${NANO_WORLDDIR}/usr/ports/packages
+				umount \${NANO_WORLDDIR}/usr/ports/distfiles
+               	umount \${NANO_WORLDDIR}/usr/ports
+               	umount \${NANO_WORLDDIR}/usr/src
+				rmdir \${NANO_WORLDDIR}/usr/ports/packages
+				rmdir \${NANO_WORLDDIR}/usr/ports/distfiles
+               	rmdir \${NANO_WORLDDIR}/usr/ports
+        	}
+        	customize_cmd add_port_${port}
+       	"
+	fi
 }
 
 #### Add routing related ports #####
@@ -339,6 +356,10 @@ add_port "benchmarks/iperf"
 
 # Add netrate tools
 customize_cmd add_netrate
+
+# Add quagga-bgp-netgen tools
+customize_cmd add_quagga-bgp-netgen
+
 
 cleanup_ports () {
 		# When port are build, they install build dependency that are not usefull for running the port
