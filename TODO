@@ -2,6 +2,7 @@
 	- NEED to merge lot's of common task of create_arch_diskimage() in nanobsd
 	- Sparc64: Need to fix the login bug, and add arch support to the update script
 	- arm: Need to found an arm devices for working on
+	- cross-compilation : check this URL: http://forums.freebsd.org/showthread.php?t=18147
 	- vm: Add a "VM" arch, with vm-tools and only limited drivers ? (brings lot's of deps like python and perl)
 
 * Authentication *
