@@ -99,7 +99,7 @@ update_src () {
 *default compress
 
 src-all tag=RELENG_8_2
-ports-all date=2011.12.22.00.00.00
+ports-all date=2011.12.26.00.00.00
 EOF
 	csup -L 1 $SUPFILE
     # Force a repatch because csup pulls pristine sources.
@@ -117,20 +117,24 @@ EOF
     	if ! grep -q $patch ${BSDRP_ROOT}/FreeBSD/src-patches; then
         	echo "Applying patch $patch..."
         	(cd FreeBSD/src &&
-         	patch -C -p0 < $BSDRP_ROOT/patches/$patch &&
-         	patch -E -p0 -s < $BSDRP_ROOT/patches/$patch)
-        	echo $patch >> $BSDRP_ROOT/FreeBSD/src-patches
+         	patch -C -p0 < ${BSDRP_ROOT}/patches/$patch &&
+         	patch -E -p0 -s < ${BSDRP_ROOT}/patches/$patch)
+        	echo $patch >> ${BSDRP_ROOT}/FreeBSD/src-patches
     	fi
 	done
-	for patch in $(cd $BSDRP_ROOT/patches && ls ports.*.patch); do
-    	if ! grep -q $patch $BSDRP_ROOT/FreeBSD/ports-patches; then
+	for patch in $(cd ${BSDRP_ROOT}/patches && ls ports.*.patch); do
+    	if ! grep -q $patch ${BSDRP_ROOT}/FreeBSD/ports-patches; then
         	echo "Applying patch $patch..."
         	(cd FreeBSD/ports &&
-         	patch -C -p0 < $BSDRP_ROOT/patches/$patch &&
-         	patch -E -p0 -s < $BSDRP_ROOT/patches/$patch)
-        	echo $patch >> $BSDRP_ROOT/FreeBSD/ports-patches
+         	patch -C -p0 < ${BSDRP_ROOT}/patches/$patch &&
+         	patch -E -p0 -s < ${BSDRP_ROOT}/patches/$patch)
+        	echo $patch >> ${BSDRP_ROOT}/FreeBSD/ports-patches
     	fi
 	done
+
+	# Overwite the nanobsd script
+	cp ${BSDRP_ROOT}/tools/nanobsd.sh ${BSDRP_ROOT}/FreeBSD/src/tools/tools/nanobsd
+	chmod +x ${BSDRP_ROOT}/FreeBSD/src/tools/tools/nanobsd
 
 }
 

@@ -3,6 +3,7 @@ Release 1.1 (not released)
 - Add a tools for using Quagga as BGP route generator
 - Lab script: Permit to choose RAM available for the routers (128MiB is not enough for 400K routes)
 - Image generator: Fetch its own FreeBSD source tree (using FreeNAS 8 model)
+- Upgrade mpd from 5.5 to 5.6
 
 Bug fix:
 - fix "can't set default locale" message
