@@ -62,7 +62,7 @@ usage () {
 	echo "  - halt/stop           : Poweroff the system"
 	echo "  - virtualized         : Optimize for a VM use"
 	echo "  - check-vm            : Try to detect if used in a VM"
-	echo "  - endpoint            : Tune for endpoint usage, permit to do bench from BSDRP (not persistent)"
+	echo "  - tune            : Tune for routing (not persistent)"
 	echo "  - help/h [option]     : Display this help message. "
 	echo "		if [option] given, display more detail about the option"
 	exit 0
@@ -108,30 +108,64 @@ ask_save () {
 	fi
 }
 
-# Tune system for endpoint usage
-endpoint () {
-	echo "Tune system for TCP/UDP endpoint"
-	echo "This is a mandatory step before using BSDRP as TCP/UDP host for bench"
-	sysctl kern.ipc.somaxconn=2048
-	set +e
-	sysctl kern.ipc.nmbclusters=32768
-	set -e
-	sysctl kern.ipc.maxsockbuf=8388608
-	sysctl net.inet.tcp.sendbuf_max=16777216
-	sysctl net.inet.tcp.recvbuf_max=16777216
-	sysctl net.inet.tcp.inflight.enable=0
-	sysctl net.inet.tcp.sendspace=65536
-	sysctl net.inet.tcp.recvspace=65536
-	sysctl net.inet.udp.recvspace=65536
-	sysctl net.inet.tcp.sendbuf_inc=16384
-	sysctl net.inet.tcp.recvbuf_inc=524288
-	sysctl net.inet.tcp.rfc1323=1
-	sysctl net.inet.tcp.sack.enable=1
-	sysctl net.inet.tcp.path_mtu_discovery=1
-	sysctl net.inet.tcp.sendbuf_auto=1
-	sysctl net.inet.tcp.hostcache.expire=1
+# Tune system
+tune () {
+	echo "Tune system for routing"
+	#https://calomel.org/network_performance.html
+	#
+	# kernel socket buffer space
+	sysctl kern.ipc.maxsockbuf=16777216
+	# kernel mbuf space raised 275MB of kernel dedicated ram
+	# Warning: need to change vm.kmem_size to 1G minimum
+	sysctl kern.ipc.nmbclusters=262144
+	# size of the listen queue for accepting new TCP connections
+	sysctl kern.ipc.somaxconn=32768
+	# increase the limit of the open sockets
+	sysctl kern.ipc.maxsockets=204800
+	# randomized processes id's
+	sysctl kern.randompid=348
+	# reply to no more than 50 ICMP packets per sec
+	sysctl net.inet.icmp.icmplim=50
+	# do not processes any TCP options in the TCP headers
+	sysctl net.inet.ip.process_options=0
+	# do not allow ip header redirects
+	sysctl net.inet.ip.redirect=0
+	# route cache expire in two seconds
+	sysctl net.inet.ip.rtexpire=2
+	sysctl net.inet.ip.rtminexpire=2
+	# route cache entries increased
+	sysctl net.inet.ip.rtmaxcache=256
+	# drop icmp redirects
+	sysctl net.inet.icmp.drop_redirect=1
+	# drop any TCP packets to closed ports
+	sysctl net.inet.tcp.blackhole=2
+	# no need to delay ACK's
 	sysctl net.inet.tcp.delayed_ack=0
-	echo "Done, but warning: Theses change are not persistent !"
+	# drop TCP packets which have SYN and FIN set
+	sysctl net.inet.tcp.drop_synfin=1
+	# close lost tcp connections in 7.5 seconds (default 30)
+	sysctl net.inet.tcp.msl=7500
+    # do not create TIME_WAIT state for localhost
+	sysctl net.inet.tcp.nolocaltimewait=1
+	# disable MTU path discovery
+	sysctl net.inet.tcp.path_mtu_discovery=0
+	# TCP receive buffer space
+	sysctl net.inet.tcp.recvbuf_max=16777216
+	# decrease buffers for incoming data
+	sysctl net.inet.tcp.recvspace=8192
+	# TCP send buffer space
+	sysctl net.inet.tcp.sendbuf_max=16777216
+	# decrease buffers for outgoing data
+	sysctl net.inet.tcp.sendspace=16384
+	# drop any UDP packets to closed ports
+	sysctl net.inet.udp.blackhole=1
+	
+
+	#sysctl net.inet.tcp.rfc1323=1
+	#sysctl net.inet.tcp.sack.enable=1
+	#sysctl net.inet.tcp.sendbuf_auto=1
+	#sysctl net.inet.tcp.hostcache.expire=1
+	echo "Done, but warning: Theses changes are not persistent !"
 }
 
 # Check if cfg was modified
@@ -301,8 +335,8 @@ case "$FIRST_OPTION" in
 	integrity)
 		integrity
 		;;
-	endpoint)
-		endpoint
+	tune)
+		tune
 		;;
 	help|h)
 		usage

@@ -47,7 +47,7 @@
  	printf("approx send rate:  %ld\n", (send_calls - send_errors) /
  	    duration);
  	printf("approx error rate: %d\n", (send_errors / send_calls));
-+	printf("approx throughput: %d Mib/s\n", (send_calls - send_errors) * 
++	printf("approx throughput: %ld Mib/s\n", ((send_calls - send_errors) / duration ) * 
 +		(packet_len + 30 ) * 8 / 1000 / 1000); 
  
  	return (0);
