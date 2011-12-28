@@ -1,4 +1,5 @@
 Release 1.1 (not released)
+- Upade base to FreeBSD 8.2-RELEASE-p5
 - netblast/netstend/netreceive bench tools now support IPv6
 - Add a tools for using Quagga as BGP route generator
 - Lab script: Permit to choose RAM available for the routers (128MiB is not enough for 400K routes)
