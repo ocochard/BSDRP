@@ -8,6 +8,7 @@ Release 1.1 (not released)
 
 Bug fix:
 - fix "can't set default locale" message
+- netstat -z now clear IPv6 stats too (bin/153206)
 
 Updated packages:
 - Bird to 1.3.4
