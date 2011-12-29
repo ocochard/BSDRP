@@ -39,7 +39,8 @@ set -eu
 NAME="BSDRP"
 
 # CVSUP mirror
-FREEBSD_CVSUP_HOST="cvsup.fr.FreeBSD.org"
+# sysutils/fastest_cvsup is very usefull
+FREEBSD_CVSUP_HOST="cvsup2.fr.freebsd.org"
 
 # Base (current) folder
 BSDRP_ROOT=`pwd`
@@ -99,7 +100,7 @@ update_src () {
 *default compress
 
 src-all tag=RELENG_8_2
-ports-all date=2011.12.27.00.00.00
+ports-all date=2011.12.28.00.00.00
 EOF
 	csup -L 1 $SUPFILE
     # Force a repatch because csup pulls pristine sources.
@@ -368,10 +369,6 @@ else
 	pprint 1 "- FAST mode (skip compression and checksumming): NO"
 fi
 
-if ($UPDATE_SRC); then
-	update_src
-fi
-
 ##### Generating the nanobsd configuration file ####
 
 # Theses variables must be set on the begining
@@ -463,6 +460,12 @@ if ($DELETE_ALL); then
 		chflags -R noschg ${NANOBSD_OBJ}
 		rm -rf ${NANOBSD_OBJ}
 	fi
+fi
+
+#### Udpate or install source ####
+if ($UPDATE_SRC); then
+	pprint 1 "Update sources..."
+	update_src
 fi
 
 # Start nanobsd using the BSDRP configuration file
