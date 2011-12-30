@@ -1,0 +1,51 @@
+diff -ruN benchmarks/iperf.orig/files/patch-src__Settings.cpp benchmarks/iperf/files/patch-src__Settings.cpp
+--- benchmarks/iperf.orig/files/patch-src__Settings.cpp	1970-01-01 01:00:00.000000000 +0100
++++ benchmarks/iperf/files/patch-src__Settings.cpp	2011-12-30 04:30:40.000000000 +0100
+@@ -0,0 +1,47 @@
++#
++# FreeBSD IPv6 MTU of an Ethernet link is 1480 and not 1500
++#
++--- src/Settings.cpp.orig	2010-07-09 03:05:46.000000000 +0200
+++++ src/Settings.cpp	2011-12-30 04:25:16.000000000 +0100
++@@ -182,6 +182,7 @@
++ 
++ // 1450 bytes is small enough to be sending one packet per datagram on ethernet
++ //  **** with IPv6 ****
+++// Note: On FreeBSD, the IPv6 MTU is 1480, then we need to use 1430 bytes
++ 
++ /* -------------------------------------------------------------------
++  * Initialize all settings to defaults.
++@@ -333,7 +334,12 @@
++             // if -l has already been processed, mBufLenSet is true
++             // so don't overwrite that value.
++             if ( !isBuflenSet( mExtSettings ) ) {
++-                mExtSettings->mBufLen = kDefault_UDPBufLen;
+++		// FreeBSD IPv6 Max payload is IPv4 max payload minus 40 octets
+++                if ( !isIPV6( mExtSettings )) {
+++                        mExtSettings->mBufLen = kDefault_UDPBufLen - 40;
+++                } else {
+++                        mExtSettings->mBufLen = kDefault_UDPBufLen;
+++                }
++             }
++             break;
++ 
++@@ -466,13 +472,18 @@
++             // already be non-zero, so don't overwrite that value
++             if ( !isUDP( mExtSettings ) ) {
++                 setUDP( mExtSettings );
++                 mExtSettings->mUDPRate = kDefault_UDPRate;
++             }
++ 
++             // if -l has already been processed, mBufLenSet is true
++             // so don't overwrite that value.
++             if ( !isBuflenSet( mExtSettings ) ) {
++-                mExtSettings->mBufLen = kDefault_UDPBufLen;
+++		// FreeBSD IPv6 Max payload is IPv4 max payload minus 40 octets
+++                if ( !isIPV6( mExtSettings )) {
+++                	mExtSettings->mBufLen = kDefault_UDPBufLen - 40;
+++		} else {
+++			mExtSettings->mBufLen = kDefault_UDPBufLen;
+++		}
++             } else if ( mExtSettings->mBufLen < (int) ( sizeof( UDP_datagram ) 
++                         + sizeof( client_hdr ) ) &&
++                         !isCompat( mExtSettings ) ) {
