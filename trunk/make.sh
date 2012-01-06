@@ -3,7 +3,7 @@
 # Make script for BSD Router Project 
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2011, The BSDRP Development Team 
+# Copyright (c) 2009-2012, The BSDRP Development Team 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -100,7 +100,7 @@ update_src () {
 *default compress
 
 src-all tag=RELENG_8_2
-ports-all date=2011.12.28.00.00.00
+ports-all date=2012.01.05.00.00.00
 EOF
 	csup -L 1 $SUPFILE
     # Force a repatch because csup pulls pristine sources.
