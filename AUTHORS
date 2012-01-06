@@ -10,9 +10,9 @@ Reuse of existing softwares/patches:
 BSD Router Project (BSDRP) is based upon/includes various free software packages, listed below.
 The authors of BSDRP would like to thank the authors of these software packages for their efforts.
 
-* FreeBSD:  Copyright (c) 1995-2011 The FreeBSD Project. All rights reserved
+* FreeBSD:  Copyright (c) 1995-2012 The FreeBSD Project. All rights reserved
 * Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support
-* FreeNAS 8 build script: Using its own FreeBSD source tree, Copyright iXsystems
+* FreeNAS 8: Lot's of idea regarding the nanobsd tunning, Copyright iXsystems
 * Quagga routing software
 * The BIRD Internet Routing Daemon 
 * Net-SNMP 

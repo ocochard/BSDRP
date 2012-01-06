@@ -4,6 +4,7 @@
 # NanoBSD port support added from Gitoyen:
 # http://www.gitoyen.net/Howto-NanoBSD-quagga-router 
 # Some cleanup idea taken from imp@ nanoBSD script
+# Add other parts came from the FreeNAS 8 too (iXsystems)
 #
 ################## Common section #################
 
@@ -570,10 +571,14 @@ usr/share/tmac/tmac.vgrind
 	# Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
     find ${NANO_WORLDDIR} -name \*.a | xargs rm
 
-	# strip binaries for ports (tips from FreeNAS)
-	(strip ${NANO_WORLDDIR}/usr/local/*bin/* > /dev/null 2>&1) || true
-	
-	# Generate package version liste
+	# strip binaries for ports (tips from FreeNAS 8)
+	pprint 4 "Stripping binaries and libraries"
+	for dir in $(find ${NANO_WORLDDIR}/ -name '*bin' -or -name 'lib' -maxdepth 3); do
+		for f in $(find $dir -type f); do
+			strip 2>/dev/null $f || :
+		done
+	done	
+	# Generate package inventory
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'pkg_info' > ${NANO_OBJ}/packaqes.info
 
@@ -628,6 +633,19 @@ bsdrp_console_vga () {
 	
 	echo 'comconsole_speed="38400"' >> ${NANO_WORLDDIR}/boot/loader.conf
 }
+
+# From FreeNAS 8
+shrink_md_fbsize()
+{
+	# We have a lot of little files on our memory disks. Let's decrease
+	# the block and frag size to fit more little files on them (this
+	# halves our space requirement by ~50% on /etc and /var on 8.x --
+	# and gives us more back on 9.x as the default block and frag size
+	# are 4 times larger).
+	sed -i '' -e 's,-S -i 4096,-S -i 4096 -b 4096 -f 512,' \
+		${NANO_WORLDDIR}/etc/rc.initdiskless
+}
+customize_cmd shrink_md_fbsize
 
 # Secure BSDRP by using schg flag
 bsdrp_secure () {
