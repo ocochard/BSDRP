@@ -1,5 +1,6 @@
---- tools/tools/netrate/netblast/netblast.c.orig	2010-12-21 18:09:25.000000000 +0100
-+++ tools/tools/netrate/netblast/netblast.c	2011-12-23 14:13:35.000000000 +0100
+diff -ruN tools/tools/netrate.old/netblast/netblast.c tools/tools/netrate/netblast/netblast.c
+--- tools/tools/netrate.old/netblast/netblast.c	2012-01-06 14:27:56.000000000 +0100
++++ tools/tools/netrate/netblast/netblast.c	2012-01-07 16:31:17.000000000 +0100
 @@ -23,21 +23,22 @@
   * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
   * SUCH DAMAGE.
@@ -171,9 +172,9 @@
 +
  }
 diff -ruN tools/tools/netrate.old/netreceive/netreceive.c tools/tools/netrate/netreceive/netreceive.c
---- tools/tools/netrate.old/netreceive/netreceive.c	2011-12-11 11:26:24.000000000 +0100
-+++ tools/tools/netrate/netreceive/netreceive.c	2011-12-11 11:27:17.000000000 +0100
-@@ -23,20 +23,25 @@
+--- tools/tools/netrate.old/netreceive/netreceive.c	2012-01-06 14:27:56.000000000 +0100
++++ tools/tools/netrate/netreceive/netreceive.c	2012-01-07 16:30:00.000000000 +0100
+@@ -23,20 +23,35 @@
   * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
   * SUCH DAMAGE.
   *
@@ -191,16 +192,26 @@ diff -ruN tools/tools/netrate.old/netreceive/netreceive.c tools/tools/netrate/ne
  
  #include <arpa/inet.h>
  
++#include <signal.h>			/* catch Ctrl+C */
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
 +#include <unistd.h>         /* close */
 +
 +#define MAXSOCK 20
++
++unsigned long int counter=0;
++
++static void
++catch_sigint (int signum __unused)
++{
++	fprintf (stderr, "Total packets received : %lu\n",counter);
++	exit(0);
++}
  
  static void
  usage(void)
-@@ -49,23 +54,26 @@
+@@ -49,23 +64,29 @@
  int
  main(int argc, char *argv[])
  {
@@ -223,6 +234,9 @@ diff -ruN tools/tools/netrate.old/netreceive/netreceive.c tools/tools/netrate/ne
 -	sin.sin_len = sizeof(sin);
 -	sin.sin_family = AF_INET;
 -	sin.sin_addr.s_addr = htonl(INADDR_ANY);
++	if (signal (SIGINT, catch_sigint) == SIG_ERR)
++		fprintf (stderr, "Can't intercept SIGINT\n");
++
 +	memset(&hints, 0, sizeof(hints));
 +	hints.ai_family = PF_UNSPEC;
 +	hints.ai_socktype = SOCK_DGRAM;
@@ -235,7 +249,7 @@ diff -ruN tools/tools/netrate.old/netreceive/netreceive.c tools/tools/netrate/ne
  
  	packet = malloc(65536);
  	if (packet == NULL) {
-@@ -74,27 +82,60 @@
+@@ -74,27 +95,61 @@
  	}
  	bzero(packet, 65536);
  
@@ -297,6 +311,7 @@ diff -ruN tools/tools/netrate.old/netreceive/netreceive.c tools/tools/netrate/ne
 +			perror("poll");
 +		for (i = 0; i < nsock; i++) {
 +			if (fds[i].revents & POLLIN) {
++				counter++;
 +				if (recv(s[i], packet, 65536, 0) < 0)
 +					perror("recv");
 +			}
@@ -309,8 +324,8 @@ diff -ruN tools/tools/netrate.old/netreceive/netreceive.c tools/tools/netrate/ne
 +	freeaddrinfo(res0);
  }
 diff -ruN tools/tools/netrate.old/netsend/netsend.c tools/tools/netrate/netsend/netsend.c
---- tools/tools/netrate.old/netsend/netsend.c	2011-12-11 11:26:24.000000000 +0100
-+++ tools/tools/netrate/netsend/netsend.c	2011-12-11 11:27:52.000000000 +0100
+--- tools/tools/netrate.old/netsend/netsend.c	2012-01-06 14:27:56.000000000 +0100
++++ tools/tools/netrate/netsend/netsend.c	2012-01-06 14:45:36.000000000 +0100
 @@ -23,11 +23,13 @@
   * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
   * SUCH DAMAGE.
