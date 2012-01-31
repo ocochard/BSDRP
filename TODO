@@ -1,3 +1,6 @@
+* Upgrading *
+	- Replacing the use of 2 systems partitions (there is not "active" partition
+	  concept on sparc64 or MIPS) by freebsd-update
 * Arch *
 	- NEED to merge lot's of common task of create_arch_diskimage() in nanobsd
 	- Sparc64: Need to fix the login bug, and add arch support to the update script
