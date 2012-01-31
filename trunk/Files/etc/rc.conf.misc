@@ -13,7 +13,10 @@ blanktime="NO"
 moused_enable="NO"
 
 #Disable sendmail
-sendmail_enable="NONE"
+sendmail_enable="NO"
+sendmail_submit_enable="NO"
+sendmail_outbound_enable="NO"
+sendmail_msp_queue_enable="NO"
 
 #Disable dump device
 dumpdev="NO"

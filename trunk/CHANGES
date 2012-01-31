@@ -11,8 +11,8 @@ Bug fix:
 - netstat -z now clear IPv6 stats too (bin/153206)
 
 Updated packages:
-- Bird to 1.3.4
-
+- Bird to 1.3.6
+- net-snmp to 5.7.1_4
 =====================================================================================================
 Release 1.0
 
