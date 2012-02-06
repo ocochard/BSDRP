@@ -40,7 +40,7 @@ NAME="BSDRP"
 
 # CVSUP mirror
 # sysutils/fastest_cvsup is very usefull
-FREEBSD_CVSUP_HOST="cvsup2.fr.freebsd.org"
+FREEBSD_CVSUP_HOST="cvsup3.fr.freebsd.org"
 
 # Base (current) folder
 BSDRP_ROOT=`pwd`
@@ -100,7 +100,7 @@ update_src () {
 *default compress
 
 src-all tag=RELENG_8_2
-ports-all date=2012.01.29.00.00.00
+ports-all date=2012.02.05.00.00.00
 EOF
 	csup -L 1 $SUPFILE
     # Force a repatch because csup pulls pristine sources.
@@ -396,17 +396,6 @@ echo "NANO_IMGNAME=\"${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img
 echo "# Kernel config file to use" >> /tmp/${NAME}.nano
 echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${NAME}.nano
 
-pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
-
-cp ${BSDRP_ROOT}/kernels/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
-
-# Debug mode: add debug features to the kernel:
-if [ ${DEBUG} ]; then
-	echo "makeoptions	DEBUG=-g" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
-	echo "options	KDB" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
-	echo "options	KDB_TRACE" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
-	echo "options	DDB" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
-fi
 # Debug mode: compile gdb
 sed -i "" '/WITHOUT_GDB/d' /tmp/${NAME}.nano
 
@@ -478,6 +467,18 @@ if ($UPDATE_SRC); then
 	update_src
 fi
 
+pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
+
+cp ${BSDRP_ROOT}/kernels/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
+
+# Debug mode: add debug features to the kernel:
+if [ ${DEBUG} ]; then
+	echo "makeoptions	DEBUG=-g" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
+	echo "options	KDB" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
+	echo "options	KDB_TRACE" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
+	echo "options	DDB" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
+fi
+
 # Start nanobsd using the BSDRP configuration file
 pprint 1 "Launching NanoBSD build process..."
 cd ${NANOBSD_DIR}
@@ -528,8 +529,8 @@ if [ ${DEBUG} ]; then
 	FILENAME="${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}_DEBUG.img"
 else
 	FILENAME="${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
-
 fi
+
 if [ "$FAST" = "n" ]; then
 	if [ -f ${NANOBSD_OBJ}/${FILENAME}.xz ]; then
 		rm ${NANOBSD_OBJ}/${FILENAME}.xz
@@ -553,6 +554,7 @@ fi
 mv ${NANOBSD_OBJ}/_.mtree ${NANOBSD_OBJ}/${FILENAME}.mtree
 xz -vf ${NANOBSD_OBJ}/${FILENAME}.mtree
 mv ${NANOBSD_OBJ}/${FILENAME}.mtree.xz ${NANOBSD_OBJ}/${NAME}_${VERSION}_${TARGET_ARCH}_${INPUT_CONSOLE}.mtree.xz
+
 pprint 1 "Security reference mtree file here:"
 pprint 1 "${NANOBSD_OBJ}/${FILENAME}.mtree.xz"
 
