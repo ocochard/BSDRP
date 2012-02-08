@@ -368,6 +368,11 @@ if [ "${FAST}" = "y" ]; then
 else
 	pprint 1 "- FAST mode (skip compression and checksumming): NO"
 fi
+if ($DEBUG); then
+    pprint 1 "- Debug image type: YES"
+else
+    pprint 1 "- Debug image type: NO"
+fi
 
 ##### Generating the nanobsd configuration file ####
 
@@ -395,9 +400,6 @@ echo "NANO_IMGNAME=\"${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img
 
 echo "# Kernel config file to use" >> /tmp/${NAME}.nano
 echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${NAME}.nano
-
-# Debug mode: compile gdb
-sed -i "" '/WITHOUT_GDB/d' /tmp/${NAME}.nano
 
 echo "# Parallel Make" >> /tmp/${NAME}.nano
 # Special ARCH commands
@@ -477,6 +479,8 @@ if [ ${DEBUG} ]; then
 	echo "options	KDB" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
 	echo "options	KDB_TRACE" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
 	echo "options	DDB" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
+	# Debug mode: compile gdb
+	sed -i "" '/WITHOUT_GDB/d' /tmp/${NAME}.nano
 fi
 
 # Start nanobsd using the BSDRP configuration file
@@ -502,7 +506,7 @@ if [ ! -f ${NANOBSD_OBJ}/_.disk.image ]; then
 	exit 1
 fi
 
-if [ ${DEBUG} ];then
+if ($DEBUG);then
 	FILENAME="${NAME}_${VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}_DEBUG.img"
 else
 	FILENAME="${NAME}_${VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
@@ -525,7 +529,7 @@ else
 	pprint 1 "${NANOBSD_OBJ}/${FILENAME}"
 fi
 
-if [ ${DEBUG} ]; then
+if ($DEBUG); then
 	FILENAME="${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}_DEBUG.img"
 else
 	FILENAME="${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
