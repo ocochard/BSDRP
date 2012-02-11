@@ -474,7 +474,7 @@ pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
 cp ${BSDRP_ROOT}/kernels/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
 
 # Debug mode: add debug features to the kernel:
-if [ ${DEBUG} ]; then
+if ($DEBUG); then
 	echo "makeoptions	DEBUG=-g" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
 	echo "options	KDB" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
 	echo "options	KDB_TRACE" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
