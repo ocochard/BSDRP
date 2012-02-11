@@ -10,6 +10,7 @@ complete ifconfig   'p/1/`ifconfig -l`/' 'n/*/(add alias -alias anycast arp -ar 
 	-vlanmtu -vlanhwtag -vlanhwfilter -vlanhwtso vnet -vnet polling -polling create destroy metric mtu netmask \
 	prefixlen phase monitor -monitor up)/'
 complete systat 'p/1/(-icmp -icmp6 -ifstat -iostat -ip -ip6 -mbufs -netstat -pigs -swap -tcp -vmstat)/'
+complete kbdcontrol 'n@-l@`ls /usr/share/syscons/keymaps`@'
 # Others Command complete
 # Lot's of these command complete were found here:
 # http://hea-www.harvard.edu/~fine/Tech/tcsh.html
