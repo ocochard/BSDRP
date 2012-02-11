@@ -3,9 +3,6 @@
 #Prevent to update motd
 update_motd=NO
 
-#No keymap
-keymap="NO"
-
 #No blanktime (suppress blanktimevidcontrol not found message)
 blanktime="NO"
 

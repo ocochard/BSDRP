@@ -3,7 +3,7 @@
 # Qemu/kvm lab test script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2011, The BSDRP Development Team
+# Copyright (c) 2009-2012, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -60,29 +60,29 @@ check_system_freebsd () {
 		KQEMU=false
     fi
 	
-    if ! kldstat -m kqemu; then
+    if ! kldstat -q -m kqemu; then
 		if $NOT_ROOT; then
 			echo "WARNING: kqemu module not loaded"
 			echo "You need to be root for loading this module"
 			KQEMU=false
 		else
         	echo "Loading kqemu"
-        	if kldload kqemu; then
+        	if kldload -q kqemu; then
             	echo "WARNING: Can't load kqemu"
-				KQEMU=false
+			KQEMU=false
         	fi
 		fi
     fi
-    if ! kldstat -m aio; then
+    if ! kldstat -q -m aio; then
 		if $NOT_ROOT; then
 			echo "ERROR: aio module not loaded (mandatory for qemu)"
 			echo "You need to be root for loading this module"
 			exit 1
 		else
         	echo "Loading module aio"
-        	if kldload aio; then
+        	if kldload -q aio; then
             	echo "ERROR Can't load module aio"
-				exit 1
+			exit 1
         	fi
 		fi
     fi
