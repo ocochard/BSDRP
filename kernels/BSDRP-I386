@@ -45,7 +45,7 @@ options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
 #options 	SCTP			# Stream Control Transmission Protocol
 options 	FFS			# Berkeley Fast Filesystem
-options 	SOFTUPDATES		# Enable FFS soft updates support
+#options 	SOFTUPDATES		# Enable FFS soft updates support
 #options 	UFS_ACL			# Support for access control lists
 #options 	UFS_DIRHASH		# Improve performance on big directories
 #options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
@@ -85,11 +85,6 @@ options 	HWPMC_HOOKS		# Necessary kernel hooks for hwpmc(4)
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
 options     INCLUDE_CONFIG_FILE     # Include this file in kernel
 
-# Packet Filter: moved as modules
-#device pf
-#device pflog
-#device pfsync
-
 # altq(9). Enable the base part of the hooks with the ALTQ option.
 # Individual disciplines must be built into the base system and can not be
 # loaded as modules at this point. ALTQ requires a stable TSC so if yours is
@@ -105,6 +100,8 @@ options 	ALTQ_PRIQ	# Priority Queueing
 options 	ALTQ_NOPCC	# Required if the TSC is unusable
 #options 	ALTQ_DEBUG
 
+options		NO_SWAPPING # Disable swapping of stack pages
+
 # MROUTING enables the kernel multicast packet forwarder, which works
 # with mrouted and XORP.
 options 	MROUTING		# Multicast routing
@@ -117,6 +114,7 @@ options 	MROUTING		# Multicast routing
 # or 'device cryptodev'.
 device 		crypto
 options 	IPSEC
+options     IPSEC_NAT_T     #NAT-T support, UDP encap of ESP
 options 	TCP_SIGNATURE		#include support for RFC 2385
 
 # To make an SMP kernel, the next two lines are needed

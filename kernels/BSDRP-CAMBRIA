@@ -49,7 +49,7 @@ options 	SCHED_4BSD		#4BSD scheduler
 #options 	PREEMPTION
 options 	INET			#InterNETworking
 options 	FFS			#Berkeley Fast Filesystem
-options 	SOFTUPDATES		#Enable FFS soft updates support
+#options 	SOFTUPDATES		#Enable FFS soft updates support
 #options 	NFSCLIENT		#Network Filesystem Client
 #options 	NFS_ROOT		#NFS usable as /, requires NFSCLIENT
 #options 	BOOTP
@@ -77,6 +77,8 @@ options     ALTQ_CDNR   # Traffic conditioner
 options     ALTQ_PRIQ   # Priority Queueing
 options     ALTQ_NOPCC  # Required if the TSC is unusable
 #options    ALTQ_DEBUG
+
+options     NO_SWAPPING # Disable swapping of stack pages
 
 # MROUTING enables the kernel multicast packet forwarder, which works
 # with mrouted and XORP.
