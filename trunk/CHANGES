@@ -5,6 +5,7 @@ Release 1.1 (not released)
 - Add a tools for using Quagga as BGP route generator: quagga-bgp-netgen
 - Lab script: Permit to configure routers' RAM size (128MiB is not enough for 400K routes)
 - Image generator: Fetch its own FreeBSD source tree (using FreeNAS 8 model)
+- Kernel: Disable softupdates and swapping, enable IPSEC NAT-T
 
 Bug fix:
 - fix "can't set default locale" message

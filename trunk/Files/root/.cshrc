@@ -7,7 +7,7 @@
 
 alias h         history 25
 alias j         jobs -l
-alias la        ls -a
+alias la        ls -aF
 alias lf        ls -FA
 
 # Some BSDRP aliases:
@@ -38,8 +38,8 @@ if ($?prompt) then
 	# An interactive shell -- set some stuff up
 	set prompt='%B[%n@%m%b]%B%~%b%# '
 	set filec
-	set history = 500
-	set savehist = 100
+	set history = 1000
+	set savehist = (1000 merge)
 	set mail = (/var/mail/$USER)
 	if ( $?tcsh ) then
 		bindkey "^W" backward-delete-word
@@ -47,12 +47,20 @@ if ($?prompt) then
 		bindkey -k down history-search-forward
 	endif
 	# command complete with TAB	
-	set autolist
+	# lists  the  remaining 
+	# choices (if any) whenever completion fails
+	set autolist=ambiguous
+	# run the expand-history editor command
+    #   before each completion attempt
+	set autoexpand
 	# Disable beep
 	set nobeep
 	# Error correction
 	set correct = cmd
+	# enables color display for the builtin ls-F and it
+	# passes --color=auto to ls
 	set color
+	# enables color escape sequence for NLS message files	
 	set colorcat
 	# Prevent overwritting existing file
 	# (disabled because prevent to use >> in script)

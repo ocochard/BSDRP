@@ -11,20 +11,37 @@ complete ifconfig   'p/1/`ifconfig -l`/' 'n/*/(add alias -alias anycast arp -ar 
 	prefixlen phase monitor -monitor up)/'
 complete systat 'p/1/(-icmp -icmp6 -ifstat -iostat -ip -ip6 -mbufs -netstat -pigs -swap -tcp -vmstat)/'
 complete kbdcontrol 'n@-l@`ls /usr/share/syscons/keymaps | sed 's/.kbd//'`@'
+
 # Others Command complete
 # Lot's of these command complete were found here:
 # http://hea-www.harvard.edu/~fine/Tech/tcsh.html
 # /usr/share/examples/tcsh/complete.tcsh
+# http://freebsd.quip.cz/ext/2012/2012-02-10-tcshrc/dot.tcshrc.complete.txt
 # 
+
+# Service and process
+complete */rc.d/*	'p/1/(start stop reload restart status rcvar onestart onestop)/'
+complete service 'c/-/(e l r v)/' 'p/1/`service -l`/' 'n/*/(start stop reload restart status rcvar onestart onestop)/'
+complete kill   'c/-/S/' 'c/%/j/' 'n/*/`ps -ax | awk '"'"'{print $1}'"'"'`/'
+complete killall  'c/-/S/' 'c/%/j/' 'n/*/`ps -axc | awk '"'"'{print $5}'"'"'`/'
+
+# dd
+complete dd	'c/if=/f/' 'c/of=/f/' \
+	'p/*/(bs cbs count files fillchar ibs if iseek obs of oseek seek skip conv)/=/'
+
+# pkg
+complete pkg_delete 'c/-/(i v D n p d f G x X r)/' \
+	'n@*@`ls /var/db/pkg`@'
+complete pkg_info 'c/-/(a b v p q Q c d D f g i I j k K r R m L s o G O x X e E l t V P)/' \
+	'n@*@`\ls -1 /var/db/pkg | sed s%/var/db/pkg/%%`@'
+
+# kernel modules
+complete kldload 'n@*@`ls -1 /boot/modules/ /boot/kernel/ | awk -F/ \$NF\ \~\ \".ko\"\ \{sub\(\/\.ko\/,\"\",\$NF\)\;print\ \$NF\}`@'
+complete kldunload 'n@*@`kldstat | awk \{sub\(\/\.ko\/,\"\",\$NF\)\;print\ \$NF\} | grep -v Name`@'
+
 # directories
 complete cd 'C/*/d/'
 complete rmdir 'C/*/d/'
-
-# signal names
-# also note that the initial - can be created with the first completion
-# but without appending a space (note the extra slash with no
-# append character specified)
-complete kill 'c/-/S/' 'p/*/`ps -ax | grep -v PID | awk \{print\ \$1\}`/'
 
 # use available commands as arguments for which, where, and man
 complete which 'p/1/c/'
@@ -62,6 +79,16 @@ complete passwd 'p/1/u/'
 
 # commands
 complete trace      p/1/c/
+
+# mount
+complete mount	'c/-/(a r t v)/' \
+	'n/-t/(cd9660 ext2fs fdescfs linprocfs \
+	linsysfs mfs mqueuefs msdosfs nfs nfs4 ntfs nullfs nwfs \
+	nwfs portalfs procfs pseudofs reiserfs smbfs udf umapfs unionfs xfs)/' 
+#	'n@*@`grep -v "^#" /etc/fstab | tr -s " " "	" | cut -f 2`@'
+complete umount	'c/-/"(a h t v)"/ n/-t/"(4.2 nfs)"/' \
+	'n/-h/`df | cut -s -d ":" -f 1 | sort -u`/' \
+	'n/*/`mount | cut -d " " -f 3`/'
 
 # Virtualbox: VBoxManage
 complete VBoxManage \

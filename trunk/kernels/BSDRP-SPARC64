@@ -41,7 +41,7 @@ options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
 #options 	SCTP			# Stream Control Transmission Protocol
 options 	FFS			# Berkeley Fast Filesystem
-options 	SOFTUPDATES		# Enable FFS soft updates support
+#options 	SOFTUPDATES		# Enable FFS soft updates support
 #options 	UFS_ACL			# Support for access control lists
 #options 	UFS_DIRHASH		# Improve performance on big directories
 #options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
@@ -89,6 +89,8 @@ options 	ALTQ_PRIQ	# Priority Queueing
 options 	ALTQ_NOPCC	# Required if the TSC is unusable 
 #options 	ALTQ_DEBUG
 
+options     NO_SWAPPING # Disable swapping of stack pages
+
 # MROUTING enables the kernel multicast packet forwarder, which works 
 # with mrouted and XORP. 
 options     MROUTING        # Multicast routing  
@@ -99,9 +101,10 @@ options     MROUTING        # Multicast routing
 # This is enabled on a per-socket basis using the TCP_MD5SIG socket option. 
 # This requires the use of 'device crypto', 'options IPSEC' 
 # or 'device cryptodev'. 
-### DO NOT ENABLE THESE 3 LINES ON SPARC64, it will crash at boot
+### DO NOT ENABLE THESE LINES ON SPARC64, it will crash at boot
 #device 		crypto 
-#options 	IPSEC 
+#options 	IPSEC
+#options     IPSEC_NAT_T     #NAT-T support, UDP encap of ESP
 #options 	TCP_SIGNATURE		#include support for RFC 2385
 
 # Make an SMP-capable kernel by default
