@@ -3,8 +3,7 @@ Release 1.1 (not released)
 - netblast/netstend/netreceive bench tools now support IPv6
 - Add keymap languages files
 - Add a tools for using Quagga as BGP route generator: quagga-bgp-netgen
-- Lab script: Permit to configure routers' RAM size (128MiB is not enough for 400K routes)
-- Image generator: Fetch its own FreeBSD source tree (using FreeNAS 8 model)
+- Lab script: Permit to configure routers' RAM size
 - Kernel: Disable softupdates and swapping, enable IPSEC NAT-T
 
 Bug fix:
@@ -16,7 +15,9 @@ Updated packages:
 - net-snmp to 5.7.1_4
 - tmux to 1.6
 - mpd to 5.6
-=====================================================================================================
+
+================================================================================
+
 Release 1.0
 
 - Upade base to FreeBSD 8.2-RELEASE-p4
@@ -68,7 +69,8 @@ ssmtp-2.64          Extremely simple MTA to get mail off the system to a mail h
 tmux-1.5            A Terminal Multiplexer
 ucarp-1.5.2_1       Userlevel Common Address Redundancy Protocol
 
-=====================================================================================================
+================================================================================
+
 Release 0.35
 
 **** WARNING: Special upgrade procedure is needed for this release ! ****
@@ -137,7 +139,8 @@ ssmtp-2.64          Extremely simple MTA to get mail off the system to a mail h
 tmux-1.4_4          A Terminal Multiplexer
 ucarp-1.5.2_1       Userlevel Common Address Redundancy Protocol
 
-=====================================================================================================
+================================================================================
+
 Release 0.34
 - Kernel:
 	Add ipdivert module 
@@ -181,7 +184,8 @@ ssmtp-2.62.3        Extremely simple MTA to get mail off the system to a mail h
 tmux-1.3            A Terminal Multiplexer
 ucarp-1.5.2_1       Userlevel Common Address Redundancy Protocol
 
-=====================================================================================================
+================================================================================
+
 Release 0.33
 - Media size needs reduced from 512MB to 256MB (Thanks Warner Losh)
 - Based on FreeBSD 8.1-Release
@@ -247,7 +251,8 @@ Installed packages and their versions:
 - ssmtp-2.62.3, Extremely simple MTA to get mail off the system to a mail hub 
 - ucarp-1.5.2, Userlevel Common Address Redundancy Protocol 
 
-=====================================================================================================
+================================================================================
+
 Release 0.32
 - Based on FreeBSD 8.0-Release-p2
 - Add tools:
@@ -279,7 +284,8 @@ Know bugs:
 - There are lot's of regression in FreeBSD 8.0-Release, will release a new as soon as 8.1-Release
   will be available
 
-=====================================================================================================
+================================================================================
+
 Release 0.31
 - Add Virtualbox detection on "system check-vm" (thanks to Baptiste Chaussade)
 - Cleanup default /etc/rc.conf
@@ -299,7 +305,8 @@ Bug fixes:
 Know bug:
 - Keyboard input don't works under VirtualBox (#2840062)
 
-=====================================================================================================
+================================================================================
+
 Release 0.3
 
 - Downgrade to FreeBSD 7.2 (permit to use it in production environement without waiting for FreeBSD 8.0 stable)
@@ -326,7 +333,8 @@ Bugs fix:
 slice after an upgrade.
 - Fix TARGET_ARCH variable in make.sh for compiling ports
 
-=====================================================================================================
+================================================================================
+
 Release 0.2
 
 - Upgrade to FreeBSD 8.0-BETA1
@@ -335,7 +343,8 @@ Release 0.2
 - Tune Kernel: Enable MROUTING and ALTQ, MULTIPLE FIB (4), disable flowtable
 - Improve/fix bugs in the BSDRP scripts: upgrade and config
 
-=====================================================================================================
+================================================================================
+
 Release 0.1
 
 First Release that include:
