@@ -1,3 +1,10 @@
+Release 1.2 (not released)
+-
+-
+-
+
+================================================================================
+
 Release 1.1
 - Upade base to FreeBSD 8.2-RELEASE-p6
 - netblast/netstend/netreceive bench tools now support IPv6
