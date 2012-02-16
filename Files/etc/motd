@@ -5,5 +5,6 @@ BSDRP is under the Simplified BSD license.
 Documentation: http://bsdrp.net
 
 Discover BSDRP tools with "help" command
-Keyboard layout can be set with: kbdcontrol -l file-map
-				(use <TAB> for list them)
+
+Configure Keyboard layout with this command:
+kbdcontrol -l keymap_file (<TAB> for list available maps)
