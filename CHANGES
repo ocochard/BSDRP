@@ -1,4 +1,5 @@
 Release 1.2 (not released)
+- Kernel: enable IPFIREWALL_FORWARD
 - Redirect periodic output to a log file
 
 ================================================================================

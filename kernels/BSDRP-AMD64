@@ -373,6 +373,9 @@ options		ROUTETABLES=16
 # man 9 zero_copy
 options		ZERO_COPY_SOCKETS
 
+#Enable the use of the IP forward feature
+options		IPFIREWALL_FORWARD
+
 # CARP: Common Address Redundancy Protocol (a patented free VRRP)
 # CARP is disabled because it's incompatible with freevrrpd
 # device      carp
