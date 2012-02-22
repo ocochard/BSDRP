@@ -1,5 +1,5 @@
 Release 1.2 (not released)
-- Kernel: enable IPFIREWALL_FORWARD
+- Kernel: Enable device enc
 - Redirect periodic output to a log file
 
 ================================================================================

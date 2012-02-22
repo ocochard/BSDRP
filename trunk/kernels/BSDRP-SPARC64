@@ -312,7 +312,11 @@ options		ROUTETABLES=16
 options		ZERO_COPY_SOCKETS
 
 #Enable the use of the IP forward feature
-options     IPFIREWALL_FORWARD
+#Reduce PPS
+#options     IPFIREWALL_FORWARD
+
+# Encapsulating Interface
+device enc
 
 # CARP: Common Address Redundancy Protocol (a patented free VRRP) 
 # CARP is disabled because it's incompatible with freevrrpd 
