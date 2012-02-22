@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: src/sys/i386/conf/GENERIC,v 1.516 2009/06/10 02:07:58 yongari Exp $
+# $FreeBSD: src/sys/i386/conf/GENERIC,v 1.519.2.18 2012/02/14 15:56:01 jimharris Exp $
 
 cpu		I486_CPU
 cpu		I586_CPU
@@ -154,7 +154,7 @@ device      mvs         # Marvell Serial ATA Host Controller driver
 #device		ahd		# AHA39320/29320 and onboard AIC79xx devices
 #options 	AHD_REG_PRETTY_PRINT	# Print register bitfields in debug
 					# output.  Adds ~215k to driver.
-#device		amd		# AMD 53C974 (Tekram DC-390(T))
+#device		esp		# AMD Am53C974 (Tekram DC-390(T))
 #device		hptiop		# Highpoint RocketRaid 3xxx series
 #device		isp		# Qlogic family
 #device		ispfw		# Firmware for QLogic HBAs- normally a module
@@ -172,6 +172,7 @@ device      mvs         # Marvell Serial ATA Host Controller driver
 #device		ncv		# NCR 53C500
 #device		nsp		# Workbit Ninja SCSI-3
 #device		stg		# TMC 18C30/18C50
+#device		isci		# Intel C600 SAS controller
 
 # SCSI peripherals
 device		scbus		# SCSI bus (required for SCSI)
@@ -194,6 +195,7 @@ device		pass		# Passthrough device (direct SCSI access)
 #device		ips		# IBM (Adaptec) ServeRAID
 #device		mly		# Mylex AcceleRAID/eXtremeRAID
 #device		twa		# 3ware 9000 series PATA/SATA RAID
+#device		tws		# LSI 3ware 9750 SATA+SAS 6Gb/s RAID controller
 
 # RAID controllers
 #device		aac		# Adaptec FSA RAID
@@ -242,10 +244,7 @@ device		uart		# Generic UART driver
 #device		ppi		# Parallel port interface device
 #device		vpo		# Requires scbus and da
 
-# If you've got a "dumb" serial or parallel PCI card that is
-# supported by the puc(4) glue driver, uncomment the following
-# line to enable it (connects to sio, uart and/or ppc drivers):
-#device		puc
+device		puc		# Multi I/O cards and multi-channel UARTs
 
 # PCI Ethernet NICs.
 device		de		# DEC/Intel DC21x4x (``Tulip'')
@@ -280,7 +279,7 @@ device		pcn		# AMD Am79C97x PCI 10/100 (precedence over 'le')
 device		re		# RealTek 8139C+/8169/8169S/8110S
 device		rl		# RealTek 8129/8139
 device		sf		# Adaptec AIC-6915 (``Starfire'')
-device      sge     # Silicon Integrated Systems SiS190/191
+device		sge		# Silicon Integrated Systems SiS190/191
 device		sis		# Silicon Integrated Systems SiS 900/SiS 7016
 device		sk		# SysKonnect SK-984x & SK-982x gigabit Ethernet
 device		ste		# Sundance ST201 (D-Link DFE-550TX)
@@ -289,6 +288,7 @@ device		tl		# Texas Instruments ThunderLAN
 device		tx		# SMC EtherPower II (83c170 ``EPIC'')
 device		vge		# VIA VT612x gigabit Ethernet
 device		vr		# VIA Rhine, Rhine II
+device		vte		# DM&P Vortex86 RDC R6040 Fast Ethernet
 device		wb		# Winbond W89C840F
 device		xl		# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 
@@ -325,6 +325,7 @@ device		xe		# Xircom pccard Ethernet
 device		loop		# Network loopback
 device		random		# Entropy device
 device		ether		# Ethernet support
+#device		vlan		# 802.1Q VLAN support
 device		tun		# Packet tunnel.
 device		pty		# BSD-style compatibility pseudo ttys
 device		md		# Memory "disks"
@@ -349,10 +350,6 @@ device		ukbd		# Keyboard
 #device		ulpt		# Printer
 device		umass		# Disks/Mass storage - Requires scbus and da
 #device		ums		# Mouse
-#device		rum		# Ralink Technology RT2501USB wireless NICs
-#device		ural		# Ralink Technology RT2500USB wireless NICs
-#device		uath		# Atheros AR5523 wireless NICs
-#device		zyd		# ZyDAS zb1211/zb1211b wireless NICs
 #device		urio		# Diamond Rio 500 MP3 player
 # USB Serial devices
 #device		u3g		# USB-based 3G modems (Option, Huawei, Sierra)
@@ -372,6 +369,11 @@ device		umass		# Disks/Mass storage - Requires scbus and da
 #device		kue		# Kawasaki LSI USB Ethernet
 #device		rue		# RealTek RTL8150 USB Ethernet
 #device		udav		# Davicom DM9601E USB
+# USB Wireless
+#device		rum		# Ralink Technology RT2501USB wireless NICs
+#device		uath		# Atheros AR5523 wireless NICs
+#device		ural		# Ralink Technology RT2500USB wireless NICs
+#device		zyd		# ZyDAS zb1211/zb1211b wireless NICs
 
 # FireWire support
 #device		firewire	# FireWire bus code
@@ -399,10 +401,6 @@ options		ZERO_COPY_SOCKETS
 
 # Encapsulating Interface
 device enc
-
-# CARP: Common Address Redundancy Protocol (a patented free VRRP)
-# CARP is disabled because it's incompatible with freevrrpd
-# device		carp
 
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules

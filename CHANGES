@@ -1,4 +1,5 @@
 Release 1.2 (not released)
+- Update base to FreeBSD 8.3(beta)
 - Kernel: Enable device enc
 - Redirect periodic output to a log file
 

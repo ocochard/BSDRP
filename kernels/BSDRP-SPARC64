@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: src/sys/sparc64/conf/GENERIC,v 1.158.2.10.2.1 2010/06/14 02:09:06 kensmith Exp $
+# $FreeBSD: src/sys/sparc64/conf/GENERIC,v 1.158.2.14 2012/01/28 23:45:31 marius Exp $
 
 cpu		SUN4U
 ident		BSDRP-SPARC64
@@ -136,11 +136,11 @@ device		ahc		# AHA2940 and onboard AIC7xxx devices
 options 	AHC_ALLOW_MEMIO	# Attempt to use memory mapped I/O
 options 	AHC_REG_PRETTY_PRINT	# Print register bitfields in debug
 					# output.  Adds ~128k to driver.
+device		esp		# AMD Am53C974, Sun ESP and FAS families
 device		isp		# Qlogic family
 device		ispfw		# Firmware module for Qlogic host adapters
 device		mpt		# LSI-Logic MPT-Fusion
 device		sym		# NCR/Symbios/LSI Logic 53C8XX/53C1010/53C1510D
-device		esp		# NCR53c9x (FEPS/FAS366)
 
 # SCSI peripherals
 device		scbus		# SCSI bus (required for SCSI)
@@ -160,7 +160,7 @@ device		atkbdc		# AT keyboard controller
 device		atkbd		# AT keyboard
 #device		psm		# PS/2 mouse
 
-#device		kbdmux		# keyboard multiplexer
+device		kbdmux		# keyboard multiplexer
 
 # syscons is the default console driver, resembling an SCO console
 #device		sc
@@ -176,6 +176,9 @@ device		mk48txx		# Mostek MK48Txx clocks
 device		rtc		# rtc (really a front-end for the MC146818)
 device		mc146818	# Motorola MC146818 and compatible clocks
 device		epic		# Sun Fire V215/V245 LEDs
+device		sbbc		# Sun BootBus controller (time-of-day clock for
+				# Serengeti and StarCat, console for Serengeti,
+				# requires device uart)
 
 # Serial (COM) ports
 device		puc		# Multi-channel uarts
@@ -214,7 +217,7 @@ device		nge		# NatSemi DP83820 gigabit Ethernet
 device		re		# RealTek 8139C+/8169/8169S/8110S
 device		rl		# RealTek 8129/8139
 device		sf		# Adaptec AIC-6915 (``Starfire'')
-#device		sis		# Silicon Integrated Systems SiS 900/SiS 7016
+device		sis		# Silicon Integrated Systems SiS 900/SiS 7016
 device		sk		# SysKonnect SK-984x & SK-982x gigabit Ethernet
 device		ste		# Sundance ST201 (D-Link DFE-550TX)
 device		stge		# Sundance/Tamarack TC9021 gigabit Ethernet
@@ -317,10 +320,6 @@ options		ZERO_COPY_SOCKETS
 
 # Encapsulating Interface
 device enc
-
-# CARP: Common Address Redundancy Protocol (a patented free VRRP) 
-# CARP is disabled because it's incompatible with freevrrpd 
-# device      carp  
 
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules 
 # Name are relative to /usr/src/sys/modules 
