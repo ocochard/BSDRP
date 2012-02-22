@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: src/sys/amd64/conf/GENERIC,v 1.528 2009/06/10 02:07:58 yongari Exp $
+# $FreeBSD: src/sys/amd64/conf/GENERIC,v 1.531.2.21 2012/02/14 15:56:01 jimharris Exp $
 
 cpu		HAMMER
 ident	BSDRP-AMD64
@@ -78,7 +78,7 @@ options 	HWPMC_HOOKS		# Necessary kernel hooks for hwpmc(4)
 # options		FLOWTABLE		# per-cpu routing cache
 #options 	KDTRACE_FRAME		# Ensure frames are compiled in
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
-options     INCLUDE_CONFIG_FILE     # Include this file in kernel
+options		INCLUDE_CONFIG_FILE     # Include this file in kernel
 
 # altq(9). Enable the base part of the hooks with the ALTQ option.
 # Individual disciplines must be built into the base system and can not be
@@ -146,11 +146,12 @@ device		mvs		# Marvell Serial ATA Host Controller driver
 #device		ahd		# AHA39320/29320 and onboard AIC79xx devices
 #options 	AHD_REG_PRETTY_PRINT	# Print register bitfields in debug
 					# output.  Adds ~215k to driver.
-#device		amd		# AMD 53C974 (Tekram DC-390(T))
+#device		esp		# AMD Am53C974 (Tekram DC-390(T))
 #device		hptiop		# Highpoint RocketRaid 3xxx series
 #device		isp		# Qlogic family
 #device		ispfw		# Firmware for QLogic HBAs- normally a module
 #device		mpt		# LSI-Logic MPT-Fusion
+#device		mps		# LSI-Logic MPT-Fusion 2
 #device		ncr		# NCR/Symbios Logic
 #device		sym		# NCR/Symbios Logic (newer chipsets + those of `ncr')
 #device		trm		# Tekram DC395U/UW/F DC315U adapters
@@ -159,6 +160,7 @@ device		mvs		# Marvell Serial ATA Host Controller driver
 #device		adw		# Advansys wide SCSI adapters
 #device		aic		# Adaptec 15[012]x SCSI adapters, AIC-6[23]60.
 #device		bt		# Buslogic/Mylex MultiMaster SCSI adapters
+#device		isci		# Intel C600 SAS controller
 
 # SCSI peripherals
 device		scbus		# SCSI bus (required for SCSI)
@@ -192,6 +194,7 @@ device		pass		# Passthrough device (direct SCSI access)
 #XXX pointer/int warnings
 #device		pst		# Promise Supertrak SX6000
 #device		twe		# 3ware ATA RAID
+#device		tws		# LSI 3ware 9750
 
 # atkbdc0 controls both the keyboard and the PS/2 mouse
 device		atkbdc		# AT keyboard controller
@@ -225,6 +228,7 @@ device		uart		# Generic UART driver
 #device		ppi		# Parallel port interface device
 #device		vpo		# Requires scbus and da
 
+device		puc		# Multi I/O cards and multi-channel UARTs
 # If you've got a "dumb" serial or parallel PCI card that is
 # supported by the puc(4) glue driver, uncomment the following
 # line to enable it (connects to sio, uart and/or ppc drivers):
@@ -263,7 +267,7 @@ device		pcn		# AMD Am79C97x PCI 10/100 (precedence over 'le')
 device		re		# RealTek 8139C+/8169/8169S/8110S
 device		rl		# RealTek 8129/8139
 device		sf		# Adaptec AIC-6915 (``Starfire'')
-device      sge     # Silicon Integrated Systems SiS190/191
+device		sge		# Silicon Integrated Systems SiS190/191
 device		sis		# Silicon Integrated Systems SiS 900/SiS 7016
 device		sk		# SysKonnect SK-984x & SK-982x gigabit Ethernet
 device		ste		# Sundance ST201 (D-Link DFE-550TX)
@@ -289,7 +293,7 @@ device		xe		# Xircom pccard Ethernet
 #device		wlan		# 802.11 support
 #options 	IEEE80211_DEBUG	# enable debug msgs
 #options 	IEEE80211_AMPDU_AGE # age frames in AMPDU reorder q's
-#options    IEEE80211_SUPPORT_MESH  # enable 802.11s D3.0 support
+#options	IEEE80211_SUPPORT_MESH  # enable 802.11s D3.0 support
 #device		wlan_wep	# 802.11 WEP support
 #device		wlan_ccmp	# 802.11 CCMP support
 #device		wlan_tkip	# 802.11 TKIP support
@@ -306,6 +310,7 @@ device		xe		# Xircom pccard Ethernet
 device		loop		# Network loopback
 device		random		# Entropy device
 device		ether		# Ethernet support
+#device		vlan		# 802.1Q VLAN support
 device		tun		# Packet tunnel.
 device		pty		# BSD-style compatibility pseudo ttys
 device		md		# Memory "disks"
@@ -319,7 +324,7 @@ device		firmware	# firmware assist module
 device		bpf		# Berkeley packet filter
 
 # USB support
-#options		USB_DEBUG	# enable debug msgs
+#options	USB_DEBUG	# enable debug msgs
 device		uhci		# UHCI PCI->USB interface
 device		ohci		# OHCI PCI->USB interface
 device		ehci		# EHCI PCI->USB interface (USB 2.0)
@@ -330,7 +335,7 @@ device		ukbd		# Keyboard
 #device		ulpt		# Printer
 device		umass		# Disks/Mass storage - Requires scbus and da
 #device		ums		# Mouse
-#device		rum		# Ralink Technology RT2501USB wireless NICs
+#device		urio		# Diamond Rio 500 MP3 player
 #device		uath		# Atheros AR5523 wireless NICs
 #device		ural		# Ralink Technology RT2500USB wireless NICs
 #device		zyd		# ZyDAS zb1211/zb1211b wireless NICs
@@ -352,6 +357,11 @@ device		umass		# Disks/Mass storage - Requires scbus and da
 #device		kue		# Kawasaki LSI USB Ethernet
 #device		rue		# RealTek RTL8150 USB Ethernet
 #device		udav		# Davicom DM9601E USB
+# USB Wireless
+#device		rum		# Ralink Technology RT2501USB wireless NICs
+#device		uath		# Atheros AR5523 wireless NICs
+#device		ural		# Ralink Technology RT2500USB wireless NICs
+#device		zyd		# ZyDAS zb1211/zb1211b wireless NICs
 
 # FireWire support
 #device		firewire	# FireWire bus code
@@ -379,10 +389,6 @@ options		ZERO_COPY_SOCKETS
 
 # Encapsulating Interface
 device enc
-
-# CARP: Common Address Redundancy Protocol (a patented free VRRP)
-# CARP is disabled because it's incompatible with freevrrpd
-# device      carp
 
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules

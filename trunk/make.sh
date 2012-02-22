@@ -99,8 +99,8 @@ update_src () {
 *default delete use-rel-suffix
 *default compress
 
-src-all tag=RELENG_8_2
-ports-all date=2012.02.15.00.00.00
+src-all tag=RELENG_8
+ports-all date=2012.02.21.00.00.00
 EOF
 	csup -L 1 $SUPFILE
     # Force a repatch because csup pulls pristine sources.
@@ -383,10 +383,11 @@ echo "NANO_NAME=${NAME}" >> /tmp/${NAME}.nano
 echo "# Source tree directory" >> /tmp/${NAME}.nano
 echo "NANO_SRC=\"${FREEBSD_SRC}\"" >> /tmp/${NAME}.nano
 
-echo "# Where the port tree is"
+echo "# Where the port tree is" >> /tmp/${NAME}.nano
 echo "NANO_PORTS=${NANO_PORTS}" >> /tmp/${NAME}.nano
 
-echo "# Where nanobsd additional files live under the source tree"
+echo "# Where nanobsd additional files live under the source tree" >> /tmp/${NAME}.nano
+
 echo "NANO_TOOLS=\"${BSDRP_ROOT}\"" >> /tmp/${NAME}.nano
 
 # Copy the common nanobsd configuration file to /tmp
