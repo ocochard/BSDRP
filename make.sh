@@ -100,7 +100,7 @@ update_src () {
 *default compress
 
 src-all tag=RELENG_8
-ports-all date=2012.02.21.00.00.00
+ports-all date=2012.02.22.00.00.00
 EOF
 	csup -L 1 $SUPFILE
     # Force a repatch because csup pulls pristine sources.
