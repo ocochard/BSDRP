@@ -3,7 +3,7 @@
 # Image manipulation tool for BSDRP 
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2011, The BSDRP Development Team 
+# Copyright (c) 2009-2012, The BSDRP Development Team 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,46 +28,50 @@
 # SUCH DAMAGE.
 #
 
-# Uncomment for enable debug: 
-#set -x
+set -e
 
 DEST_ROOT=/tmp/bsdrp_root
 DEST_CFG=/tmp/bsdrp_cfg
 DEST_DATA=/tmp/bsdrp_data
-BSDRP_SRC=/usr/src/tools/tools/nanobsd/BSDRP
+DEST_LIST="$DEST_ROOT $DEST_CFG $DEST_DATA"
+BSDRP_SRC=..
 
 # Get options passed by user
 getoption () {
-	OPTION="$1"
-    FILENAME="$2"
+	if [ $# -lt 1 ]; then
+        	usage
+	else
+		OPTION="$1"
+	fi
+	if [ $# -eq 2 ];then
+		FILENAME="$2"
+	fi
+
+	set -u
    	case "$OPTION" in
 		mount)
         	mount_img
-            ;;
+       		;;
         umount)
-       	    umount_img 
-            ;;
-		update)
-			update_img
-			;;
-		qemu)
-			convert_2qemu
-			;;
-		#convert)
-		#	convert
-		#	;;
-		help|h)
-			usage
-			;;
-		*)
-            if [ "${OPTION}" = "" ];
-            then
-          		echo "missing option"
-            else    
-            	echo "illegal option: $OPTION"
-            fi
-            usage
-            ;;
+		umount_img 
+		;;
+	update)
+		update_img
+		;;
+	qemu)
+		convert_2qemu
+		;;
+	help|h)
+		usage
+		;;
+	*)
+       		if [ ! -n ${OPTION} ]; then
+       			echo "missing option"
+        	else    
+            		echo "illegal option: $OPTION"
+        	fi
+        	usage
+            	;;
         esac
 }
 
@@ -81,79 +85,38 @@ usage () {
 	echo "  - umount   : umount BSDRP image"
 	echo "  - update   : Copy some of the BSDRP source Files/ to mounted root"
 	echo "  - qemu <filename>   : Convert BSDRP image to compressed qcow2 (qemu) format (not mandatory for using it with qemu)"
-#	echo "  - convert    : Convert ad0 to da0 and vice e versa"
 	echo "  - help (h) [option]  : Display this help message"
 	exit 0
 }
 
 # Check if image is mounted
-check_is_mount () {
-	# Verifing that destination mount points are mounted
-	(mount | grep "${DEST_ROOT}"  > /dev/null 2>&1 )
-	if [ ! $? -eq 0 ]
-	then
-		echo "It seem that ${DEST_ROOT} is not mounted"
-		echo '"Use "image_tools mount" before'		
-		exit 1
+# $1: mount point to check
+# Return 0 if yes, 1 if not
+is_mounted () {
+	if df $1  > /dev/null 2>&1; then
+		return 0
+	else
+		return 1
 	fi
-
-	(mount | grep "${DEST_CFG}"  > /dev/null 2>&1 )
-	if [ ! $? -eq 0 ]
-	then
-		echo "It seem that ${DEST_CFG} is not mounted"
-		echo '"Use "image_tools mount" before'		
-		exit 1
-	fi
-	
-	(mount | grep "${DEST_DATA}"  > /dev/null 2>&1 )
-	if [ ! $? -eq 0 ]
-	then
-		echo "It seem that ${DEST_DATA} is not mounted"
-	fi
-
-}
-# Convert function
-convert_drive () {
-	echo "mount -o ro /dev/${NEW_DRIVE}s3" > ${DEST_ROOT}/conf/default/etc/remount	
-	echo "NANO_DRIVE=${NEW_DRIVE}" > ${DEST_ROOT}/etc/nanobsd.conf
-	echo "/dev/${NEW_DRIVE}s1a / ufs ro 1 1" > ${DEST_ROOT}/etc/fstab
-    echo "/dev/${NEW_DRIVE}s3 /cfg ufs rw,noauto 2 2" >> ${DEST_ROOT}/etc/fstab
-	echo "Done!"
-	echo "Don't forget to change the filename from ${NANO_DRIVE} to ${NEW_DRIVE} once image will be umounted"
-	exit 0
 }
 
-# Convert Disk type (ad0 to da0, da0 to ad0) 
-convert () {
-	check_is_mount
-	# Get original disk type (set the variable NANO_DRIVE)
-	. ${DEST_ROOT}/etc/nanobsd.conf
-	case "$NANO_DRIVE" in
-		ad0)
-			echo "ad0 detected, convert to da0:"
-			NEW_DRIVE=da0
-			convert_drive	
-			exit 0
-			;;
-		da0)
-			echo "da0 detected, convert to ad0:"
-			NEW_DRIVE=ad0
-			convert_drive
-			exit 0
-			;;
-		*)
-			echo "Unknown value: ${NANO_DRIVE}"
-			exit 1
-	esac
-	
+are_mounted () {
+	for MOUNT in $DEST_LIST; do
+		if [ -d $MOUNT ];then
+			is_mounted $MOUNT
+		fi
+	done
 }
+
 # update image
 update_img () {
-	check_is_mount
+	if ! are_mounted; then
+		echo "ERROR: image not mounted"
+		exit 1
+	fi
 
 	# Verifing the presence of BSDRP Files folder:
-	if [ ! -d ${BSDRP_SRC}/Files ]
-	then
+	if [ ! -d ${BSDRP_SRC}/Files ]; then
 		echo "Don't found ${BSDRP_SRC}/Files !"
 		exit 1
 	fi
@@ -187,8 +150,7 @@ check_img () {
         fi
         # Checking file type
         (file -b ${FILENAME} | grep "boot sector"  > /dev/null 2>&1 )
-        if [ ! $? -eq 0 ]
-        then
+        if [ ! $? -eq 0 ]; then
                 echo "Not a BSDRP image file detected"
                 echo "If your BSDRP image is zipped, unzip it before to use
  with this tools"
@@ -222,9 +184,7 @@ convert_2qemu () {
 
 
 	echo "Converting image…"
-	qemu-img convert -c -f raw -O qcow2 ${FILENAME} ${FILENAME}.qcow2
-  	if [ ! $? -eq 0 ]
-	then
+	if ! qemu-img convert -c -f raw -O qcow2 ${FILENAME} ${FILENAME}.qcow2; then
 		echo "Meet a problem during qemu-img convert"
 		exit 1
 	fi
@@ -233,89 +193,53 @@ convert_2qemu () {
 	exit 0
 }
 
-# Check if BSDRP image is allready mounted
-check_notmounted () {
-	# Verifing that destination mount point are free
-	(mount | grep "${DEST_ROOT}"  > /dev/null 2>&1 )
-	if [ $? -eq 0 ]
-	then
-		echo "It seem that ${DEST_ROOT} is allready mounted"
-		echo '"Use "image_tools umount" before to use mount'		
-		exit 1
-	fi
-
-	(mount | grep "${DEST_CFG}"  > /dev/null 2>&1 )
-	if [ $? -eq 0 ]
-	then
-		echo "It seem that ${DEST_CFG} is allready mounted"
-		echo '"Use "image_tools umount" before to use mount'		
-		exit 1
-	fi
-
-	(mount | grep "${DEST_DATA}"  > /dev/null 2>&1 )
-	if [ $? -eq 0 ]
-	then
-		echo "It seem that ${DEST_DATA} is allready mounted"
-		echo '"Use "image_tools umount" before to use mount'		
-		exit 1
-	fi
-
-}
 # Mount image
 mount_img () {
 
-	check_notmounted
+	if are_mounted; then
+		echo "Some of them are allready mounted"
+		exit 1
+	fi
 	check_img
-
-	# Create the destination folders
-
-	if [ ! -d ${DEST_ROOT} ]
-	then
-		mkdir ${DEST_ROOT}
-	fi
-
-	if [ ! -d ${DEST_CFG} ]
-	then
-		mkdir ${DEST_CFG}
-	fi
-
-	if [ ! -d ${DEST_DATA} ]
-	then
-		mkdir ${DEST_DATA}
-	fi
 
 	# Create RAM disk
 
-	MD=`mdconfig -a -t vnode -f ${FILENAME} -x 63 -y 16`
-	if [ ! $? -eq 0 ]
-	then
+	MD=`mdconfig -a -t vnode -f ${FILENAME}`
+	if [ ! $? -eq 0 ]; then
 		echo "Meet a problem for creating memory disk."
 		exit 1
 	fi
 
 	# Save MD name (for umount)
-	echo "MD=$MD" > /tmp/bsdrp_image_tools.tmp
-	
-	mount /dev/${MD}s1a ${DEST_ROOT}
-	if [ ! $? -eq 0 ]
-	then
-		echo "Meet a problem for mounting root partition of the image."
-		echo "Destroying Ram drive..."
+	echo "MD=$MD" > /tmp/bsdrp_image_tool.tmp
+	if [ -e /dev/${MD}s1a ]; then
+		mkdir ${DEST_ROOT}
+		if ! mount /dev/${MD}s1a ${DEST_ROOT}; then
+			echo "ERROR Meet a problem for mounting root partition of the image."
+			echo "Destroying Ram drive..."
+			mdconfig -d -u $MD
+			rm /tmp/bsdrp_image_tool.tmp
+			exit 1
+		fi
+	else
+		echo "ERROR: no /dev/${MD}s1a partition"
 		mdconfig -d -u $MD
+		rm /tmp/bsdrp_image_tool.tmp
 		exit 1
 	fi
 
-	mount /dev/${MD}s3 ${DEST_CFG}
-	if [ ! $? -eq 0 ]
-	then
-		echo "Meet a problem for mounting cfg partition of the image."
-		exit 1
+	if [ -e /dev/${MD}s3 ]; then
+		mkdir ${DEST_CFG}
+		if ! mount /dev/${MD}s3 ${DEST_CFG}; then
+			echo "ERROR: Meet a problem for mounting cfg partition of the image."
+		fi
 	fi
 
-	mount /dev/${MD}s4 ${DEST_DATA}
-	if [ ! $? -eq 0 ]
-	then
-		echo "Meet a problem for mounting data partition of the image."
+	if [ -e /dev/${MD}s4 ]; then
+		mkdir ${DEST_DATA}
+		if mount /dev/${MD}s4 ${DEST_DATA}; then
+			echo "Meet a problem for mounting data partition of the image."
+		fi
 	fi
 
 	echo "Successful mount BSDRP image into:"
@@ -329,41 +253,34 @@ mount_img () {
 # umount the image
 umount_img () {
 
-	check_is_mount
-
-	umount ${DEST_ROOT}
-	if [ ! $? -eq 0 ]
-	then
-		echo "Meet a problem for umounting root partition of the image."
-		echo "Still in use ?"
+	if ! are_mounted; then
+		echo "ERROR: They are not mounted"
 		exit 1
 	fi
 
-	umount ${DEST_CFG}
-	if [ ! $? -eq 0 ]
-	then
-		echo "Meet a problem for umounting cfg partition of the image."
-		echo "Still in use ?"
-		exit 1
-	fi
-
-	umount ${DEST_DATA}
-	if [ ! $? -eq 0 ]
-	then
-		echo "Meet a problem for umounting data partition of the image."
-		echo "Not a blocking problem"
-	fi
+	for DEST_MOUNT in $DEST_LIST; do
+		if [ -d ${DEST_MOUNT} ]; then
+			if ! umount ${DEST_MOUNT}; then
+				echo "ERROR: Meet a problem for umounting $DEST_MOUNT."
+			else
+				rm -rf ${DEST_MOUNT}
+			fi
+		fi
+	done
 
 	# Get the Memory Disk identifier:
-	. /tmp/bsdrp_image_tools.tmp
+	. /tmp/bsdrp_image_tool.tmp
 
 	# Destroy memory disk:
 	echo "Destroy ${MD}"
-	mdconfig -d -u $MD
+	
+	if ! mdconfig -d -u $MD; then
+		echo "ERROR: Can't destroy md $MD"
+	fi
 	echo "Successful umount BSDRP image"
 
 	# cleanup
-	rm /tmp/bsdrp_image_tools.tmp
+	rm /tmp/bsdrp_image_tool.tmp
 	
 	exit 0
 }
