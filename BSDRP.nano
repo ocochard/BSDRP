@@ -578,7 +578,7 @@ usr/share/tmac/tmac.vgrind
 	done	
 	# Generate package inventory
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
-	'pkg_info' > ${NANO_OBJ}/packaqes.info
+	'pkg_info' > ${NANO_OBJ}/packages.info
 
 }
 

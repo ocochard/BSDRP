@@ -1,3 +1,8 @@
+* Bugs *
+	- If local /usr/ports not installed, can't build
+	- Add an exclude list to the csup ports section
+	- Check date on the csup
+	- Need to test the system rollback function
 * Upgrading *
 	- Replacing the use of 2 systems partitions (there is not "active" partition
 	  concept on sparc64 or MIPS) by freebsd-update
