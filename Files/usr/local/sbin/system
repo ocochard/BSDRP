@@ -141,12 +141,12 @@ rollback () {
 	DST_SLICE=0
 
 	if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s1"` ]; then 
-    	DST_SLICE=1
-    	SRC_SLICE=2
-	fi
-	if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s2"` ]; then                
     	DST_SLICE=2
     	SRC_SLICE=1
+	fi
+	if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s2"` ]; then                
+    	DST_SLICE=1
+    	SRC_SLICE=2
 	fi
 
 	if [ $DST_SLICE = 0 ]; then
@@ -155,9 +155,14 @@ rollback () {
 	fi
 	
 	# Check if old system was good
-	if ! fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a; then
-    	echo "ERROR: Missing or fsck problem on the previous system slice"
-    	exit 1
+	if [ -e /dev/${NANO_DRIVE}s${DST_SLICE}a ]; then
+		if ! fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a; then
+    		echo "ERROR: Missing or fsck problem on the previous system slice"
+    		exit 1
+		fi
+	else
+		echo "ERROR: This system was never upgraded"
+		exit 1
 	fi
 
 	# Need to compare some files between the old and new partition
