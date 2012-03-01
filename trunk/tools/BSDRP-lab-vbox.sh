@@ -3,7 +3,7 @@
 # VirtualBox lab script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2011, The BSDRP Development Team
+# Copyright (c) 2009-2012, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -453,6 +453,7 @@ stop_all_vm () {
 vbox_hostonly () {
 	if ! `VBoxManage list hostonlyifs | grep "^Name:"  >> ${LOG_FILE} 2>&1`; then
         echo "ERROR: Not VBox hostonly NIC, you need to create one:"
+		echo "VBoxManage hostonlyif create"
 		echo "VBoxManage hostonlyif ipconfig vboxnet0 --ip 192.168.1.30 --netmask 255.255.255.0"
 		echo "VBoxManage dhcpserver remove --ifname vboxnet0"
         exit 1
