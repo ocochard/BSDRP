@@ -9,7 +9,7 @@
 ################## Common section #################
 
 # Where cust_pkg() finds packages to install
-NANO_PACKAGE_DIR=${NANO_SRC}/${NANO_TOOLS}/Pkg
+NANO_PACKAGE_DIR=${NANO_TOOLS}/Pkg
 NANO_PACKAGE_LIST="*"
 
 # Object tree directory
