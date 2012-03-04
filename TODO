@@ -1,9 +1,6 @@
 * Bugs *
 	- If local /usr/ports not installed: can't build ports
 
-* Install *
-	- Add: system data-slice-expand: delete/re-create /data slice when installed on a hard drive
-
 * Upgrading *
 	- Replacing the use of 2 systems partitions (there is not "active" partition
 	  concept on sparc64 or MIPS) by freebsd-update

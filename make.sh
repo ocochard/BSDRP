@@ -523,6 +523,12 @@ if ($DEBUG);then
 else
 	FILENAME="${NAME}_${VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
 fi
+
+#Remove old images if present
+if [ -f ${NANOBSD_OBJ}/${FILENAME} ]; then
+	rm ${NANOBSD_OBJ}/${FILENAME}
+fi
+
 if [ -f ${NANOBSD_OBJ}/${FILENAME}.xz ]; then
 	rm ${NANOBSD_OBJ}/${FILENAME}.xz
 fi
@@ -547,15 +553,16 @@ else
 	FILENAME="${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
 fi
 
+#Remove old images if present
+if [ -f ${NANOBSD_OBJ}/${FILENAME}.xz ]; then
+    rm ${NANOBSD_OBJ}/${FILENAME}.xz
+fi
+
 if [ "$FAST" = "n" ]; then
-	if [ -f ${NANOBSD_OBJ}/${FILENAME}.xz ]; then
-		rm ${NANOBSD_OBJ}/${FILENAME}.xz
-	fi 
 	pprint 1 "Compressing ${NAME} full image..." 
 	xz -vf ${NANOBSD_OBJ}/${FILENAME}
 	pprint 1 "Generating checksum for ${NAME} full image..."
 	sha256 ${NANOBSD_OBJ}/${FILENAME}.xz > ${NANOBSD_OBJ}/${FILENAME}.sha256
-
    	pprint 1 "Zipped ${NAME} full image file here:"
    	pprint 1 "${NANOBSD_OBJ}/${FILENAME}.xz"
 else
