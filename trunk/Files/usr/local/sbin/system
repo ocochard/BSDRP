@@ -58,6 +58,7 @@ usage () {
 	# value $0 is the name of the called script
 	echo "Usage: $0 option"
 	echo "  - check-vm            : Try to detect if used in a VM"
+	echo "  - expand-data-slice   : Permit to grow the /data partition size"
 	echo "  - integrity filename  : Check system integrity using the given reference file"
 	echo "  - halt/stop           : Poweroff the system"
 	echo "  - help/h [option]     : Display this help message. "
@@ -109,6 +110,53 @@ ask_save () {
 	fi
 }
 
+#When installed on bigger usb key or hard-drive
+#Destroy the data partition and re-create a big one
+expand_data_slice () {
+	# Get the NANO_GLABEL_SYS variable
+    NANO_GLABEL_SYS=`cut -d '/' -f 2 /etc/nanobsd.conf`
+	if mount | grep -q "/data"; then
+		echo "/data is mounted, you need to unmount it"
+		exit 1
+    fi
+	# Get the NANO_GLABEL_SYS_FULL variable
+    # (kept the last number: 1 or 2)
+    NANO_GLABEL_SYS_FULL=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1`
+
+    # Get the disk name using its label
+    NANO_DRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} | awk '{print $3}' | cut -d's' -f1`
+
+	#free space
+	FREE_SPACE=`gpart show ${NANO_DRIVE} | grep "\- free \-" | grep -v k | cut -d '-' -f 3`
+	if [ -z ${FREE_SPACE} ]; then
+		echo "There is no space left on disk"
+		exit 0
+	fi
+	echo "There is ${FREE_SPACE} available on your disk that can be use for /data"
+	echo "Warning: This action will delete all existing data in /data"
+	echo -n "Are you sure to repartition your disk ? (y/n)"
+    while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
+        read USER_CONFIRM <&1
+    done
+    if [ "$USER_CONFIRM" = "n" ]; then
+        exit 0 
+    fi
+
+	if ! gpart delete -i 4 ${NANO_DRIVE}; then
+		echo "ERROR: gpart delete -i 4 ${NANO_DRIVE} failed"
+		exit 1
+	fi
+
+	if ! gpart add -t freebsd -i 4 ${NANO_DRIVE}; then
+		echo "ERROR: gpart add -t freebsd -i 4 ${NANO_DRIVE} failed"
+	fi
+
+	if ! newfs -b 4096 -f 512 -i 8192 -O1 -U -L ${NANO_GLABEL_SYS}s4 ${NANO_DRIVE}s4; then
+		echo "ERROR: newfs ${NANO_DRIVE}s4 failed"
+	fi
+	echo "Done"
+
+}
 #Revert to the other system partition
 #Big part of this function came from the upgrade script
 #TODO: Need to merge the upgrade script and this script
@@ -427,17 +475,20 @@ else
 fi
 
 case "$FIRST_OPTION" in
-    integrity)
-        integrity
-        ;;
-    check-vm)
+	check-vm)
         check_vm
         ;;
+	expand-data-slice)
+		expand_data_slice
+		;;
 	halt|stop)
 		sys_halt
 		;;
     help|h)
         usage
+        ;;
+    integrity)
+        integrity
         ;;
 	reboot|reload)
 		sys_reboot

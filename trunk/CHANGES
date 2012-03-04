@@ -1,6 +1,7 @@
 Release 1.2 (not released)
 - Update base to FreeBSD 8.3-RC1
-- Add 'system rollback'
+- Add 'system rollback': remotely rollback to previous
+- Add 'system expand-data-slice': Expand the size of /data to all available space on disk 
 - Kernel: Enable device enc and some 1OG drivers (cxgb, cxgbe, mxge, nxge)
 - Redirect periodic output to a log file
 
