@@ -117,14 +117,6 @@ ask_save () {
 # 2. Mount the previous and update the fstab
 # 3. Change the active slice and bootloader default choice	
 rollback () {
-	echo -n "Warning: Are you sure to revert to the previous release ? (y/n)"
-	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
-       	read USER_CONFIRM <&1
-	done
-	if [ "$USER_CONFIRM" = "n" ]; then
-		return 0	
-	fi
-
 	# Get the NANO_GLABEL_SYS variable
 	NANO_GLABEL_SYS=`cut -d '/' -f 2 /etc/nanobsd.conf`
 	# Get the NANO_GLABEL_SYS_FULL variable
@@ -165,32 +157,23 @@ rollback () {
 		exit 1
 	fi
 
+	echo -n "Warning: Are you sure to revert to the previous release ? (y/n)"
+	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
+       	read USER_CONFIRM <&1
+	done
+	if [ "$USER_CONFIRM" = "n" ]; then
+		exit 0	
+	fi
+
 	# Need to compare some files between the old and new partition
 	if [ ! -d /tmp/sysupgrade ]; then
     	mkdir /tmp/sysupgrade
 	fi
 
-	# Mount the old system slice
-	if ! mount /dev/ufs/${NANO_GLABEL_SYS}s${DST_SLICE}a /tmp/sysupgrade; then
-    	echo "ERROR: Can't mount old system slice"
-    	exit 1
-	fi
 	#   Adapt fstab of the old system
-	for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab; do
-        sed -i "" "s/${NANO_GLABEL_SYS}s${SRC_SLICE}a/${NANO_GLABEL_SYS}s${DST_SLICE}a/g" $f
-    	done	
-
-	if ! umount /tmp/sysupgrade; then
-    	echo "ERROR: Can't umount old system slice"
-    	exit 1
-	fi
-
-	if ! rm -r /tmp/sysupgrade; then
-    	echo "WARNING: Can't remove tempdir"
-	fi
+    sed -i "" "s/${NANO_GLABEL_SYS}s${SRC_SLICE}a/${NANO_GLABEL_SYS}s${DST_SLICE}a/g" /etc/fstab
 
 	# Save the config file that include the fstab
-	# Don't know if it's usefull
 	if ! mount /cfg; then
     	echo "ERROR: Cant't mount /cfg"
     	exit 1
@@ -204,7 +187,7 @@ rollback () {
     	echo "ERROR: Can't umount /cfg"
     	exit 1
 	fi
-	case "${ARCH}" in
+	case `uname -m` in
         i386|amd64)
                 if ! boot0cfg -s ${DST_SLICE} -t 18 -v ${NANO_DRIVE}; then
                     echo "ERROR: Can't update FreeBSD bootloader"

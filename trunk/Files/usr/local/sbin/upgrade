@@ -140,11 +140,12 @@ if ! rm -r /tmp/sysupgrade; then
 	echo "WARNING: Can't remove tempdir"
 fi
 
-# Save the config file that include the fstab
-# Don't know if it's usefull
-if ! mount /cfg; then
-	echo "ERROR: Cant't mount /cfg"
-	exit 1
+# Save the fstab to /cfg
+if mount | ! grep -q "/cfg"; then
+	if ! mount /cfg; then
+		echo "ERROR: Cant't mount /cfg"
+		exit 1
+	fi
 fi
 if ! cp /etc/fstab /cfg; then
 	echo "ERROR: Can't save fstab"

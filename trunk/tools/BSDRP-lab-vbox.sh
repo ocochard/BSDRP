@@ -164,9 +164,9 @@ create_template () {
 	fi
 
 
-	echo "Add SATA controller to the VM..." >> ${LOG_FILE}
-	if ! VBoxManage storagectl ${VM_TPL_NAME} --name "SATA Controller" --add sata --controller IntelAhci >> ${LOG_FILE} 2>&1; then
-		echo "[ERROR] Can't add SATA controller to the VM!"
+	echo "Add ATA controller to the VM..." >> ${LOG_FILE}
+	if ! VBoxManage storagectl ${VM_TPL_NAME} --name "ATA Controller" --add ide --controller PIIX4 >> ${LOG_FILE} 2>&1; then
+		echo "[ERROR] Can't add ATA controller to the VM!"
 		exit 1
 	fi
 
@@ -177,7 +177,7 @@ create_template () {
 	fi
 
 	echo "Add the VDI to the VM..." >> ${LOG_FILE}
-	if ! VBoxManage storageattach ${VM_TPL_NAME} --storagectl "SATA Controller" \
+	if ! VBoxManage storageattach ${VM_TPL_NAME} --storagectl "ATA Controller" \
     --port 0 --device 0 --type hdd \
     --medium "${WORKING_DIR}/${VM_TPL_NAME}/${VM_TPL_NAME}.vdi" >> ${LOG_FILE} 2>&1; then
 		echo "[ERROR] Can't add VDI to the VM!"
@@ -295,8 +295,8 @@ parse_filename () {
         SERIAL=false
         echo "vga image"
 		if ! $VBOX_VGA; then
-		echo "[ERROR] You can't use BSDRP vga release with a Virtualbox that didn't support RDP or VNC"
-		exit 1
+			echo "[ERROR] You can't use BSDRP vga release with a Virtualbox that didn't support RDP or VNC"
+			exit 1
 		fi
     fi
 
@@ -466,10 +466,10 @@ usage () {
         (
         echo "Usage: $0 [-hds] [-i BSDRP_image_file.img] [-n router-number] [-l LAN-number]"
         echo "  -i filename     BSDRP image file name (to be used the first time only)"
-        echo "  -d       		Delete all BSDRP VM and disks"
+        echo "  -d              Delete all BSDRP VM and disks"
         echo "  -n X            Number of router (between 1 and 9) full meshed (default: 1)"
         echo "  -l Y            Number of LAN between 0 and 9 (default: 0)"
-		echo "  -m				RAM (in MB) for each VM (default: 128)"
+		echo "  -m              RAM (in MB) for each VM (default: 128)"
 		echo "  -c              Enable internal NIC shared with host for each routers (default: Disable)"
         echo "  -h              Display this help"
         echo "  -s              Stop all VM"
