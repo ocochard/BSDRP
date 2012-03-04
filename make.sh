@@ -91,6 +91,7 @@ update_src () {
 	fi
 
     SUPFILE=${BSDRP_ROOT}/FreeBSD/supfile
+	PORTS_DATE="date=2012.03.02.00.00.00"
     cat <<EOF > $SUPFILE
 *default host=${FREEBSD_CVSUP_HOST}
 *default base=${BSDRP_ROOT}/FreeBSD/sup
@@ -99,8 +100,18 @@ update_src () {
 *default delete use-rel-suffix
 *default compress
 
-src-all tag=RELENG_8
-ports-all date=2012.02.25.00.00.00
+src-all tag=RELENG_8_3
+#ports-all date=2012.03.01.00.00.00
+ports-base ${PORTS_DATE}
+ports-benchmarks ${PORTS_DATE}
+#ports-archivers ${PORTS_DATE}
+ports-devel ${PORTS_DATE}
+ports-lang ${PORTS_DATE}
+ports-net ${PORTS_DATE}
+ports-net-mgmt ${PORTS_DATE}
+ports-mail ${PORTS_DATE}
+ports-sysutils ${PORTS_DATE}
+
 EOF
 	csup -L 1 $SUPFILE
     # Force a repatch because csup pulls pristine sources.
@@ -346,7 +357,7 @@ fi
 check_clean
 
 # If no source installed, force installing them
-if [ ! -d ${BSDRP_ROOT}/FreeBSD ]; then
+if [ ! -d ${BSDRP_ROOT}/FreeBSD/ports/net/quagga ]; then
 	UPDATE_SRC=true
 fi
 

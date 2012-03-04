@@ -1,5 +1,6 @@
 Release 1.2 (not released)
-- Update base to FreeBSD 8.3(beta)
+- Update base to FreeBSD 8.3-RC1
+- Add 'system rollback'
 - Kernel: Enable device enc and some 1OG drivers (cxgb, cxgbe, mxge, nxge)
 - Redirect periodic output to a log file
 

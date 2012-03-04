@@ -1,11 +1,13 @@
 * Bugs *
-	- If local /usr/ports not installed, can't build
-	- Add an exclude list to the csup ports section
-	- Check date on the csup
-	- Need to test the system rollback function
+	- If local /usr/ports not installed: can't build ports
+
+* Install *
+	- Add: system data-slice-expand: delete/re-create /data slice when installed on a hard drive
+
 * Upgrading *
 	- Replacing the use of 2 systems partitions (there is not "active" partition
 	  concept on sparc64 or MIPS) by freebsd-update
+
 * Arch *
 	- NEED to merge lot's of common task of create_arch_diskimage() in nanobsd
 	- Sparc64: Need to fix the login bug, and add arch support to the update script
@@ -36,3 +38,6 @@
 
 * WRAP *
 	- Add WRAP detection on the upgrade script and prevent to upgrade
+
+* Documentation *
+	- Hard drive installation (dd if=usb of=hdd) and "system data expand"

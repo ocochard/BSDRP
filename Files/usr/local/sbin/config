@@ -117,9 +117,12 @@ mount_data () {
 	if ! grep -q "/data" /etc/fstab; then
 		echo "/dev/ufs/BSDRPs4 /data ufs rw,noauto 2 2" >> /etc/fstab
 	fi
-	if ! mount /data; then
-		echo "ERROR: Can't mount /data"
-		exit 1
+	
+	if mount | ! grep -q "/data"; then
+		if ! mount /data; then
+			echo "ERROR: Can't mount /data"
+			exit 1
+		fi
 	fi
 }
 
