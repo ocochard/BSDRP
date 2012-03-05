@@ -101,12 +101,15 @@ integrity () {
 #ask to save configuration
 ask_save () {	
 	echo "Warning: Unsaved changes detected !"
-	echo -n "Do you want to save the configuration before to continue ? (y/n): "
-	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
+	config diff
+	echo -n "Do you want to save the configuration before to continue or abort ? (y/n/a): "
+	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" -a "$USER_CONFIRM" != "a" ]; do
        	read USER_CONFIRM <&1
 	done
 	if [ "$USER_CONFIRM" = "y" ]; then
 		config save	
+	elif [ "$USER_CONFIRM" = "a" ]; then
+		exit 0
 	fi
 }
 
