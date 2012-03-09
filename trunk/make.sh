@@ -91,7 +91,7 @@ update_src () {
 	fi
 
     SUPFILE=${BSDRP_ROOT}/FreeBSD/supfile
-	PORTS_DATE="date=2012.03.02.00.00.00"
+	PORTS_DATE="date=2012.03.07.00.00.00"
     cat <<EOF > $SUPFILE
 *default host=${FREEBSD_CVSUP_HOST}
 *default base=${BSDRP_ROOT}/FreeBSD/sup
@@ -345,10 +345,9 @@ if [ "${NANO_KERNEL}" = "${NAME}-SPARC64" ] ; then
     INPUT_CONSOLE="serial"
 fi
 
-NANOBSD_OBJ=/usr/obj/nanobsd.${NAME}.${TARGET_ARCH}
-
+NANO_OBJ=/usr/obj/${NAME}.${TARGET_ARCH}
 if [ "${SKIP_REBUILD}" = "-b" ]; then
-	if [ ! -d ${NANOBSD_OBJ} ]; then
+	if [ ! -d ${NANO_OBJ} ]; then
 		echo "ERROR: No previous object directory found, you can't use -b option"
 		exit 1
 	fi
@@ -400,6 +399,7 @@ echo "NANO_PORTS=${NANO_PORTS}" >> /tmp/${NAME}.nano
 echo "# Where nanobsd additional files live under the source tree" >> /tmp/${NAME}.nano
 
 echo "NANO_TOOLS=\"${BSDRP_ROOT}\"" >> /tmp/${NAME}.nano
+echo "NANO_OBJ=\"${NANO_OBJ}\"" >> /tmp/${NAME}.nano
 
 # Copy the common nanobsd configuration file to /tmp
 cat ${NAME}.nano >> /tmp/${NAME}.nano
@@ -457,7 +457,7 @@ export TARGET_ARCH
 
 # Delete the destination dir
 if ($DELETE_ALL); then
-	if [ -d ${NANOBSD_OBJ} ]; then
+	if [ -d ${NANO_OBJ} ]; then
 		pprint 1 "Existing working directory detected,"
 		pprint 1 "but you asked for rebuild all (no -b neither -k option given)"
 		pprint 1 "Do you want to continue ? (y/n)"
@@ -469,9 +469,9 @@ if ($DELETE_ALL); then
                exit 0     
         fi
 
-		pprint 1 "Delete existing ${NANOBSD_OBJ} directory"
-		chflags -R noschg ${NANOBSD_OBJ}
-		rm -rf ${NANOBSD_OBJ}
+		pprint 1 "Delete existing ${NANO_OBJ} directory"
+		chflags -R noschg ${NANO_OBJ}
+		rm -rf ${NANO_OBJ}
 	fi
 fi
 
@@ -505,7 +505,7 @@ if [ $? -eq 0 ]; then
 	pprint 1 "NanoBSD build seems finish successfully."
 else
 	pprint 1 "ERROR: NanoBSD meet an error, check the log files here:"
-	pprint 1 "${NANOBSD_OBJ}/"	
+	pprint 1 "${NANO_OBJ}/"	
 	pprint 1 "An error during the build world or kernel can be caused by"
 	pprint 1 "a bug in the FreeBSD-current code"	
 	pprint 1 "try to re-sync your code" 
@@ -513,7 +513,7 @@ else
 fi
 
 # The exit code on NanoBSD doesn't work for port compilation/installation
-if [ ! -f ${NANOBSD_OBJ}/_.disk.image ]; then
+if [ ! -f ${NANO_OBJ}/_.disk.image ]; then
 	pprint 1 "ERROR: NanoBSD meet an error (port installation/compilation ?)"
 	exit 1
 fi
@@ -525,26 +525,26 @@ else
 fi
 
 #Remove old images if present
-if [ -f ${NANOBSD_OBJ}/${FILENAME} ]; then
-	rm ${NANOBSD_OBJ}/${FILENAME}
+if [ -f ${NANO_OBJ}/${FILENAME} ]; then
+	rm ${NANO_OBJ}/${FILENAME}
 fi
 
-if [ -f ${NANOBSD_OBJ}/${FILENAME}.xz ]; then
-	rm ${NANOBSD_OBJ}/${FILENAME}.xz
+if [ -f ${NANO_OBJ}/${FILENAME}.xz ]; then
+	rm ${NANO_OBJ}/${FILENAME}.xz
 fi
 
-mv ${NANOBSD_OBJ}/_.disk.image ${NANOBSD_OBJ}/${FILENAME}
+mv ${NANO_OBJ}/_.disk.image ${NANO_OBJ}/${FILENAME}
 
 if [ "$FAST" = "n" ]; then
 	pprint 1 "Compressing ${NAME} upgrade image..."
-	xz -vf ${NANOBSD_OBJ}/${FILENAME}
+	xz -vf ${NANO_OBJ}/${FILENAME}
 	pprint 1 "Generating checksum for ${NAME} upgrade image..."
-	sha256 ${NANOBSD_OBJ}/${FILENAME}.xz > ${NANOBSD_OBJ}/${FILENAME}.sha256
+	sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
 	pprint 1 "${NAME} upgrade image file here:"
-	pprint 1 "${NANOBSD_OBJ}/${FILENAME}.xz"
+	pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
 else
 	pprint 1 "Uncompressed ${NAME} upgrade image file here:"
-	pprint 1 "${NANOBSD_OBJ}/${FILENAME}"
+	pprint 1 "${NANO_OBJ}/${FILENAME}"
 fi
 
 if ($DEBUG); then
@@ -554,32 +554,32 @@ else
 fi
 
 #Remove old images if present
-if [ -f ${NANOBSD_OBJ}/${FILENAME}.xz ]; then
-    rm ${NANOBSD_OBJ}/${FILENAME}.xz
+if [ -f ${NANO_OBJ}/${FILENAME}.xz ]; then
+    rm ${NANO_OBJ}/${FILENAME}.xz
 fi
 
 if [ "$FAST" = "n" ]; then
 	pprint 1 "Compressing ${NAME} full image..." 
-	xz -vf ${NANOBSD_OBJ}/${FILENAME}
+	xz -vf ${NANO_OBJ}/${FILENAME}
 	pprint 1 "Generating checksum for ${NAME} full image..."
-	sha256 ${NANOBSD_OBJ}/${FILENAME}.xz > ${NANOBSD_OBJ}/${FILENAME}.sha256
+	sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
    	pprint 1 "Zipped ${NAME} full image file here:"
-   	pprint 1 "${NANOBSD_OBJ}/${FILENAME}.xz"
+   	pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
 else
 	pprint 1 "Unzipped ${NAME} full image file here:"
-   	pprint 1 "${NANOBSD_OBJ}/${FILENAME}"
+   	pprint 1 "${NANO_OBJ}/${FILENAME}"
 fi
 
 pprint 1 "Zipping and renaming mtree..."
-if [ -f ${NANOBSD_OBJ}/${FILENAME}.mtree.xz ]; then
-	rm ${NANOBSD_OBJ}/${FILENAME}.mtree.xz
+if [ -f ${NANO_OBJ}/${FILENAME}.mtree.xz ]; then
+	rm ${NANO_OBJ}/${FILENAME}.mtree.xz
 fi
-mv ${NANOBSD_OBJ}/_.mtree ${NANOBSD_OBJ}/${FILENAME}.mtree
-xz -vf ${NANOBSD_OBJ}/${FILENAME}.mtree
-mv ${NANOBSD_OBJ}/${FILENAME}.mtree.xz ${NANOBSD_OBJ}/${NAME}_${VERSION}_${TARGET_ARCH}_${INPUT_CONSOLE}.mtree.xz
+mv ${NANO_OBJ}/_.mtree ${NANO_OBJ}/${FILENAME}.mtree
+xz -vf ${NANO_OBJ}/${FILENAME}.mtree
+mv ${NANO_OBJ}/${FILENAME}.mtree.xz ${NANO_OBJ}/${NAME}_${VERSION}_${TARGET_ARCH}_${INPUT_CONSOLE}.mtree.xz
 
 pprint 1 "Security reference mtree file here:"
-pprint 1 "${NANOBSD_OBJ}/${FILENAME}.mtree.xz"
+pprint 1 "${NANO_OBJ}/${FILENAME}.mtree.xz"
 
 pprint 1 "Done !"
 exit 0

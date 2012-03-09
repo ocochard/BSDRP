@@ -1,0 +1,12 @@
+--- Mk/bsd.port.mk.orig	2012-02-22 18:34:47.000000000 +0100
++++ Mk/bsd.port.mk	2012-03-08 21:58:17.000000000 +0100
+@@ -2205,7 +2205,8 @@
+ 			LDFLAGS="${LDFLAGS}" \
+ 			CXX="${CXX}" CXXFLAGS="${CXXFLAGS}" \
+ 			MANPREFIX="${MANPREFIX}"
+-
++MAKE_ENV+=		TARGET_ARCH=
++			
+ # Add -fno-strict-aliasing to CFLAGS with optimization level -O2 or higher.
+ # gcc 4.x enable strict aliasing optimization with -O2 which is known to break
+ # a lot of ports.
