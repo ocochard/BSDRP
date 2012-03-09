@@ -48,26 +48,17 @@ if [ "${ARCH}" = "sparc64" ]; then
 	exit 1
 fi
 
-# Get the NANO_GLABEL_SYS variable
-NANO_GLABEL_SYS=`cut -d '/' -f 2 /etc/nanobsd.conf`
-# Get the NANO_GLABEL_SYS_FULL variable
-# (kept the last number: 1 or 2)
-NANO_GLABEL_SYS_FULL=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1`
-
-# Get the disk name using its label
-NANO_DRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} | awk '{print $3}' | cut -d's' -f1`
-
-# Get the full disk name
-NANO_FULLDRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} | awk '{print $3}'`
+#Load the NANO_DRIVE (label) variable:
+. /etc/nanobsd.conf
 
 # Check and set final variable
 DST_SLICE=0
 
-if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s1"` ]; then 
+if mount | grep -q "/dev/${NANO_DRIVE}s1a on / "; then 
 	DST_SLICE=2
 	SRC_SLICE=1
 fi
-if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s2"` ]; then                
+if mount | grep -q "/dev/${NANO_DRIVE}s2a on / " ; then                
     DST_SLICE=1
 	SRC_SLICE=2
 fi
@@ -77,26 +68,29 @@ if [ $DST_SLICE = 0 ]; then
 	exit 1
 fi
 
+boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s${SRC_SLICE}a | awk '{ print $3; }' | cut -d s -f 1`
+label=`cut -d '/' -f 2 /etc/nanobsd.conf`
+
 # Blow away old system.
-if ! dd if=/dev/zero of=/dev/${NANO_DRIVE}s${DST_SLICE} bs=1m count=1 > /dev/null 2>&1; then
-	echo "ERROR: Can't initialize destination partition"
+if ! dd if=/dev/zero of=${boot_dev}s${DST_SLICE} bs=1m count=1 > /dev/null 2>&1; then
+	echo "ERROR: Can't initialize destination partition ${boot_dev}s${DST_SLICE}"
 	exit 1
 fi
 
 # Copy in new system
-if ! dd of=/dev/${NANO_DRIVE}s${DST_SLICE} obs=64k; then
-	echo "ERROR: Can't install the upgrade on /dev/${NANO_DRIVE}s${DST_SLICE}"
+if ! dd of=${boot_dev}s${DST_SLICE} obs=64k; then
+	echo "ERROR: Can't install the upgrade on ${boot_dev}s${DST_SLICE}"
 	exit 1
 fi
 
 # Check that it worked
-if ! fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a; then
-	echo "ERROR: New file system check failed"
+if ! fsck_ffs -n ${boot_dev}s${DST_SLICE}a; then
+	echo "ERROR: New file system ${boot_dev}s${DST_SLICE}a check failed"
 	exit 1
 fi
 
 # Set Label into the new slice
-if ! tunefs -L ${NANO_GLABEL_SYS}s${DST_SLICE}a /dev/${NANO_DRIVE}s${DST_SLICE}a; then
+if ! tunefs -L ${label}s${DST_SLICE}a ${boot_dev}s${DST_SLICE}a; then
 	echo "ERROR: Can't put label on the new filesystem"
 	exit 1
 fi
@@ -106,14 +100,14 @@ if [ ! -d /tmp/sysupgrade ]; then
 	mkdir /tmp/sysupgrade
 fi
 
-if ! mount /dev/ufs/${NANO_GLABEL_SYS}s${DST_SLICE}a /tmp/sysupgrade; then
+if ! mount /dev/ufs/${label}s${DST_SLICE}a /tmp/sysupgrade; then
 	echo "ERROR: Can't mount new upgrade image"
 	exit 1
 fi
 # 	Adapt fstab of the new system
 for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab
 	do
-	    sed -i "" "s/${NANO_GLABEL_SYS}s${SRC_SLICE}a/${NANO_GLABEL_SYS}s${DST_SLICE}a/g" $f
+	    sed -i "" "s/${label}s${SRC_SLICE}a/${label}s${DST_SLICE}a/g" $f
     done
 #	Compare the loader.conf, and include the diff into the new partition
 #	This file is for example, modified by "system virtualized"
@@ -159,18 +153,18 @@ fi
 
 case "${ARCH}" in
         i386|amd64)
-				if ! boot0cfg -s ${DST_SLICE} -t 18 -v ${NANO_DRIVE}; then
+				if ! boot0cfg -s ${DST_SLICE} -t 18 -v ${boot_dev}; then
 					echo "ERROR: Can't update FreeBSD bootloader"
 					exit 1
 				fi
-				if ! gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}; then
+				if ! gpart set -a active -i ${DST_SLICE} ${boot_dev}; then
 					echo "ERROR: Can't update active partition"
 					exit 1
 				fi
                 ;;
         arm)
 				echo "arm upgrade script not tested!"	
-				if ! gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}; then
+				if ! gpart set -a active -i ${DST_SLICE} ${boot_dev}; then
 					echo "ERROR: Can't update active partition"
 					exit 1
 				fi

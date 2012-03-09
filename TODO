@@ -1,5 +1,6 @@
 * Bugs *
-	- If local /usr/ports not installed: can't build ports
+	- growfs remove the ufs label, and can't set it after
+	- if /data had a fsck problem, system refuse go in single user
 
 * Upgrading *
 	- Replacing the use of 2 systems partitions (there is not "active" partition

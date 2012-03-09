@@ -116,27 +116,25 @@ ask_save () {
 #When installed on bigger usb key or hard-drive
 #Destroy the data partition and re-create a big one
 expand_data_slice () {
-	# Get the NANO_GLABEL_SYS variable
-    NANO_GLABEL_SYS=`cut -d '/' -f 2 /etc/nanobsd.conf`
+
+	#Load the NANO_DRIVE (label) variable:
+	. /etc/nanobsd.conf
+
+	boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s.a | awk '{ print $3; }' | cut -d s -f 1`
+	label=`cut -d '/' -f 2 /etc/nanobsd.conf`
+
 	if mount | grep -q "/data"; then
 		echo "/data is mounted, you need to unmount it"
 		exit 1
     fi
-	# Get the NANO_GLABEL_SYS_FULL variable
-    # (kept the last number: 1 or 2)
-    NANO_GLABEL_SYS_FULL=`mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1`
-
-    # Get the disk name using its label
-    NANO_DRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} | awk '{print $3}' | cut -d's' -f1`
 
 	#free space
-	FREE_SPACE=`gpart show ${NANO_DRIVE} | grep "\- free \-" | grep -v k | cut -d '-' -f 3`
+	FREE_SPACE=`gpart show ${boot_dev} | grep "\- free \-" | grep -v k | cut -d '-' -f 3`
 	if [ -z ${FREE_SPACE} ]; then
 		echo "There is no space left on disk"
 		exit 0
 	fi
 	echo "There is ${FREE_SPACE} available on your disk that can be use for /data"
-	echo "Warning: This action will delete all existing data in /data"
 	echo -n "Are you sure to repartition your disk ? (y/n)"
     while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
         read USER_CONFIRM <&1
@@ -145,17 +143,21 @@ expand_data_slice () {
         exit 0 
     fi
 
-	if ! gpart delete -i 4 ${NANO_DRIVE}; then
-		echo "ERROR: gpart delete -i 4 ${NANO_DRIVE} failed"
+	if ! gpart resize -i 4 ${boot_dev}; then
+		echo "ERROR: gpart resize -i 4 ${boot_dev} failed"
 		exit 1
 	fi
 
-	if ! gpart add -t freebsd -i 4 ${NANO_DRIVE}; then
-		echo "ERROR: gpart add -t freebsd -i 4 ${NANO_DRIVE} failed"
+	if ! growfs -y ${boot_dev}s4; then
+		echo "ERROR: growfs ${boot_dev}s4 failed"
+		exit 1
 	fi
 
-	if ! newfs -b 4096 -f 512 -i 8192 -O1 -U -L ${NANO_GLABEL_SYS}s4 ${NANO_DRIVE}s4; then
-		echo "ERROR: newfs ${NANO_DRIVE}s4 failed"
+	# The label is removed, need to re-put it
+
+	if ! tunefs -L ${label} ${boot_dev}s4
+		echo "ERROR: cannot reset label ${label} to ${boot_dev}s4"
+		exit 1
 	fi
 	echo "Done"
 
