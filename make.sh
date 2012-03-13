@@ -58,7 +58,7 @@ FREEBSD_SRC="${BSDRP_ROOT}/FreeBSD/src"
 NANOBSD_DIR="${FREEBSD_SRC}/tools/tools/nanobsd"
 
 # Product version (need to add SVN versio too)
-VERSION=`cat ${BSDRP_ROOT}/Files/etc/${NAME}.version`
+VERSION=`cat ${BSDRP_ROOT}/Files/etc/version`
 
 # Number of jobs
 MAKE_JOBS=$(( 2 * $(sysctl -n kern.smp.cpus) + 1 ))

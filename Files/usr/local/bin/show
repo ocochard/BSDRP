@@ -172,7 +172,7 @@ packages () {
 }
 # Display version
 version () {
-	VERSION=`cat /etc/BSDRP.version`
+	VERSION=`cat /etc/version`
 	FREEBSD_VERSION=`uname -srp`
     	echo "BSD Router Project version: ${VERSION}"
     	echo "Based on: ${FREEBSD_VERSION}"
