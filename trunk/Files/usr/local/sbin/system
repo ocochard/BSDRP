@@ -153,12 +153,6 @@ expand_data_slice () {
 		exit 1
 	fi
 
-	# The label is removed, need to re-put it
-
-	if ! tunefs -L ${label} ${boot_dev}s4
-		echo "ERROR: cannot reset label ${label} to ${boot_dev}s4"
-		exit 1
-	fi
 	echo "Done"
 
 }
