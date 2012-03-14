@@ -240,19 +240,13 @@ add_port () {
 				if [ ! -d \${NANO_OBJ}/ports ]; then
 					mkdir -p \${NANO_OBJ}/ports/packages
 				fi
-				if [ ! -d \${NANO_PORTS}/distfiles ]; then
-					mkdir -p \${NANO_PORTS}/ports/distfiles
-				fi
            		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
-				mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
            		mount -t unionfs -o noatime \${NANO_SRC} \
 					\${NANO_WORLDDIR}/usr/src
            		mount -t unionfs -o noatime \${NANO_PORTS} \
                      \${NANO_WORLDDIR}/usr/ports
 				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
 					\${NANO_WORLDDIR}/usr/ports/packages
-				mount -t unionfs -o noatime \${NANO_PORTS}/ports/distfiles \
-                    \${NANO_WORLDDIR}/usr/ports/distfiles
               	mkdir -p \${NANO_WORLDDIR}/dev
               	mount -t devfs devfs \${NANO_WORLDDIR}/dev
            		mkdir -p \${NANO_WORLDDIR}/usr/pobj
@@ -276,11 +270,9 @@ add_port () {
                	rm -rf \${NANO_WORLDDIR}/usr/workdir
                	umount \${NANO_WORLDDIR}/dev
 				umount \${NANO_WORLDDIR}/usr/ports/packages
-				umount \${NANO_WORLDDIR}/usr/ports/distfiles
                	umount \${NANO_WORLDDIR}/usr/ports
                	umount \${NANO_WORLDDIR}/usr/src
 				rmdir \${NANO_WORLDDIR}/usr/ports/packages
-				rmdir \${NANO_WORLDDIR}/usr/ports/distfiles
                	rmdir \${NANO_WORLDDIR}/usr/ports
         	}
         	customize_cmd add_port_${port}
