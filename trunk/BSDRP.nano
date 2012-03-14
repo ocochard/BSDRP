@@ -219,21 +219,15 @@ add_port () {
 			add_pkg_${port} () {
 				#Need to create ${NANO_OBJ}/ports in this add_pkg_${port} function
 				if [ ! -d \${NANO_OBJ}/ports ]; then
-					mkdir -p \${NANO_OBJ}/ports/distfiles
 					mkdir -p \${NANO_OBJ}/ports/packages
 				fi
 				mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
-				mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
 				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
 					\${NANO_WORLDDIR}/usr/ports/packages
-				mount -t unionfs -o noatime \${NANO_OBJ}/ports/distfiles \
-                       \${NANO_WORLDDIR}/usr/ports/distfiles
 				chroot \${NANO_WORLDDIR} /bin/sh -exc \
                		'cd /usr/ports/packages/All;pkg_add -v -F ${PKG_NAME}.tbz'
 				umount \${NANO_WORLDDIR}/usr/ports/packages
-				umount \${NANO_WORLDDIR}/usr/ports/distfiles
 				rmdir \${NANO_WORLDDIR}/usr/ports/packages
-				rmdir \${NANO_WORLDDIR}/usr/ports/distfiles
 				rmdir \${NANO_WORLDDIR}/usr/ports
 			}
        		customize_cmd add_pkg_${port}
@@ -244,8 +238,10 @@ add_port () {
        		add_port_${port} () {
 				#Need to create ${NANO_OBJ}/ports in this add_port_${port} function
 				if [ ! -d \${NANO_OBJ}/ports ]; then
-					mkdir -p \${NANO_OBJ}/ports/distfiles
 					mkdir -p \${NANO_OBJ}/ports/packages
+				fi
+				if [ ! -d \${NANO_PORTS}/distfiles ]; then
+					mkdir -p \${NANO_PORTS}/ports/distfiles
 				fi
            		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
 				mkdir -p \${NANO_WORLDDIR}/usr/ports/distfiles
@@ -255,7 +251,7 @@ add_port () {
                      \${NANO_WORLDDIR}/usr/ports
 				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
 					\${NANO_WORLDDIR}/usr/ports/packages
-				mount -t unionfs -o noatime \${NANO_OBJ}/ports/distfiles \
+				mount -t unionfs -o noatime \${NANO_PORTS}/ports/distfiles \
                     \${NANO_WORLDDIR}/usr/ports/distfiles
               	mkdir -p \${NANO_WORLDDIR}/dev
               	mount -t devfs devfs \${NANO_WORLDDIR}/dev
