@@ -1,6 +1,7 @@
 * Bugs *
 	- growfs remove the ufs label, and can't set it after
 	- if /data had a fsck problem, system refuse go in single user
+	- config: If data allready mounted, don't unmount it
 
 * Upgrading *
 	- Replacing the use of 2 systems partitions (there is not "active" partition

@@ -355,7 +355,7 @@ if [ "${NANO_KERNEL}" = "${NAME}-SPARC64" ] ; then
 fi
 
 
-if [ `sysctl -n hw.usermem` -lt 2500000000 ]; then
+if [ `sysctl -n hw.usermem` -lt 2000000000 ]; then
 	echo "WARNING: Not enough hw.usermem available, disable memory disk usage"
     MDMFS=false
 fi
@@ -370,8 +370,8 @@ if ($MDMFS); then
 				exit 1
 			fi
 		fi
-		if ! mdmfs -S -s 2G md /tmp/obj; then
-			echo "ERROR: Cannot create a 2G mdmfs on /tmp/obj"
+		if ! mdmfs -S -s 1500M md /tmp/obj; then
+			echo "ERROR: Cannot create a 1.5G mdmfs on /tmp/obj"
 			exit 1
 		fi
 	fi
@@ -620,5 +620,8 @@ mv ${NANO_OBJ}/${FILENAME}.mtree.xz ${NANO_OBJ}/${NAME}_${VERSION}_${TARGET_ARCH
 pprint 1 "Security reference mtree file here:"
 pprint 1 "${NANO_OBJ}/${FILENAME}.mtree.xz"
 
+if ($MDMFS); then
+	pprint 1 "Remember, remember the ${NANO_OBJ} is a RAM disk"
+fi
 pprint 1 "Done !"
 exit 0

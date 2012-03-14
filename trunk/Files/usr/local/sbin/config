@@ -135,6 +135,7 @@ umount_data () {
 }
 # Archive cfg
 archive_cfg () {
+	#TO DO: If data allready mounted, don't unmount it
 	mount_data
 	echo "Archiving configuration files..."
 	if [ ! -d /data/archives ]; then
