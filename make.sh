@@ -364,9 +364,11 @@ if ($MDMFS); then
 	if mount | grep -q -e "^/dev/md[[:digit:]].*[[:space:]]/tmp/obj[[:space:]]"; then
     	echo "Existing mdmfs file system detected"
 	else
-		if ! mkdir /tmp/obj; then
-			echo "ERROR: Cannot create /tmp/obj"
-			exit 1
+		if [ ! -d /tmp/obj ]; then
+			if ! mkdir /tmp/obj; then
+				echo "ERROR: Cannot create /tmp/obj"
+				exit 1
+			fi
 		fi
 		if ! mdmfs -S -s 2G md /tmp/obj; then
 			echo "ERROR: Cannot create a 2G mdmfs on /tmp/obj"
