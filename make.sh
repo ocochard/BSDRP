@@ -156,7 +156,12 @@ EOF
 # exit with 2 if problem detected and can't clean it
 check_clean() {
 	# Patch from Warner Losh (imp@)
-	__a=`mount | grep /usr/obj/ | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}'`
+	if ($MDMFS); then
+		local OBJ_DIR=/tmp/obj/
+	else
+		local OBJ_DIR=/usr/obj/
+	fi
+	__a=`mount | grep ${OBJ_DIR} | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}'`
 	if [ -n "$__a" ]; then
 		echo "unmounting $__a"
 		umount $__a
@@ -165,17 +170,18 @@ check_clean() {
 
 usage () {
         (
-        pprint 1 "Usage: $0 -bdhkuw [-c vga|serial] [-a i386|amd64]"
+        pprint 1 "Usage: $0 -bdhkurw [-c vga|serial] [-a i386|amd64]"
         pprint 1 "  -a      specify target architecture: i386 or amd64"
 		pprint 1 "          if not specified, use local system arch (`uname -m`)"
 		pprint 1 "          cambria (arm) and sparc64 targets are in work-in-progress state"	
         pprint 1 "  -b      suppress buildworld and buildkernel"
 		pprint 1 "  -c      specify console type: vga (default) or serial"
-		pprint 1 "  -d      Generate image with debug feature enabled"
+		pprint 1 "  -d      generate image with debug feature enabled"
 		pprint 1 "  -f      fast mode, skip: images compression and checksums"
-		pprint 1 "  -h      Display this help message"
-		pprint 1 "  -u      Update all src (freebsd and ports)"
+		pprint 1 "  -h      display this help message"
 		pprint 1 "  -k      suppress buildkernel"
+		pprint 1 "  -u      update all src (freebsd and ports)"
+		pprint 1 "  -r      use a memory disk as destination dir" 
 		pprint 1 "  -w      suppress buildworld"
         ) 1>&2
         exit 2
@@ -210,10 +216,10 @@ esac
 DEBUG=false
 SKIP_REBUILD=""
 INPUT_CONSOLE="vga"
-FAST="n"
+FAST=false
 UPDATE_SRC=false
-
-args=`getopt a:bc:dfhkuw $*`
+MDMFS=false
+args=`getopt a:bc:dfhkurw $*`
 
 set -- $args
 DELETE_ALL=true
@@ -296,7 +302,7 @@ do
                 shift
                 ;;
 		-f)
-                FAST="y"
+                FAST=true
                 shift
                 ;;
 		-h)
@@ -309,6 +315,10 @@ do
                 ;;
 		-u)
 				UPDATE_SRC=true
+				shift
+				;;
+		-r)
+				MDMFS=true
 				shift
 				;;
 		-w)
@@ -326,7 +336,6 @@ if [ $# -gt 0 ] ; then
         echo "$0: Extraneous arguments supplied"
         usage
 fi
-
 # Cross compilation is not possible for the ports
 
 # Cambria is not compatible with vga output
@@ -345,7 +354,29 @@ if [ "${NANO_KERNEL}" = "${NAME}-SPARC64" ] ; then
     INPUT_CONSOLE="serial"
 fi
 
-NANO_OBJ=/usr/obj/${NAME}.${TARGET_ARCH}
+
+if [ `sysctl -n hw.usermem` -lt 2500000000 ]; then
+	echo "WARNING: Not enough hw.usermem available, disable memory disk usage"
+    MDMFS=false
+fi
+
+if ($MDMFS); then
+	if mount | grep -q -e "^/dev/md[[:digit:]].*[[:space:]]/tmp/obj[[:space:]]"; then
+    	echo "Existing mdmfs file system detected"
+	else
+		if ! mkdir /tmp/obj; then
+			echo "ERROR: Cannot create /tmp/obj"
+			exit 1
+		fi
+		if ! mdmfs -S -s 2G md /tmp/obj; then
+			echo "ERROR: Cannot create a 2G mdmfs on /tmp/obj"
+			exit 1
+		fi
+	fi
+	NANO_OBJ=/tmp/obj/${NAME}.${TARGET_ARCH}
+else
+	NANO_OBJ=/usr/obj/${NAME}.${TARGET_ARCH}
+fi
 if [ "${SKIP_REBUILD}" = "-b" ]; then
 	if [ ! -d ${NANO_OBJ} ]; then
 		echo "ERROR: No previous object directory found, you can't use -b option"
@@ -373,10 +404,16 @@ if [ "${SKIP_REBUILD}" = "" ]; then
 else
 	pprint 1 "- Build the full world (take about 1 hour): NO"
 fi
-if [ "${FAST}" = "y" ]; then
+if (${FAST}); then
 	pprint 1 "- FAST mode (skip compression and checksumming): YES"
 else
 	pprint 1 "- FAST mode (skip compression and checksumming): NO"
+fi
+
+if ($MDMFS); then
+	pprint 1 "- MDMFS: YES"
+else
+	pprint 1 "- MDMFS: NO"
 fi
 if ($DEBUG); then
     pprint 1 "- Debug image type: YES"
@@ -535,7 +572,7 @@ fi
 
 mv ${NANO_OBJ}/_.disk.image ${NANO_OBJ}/${FILENAME}
 
-if [ "$FAST" = "n" ]; then
+if ! $FAST; then
 	pprint 1 "Compressing ${NAME} upgrade image..."
 	xz -vf ${NANO_OBJ}/${FILENAME}
 	pprint 1 "Generating checksum for ${NAME} upgrade image..."
@@ -558,7 +595,7 @@ if [ -f ${NANO_OBJ}/${FILENAME}.xz ]; then
     rm ${NANO_OBJ}/${FILENAME}.xz
 fi
 
-if [ "$FAST" = "n" ]; then
+if ! $FAST; then
 	pprint 1 "Compressing ${NAME} full image..." 
 	xz -vf ${NANO_OBJ}/${FILENAME}
 	pprint 1 "Generating checksum for ${NAME} full image..."

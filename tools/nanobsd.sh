@@ -223,12 +223,12 @@ build_kernel ( ) (
 	# when cross-building
 	unset TARGET_CPUTYPE
 	unset TARGET_BIG_ENDIAN
-	# Note: We intentionally build all modules, not only the ones in
-	# NANO_MODULES so the built world can be reused by multiple images.
+	# Note: DISABLE build all modules (official nanobsd builds all)
 	env TARGET_ARCH=${NANO_ARCH} ${NANO_PMAKE} buildkernel \
 		__MAKE_CONF=${NANO_MAKE_CONF_BUILD} \
 		${kernconfdir:+"KERNCONFDIR="}${kernconfdir} \
-		KERNCONF=${kernconf}
+		KERNCONF=${kernconf} \
+		MODULES_OVERRIDE="${NANO_MODULES}"
 	) > ${MAKEOBJDIRPREFIX}/_.bk 2>&1
 )
 
