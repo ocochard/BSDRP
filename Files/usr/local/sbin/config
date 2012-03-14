@@ -90,6 +90,21 @@ mount_cfg () {
 	fi
 }
 
+# Check if mounted
+# $1: volume to check
+# result: true or false
+is_mounted () {
+	if [ -z "$1" ]; then
+		echo "BUG: is_mounted() need argument"
+		exit 1
+	fi
+	if mount | grep -q -e "[[:space:]]$1[[:space:]]"; then
+		return 0
+	else
+		return 1
+    fi
+}
+
 # Umount /cfg
 umount_cfg () {
 	umount /cfg
@@ -135,8 +150,13 @@ umount_data () {
 }
 # Archive cfg
 archive_cfg () {
+	if is_mounted /data; then
+		local DATA_MOUNTED=true
+	else
+		local DATA_MOUNTED=false
+		mount_data
+	fi
 	#TO DO: If data allready mounted, don't unmount it
-	mount_data
 	echo "Archiving configuration files..."
 	if [ ! -d /data/archives ]; then
 		if ! mkdir /data/archives; then
@@ -153,11 +173,15 @@ archive_cfg () {
 
 	if ! tar -cJvpf /data/archives/rollback.tar.xz -C /cfg/ . 2>/dev/null; then
 		echo "ERROR: Can't generate tar archive."
-		umount_data
+		if ! $DATA_MOUNTED; then
+			umount_data
+		fi
 		umount_cfg
 		exit 1
 	fi
-	umount_data
+	if ! $DATA_MOUNTED; then
+		umount_data
+	fi
 }
 # save configuration
 save_cfg () {
