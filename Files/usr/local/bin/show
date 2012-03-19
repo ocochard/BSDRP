@@ -104,7 +104,7 @@ usage () {
 	case "$SECOND_OPTION" in
         route)
 			echo "Options for route:"
-	                echo " - ipv4/4 : Display only IPv4 routes"
+			echo " - ipv4/4 : Display only IPv4 routes"
 			echo " - ipv6/6 : Display only IPv6 routes" 
 			;;
 		process|proc)
@@ -182,15 +182,15 @@ version () {
 # Display routes
 route () {
 	case "$SECOND_OPTION" in
-                ipv4|4)
-                       netstat -rn -f inet 
+		ipv4|4)
+			netstat -rn -f inet 
 			;;
 		ipv6|6)
 			netstat -rn -f inet6	
 			;;
 		*)
-		netstat -rn
-		;;	
+			netstat -rn
+			;;	
 	esac
 	exit 0
 }

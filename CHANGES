@@ -1,7 +1,7 @@
 Release 1.2 (not released)
-- Update base to FreeBSD 8.3-RC1
+- Update base to FreeBSD 8.3-RC2
 - Add 'system rollback': remotely rollback to previous
-- Add 'system expand-data-slice': Expand the size of /data to all available space on disk 
+- Add 'system expand-data-slice': Expand the size of /data to all available space on disk. This feature bugs: http://www.freebsd.org/cgi/query-pr.cgi?pr=165962
 - Kernel: add drivers for 'device enc', some 1OG NIC (cxgb, cxgbe, mxge, nxge) and SCSI/RAID controllers
 - Redirect periodic output to a log file
 - Build script speed improvement: add mdmfs support, kept distfiles in the same folder as FreeBSD sources, didn't compile all kernel modules
