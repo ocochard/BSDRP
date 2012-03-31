@@ -61,7 +61,7 @@ NANOBSD_DIR="${FREEBSD_SRC}/tools/tools/nanobsd"
 VERSION=`cat ${BSDRP_ROOT}/Files/etc/version`
 
 # Number of jobs
-MAKE_JOBS=$(( 2 * $(sysctl -n kern.smp.cpus) + 1 ))
+MAKE_JOBS=$(( 2 * $(sysctl -n kern.smp.cpus)))
 
 # Progress Print level
 PPLEVEL=3
@@ -91,7 +91,7 @@ update_src () {
 	fi
 
     SUPFILE=${BSDRP_ROOT}/FreeBSD/supfile
-	PORTS_DATE="date=2012.03.19.00.00.00"
+	PORTS_DATE="date=2012.03.30.00.00.00"
     cat <<EOF > $SUPFILE
 *default host=${FREEBSD_CVSUP_HOST}
 *default base=${BSDRP_ROOT}/FreeBSD/sup
@@ -493,7 +493,7 @@ export TARGET_ARCH
 if [ -z "${SKIP_REBUILD}" ]; then
 	if [ -d ${NANO_OBJ} ]; then
 		pprint 1 "Existing working directory detected,"
-		pprint 1 "but you asked for rebuild some parts (no -b neither -k option given)"
+		pprint 1 "but you asked for rebuild some parts (no -b, -w or -k option given)"
 		pprint 1 "Do you want to continue ? (y/n)"
 		USER_CONFIRM=""
         while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
