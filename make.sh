@@ -221,7 +221,6 @@ MDMFS=false
 args=`getopt a:bc:dfhkurw $*`
 
 set -- $args
-DELETE_ALL=true
 for i
 do
         case "$i"
@@ -277,8 +276,7 @@ do
 				shift
                 ;;
 		-b)
-                SKIP_REBUILD="-b"
-                DELETE_ALL=false
+                SKIP_REBUILD="-b -n"
                 shift
                 ;;
         -c)
@@ -308,8 +306,7 @@ do
                 usage
                 ;;
 		-k)
-                SKIP_REBUILD="-k"
-				DELETE_ALL=false
+                SKIP_REBUILD="-k -n"
                 shift
                 ;;
 		-u)
@@ -321,8 +318,7 @@ do
 				shift
 				;;
 		-w)
-                SKIP_REBUILD="-w"
-				DELETE_ALL=false
+                SKIP_REBUILD="-w -n"
                 shift
                 ;;
         --)
@@ -378,9 +374,9 @@ if ($MDMFS); then
 else
 	NANO_OBJ=/usr/obj/${NAME}.${TARGET_ARCH}
 fi
-if [ "${SKIP_REBUILD}" = "-b" ]; then
+if [ -n "${SKIP_REBUILD}" ]; then
 	if [ ! -d ${NANO_OBJ} ]; then
-		echo "ERROR: No previous object directory found, you can't use -b option"
+		echo "ERROR: No previous object directory found, you can't skip some rebuild"
 		exit 1
 	fi
 fi
@@ -400,7 +396,7 @@ if ($UPDATE_SRC); then
 else
 	pprint 1 "- Source Updating/installing: NO"
 fi
-if [ "${SKIP_REBUILD}" = "" ]; then
+if [ -z "${SKIP_REBUILD}" ]; then
 	pprint 1 "- Build the full world (take about 1 hour): YES"
 else
 	pprint 1 "- Build the full world (take about 1 hour): NO"
@@ -494,10 +490,10 @@ esac
 export TARGET_ARCH
 
 # Delete the destination dir
-if ($DELETE_ALL); then
+if [ -z "${SKIP_REBUILD}" ]; then
 	if [ -d ${NANO_OBJ} ]; then
 		pprint 1 "Existing working directory detected,"
-		pprint 1 "but you asked for rebuild all (no -b neither -k option given)"
+		pprint 1 "but you asked for rebuild some parts (no -b neither -k option given)"
 		pprint 1 "Do you want to continue ? (y/n)"
 		USER_CONFIRM=""
         while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
