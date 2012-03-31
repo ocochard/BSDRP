@@ -1,0 +1,18 @@
+--- sys/geom/label/g_label_ufs.c.orig	2012-03-31 06:00:49.000000000 +0200
++++ sys/geom/label/g_label_ufs.c	2012-03-31 06:03:11.000000000 +0200
+@@ -81,12 +81,10 @@
+ 		fs = (struct fs *)g_read_data(cp, superblock, SBLOCKSIZE, NULL);
+ 		if (fs == NULL)
+ 			continue;
+-		/* Check for magic and make sure things are the right size */
+-		if (fs->fs_magic == FS_UFS1_MAGIC && fs->fs_fsize > 0 &&
+-		    pp->mediasize / fs->fs_fsize == fs->fs_old_size) {
++		/* Check for magic */
++		if (fs->fs_magic == FS_UFS1_MAGIC && fs->fs_fsize > 0) {
+ 		    	/* Valid UFS1. */
+-		} else if (fs->fs_magic == FS_UFS2_MAGIC && fs->fs_fsize > 0 &&
+-		    pp->mediasize / fs->fs_fsize == fs->fs_size) {
++		} else if (fs->fs_magic == FS_UFS2_MAGIC && fs->fs_fsize > 0) {
+ 		    	/* Valid UFS2. */
+ 		} else {
+ 			g_free(fs);
