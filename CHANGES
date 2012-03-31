@@ -6,6 +6,9 @@ Release 1.2 (not released)
 - Redirect periodic output to a log file
 - Build script speed improvement: add mdmfs support, kept distfiles in the same folder as FreeBSD sources, didn't compile all kernel modules
 
+Updated packages:
+- Bird to 1.3.7
+
 ================================================================================
 
 Release 1.1
