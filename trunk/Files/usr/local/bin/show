@@ -183,13 +183,13 @@ version () {
 route () {
 	case "$SECOND_OPTION" in
 		ipv4|4)
-			netstat -rn -f inet 
+			netstat -rnW -f inet 
 			;;
 		ipv6|6)
-			netstat -rn -f inet6	
+			netstat -rnW -f inet6	
 			;;
 		*)
-			netstat -rn
+			netstat -rnW
 			;;	
 	esac
 	exit 0

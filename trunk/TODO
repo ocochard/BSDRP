@@ -1,5 +1,4 @@
 * Bugs *
-	- growfs remove the ufs label, and can't set it after
 	- if /data had a fsck problem, system refuse go in single user
 
 * Upgrading *
