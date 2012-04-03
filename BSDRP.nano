@@ -289,7 +289,7 @@ add_port () {
 add_port "net-mgmt/net-snmp" "-DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
 
 # Quagga installation
-add_port "net/quagga" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
+add_port "net/quagga-re" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:

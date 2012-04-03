@@ -1,13 +1,6 @@
---- tools/tools/netrate/netsend/netsend.c.orig	2012-03-03 07:15:13.000000000 +0100
-+++ tools/tools/netrate/netsend/netsend.c	2012-03-02 20:30:47.000000000 +0100
-@@ -23,12 +23,13 @@
-  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-  * SUCH DAMAGE.
-  *
-- * $FreeBSD: src/tools/tools/netrate/netsend/netsend.c,v 1.9.10.4.2.1 2012/03/03 06:15:13 kensmith Exp $
-+ * $FreeBSD: src/tools/tools/netrate/netsend/netsend.c,v 1.13 2011/11/08 17:23:43 cognet Exp $
-  */
- 
+--- tools/tools/netrate/netsend/netsend.c.orig	2011-11-11 05:20:22.000000000 +0100
++++ tools/tools/netrate/netsend/netsend.c	2012-04-03 02:12:42.000000000 +0200
+@@ -29,6 +29,7 @@
  #include <sys/endian.h>
  #include <sys/types.h>
  #include <sys/socket.h>

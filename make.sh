@@ -100,7 +100,7 @@ update_src () {
 *default delete use-rel-suffix
 *default compress
 
-src-all tag=RELENG_8_3
+src-all tag=RELENG_9_0
 #ports-all date=${PORTS_DATE}
 ports-base ${PORTS_DATE}
 ports-benchmarks ${PORTS_DATE}
@@ -452,10 +452,10 @@ echo "# Parallel Make" >> /tmp/${NAME}.nano
 # Note for modules names: They are relative to /usr/src/sys/modules
 case ${TARGET_ARCH} in
 	"i386") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="acpi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec glxsb ispfw"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="acpi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec glxsb ispfw"' >> /tmp/${NAME}.nano
 	;;
 	"amd64") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="ispfw netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec ispfw"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="ispfw netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec ispfw"' >> /tmp/${NAME}.nano
 	;;
 	"arm") echo "NANO_PMAKE=\"make\"" >> /tmp/${NAME}.nano
 	echo 'NANO_MODULES=""' >> /tmp/${NAME}.nano
@@ -464,7 +464,7 @@ case ${TARGET_ARCH} in
 	export NANO_MAKEFS
 	;;
 	"sparc64") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="netgraph rc4 if_ef if_tap if_carp if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias dummynet pf pflog"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="netgraph rc4 if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog"' >> /tmp/${NAME}.nano
 	;;
 esac
 
