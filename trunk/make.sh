@@ -101,7 +101,7 @@ update_src () {
 *default compress
 
 src-all tag=RELENG_9_0
-#ports-all date=${PORTS_DATE}
+#ports-all ${PORTS_DATE}
 ports-base ${PORTS_DATE}
 ports-benchmarks ${PORTS_DATE}
 ports-devel ${PORTS_DATE}
