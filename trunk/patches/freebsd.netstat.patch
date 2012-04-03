@@ -1,46 +1,6 @@
---- sys/netinet6/in6_proto.c.orig	2011-12-29 09:52:06.000000000 +0100
-+++ sys/netinet6/in6_proto.c	2011-12-29 09:54:52.000000000 +0100
-@@ -514,7 +514,7 @@
- 	&VNET_NAME(ip6_sendredirects), 0, "");
- SYSCTL_VNET_INT(_net_inet6_ip6, IPV6CTL_DEFHLIM, hlim, CTLFLAG_RW,
- 	&VNET_NAME(ip6_defhlim), 0, "");
--SYSCTL_VNET_STRUCT(_net_inet6_ip6, IPV6CTL_STATS, stats, CTLFLAG_RD,
-+SYSCTL_VNET_STRUCT(_net_inet6_ip6, IPV6CTL_STATS, stats, CTLFLAG_RW,
- 	&VNET_NAME(ip6stat), ip6stat, "");
- SYSCTL_VNET_INT(_net_inet6_ip6, IPV6CTL_MAXFRAGPACKETS, maxfragpackets,
- 	CTLFLAG_RW, &VNET_NAME(ip6_maxfragpackets), 0, "");
-@@ -550,7 +550,7 @@
- 	&VNET_NAME(ip6_v6only), 0, "");
- SYSCTL_VNET_INT(_net_inet6_ip6, IPV6CTL_AUTO_LINKLOCAL, auto_linklocal,
- 	CTLFLAG_RW, &VNET_NAME(ip6_auto_linklocal), 0, "");
--SYSCTL_VNET_STRUCT(_net_inet6_ip6, IPV6CTL_RIP6STATS, rip6stats, CTLFLAG_RD,
-+SYSCTL_VNET_STRUCT(_net_inet6_ip6, IPV6CTL_RIP6STATS, rip6stats, CTLFLAG_RW,
- 	&VNET_NAME(rip6stat), rip6stat, "");
- SYSCTL_VNET_INT(_net_inet6_ip6, IPV6CTL_PREFER_TEMPADDR, prefer_tempaddr,
- 	CTLFLAG_RW, &VNET_NAME(ip6_prefer_tempaddr), 0, "");
-@@ -570,7 +570,7 @@
- 	CTLFLAG_RW, &VNET_NAME(icmp6_rediraccept), 0, "");
- SYSCTL_VNET_INT(_net_inet6_icmp6, ICMPV6CTL_REDIRTIMEOUT, redirtimeout,
- 	CTLFLAG_RW, &VNET_NAME(icmp6_redirtimeout), 0, "");
--SYSCTL_VNET_STRUCT(_net_inet6_icmp6, ICMPV6CTL_STATS, stats, CTLFLAG_RD,
-+SYSCTL_VNET_STRUCT(_net_inet6_icmp6, ICMPV6CTL_STATS, stats, CTLFLAG_RW,
- 	&VNET_NAME(icmp6stat), icmp6stat, "");
- SYSCTL_VNET_INT(_net_inet6_icmp6, ICMPV6CTL_ND6_PRUNE, nd6_prune, CTLFLAG_RW,
- 	&VNET_NAME(nd6_prune), 0, "");
---- sys/netinet6/ip6_mroute.c.orig	2011-12-29 09:55:59.000000000 +0100
-+++ sys/netinet6/ip6_mroute.c	2011-12-29 09:56:25.000000000 +0100
-@@ -250,7 +250,7 @@
- static mifi_t reg_mif_num = (mifi_t)-1;
- 
- static struct pim6stat pim6stat;
--SYSCTL_STRUCT(_net_inet6_pim, PIM6CTL_STATS, stats, CTLFLAG_RD,
-+SYSCTL_STRUCT(_net_inet6_pim, PIM6CTL_STATS, stats, CTLFLAG_RW,
-     &pim6stat, pim6stat,
-     "PIM Statistics (struct pim6stat, netinet6/pim_var.h)");
- 
---- usr.bin/netstat/inet6.c.orig	2011-12-29 09:58:27.000000000 +0100
-+++ usr.bin/netstat/inet6.c	2011-12-29 10:04:46.000000000 +0100
-@@ -364,15 +364,17 @@
+--- usr.bin/netstat/inet6.c.orig	2012-03-03 07:15:13.000000000 +0100
++++ usr.bin/netstat/inet6.c	2012-04-03 02:38:10.000000000 +0200
+@@ -360,15 +360,17 @@
  void
  ip6_stats(u_long off, const char *name, int af1 __unused, int proto __unused)
  {
@@ -55,13 +15,13 @@
 -		if (sysctlbyname("net.inet6.ip6.stats", &ip6stat, &len, NULL,
 -		    0) < 0) {
 +		if (zflag)
-+			memset(&zerostat, 0, len);
-+			if (sysctlbyname("net.inet6.ip6.stats", &ip6stat, &len,
-+				zflag ? &zerostat : NULL, zflag ? len : 0) < 0) {
++           memset(&zerostat, 0, len);
++        if (sysctlbyname("net.inet6.ip6.stats", &ip6stat, &len,
++			zflag ? &zerostat : NULL, zflag ? len : 0) < 0) {
  			if (errno != ENOENT)
  				warn("sysctl: net.inet6.ip6.stats");
  			return;
-@@ -844,15 +846,17 @@
+@@ -840,15 +842,17 @@
  void
  icmp6_stats(u_long off, const char *name, int af1 __unused, int proto __unused)
  {
@@ -77,11 +37,11 @@
 +			memset(&zerostat, 0, len);
  		if (sysctlbyname("net.inet6.icmp6.stats", &icmp6stat, &len,
 -		    NULL, 0) < 0) {
-+			zflag ? &zerostat : NULL, zflag ? len : 0) < 0) {	
++			zflag ? &zerostat : NULL, zflag ? len : 0) < 0) {
  			if (errno != ENOENT)
  				warn("sysctl: net.inet6.icmp6.stats");
  			return;
-@@ -1037,14 +1041,16 @@
+@@ -1033,14 +1038,16 @@
  void
  rip6_stats(u_long off, const char *name, int af1 __unused, int proto __unused)
  {
@@ -100,3 +60,43 @@
  			if (errno != ENOENT)
  				warn("sysctl: net.inet6.ip6.rip6stats");
  			return;
+--- sys/netinet6/in6_proto.c.orig	2012-04-03 02:30:34.000000000 +0200
++++ sys/netinet6/in6_proto.c	2012-04-03 02:29:59.000000000 +0200
+@@ -520,7 +520,7 @@
+ 	&VNET_NAME(ip6_sendredirects), 0, "");
+ SYSCTL_VNET_INT(_net_inet6_ip6, IPV6CTL_DEFHLIM, hlim, CTLFLAG_RW,
+ 	&VNET_NAME(ip6_defhlim), 0, "");
+-SYSCTL_VNET_STRUCT(_net_inet6_ip6, IPV6CTL_STATS, stats, CTLFLAG_RD,
++SYSCTL_VNET_STRUCT(_net_inet6_ip6, IPV6CTL_STATS, stats, CTLFLAG_RW,
+ 	&VNET_NAME(ip6stat), ip6stat, "");
+ SYSCTL_VNET_INT(_net_inet6_ip6, IPV6CTL_MAXFRAGPACKETS, maxfragpackets,
+ 	CTLFLAG_RW, &VNET_NAME(ip6_maxfragpackets), 0, "");
+@@ -573,7 +573,7 @@
+ 	CTLFLAG_RW, &VNET_NAME(ip6_auto_linklocal), 0,
+ 	"Default value of per-interface flag for automatically adding an IPv6"
+ 	" link-local address to interfaces when attached");
+-SYSCTL_VNET_STRUCT(_net_inet6_ip6, IPV6CTL_RIP6STATS, rip6stats, CTLFLAG_RD,
++SYSCTL_VNET_STRUCT(_net_inet6_ip6, IPV6CTL_RIP6STATS, rip6stats, CTLFLAG_RW,
+ 	&VNET_NAME(rip6stat), rip6stat, "");
+ SYSCTL_VNET_INT(_net_inet6_ip6, IPV6CTL_PREFER_TEMPADDR, prefer_tempaddr,
+ 	CTLFLAG_RW, &VNET_NAME(ip6_prefer_tempaddr), 0, "");
+@@ -604,7 +607,7 @@
+ 	CTLFLAG_RW, &VNET_NAME(icmp6_rediraccept), 0, "");
+ SYSCTL_VNET_INT(_net_inet6_icmp6, ICMPV6CTL_REDIRTIMEOUT, redirtimeout,
+ 	CTLFLAG_RW, &VNET_NAME(icmp6_redirtimeout), 0, "");
+-SYSCTL_VNET_STRUCT(_net_inet6_icmp6, ICMPV6CTL_STATS, stats, CTLFLAG_RD,
++SYSCTL_VNET_STRUCT(_net_inet6_icmp6, ICMPV6CTL_STATS, stats, CTLFLAG_RW,
+ 	&VNET_NAME(icmp6stat), icmp6stat, "");
+ SYSCTL_VNET_INT(_net_inet6_icmp6, ICMPV6CTL_ND6_PRUNE, nd6_prune, CTLFLAG_RW,
+ 	&VNET_NAME(nd6_prune), 0, "");
+--- sys/netinet6/ip6_mroute.c.orig	2012-04-03 02:30:34.000000000 +0200
++++ sys/netinet6/ip6_mroute.c	2012-04-03 02:31:38.000000000 +0200
+@@ -250,7 +250,7 @@
+ static mifi_t reg_mif_num = (mifi_t)-1;
+ 
+ static struct pim6stat pim6stat;
+-SYSCTL_STRUCT(_net_inet6_pim, PIM6CTL_STATS, stats, CTLFLAG_RD,
++SYSCTL_STRUCT(_net_inet6_pim, PIM6CTL_STATS, stats, CTLFLAG_RW,
+     &pim6stat, pim6stat,
+     "PIM Statistics (struct pim6stat, netinet6/pim_var.h)");
+ 
