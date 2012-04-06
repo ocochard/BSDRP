@@ -91,7 +91,7 @@ usage () {
 
 # Check if image is mounted
 # $1: mount point to check
-# Return 0 if yes, 1 if not
+# Return 0 (true) if yes, 1 (false) if not
 is_mounted () {
 	if df $1  > /dev/null 2>&1; then
 		return 0
@@ -103,9 +103,12 @@ is_mounted () {
 are_mounted () {
 	for MOUNT in $DEST_LIST; do
 		if [ -d $MOUNT ];then
-			is_mounted $MOUNT
+			if is_mounted $MOUNT; then
+				return 0
+			fi
 		fi
 	done
+	return 1
 }
 
 # update image
