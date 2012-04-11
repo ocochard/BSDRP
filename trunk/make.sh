@@ -353,6 +353,10 @@ fi
 if [ `sysctl -n hw.usermem` -lt 2000000000 ]; then
 	echo "WARNING: Not enough hw.usermem available, disable memory disk usage"
     MDMFS=false
+elif [ `sysctl -n hw.usermem` -lt 4000000000 ]; then
+	MDMFS_SIZE="1500M"
+else
+    MDMFS_SIZE="3000M"
 fi
 
 if ($MDMFS); then
@@ -365,8 +369,8 @@ if ($MDMFS); then
 				exit 1
 			fi
 		fi
-		if ! mdmfs -S -s 1500M md /tmp/obj; then
-			echo "ERROR: Cannot create a 1.5G mdmfs on /tmp/obj"
+		if ! mdmfs -S -s $MDMFS_SIZE md /tmp/obj; then
+			echo "ERROR: Cannot create a $MDMFS_SIZE mdmfs on /tmp/obj"
 			exit 1
 		fi
 	fi
