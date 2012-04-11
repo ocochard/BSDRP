@@ -82,7 +82,7 @@ check_system_common () {
 }
 
 check_system_linux () {
-	if ! `modprobe -a vboxdrv`; then
+	if ! `grep -q vboxdrv /proc/modules`; then
 		echo "[WARNING] VirtualBox module not loaded ?"
 	fi
 }
@@ -638,8 +638,6 @@ if ! check_vm ${VM_TPL_NAME}; then
         echo "        You need to enter an image filename for creating the VM."
         exit 1
 	fi
-else
-
 fi
 
 build_lab
