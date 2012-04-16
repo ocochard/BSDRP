@@ -36,7 +36,7 @@ setenv  BLOCKSIZE       K
 
 if ($?prompt) then
 	# An interactive shell -- set some stuff up
-	set prompt='%B[%n@%m%b]%B%~%b%# '
+	set prompt='%B[%n@%m]%~%b%# '
 	set filec
 	set history = 1000
 	set savehist = (1000 merge)
