@@ -412,6 +412,8 @@ delete_vm () {
    	echo "Delete VM $1" 
     if ! VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1; then
 		echo "[ERROR] Can't delete VM $1."
+		echo "Check ${LOG_FILE} for more detail"
+		exit 1
 	fi
 
 	#Some times, templates is deletet, but there is some file that was not deletet
