@@ -397,7 +397,7 @@ start_lab () {
 
 	if ($HOSTONLY_NIC); then
 		echo "You need to configure an IP address in these range for communicating with the host:"
-		`which ifconfig` ${HOSTONLY_NIC_NAME} | grep "inet"
+		/sbin/ifconfig ${HOSTONLY_NIC_NAME} | grep "inet"
     fi
 }
 
