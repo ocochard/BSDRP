@@ -91,7 +91,7 @@ update_src () {
 	fi
 
     SUPFILE=${BSDRP_ROOT}/FreeBSD/supfile
-	PORTS_DATE="date=2012.04.05.00.00.00"
+	PORTS_DATE="date=2012.04.18.00.00.00"
     cat <<EOF > $SUPFILE
 *default host=${FREEBSD_CVSUP_HOST}
 *default base=${BSDRP_ROOT}/FreeBSD/sup
@@ -456,10 +456,10 @@ echo "# Parallel Make" >> /tmp/${NAME}.nano
 # Note for modules names: They are relative to /usr/src/sys/modules
 case ${TARGET_ARCH} in
 	"i386") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="acpi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec glxsb ispfw"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="acpi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec glxsb ispfw ichwd"' >> /tmp/${NAME}.nano
 	;;
 	"amd64") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec ispfw"' >> /tmp/${NAME}.nano
+	echo 'NANO_MODULES="netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec ispfw ichwd"' >> /tmp/${NAME}.nano
 	;;
 	"arm") echo "NANO_PMAKE=\"make\"" >> /tmp/${NAME}.nano
 	echo 'NANO_MODULES=""' >> /tmp/${NAME}.nano
