@@ -109,14 +109,6 @@ for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fsta
 	do
 	    sed -i "" "s/${label}s${SRC_SLICE}a/${label}s${DST_SLICE}a/g" $f
     done
-#	Compare the loader.conf, and include the diff into the new partition
-#	This file is for example, modified by "system virtualized"
-if ! diff -ruN /tmp/sysupgrade/boot/loader.conf /boot/loader.conf > /tmp/loader.conf.patch; then
-	if ! patch -s /tmp/sysupgrade/boot/loader.conf /tmp/loader.conf.patch; then
-		echo "WARNING: Can't patch upgraded /boot/loader.conf"
-		echo "YOU NEED to manually merge your /boot/loader.conf"
-	fi
-fi
 
 #	Check if their is a post-upgrade script on the newimage (This script will be start at the end of the upgrade process)
 if [ -f /tmp/sysupgrade/usr/local/sbin/post-upgrade.sh ]; then
