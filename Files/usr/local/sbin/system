@@ -120,7 +120,7 @@ expand_data_slice () {
 	#Load the NANO_DRIVE (label) variable:
 	. /etc/nanobsd.conf
 
-	boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s.a | awk '{ print $3; }' | cut -d s -f 1`
+	boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s1a | awk '{ print $3; }' | cut -d s -f 1`
 	label=`cut -d '/' -f 2 /etc/nanobsd.conf`
 
 	if mount | grep -q "/data"; then
