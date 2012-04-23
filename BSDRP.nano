@@ -215,7 +215,7 @@ add_port () {
 	# 2. Add a trap
 
 	cd ${NANO_PORTS}/$1
-	PKG_NAME=`env PORTSDIR=${NANO_PORTS} make package-name`
+	PKG_NAME=`env PORTSDIR=${NANO_PORTS} make package-name $2`
 	if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.tbz ]; then
 	# Pkg file found: Generate add_pkg_NAME function
 		eval "
