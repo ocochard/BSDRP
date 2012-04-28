@@ -322,6 +322,9 @@ add_port "mail/ssmtp"
 # Add tmux (screen equivalent, but better because BSD)
 add_port "sysutils/tmux"
 
+# Add sudo for fine permission management
+add_port "security/sudo"
+
 # Add mpd5, a multi-link PPP protocol server (netgraph dependent)
 add_port "net/mpd5"
 
