@@ -109,6 +109,7 @@ ports-lang ${PORTS_DATE}
 ports-net ${PORTS_DATE}
 ports-net-mgmt ${PORTS_DATE}
 ports-mail ${PORTS_DATE}
+ports-security ${PORTS_DATE}
 ports-sysutils ${PORTS_DATE}
 
 EOF
