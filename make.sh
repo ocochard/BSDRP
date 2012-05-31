@@ -91,7 +91,7 @@ update_src () {
 	fi
 
     SUPFILE=${BSDRP_ROOT}/FreeBSD/supfile
-	PORTS_DATE="date=2012.05.26.00.00.00"
+	PORTS_DATE="date=2012.05.31.00.00.00"
     cat <<EOF > $SUPFILE
 *default host=${FREEBSD_CVSUP_HOST}
 *default base=${BSDRP_ROOT}/FreeBSD/sup
@@ -100,7 +100,7 @@ update_src () {
 *default delete use-rel-suffix
 *default compress
 
-src-all tag=RELENG_9_0
+src-all tag=RELENG_9 ${PORTS_DATE}
 #ports-all ${PORTS_DATE}
 ports-base ${PORTS_DATE}
 ports-benchmarks ${PORTS_DATE}
