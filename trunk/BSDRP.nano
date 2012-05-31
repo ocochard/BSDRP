@@ -166,9 +166,9 @@ NANO_LABEL=${NANO_NAME}
 # Progress Print level
 PPLEVEL=3
 
-# Add netblast/netrecieve tools
+# Add netblast/netrecieve and netmap tools
 add_netrate () {
-	TOOLS_LIST="netrate/netblast netrate/netreceive netrate/netsend"
+	TOOLS_LIST="netmap netrate/netblast netrate/netreceive netrate/netsend"
 	mkdir -p ${NANO_WORLDDIR}/dev
 	mount -t devfs devfs ${NANO_WORLDDIR}/dev
 	mount -t unionfs -o noatime ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
@@ -179,9 +179,12 @@ add_netrate () {
 			'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 			MACHINE=${NANO_ARCH} UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
-		FILENAME=`echo ${TOOL} | cut -f 2 -d "/"`
-		mv ${NANO_WORLDDIR}/usr/src/tools/tools/${TOOL}/${FILENAME} ${NANO_WORLDDIR}/usr/local/bin
-		rm ${NANO_WORLDDIR}/usr/src/tools/tools/${TOOL}/${FILENAME}.o 
+		for file in `grep "^PROG" ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/Makefile | cut -d '=' -f 2`; do
+			mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
+		done
+		#FILENAME=`basename ${TOOL}`
+		#mv ${NANO_WORLDDIR}/usr/src/tools/tools/${TOOL}/${FILENAME} ${NANO_WORLDDIR}/usr/local/bin
+		#rm ${NANO_WORLDDIR}/usr/src/tools/tools/${TOOL}/${FILENAME}.o 
 	done
 	rm -rf ${NANO_WORLDDIR}/usr/workdir
 	umount ${NANO_WORLDDIR}/usr/src
