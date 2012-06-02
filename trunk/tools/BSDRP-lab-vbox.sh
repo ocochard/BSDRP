@@ -108,19 +108,19 @@ check_image () {
 			echo "[ERROR] Need bunzip2 for bunzip the compressed image!"
             exit 1
 		fi
-        if ! bunzip2 -k $1; then
+        if ! bunzip2 -fk $1; then
 			echo "[ERROR] Can't bunzip2 image file!"
 			exit 1
 		fi
         # change FILENAME by removing the last.bz2"
         FILENAME=`echo $1 | sed -e 's/.bz2//g'`
-    elif echo ${FILENAME} | grep -q xz  >> ${LOG_FILE} 2>&1; then
+    elif echo $1 | grep -q xz  >> ${LOG_FILE} 2>&1; then
         echo "xz compressed image detected, unzip it..."
 		if ! which xz > /dev/null 2>&1; then
             echo "[ERROR] Need xz for unxz the compressed image!"
             exit 1
         fi
-        if ! xz -dk ${FILENAME}; then
+        if ! xz -dkf ${FILENAME}; then
 			echo "[ERROR] Can't unxz image file!"
 			exit 1
 		fi
@@ -154,6 +154,9 @@ create_template () {
 		exit 1
 	fi
 
+	if [ -z "$RAM" ]; then
+		RAM=128
+	fi
     if ! VBoxManage modifyvm ${VM_TPL_NAME} --audio none --memory $RAM --vram 8 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1; then
 		echo "[ERROR] Can't customize ${VM_TPL_NAME}"
 		exit 1
@@ -315,6 +318,15 @@ build_lab () {
     #Enter the main loop for each VM
     while [ $i -le $NUMBER_VM ]; do
         clone_vm BSDRP_lab_R$i
+
+		if [ -n "$RAM" ]; then
+			#Configure RAM
+			if ! VBoxManage modifyvm BSDRP_lab_R$i --memory $RAM >> ${LOG_FILE} 2>&1; then
+        		echo "[ERROR] Can't change RAM for BSDRP_lab_R$i"
+        		exit 1
+    		fi
+		fi
+
         NIC_NUMBER=0
         echo "Router$i have the following NIC:"
         #Enter in the Cross-over (Point-to-Point) NIC loop
@@ -498,7 +510,7 @@ NUMBER_VM=""
 HOSTONLY_NIC=false
 LAN=""
 FILENAME=""
-RAM="128"
+RAM=""
 
 echo "BSD Router Project (http://bsdrp.net) - VirtualBox lab script"
 

@@ -354,9 +354,6 @@ options		ZERO_COPY_SOCKETS
 # Encapsulating Interface
 device enc
 
-# Netmap
-device netmap
-
 # Kept the use of modules (for kept a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules
 # This line is no more used, check the variable NANO_MODULES in generated nanobsd config files

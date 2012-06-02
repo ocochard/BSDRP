@@ -332,7 +332,7 @@ options		ZERO_COPY_SOCKETS
 # Encapsulating Interface
 device enc
 
-# Netmap
+# Netmap: need a minimum of 512Mo of RAM and fast machine
 device netmap
 
 # Kept the use of modules (for a small kernel) but prevent to build all modules
