@@ -13,12 +13,12 @@ Updated packages:
 - Bird to 1.3.7
 - Quagga to Quagga-RE 0.99.17.9
 
-Note regarding netmap (on amd64 only):
+Note regarding netmap:
 - Only 2 demos tools available (not usable for forwarding presently): 
 	pkt-gen: a packet sink/source
 	bridge: a two-port jumper wire
 - Support theses NICs: em, igb, lem, re, ixgbe
-- Minimum RAM requirements was increased to 512MB (netmap needs about 200MB)
+- Enable on amd64 only: Minimum RAM requirements was increased to 512MB (netmap needs about 200MB) and netmap can't be compile as a kernel module
 - More information about netmap: http://info.iet.unipi.it/~luigi/netmap/
 
 Installed packages:
