@@ -174,6 +174,10 @@ add_netrate () {
 	mount -t unionfs -o noatime ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
 	mkdir -p ${NANO_WORLDDIR}/usr/workdir
 	for TOOL in ${TOOLS_LIST}; do
+		# netmap is not available on sparc64
+		if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
+            		continue
+        	fi	
 		export TOOL
 		chroot ${NANO_WORLDDIR} /bin/sh -exc \
 			'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
