@@ -333,7 +333,7 @@ options		ZERO_COPY_SOCKETS
 device enc
 
 # Netmap: need a minimum of 512Mo of RAM and fast machine
-device netmap
+#device netmap
 
 # Kept the use of modules (for a small kernel) but prevent to build all modules
 # Name are relative to /usr/src/sys/modules
