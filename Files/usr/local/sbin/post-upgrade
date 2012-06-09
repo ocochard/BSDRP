@@ -1,0 +1,78 @@
+#!/bin/sh
+#
+# Upgrade tool for BSD Router Project
+# http://bsdrp.net
+#
+# Copyright (c) 2009-2012, The BSDRP Development Team
+# All rights reserved.
+# Based on the updatep1 and updatep2 script of nanoBSD
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+set -e
+
+if [ $# -lt 1 ]; then
+	echo "ERROR: This script should be call by update"
+	exit 1
+fi
+DST=$1
+set -u
+mount_newpart () {
+	if [ ! -d /tmp/sysupgrade ]; then
+    	mkdir /tmp/sysupgrade
+		if ! mount ${DST} /tmp/sysupgrade; then
+			echo "ERROR: Can't mount new partition"
+			if ! rm -r /tmp/sysupgrade; then
+				echo "and can't clean /tmp/sysupgrade"
+			fi
+    		exit 1
+		fi
+	fi
+}
+
+umount_newpart () {
+	if mount | grep -q "${DST} on /tmp/sysupgrade"; then	
+		if ! umount /tmp/sysupgrade; then
+    		echo "ERROR: Can't umount new partition"
+    		exit 1
+		fi
+
+		if ! rm -r /tmp/sysupgrade; then
+    		echo "WARNING: Can't remove tempdir"
+		fi
+	fi
+}
+
+# Release 1.1 upgrade script didn't preserve the existence of /boot/loader.conf.local
+if grep -q '^1.1$' /etc/version; then
+	mount_newpart
+	# Kept the /boot/loader.conf.local file
+	if [ -f /boot/loader.conf.local ]; then
+    	if ! cp /boot/loader.conf.local /tmp/sysupgrade/boot; then
+        	echo "WARNING: Can't backup /boot/loader.conf.local"
+    	fi
+	fi
+fi
+
+umount_newpart
+exit 0

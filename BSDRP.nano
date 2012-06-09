@@ -350,7 +350,6 @@ customize_cmd add_netrate
 # Add quagga-bgp-netgen tools
 customize_cmd add_quagga-bgp-netgen
 
-
 cleanup_ports () {
 		# When port are build, they install build dependency that are not usefull for running the port
 		# The list of build-only package to be delete can be found like this:

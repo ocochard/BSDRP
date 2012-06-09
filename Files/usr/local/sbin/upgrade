@@ -95,7 +95,7 @@ if ! tunefs -L ${label}s${DST_SLICE}a ${boot_dev}s${DST_SLICE}a; then
 	exit 1
 fi
 
-# Need to compare some files between the old and new partition
+# Need to tune some files on the new partition
 if [ ! -d /tmp/sysupgrade ]; then
 	mkdir /tmp/sysupgrade
 fi
@@ -104,6 +104,12 @@ if ! mount /dev/ufs/${label}s${DST_SLICE}a /tmp/sysupgrade; then
 	echo "ERROR: Can't mount new upgrade image"
 	exit 1
 fi
+# Kept the /boot/loader.conf.local file
+if [ -f /boot/loader.conf.local ]; then
+    if ! cp /boot/loader.conf.local /tmp/sysupgrade/boot; then
+        echo "WARNING: Can't backup /boot/loader.conf.local"
+    fi
+fi
 # 	Adapt fstab of the new system
 for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab
 	do
@@ -111,8 +117,8 @@ for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fsta
     done
 
 #	Check if their is a post-upgrade script on the newimage (This script will be start at the end of the upgrade process)
-if [ -f /tmp/sysupgrade/usr/local/sbin/post-upgrade.sh ]; then
-	if ! cp /tmp/sysupgrade/usr/local/sbin/post-upgrade.sh /tmp/post-upgrade.sh; then
+if [ -f /tmp/sysupgrade/usr/local/sbin/post-upgrade ]; then
+	if ! cp /tmp/sysupgrade/usr/local/sbin/post-upgrade /tmp/post-upgrade; then
 		echo "WARNING: Can't copy post-upgrade script!"
 	fi
 fi
@@ -170,9 +176,9 @@ esac
 echo "BSDRP Upgrade complete"
 logger BSDRP Upgrade complete
 
-if [ -f /tmp/post-upgrade.sh ]; then
+if [ -f /tmp/post-upgrade ]; then
 	echo "Starting post-upgrade script..."
 	logger Starting post-upgrade script
-	chmod +x /tmp/post-upgrade.sh
-	/tmp/post-upgrade.sh
+	chmod +x /tmp/post-upgrade
+	/tmp/post-upgrade /dev/ufs/${label}s${DST_SLICE}a
 fi
