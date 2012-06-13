@@ -185,10 +185,12 @@ add_netrate () {
 			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
 		for file in `grep "^PROG" ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/Makefile | cut -d '=' -f 2`; do
 			mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
+			if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
+				if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
+					echo "WARNING: Can't delete $TOOL/$file.o"
+				fi
+			fi
 		done
-		#FILENAME=`basename ${TOOL}`
-		#mv ${NANO_WORLDDIR}/usr/src/tools/tools/${TOOL}/${FILENAME} ${NANO_WORLDDIR}/usr/local/bin
-		#rm ${NANO_WORLDDIR}/usr/src/tools/tools/${TOOL}/${FILENAME}.o 
 	done
 	rm -rf ${NANO_WORLDDIR}/usr/workdir
 	umount ${NANO_WORLDDIR}/usr/src
