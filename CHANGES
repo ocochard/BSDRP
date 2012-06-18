@@ -2,11 +2,11 @@ Release 1.2 (not released)
 - Update base to FreeBSD 9-STABLE: netmap module enabled and pkt-gen/bridge tools added
 - Default kern.ipc.nmbclusters increased to 275MB
 - Transmit and receive descriptors for igb and em set to max (4096)
-- New package: sudo
+- New package: security/sudo and sysutils/ipmitool
 - Enable TRIM on filesystem
 - Add 'system rollback': remotely rollback to previous
 - Add 'system expand-data-slice': Expand the size of /data to all available space on disk.
-- Add Kernel drivers: 'device enc', some 1OG NIC (cxgb, cxgbe, mxge, nxge), SCSI/RAID controllers, Intel ICH watchdog
+- Add Kernel drivers: 'device enc', some 1OG NIC (cxgb, cxgbe, mxge, nxge), SCSI/RAID controllers, Intel ICH watchdog, ipmi and aesni drivers modules
 - Redirect periodic output to a log file
 - User customized /boot/loader.conf.local are preserved after an upgrade
 - Add version number on the boot menu
@@ -33,6 +33,7 @@ dlmalloc-2.8.4      Small, fast malloc library by Doug Lea
 fprobe-1.1_1        Tool that collects network traffic data
 freevrrpd-1.0       This a VRRP RFC2338 Compliant implementation under FreeBSD
 iperf-2.0.5         A tool to measure maximum TCP and UDP bandwidth
+ipmitool-1.8.11_4   CLI to manage IPMI systems
 isc-dhcp42-relay-4.2.4 The ISC Dynamic Host Configuration Protocol relay
 isc-dhcp42-server-4.2.4 The ISC Dynamic Host Configuration Protocol server
 libevent-1.4.14b_2  Provides an API to execute callback functions on certain ev
