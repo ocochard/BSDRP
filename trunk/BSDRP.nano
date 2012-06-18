@@ -331,6 +331,9 @@ add_port "mail/ssmtp"
 # Add tmux (screen equivalent, but better because BSD)
 add_port "sysutils/tmux"
 
+# Add ipmi tools
+add_port "sysutils/ipmitool"
+
 # Add sudo for fine permission management
 add_port "security/sudo"
 
