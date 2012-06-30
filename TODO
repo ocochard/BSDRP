@@ -38,3 +38,6 @@
 
 * Documentation *
 	- Hard drive installation (dd if=usb of=hdd) and "system data expand"
+
+nanobsd patches to include:
+http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html
