@@ -153,7 +153,7 @@ expand_data_slice () {
 		exit 1
 	fi
 
-	if ! tunefs -j ${boot_dev}s4; then
+	if ! tunefs -j enable ${boot_dev}s4; then
 		echo "WARNING: Can't enable soft updates journaling"
 	fi
 
