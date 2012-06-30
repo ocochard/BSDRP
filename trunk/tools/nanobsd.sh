@@ -463,9 +463,24 @@ create_i386_diskimage ( ) (
 	pprint 3 "log: ${NANO_OBJ}/_.di"
 
 	(
+	IMG=${NANO_DISKIMGDIR}/${NANO_IMGNAME}
+	MNT=${NANO_OBJ}/_.mnt
+	mkdir -p ${MNT}
+
+	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
+		MD=`mdconfig -a -t swap -s ${NANO_MEDIASIZE} -x ${NANO_SECTS} \
+			-y ${NANO_HEADS}`
+	else
+		echo "Creating md backing file..."
+		rm -f ${IMG}
+		dd if=/dev/zero of=${IMG} seek=${NANO_MEDIASIZE} count=0
+		MD=`mdconfig -a -t vnode -f ${IMG} -x ${NANO_SECTS} \
+			-y ${NANO_HEADS}`
+	fi
+
 	echo $NANO_MEDIASIZE $NANO_IMAGES \
 		$NANO_SECTS $NANO_HEADS \
-		$NANO_CODESIZE $NANO_CONFSIZE $NANO_DATASIZE |
+		$NANO_CODESIZE $NANO_CONFSIZE $NANO_DATASIZE $MD |
 	awk '
 	{
 		printf "# %s\n", $0
@@ -475,12 +490,6 @@ create_i386_diskimage ( ) (
 
 		# number of full cylinders on media
 		cyl = int ($1 / cs)
-
-		# output fdisk geometry spec, truncate cyls to 1023
-		if (cyl <= 1023)
-			print "g c" cyl " h" $4 " s" $3
-		else
-			print "g c" 1023 " h" $4 " s" $3
 
 		if ($7 > 0) { 
 			# size of data partition in full cylinders
@@ -499,26 +508,33 @@ create_i386_diskimage ( ) (
 			isl = int (($5 + cs - 1) / cs)
 		}
 
+		# Create MBR partition table
+		print "gpart create -s mbr", $8
+
 		# First image partition start at second track
-		print "p 1 165 " $3, isl * cs - $3
+		print "gpart add -t freebsd -b ", $3, " -s ", \
+			isl * cs - $3, $8
 		c = isl * cs;
 
 		# Second image partition (if any) also starts offset one 
 		# track to keep them identical.
 		if ($2 > 1) {
-			print "p 2 165 " $3 + c, isl * cs - $3
+			print "gpart add -t freebsd -b ", $3 + c, \
+				" -s ", isl * cs - $3, $8
 			c += isl * cs;
 		}
 
 		# Config partition starts at cylinder boundary.
-		print "p 3 165 " c, csl * cs
+		print "gpart add -t freebsd -b ", c, " -s ", csl * cs, $8
 		c += csl * cs
 
 		# Data partition (if any) starts at cylinder boundary.
 		if ($7 > 0) {
-			print "p 4 165 " c, dsl * cs
+			print "gpart add -t freebsd -b ", c, \
+				" -s ", dsl * cs, $8
 		} else if ($7 < 0 && $1 > c) {
-			print "p 4 165 " c, $1 - c
+			print "gpart add -t freebsd -b ", c, \
+				" -s ", $1 - c, $8
 		} else if ($1 < c) {
 			print "Disk space overcommitted by", \
 			    c - $1, "sectors" > "/dev/stderr"
@@ -527,28 +543,14 @@ create_i386_diskimage ( ) (
 
 		# Force slice 1 to be marked active. This is necessary
 		# for booting the image from a USB device to work.
-		print "a 1"
+		print "gpart set -a active -i 1 ", $8
 	}
-	' > ${NANO_OBJ}/_.fdisk
-
-	IMG=${NANO_DISKIMGDIR}/${NANO_IMGNAME}
-	MNT=${NANO_OBJ}/_.mnt
-	mkdir -p ${MNT}
-
-	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
-		MD=`mdconfig -a -t swap -s ${NANO_MEDIASIZE} -x ${NANO_SECTS} \
-			-y ${NANO_HEADS}`
-	else
-		echo "Creating md backing file..."
-		rm -f ${IMG}
-		dd if=/dev/zero of=${IMG} seek=${NANO_MEDIASIZE} count=0
-		MD=`mdconfig -a -t vnode -f ${IMG} -x ${NANO_SECTS} \
-			-y ${NANO_HEADS}`
-	fi
+	' > ${NANO_OBJ}/_.gpart
 
 	trap "echo 'Running exit trap code' ; df -i ${MNT} ; umount ${MNT} || true ; mdconfig -d -u $MD" 1 2 15 EXIT
 
-	fdisk -i -f ${NANO_OBJ}/_.fdisk ${MD}
+	sh ${NANO_OBJ}/_.gpart
+	gpart show ${MD}
 	fdisk ${MD}
 	# XXX: params
 	# XXX: pick up cached boot* files, they may not be in image anymore.

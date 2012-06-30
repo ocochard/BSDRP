@@ -1,6 +1,7 @@
 --- Mk/bsd.port.mk.orig	2012-02-22 18:34:47.000000000 +0100
+
 +++ Mk/bsd.port.mk	2012-03-08 21:58:17.000000000 +0100
-@@ -2205,7 +2205,8 @@
+@@ -2179,7 +2179,8 @@
  			LDFLAGS="${LDFLAGS}" \
  			CXX="${CXX}" CXXFLAGS="${CXXFLAGS}" \
  			MANPREFIX="${MANPREFIX}"
