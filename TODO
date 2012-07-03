@@ -1,9 +1,10 @@
 * Bugs *
 	- if /data had a fsck problem, system refuse go in single user
+	- add auto-trimming of all log files that are being created
 
 * Upgrading *
 	- Replacing the use of 2 systems partitions (there is not "active" partition
-	  concept on sparc64 or MIPS) by freebsd-update
+	  concept on sparc64 or MIPS) by freebsd-update ???
 
 * Arch *
 	- NEED to merge lot's of common task of create_arch_diskimage() in nanobsd
@@ -39,5 +40,5 @@
 * Documentation *
 	- Hard drive installation (dd if=usb of=hdd) and "system data expand"
 
-nanobsd patches to include:
+nanobsd patches to study for inclusion:
 http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html
