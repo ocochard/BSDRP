@@ -40,7 +40,7 @@ NAME="BSDRP"
 
 # CVSUP mirror
 # sysutils/fastest_cvsup is very usefull
-FREEBSD_CVSUP_HOST="cvsup3.fr.freebsd.org"
+FREEBSD_CVSUP_HOST="cvsup.fr.freebsd.org"
 
 # Base (current) folder
 BSDRP_ROOT=`pwd`
@@ -90,8 +90,9 @@ update_src () {
     	mkdir -p ${BSDRP_ROOT}/FreeBSD
 	fi
 
+# sctp is buggy after the 19 july for -stable
     SUPFILE=${BSDRP_ROOT}/FreeBSD/supfile
-	PORTS_DATE="date=2012.07.03.00.00.00"
+	PORTS_DATE="date=2012.07.26.00.00.00"
     cat <<EOF > $SUPFILE
 *default host=${FREEBSD_CVSUP_HOST}
 *default base=${BSDRP_ROOT}/FreeBSD/sup
@@ -100,7 +101,7 @@ update_src () {
 *default delete use-rel-suffix
 *default compress
 
-src-all tag=RELENG_9 ${PORTS_DATE}
+src-all tag=RELENG_9 "date=2012.07.19.00.00.00"
 #ports-all ${PORTS_DATE}
 ports-base ${PORTS_DATE}
 ports-benchmarks ${PORTS_DATE}
