@@ -308,6 +308,9 @@ add_port "net/bird6" "-DWITH_FIBS -DWITH_FIREWALL"
 # Add FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
 
+# Ipsec-tools
+add_port "security/ipsec-tools" "-DWITH_RC5 -DWITH_IDEA -DWITH_RADIUS -DWITH_LDAP"
+
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
 # UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
 add_port "net/ucarp"
@@ -317,6 +320,9 @@ add_port "net/mcast-tools"
 
 # Add IPv4 DVMRP (multicast) routing daemon
 add_port "net/mrouted"
+
+# Add pimdd: IPv4 PIM Dense Mode daemon
+add_port "net/pimdd"
 
 # Add fprobe: Netflow probe
 add_port "net-mgmt/fprobe"
