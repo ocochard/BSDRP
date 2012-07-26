@@ -90,7 +90,6 @@ update_src () {
     	mkdir -p ${BSDRP_ROOT}/FreeBSD
 	fi
 
-# sctp is buggy after the 19 july for -stable
     SUPFILE=${BSDRP_ROOT}/FreeBSD/supfile
 	PORTS_DATE="date=2012.07.26.00.00.00"
     cat <<EOF > $SUPFILE
@@ -101,7 +100,7 @@ update_src () {
 *default delete use-rel-suffix
 *default compress
 
-src-all tag=RELENG_9 "date=2012.07.19.00.00.00"
+src-all tag=RELENG_9 ${PORTS_DATE}
 #ports-all ${PORTS_DATE}
 ports-base ${PORTS_DATE}
 ports-benchmarks ${PORTS_DATE}
