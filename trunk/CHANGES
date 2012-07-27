@@ -1,8 +1,8 @@
 Release 1.2 (not released)
-- Update base to FreeBSD 9-STABLE: netmap module and pkt-gen/bridge tools added
+- Update base to FreeBSD 9.1-PRERELEASE: netmap module and pkt-gen/bridge tools added
 - Default kern.ipc.nmbclusters increased to 275MB
 - Transmit and receive descriptors for igb and em set to max (4096)
-- New packages: net/pimdd, security/sudo, sysutils/ipmitool and security/ipsec-tools
+- New packages: mctest (a multicast test tool), net/pimdd, security/sudo, sysutils/ipmitool and security/ipsec-tools
 - Enable TRIM on filesystem
 - Add 'system rollback': Rollback to previous version
 - Add 'system expand-data-slice': Expand the size of /data to all available space on disk and enable soft update journaling on it.
