@@ -369,20 +369,24 @@ delete_interface_lab_linux () {
 # Parse filename for detecting ARCH and console
 parse_filename () {
     QEMU_ARCH=0
+	if [ -z "$RAM" ]; then
+        RAM=192
+    fi
+
 	case "$OS_DETECTED" in
 	"FreeBSD")
     	if echo "${FILENAME}" | grep -q "amd64"; then
-        	QEMU_ARCH="qemu-system-x86_64 -m 128"
+        	QEMU_ARCH="qemu-system-x86_64 -m ${RAM}"
         	echo "filename guest a x86-64 image"
    		fi
     	if echo "${FILENAME}" | grep -q "i386"; then
-        	QEMU_ARCH="qemu -m 128"
+        	QEMU_ARCH="qemu -m ${RAM}"
         	echo "filename guests a i386 image"
     	fi
     	if [ "$QEMU_ARCH" = "0" ]; then
         	echo "WARNING: Can't guests arch of this image"
         	echo "Will use as default i386"
-        	QEMU_ARCH="qemu -m 128"
+        	QEMU_ARCH="qemu -m ${RAM}"
     	fi
 		if $KQEMU; then
 			QEMU_ARCH="${QEMU_ARCH} -enable-kqemu"
@@ -390,7 +394,7 @@ parse_filename () {
         break
          ;;
     "Linux")
-		QEMU_ARCH="kvm -m 128"
+		QEMU_ARCH="kvm -m ${RAM}"
          break
          ;;
      *)

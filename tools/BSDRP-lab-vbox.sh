@@ -155,7 +155,7 @@ create_template () {
 	fi
 
 	if [ -z "$RAM" ]; then
-		RAM=128
+		RAM=192
 	fi
     if ! VBoxManage modifyvm ${VM_TPL_NAME} --audio none --memory $RAM --vram 8 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1; then
 		echo "[ERROR] Can't customize ${VM_TPL_NAME}"
@@ -483,7 +483,7 @@ usage () {
         echo "  -d              Delete all BSDRP VM and disks"
         echo "  -n X            Number of router (between 1 and 9) full meshed (default: 1)"
         echo "  -l Y            Number of LAN between 0 and 9 (default: 0)"
-		echo "  -m              RAM (in MB) for each VM (default: 128)"
+		echo "  -m              RAM (in MB) for each VM (default: 192)"
 		echo "  -c              Enable internal NIC shared with host for each routers (default: Disable)"
         echo "  -h              Display this help"
         echo "  -s              Stop all VM"
