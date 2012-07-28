@@ -1,0 +1,75 @@
+diff -ruN net/mrouted.orig/Makefile net/mrouted/Makefile
+--- net/mrouted.orig/Makefile	2012-07-28 10:37:24.000000000 +0200
++++ net/mrouted/Makefile	2012-07-28 14:17:37.000000000 +0200
+@@ -6,14 +6,13 @@
+ #
+ 
+ PORTNAME=	mrouted
+-PORTVERSION=	3.9.5
++PORTVERSION=	3.9.6
+ CATEGORIES=	net
+-MASTER_SITES=	ftp://ftp.vmlinux.org/pub/People/jocke/mrouted/
++MASTER_SITES=	http://cloud.github.com/downloads/troglobit/mrouted/
+ 
+ MAINTAINER=	johans@FreeBSD.org
+ COMMENT=	Multicast routing daemon providing DVMRP for IPv4
+ 
+-USE_RC_SUBR=	mrouted
+ USE_BZIP2=	yes
+ USE_GMAKE=	yes
+ MAKE_ARGS=	sysconfdir=${PREFIX}/etc \
+@@ -25,6 +24,12 @@
+ PLIST_FILES=	sbin/map-mbone sbin/mrouted sbin/mrinfo sbin/mtrace \
+ 		etc/mrouted.conf
+ 
++post-patch:
++	${REINPLACE_CMD} \
++		"s|/etc|${PREFIX}/etc|g" \
++		${WRKSRC}/main.c ${WRKSRC}/mrouted.8 ${WRKSRC}/mrouted.conf \
++		${WRKSRC}/pathnames.h ${WRKSRC}/Makefile
++
+ .ifdef	NOPORTDOCS
+ MAKE_ARGS+=	datadir=${WRKDIR}/doc
+ .endif
+diff -ruN net/mrouted.orig/distinfo net/mrouted/distinfo
+--- net/mrouted.orig/distinfo	2012-07-28 10:37:24.000000000 +0200
++++ net/mrouted/distinfo	2012-07-28 10:45:53.000000000 +0200
+@@ -1,2 +1,2 @@
+-SHA256 (mrouted-3.9.5.tar.bz2) = 10f0204f3a420033df7b5dfe4cac96dfba58649cbd813d7c6e2253367601b147
+-SIZE (mrouted-3.9.5.tar.bz2) = 112746
++SHA256 (mrouted-3.9.6.tar.bz2) = 8f6bdbd6eec1da3f6b0ca651a0484d7bdf7d7ead6c5d47abbaef0dfed949eccf
++SIZE (mrouted-3.9.6.tar.bz2) = 112713
+diff -ruN net/mrouted.orig/files/mrouted.in net/mrouted/files/mrouted.in
+--- net/mrouted.orig/files/mrouted.in	2012-07-28 10:37:24.000000000 +0200
++++ net/mrouted/files/mrouted.in	1970-01-01 01:00:00.000000000 +0100
+@@ -1,21 +0,0 @@
+-#!/bin/sh
+-#
+-# $NetBSD: mrouted,v 1.6 2002/03/22 04:33:59 thorpej Exp $
+-# $FreeBSD: ports/net/mrouted/files/mrouted.in,v 1.3 2012/01/14 08:56:19 dougb Exp $
+-#
+-
+-# PROVIDE: mrouted
+-# REQUIRE: netif routing cleanvar
+-# KEYWORD: nojail
+-
+-. /etc/rc.subr
+-
+-name="mrouted"
+-rcvar=mrouted_enable
+-command=%%PREFIX%%/sbin/${name}
+-pidfile="/var/run/${name}.pid"
+-required_files=%%PREFIX%%/etc/${name}.conf
+-extra_commands="reload"
+-
+-load_rc_config $name
+-run_rc_command "$1"
+diff -ruN net/mrouted.orig/pkg-descr net/mrouted/pkg-descr
+--- net/mrouted.orig/pkg-descr	2012-07-28 10:37:24.000000000 +0200
++++ net/mrouted/pkg-descr	2012-07-28 10:42:37.000000000 +0200
+@@ -2,4 +2,4 @@
+ It turns a UNIX workstation into a DVMRP multicast router with tunnel
+ support, in order to cross non-multicast-aware routers.
+ 
+-WWW: http://troglobit.com/mrouted.shtml
++WWW: https://github.com/troglobit/mrouted
