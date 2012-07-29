@@ -40,7 +40,7 @@ isc-dhcp42-server-4.2.4_1 The ISC Dynamic Host Configuration Protocol server
 libevent-1.4.14b_2  Provides an API to execute callback functions on certain ev
 mcast-tools-20061214_1 IPv6 multicast routing daemons and tools
 mpd-5.6             Multi-link PPP daemon based on netgraph(4)
-mrouted-3.9.5       Multicast routing daemon providing DVMRP for IPv4
+mrouted-3.9.6       Multicast routing daemon providing DVMRP for IPv4
 net-snmp-5.7.1_7    An extendable SNMP implementation
 openldap-client-2.4.31_1 Open source LDAP client implementation
 pimdd-0.2.1.0       UO Dense Protocol-Independent Multicast (PIM-DM) daemon for
