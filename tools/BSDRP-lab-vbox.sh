@@ -399,8 +399,7 @@ start_lab () {
         sleep 2
 
         if ($SERIAL); then
-            #socat -s UNIX-CONNECT:/tmp/BSDRP_lab_R$i.serial TCP-LISTEN:800$i >> ${LOG_FILE} 2>&1 &
-            echo "Connect to router ${i}: socat unix-connect:/tmp/BSDRP_lab_R${i}.serial STDIO,raw,echo=0"
+            echo "Connect to router ${i}: socat unix-connect:/tmp/BSDRP_lab_R${i}.serial stdio,raw,echo=0,icanon=0"
         else
             echo "Connect to router ${i}: connect a ${VBOX_OUTPUT} client on port 590${i}"
         fi
