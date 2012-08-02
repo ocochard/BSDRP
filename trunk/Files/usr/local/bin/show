@@ -72,6 +72,12 @@ getoption () {
         memory|mem)
             memory
             ;;
+		mroute|mcast)
+			mroute
+			;;
+		mtraffic)
+			mtraffic
+			;;
 		packages|package)
 			packages
 			;;
@@ -92,7 +98,7 @@ getoption () {
             ;;
 
 		*)
-			echo "illegal option: $FIRST_OPTION"
+			echo "Wrong or missing option"
 			usage
 			;;
 	esac
@@ -122,9 +128,11 @@ usage () {
 		echo "  - license/lic  : Display BSDRP license"
 		echo "  - mbuf         : Display network memory management routine stats"
 		echo "  - memory/mem   : Display general memory usage"
+		echo "  - mroute/mcast : Display multicast group"
+		echo "  - mtraffic     : Display multicast stats"
 		echo "  - packages     : Display lists of installed packages"
-		echo "  - process/proc  : Display process information"
-		echo "  - route    : Display routes"
+		echo "  - process/proc : Display process information"
+		echo "  - route        : Display routes"
 		echo "  - traffic      : Display extensive IP traffic statistics"
 		echo "  - tech-support : Display Lot's of information"
 		echo "  - version/ver  : Display BSDRP version"
@@ -194,6 +202,19 @@ route () {
 	esac
 	exit 0
 }
+
+# Display multicast routing
+mroute () {
+	netstat -gW
+	exit 0
+}
+
+# Display multicast traffic stats
+mtraffic () {
+    netstat -gs
+    exit 0
+}
+
 # Display memory usage information
 # This function is a shell re-writting of the perl script:
 ##  freebsd-memory -- List Total System Memory Usage
