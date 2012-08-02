@@ -14,7 +14,7 @@ Release 1.2 (not released)
 
 Updated packages:
 - Bird to 1.3.7
-- Quagga to Quagga-RE 0.99.17.10
+- Quagga to Quagga-RE 0.99.17.11
 - ISC-isc-dhcp to 4.2.4-P1
 
 Note regarding netmap:
@@ -44,7 +44,7 @@ mrouted-3.9.6       Multicast routing daemon providing DVMRP for IPv4
 net-snmp-5.7.1_7    An extendable SNMP implementation
 openldap-client-2.4.31_1 Open source LDAP client implementation
 pimdd-0.2.1.0       UO Dense Protocol-Independent Multicast (PIM-DM) daemon for
-quagga-re-0.99.17.10 A branch of popular quagga software pointed at stability
+quagga-re-0.99.17.11 A branch of popular quagga software pointed at stability
 ssmtp-2.64          Extremely simple MTA to get mail off the system to a mail h
 sudo-1.8.5.p2       Allow others to run commands as root
 tmux-1.6            A Terminal Multiplexer
