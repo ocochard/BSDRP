@@ -31,6 +31,7 @@
 * Performance *
 	- Need to test Netmap (http://info.iet.unipi.it/~luigi/netmap/)
 	- In place of tunning, need to add a script that check the hardware, and regarding the hardware (NIC drivers, ncpu, RAM, etc...) will display some advice
+	- SMP-friendly pf: http://lists.freebsd.org/pipermail/freebsd-pf/2012-June/006643.html
 
 * API *
 	- Need to check if an API (for usage as a VM in cloud for example) is a good idea

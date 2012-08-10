@@ -90,6 +90,9 @@ main(int argc, char *argv[])
         /*NOTREACHED*/
     }
 
+	/* we have our socket, we don't need the list res0 anymore */
+    freeaddrinfo(res0);
+
 	printf("Sending packet at %s, port %s\n", argv[1], argv[2]);
 	/* Infinite loop of send() */
 	for(;;) {

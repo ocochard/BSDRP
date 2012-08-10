@@ -211,6 +211,7 @@ mroute () {
 
 # Display multicast traffic stats
 mtraffic () {
+	ifmcstat
     netstat -gs
     exit 0
 }

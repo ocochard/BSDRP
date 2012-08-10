@@ -369,7 +369,7 @@ cleanup_ports () {
 		# diff packages.info.first packages.info
 		set +e
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'pkg_delete auto* m4* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* p5-gettext* libsigsegv*'
+        'pkg_delete auto* m4* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* p5-gettext* libsigsegv* pkgconf*'
 		set -e
 }
 

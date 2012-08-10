@@ -1,14 +1,14 @@
 Release 1.2 (not released)
 - Update base to FreeBSD 9.1-PRERELEASE: netmap module and pkt-gen/bridge tools added
 - Default kern.ipc.nmbclusters increased to 275MB
-- Transmit and receive descriptors for igb and em set to max (4096)
+- Transmit and receive descriptors for igb(4) and em(4) set to max (4096)
 - New packages: mctest (a multicast test tool), net/pimdd, security/sudo, sysutils/ipmitool and security/ipsec-tools
 - Enable TRIM on filesystem
 - Add 'system rollback': Rollback to previous version
 - Add 'system expand-data-slice': Expand the size of /data to all available space on disk and enable soft update journaling on it.
 - Add Kernel drivers: 'device enc', some 1OG NIC (cxgb, cxgbe, mxge, nxge), SCSI/RAID controllers, Intel ICH watchdog, ipmi and aesni drivers modules
 - Redirect periodic output to a log file
-- User customized /boot/loader.conf.local are preserved after an upgrade
+- User customized /boot/loader.conf.local file is preserved after an upgrade
 - Add version number on the boot menu
 - Build script speed improvement: add mdmfs support, kept distfiles in the same folder as FreeBSD sources, didn't compile all kernel modules 
 
@@ -21,7 +21,7 @@ Note regarding netmap:
 - Only 2 demos tools available (not usable for forwarding presently): 
 	pkt-gen: a packet sink/source
 	bridge: a two-port jumper wire
-- Support theses NICs: em, igb, lem, re, ixgbe
+- Support only theses NICs: em, igb, lem, re, ixgbe
 - Minimum RAM requirements was increased to 512MB (netmap needs about 200MB)
 - More information about netmap: http://info.iet.unipi.it/~luigi/netmap/
 
@@ -38,11 +38,13 @@ ipsec-tools-0.8.0_3 KAME racoon IKE daemon, ipsec-tools version
 isc-dhcp42-relay-4.2.4 The ISC Dynamic Host Configuration Protocol relay
 isc-dhcp42-server-4.2.4_1 The ISC Dynamic Host Configuration Protocol server
 libevent-1.4.14b_2  Provides an API to execute callback functions on certain ev
+libgcrypt-1.5.0     General purpose crypto library based on code used in GnuPG
+libgpg-error-1.10   Common error values for all GnuPG components
 mcast-tools-20061214_1 IPv6 multicast routing daemons and tools
 mpd-5.6             Multi-link PPP daemon based on netgraph(4)
 mrouted-3.9.6       Multicast routing daemon providing DVMRP for IPv4
 net-snmp-5.7.1_7    An extendable SNMP implementation
-openldap-client-2.4.31_1 Open source LDAP client implementation
+openldap-client-2.4.32_1 Open source LDAP client implementation
 pimdd-0.2.1.0       UO Dense Protocol-Independent Multicast (PIM-DM) daemon for
 quagga-re-0.99.17.11 A branch of popular quagga software pointed at stability
 ssmtp-2.64          Extremely simple MTA to get mail off the system to a mail h
