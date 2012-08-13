@@ -35,6 +35,9 @@
 set -e
 #set -u
 
+# A usefull function (from: http://code.google.com/p/sh-die/)
+die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+
 # Display help
 usage () {
 	echo "BSD Router Project: system tool"
@@ -72,14 +75,8 @@ usage () {
 
 # Check system integrity
 integrity () {
-	if [ "${SECOND_OPTION}" = "" ]; then
-		echo "ERROR: Reference mtree filename missing"
-		exit 1
-	fi
-	if [ ! -f ${SECOND_OPTION} ]; then
-		echo "ERROR: File ${SECOND_OPTION} didn't exist."
-		exit 1 
-	fi
+	[ "${SECOND_OPTION}" = "" ] && die "ERROR: Reference mtree filename missing"
+	[ ! -f ${SECOND_OPTION} ] && die "ERROR: File ${SECOND_OPTION} didn't exist."
 	FILE_TYPE=`file ${SECOND_OPTION} | cut -d : -f 2`
 	
 	if echo "${FILE_TYPE}" | grep -qi "ASCII text"; then
@@ -90,8 +87,7 @@ integrity () {
 	elif echo "${FILE_TYPE}" | grep -qi xz; then
 		cmd="xz -dc ${SECOND_OPTION} | mtree -p /"
 	else
-		echo "Is the given reference mtree file a good mtree file ?"
-		exit 1
+		die "Is the given reference mtree file a good mtree file ?"
 	fi
 	echo "Here is the modified files comparing to the reference mtree file:"
 	eval $cmd
@@ -124,38 +120,46 @@ expand_data_slice () {
 	label=`cut -d '/' -f 2 /etc/nanobsd.conf`
 
 	if mount | grep -q "/data"; then
-		echo "/data is mounted, you need to unmount it"
-		exit 1
+		die "/data is mounted, you need to unmount it"
     fi
 
 	#free space
 	FREE_SPACE=`gpart show ${boot_dev} | grep "\- free \-" | grep -v k | cut -d '-' -f 3`
-	if [ -z ${FREE_SPACE} ]; then
-		echo "There is no space left on disk"
-		exit 0
-	fi
+	[ -z ${FREE_SPACE} ] && die "There is no space left on disk"
 	echo "There is ${FREE_SPACE} available on your disk that can be use for /data"
 	echo -n "Are you sure to repartition your disk ? (y/n)"
     while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
         read USER_CONFIRM <&1
     done
-    if [ "$USER_CONFIRM" = "n" ]; then
-        exit 0 
-    fi
+    [ "$USER_CONFIRM" = "n" ] && die "User cancel"
 
-	if ! gpart resize -i 4 ${boot_dev}; then
-		echo "ERROR: gpart resize -i 4 ${boot_dev} failed"
-		exit 1
-	fi
+	# Using "gpart resize" + growfs  is too slow and create a bug with 
+	# the geom label (pr=kern/165962)
+	#
 
-	if ! growfs -y ${boot_dev}s4; then
-		echo "ERROR: growfs ${boot_dev}s4 failed"
-		exit 1
-	fi
+	# Backup the s4 (data) partion
+	dump -0auf/tmp/s4.dump ${boot_dev}s4 || die "ERROR: dumping ${boot_dev}s4 to /tmp failed"
 
-	if ! tunefs -j enable ${boot_dev}s4; then
-		echo "WARNING: Can't enable soft updates journaling"
-	fi
+	# Deleting partition s4
+	gpart delete -i 4 ${boot_dev} || die "Unable to /sbin/gpart delete -i 4 ${boot_dev}"
+
+	# Recreating s4 using full disk space
+	gpart add -t freebsd ${boot_dev} || die "Unable /sbin/gpart add -t freebsd ${boot_dev}"
+
+	# Formatting the new partition (SUJ
+	LABEL=`cut -f 2 -d "/" /etc/nanobsd.conf`
+	newfs -UjL ${LABEL}s4 ${boot_dev}s4 || die "Unable to newfs -UjtL ${LABEL}s4 ${boot_dev}s4"
+
+	# Restoring the dump
+	[ -d /tmp/slice ] || mkdir -p /tmp/slice
+	mount ${boot_dev}s4 /tmp/slice || die "Unable to mount ${boot_dev}s4 /tmp/slice"
+	cd /tmp/slice
+	restore rf /tmp/s4.dump || die "Unable to restore rf /tmp/s4.dump"
+	[ -f /tmp/slice/restoresymtable ] && rm -rf /tmp/slice/restoresymtable
+	[ -f /etc/dumpdates ] && rm -rf /etc/dumpdates
+
+	cd
+	umount /tmp/slice || die "Can't unmount /tmp/slice, but it's done"
 
 	echo "Done"
 
@@ -192,20 +196,14 @@ rollback () {
     	SRC_SLICE=2
 	fi
 
-	if [ $DST_SLICE = 0 ]; then
-    	echo "Can't detect active slice"
-    	exit 1
-	fi
+	[ $DST_SLICE = 0 ] && die "Can't detect active slice"
 	
 	# Check if old system was good
 	if [ -e /dev/${NANO_DRIVE}s${DST_SLICE}a ]; then
-		if ! fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a; then
-    		echo "ERROR: Missing or fsck problem on the previous system slice"
-    		exit 1
-		fi
+		fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a || 
+		die "ERROR: Missing or fsck problem on the previous system slice"
 	else
-		echo "ERROR: This system was never upgraded"
-		exit 1
+		die "ERROR: This system was never upgraded"
 	fi
 
 	echo -n "Warning: Are you sure to revert to the previous release ? (y/n)"
@@ -217,44 +215,30 @@ rollback () {
 	fi
 
 	# Need to compare some files between the old and new partition
-	if [ ! -d /tmp/sysupgrade ]; then
-    	mkdir /tmp/sysupgrade
-	fi
+	[ -d /tmp/sysupgrade ] || mkdir /tmp/sysupgrade
 
 	#   Adapt fstab of the old system
     sed -i "" "s/${NANO_GLABEL_SYS}s${SRC_SLICE}a/${NANO_GLABEL_SYS}s${DST_SLICE}a/g" /etc/fstab
 
 	# Save the config file that include the fstab
-	if ! mount /cfg; then
-    	echo "ERROR: Cant't mount /cfg"
-    	exit 1
-	fi
+	mount /cfg || die "ERROR: Cant't mount /cfg"
 	if ! cp /etc/fstab /cfg; then
-    	echo "ERROR: Can't save fstab"
     	umount /cfg
-    	exit 1
+		die "ERROR: Can't save fstab"
 	fi
-	if ! umount /cfg; then
-    	echo "ERROR: Can't umount /cfg"
-    	exit 1
-	fi
+	umount /cfg || die "ERROR: Can't umount /cfg"
 	case `uname -m` in
-        i386|amd64)
-                if ! boot0cfg -s ${DST_SLICE} -t 18 -v ${NANO_DRIVE}; then
-                    echo "ERROR: Can't update FreeBSD bootloader"
-                    exit 1
-                fi
-                if ! gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}; then
-                    echo "ERROR: Can't update active partition"
-                    exit 1
-                fi
+		i386|amd64)
+			boot0cfg -s ${DST_SLICE} -t 18 -v ${NANO_DRIVE} ||
+				die "ERROR: Can't update FreeBSD bootloader"
+           
+			gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE} ||
+				die "ERROR: Can't update active partition"
                 ;;
         arm)
                 echo "arm upgrade script not tested!"   
-                if ! gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE}; then
-                    echo "ERROR: Can't update active partition"
-                    exit 1
-                fi
+                gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE} ||
+                    die "ERROR: Can't update active partition"
                 ;;
         sparc64)
                 echo "You need to configure OBP for booting on"
@@ -424,31 +408,18 @@ sys_virtualized () {
         read USER_CONFIRM <&1
 	done
 	
-	if [ "$USER_CONFIRM" = "n" ]; then
-		echo "Canceling"
-		exit 0
-	fi
+	[ "$USER_CONFIRM" = "n" ] && die "Canceling"
 	
-	if [ `mount -u -o rw /` ]; then
-		echo "Error: Can't mount in read-write mode the /"
-		exit 1
-	fi
+	mount -uw / || die "ERROR: mount -uw /"
 	
 	if [ `echo kern.hz=100 >> /boot/loader.conf` ]; then
-		echo "Error: Can't modify loader.conf"
-		exit 1
+		die "Error: Can't modify loader.conf"
 	fi
 
-	if [ `mount -u -o ro /` ]; then
-        echo "Error: Can't re-mount in read-only mode the /"
-        exit 1
-    fi
+	mount -ur / || die "ERROR: mount -ur /"
 
 	echo "A reboot is needed for apply changes."
-
 	exit 0
-
-
 }
 
 ###################

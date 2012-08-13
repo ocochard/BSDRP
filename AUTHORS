@@ -4,6 +4,7 @@ Founder:
 Developers and Contributors:
 Listed in order of seniority along with date of first contribution.
     - Baptiste Chaussade (bchaussade@gmail.com): Tester and Wiki contributer about Virtualbox stufs (08/2009)
+	- Marc Gauthier (mga.gauthier@orange.com): Patch that improve a lot's the data partition growing (replacing gpart-resize/growfs with a dump/gpart-delete/gpart-create/newfs/restore" (03/2012)
 
 Reuse of existing softwares/patches:
 
@@ -26,4 +27,4 @@ The authors of BSDRP would like to thank the authors of these software packages 
 * mcast-tools: Copyright (C) 1999 WIDE Project, Copyright (c) 1998-2001 The University of Southern California/Information Sciences Institute
 * mrouted: Copyright (C) 2002 The Board of Trustees of the Leland Stanford Junior University
 * mpd: Multi-link PPP Daemon, Copyright (c) 2003-2004, Archie L. Cobbs, Michael Bretterklieber, Alexander Motin
-
+* sh-die: http://code.google.com/p/sh-die/
