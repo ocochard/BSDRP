@@ -42,11 +42,11 @@ NAME="BSDRP"
 # sysutils/fastest_cvsup is very usefull
 FREEBSD_CVSUP_HOST="cvsup.fr.freebsd.org"
 
+# CVS date of the source tree
+PORTS_DATE="date=2012.08.13.00.00.00"
+
 # Base (current) folder
 BSDRP_ROOT=`pwd`
-
-# Where the build configuration files used by nanobsd.sh live.
-#NANO_CFG_BASE=${BSDRP_ROOT}/nanobsd
 
 # Where the FreeBSD ports tree lives.
 NANO_PORTS="${BSDRP_ROOT}/FreeBSD/ports"
@@ -90,8 +90,8 @@ update_src () {
     	mkdir -p ${BSDRP_ROOT}/FreeBSD
 	fi
 
+	# Generating the csup configuration file
     SUPFILE=${BSDRP_ROOT}/FreeBSD/supfile
-	PORTS_DATE="date=2012.08.10.00.00.00"
     cat <<EOF > $SUPFILE
 *default host=${FREEBSD_CVSUP_HOST}
 *default base=${BSDRP_ROOT}/FreeBSD/sup
@@ -114,6 +114,10 @@ ports-sysutils ${PORTS_DATE}
 
 EOF
 	csup -L 1 $SUPFILE
+}
+
+#patch the source tree
+patch_src() {
     # Force a repatch because csup pulls pristine sources.
     : > $BSDRP_ROOT/FreeBSD/src-patches
     : > $BSDRP_ROOT/FreeBSD/ports-patches
@@ -518,6 +522,8 @@ fi
 if ($UPDATE_SRC); then
 	pprint 1 "Update sources..."
 	update_src
+	pprint 1 "Patch sources..."
+	patch_src
 fi
 
 pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
