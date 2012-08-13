@@ -496,6 +496,11 @@ case ${INPUT_CONSOLE} in
 esac
 
 # Export some variables for using them under nanobsd
+# Somes ports needs the correct uname -r output
+REV=`grep -m 1 REVISION= ${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"'`
+BRA=`grep -m 1 BRANCH=  ${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"'`
+export FBSD_DST_RELEASE="${REV}-${BRA}"
+export FBSD_DST_OSVERSION=$(awk '/\#define.*__FreeBSD_version/ { print $3 }' "${FREEBSD_SRC}/sys/sys/param.h")
 export TARGET_ARCH
 
 # Delete the destination dir
