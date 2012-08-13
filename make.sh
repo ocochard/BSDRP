@@ -501,7 +501,7 @@ export TARGET_ARCH
 # Delete the destination dir
 if [ -z "${SKIP_REBUILD}" ]; then
 	if [ -d ${NANO_OBJ} ]; then
-		pprint 1 "Existing working directory detected,"
+		pprint 1 "Existing working directory detected (${NANO_OBJ}),"
 		pprint 1 "but you asked for rebuild some parts (no -b, -w or -k option given)"
 		pprint 1 "Do you want to continue ? (y/n)"
 		USER_CONFIRM=""
