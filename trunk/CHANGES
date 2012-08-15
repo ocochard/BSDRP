@@ -18,7 +18,8 @@ Updated packages:
 - ISC-isc-dhcp to 4.2.4-P1
 
 Note regarding netmap:
-- Only 2 demos tools available (not usable for forwarding presently): 
+- Only 3 demos tools available:
+	ipfw-userland version 
 	pkt-gen: a packet sink/source
 	bridge: a two-port jumper wire
 - Support only theses NICs: em, igb, lem, re, ixgbe
@@ -33,6 +34,7 @@ dlmalloc-2.8.4      Small, fast malloc library by Doug Lea
 fprobe-1.1_1        Tool that collects network traffic data
 freevrrpd-1.0       This a VRRP RFC2338 Compliant implementation under FreeBSD
 iperf-2.0.5         A tool to measure maximum TCP and UDP bandwidth
+ipfw-user-0.1       Netmap-enabled IPFW userspace version
 ipmitool-1.8.11_4   CLI to manage IPMI systems
 ipsec-tools-0.8.0_3 KAME racoon IKE daemon, ipsec-tools version
 isc-dhcp42-relay-4.2.4 The ISC Dynamic Host Configuration Protocol relay
