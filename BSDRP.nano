@@ -300,6 +300,9 @@ add_port () {
 
 #### Add routing related ports #####
 
+# high-performance ipfw netmap
+add_port "net/ipfw-user"
+
 # Then we need to install net-snmp without perl modules
 add_port "net-mgmt/net-snmp" "-DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
 

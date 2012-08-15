@@ -43,7 +43,7 @@ NAME="BSDRP"
 FREEBSD_CVSUP_HOST="cvsup.fr.freebsd.org"
 
 # CVS date of the source tree
-PORTS_DATE="date=2012.08.14.00.00.00"
+PORTS_DATE="date=2012.08.15.00.00.00"
 
 # Base (current) folder
 BSDRP_ROOT=`pwd`
@@ -121,6 +121,7 @@ patch_src() {
     # Force a repatch because csup pulls pristine sources.
     : > $BSDRP_ROOT/FreeBSD/src-patches
     : > $BSDRP_ROOT/FreeBSD/ports-patches
+	: > $BSDRP_ROOT/FreeBSD/ports-added
     # Nuke the newly created files to avoid build errors, as
     # patch(1) will automatically append to the previously
     # non-existent file.
@@ -152,6 +153,18 @@ patch_src() {
 	cp ${BSDRP_ROOT}/tools/nanobsd.sh ${BSDRP_ROOT}/FreeBSD/src/tools/tools/nanobsd
 	chmod +x ${BSDRP_ROOT}/FreeBSD/src/tools/tools/nanobsd
 
+}
+
+#Add new ports in shar format
+add_new_ports() {
+	for ports in $(cd ${BSDRP_ROOT}/patches && ls ports.*.shar); do
+		if ! grep -q $ports ${BSDRP_ROOT}/FreeBSD/ports-added; then
+			echo "Adding port $ports..."
+			(cd FreeBSD/ports &&
+			sh ${BSDRP_ROOT}/patches/$ports)
+			echo $ports >> ${BSDRP_ROOT}/FreeBSD/ports-added
+		fi
+	done
 }
 
 ##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount
@@ -529,6 +542,8 @@ if ($UPDATE_SRC); then
 	update_src
 	pprint 1 "Patch sources..."
 	patch_src
+	pprint 1 "Add ports..."
+	add_new_ports
 fi
 
 pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
