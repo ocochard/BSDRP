@@ -43,7 +43,7 @@ NAME="BSDRP"
 FREEBSD_CVSUP_HOST="cvsup.fr.freebsd.org"
 
 # CVS date of the source tree
-PORTS_DATE="date=2012.08.15.00.00.00"
+PORTS_DATE="date=2012.08.17.00.00.00"
 
 # Base (current) folder
 BSDRP_ROOT=`pwd`

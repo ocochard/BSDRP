@@ -60,6 +60,9 @@ getoption () {
         help|h)
             usage
             ;;
+		ifstat)
+			ifstat
+			;;
         license|lic)
             license
             ;;
@@ -125,6 +128,7 @@ usage () {
         echo "  - authors      : Display authors and contributors list"
 		echo "  - help/h [option]  : Display this help message. "
         echo "       If [option] given, display more detail about"
+		echo "  - ifstat       : Display interface stats"
 		echo "  - license/lic  : Display BSDRP license"
 		echo "  - mbuf         : Display network memory management routine stats"
 		echo "  - memory/mem   : Display general memory usage"
@@ -157,6 +161,12 @@ license () {
 # Display mbuf usag
 mbuf () {
 	netstat -m
+	exit 0
+}
+
+# Display interface stats
+ifstat () {
+	netstat -bdhi
 	exit 0
 }
 

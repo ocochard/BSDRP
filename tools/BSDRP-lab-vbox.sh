@@ -144,9 +144,12 @@ create_template () {
 	if [ -z "$RAM" ]; then
 		RAM=192
 	fi
-    if ! VBoxManage modifyvm ${VM_TPL_NAME} --audio none --memory $RAM --vram 8 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1; then
+
+	# Enabling ICH9 chipset (support 36 NIC)
+    if ! VBoxManage modifyvm ${VM_TPL_NAME} --chipset ich9 --audio none --memory $RAM --vram 8 --boot1 disk --floppy disabled >> ${LOG_FILE} 2>&1; then
 		die "[ERROR] Can't customize ${VM_TPL_NAME}"
 	fi
+
     if ! VBoxManage modifyvm ${VM_TPL_NAME} --biosbootmenu disabled >> ${LOG_FILE} 2>&1; then
 		die "[ERROR] Can't disable bootmenu for $1"
 	fi

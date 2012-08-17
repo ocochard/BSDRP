@@ -6,6 +6,9 @@ update_motd=NO
 #No blanktime (suppress blanktimevidcontrol not found message)
 blanktime="NO"
 
+#Increase the vga console resolution to 1024x768x8
+allscreens_flags="MODE_261"
+
 #Disable moused
 moused_enable="NO"
 
