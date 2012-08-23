@@ -38,12 +38,8 @@ set -eu
 # Name of the product
 NAME="BSDRP"
 
-# CVSUP mirror
-# sysutils/fastest_cvsup is very usefull
-FREEBSD_CVSUP_HOST="cvsup.fr.freebsd.org"
-
-# CVS date of the source tree
-PORTS_DATE="date=2012.08.17.00.00.00"
+# SVN date of the source tree
+PORTS_REV="302986"
 
 # Base (current) folder
 BSDRP_ROOT=`pwd`
@@ -70,6 +66,9 @@ PPLEVEL=3
 ########### Function definition #############
 #############################################
 
+# A usefull function (from: http://code.google.com/p/sh-die/)
+die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+
 # Progress Print
 #       Print $2 at level $1.
 pprint() {
@@ -82,52 +81,44 @@ pprint() {
 # TO DO: write a small fastest_csvusp 
 update_src () {
 	echo "Updating/Installing FreeBSD and ports source"
-    if [ -z "${FREEBSD_CVSUP_HOST}" ]; then
-        error "No sup host defined, please define FREEBSD_CVSUP_HOST and rerun"
-    fi
-    echo "Checking out tree from ${FREEBSD_CVSUP_HOST}..."
-	if [ ! -d ${BSDRP_ROOT}/FreeBSD ]; then
-    	mkdir -p ${BSDRP_ROOT}/FreeBSD
+    
+	if [ ! -d ${BSDRP_ROOT}/FreeBSD/src/.svn ]; then
+		echo "Checking out source..."
+    	mkdir -p ${BSDRP_ROOT}/FreeBSD/src || die "Can't create ${BSDRP_ROOT}/FreeBSD/src"
+		svn co svn://svn.freebsd.org/base/releng/9.1 ${BSDRP_ROOT}/FreeBSD/src || die "Can't check out sources"
+	else
+		#cleaning local patced source
+		svn revert -R ${BSDRP_ROOT}/FreeBSD/src
+		echo "Updating sources..."
+		svn update ${BSDRP_ROOT}/FreeBSD/src || die "Can't update FreeBSD src"
 	fi
-
-	# Generating the csup configuration file
-    SUPFILE=${BSDRP_ROOT}/FreeBSD/supfile
-    cat <<EOF > $SUPFILE
-*default host=${FREEBSD_CVSUP_HOST}
-*default base=${BSDRP_ROOT}/FreeBSD/sup
-*default prefix=${BSDRP_ROOT}/FreeBSD
-*default release=cvs
-*default delete use-rel-suffix
-*default compress
-
-src-all tag=RELENG_9 ${PORTS_DATE}
-#ports-all ${PORTS_DATE}
-ports-base ${PORTS_DATE}
-ports-benchmarks ${PORTS_DATE}
-ports-devel ${PORTS_DATE}
-ports-lang ${PORTS_DATE}
-ports-net ${PORTS_DATE}
-ports-net-mgmt ${PORTS_DATE}
-ports-mail ${PORTS_DATE}
-ports-security ${PORTS_DATE}
-ports-sysutils ${PORTS_DATE}
-
-EOF
-	csup -L 1 $SUPFILE
+	if [ ! -d ${BSDRP_ROOT}/FreeBSD/ports/.svn ]; then
+		echo "Checking out ports source..."
+		mkdir -p ${BSDRP_ROOT}/FreeBSD/ports || die "Can't create ${BSDRP_ROOT}/FreeBSD/ports"
+        svn co svn://svn.freebsd.org/ports/head ${BSDRP_ROOT}/FreeBSD/ports -r {${PORTS_REV}} || die "Can't check out ports sources"
+	else
+		#cleaning local patched ports sources
+		svn revert -R ${BSDRP_ROOT}/FreeBSD/ports
+		echo "Updating ports sources..."
+		svn update ${BSDRP_ROOT}/FreeBSD/ports -r ${PORTS_REV} || die "Can't update ports sources"
+	fi
 }
 
 #patch the source tree
 patch_src() {
-    # Force a repatch because csup pulls pristine sources.
     : > $BSDRP_ROOT/FreeBSD/src-patches
     : > $BSDRP_ROOT/FreeBSD/ports-patches
 	: > $BSDRP_ROOT/FreeBSD/ports-added
     # Nuke the newly created files to avoid build errors, as
     # patch(1) will automatically append to the previously
     # non-existent file.
-    for file in $(find ${BSDRP_ROOT}/FreeBSD/ -name '*.orig' -size 0); do
-        rm -f "$(echo "$file" | sed -e 's/.orig//')"
-    done
+	( cd FreeBSD/src &&
+	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
+	( cd FreeBSD/ports
+	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
+#    for file in $(find ${BSDRP_ROOT}/FreeBSD/ -name '*.orig' -size 0); do
+#        rm -f "$(echo "$file" | sed -e 's/.orig//')"
+#    done
     : > $BSDRP_ROOT/FreeBSD/.pulled
 
 	for patch in $(cd ${BSDRP_ROOT}/patches && ls freebsd.*.patch); do
@@ -508,14 +499,6 @@ case ${INPUT_CONSOLE} in
 ;;
 esac
 
-# Export some variables for using them under nanobsd
-# Somes ports needs the correct uname -r output
-REV=`grep -m 1 REVISION= ${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"'`
-BRA=`grep -m 1 BRANCH=  ${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"'`
-export FBSD_DST_RELEASE="${REV}-${BRA}"
-export FBSD_DST_OSVERSION=$(awk '/\#define.*__FreeBSD_version/ { print $3 }' "${FREEBSD_SRC}/sys/sys/param.h")
-export TARGET_ARCH
-
 # Delete the destination dir
 if [ -z "${SKIP_REBUILD}" ]; then
 	if [ -d ${NANO_OBJ} ]; then
@@ -545,6 +528,15 @@ if ($UPDATE_SRC); then
 	pprint 1 "Add ports..."
 	add_new_ports
 fi
+
+# Export some variables for using them under nanobsd
+# Somes ports needs the correct uname -r output
+REV=`grep -m 1 REVISION= ${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"'`
+BRA=`grep -m 1 BRANCH=  ${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"'`
+export FBSD_DST_RELEASE="${REV}-${BRA}"
+export FBSD_DST_OSVERSION=$(awk '/\#define.*__FreeBSD_version/ { print $3 }' "${FREEBSD_SRC}/sys/sys/param.h")
+export TARGET_ARCH
+
 
 pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
 
