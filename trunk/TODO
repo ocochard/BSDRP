@@ -12,6 +12,7 @@
 	- arm: Need to found an arm devices for working on
 	- cross-compilation : check this URL: http://forums.freebsd.org/showthread.php?t=18147
 	- vm: Add a "VM" arch, with vm-tools and only limited drivers ? (brings lot's of deps like python and perl)
+	- Need to migrate to pkgng
 
 * Authentication *
 	- Need to test PAM (Radius, TACAS+) modules
