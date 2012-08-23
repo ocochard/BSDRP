@@ -10,10 +10,10 @@
 # modification, are permitted provided that the following conditions
 # are met:
 # 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
+#	 notice, this list of conditions and the following disclaimer.
 # 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
+#	 notice, this list of conditions and the following disclaimer in the
+#	 documentation and/or other materials provided with the distribution.
 #
 # THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -38,7 +38,7 @@ set -eu
 # Name of the product
 NAME="BSDRP"
 
-# SVN date of the source tree
+# SVN revision number to sync with
 PORTS_REV="302986"
 
 # Base (current) folder
@@ -70,21 +70,21 @@ PPLEVEL=3
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # Progress Print
-#       Print $2 at level $1.
+#		Print $2 at level $1.
 pprint() {
-    if [ "$1" -le $PPLEVEL ]; then
-        printf "%.${1}s %s\n" "#####" "$2"
-    fi
+	if [ "$1" -le $PPLEVEL ]; then
+		printf "%.${1}s %s\n" "#####" "$2"
+	fi
 }
 
 # Update or install src if not installed
 # TO DO: write a small fastest_csvusp 
 update_src () {
 	echo "Updating/Installing FreeBSD and ports source"
-    
+	
 	if [ ! -d ${BSDRP_ROOT}/FreeBSD/src/.svn ]; then
 		echo "Checking out source..."
-    	mkdir -p ${BSDRP_ROOT}/FreeBSD/src || die "Can't create ${BSDRP_ROOT}/FreeBSD/src"
+		mkdir -p ${BSDRP_ROOT}/FreeBSD/src || die "Can't create ${BSDRP_ROOT}/FreeBSD/src"
 		svn co svn://svn.freebsd.org/base/releng/9.1 ${BSDRP_ROOT}/FreeBSD/src || die "Can't check out sources"
 	else
 		#cleaning local patced source
@@ -95,7 +95,7 @@ update_src () {
 	if [ ! -d ${BSDRP_ROOT}/FreeBSD/ports/.svn ]; then
 		echo "Checking out ports source..."
 		mkdir -p ${BSDRP_ROOT}/FreeBSD/ports || die "Can't create ${BSDRP_ROOT}/FreeBSD/ports"
-        svn co svn://svn.freebsd.org/ports/head ${BSDRP_ROOT}/FreeBSD/ports -r {${PORTS_REV}} || die "Can't check out ports sources"
+		svn co svn://svn.freebsd.org/ports/head ${BSDRP_ROOT}/FreeBSD/ports -r {${PORTS_REV}} || die "Can't check out ports sources"
 	else
 		#cleaning local patched ports sources
 		svn revert -R ${BSDRP_ROOT}/FreeBSD/ports
@@ -106,38 +106,35 @@ update_src () {
 
 #patch the source tree
 patch_src() {
-    : > $BSDRP_ROOT/FreeBSD/src-patches
-    : > $BSDRP_ROOT/FreeBSD/ports-patches
+	: > $BSDRP_ROOT/FreeBSD/src-patches
+	: > $BSDRP_ROOT/FreeBSD/ports-patches
 	: > $BSDRP_ROOT/FreeBSD/ports-added
-    # Nuke the newly created files to avoid build errors, as
-    # patch(1) will automatically append to the previously
-    # non-existent file.
+	# Nuke the newly created files to avoid build errors, as
+	# patch(1) will automatically append to the previously
+	# non-existent file.
 	( cd FreeBSD/src &&
 	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
 	( cd FreeBSD/ports
 	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
-#    for file in $(find ${BSDRP_ROOT}/FreeBSD/ -name '*.orig' -size 0); do
-#        rm -f "$(echo "$file" | sed -e 's/.orig//')"
-#    done
-    : > $BSDRP_ROOT/FreeBSD/.pulled
+	: > $BSDRP_ROOT/FreeBSD/.pulled
 
 	for patch in $(cd ${BSDRP_ROOT}/patches && ls freebsd.*.patch); do
-    	if ! grep -q $patch ${BSDRP_ROOT}/FreeBSD/src-patches; then
-        	echo "Applying patch $patch..."
-        	(cd FreeBSD/src &&
-         	patch -C -p0 < ${BSDRP_ROOT}/patches/$patch &&
-         	patch -E -p0 -s < ${BSDRP_ROOT}/patches/$patch)
-        	echo $patch >> ${BSDRP_ROOT}/FreeBSD/src-patches
-    	fi
+		if ! grep -q $patch ${BSDRP_ROOT}/FreeBSD/src-patches; then
+			echo "Applying patch $patch..."
+			(cd FreeBSD/src &&
+			patch -C -p0 < ${BSDRP_ROOT}/patches/$patch &&
+			patch -E -p0 -s < ${BSDRP_ROOT}/patches/$patch)
+			echo $patch >> ${BSDRP_ROOT}/FreeBSD/src-patches
+		fi
 	done
 	for patch in $(cd ${BSDRP_ROOT}/patches && ls ports.*.patch); do
-    	if ! grep -q $patch ${BSDRP_ROOT}/FreeBSD/ports-patches; then
-        	echo "Applying patch $patch..."
-        	(cd FreeBSD/ports &&
-         	patch -C -p0 < ${BSDRP_ROOT}/patches/$patch &&
-         	patch -E -p0 -s < ${BSDRP_ROOT}/patches/$patch)
-        	echo $patch >> ${BSDRP_ROOT}/FreeBSD/ports-patches
-    	fi
+		if ! grep -q $patch ${BSDRP_ROOT}/FreeBSD/ports-patches; then
+			echo "Applying patch $patch..."
+			(cd FreeBSD/ports &&
+			patch -C -p0 < ${BSDRP_ROOT}/patches/$patch &&
+			patch -E -p0 -s < ${BSDRP_ROOT}/patches/$patch)
+			echo $patch >> ${BSDRP_ROOT}/FreeBSD/ports-patches
+		fi
 	done
 
 	# Overwite the nanobsd script
@@ -177,22 +174,22 @@ check_clean() {
 }
 
 usage () {
-        (
-        pprint 1 "Usage: $0 -bdhkurw [-c vga|serial] [-a i386|amd64]"
-        pprint 1 "  -a      specify target architecture: i386 or amd64"
-		pprint 1 "          if not specified, use local system arch (`uname -m`)"
-		pprint 1 "          cambria (arm) and sparc64 targets are in work-in-progress state"	
-        pprint 1 "  -b      suppress buildworld and buildkernel"
-		pprint 1 "  -c      specify console type: vga (default) or serial"
-		pprint 1 "  -d      generate image with debug feature enabled"
-		pprint 1 "  -f      fast mode, skip: images compression and checksums"
-		pprint 1 "  -h      display this help message"
-		pprint 1 "  -k      suppress buildkernel"
-		pprint 1 "  -u      update all src (freebsd and ports)"
-		pprint 1 "  -r      use a memory disk as destination dir" 
-		pprint 1 "  -w      suppress buildworld"
-        ) 1>&2
-        exit 2
+	(
+		pprint 1 "Usage: $0 -bdhkurw [-c vga|serial] [-a i386|amd64]"
+		pprint 1 "	-a		specify target architecture: i386 or amd64"
+		pprint 1 "			if not specified, use local system arch (`uname -m`)"
+		pprint 1 "			cambria (arm) and sparc64 targets are in work-in-progress state"	
+		pprint 1 "	-b		suppress buildworld and buildkernel"
+		pprint 1 "	-c		specify console type: vga (default) or serial"
+		pprint 1 "	-d		generate image with debug feature enabled"
+		pprint 1 "	-f		fast mode, skip: images compression and checksums"
+		pprint 1 "	-h		display this help message"
+		pprint 1 "	-k		suppress buildkernel"
+		pprint 1 "	-u		update all src (freebsd and ports)"
+		pprint 1 "	-r		use a memory disk as destination dir" 
+		pprint 1 "	-w		suppress buildworld"
+	) 1>&2
+	exit 2
 }
 
 #############################################
@@ -232,113 +229,111 @@ args=`getopt a:bc:dfhkurw $*`
 set -- $args
 for i
 do
-        case "$i"
-        in
-        -a)
-                case "$2" in
-				"amd64")
-					if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
-						TARGET_ARCH="amd64"
-                    	NANO_KERNEL="${NAME}-AMD64"
-					else
-						pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
-						exit 1
-					fi
-					;;
-				"i386")
-					if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
-						TARGET_ARCH="i386"
-                    	NANO_KERNEL="${NAME}-I386"
-					else
-                        pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
-                        exit 1
-                    fi
-					;;
-				"cambria")
-					if [ "${MACHINE_ARCH}" = "arm" ]; then
-						TARGET_ARCH="arm"
-                    	TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
-                    	TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
-                    	NANO_KERNEL="${NAME}-CAMBRIA"
-					else
-                        pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
-                        exit 1
-                    fi
-					;;
-				"sparc64")
-					if [ "${MACHINE_ARCH}" = "sparc64" ]; then
-						TARGET_ARCH="sparc64"
-                    	TARGET_CPUTYPE=sparc64; export TARGET_CPUTYPE
-                    	TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
-                    	NANO_KERNEL="${NAME}-SPARC64"
-					else
-                        pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
-                        exit 1
-                    fi
-					;;
-
-				*)
-					pprint 1 "ERROR: Bad arch type"
+		case "$i" in
+		-a)
+			case "$2" in
+			"amd64")
+				if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
+					TARGET_ARCH="amd64"
+					NANO_KERNEL="${NAME}-AMD64"
+				else
+					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
 					exit 1
-				esac
-				shift
-				shift
-                ;;
+				fi
+				;;
+			"i386")
+				if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
+					TARGET_ARCH="i386"
+					NANO_KERNEL="${NAME}-I386"
+				else
+					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
+					exit 1
+				fi
+				;;
+			"cambria")
+				if [ "${MACHINE_ARCH}" = "arm" ]; then
+					TARGET_ARCH="arm"
+					TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
+					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
+					NANO_KERNEL="${NAME}-CAMBRIA"
+				else
+					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
+					exit 1
+				fi
+				;;
+			"sparc64")
+				if [ "${MACHINE_ARCH}" = "sparc64" ]; then
+					TARGET_ARCH="sparc64"
+					TARGET_CPUTYPE=sparc64; export TARGET_CPUTYPE
+					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
+					NANO_KERNEL="${NAME}-SPARC64"
+				else
+					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
+					exit 1
+				fi
+				;;
+			*)
+				pprint 1 "ERROR: Bad arch type"
+				exit 1
+			esac
+			shift
+			shift
+			;;
 		-b)
-                SKIP_REBUILD="-b -n"
-                shift
-                ;;
-        -c)
-                case "$2" in
-                vga)
-                    INPUT_CONSOLE="vga"
-                    ;;
-                serial)
-                    INPUT_CONSOLE="serial"
-                    ;;
-				*)
-					pprint 1 "ERROR: Bad console type"
-					exit 1
-                esac
-				shift
-				shift
-                ;;
+			SKIP_REBUILD="-b -n"
+			shift
+			;;
+		-c)
+			case "$2" in
+			vga)
+				INPUT_CONSOLE="vga"
+				;;
+			serial)
+				INPUT_CONSOLE="serial"
+				;;
+			*)
+				pprint 1 "ERROR: Bad console type"
+				exit 1
+			esac
+			shift
+			shift
+			;;
 		-d)
-                DEBUG=true
-                shift
-                ;;
+			DEBUG=true
+			shift
+			;;
 		-f)
-                FAST=true
-                shift
-                ;;
+			FAST=true
+			shift
+			;;
 		-h)
-                usage
-                ;;
+			usage
+			;;
 		-k)
-                SKIP_REBUILD="-k -n"
-                shift
-                ;;
+			SKIP_REBUILD="-k -n"
+			shift
+			;;
 		-u)
-				UPDATE_SRC=true
-				shift
-				;;
+			UPDATE_SRC=true
+			shift
+			;;
 		-r)
-				MDMFS=true
-				shift
-				;;
+			MDMFS=true
+			shift
+			;;
 		-w)
-                SKIP_REBUILD="-w -n"
-                shift
-                ;;
-        --)
-                shift
-                break
-        esac
+			SKIP_REBUILD="-w -n"
+			shift
+			;;
+		--)
+			shift
+			break
+		esac
 done
 
 if [ $# -gt 0 ] ; then
-        echo "$0: Extraneous arguments supplied"
-        usage
+	echo "$0: Extraneous arguments supplied"
+	usage
 fi
 # Cross compilation is not possible for the ports
 
@@ -352,36 +347,29 @@ fi
 
 # Sparc64 is not compatible with vga output
 if [ "${NANO_KERNEL}" = "${NAME}-SPARC64" ] ; then
-    if [ "${INPUT_CONSOLE}" = "vga" ] ; then
-        pprint 1 "Sparc64 platform didn't have vga board: Changing console to serial"
-    fi
-    INPUT_CONSOLE="serial"
+	if [ "${INPUT_CONSOLE}" = "vga" ] ; then
+		pprint 1 "Sparc64 platform didn't have vga board: Changing console to serial"
+	fi
+	INPUT_CONSOLE="serial"
 fi
-
 
 if [ `sysctl -n hw.usermem` -lt 2000000000 ]; then
 	echo "WARNING: Not enough hw.usermem available, disable memory disk usage"
-    MDMFS=false
+	MDMFS=false
 elif [ `sysctl -n hw.usermem` -lt 4000000000 ]; then
 	MDMFS_SIZE="1500M"
 else
-    MDMFS_SIZE="3000M"
+	MDMFS_SIZE="3000M"
 fi
 
 if ($MDMFS); then
 	if mount | grep -q -e "^/dev/md[[:digit:]].*[[:space:]]/tmp/obj[[:space:]]"; then
-    	echo "Existing mdmfs file system detected"
+		echo "Existing mdmfs file system detected"
 	else
 		if [ ! -d /tmp/obj ]; then
-			if ! mkdir /tmp/obj; then
-				echo "ERROR: Cannot create /tmp/obj"
-				exit 1
-			fi
+			mkdir /tmp/obj || die "ERROR: Cannot create /tmp/obj"
 		fi
-		if ! mdmfs -S -s $MDMFS_SIZE md /tmp/obj; then
-			echo "ERROR: Cannot create a $MDMFS_SIZE mdmfs on /tmp/obj"
-			exit 1
-		fi
+		mdmfs -S -s $MDMFS_SIZE md /tmp/obj || die "ERROR: Cannot create a $MDMFS_SIZE mdmfs on /tmp/obj"
 	fi
 	NANO_OBJ=/tmp/obj/${NAME}.${TARGET_ARCH}
 else
@@ -397,9 +385,7 @@ fi
 check_clean
 
 # If no source installed, force installing them
-if [ ! -d ${BSDRP_ROOT}/FreeBSD/ports/net/quagga ]; then
-	UPDATE_SRC=true
-fi
+[ -d ${BSDRP_ROOT}/FreeBSD/ports/net/quagga ] || UPDATE_SRC=true
 
 pprint 1 "Will generate an ${NAME} image with theses values:"
 pprint 1 "- Target architecture: ${TARGET_ARCH}"
@@ -426,9 +412,9 @@ else
 	pprint 1 "- MDMFS: NO"
 fi
 if ($DEBUG); then
-    pprint 1 "- Debug image type: YES"
+	pprint 1 "- Debug image type: YES"
 else
-    pprint 1 "- Debug image type: NO"
+	pprint 1 "- Debug image type: NO"
 fi
 
 ##### Generating the nanobsd configuration file ####
@@ -465,38 +451,37 @@ echo "# Parallel Make" >> /tmp/${NAME}.nano
 # Note for modules names: They are relative to /usr/src/sys/modules
 case ${TARGET_ARCH} in
 	"i386") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="netmap ipmi acpi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec glxsb ispfw ichwd aesni"' >> /tmp/${NAME}.nano
-	;;
+		echo 'NANO_MODULES="netmap ipmi acpi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec glxsb ispfw ichwd aesni"' >> /tmp/${NAME}.nano
+		;;
 	"amd64") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="netmap ipmi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec ispfw ichwd aesni"' >> /tmp/${NAME}.nano
-	;;
+		echo 'NANO_MODULES="netmap ipmi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec ispfw ichwd aesni"' >> /tmp/${NAME}.nano
+		;;
 	"arm") echo "NANO_PMAKE=\"make\"" >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES=""' >> /tmp/${NAME}.nano
-	NANO_MAKEFS="makefs -B big \
-    -o bsize=4096,fsize=512,density=8192,optimization=space"
-	export NANO_MAKEFS
-	;;
+		echo 'NANO_MODULES=""' >> /tmp/${NAME}.nano
+		NANO_MAKEFS="makefs -B big \
+		-o bsize=4096,fsize=512,density=8192,optimization=space"
+		export NANO_MAKEFS
+		;;
 	"sparc64") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-	echo 'NANO_MODULES="netgraph rc4 if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog"' >> /tmp/${NAME}.nano
-	;;
+		echo 'NANO_MODULES="netgraph rc4 if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog"' >> /tmp/${NAME}.nano
+		;;
 esac
 
 echo "# Bootloader type"  >> /tmp/${NAME}.nano
 
 case ${INPUT_CONSOLE} in
 	"dual") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/${NAME}.nano 
-	echo "#Configure dual vga/serial console port" >> /tmp/${NAME}.nano
-	echo "customize_cmd bsdrp_console_dual" >> /tmp/${NAME}.nano
-;;
-
+		echo "#Configure dual vga/serial console port" >> /tmp/${NAME}.nano
+		echo "customize_cmd bsdrp_console_dual" >> /tmp/${NAME}.nano
+		;;
 	"vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/${NAME}.nano 
-	echo "#Configure vga only console port" >> /tmp/${NAME}.nano
-	echo "customize_cmd bsdrp_console_vga" >> /tmp/${NAME}.nano
-;;
+		echo "#Configure vga only console port" >> /tmp/${NAME}.nano
+		echo "customize_cmd bsdrp_console_vga" >> /tmp/${NAME}.nano
+		;;
 	"serial") echo "NANO_BOOTLOADER=\"boot/boot0sio\"" >> /tmp/${NAME}.nano
-	echo "#Configure serial console port" >> /tmp/${NAME}.nano
-	echo "customize_cmd bsdrp_console_serial" >> /tmp/${NAME}.nano
-;;
+		echo "#Configure serial console port" >> /tmp/${NAME}.nano
+		echo "customize_cmd bsdrp_console_serial" >> /tmp/${NAME}.nano
+		;;
 esac
 
 # Delete the destination dir
@@ -506,12 +491,10 @@ if [ -z "${SKIP_REBUILD}" ]; then
 		pprint 1 "but you asked for rebuild some parts (no -b, -w or -k option given)"
 		pprint 1 "Do you want to continue ? (y/n)"
 		USER_CONFIRM=""
-        while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
-        	read USER_CONFIRM <&1
-        done
-        if [ "$USER_CONFIRM" = "n" ]; then
-               exit 0     
-        fi
+		while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
+			read USER_CONFIRM <&1
+		done
+		[ "$USER_CONFIRM" = "n" ] && exit 0
 
 		pprint 1 "Delete existing ${NANO_OBJ} directory"
 		chflags -R noschg ${NANO_OBJ}
@@ -532,11 +515,10 @@ fi
 # Export some variables for using them under nanobsd
 # Somes ports needs the correct uname -r output
 REV=`grep -m 1 REVISION= ${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"'`
-BRA=`grep -m 1 BRANCH=  ${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"'`
+BRA=`grep -m 1 BRANCH=	${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"'`
 export FBSD_DST_RELEASE="${REV}-${BRA}"
 export FBSD_DST_OSVERSION=$(awk '/\#define.*__FreeBSD_version/ { print $3 }' "${FREEBSD_SRC}/sys/sys/param.h")
 export TARGET_ARCH
-
 
 pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
 
@@ -562,7 +544,7 @@ if [ $? -eq 0 ]; then
 	pprint 1 "NanoBSD build seems finish successfully."
 else
 	pprint 1 "ERROR: NanoBSD meet an error, check the log files here:"
-	pprint 1 "${NANO_OBJ}/"	
+	pprint 1 "${NANO_OBJ}/"
 	pprint 1 "An error during the build world or kernel can be caused by"
 	pprint 1 "a bug in the FreeBSD-current code"	
 	pprint 1 "try to re-sync your code" 
@@ -582,13 +564,9 @@ else
 fi
 
 #Remove old images if present
-if [ -f ${NANO_OBJ}/${FILENAME} ]; then
-	rm ${NANO_OBJ}/${FILENAME}
-fi
+[ -f ${NANO_OBJ}/${FILENAME} ] && rm ${NANO_OBJ}/${FILENAME}
 
-if [ -f ${NANO_OBJ}/${FILENAME}.xz ]; then
-	rm ${NANO_OBJ}/${FILENAME}.xz
-fi
+[ -f ${NANO_OBJ}/${FILENAME}.xz ] && rm ${NANO_OBJ}/${FILENAME}.xz
 
 mv ${NANO_OBJ}/_.disk.image ${NANO_OBJ}/${FILENAME}
 
@@ -611,26 +589,22 @@ else
 fi
 
 #Remove old images if present
-if [ -f ${NANO_OBJ}/${FILENAME}.xz ]; then
-    rm ${NANO_OBJ}/${FILENAME}.xz
-fi
+[ -f ${NANO_OBJ}/${FILENAME}.xz ] && rm ${NANO_OBJ}/${FILENAME}.xz
 
 if ! $FAST; then
 	pprint 1 "Compressing ${NAME} full image..." 
 	xz -vf ${NANO_OBJ}/${FILENAME}
 	pprint 1 "Generating checksum for ${NAME} full image..."
 	sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
-   	pprint 1 "Zipped ${NAME} full image file here:"
-   	pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
+	pprint 1 "Zipped ${NAME} full image file here:"
+	pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
 else
 	pprint 1 "Unzipped ${NAME} full image file here:"
-   	pprint 1 "${NANO_OBJ}/${FILENAME}"
+	pprint 1 "${NANO_OBJ}/${FILENAME}"
 fi
 
 pprint 1 "Zipping and renaming mtree..."
-if [ -f ${NANO_OBJ}/${FILENAME}.mtree.xz ]; then
-	rm ${NANO_OBJ}/${FILENAME}.mtree.xz
-fi
+[ -f ${NANO_OBJ}/${FILENAME}.mtree.xz ] && rm ${NANO_OBJ}/${FILENAME}.mtree.xz
 mv ${NANO_OBJ}/_.mtree ${NANO_OBJ}/${FILENAME}.mtree
 xz -vf ${NANO_OBJ}/${FILENAME}.mtree
 mv ${NANO_OBJ}/${FILENAME}.mtree.xz ${NANO_OBJ}/${NAME}_${VERSION}_${TARGET_ARCH}_${INPUT_CONSOLE}.mtree.xz
