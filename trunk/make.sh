@@ -39,7 +39,7 @@ set -eu
 NAME="BSDRP"
 
 # SVN revision number to sync with
-PORTS_REV="302986"
+PORTS_REV="303178"
 
 # Base (current) folder
 BSDRP_ROOT=`pwd`
@@ -87,6 +87,7 @@ update_src () {
 		mkdir -p ${BSDRP_ROOT}/FreeBSD/src || die "Can't create ${BSDRP_ROOT}/FreeBSD/src"
 		svn co svn://svn.freebsd.org/base/releng/9.1 ${BSDRP_ROOT}/FreeBSD/src || die "Can't check out sources"
 	else
+		echo "Cleaning local patches to source..."
 		#cleaning local patced source
 		svn revert -R ${BSDRP_ROOT}/FreeBSD/src
 		echo "Updating sources..."
@@ -95,9 +96,10 @@ update_src () {
 	if [ ! -d ${BSDRP_ROOT}/FreeBSD/ports/.svn ]; then
 		echo "Checking out ports source..."
 		mkdir -p ${BSDRP_ROOT}/FreeBSD/ports || die "Can't create ${BSDRP_ROOT}/FreeBSD/ports"
-		svn co svn://svn.freebsd.org/ports/head ${BSDRP_ROOT}/FreeBSD/ports -r {${PORTS_REV}} || die "Can't check out ports sources"
+		svn co svn://svn.freebsd.org/ports/head ${BSDRP_ROOT}/FreeBSD/ports -r ${PORTS_REV} || die "Can't check out ports sources"
 	else
 		#cleaning local patched ports sources
+		echo "Cleaning local patches to ports..."
 		svn revert -R ${BSDRP_ROOT}/FreeBSD/ports
 		echo "Updating ports sources..."
 		svn update ${BSDRP_ROOT}/FreeBSD/ports -r ${PORTS_REV} || die "Can't update ports sources"
