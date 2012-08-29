@@ -162,7 +162,7 @@ usage () {
 		pprint 1 "Usage: $0 -bdhkurw [-c vga|serial] [-a ARCH]"
 		pprint 1 " -a   specify target architecture:"
 		pprint 1 "      i386, i386_xenpv, amd64 or amd64_xenhvm"
-		pprint 1 "      if not specified, use local system arch (`uname -m`)"
+		pprint 1 "      if not specified, use local system arch (`uname -p`)"
 		pprint 1 "      cambria (arm) and sparc64 targets are in work-in-progress state"	
 		pprint 1 " -b   suppress buildworld and buildkernel"
 		pprint 1 " -c   specify console type: vga (default) or serial"
@@ -186,8 +186,8 @@ pprint 1 ""
 
 #Get argument
 
-TARGET_ARCH=`uname -m`
-MACHINE_ARCH=${TARGET_ARCH}
+LOCAL_ARCH=`uname -p`
+TARGET_ARCH=${LOCAL_ARCH}
 NANO_KERNEL=${TARGET_ARCH}
 DEBUG=false
 SKIP_REBUILD=""
@@ -203,40 +203,41 @@ do
 		case "$i" in
 		-a)
 			NANO_KERNEL=$2
+			[ -f kernels/${NANO_KERNEL} ] || die "Can't found kernels/${NANO_KERNEL}"
 			case "${NANO_KERNEL}" in
-			"amd64"|"amd64_xenhvm")
-				if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
+			"amd64" | "amd64_xenhvm" )
+				if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
 					TARGET_ARCH="amd64"
 				else
-					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
+					pprint 1 "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
 					exit 1
 				fi
 				;;
-			"i386"|"i386_xenpv")
-				if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
+			"i386" | "i386_xenpv" )
+				if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
 					TARGET_ARCH="i386"
 				else
-					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
+					pprint 1 "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
 					exit 1
 				fi
 				;;
 			"cambria")
-				if [ "${MACHINE_ARCH}" = "arm" ]; then
+				if [ "${LOCAL_ARCH}" = "arm" ]; then
 					TARGET_ARCH="arm"
 					TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
 					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
 				else
-					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
+					pprint 1 "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
 					exit 1
 				fi
 				;;
 			"sparc64")
-				if [ "${MACHINE_ARCH}" = "sparc64" ]; then
+				if [ "${LOCAL_ARCH}" = "sparc64" ]; then
 					TARGET_ARCH="sparc64"
 					TARGET_CPUTYPE=sparc64; export TARGET_CPUTYPE
 					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
 				else
-					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
+					pprint 1 "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
 					exit 1
 				fi
 				;;
@@ -488,7 +489,7 @@ pprint 3 "Copying ${NANO_KERNEL} Kernel configuration file"
 cp ${BSDRP_ROOT}/kernels/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
 # The xenhvm kernel include the amd64 kernel, need to copy it too
 if [ "${NANO_KERNEL}" = "amd64_xenhvm" ]; then
-	cp ${BSDRP_ROOT}/kernels/${TARGET_ARCH} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
+	cp ${BSDRP_ROOT}/kernels/amd64 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
 fi
 
 # Debug mode: add debug features to the kernel:
@@ -504,7 +505,7 @@ fi
 # Start nanobsd using the BSDRP configuration file
 pprint 1 "Launching NanoBSD build process..."
 cd ${NANOBSD_DIR}
-sh ${NANOBSD_DIR}/nanobsd.sh ${SKIP_REBUILD} -c /tmp/${NAME}.nano
+sh -x ${NANOBSD_DIR}/nanobsd.sh ${SKIP_REBUILD} -c /tmp/${NAME}.nano
 
 # Testing exit code of NanoBSD:
 if [ $? -eq 0 ]; then
@@ -525,7 +526,7 @@ if [ ! -f ${NANO_OBJ}/_.disk.image ]; then
 fi
 
 if ($DEBUG);then
-	FILENAME="${NAME}_${VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}_DEBUG.img"
+	FILENAME="${NAME}_${VERSION}_upgrade_${NANO_KERNEL}_${INPUT_CONSOLE}_DEBUG.img"
 else
 	FILENAME="${NAME}_${VERSION}_upgrade_${NANO_KERNEL}_${INPUT_CONSOLE}.img"
 fi
