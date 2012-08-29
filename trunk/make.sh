@@ -35,32 +35,14 @@
 # Exit if error or variable undefined
 set -eu
 
-# Name of the product
-NAME="BSDRP"
-
-# SVN revision number to sync with
-PORTS_REV="303178"
-
-# Base (current) folder
-BSDRP_ROOT=`pwd`
-
-# Where the FreeBSD ports tree lives.
-NANO_PORTS="${BSDRP_ROOT}/FreeBSD/ports"
-
-# Where the FreeBSD source tree lives.
-FREEBSD_SRC="${BSDRP_ROOT}/FreeBSD/src"
-
-# Where the nanobsd tree lives
-NANOBSD_DIR="${FREEBSD_SRC}/tools/tools/nanobsd"
+# Loading the variables
+. ./make.conf
 
 # Product version (need to add SVN versio too)
 VERSION=`cat ${BSDRP_ROOT}/Files/etc/version`
 
 # Number of jobs
 MAKE_JOBS=$(( 2 * $(sysctl -n kern.smp.cpus)))
-
-# Progress Print level
-PPLEVEL=3
 
 #############################################
 ########### Function definition #############
@@ -85,7 +67,7 @@ update_src () {
 	if [ ! -d ${BSDRP_ROOT}/FreeBSD/src/.svn ]; then
 		echo "Checking out source..."
 		mkdir -p ${BSDRP_ROOT}/FreeBSD/src || die "Can't create ${BSDRP_ROOT}/FreeBSD/src"
-		svn co svn://svn.freebsd.org/base/releng/9.1 ${BSDRP_ROOT}/FreeBSD/src || die "Can't check out sources"
+		svn co svn://${SVN_SRC_PATH} ${BSDRP_ROOT}/FreeBSD/src || die "Can't check out sources"
 	else
 		echo "Cleaning local patches to source..."
 		#cleaning local patced source
@@ -96,7 +78,7 @@ update_src () {
 	if [ ! -d ${BSDRP_ROOT}/FreeBSD/ports/.svn ]; then
 		echo "Checking out ports source..."
 		mkdir -p ${BSDRP_ROOT}/FreeBSD/ports || die "Can't create ${BSDRP_ROOT}/FreeBSD/ports"
-		svn co svn://svn.freebsd.org/ports/head ${BSDRP_ROOT}/FreeBSD/ports -r ${PORTS_REV} || die "Can't check out ports sources"
+		svn co svn://${SVN_PORTS_PATH} ${BSDRP_ROOT}/FreeBSD/ports -r ${PORTS_REV} || die "Can't check out ports sources"
 	else
 		#cleaning local patched ports sources
 		echo "Cleaning local patches to ports..."
@@ -205,21 +187,7 @@ pprint 1 ""
 
 TARGET_ARCH=`uname -m`
 MACHINE_ARCH=${TARGET_ARCH}
-
-case "$TARGET_ARCH" in
-	"amd64")
-		NANO_KERNEL="${NAME}-AMD64"
-		;;
-	"i386")
-		NANO_KERNEL="${NAME}-I386"
-		;;
-	"arm")
-		NANO_KERNEL="${NAME}-CAMBRIA"
-		;;
-	"sparc64")
-		NANO_KERNEL="${NAME}-SPARC64"
-		;;
-esac
+NANO_KERNEL=kconfig.$TARGET_ARCH
 DEBUG=false
 SKIP_REBUILD=""
 INPUT_CONSOLE="vga"
@@ -237,7 +205,7 @@ do
 			"amd64")
 				if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
 					TARGET_ARCH="amd64"
-					NANO_KERNEL="${NAME}-AMD64"
+					NANO_KERNEL="kconfig.${TARGET_ARCH}"
 				else
 					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
 					exit 1
@@ -246,7 +214,7 @@ do
 			"i386")
 				if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
 					TARGET_ARCH="i386"
-					NANO_KERNEL="${NAME}-I386"
+					NANO_KERNEL="kconfig.${TARGET_ARCH}"
 				else
 					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
 					exit 1
@@ -257,7 +225,7 @@ do
 					TARGET_ARCH="arm"
 					TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
 					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
-					NANO_KERNEL="${NAME}-CAMBRIA"
+					NANO_KERNEL="kconfig.cambria"
 				else
 					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
 					exit 1
@@ -268,7 +236,7 @@ do
 					TARGET_ARCH="sparc64"
 					TARGET_CPUTYPE=sparc64; export TARGET_CPUTYPE
 					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
-					NANO_KERNEL="${NAME}-SPARC64"
+					NANO_KERNEL="kconfig.${TARGET_ARCH}"
 				else
 					pprint 1 "Cross compiling is not possible in your case: ${MACHINE_ARCH} => $2"
 					exit 1
@@ -340,7 +308,7 @@ fi
 # Cross compilation is not possible for the ports
 
 # Cambria is not compatible with vga output
-if [ "${NANO_KERNEL}" = "${NAME}-CAMBRIA" ] ; then
+if [ "${TARGET_ARCH}" = "arm" ] ; then
 	if [ "${INPUT_CONSOLE}" = "vga" ] ; then
 		pprint 1 "Gateworks Cambria platform didn't have vga board: Changing console to serial"
 	fi
@@ -348,7 +316,7 @@ if [ "${NANO_KERNEL}" = "${NAME}-CAMBRIA" ] ; then
 fi
 
 # Sparc64 is not compatible with vga output
-if [ "${NANO_KERNEL}" = "${NAME}-SPARC64" ] ; then
+if [ "${TARGET_ARCH}" = "sparc64" ] ; then
 	if [ "${INPUT_CONSOLE}" = "vga" ] ; then
 		pprint 1 "Sparc64 platform didn't have vga board: Changing console to serial"
 	fi
@@ -429,7 +397,7 @@ echo "# Source tree directory" >> /tmp/${NAME}.nano
 echo "NANO_SRC=\"${FREEBSD_SRC}\"" >> /tmp/${NAME}.nano
 
 echo "# Where the port tree is" >> /tmp/${NAME}.nano
-echo "NANO_PORTS=${NANO_PORTS}" >> /tmp/${NAME}.nano
+echo "NANO_PORTS=\"${NANO_PORTS}\"" >> /tmp/${NAME}.nano
 
 echo "# Where nanobsd additional files live under the source tree" >> /tmp/${NAME}.nano
 
@@ -453,19 +421,19 @@ echo "# Parallel Make" >> /tmp/${NAME}.nano
 # Note for modules names: They are relative to /usr/src/sys/modules
 case ${TARGET_ARCH} in
 	"i386") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-		echo 'NANO_MODULES="netmap ipmi acpi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec glxsb ispfw ichwd aesni"' >> /tmp/${NAME}.nano
+		echo "NANO_MODULES=\"${NANO_MODULE_i386}\"" >> /tmp/${NAME}.nano
 		;;
 	"amd64") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-		echo 'NANO_MODULES="netmap ipmi netgraph rc4 sppp if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog hifn padlock safe ubsec ispfw ichwd aesni"' >> /tmp/${NAME}.nano
+		echo "NANO_MODULES=\"${NANO_MODULES_amd64}\"" >> /tmp/${NAME}.nano
 		;;
 	"arm") echo "NANO_PMAKE=\"make\"" >> /tmp/${NAME}.nano
-		echo 'NANO_MODULES=""' >> /tmp/${NAME}.nano
+		echo "NANO_MODULES=\"${NANO_MODULES_arm}\"" >> /tmp/${NAME}.nano
 		NANO_MAKEFS="makefs -B big \
 		-o bsize=4096,fsize=512,density=8192,optimization=space"
 		export NANO_MAKEFS
 		;;
 	"sparc64") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-		echo 'NANO_MODULES="netgraph rc4 if_ef if_tap if_carp if_bridge bridgestp if_lagg if_gre ipfw ipdivert libalias dummynet pf pflog"' >> /tmp/${NAME}.nano
+		echo "NANO_MODULES=\"${NANO_MODULES_sparc64}\"" >> /tmp/${NAME}.nano
 		;;
 esac
 
