@@ -159,19 +159,20 @@ check_clean() {
 
 usage () {
 	(
-		pprint 1 "Usage: $0 -bdhkurw [-c vga|serial] [-a i386|amd64]"
-		pprint 1 "	-a		specify target architecture: i386 or amd64"
-		pprint 1 "			if not specified, use local system arch (`uname -m`)"
-		pprint 1 "			cambria (arm) and sparc64 targets are in work-in-progress state"	
-		pprint 1 "	-b		suppress buildworld and buildkernel"
-		pprint 1 "	-c		specify console type: vga (default) or serial"
-		pprint 1 "	-d		generate image with debug feature enabled"
-		pprint 1 "	-f		fast mode, skip: images compression and checksums"
-		pprint 1 "	-h		display this help message"
-		pprint 1 "	-k		suppress buildkernel"
-		pprint 1 "	-u		update all src (freebsd and ports)"
-		pprint 1 "	-r		use a memory disk as destination dir" 
-		pprint 1 "	-w		suppress buildworld"
+		pprint 1 "Usage: $0 -bdhkurw [-c vga|serial] [-a ARCH]"
+		pprint 1 " -a   specify target architecture:"
+		pprint 1 "      i386, i386_xenpv, amd64 or amd64_xenhvm"
+		pprint 1 "      if not specified, use local system arch (`uname -m`)"
+		pprint 1 "      cambria (arm) and sparc64 targets are in work-in-progress state"	
+		pprint 1 " -b   suppress buildworld and buildkernel"
+		pprint 1 " -c   specify console type: vga (default) or serial"
+		pprint 1 " -d   generate image with debug feature enabled"
+		pprint 1 " -f   fast mode, skip: images compression and checksums"
+		pprint 1 " -h   display this help message"
+		pprint 1 " -k   suppress buildkernel"
+		pprint 1 " -u   update all src (freebsd and ports)"
+		pprint 1 " -r   use a memory disk as destination dir" 
+		pprint 1 " -w   suppress buildworld"
 	) 1>&2
 	exit 2
 }
@@ -187,6 +188,7 @@ pprint 1 ""
 
 TARGET_ARCH=`uname -m`
 MACHINE_ARCH=${TARGET_ARCH}
+KERNEL_ARCH=${TARGET_ARCH}
 NANO_KERNEL=kconfig.$TARGET_ARCH
 DEBUG=false
 SKIP_REBUILD=""
@@ -201,8 +203,9 @@ for i
 do
 		case "$i" in
 		-a)
-			case "$2" in
-			"amd64")
+			KERNEL_ARCH=$2
+			case "${KERNEL_ARCH}" in
+			"amd64"|"amd64_xenhvm")
 				if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
 					TARGET_ARCH="amd64"
 					NANO_KERNEL="kconfig.${TARGET_ARCH}"
@@ -211,7 +214,7 @@ do
 					exit 1
 				fi
 				;;
-			"i386")
+			"i386"|"i386_xenpv")
 				if [ "${MACHINE_ARCH}" = "amd64" -o "${MACHINE_ARCH}" = "i386" ]; then
 					TARGET_ARCH="i386"
 					NANO_KERNEL="kconfig.${TARGET_ARCH}"
@@ -341,9 +344,9 @@ if ($MDMFS); then
 		fi
 		mdmfs -S -s $MDMFS_SIZE md /tmp/obj || die "ERROR: Cannot create a $MDMFS_SIZE mdmfs on /tmp/obj"
 	fi
-	NANO_OBJ=/tmp/obj/${NAME}.${TARGET_ARCH}
+	NANO_OBJ=/tmp/obj/${NAME}.${KERNEL_ARCH}
 else
-	NANO_OBJ=/usr/obj/${NAME}.${TARGET_ARCH}
+	NANO_OBJ=/usr/obj/${NAME}.${KERNEL_ARCH}
 fi
 if [ -n "${SKIP_REBUILD}" ]; then
 	if [ ! -d ${NANO_OBJ} ]; then
@@ -355,10 +358,10 @@ fi
 check_clean
 
 # If no source installed, force installing them
-[ -d ${BSDRP_ROOT}/FreeBSD/ports/net/quagga ] || UPDATE_SRC=true
+[ -d ${BSDRP_ROOT}/FreeBSD/ports/.svn ] || UPDATE_SRC=true
 
 pprint 1 "Will generate an ${NAME} image with theses values:"
-pprint 1 "- Target architecture: ${TARGET_ARCH}"
+pprint 1 "- Target architecture: ${KERNEL_ARCH}"
 pprint 1 "- Console : ${INPUT_CONSOLE}"
 if ($UPDATE_SRC); then
 	pprint 1 "- Source Updating/installing: YES"
@@ -419,21 +422,14 @@ echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${NAME}.nano
 echo "# Parallel Make" >> /tmp/${NAME}.nano
 # Special ARCH commands
 # Note for modules names: They are relative to /usr/src/sys/modules
+echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
+eval echo NANO_MODULES=\\\"\${NANO_MODULES_${KERNEL_ARCH}}\\\" >> /tmp/${NAME}.nano
 case ${TARGET_ARCH} in
-	"i386") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-		echo "NANO_MODULES=\"${NANO_MODULE_i386}\"" >> /tmp/${NAME}.nano
-		;;
-	"amd64") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-		echo "NANO_MODULES=\"${NANO_MODULES_amd64}\"" >> /tmp/${NAME}.nano
-		;;
 	"arm") echo "NANO_PMAKE=\"make\"" >> /tmp/${NAME}.nano
 		echo "NANO_MODULES=\"${NANO_MODULES_arm}\"" >> /tmp/${NAME}.nano
 		NANO_MAKEFS="makefs -B big \
 		-o bsize=4096,fsize=512,density=8192,optimization=space"
 		export NANO_MAKEFS
-		;;
-	"sparc64") echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-		echo "NANO_MODULES=\"${NANO_MODULES_sparc64}\"" >> /tmp/${NAME}.nano
 		;;
 esac
 
@@ -490,9 +486,13 @@ export FBSD_DST_RELEASE="${REV}-${BRA}"
 export FBSD_DST_OSVERSION=$(awk '/\#define.*__FreeBSD_version/ { print $3 }' "${FREEBSD_SRC}/sys/sys/param.h")
 export TARGET_ARCH
 
-pprint 3 "Copying ${TARGET_ARCH} Kernel configuration file"
+pprint 3 "Copying ${KERNEL_ARCH} Kernel configuration file"
 
 cp ${BSDRP_ROOT}/kernels/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
+# The xenhvm kernel include the amd64 kernel, need to copy it too
+if [ "${KERNEL_ARCH}" = "amd64_xenhvm" ]; then
+	cp ${BSDRP_ROOT}/kernels/kconfig.${TARGET_ARCH} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/kconfig.${TARGET_ARCH}
+fi
 
 # Debug mode: add debug features to the kernel:
 if ($DEBUG); then
@@ -530,7 +530,7 @@ fi
 if ($DEBUG);then
 	FILENAME="${NAME}_${VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}_DEBUG.img"
 else
-	FILENAME="${NAME}_${VERSION}_upgrade_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
+	FILENAME="${NAME}_${VERSION}_upgrade_${KERNEL_ARCH}_${INPUT_CONSOLE}.img"
 fi
 
 #Remove old images if present
@@ -553,9 +553,9 @@ else
 fi
 
 if ($DEBUG); then
-	FILENAME="${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}_DEBUG.img"
+	FILENAME="${NAME}_${VERSION}_full_${KERNEL_ARCH}_${INPUT_CONSOLE}_DEBUG.img"
 else
-	FILENAME="${NAME}_${VERSION}_full_${TARGET_ARCH}_${INPUT_CONSOLE}.img"
+	FILENAME="${NAME}_${VERSION}_full_${KERNEL_ARCH}_${INPUT_CONSOLE}.img"
 fi
 
 #Remove old images if present
@@ -577,7 +577,7 @@ pprint 1 "Zipping and renaming mtree..."
 [ -f ${NANO_OBJ}/${FILENAME}.mtree.xz ] && rm ${NANO_OBJ}/${FILENAME}.mtree.xz
 mv ${NANO_OBJ}/_.mtree ${NANO_OBJ}/${FILENAME}.mtree
 xz -vf ${NANO_OBJ}/${FILENAME}.mtree
-mv ${NANO_OBJ}/${FILENAME}.mtree.xz ${NANO_OBJ}/${NAME}_${VERSION}_${TARGET_ARCH}_${INPUT_CONSOLE}.mtree.xz
+mv ${NANO_OBJ}/${FILENAME}.mtree.xz ${NANO_OBJ}/${NAME}_${VERSION}_${KERNEL_ARCH}_${INPUT_CONSOLE}.mtree.xz
 
 pprint 1 "Security reference mtree file here:"
 pprint 1 "${NANO_OBJ}/${FILENAME}.mtree.xz"

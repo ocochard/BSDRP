@@ -1,0 +1,24 @@
+#
+# XENHVM -- Xen HVM kernel configuration file for FreeBSD/amd64
+#
+# $FreeBSD: src/sys/amd64/conf/XENHVM,v 1.12.2.1.2.1 2011/11/11 04:20:22 kensmith Exp $
+#
+include		kconfig.amd64
+ident		BSDRP-XENHVM
+
+#makeoptions	MODULES_OVERRIDE=""
+
+#
+# Adaptive locks rely on a lock-free pointer read to determine the run state
+# of the thread holding a lock when under contention; under a virtualisation
+# system, the thread run state may not accurately reflect whether the thread
+# (or rather its host VCPU) is actually executing.  As such, disable this
+# optimisation.
+#
+options 	NO_ADAPTIVE_MUTEXES
+options 	NO_ADAPTIVE_RWLOCKS
+options 	NO_ADAPTIVE_SX
+
+# Xen HVM support
+options 	XENHVM
+device		xenpci
