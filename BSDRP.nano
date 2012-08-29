@@ -34,6 +34,7 @@ CONF_INSTALL=''
 # WITHOUT_KVM= and WITHOUT_KVM_SUPPORT= prevent buildworld to complet (don't know why)
 
 CONF_WORLD='
+MALLOC_PRODUCTION=
 WITHOUT_ACCT=
 WITHOUT_AMD=
 WITHOUT_APM=
