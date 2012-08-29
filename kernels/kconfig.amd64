@@ -188,5 +188,5 @@ options		ZERO_COPY_SOCKETS
 # Encapsulating Interface
 device enc
 
-# The kernel modules are listed in the variable NANO_MODULES (make.sh)
+# The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)
 
