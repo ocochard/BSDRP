@@ -505,7 +505,7 @@ fi
 # Start nanobsd using the BSDRP configuration file
 pprint 1 "Launching NanoBSD build process..."
 cd ${NANOBSD_DIR}
-sh -x ${NANOBSD_DIR}/nanobsd.sh ${SKIP_REBUILD} -c /tmp/${NAME}.nano
+sh ${NANOBSD_DIR}/nanobsd.sh ${SKIP_REBUILD} -c /tmp/${NAME}.nano
 
 # Testing exit code of NanoBSD:
 if [ $? -eq 0 ]; then
