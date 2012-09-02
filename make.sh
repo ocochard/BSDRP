@@ -603,7 +603,7 @@ EOF
 		sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
 		pprint 1 "Zipped ${NAME} full image file here:"
 		pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
-		mv ${NANO_OBJ}/_.mtree ${NANO_OBJ}/${NANO_OBJ}/${NAME}_${VERSION}_${NANO_KERNEL}_${INPUT_CONSOLE}.mtree
+		mv ${NANO_OBJ}/_.mtree ${NANO_OBJ}/${NAME}_${VERSION}_${NANO_KERNEL}_${INPUT_CONSOLE}.mtree
 		FILENAME="${NAME}_${VERSION}_${NANO_KERNEL}_${INPUT_CONSOLE}"
 	fi
 	pprint 1 "Zipping and renaming mtree..."
