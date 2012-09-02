@@ -581,7 +581,7 @@ EOF
 		cp ${NANO_OBJ}/_.w/boot/kernel/kernel.gz ${NANO_OBJ}/${NANO_KERNEL}.kernel.gz
 		tar cvfJ ${NANO_OBJ}/${FILENAME}.tar.xz \
 			${NANO_OBJ}/${FILENAME}.conf \
-			${NANO_OBJ}/${FILENAME}.img \			
+			${NANO_OBJ}/${FILENAME}.img	\
 			${NANO_OBJ}/${NANO_KERNEL}.kernel.gz
 		pprint 1 "${NANO_OBJ}/${FILENAME}.tar.xz include:"
 		pprint 1 "- XEN example configuration file: ${FILENAME}.conf"
