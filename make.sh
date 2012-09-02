@@ -543,14 +543,16 @@ fi
 mv ${NANO_OBJ}/_.disk.image ${NANO_OBJ}/${FILENAME}
 
 if ! $FAST; then
-	if ! echo ${NANO_KERNEL} | grep -q xenpv -; then
-		pprint 1 "Compressing ${NAME} upgrade image..."
-		xz -vf ${NANO_OBJ}/${FILENAME}
-		pprint 1 "Generating checksum for ${NAME} upgrade image..."
-		sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
-		pprint 1 "${NAME} upgrade image file here:"
-		pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
+	if echo ${NANO_KERNEL} | grep -q xenpv -; then
+		mv ${NANO_OBJ}/${FILENAME} ${NANO_OBJ}/${NAME}_${VERSION}_upgrade_${NANO_KERNEL}.img
+        FILENAME="${NAME}_${VERSION}_upgrade_${NANO_KERNEL}.img"
 	fi
+	pprint 1 "Compressing ${NAME} upgrade image..."
+	xz -vf ${NANO_OBJ}/${FILENAME}
+	pprint 1 "Generating checksum for ${NAME} upgrade image..."
+	sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
+	pprint 1 "${NAME} upgrade image file here:"
+	pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
 else
 	pprint 1 "Uncompressed ${NAME} upgrade image file here:"
 	pprint 1 "${NANO_OBJ}/${FILENAME}"
@@ -583,10 +585,17 @@ EOF
 			${NANO_OBJ}/${FILENAME}.conf \
 			${NANO_OBJ}/${FILENAME}.img	\
 			${NANO_OBJ}/${NANO_KERNEL}.kernel.gz
+		rm ${NANO_OBJ}/${FILENAME}.conf
+		rm ${NANO_OBJ}/${FILENAME}.img
+		rm ${NANO_OBJ}/${NANO_KERNEL}.kernel.gz
+		pprint 1 "Generating checksum for ${NAME} Xen archive..."
+        sha256 ${NANO_OBJ}/${FILENAME}.tar.xz > ${NANO_OBJ}/${FILENAME}.sha256
 		pprint 1 "${NANO_OBJ}/${FILENAME}.tar.xz include:"
 		pprint 1 "- XEN example configuration file: ${FILENAME}.conf"
 		pprint 1 "- The disk image: ${FILENAME}.img"
 		pprint 1 "- The extracted kernel: ${NANO_KERNEL}.kernel.gz"
+		mv ${NANO_OBJ}/_.mtree ${NANO_OBJ}/${NAME}_${VERSION}_${NANO_KERNEL}.mtree
+		FILENAME="${NAME}_${VERSION}_${NANO_KERNEL}"
 	else	
 		pprint 1 "Compressing ${NAME} full image..." 
 		xz -vf ${NANO_OBJ}/${FILENAME}
@@ -594,20 +603,20 @@ EOF
 		sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
 		pprint 1 "Zipped ${NAME} full image file here:"
 		pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
-	fi	
+		mv ${NANO_OBJ}/_.mtree ${NANO_OBJ}/${NANO_OBJ}/${NAME}_${VERSION}_${NANO_KERNEL}_${INPUT_CONSOLE}.mtree
+		FILENAME="${NAME}_${VERSION}_${NANO_KERNEL}_${INPUT_CONSOLE}"
+	fi
+	pprint 1 "Zipping and renaming mtree..."
+	[ -f ${NANO_OBJ}/${FILENAME}.mtree.xz ] && rm ${NANO_OBJ}/${FILENAME}.mtree.xz
+	xz -vf ${NANO_OBJ}/${FILENAME}.mtree
+	pprint 1 "HIDS reference file here:"
+    pprint 1 "${NANO_OBJ}/${FILENAME}.mtree.xz"
 else
 	pprint 1 "Unzipped ${NAME} full image file here:"
 	pprint 1 "${NANO_OBJ}/${FILENAME}"
+	pprint 1 "Unzipped HIDS reference file here:"
+	pprint 1 "${NANO_OBJ}/_.mtree"
 fi
-
-pprint 1 "Zipping and renaming mtree..."
-[ -f ${NANO_OBJ}/${FILENAME}.mtree.xz ] && rm ${NANO_OBJ}/${FILENAME}.mtree.xz
-mv ${NANO_OBJ}/_.mtree ${NANO_OBJ}/${FILENAME}.mtree
-xz -vf ${NANO_OBJ}/${FILENAME}.mtree
-mv ${NANO_OBJ}/${FILENAME}.mtree.xz ${NANO_OBJ}/${NAME}_${VERSION}_${NANO_KERNEL}_${INPUT_CONSOLE}.mtree.xz
-
-pprint 1 "Security reference mtree file here:"
-pprint 1 "${NANO_OBJ}/${FILENAME}.mtree.xz"
 
 if ($MDMFS); then
 	pprint 1 "Remember, remember the ${NANO_OBJ} is a RAM disk"
