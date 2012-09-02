@@ -145,12 +145,7 @@ add_new_ports() {
 # exit with 2 if problem detected and can't clean it
 check_clean() {
 	# Patch from Warner Losh (imp@)
-	if ($MDMFS); then
-		local OBJ_DIR=/tmp/obj/
-	else
-		local OBJ_DIR=/usr/obj/
-	fi
-	__a=`mount | grep ${OBJ_DIR} | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}'`
+	__a=`mount | grep $1 | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}'`
 	if [ -n "$__a" ]; then
 		echo "unmounting $__a"
 		umount $__a
@@ -161,7 +156,7 @@ usage () {
 	(
 		pprint 1 "Usage: $0 -bdhkurw [-c vga|serial] [-a ARCH]"
 		pprint 1 " -a   specify target architecture:"
-		pprint 1 "      i386, i386_xenpv, amd64 or amd64_xenhvm"
+		pprint 1 "      i386, i386_xenpv, i386_xenhvm, amd64 or amd64_xenhvm"
 		pprint 1 "      if not specified, use local system arch (`uname -p`)"
 		pprint 1 "      cambria (arm) and sparc64 targets are in work-in-progress state"	
 		pprint 1 " -b   suppress buildworld and buildkernel"
@@ -213,7 +208,7 @@ do
 					exit 1
 				fi
 				;;
-			"i386" | "i386_xenpv" )
+			"i386" | "i386_xenpv" | "i386_xenhvm")
 				if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
 					TARGET_ARCH="i386"
 				else
@@ -351,7 +346,7 @@ if [ -n "${SKIP_REBUILD}" ]; then
 	fi
 fi
 
-check_clean
+check_clean ${NANO_OBJ}
 
 # If no source installed, force installing them
 [ -d ${BSDRP_ROOT}/FreeBSD/ports/.svn ] || UPDATE_SRC=true
@@ -426,8 +421,11 @@ case ${NANO_KERNEL} in
 		-o bsize=4096,fsize=512,density=8192,optimization=space"
 		export NANO_MAKEFS
 		;;
-	"i386_xenpv" | "amd64_xenhvm")
+	"i386_xenpv" | "i386_xenhvm" | "amd64_xenhvm")
 		echo "add_port=\"sysutils/xen-tools\"" >> /tmp/${NAME}.nano
+		echo "#Configure xen console port" >> /tmp/${NAME}.nano
+        echo "customize_cmd bsdrp_console_xen" >> /tmp/${NAME}.nano
+
 		;;
 esac
 
@@ -487,10 +485,16 @@ export TARGET_ARCH
 pprint 3 "Copying ${NANO_KERNEL} Kernel configuration file"
 
 cp ${BSDRP_ROOT}/kernels/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
-# The xenhvm kernel include the amd64 kernel, need to copy it too
-if [ "${NANO_KERNEL}" = "amd64_xenhvm" ]; then
-	cp ${BSDRP_ROOT}/kernels/amd64 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
-fi
+
+# The xenhvm kernel include the standard kernel, need to copy it too
+case ${NANO_KERNEL} in
+	"amd64_xenhvm")
+		cp ${BSDRP_ROOT}/kernels/amd64 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
+		;;
+	"i386_xenhvm")
+		cp ${BSDRP_ROOT}/kernels/i386 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
+        ;;	
+esac
 
 # Debug mode: add debug features to the kernel:
 if ($DEBUG); then
@@ -539,12 +543,14 @@ fi
 mv ${NANO_OBJ}/_.disk.image ${NANO_OBJ}/${FILENAME}
 
 if ! $FAST; then
-	pprint 1 "Compressing ${NAME} upgrade image..."
-	xz -vf ${NANO_OBJ}/${FILENAME}
-	pprint 1 "Generating checksum for ${NAME} upgrade image..."
-	sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
-	pprint 1 "${NAME} upgrade image file here:"
-	pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
+	if ! echo ${NANO_KERNEL} | grep -q xenpv -; then
+		pprint 1 "Compressing ${NAME} upgrade image..."
+		xz -vf ${NANO_OBJ}/${FILENAME}
+		pprint 1 "Generating checksum for ${NAME} upgrade image..."
+		sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
+		pprint 1 "${NAME} upgrade image file here:"
+		pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
+	fi
 else
 	pprint 1 "Uncompressed ${NAME} upgrade image file here:"
 	pprint 1 "${NANO_OBJ}/${FILENAME}"
@@ -558,14 +564,37 @@ fi
 
 #Remove old images if present
 [ -f ${NANO_OBJ}/${FILENAME}.xz ] && rm ${NANO_OBJ}/${FILENAME}.xz
-
 if ! $FAST; then
-	pprint 1 "Compressing ${NAME} full image..." 
-	xz -vf ${NANO_OBJ}/${FILENAME}
-	pprint 1 "Generating checksum for ${NAME} full image..."
-	sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
-	pprint 1 "Zipped ${NAME} full image file here:"
-	pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
+	if echo ${NANO_KERNEL} | grep -q xenpv -; then
+		mv ${NANO_OBJ}/${FILENAME} ${NANO_OBJ}/${NAME}_${VERSION}_full_${NANO_KERNEL}.img
+		FILENAME="${NAME}_${VERSION}_full_${NANO_KERNEL}"
+		[ -f ${NANO_OBJ}/${FILENAME}.tar.xz ] && rm ${NANO_OBJ}/${FILENAME}.tar.xz
+    	pprint 1 "Generate the XEN PV archive..."
+		cat <<EOF > ${NANO_OBJ}/${FILENAME}.conf
+name = "${NAME}-${NANO_KERNEL}"
+memory = 196
+disk = [ 'file:${FILENAME}.img,hda,w']
+vif = [' ']
+kernel = "${FILENAME}.kernel.gz"
+extra = ",vfs.root.mountfrom=ufs:/ufs/BSDRPs1a"
+EOF
+		cp ${NANO_OBJ}/_.w/boot/kernel/kernel.gz ${NANO_OBJ}/${NANO_KERNEL}.kernel.gz
+		tar cvfJ ${NANO_OBJ}/${FILENAME}.tar.xz \
+			${NANO_OBJ}/${FILENAME}.conf \
+			${NANO_OBJ}/${FILENAME}.img \			
+			${NANO_OBJ}/${NANO_KERNEL}.kernel.gz
+		pprint 1 "${NANO_OBJ}/${FILENAME}.tar.xz include:"
+		pprint 1 "- XEN example configuration file: ${FILENAME}.conf"
+		pprint 1 "- The disk image: ${FILENAME}.img"
+		pprint 1 "- The extracted kernel: ${NANO_KERNEL}.kernel.gz"
+	else	
+		pprint 1 "Compressing ${NAME} full image..." 
+		xz -vf ${NANO_OBJ}/${FILENAME}
+		pprint 1 "Generating checksum for ${NAME} full image..."
+		sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
+		pprint 1 "Zipped ${NAME} full image file here:"
+		pprint 1 "${NANO_OBJ}/${FILENAME}.xz"
+	fi	
 else
 	pprint 1 "Unzipped ${NAME} full image file here:"
 	pprint 1 "${NANO_OBJ}/${FILENAME}"

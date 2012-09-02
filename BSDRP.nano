@@ -646,6 +646,16 @@ bsdrp_console_vga () {
 	echo 'comconsole_speed="38400"' >> ${NANO_WORLDDIR}/boot/loader.conf
 }
 
+# Special xen console configuration
+bsdrp_console_xen () {
+	#Remove all default virtual terminal (in pv mode, need to check in hvm)
+	#sed -i '' '/^ttyv/d' ${NANO_WORLDDIR}/etc/ttys
+	#Add a new xc0 console
+	echo 'xc0     "/usr/libexec/getty Pc"         vt100   on  secure' >> ${NANO_WORLDDIR}/etc/ttys
+	#Replace the default em0 by xn0 in rc.conf
+	sed -i "" -e /ifconfig_/s/em0/xn0/ ${NANO_WORLDDIR}/etc/rc.conf
+}
+
 # From FreeNAS 8
 shrink_md_fbsize()
 {
