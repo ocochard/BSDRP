@@ -23,7 +23,7 @@ options 	MSDOSFS			# MSDOS Filesystem
 options 	PROCFS			# Process filesystem (requires PSEUDOFS)
 options 	PSEUDOFS		# Pseudo-filesystem framework
 options 	GEOM_PART_GPT		# GUID Partition Tables.
-options 	GEOM_RAID		# Soft RAID functionality.
+#options 	GEOM_RAID		# Soft RAID functionality.
 options 	GEOM_LABEL		# Provides labelization
 #options 	COMPAT_FREEBSD32	# Compatible with i386 binaries
 #options 	COMPAT_FREEBSD4		# Compatible with FreeBSD4
@@ -267,7 +267,7 @@ device		firmware	# firmware assist module
 device		bpf		# Berkeley packet filter
 
 # USB support
-options 	USB_DEBUG	# enable debug msgs
+#options 	USB_DEBUG	# enable debug msgs
 device		uhci		# UHCI PCI->USB interface
 device		ohci		# OHCI PCI->USB interface
 device		ehci		# EHCI PCI->USB interface (USB 2.0)
