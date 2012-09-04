@@ -422,10 +422,10 @@ case ${NANO_KERNEL} in
 		export NANO_MAKEFS
 		;;
 	"i386_xenpv" | "i386_xenhvm" | "amd64_xenhvm")
-		echo "add_port=\"sysutils/xen-tools\"" >> /tmp/${NAME}.nano
+		#echo "add_port \"lang/python27\" \"-DNOPORTDATA\"" >> /tmp/${NAME}.nano
+		#echo "add_port \"sysutils/xen-tools\"" >> /tmp/${NAME}.nano
 		echo "#Configure xen console port" >> /tmp/${NAME}.nano
         echo "customize_cmd bsdrp_console_xen" >> /tmp/${NAME}.nano
-
 		;;
 esac
 

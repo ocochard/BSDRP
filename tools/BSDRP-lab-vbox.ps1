@@ -2,7 +2,7 @@
 # VirtualBox PowerShell lab script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2011, The BSDRP Development Team
+# Copyright (c) 2011-2012, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -88,6 +88,34 @@ function set_API_enums() {
             
             ChipsetType_PIIX3 = 1;
             ChipsetType_ICH9 = 2;
+			
+			
+			MachineState_Null = 0;
+			MachineState_PoweredOff = 1;
+			MachineState_Saved = 2;
+			MachineState_Teleported = 3;
+			MachineState_Aborted = 4;
+			MachineState_Running = 5;
+			MachineState_Paused = 6;
+			MachineState_Stuck = 7;
+			MachineState_Teleporting = 8;
+			MachineState_LiveSnapshotting  = 9;
+			MachineState_Starting = 10;
+			MachineState_Stopping = 11;
+			MachineState_Saving = 12;
+			MachineState_Restoring = 13;
+			MachineState_TeleportingPausedVM  = 14;
+			MachineState_TeleportingIn = 15;
+			MachineState_FaultTolerantSyncing = 16;
+			MachineState_DeletingSnapshotOnline = 17;
+			MachineState_DeletingSnapshotPaused = 18;
+			MachineState_RestoringSnapshot = 19;
+			MachineState_DeletingSnapshot = 20;
+			MachineState_SettingUp = 21;
+			MachineState_FirstOnline = 22;
+			MachineState_LastOnline = 23;
+			MachineState_FirstTransient = 24;
+			MachineState_LastTransient = 25;
             
             NetworkAdapterType_Null = 0;
             NetworkAdapterType_Am79C970A = 1;
@@ -152,10 +180,9 @@ Function create_template () {
     #Configure the VM
     
     # Chipset PIIX3 support a maximum of 8 NIC
-    # Chipset ICH9 support a maximum of 36 NIC... But it's not working (experimental)
-    
-    $MACHINE.ChipsetType=$ChipsetType_PIIX3
-    $MACHINE.MemorySize=128
+    # Chipset ICH9 support a maximum of 36 NIC... But need VirtualBox 4.2 minimum
+    $MACHINE.ChipsetType=$ChipsetType_ICH9
+    $MACHINE.MemorySize=192
     $MACHINE.VRAMSize=8
     $MACHINE.Description="BSD Router Project Template VM"
     $MACHINE.setBootOrder(1,$DeviceType_HardDisk)
@@ -178,14 +205,17 @@ Function create_template () {
     }
     
     # Adding a disk controller to the machine
-    try { $MACHINE_STORAGECONTROLLER = $MACHINE.addStorageController("SATA Controller",$StorageBus_SATA) }
+	# Seems to have a problem with SATA controller (Intel AHCI that can't boot BSDRP based on FreeBSD 9.1-RC1)
+    try { $MACHINE_STORAGECONTROLLER = $MACHINE.addStorageController("ATA Controller",$StorageBus_IDE) }
 	catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't Add a Storage Controller to $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
   
-    $MACHINE_STORAGECONTROLLER.portCount=1
+	$MACHINE_STORAGECONTROLLER.controllerType=$StorageControllerType_PIIX4
+    #PortCount can be modified for SATA controller only
+    #$MACHINE_STORAGECONTROLLER.portCount=1
 
     # Save the VM settings
     try { $MACHINE.saveSettings() }
@@ -265,7 +295,7 @@ Function create_template () {
     # At last ! Attach the disk to unlocked-copy-object of the VM
     # But need to use the $SESSION.machine and not the $MACHINE object
     try {
-        $SESSION.machine.attachDevice("SATA Controller",0,0,$DeviceType_HardDisk,$MEDIUM)
+        $SESSION.machine.attachDevice("ATA Controller",0,0,$DeviceType_HardDisk,$MEDIUM)
     } catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't attach $DST_VDI_FILE to $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
@@ -423,6 +453,8 @@ Function clone_vm () {
 # parameter: [string], VM name
 Function delete_all_nic () {
     param([string]$VM_NAME)
+    #$MAX_NIC=$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_ICH9)
+    #Need to disable ICH9 based count max value (will enable it for Virtualbox 4.2)
     $MAX_NIC=$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_PIIX3)
     
     try {$MACHINE=$VIRTUALBOX.findMachine($VM_NAME)}
@@ -490,7 +522,8 @@ Function modify_nic () {
     # Virtualbox begin to count NIC starting at zero, need to substract 1 to the NIC value
     #Need to open the machine, and the session
     $ADAPTER=$SESSION.machine.getNetworkAdapter($NIC-1)
-    $ADAPTER.adapterType=$NetworkAdapterType_I82540EM
+    #For high-speed IO, you can use NetworkAdapterType_Virtio here.
+    $ADAPTER.adapterType=$NetworkAdapterType_I82540E
     $ADAPTER.MACAddress=$MAC
 	#Need to permit promiscious mode (for carp or vrrp that use multiple MAC for the same NIC as example)
 	$ADAPTER.promiscModePolicy=$NetworkAdapterPromiscModePolicy_AllowNetwork
@@ -510,6 +543,13 @@ Function modify_nic () {
     catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't save $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
+        # Unlock the machine
+         try { $SESSION.unlockMachine() }
+         catch {
+            Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ":Can't unlock $VM_TPL_NAME"
+            Write-Host "Detail: " $($error)
+            clean_exit
+        }
         clean_exit
     }
     
@@ -622,7 +662,7 @@ Function clean_exit () {
 
 
 Function start_lab () {
-    # Start all labs
+    # Start all routers
     param ([int]$NUMBER_VM)
     for ($i=1;$i -le $NUMBER_VM;$i++) {
         # Open the MACHINE object
@@ -666,6 +706,82 @@ Function start_lab () {
     #write-host "     baud : 115200"
 }
 
+Function stop_lab () {
+    # Stop all routers
+	param ([int]$MAX_VM)
+	Write-Host "Stop all running BSDRP"
+    
+    for ($i=1;$i -le $MAX_VM;$i++) {
+        # Open the MACHINE object
+        try {$MACHINE=$VIRTUALBOX.findMachine("BSDRP_lab_R$i")}
+    	catch {
+            return $true
+    	}
+        
+        # Lock the VM
+        try { $MACHINE.lockMachine($SESSION,$LockType_Shared) }
+        catch {
+            Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't lock BSDRP_lab_R$i"
+            Write-Host "Detail: " $($error)
+            clean_exit
+        }
+		if ($SESSION.console.state -ne $MachineState_Running) {
+			
+			# If allready power off, continue
+			# Unlock the machine
+			try { $SESSION.unlockMachine() }
+			catch {
+				Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't unlock BSDRP_lab_R$i"
+				Write-Host "Detail: " $($error)
+				clean_exit
+			}
+			# And continue
+			continue
+		}
+        # Wait for stopping launching process of the VM
+		try { $PROGRESS=$SESSION.console.powerDown() }
+		catch {
+            Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't send poweroff signal to BSDRP_lab_R$i"
+            Write-Host "Detail: " $($error)
+            # Unlock the machine
+			try { $SESSION.unlockMachine() }
+			catch {
+				Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't unlock BSDRP_lab_R$i"
+				Write-Host "Detail: " $($error)
+				clean_exit
+			}
+            clean_exit
+        }
+		
+        try { $PROGRESS.waitForCompletion(-1) }
+        catch {
+            Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Wait for endstart BSDRP_lab_R$i"
+            Write-Host "Detail: " $($error)
+            # Unlock the machine
+			try { $SESSION.unlockMachine() }
+			catch {
+				Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't unlock BSDRP_lab_R$i"
+				Write-Host "Detail: " $($error)
+				clean_exit
+			}
+            clean_exit
+        }
+        
+        # Unlock the machine
+        try { $SESSION.unlockMachine() }
+        catch {
+            Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't unlock BSDRP_lab_R$i"
+            Write-Host "Detail: " $($error)
+        }
+    } # Endfor
+    Write-Host "All routers started, connect to them using:"
+    Write-Host " - For BSDRP vga release, with mstsc (included in MS Windows): "
+    write-host "     mstsc /v:127.0.0.1:505x (replacing x by router number)"
+    write-host " - For BSDRP serial and vga release: Configure PuTTY to connect to:"
+    write-host "     connection type: Serial"
+    write-host "     serial line: \\.\pipe\BSDRP_lab_Rx (replacing x by router number)"
+    #write-host "     baud : 115200"
+}
 #### Main ####
 
 # Settings VirtualBox COM API static variables
@@ -703,6 +819,9 @@ catch {
     clean_exit
 }
 
+[int] $MAX_VM=20
+stop_lab $MAX_VM
+
 #If BSDRP VM template doesn't exist, ask for a filename to user
 Write-Verbose "Looking for allready existing $VM_TPL_NAME machine"
 try { $VIRTUALBOX_VM_TEMPLATE=$VIRTUALBOX.findMachine($VM_TPL_NAME) }
@@ -724,9 +843,9 @@ catch {
     create_template $FILENAME 
 }
 
-# Incomplete support of ICH9 chipset: Can't create more than 8 NIC (but report 36)
-[int] $MAX_NIC=$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_PIIX3)
-
+# The maximum number of NIC depend of the chipset used
+[int] $MAX_NIC=$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_ICH9)
+[bool] $FULL_MESH=$false
 [bool] $SHARED_WITH_HOST_LAN=$false
 $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes",""
 $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No",""
@@ -743,8 +862,6 @@ do {
 } until (($LAN -ne $null) -and ($LAN -ge 0) -and ($LAN -le $MAX_NIC))
 $MAX_NIC=$MAX_NIC - $LAN
 
-[int] $MAX_VM=20
-[bool] $FULL_MESH=$false
 if ($MAX_NIC -gt 0) {
     $MESSAGE = "Enable full mesh links between all routers ?"
     $RESULT = $Host.UI.PromptForChoice($TITLE,$MESSAGE,$CHOICES,0)
