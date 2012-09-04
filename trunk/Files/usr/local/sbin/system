@@ -378,6 +378,14 @@ check_vm () {
     if (${VM_FOUND}); then
 		if [ "${SECOND_OPTION}" != "quiet" ]; then
         	echo "VM environnement detected"
+			echo "To use virtuio modules, add theses lines in /boot/loader.conf.local:"
+			echo 'virtio_load="YES"'
+			echo 'virtio_load="YES"'
+			echo 'virtio_pci_load="YES"'
+			echo 'virtio_blk_load="YES"'
+			echo 'if_vtnet_load="YES"'
+			echo 'virtio_balloon_load="YES"'
+			echo 'Then use ifconfig_vtnetX in rc.conf'
 		fi
     fi
 	
@@ -401,7 +409,9 @@ check_vm () {
 # Create a new image with acceptable performance under virtualization (quemu, vmware, virtualbox, etc...)
 sys_virtualized () {
 
-	echo "This step will configure BSDRP for being use as a VM"
+	echo "This step will configure BSDRP for being use as a VM:"
+	echo "- Reduce kern.hz to 100"
+	echo "- Load virtio modules"
 	echo -n "Do you want to continue ? (y/n): "
 	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]
 	do
@@ -412,13 +422,20 @@ sys_virtualized () {
 	
 	mount -uw / || die "ERROR: mount -uw /"
 	
-	if [ `echo kern.hz=100 >> /boot/loader.conf` ]; then
+	if [ `echo kern.hz=100 >> /boot/loader.conf.local` ]; then
 		die "Error: Can't modify loader.conf"
 	fi
+	echo 'virtio_load="YES"' >> /boot/loader.conf.local
+    echo 'virtio_load="YES"' >> /boot/loader.conf.local
+    echo 'virtio_pci_load="YES"' >> /boot/loader.conf.local
+    echo 'virtio_blk_load="YES"' >> /boot/loader.conf.local
+    echo 'if_vtnet_load="YES"' >> /boot/loader.conf.local
+    echo 'virtio_balloon_load="YES"' >> /boot/loader.conf.local
 
 	mount -ur / || die "ERROR: mount -ur /"
 
 	echo "A reboot is needed for apply changes."
+	echo "Don't forget to modify rc.conf for declaring ifconfig_vtnetX"
 	exit 0
 }
 
