@@ -378,7 +378,7 @@ check_vm () {
     if (${VM_FOUND}); then
 		if [ "${SECOND_OPTION}" != "quiet" ]; then
         	echo "VM environnement detected"
-			echo "To use virtuio modules, add theses lines in /boot/loader.conf.local:"
+			echo "To use virtio modules, add theses lines in /boot/loader.conf.local:"
 			echo 'virtio_load="YES"'
 			echo 'virtio_load="YES"'
 			echo 'virtio_pci_load="YES"'
