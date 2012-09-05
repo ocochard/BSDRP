@@ -156,7 +156,7 @@ usage () {
 	(
 		pprint 1 "Usage: $0 -bdhkurw [-c vga|serial] [-a ARCH]"
 		pprint 1 " -a   specify target architecture:"
-		pprint 1 "      i386, i386_xenpv, i386_xenhvm, amd64 or amd64_xenhvm"
+		pprint 1 "      i386, i386-xenpv, i386-xenhvm, amd64 or amd64-xenhvm"
 		pprint 1 "      if not specified, use local system arch (`uname -p`)"
 		pprint 1 "      cambria (arm) and sparc64 targets are in work-in-progress state"	
 		pprint 1 " -b   suppress buildworld and buildkernel"
@@ -200,7 +200,7 @@ do
 			NANO_KERNEL=$2
 			[ -f kernels/${NANO_KERNEL} ] || die "Can't found kernels/${NANO_KERNEL}"
 			case "${NANO_KERNEL}" in
-			"amd64" | "amd64_xenhvm" )
+			"amd64" | "amd64-xenhvm" )
 				if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
 					TARGET_ARCH="amd64"
 				else
@@ -208,7 +208,7 @@ do
 					exit 1
 				fi
 				;;
-			"i386" | "i386_xenpv" | "i386_xenhvm")
+			"i386" | "i386-xenpv" | "i386-xenhvm")
 				if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
 					TARGET_ARCH="i386"
 				else
@@ -421,7 +421,7 @@ case ${NANO_KERNEL} in
 		-o bsize=4096,fsize=512,density=8192,optimization=space"
 		export NANO_MAKEFS
 		;;
-	"i386_xenpv" | "i386_xenhvm" | "amd64_xenhvm")
+	"i386-xenpv" | "i386-xenhvm" | "amd64-xenhvm" | "amd64-xenpv" )
 		#echo "add_port \"lang/python27\" \"-DNOPORTDATA\"" >> /tmp/${NAME}.nano
 		#echo "add_port \"sysutils/xen-tools\"" >> /tmp/${NAME}.nano
 		echo "#Configure xen console port" >> /tmp/${NAME}.nano
@@ -486,12 +486,12 @@ pprint 3 "Copying ${NANO_KERNEL} Kernel configuration file"
 
 cp ${BSDRP_ROOT}/kernels/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
 
-# The xenhvm kernel include the standard kernel, need to copy it too
+# The xen-hvm kernel include the standard kernel, need to copy it too
 case ${NANO_KERNEL} in
-	"amd64_xenhvm")
+	"amd64-xenhvm")
 		cp ${BSDRP_ROOT}/kernels/amd64 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
 		;;
-	"i386_xenhvm")
+	"i386-xenhvm")
 		cp ${BSDRP_ROOT}/kernels/i386 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
         ;;	
 esac

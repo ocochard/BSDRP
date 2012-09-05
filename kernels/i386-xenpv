@@ -61,6 +61,37 @@ nodevice	atpic
 nodevice	isa
 options 	MCLSHIFT=12
 
+# To make an SMP kernel, the next two lines are needed
+options 	SMP			# Symmetric MultiProcessor Kernel
+device		apic			# I/O APIC
+
+#device		atkbdc		# AT keyboard controller
+#device		atkbd		# AT keyboard
+#device		psm		# PS/2 mouse
+device		pci
+
+#device		kbdmux		# keyboard multiplexer
+
+# Pseudo devices.
+device		loop		# Network loopback
+device		random		# Entropy device
+device		ether		# Ethernet support
+device		tun		# Packet tunnel.
+device		md		# Memory "disks"
+device		gif		# IPv6 and IPv4 tunneling
+device		faith		# IPv6-to-IPv4 relaying (translation)
+
+# Wireless cards
+#options		IEEE80211_SUPPORT_MESH
+#options		AH_SUPPORT_AR5416
+
+# The `bpf' device enables the Berkeley Packet Filter.
+# Be aware of the administrative consequences of enabling this!
+# Note that 'bpf' is required for DHCP.
+device		bpf		# Berkeley packet filter
+
+####### BSDRP section #####
+
 # altq(9). Enable the base part of the hooks with the ALTQ option.
 # Individual disciplines must be built into the base system and can not be
 # loaded as modules at this point. ALTQ requires a stable TSC so if yours is
@@ -94,35 +125,6 @@ options     IPSEC
 options     IPSEC_NAT_T     #NAT-T support, UDP encap of ESP
 options     TCP_SIGNATURE       #include support for RFC 2385
 
-# To make an SMP kernel, the next two lines are needed
-options 	SMP			# Symmetric MultiProcessor Kernel
-device		apic			# I/O APIC
-
-
-#device		atkbdc		# AT keyboard controller
-#device		atkbd		# AT keyboard
-#device		psm		# PS/2 mouse
-device		pci
-
-#device		kbdmux		# keyboard multiplexer
-
-# Pseudo devices.
-device		loop		# Network loopback
-device		random		# Entropy device
-device		ether		# Ethernet support
-device		tun		# Packet tunnel.
-device		md		# Memory "disks"
-device		gif		# IPv6 and IPv4 tunneling
-device		faith		# IPv6-to-IPv4 relaying (translation)
-
-# Wireless cards
-#options		IEEE80211_SUPPORT_MESH
-#options		AH_SUPPORT_AR5416
-
-# The `bpf' device enables the Berkeley Packet Filter.
-# Be aware of the administrative consequences of enabling this!
-# Note that 'bpf' is required for DHCP.
-device		bpf		# Berkeley packet filter
 
 # Add multiple route table support
 options     ROUTETABLES=16

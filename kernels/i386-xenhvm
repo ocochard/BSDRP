@@ -4,7 +4,7 @@
 # $FreeBSD: releng/9.1/sys/i386/conf/XENHVM 239639 2012-08-24 05:36:37Z cperciva $
 #
 include		i386
-ident		BSDRD-I386_XENHVM
+ident		BSDRD-I386-XENHVM
 
 #
 # Adaptive locks rely on a lock-free pointer read to determine the run state
