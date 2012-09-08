@@ -67,13 +67,13 @@ update_src () {
 	if [ ! -d ${BSDRP_ROOT}/FreeBSD/src/.svn ]; then
 		echo "Checking out source..."
 		mkdir -p ${BSDRP_ROOT}/FreeBSD/src || die "Can't create ${BSDRP_ROOT}/FreeBSD/src"
-		svn co svn://${SVN_SRC_PATH} ${BSDRP_ROOT}/FreeBSD/src || die "Can't check out sources"
+		svn co svn://${SVN_SRC_PATH} ${BSDRP_ROOT}/FreeBSD/src -r ${SRC_REV} || die "Can't check out sources"
 	else
 		echo "Cleaning local patches to source..."
 		#cleaning local patced source
 		svn revert -R ${BSDRP_ROOT}/FreeBSD/src
 		echo "Updating sources..."
-		svn update ${BSDRP_ROOT}/FreeBSD/src || die "Can't update FreeBSD src"
+		svn update ${BSDRP_ROOT}/FreeBSD/src -r ${SRC_REV} || die "Can't update FreeBSD src"
 	fi
 	if [ ! -d ${BSDRP_ROOT}/FreeBSD/ports/.svn ]; then
 		echo "Checking out ports source..."
