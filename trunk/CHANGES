@@ -1,6 +1,7 @@
 Release 1.2 (not released)
 - Update base to FreeBSD 9.1-RC1
 - Add Kernel drivers: netmap (framework for fast packet I/O), Encapsulating Interface (enc), some 1OG NICs (cxgb, cxgbe, mxge, nxge), SCSI/RAID controllers, Intel ICH watchdog, ipmi, asni and virtio
+- Patched bridge: Should increase performance
 - Default kern.ipc.nmbclusters increased to 275MB
 - Transmit and receive descriptors for igb(4) and em(4) set to max (4096)
 - New packages: mctest (a multicast test tool), net/pimdd, security/sudo, sysutils/ipmitool and security/ipsec-tools
