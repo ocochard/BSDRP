@@ -1,0 +1,20 @@
+--- usr.sbin/syslogd/syslogd.c.orig	2012-09-08 08:59:40.000000000 +0200
++++ usr.sbin/syslogd/syslogd.c	2012-09-10 11:09:21.000000000 +0200
+@@ -1939,9 +1939,16 @@
+ 			tp = f->f_un.f_forw.f_hname;
+ 			p++;
+ 
+-			while (*p && (*p != ':') && (i-- > 0)) {
++			while (*p && (*p != ':') && (*p != '[') && (i-- > 0)) {
+ 				*tp++ = *p++;
+ 			}
++			if (*p == '[') {
++				p++;
++				while (*p && (*p != ']') && (i-- > 0)) {
++					*tp++ = *p++;
++				}
++				p++;
++			}
+ 			*tp = '\0';
+ 		}
+ 		/* See if we copied a domain and have a port */
