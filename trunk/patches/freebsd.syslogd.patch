@@ -1,20 +1,33 @@
---- usr.sbin/syslogd/syslogd.c.orig	2012-09-08 08:59:40.000000000 +0200
-+++ usr.sbin/syslogd/syslogd.c	2012-09-10 11:09:21.000000000 +0200
-@@ -1939,9 +1939,16 @@
+Index: syslogd.c
+===================================================================
+--- usr.sbin/syslogd/syslogd.c.orig	(revision 240078)
++++ usr.sbin/syslogd/syslogd.c	(working copy)
+@@ -1931,6 +1931,7 @@
+ 	case '@':
+ 		{
+ 			char *tp;
++			char endkey = ':';
+ 			/*
+ 			 * scan forward to see if there is a port defined.
+ 			 * so we can't use strlcpy..
+@@ -1939,9 +1940,19 @@
  			tp = f->f_un.f_forw.f_hname;
  			p++;
  
 -			while (*p && (*p != ':') && (i-- > 0)) {
-+			while (*p && (*p != ':') && (*p != '[') && (i-- > 0)) {
- 				*tp++ = *p++;
- 			}
++			/*
++			 * an ipv6 address should start with a '[' in that case
++			 * we should scan for a ']'
++			 */
 +			if (*p == '[') {
 +				p++;
-+				while (*p && (*p != ']') && (i-- > 0)) {
-+					*tp++ = *p++;
-+				}
-+				p++;
++				endkey = ']';
 +			}
++			while (*p && (*p != endkey) && (i-- > 0)) {
+ 				*tp++ = *p++;
+ 			}
++			if (endkey == ']' && *p == endkey)
++				p++;
  			*tp = '\0';
  		}
  		/* See if we copied a domain and have a port */
