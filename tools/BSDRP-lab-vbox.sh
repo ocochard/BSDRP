@@ -286,6 +286,12 @@ build_lab () {
 	if ($HOSTONLY_NIC); then
 		echo "- One NIC connected to the shared LAN with the host"
 	fi
+	if ($VIRTIO); then
+		echo "- Virtio interfaces enabled"
+		NIC_TYPE="virtio"
+	else
+		NIC_TYPE="82540EM"
+	fi
     echo ""
     local i=1
     #Enter the main loop for each VM
@@ -309,11 +315,11 @@ build_lab () {
                 echo "em${NIC_NUMBER} connected to Router${j}."
                 NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
                 if [ $i -le $j ]; then
-                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${i}${j} --macaddress${NIC_NUMBER} AAAA00000${i}${i}${j} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
+                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} ${NIC_TYPE} --intnet${NIC_NUMBER} LAN${i}${j} --macaddress${NIC_NUMBER} AAAA00000${i}${i}${j} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
 						die "[ERROR] Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
 					fi
                 else
-                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN${j}${i} --macaddress${NIC_NUMBER} AAAA00000${i}${j}${i} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
+                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} ${NIC_TYPE} --intnet${NIC_NUMBER} LAN${j}${i} --macaddress${NIC_NUMBER} AAAA00000${i}${j}${i} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
 						die "[ERROR] Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
 					fi
                 fi
@@ -325,7 +331,7 @@ build_lab () {
         while [ $j -le $LAN ]; do
             echo "em${NIC_NUMBER} connected to LAN number ${j}."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-            if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} 82540EM --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC00000${j}0${i} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
+            if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} ${NIC_TYPE} --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC00000${j}0${i} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
 				die "[ERROR] Can't add NIC ${NIC_NUMBER} (LAN) to VM $i"
 			fi
             j=`expr $j + 1`
@@ -333,7 +339,7 @@ build_lab () {
 		if ($HOSTONLY_NIC); then
 			echo "em${NIC_NUMBER} connected to shared-with-host LAN."
 			NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-			if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --hostonlyadapter${NIC_NUMBER} ${HOSTONLY_NIC_NAME} --nictype${NIC_NUMBER} 82540EM --macaddress${NIC_NUMBER} 00bbbb00000${i} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
+			if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --hostonlyadapter${NIC_NUMBER} ${HOSTONLY_NIC_NAME} --nictype${NIC_NUMBER} ${NIC_TYPE} --macaddress${NIC_NUMBER} 00bbbb00000${i} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
 				die "[ERROR] Can't add NIC ${NIC_NUMBER} (Host only) to VM $i"
 			fi
 		fi
@@ -408,10 +414,10 @@ delete_all_vm () {
 	LIST_VM=`VBoxManage list vms | grep BSDRP_lab_R | cut -d "\"" -f 2`
     #Enter the main loop for each cloned VM
     for i in ${LIST_VM}; do
-            delete_vm $i 
+			check_vm $i && delete_vm $i
     done
 	#And, at last, delete the template
-	delete_vm ${VM_TPL_NAME}
+	check_vm ${VM_TPL_NAME} && delete_vm ${VM_TPL_NAME}
 	echo "All VMs deleted"
 }
 
@@ -443,7 +449,7 @@ vbox_hostonly () {
 
 usage () {
         (
-        echo "Usage: $0 [-hds] [-i BSDRP_image_file.img] [-n router-number] [-l LAN-number]"
+        echo "Usage: $0 [-hdsv] [-i BSDRP_image_file.img] [-n router-number] [-l LAN-number]"
         echo "  -i filename     BSDRP image file name (to be used the first time only)"
         echo "  -d              Delete all BSDRP VM and disks"
         echo "  -n X            Number of router (between 1 and 9) full meshed (default: 1)"
@@ -452,6 +458,7 @@ usage () {
 		echo "  -c              Enable internal NIC shared with host for each routers (default: Disable)"
         echo "  -h              Display this help"
         echo "  -s              Stop all VM"
+		echo "  -v              Enable virtio drivers"
         echo ""
         ) 1>&2
         exit 2
@@ -464,7 +471,7 @@ usage () {
 ### Parse argument
 
 #set +e
-args=`getopt i:dhcl:m:n:s $*`
+args=`getopt i:dhcl:m:n:sv $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
@@ -473,6 +480,7 @@ fi
 
 NUMBER_VM=""
 HOSTONLY_NIC=false
+VIRTIO=false
 LAN=""
 FILENAME=""
 RAM=""
@@ -548,6 +556,10 @@ do
                 stop_all_vm
 				exit 0
                 ;;
+		-v)
+				VIRTIO=true
+				shift
+				;;
         --)
                 shift
                 break

@@ -39,7 +39,7 @@
 polling_enable=${polling_enable-"NO"}
 
 name="polling"
-rcvar=`set_rcvar`
+rcvar=${name}_enable
 
 start_cmd="polling_start"
 stop_cmd="polling_stop"

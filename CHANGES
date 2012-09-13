@@ -39,7 +39,7 @@ ipfw-user-0.1       Netmap-enabled IPFW userspace version
 ipmitool-1.8.11_4   CLI to manage IPMI systems
 ipsec-tools-0.8.0_3 KAME racoon IKE daemon, ipsec-tools version
 isc-dhcp42-relay-4.2.4 The ISC Dynamic Host Configuration Protocol relay
-isc-dhcp42-server-4.2.4_1 The ISC Dynamic Host Configuration Protocol server
+isc-dhcp42-server-4.2.4_2 The ISC Dynamic Host Configuration Protocol server
 libevent-1.4.14b_2  Provides an API to execute callback functions on certain ev
 libgcrypt-1.5.0_1   General purpose crypto library based on code used in GnuPG
 libgpg-error-1.10   Common error values for all GnuPG components
@@ -54,6 +54,7 @@ ssmtp-2.64          Extremely simple MTA to get mail off the system to a mail h
 sudo-1.8.5.p3       Allow others to run commands as root
 tmux-1.6            A Terminal Multiplexer
 ucarp-1.5.2_1       Userlevel Common Address Redundancy Protocol
+virtio-kmod-9-0.239473 virtio kernel modules port for 8.[23]/9.0
 
 ================================================================================
 

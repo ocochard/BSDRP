@@ -41,7 +41,7 @@
 pimdd_enable=${pimdd_enable-"NO"}
 
 name="pimdd"
-rcvar=`set_rcvar`
+rcvar=${name}_enable
 
 command="/usr/local/sbin/${name}"
 

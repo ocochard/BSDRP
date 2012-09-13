@@ -38,7 +38,7 @@ set -eu
 # Loading the variables
 . ./make.conf
 
-# Product version (need to add SVN versio too)
+# Product version
 VERSION=`cat ${BSDRP_ROOT}/Files/etc/version`
 
 # Number of jobs
