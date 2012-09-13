@@ -41,7 +41,7 @@
 pim6sd_enable=${pim6sd_enable-"NO"}
 
 name="pim6sd"
-rcvar=`set_rcvar`
+rcvar=${name}_enable
 
 command="/usr/local/sbin/${name}"
 required_files="/usr/local/etc/${name}.conf"

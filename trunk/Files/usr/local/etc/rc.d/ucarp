@@ -73,7 +73,7 @@
 ucarp_enable=${ucarp_enable-"NO"}
 
 name="ucarp"
-rcvar=`set_rcvar`
+rcvar=${name}_enable
 command="/usr/local/sbin/$name"
 
 load_rc_config $name

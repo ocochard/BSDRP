@@ -40,7 +40,7 @@
 freevrrpd_enable=${freevrrpd_enable-"NO"}
 
 name="freevrrpd"
-rcvar=`set_rcvar`
+rcvar=${name}_enable
 
 command="/usr/local/sbin/${name}"
 required_files="/usr/local/etc/${name}.conf"
