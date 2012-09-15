@@ -170,7 +170,7 @@ Function create_template () {
         Remove-Item -path $VM_DIR -force -recurse
     }
     #Create VM
-    try {$MACHINE=$VIRTUALBOX.createMachine("",$VM_TPL_NAME,$VM_ARCH,"",$false)}
+    try {$MACHINE=$VIRTUALBOX.createMachine("",$VM_TPL_NAME,[string[]]@(),$VM_ARCH,"")}
     catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't create $VM_TPL_NAME machine"
         Write-Host "Detail: " $($error)
@@ -343,14 +343,14 @@ Function parse_filename () {
 	param ([string]$FILENAME)
     Write-Host "Parsing filename given for guesing ARCH and CONSOLE values:"
     if ($FILENAME.Contains("_amd64")) {
-        $global:VM_ARCH="FreeBSD_64"
+        [string] $global:VM_ARCH="FreeBSD_64"
         Write-Host "- ARCH: x86-64"
         if (!($VIRTUALBOX.Host.getProcessorFeature($ProcessorFeature_HWVirtEx))) {
             write-host "[ERROR] : Your processor didn't support 64bit OS"
             clean_exit
         }
     } elseif ($FILENAME.Contains("_i386")) {
-        $global:VM_ARCH="FreeBSD"
+        [string] $global:VM_ARCH="FreeBSD"
         Write-Host "- ARCH: i386"
     } else {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": parse_filename(): Can't guests arch of this image"
@@ -393,7 +393,7 @@ Function clone_vm () {
 	}
     
 	$error.clear()
-	try {$MACHINE_CLONE=$VIRTUALBOX.createMachine("",$CLONE_NAME,$OS_TYPE,"",$false)}
+	try {$MACHINE_CLONE=$VIRTUALBOX.createMachine("",$CLONE_NAME,[string[]]@(),$OS_TYPE,"")}
     catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't create $CLONE_NAME clone"
         Write-Host "Detail: " $($error)
@@ -522,8 +522,13 @@ Function modify_nic () {
     # Virtualbox begin to count NIC starting at zero, need to substract 1 to the NIC value
     #Need to open the machine, and the session
     $ADAPTER=$SESSION.machine.getNetworkAdapter($NIC-1)
-    #For high-speed IO, you can use NetworkAdapterType_Virtio here.
-    $ADAPTER.adapterType=$NetworkAdapterType_I82540E
+    
+	if ($VIRTIO) {
+		$ADAPTER.adapterType=$NetworkAdapterType_Virtio
+	} else {
+		$ADAPTER.adapterType=$NetworkAdapterType_I82540E
+    }
+	
     $ADAPTER.MACAddress=$MAC
 	#Need to permit promiscious mode (for carp or vrrp that use multiple MAC for the same NIC as example)
 	$ADAPTER.promiscModePolicy=$NetworkAdapterPromiscModePolicy_AllowNetwork
@@ -581,6 +586,13 @@ Function build_lab () {
         Write-Host "- Full mesh ethernet point-to-point link between each routers"
     }
     
+    if ($VIRTIO) {
+        Write-Host "- Virtio interfaces enabled"
+        $FBSD_NIC_TYPE="vtnet"
+	} else {
+        $FBSD_NIC_TYPE="em"
+    }
+	
     if (!($VM_ARCH)) {
         $VM_ARCH=
         try {$MACHINE_TEMPLATE=$VIRTUALBOX.findMachine($VM_TPL_NAME)}
@@ -612,12 +624,23 @@ Function build_lab () {
             $j=1
             while ($j -le $NUMBER_VM){
                 if ($i -ne $j) {
-                    Write-Host ("em" + $NIC_NUMBER + " connected to Router${j}.")
+                    Write-Host ($FBSD_NIC_TYPE + $NIC_NUMBER + " connected to Router${j}.")
                     $NIC_NUMBER++
-                    if ($i -le $j) {
-                        modify_nic "BSDRP_lab_R$i" $NIC_NUMBER ("$i" + "$j") ("AAAA00000" + $i + $i + $j)
+                       #Formating mac address type (need to pad the output)
+                    if ($i -le 9) {
+                        $MAC_I="0" + $i
                     } else {
-                        modify_nic "BSDRP_lab_R$i" $NIC_NUMBER ("$j" + "$i") ("AAAA00000" + $i + $j + $i)
+                        $MAC_I=$i
+                    }
+                    if ($j -le 9) {
+                        $MAC_J="0" + $j
+                    } else {
+                        $MAC_J=$j
+                    }
+                    if ($i -le $j) {
+                        modify_nic "BSDRP_lab_R$i" $NIC_NUMBER ("$i" + "$j") ("AAAA00" + $MAC_I + $MAC_I + $MAC_J)
+                    } else {
+                        modify_nic "BSDRP_lab_R$i" $NIC_NUMBER ("$j" + "$i") ("AAAA00" + $MAC_I + $MAC_J + $MAC_I)
                     }
                 } # endif avoiding himself in compute
                 $j++ 
@@ -627,17 +650,32 @@ Function build_lab () {
         #Enter in the LAN NIC loop
         $j=1
         while ($j -le $LAN) {
-            Write-Host ("em" + $NIC_NUMBER + " connected to dedicated LAN number " + $j)
+            if ($i -le 9) {
+                $MAC_I="0" + $i
+             } else {
+                $MAC_I=$i
+             }
+             if ($j -le 9) {
+                 $MAC_J="0" + $j
+             } else {
+                  $MAC_J=$j
+             }
+            Write-Host ($FBSD_NIC_TYPE + $NIC_NUMBER + " connected to dedicated LAN number " + $j)
             $NIC_NUMBER++
-            modify_nic "BSDRP_lab_R$i" $NIC_NUMBER ("10" + $j) ("CCCC00000" + $j + "0" + $i)
+            modify_nic "BSDRP_lab_R$i" $NIC_NUMBER ("10" + $j) ("CCCC0000" + $MAC_J + $MAC_I)
             $j++
         } #end of while LAN
         
         #Enter the shared with host lan
 		if ($SHARED_WITH_HOST_LAN) {
-			Write-Host ("em" + $NIC_NUMBER + " connected to the shared-with-host LAN.")
+            if ($i -le 9) {
+                $MAC_I="0" + $i
+             } else {
+                $MAC_I=$i
+             }
+			Write-Host ($FBSD_NIC_TYPE + $NIC_NUMBER + " connected to the shared-with-host LAN.")
             $NIC_NUMBER++
-            modify_nic "BSDRP_lab_R$i" $NIC_NUMBER "" ("00bbbb00000" + $i) $true
+            modify_nic "BSDRP_lab_R$i" $NIC_NUMBER "" ("00BBBB0000" + $MAC_I) $true
 		} #endif Shared_with_host_lan
     }
 } # End Function build_lab
@@ -847,6 +885,7 @@ catch {
 [int] $MAX_NIC=$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_ICH9)
 [bool] $FULL_MESH=$false
 [bool] $SHARED_WITH_HOST_LAN=$false
+[bool] $VIRTIO=$false
 $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes",""
 $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No",""
 $CHOICES = [System.Management.Automation.Host.ChoiceDescription[]]($yes,$no)
@@ -855,6 +894,12 @@ $RESULT = $Host.UI.PromptForChoice($TITLE,$MESSAGE,$CHOICES,0)
 if($RESULT -eq 0) {
     $SHARED_WITH_HOST_LAN=$true
     $MAX_NIC--
+}
+
+$MESSAGE = "Do you want to enable virtio NIC type ? (Increase perfomance, but don't forget to load virtio drivers with cmd: system virtualized"
+$RESULT = $Host.UI.PromptForChoice($TITLE,$MESSAGE,$CHOICES,0)
+if($RESULT -eq 0) {
+    $VIRTIO=$true
 }
 
 do {
