@@ -289,8 +289,10 @@ build_lab () {
 	if ($VIRTIO); then
 		echo "- Virtio interfaces enabled"
 		NIC_TYPE="virtio"
+		DRIVER_TYPE="vtnet"
 	else
 		NIC_TYPE="82540EM"
+		DRIVER_TYPE="em"
 	fi
     echo ""
     local i=1
@@ -312,10 +314,21 @@ build_lab () {
         local j=1
         while [ $j -le $NUMBER_VM ]; do
             if [ $i -ne $j ]; then
-                echo "em${NIC_NUMBER} connected to Router${j}."
+                echo "${DRIVER_TYPE}${NIC_NUMBER} connected to Router${j}."
                 NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
                 if [ $i -le $j ]; then
-                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} ${NIC_TYPE} --intnet${NIC_NUMBER} LAN${i}${j} --macaddress${NIC_NUMBER} AAAA00000${i}${i}${j} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
+					#Need to manage correct mac address
+					if [ $i -le 9 ]; then
+						MAC_I="0$i"
+					else
+						MAC_I="$i"
+					fi
+					if [ $j -le 9 ]; then
+						MAC_J="0$i"
+					else
+						MAC_J="$i"
+					fi
+                    if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} ${NIC_TYPE} --intnet${NIC_NUMBER} LAN${i}${j} --macaddress${NIC_NUMBER} AAAA00${MAC_I}${MAC_I}${MAC_J} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
 						die "[ERROR] Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
 					fi
                 else
@@ -329,17 +342,34 @@ build_lab () {
         #Enter in the LAN NIC loop
         local j=1
         while [ $j -le $LAN ]; do
-            echo "em${NIC_NUMBER} connected to LAN number ${j}."
+			#Need to manage correct mac address
+			if [ $i -le 9 ]; then
+				MAC_I="0$i"
+			else
+				MAC_I="$i"
+			fi
+			if [ $j -le 9 ]; then
+				MAC_J="0$i"
+			else
+				MAC_J="$i"
+			fi
+            echo "${DRIVER_TYPE}${NIC_NUMBER} connected to LAN number ${j}."
             NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-            if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} ${NIC_TYPE} --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC00000${j}0${i} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
+            if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet --nictype${NIC_NUMBER} ${NIC_TYPE} --intnet${NIC_NUMBER} LAN10${j} --macaddress${NIC_NUMBER} CCCC0000${MAC_J}${MAC_I} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
 				die "[ERROR] Can't add NIC ${NIC_NUMBER} (LAN) to VM $i"
 			fi
             j=`expr $j + 1`
         done
 		if ($HOSTONLY_NIC); then
-			echo "em${NIC_NUMBER} connected to shared-with-host LAN."
+			#Need to manage correct mac address
+			if [ $i -le 9 ]; then
+				MAC_I="0$i"
+			else
+				MAC_I="$i"
+			fi
+			echo "${DRIVER_TYPE}${NIC_NUMBER} connected to shared-with-host LAN."
 			NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
-			if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --hostonlyadapter${NIC_NUMBER} ${HOSTONLY_NIC_NAME} --nictype${NIC_NUMBER} ${NIC_TYPE} --macaddress${NIC_NUMBER} 00bbbb00000${i} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
+			if ! VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly --hostonlyadapter${NIC_NUMBER} ${HOSTONLY_NIC_NAME} --nictype${NIC_NUMBER} ${NIC_TYPE} --macaddress${NIC_NUMBER} 00bbbb0000${MAC_I} --nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1; then
 				die "[ERROR] Can't add NIC ${NIC_NUMBER} (Host only) to VM $i"
 			fi
 		fi
@@ -511,8 +541,7 @@ esac
 check_user
 
 WORKING_DIR=`VBoxManage list systemproperties | grep "Default machine folder" | cut -d ":" -f 2 | tr -s " " | sed '1s/^.//'`
-MAX_NIC=`VBoxManage list systemproperties | grep "Maximum PIIX3 Network Adapter count" | cut -d ":" -f 2 | tr -s " " | sed '1s/^.//'`
-# Virtualbox is limited to 8 VNIC to each machine
+MAX_NIC=`VBoxManage list systemproperties | grep "Maximum ICH9 Network Adapter count" | cut -d ":" -f 2 | tr -s " " | sed '1s/^.//'`
 # A full mesh network consume, on each machine, N-1 VNIC
 MAX_VM=`expr $MAX_NIC + 1`
 
