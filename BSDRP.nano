@@ -621,6 +621,8 @@ bsdrp_console_serial () {
 #
 ###### Warning ####
 # BUG TO FIX: Don't boot if no serial port available!
+# Seems fixed:
+# http://lists.freebsd.org/pipermail/freebsd-hackers/2012-September/040523.html
 #
 bsdrp_console_dual () {
     sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
@@ -632,7 +634,6 @@ bsdrp_console_dual () {
 
 	# Customize loader.conf file:
 	echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
 	echo 'comconsole_speed="38400"' >> ${NANO_WORLDDIR}/boot/loader.conf
 	echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 

@@ -1,6 +1,9 @@
 * Bugs *
-	- if /data had a fsck problem, system refuse go in single user
+	- if no-mandatory /data had a fsck problem, system refuse go in single user
 	- add auto-trimming of all log files that are being created
+
+* package *
+	- Need to replace pkg by pkgng
 
 * Upgrading *
 	- Replacing the use of 2 systems partitions (there is not "active" partition
@@ -35,7 +38,7 @@
 * API *
 	- Need to check if an API (for usage as a VM in cloud for example) is a good idea
 
-* WRAP *
+* PC Engine WRAP *
 	- Add WRAP detection on the upgrade script and prevent to upgrade
 
 nanobsd patches to study for inclusion:

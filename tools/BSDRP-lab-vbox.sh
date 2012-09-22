@@ -63,14 +63,14 @@ check_system_common () {
         die "[ERROR] Need Virtualbox 4.1 minimum"
 
 	if ! `VBoxHeadless | grep -q vnc`; then
-		if ! `VBoxHeadless | grep -q vrd`; then
+		if ! `VBoxHeadless | grep -q vrde`; then
 			echo "No Virtualbox VRD/VNC support detected:"
 			echo "BSDRP vga images will not be supported (only serial)"
-			echo "VRDP: Supported by Virtualbox closed source release"
+			echo "VRDE: Supported by Virtualbox closed source release"
 			echo "VNC:  Supported by FreeBSD VirtualBox-OSE (if enabled during make config)"
 			VBOX_VGA=false
 		else
-			VBOX_OUTPUT="vrdp"
+			VBOX_OUTPUT="vrde"
 			VBOX_VGA=true
 		fi
 	else
@@ -389,13 +389,16 @@ start_lab () {
 	fi
     #Enter the main loop for each VM
     while [ $i -le $NUMBER_VM ]; do
-        # OSE version of VB doesn't support --vrdp option
-		# FreeBSD OSE version of VB support only --vnc option
 		if ! ($SERIAL); then
-			if [ "${VBOX_OUTPUT}" = "vnc" ]; then
-        		nohup VBoxHeadless --vnc --${VBOX_OUTPUT}port 590${i} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
+			if [ $i -le 9 ]; then
+				VNC_PORT="0$i"
 			else
-				nohup VBoxHeadless --${VBOX_OUTPUT} on --${VBOX_OUTPUT}port 590${i} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
+				VNC_PORT="$i"
+			fi
+			if [ "${VBOX_OUTPUT}" = "vnc" ]; then
+        		nohup VBoxHeadless --vnc --${VBOX_OUTPUT}port 59${VNC_PORT} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
+			else
+				nohup VBoxHeadless --${VBOX_OUTPUT} on --${VBOX_OUTPUT}port 59${VNC_PORT} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
 			fi
 		else
 			nohup VBoxHeadless --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
