@@ -199,7 +199,7 @@ add_netrate () {
 	umount ${NANO_WORLDDIR}/dev
 }
 
-# Add Quagga routes injector
+# Add Quagga BGP route injector
 add_quagga-bgp-netgen () {
     mkdir -p ${NANO_WORLDDIR}/dev
     mount -t devfs devfs ${NANO_WORLDDIR}/dev
@@ -230,9 +230,11 @@ add_port () {
 	cd ${NANO_PORTS}/$1
 	# Warning: a package name can change regarding the build option
 	PKG_NAME=`env PORTSDIR=${NANO_PORTS} make package-name $2`
-	if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.tbz ]; then
+	if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.txz ]; then
 	# Pkg file found: Generate add_pkg_NAME function
-		eval "
+		#Don't try to install pkg, the boot strap will install it
+		if [ "$1" != "ports-mgmt/pkg" ]; then
+			eval "
 			add_pkg_${port} () {
 				#Need to create ${NANO_OBJ}/ports in this add_pkg_${port} function
 				if [ ! -d \${NANO_OBJ}/ports ]; then
@@ -242,13 +244,14 @@ add_port () {
 				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
 					\${NANO_WORLDDIR}/usr/ports/packages
 				chroot \${NANO_WORLDDIR} /bin/sh -exc \
-               		'cd /usr/ports/packages/All;pkg_add -v -F ${PKG_NAME}.tbz'
+               		'env ASSUME_ALWAYS_YES=true PACKAGESITE=file:///usr/ports/packages pkg add /usr/ports/packages/All/${PKG_NAME}.txz'
 				umount \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports
 			}
        		customize_cmd add_pkg_${port}
-       	"
+       		"
+		fi
 	else
 	# No pkg file: Generate add_port_NAME function
        	eval "
@@ -281,9 +284,15 @@ add_port () {
 				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-                    install BATCH=yes -DWITHOUT_X11 -DNOPORTDOCS -DNO_INSTALL_MANPAGES -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
+                    install BATCH=yes -DWITH_PKGNG -DWITHOUT_X11 -DNOPORTDOCS -DNO_INSTALL_MANPAGES -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
+				[ -d \${NANO_WORLDDIR}/usr/ports/packages/All ] ||  mkdir -p \${NANO_WORLDDIR}/usr/ports/packages/All
                	chroot \${NANO_WORLDDIR} /bin/sh -exc \
-					'mkdir -p /usr/ports/packages/All;cd /usr/ports/packages/All;pkg_create -Rxb ${PKG_NAME}'
+					'env ASSUME_ALWAYS_YES=true pkg create -o /usr/ports/packages/All -a'
+				# Ugly pkg bootstrap fix (that want a mandatory pkg.txz in package/Latest/pkg.txz)
+				if [ "$1" = "ports-mgmt/pkg" ]; then
+					[ -d \${NANO_WORLDDIR}/usr/ports/packages/Latest ] ||  mkdir -p \${NANO_WORLDDIR}/usr/ports/packages/Latest
+					cp \${NANO_WORLDDIR}/usr/ports/packages/All/${PKG_NAME}.txz \${NANO_WORLDDIR}/usr/ports/packages/Latest/pkg.txz
+				fi
 				rm \${NANO_WORLDDIR}/etc/resolv.conf
                	rm -rf \${NANO_WORLDDIR}/usr/obj
                	rm -rf \${NANO_WORLDDIR}/usr/pobj
@@ -301,6 +310,9 @@ add_port () {
 }
 
 #### Add routing related ports #####
+
+# Package management
+add_port "ports-mgmt/pkg"
 
 # high-performance ipfw netmap
 add_port "net/ipfw-user"
@@ -381,7 +393,7 @@ cleanup_ports () {
 		# diff packages.info.first packages.info
 		set +e
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'pkg_delete auto* m4* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* p5-gettext* libsigsegv* pkgconf*'
+        'env ASSUME_ALWAYS_YES=true pkg delete -g auto* m4* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* p5-gettext* libsigsegv* pkgconf*'
 		set -e
 }
 
@@ -558,6 +570,12 @@ usr/libexec/lint2
 usr/sbin/btxld
 usr/sbin/config
 usr/sbin/i2c
+usr/sbin/pkg_add
+usr/sbin/pkg_create
+usr/sbin/pkg_delete
+usr/sbin/pkg_info
+usr/sbin/pkg_updating
+usr/sbin/pkg_version
 usr/sbin/rmt
 usr/share/misc/gprof.flat
 usr/share/misc/gprof.callg
@@ -593,7 +611,7 @@ usr/share/tmac/tmac.vgrind
 	done	
 	# Generate package inventory
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
-	'pkg_info' > ${NANO_OBJ}/packages.info
+	'pkg info' > ${NANO_OBJ}/packages.info
 
 }
 
