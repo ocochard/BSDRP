@@ -311,9 +311,6 @@ add_port () {
 
 #### Add routing related ports #####
 
-# Package management
-add_port "ports-mgmt/pkg"
-
 # high-performance ipfw netmap
 add_port "net/ipfw-user"
 
