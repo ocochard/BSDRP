@@ -8,6 +8,7 @@ Release 1.2 (not released)
 - Default kern.ipc.nmbclusters increased to 275MB
 - Transmit and receive descriptors for igb(4) and em(4) set to max (4096)
 - The VGA release enable the serial port console sooner if present
+- Migrated to the new pkg tool
 - New packages: mctest (a multicast test tool), net/pimdd, security/sudo, sysutils/ipmitool and security/ipsec-tools
 - Add 'system rollback': Rollback to previous version
 - Add 'system expand-data-slice': Expand the size of /data to all available space on disk and enable soft update journaling on it.

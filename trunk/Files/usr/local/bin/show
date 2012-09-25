@@ -185,7 +185,7 @@ traffic() {
 
 # Display packages
 packages () {
-	pkg_info
+	pkg info
 	exit 0
 }
 # Display version
