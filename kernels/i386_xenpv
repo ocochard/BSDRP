@@ -36,7 +36,7 @@ options 	GEOM_LABEL		# Provides labelization
 #options 	COMPAT_FREEBSD6		# Compatible with FreeBSD6
 #options 	COMPAT_FREEBSD7		# Compatible with FreeBSD7
 #options 	KTRACE			# ktrace(1) support
-#options 	STACK			# stack(9) support
+options 	STACK			# stack(9) support
 options 	SYSVSHM			# SYSV-style shared memory
 options 	SYSVMSG			# SYSV-style message queues
 options 	SYSVSEM			# SYSV-style semaphores
@@ -45,7 +45,8 @@ options 	KBD_INSTALL_CDEV	# install a CDEV entry in /dev
 #options 	AUDIT			# Security event auditing
 
 # Debugging for use in -current
-#options 	KDB			# Enable kernel debugger support.
+options 	KDB			# Enable kernel debugger support.
+options		KDB_TRACE	# Print a stack trace for a panic
 #options 	DDB			# Support DDB.
 #options 	GDB			# Support remote GDB.
 #options 	DEADLKRES		# Enable the deadlock resolver
