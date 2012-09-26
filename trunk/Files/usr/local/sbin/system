@@ -380,7 +380,6 @@ check_vm () {
         	echo "VM environnement detected"
 			echo "To use virtio modules, add theses lines in /boot/loader.conf.local:"
 			echo 'virtio_load="YES"'
-			echo 'virtio_load="YES"'
 			echo 'virtio_pci_load="YES"'
 			echo 'virtio_blk_load="YES"'
 			echo 'if_vtnet_load="YES"'
