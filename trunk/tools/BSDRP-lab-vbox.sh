@@ -126,13 +126,6 @@ check_image () {
 # Create BSDRP template VM by converting BSDRP image disk file (given in parameter) into Virtualbox format and compress it
 # This template is used only for the image disk
 create_template () {
-	echo "Image file given... rebuilding BSDRP router template and deleting all routers"
-	echo "Check if BSDRP template VM exist..." >> ${LOG_FILE}
-    if check_vm ${VM_TPL_NAME}; then
-		echo "Found: Deleting all BSDRP routers VM..."
-        delete_all_vm
-    fi
-
 	# Generate $VM_ARCH and $CONSOLE from the filename	
 	parse_filename $1
 
@@ -576,6 +569,8 @@ do
                 ;;
         -i)
                 FILENAME="$2"
+				echo "Filename given, delete existing lab"
+				delete_all_vm
                 shift
                 shift
                 ;;
