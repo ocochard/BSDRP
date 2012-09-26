@@ -61,6 +61,7 @@ generate(){
 	     	else	
 				[ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-${VERSION}-${arch}-${console}.mtree.xz ] || die "problem during final build regarding of ${arch}-${console}"
 			fi
+			echo "done" > ${OBJ_BASE_DIR}/BSDRP.${arch}/release.done
 		done
     done
 
@@ -72,7 +73,7 @@ upload(){
     /usr/local/BSDRP/CHANGES
     '
 	for arch in ${ARCH_LIST}; do
-		FILE_LIST="${FILE_LIST} `ls ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-*`"
+		[ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/release.done ] && FILE_LIST="${FILE_LIST} `ls ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-*`"
 	done
 	${DRY} scp ${FILE_LIST} cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1
 }
