@@ -30,6 +30,15 @@ usage () {
 	exit 0
 }
 
+##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount
+# exit with 0 if no problem detected                                            # exit with 1 if problem detected, but clean it                                 # exit with 2 if problem detected and can't clean it
+check_clean() {
+    # Patch from Warner Losh (imp@)
+	__a=`mount | grep $1 | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}'`
+	if [ -n "$__a" ]; then
+        echo "unmounting $__a"                                                          umount $__a
+    fi                                                                          }
+
 generate(){
 	[ -d ${SRC_DIR} ] || die "Doesn't found source dir: ${SRC_DIR}"
 	# cleanup obj dir
@@ -37,6 +46,7 @@ generate(){
 		OBJ_DIR="${OBJ_BASE_DIR}/BSDRP.${arch}"
 		if [ -d ${OBJ_DIR} ]; then
 			echo "Cleaning dir ${OBJ_DIR}..."
+			check_clean ${OBJ_DIR}
 			${DRY} rm -rf ${OBJ_DIR}
 		fi
 	done
@@ -44,7 +54,7 @@ generate(){
 	# This step, can let some dev-only package on the final image
 	for arch in ${ARCH_LIST}; do
 		( cd ${SRC_DIR}
-		${DRY} ./make.sh -f -a ${arch}
+		${DRY} ./make.sh -u -f -a ${arch}
 		)
 		[ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/_.mtree ] || die "problem during initial build of ${arch}"
 	done

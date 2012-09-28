@@ -1,11 +1,12 @@
 Release 1.2 (not released)
-- Update base to FreeBSD 9.1-RC1
+- Update base to FreeBSD 9.1-RC2
 - Add Kernel drivers: netmap (framework for fast packet I/O), Encapsulating Interface (enc), some 1OG NICs (cxgb, cxgbe, mxge, nxge), SCSI/RAID controllers, Intel ICH watchdog, ipmi, asni and virtio
 - FreeBSD patches
 -   if_bridge and if_lagg: increased performance (from -current)
 -	boot-loader and dual console (vga/serial): no more hang if no serial port present, the vga image have dual console (vga/serial) enabled
 -	syslogd: IPv6 support (from -current)
 - Default kern.ipc.nmbclusters increased to 275MB
+- Re-enable DMA and disk-caching
 - Transmit and receive descriptors for igb(4) and em(4) set to max (4096)
 - The VGA release enable the serial port console sooner if present
 - Migrated to the new pkg tool
