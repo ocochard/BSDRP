@@ -286,7 +286,6 @@ add_port () {
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                     install BATCH=yes -DWITH_PKGNG -DWITHOUT_X11 -DNOPORTDOCS -DNO_INSTALL_MANPAGES -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
 				[ -d \${NANO_WORLDDIR}/usr/ports/packages/All ] ||  mkdir -p \${NANO_WORLDDIR}/usr/ports/packages/All
-				 [ -d \${NANO_WORLDDIR}/usr/ports/packages/Latest ] ||  mkdir -p \${NANO_WORLDDIR}/usr/ports/packages/Latest
                	chroot \${NANO_WORLDDIR} /bin/sh -exc \
 					'env ASSUME_ALWAYS_YES=true pkg create -o /usr/ports/packages/All -a'
 				# Ugly pkg bootstrap fix (that want a mandatory pkg.txz in package/Latest/pkg.txz)
