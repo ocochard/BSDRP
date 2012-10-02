@@ -154,7 +154,7 @@ check_clean() {
 
 usage () {
 	(
-		pprint 1 "Usage: $0 -bdhkurw [-c vga|serial] [-a ARCH]"
+		pprint 1 "Usage: $0 -bdhkuryw [-c vga|serial] [-a ARCH]"
 		pprint 1 " -a   specify target architecture:"
 		pprint 1 "      i386, i386_xenpv, i386_xenhvm, amd64 or amd64_xenhvm"
 		pprint 1 "      if not specified, use local system arch (`uname -p`)"
@@ -167,6 +167,7 @@ usage () {
 		pprint 1 " -k   suppress buildkernel"
 		pprint 1 " -u   update all src (freebsd and ports)"
 		pprint 1 " -r   use a memory disk as destination dir" 
+		pprint 1 " -y   Answer yes to all confirmation"
 		pprint 1 " -w   suppress buildworld"
 	) 1>&2
 	exit 2
@@ -181,6 +182,7 @@ pprint 1 ""
 
 #Get argument
 
+ALWAYS_YES=false
 LOCAL_ARCH=`uname -p`
 TARGET_ARCH=${LOCAL_ARCH}
 NANO_KERNEL=${TARGET_ARCH}
@@ -190,7 +192,7 @@ INPUT_CONSOLE="vga"
 FAST=false
 UPDATE_SRC=false
 MDMFS=false
-args=`getopt a:bc:dfhkurw $*`
+args=`getopt a:bc:dfhkuryw $*`
 
 set -- $args
 for i
@@ -283,6 +285,10 @@ do
 			;;
 		-r)
 			MDMFS=true
+			shift
+			;;
+		-y)
+			ALWAYS_YES=true
 			shift
 			;;
 		-w)
@@ -448,12 +454,13 @@ if [ -z "${SKIP_REBUILD}" ]; then
 		pprint 1 "Existing working directory detected (${NANO_OBJ}),"
 		pprint 1 "but you asked for rebuild some parts (no -b, -w or -k option given)"
 		pprint 1 "Do you want to continue ? (y/n)"
-		USER_CONFIRM=""
-		while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
-			read USER_CONFIRM <&1
-		done
-		[ "$USER_CONFIRM" = "n" ] && exit 0
-
+		if ! ${ALWAYS_YES}; then
+			USER_CONFIRM=""
+			while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
+				read USER_CONFIRM <&1
+			done
+			[ "$USER_CONFIRM" = "n" ] && exit 0
+		fi
 		pprint 1 "Delete existing ${NANO_OBJ} directory"
 		chflags -R noschg ${NANO_OBJ}
 		rm -rf ${NANO_OBJ}

@@ -56,10 +56,10 @@ mrouted-3.9.6                  Multicast routing daemon providing DVMRP for IPv4
 net-snmp-5.7.1_7               An extendable SNMP implementation
 openldap-client-2.4.32_1       Open source LDAP client implementation
 pimdd-0.2.1.0                  UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-pkg-1.0                        New generation package manager
+pkg-1.0.1                      New generation package manager
 quagga-re-0.99.17.11           A branch of popular quagga software pointed at stability
 ssmtp-2.64                     Extremely simple MTA to get mail off the system to a mail hub
-sudo-1.8.5.p3                  Allow others to run commands as root
+sudo-1.8.6.p3_1                Allow others to run commands as root
 tmux-1.6                       A Terminal Multiplexer
 ucarp-1.5.2_1                  Userlevel Common Address Redundancy Protocol
 virtio-kmod-9-0.239473         virtio kernel modules port for 8.[23]/9.0

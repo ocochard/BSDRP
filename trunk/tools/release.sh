@@ -42,25 +42,22 @@ check_clean() {
 generate(){
 	[ -d ${SRC_DIR} ] || die "Doesn't found source dir: ${SRC_DIR}"
 	# cleanup obj dir
-	for arch in ${ARCH_LIST}; do
-		OBJ_DIR="${OBJ_BASE_DIR}/BSDRP.${arch}"
-		if [ -d ${OBJ_DIR} ]; then
-			echo "Cleaning dir ${OBJ_DIR}..."
-			check_clean ${OBJ_DIR}
-			${DRY} rm -rf ${OBJ_DIR}
-		fi
-	done
-	# Initial build (rebuild all)
-	# This step, can let some dev-only package on the final image
-	for arch in ${ARCH_LIST}; do
-		( cd ${SRC_DIR}
-		${DRY} ./make.sh -u -f -a ${arch}
-		)
-		[ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/_.mtree ] || die "problem during initial build of ${arch}"
-	done
-
+	#for arch in ${ARCH_LIST}; do
+	#	OBJ_DIR="${OBJ_BASE_DIR}/BSDRP.${arch}"
+	#		if [ -d ${OBJ_DIR} ]; then
+	#			echo "Cleaning dir ${OBJ_DIR}..."
+#			check_clean ${OBJ_DIR}
+#			${DRY} rm -rf ${OBJ_DIR}
+#		fi
+#	done
+	
 	# Build of each arch/console
     for arch in ${ARCH_LIST}; do
+		# Initial build (update and rebuild all)
+		( cd ${SRC_DIR}
+        ${DRY} ./make.sh -u -f -y -a ${arch}
+        )
+        [ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/_.mtree ] || die "problem during initial build of ${arch}"
 		for console in ${CONSOLE_LIST}; do
 			[ "${arch}" = "i386_xenpv" -a "${console}" = "serial" ] && continue
         	( cd ${SRC_DIR}
