@@ -8,6 +8,8 @@
 #
 ################## Common section #################
 
+# Console port speed
+COM_SPEED=38400
 # Where cust_pkg() finds packages to install
 NANO_PACKAGE_DIR=${NANO_TOOLS}/Pkg
 NANO_PACKAGE_LIST="*"
@@ -18,7 +20,7 @@ NANO_ARCH=${TARGET_ARCH}
 
 # Options to put in make.conf during buildworld only
 CONF_BUILD='
-BOOT_COMCONSOLE_SPEED=38400
+BOOT_COMCONSOLE_SPEED=${COM_SPEED}
 '
 
 # Options to put in make.conf during installworld only
@@ -617,7 +619,7 @@ bsdrp_console_serial () {
 	# Enable getty on console
 	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/9600/38400/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 
     # Disable getty on syscons devices
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
@@ -627,7 +629,7 @@ bsdrp_console_serial () {
 
 	# Customize loader.conf file:
 	echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'comconsole_speed="38400"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
 	echo 'console="comconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 
 }
@@ -642,14 +644,14 @@ bsdrp_console_serial () {
 bsdrp_console_dual () {
     sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/9600/38400/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 
     # Tell loader to use serial and vga console.
     echo " -D" > ${NANO_WORLDDIR}/boot.config
 
 	# Customize loader.conf file:
 	echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'comconsole_speed="38400"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
 	echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 
 }
@@ -658,9 +660,9 @@ bsdrp_console_dual () {
 bsdrp_console_vga () {
 	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/9600/38400/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 	
-	echo 'comconsole_speed="38400"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
 }
 
 # Special xen console configuration
