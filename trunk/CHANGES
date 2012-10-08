@@ -43,7 +43,7 @@ fprobe-1.1_1                   Tool that collects network traffic data
 freevrrpd-1.1                  This a VRRP RFC2338 Compliant implementation under FreeBSD
 iperf-2.0.5                    A tool to measure maximum TCP and UDP bandwidth
 ipfw-user-0.1                  Netmap-enabled IPFW userspace version
-ipmitool-1.8.11_4              CLI to manage IPMI systems
+ipmitool-1.8.12                CLI to manage IPMI systems
 ipsec-tools-0.8.0_3            KAME racoon IKE daemon, ipsec-tools version
 isc-dhcp42-relay-4.2.4         The ISC Dynamic Host Configuration Protocol relay
 isc-dhcp42-server-4.2.4_2      The ISC Dynamic Host Configuration Protocol server
