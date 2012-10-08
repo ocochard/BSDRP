@@ -19,9 +19,9 @@ NANO_PACKAGE_LIST="*"
 NANO_ARCH=${TARGET_ARCH}
 
 # Options to put in make.conf during buildworld only
-CONF_BUILD='
+CONF_BUILD="
 BOOT_COMCONSOLE_SPEED=${COM_SPEED}
-'
+"
 
 # Options to put in make.conf during installworld only
 # Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
