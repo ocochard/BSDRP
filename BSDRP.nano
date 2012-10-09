@@ -225,10 +225,6 @@ add_quagga-bgp-netgen () {
 add_port () {
 	port=`echo $1 | sed -e 's/\//_/'`
 	# Check if package allready exist
-	# Need to:
-	# 1. check ARCH of this package!
-	# 2. Add a trap
-
 	cd ${NANO_PORTS}/$1
 	# Warning: a package name can change regarding the build option
 	PKG_NAME=`env PORTSDIR=${NANO_PORTS} make package-name $2`
@@ -286,15 +282,8 @@ add_port () {
 				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-                    install BATCH=yes -DWITH_PKGNG -DWITHOUT_X11 -DNOPORTDOCS -DNO_INSTALL_MANPAGES -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
-				[ -d \${NANO_WORLDDIR}/usr/ports/packages/All ] ||  mkdir -p \${NANO_WORLDDIR}/usr/ports/packages/All
-               	chroot \${NANO_WORLDDIR} /bin/sh -exc \
-					'env ASSUME_ALWAYS_YES=true pkg create -o /usr/ports/packages/All -a'
-				# Ugly pkg bootstrap fix (that want a mandatory pkg.txz in package/Latest/pkg.txz)
-				if [ ! -d \${NANO_WORLDDIR}/usr/ports/packages/Latest ]; then
-					mkdir -p \${NANO_WORLDDIR}/usr/ports/packages/Latest
-					cp \${NANO_WORLDDIR}/usr/ports/packages/All/pkg-*.txz \${NANO_WORLDDIR}/usr/ports/packages/Latest/pkg.txz
-				fi
+                install package-recursive BATCH=yes -DWITH_PKGNG -DWITHOUT_X11 \
+				-DNOPORTDOCS -DNO_INSTALL_MANPAGES -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
 				rm \${NANO_WORLDDIR}/etc/resolv.conf
                	rm -rf \${NANO_WORLDDIR}/usr/obj
                	rm -rf \${NANO_WORLDDIR}/usr/pobj
