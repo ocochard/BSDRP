@@ -51,7 +51,7 @@ load_rc_config $name
 : ${bird6_enable="NO"}
 : ${bird6_config="/usr/local/etc/${name}.conf"}
 
-command_args="-s /var/run/${name}.ctl -c $bird_config"
+command_args="-s /var/run/${name}.ctl -c $bird6_config"
 
 run_rc_command "$1"
 

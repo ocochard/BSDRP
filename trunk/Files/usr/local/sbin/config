@@ -184,6 +184,8 @@ archive_cfg () {
 	fi
 }
 # save configuration
+# TODO: Need to backup /boot/loader.conf.local in case of restoring
+#		configuration to other routers
 save_cfg () {
 	mount_cfg
 	archive_cfg
@@ -487,6 +489,11 @@ factory () {
 		mount_cfg
         rm -rf /cfg/*
         umount_cfg
+		if [ -f /boot/loader.conf.local ]; then
+			mount -uw /
+			rm -rf /boot/loader.conf.local
+			mount -ur /
+		fi
 		echo "Done"
 		echo "For confirming this action: Reboot and answer 'no' to the question about saving configuration"
 		echo "For canceling this action: Simply save the running configuration with 'config save'"
