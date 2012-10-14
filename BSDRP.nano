@@ -306,7 +306,7 @@ add_port () {
 add_port "net/ipfw-user"
 
 # Then we need to install net-snmp without perl modules
-add_port "net-mgmt/net-snmp" "-DWITH_IPV6 -DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
+add_port "net-mgmt/net-snmp" "-DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
 
 # Quagga installation
 add_port "net/quagga-re" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
@@ -339,7 +339,7 @@ add_port "net/pimdd"
 add_port "net-mgmt/fprobe"
 
 # Add DHCP server and client
-add_port "net/isc-dhcp42-server" "-DWITH_DHCP_IPV6 -DWITHOUT_DHCP_PARANOIA"
+add_port "net/isc-dhcp42-server"
 add_port "net/isc-dhcp42-relay"
 
 # Add sstmp, a simple MTA to get mail off the system
