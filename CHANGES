@@ -8,7 +8,7 @@ Release 1.2 (not released)
 - Default kern.ipc.nmbclusters increased to 275MB
 - Re-enable DMA and disk-caching
 - Transmit and receive descriptors for igb(4) and em(4) set to max (4096)
-- The VGA release enable the serial port console sooner if present
+	=> This changes create problems on low RAM i386 arch
 - Migrated to the new pkg tool
 - New packages: mctest (a multicast test tool), net/pimdd, security/sudo, sysutils/ipmitool and security/ipsec-tools
 - Add 'system rollback': Rollback to previous version
