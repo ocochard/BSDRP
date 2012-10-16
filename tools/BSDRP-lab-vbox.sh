@@ -126,8 +126,9 @@ check_image () {
 # Create BSDRP template VM by converting BSDRP image disk file (given in parameter) into Virtualbox format and compress it
 # This template is used only for the image disk
 create_template () {
-	# Generate $VM_ARCH and $CONSOLE from the filename	
-	parse_filename $1
+	# Generate $VM_ARCH and $CONSOLE from the filename
+	
+	[ -z "$VM_ARCH" ] && parse_filename $1
 
 	echo "Create BSDRP template VM..." >> ${LOG_FILE}
     if ! VBoxManage createvm --name ${VM_TPL_NAME} --ostype $VM_ARCH --register >> ${LOG_FILE} 2>&1; then
@@ -244,7 +245,6 @@ delete_all_nic () {
 
 # Parse filename for detecting ARCH and console
 parse_filename () {
-    VM_ARCH=0
     if echo "$1" | grep -q "amd64"; then
         VM_ARCH="FreeBSD_64"
         echo "x86-64 image"
@@ -256,7 +256,6 @@ parse_filename () {
     fi
     [ "$VM_ARCH" = "0" ] && die "[ERROR] Can't deduce arch type from filename"
     
-	VM_OUTPUT=0
     if echo "$1" | grep -q "serial"; then
         SERIAL=true
         echo "serial image"
@@ -475,16 +474,20 @@ vbox_hostonly () {
 
 usage () {
         (
-        echo "Usage: $0 [-hdsv] [-i BSDRP_image_file.img] [-n router-number] [-l LAN-number]"
-        echo "  -i filename     BSDRP image file name (to be used the first time only)"
-        echo "  -d              Delete all BSDRP VM and disks"
-        echo "  -n X            Number of router (between 1 and 9) full meshed (default: 1)"
-        echo "  -l Y            Number of LAN between 0 and 9 (default: 0)"
-		echo "  -m              RAM (in MB) for each VM (default: 192)"
-		echo "  -c              Enable internal NIC shared with host for each routers (default: Disable)"
-        echo "  -h              Display this help"
-        echo "  -s              Stop all VM"
-		echo "  -v              Enable virtio drivers"
+        echo "Usage: $0 [-hdsv] [-a i386|amd64] [-i BSDRP_image_file.img] [-n router-number] [-l LAN-number] [-o serial|vga]"
+		echo "  -a ARCH    Force architecture: i386 or amd"
+		echo "             This disable automatic arch/console detection from the filename"
+		echo "             You should use -o with -a"
+		echo "  -c         Enable internal NIC shared with host for each routers (default: Disable)"
+        echo "  -d         Delete all BSDRP VM and disks"
+        echo "  -i filename BSDRP image file name (to be used the first time only)"
+        echo "  -h         Display this help"
+        echo "  -l Y       Number of LAN between 0 and 9 (default: 0)"
+		echo "  -m         RAM (in MB) for each VM (default: 192)"
+        echo "  -n X       Number of router (between 1 and 9) full meshed (default: 1)"
+       	echo "  -o CONS    Force console: vga (default if -a) or serial" 
+		echo "  -s         Stop all VM"
+		echo "  -v         Enable virtio drivers"
         echo ""
         ) 1>&2
         exit 2
@@ -497,7 +500,7 @@ usage () {
 ### Parse argument
 
 #set +e
-args=`getopt i:dhcl:m:n:sv $*`
+args=`getopt a:i:dhcl:m:n:o:sv $*`
 if [ $? -ne 0 ] ; then
         usage
         exit 2
@@ -510,6 +513,8 @@ VIRTIO=false
 LAN=""
 FILENAME=""
 RAM=""
+SERIAL=false
+VM_ARCH=""
 
 echo "BSD Router Project (http://bsdrp.net) - VirtualBox lab script"
 
@@ -534,8 +539,6 @@ case "$OS_DETECTED" in
         ;;
 esac
 
-check_user
-
 WORKING_DIR=`VBoxManage list systemproperties | grep "Default machine folder" | cut -d ":" -f 2 | tr -s " " | sed '1s/^.//'`
 MAX_NIC=`VBoxManage list systemproperties | grep "Maximum ICH9 Network Adapter count" | cut -d ":" -f 2 | tr -s " " | sed '1s/^.//'`
 # A full mesh network consume, on each machine, N-1 VNIC
@@ -546,6 +549,18 @@ for i
 do
         case "$i" 
         in
+		-a)
+				if [ "$2" == "i386" ]; then
+					VM_ARCH="FreeBSD"
+				elif [ "$2" == "amd64" ]; then
+					VM_ARCH="FreeBSD_64"
+				else
+					echo "INPUT ERROR: Bad ARCH name"
+					usage
+				fi
+				shift
+                shift
+                ;;
         -n)
                 NUMBER_VM=$2
                 shift
@@ -579,6 +594,19 @@ do
 				shift
 				shift
 				;;
+		-o)
+				if [ "$2" == "vga" ]; then
+					SERIAL=false
+				elif [ "$2" == "serial" ]; then
+					SERIAL=true
+				else
+					echo "INPUT ERROR: Bad OUTPUT name"
+					usage
+				fi
+				shift
+                shift
+                ;;
+	
         -s)
                 stop_all_vm
 				exit 0
@@ -592,6 +620,8 @@ do
                 break
         esac
 done
+
+check_user
 
 if [ "$NUMBER_VM" != "" ]; then
     if [ $NUMBER_VM -lt 1 ]; then
