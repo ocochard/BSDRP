@@ -68,5 +68,4 @@ set noswapfile
 set viminfo=""
 
 " Display insecable space
-highlight NbSp ctermbg=lightgray guibg=lightred
-match NbSp /\%xa0/
+set listchars=nbsp:·

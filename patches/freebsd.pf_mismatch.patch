@@ -1,0 +1,13 @@
+--- sys/contrib/pf/net/pf.c.orig	2012-10-30 19:42:54.000000000 +0100
++++ sys/contrib/pf/net/pf.c	2012-10-30 20:09:00.000000000 +0100
+@@ -1176,10 +1176,6 @@
+ 	    a->port[1] == b->port[0])
+ 		return (0);
+ 	else {
+-		/* mismatch. must not happen. */
+-		printf("pf: state key linking mismatch! dir=%s, "
+-		    "if=%s, stored af=%u, a0: ",
+-		    dir == PF_OUT ? "OUT" : "IN", kif->pfik_name, a->af);
+ 		pf_print_host(&a->addr[0], a->port[0], a->af);
+ 		printf(", a1: ");
+ 		pf_print_host(&a->addr[1], a->port[1], a->af);

@@ -532,15 +532,15 @@ if [ ! -f ${NANO_OBJ}/_.disk.image ]; then
 	exit 1
 fi
 
+# We start by renaming/xzing the upgrade image
 if ($DEBUG);then
 	FILENAME="${NAME}-${VERSION}-upgrade-${NANO_KERNEL}-${INPUT_CONSOLE}-DEBUG.img"
 else
 	FILENAME="${NAME}-${VERSION}-upgrade-${NANO_KERNEL}-${INPUT_CONSOLE}.img"
 fi
 
-#Remove old images if present
+#Remove old upgrade images if present
 [ -f ${NANO_OBJ}/${FILENAME} ] && rm ${NANO_OBJ}/${FILENAME}
-
 [ -f ${NANO_OBJ}/${FILENAME}.xz ] && rm ${NANO_OBJ}/${FILENAME}.xz
 
 mv ${NANO_OBJ}/_.disk.image ${NANO_OBJ}/${FILENAME}
@@ -561,6 +561,7 @@ else
 	pprint 1 "${NANO_OBJ}/${FILENAME}"
 fi
 
+# Now renamning/xzing the full image
 if ($DEBUG); then
 	FILENAME="${NAME}-${VERSION}-full-${NANO_KERNEL}-${INPUT_CONSOLE}-DEBUG.img"
 else
@@ -583,14 +584,15 @@ vif = [' ']
 kernel = "${FILENAME}.kernel.gz"
 extra = ",vfs.root.mountfrom=ufs:/ufs/BSDRPs1a"
 EOF
-		cp ${NANO_OBJ}/_.w/boot/kernel/kernel.gz ${NANO_OBJ}/${NANO_KERNEL}.kernel.gz
+		cp ${NANO_OBJ}/_.w/boot/kernel/kernel.gz ${NANO_OBJ}/${NAME}-${NANO_KERNEL}.kernel.gz
 		tar cvfJ ${NANO_OBJ}/${FILENAME}.tar.xz \
-			${NANO_OBJ}/${FILENAME}.conf \
-			${NANO_OBJ}/${FILENAME}.img	\
-			${NANO_OBJ}/${NANO_KERNEL}.kernel.gz
+			-C ${NANO_OBJ} \
+			${FILENAME}.conf \
+			${FILENAME}.img	\
+			${NAME}-${NANO_KERNEL}.kernel.gz
 		rm ${NANO_OBJ}/${FILENAME}.conf
 		rm ${NANO_OBJ}/${FILENAME}.img
-		rm ${NANO_OBJ}/${NANO_KERNEL}.kernel.gz
+		rm ${NANO_OBJ}/${NAME}-${NANO_KERNEL}.kernel.gz
 		pprint 1 "Generating checksum for ${NAME} Xen archive..."
         sha256 ${NANO_OBJ}/${FILENAME}.tar.xz > ${NANO_OBJ}/${FILENAME}.sha256
 		pprint 1 "${NANO_OBJ}/${FILENAME}.tar.xz include:"
