@@ -2,6 +2,7 @@
 	- if no-mandatory /data had a fsck problem, system refuse go in single user
 	- add auto-trimming of all log files that are being created
 	- should save /boot/loader.conf.local in config archive for restoring it on another router
+	- With NIC tunning in /boot/loader.conf.local, configuring em NIC is no more possible: not enought mbuf available on i386 with low RAM (196MB of RAM).
 
 * Upgrading *
 	- Replacing the use of 2 systems partitions (there is not "active" partition
@@ -33,6 +34,7 @@
 
 * API *
 	- Need to check if an API (for usage as a VM in cloud for example) is a good idea
+	- Netconf: Need to check this BSD licensed: http://www.yumaworks.com/products/yuma/
 
 nanobsd patches to study for inclusion:
 http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html

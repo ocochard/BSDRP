@@ -1,7 +1,8 @@
 Release 1.2 (not released)
-- Update base to FreeBSD 9.1-RC2
+- Update base to FreeBSD 9.1-RC3
 - Add Kernel drivers: netmap (framework for fast packet I/O), Encapsulating Interface (enc), some 1OG NICs (cxgb, cxgbe, mxge, nxge), SCSI/RAID controllers, Intel ICH watchdog, ipmi, asni and virtio
-- FreeBSD patches
+- FreeBSD patches:
+-	kern/163208 PF state key linking mismatch
 -   if_bridge and if_lagg: increased performance (from -current)
 -	boot-loader and dual console (vga/serial): no more hang if no serial port present, the vga image have dual console (vga/serial) enabled
 -	syslogd: IPv6 support (from -current)

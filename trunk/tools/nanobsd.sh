@@ -772,7 +772,7 @@ if ($7 > 0) {
         SIZE=`awk '/^p 4/ { print $5 "b" }' ${FDISK}`
         # XXX: fill from where ?
         pprint 2 "${NANO_MAKEFS} -s ${SIZE} ${DATA} /var/empty"
-		# NEED TO SET THE LABEL !!!
+		# NEED TO SET THE LABEL !!!
         ${NANO_MAKEFS} -s ${SIZE} ${DATA} /var/empty
         pprint 2 "dd if=${DATA} of=/dev/${MD}s4 bs=${BS}"
         dd if=${DATA} of=/dev/${MD}s4 bs=${BS}
