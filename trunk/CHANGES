@@ -17,6 +17,7 @@ Release 1.2 (not released)
     - security/sudo
     - sysutils/ipmitool
     - security/ipsec-tools
+- Include the man pages (Note: Only 10MB left)
 - Add 'system rollback': Rollback to previous version
 - Add 'system expand-data-slice': Expand the size of /data to all available space on disk and enable soft update journaling on it.
 - Redirect periodic output to a log file
