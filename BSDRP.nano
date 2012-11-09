@@ -78,8 +78,6 @@ WITHOUT_LIB32=
 WITHOUT_LOCALES=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
-WITHOUT_MAN=
-WITHOUT_MAN_UTILS=
 WITHOUT_NCP=
 WITHOUT_NDIS=
 WITHOUT_NETCAT=
@@ -136,7 +134,7 @@ NANO_CODESIZE=0
 
 # Size of configuration file system in 512 bytes sectors
 # Cannot be zero.
-# 10MB = 2048
+# about 15MB = 20480
 NANO_CONFSIZE=20480
 
 # Size of data file system in 512 bytes sectors
@@ -283,7 +281,7 @@ add_port () {
 				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                 install package-recursive BATCH=yes -DWITH_PKGNG -DWITHOUT_X11 \
-				-DNOPORTDOCS -DNO_INSTALL_MANPAGES -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
+				-DNOPORTDOCS -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
 				rm \${NANO_WORLDDIR}/etc/resolv.conf
                	rm -rf \${NANO_WORLDDIR}/usr/obj
                	rm -rf \${NANO_WORLDDIR}/usr/pobj
@@ -446,7 +444,6 @@ bsdrp_custom () {
 	# usr/include : 15MB
 	FOLDERS_TO_REMOVE='
 usr/local/include
-usr/local/man
 usr/local/info
 usr/local/share/doc/gettext
 usr/local/share/doc/libasprintf
@@ -454,11 +451,8 @@ usr/local/share/doc/libiconv
 usr/local/share/doc/snmp
 usr/local/share/examples/quagga
 usr/include
-usr/share/groff_font
-usr/share/tmac
 usr/share/me
 usr/share/info
-usr/share/man
 usr/share/openssl
 usr/libdata/lint
 usr/libdata/ldscripts
