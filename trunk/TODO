@@ -36,5 +36,8 @@
 	- Need to check if an API (for usage as a VM in cloud for example) is a good idea
 	- Netconf: Need to check this BSD licensed: http://www.yumaworks.com/products/yuma/
 
+* labs *
+	- PAM: tacacs+, radius, ldap, etc…
+
 nanobsd patches to study for inclusion:
 http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html
