@@ -9,7 +9,7 @@ Release 1.2 (not released)
 - Default kern.ipc.nmbclusters increased to 275MB
 - Re-enable DMA and disk-caching
 - Transmit and receive descriptors for igb(4) and em(4) set to max (4096)
-	=> This changes create problems on low RAM i386 arch
+	=> This changes can create problems on I386 arch with less than 256Mb of RAM
 - Migrated to the new pkg tool
 - New packages:
     - mctest (a multicast test tool)
