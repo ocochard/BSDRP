@@ -255,18 +255,21 @@ parse_filename () {
         echo "i386 image"
     fi
     [ "$VM_ARCH" = "0" ] && die "[ERROR] Can't deduce arch type from filename"
-    
-    if echo "$1" | grep -q "serial"; then
-        SERIAL=true
-        echo "serial image"
-    fi
-    if echo "$1" | grep -q "vga"; then
-        SERIAL=false
-        echo "vga image"
-		if ! $VBOX_VGA; then
-			die "[ERROR] You can't use BSDRP vga release with a Virtualbox that didn't support RDP or VNC"
-		fi
-    fi
+ 
+	# SERIAL can bÃe allready set from CLI options 
+	if [ -z ${SERIAL} ]; then  
+    	if echo "$1" | grep -q "serial"; then
+        	SERIAL=true
+        	echo "serial image"
+    	fi
+    	if echo "$1" | grep -q "vga"; then
+        	SERIAL=false
+        	echo "vga image"
+			if ! $VBOX_VGA; then
+				die "[ERROR] You can't use BSDRP vga release with a Virtualbox that didn't support RDP or VNC"
+			fi
+    	fi
+	fi
 
 }
 
@@ -485,7 +488,7 @@ usage () {
         echo "  -l Y       Number of LAN between 0 and 9 (default: 0)"
 		echo "  -m         RAM (in MB) for each VM (default: 192)"
         echo "  -n X       Number of router (between 1 and 9) full meshed (default: 1)"
-       	echo "  -o CONS    Force console:Â vga (default if -a) or serial" 
+       	echo "  -o CONS    Force console:vga (default if -a) or serial" 
 		echo "  -s         Stop all VM"
 		echo "  -v         Enable virtio drivers"
         echo ""
@@ -513,7 +516,7 @@ VIRTIO=false
 LAN=""
 FILENAME=""
 RAM=""
-SERIAL=false
+SERIAL=""
 VM_ARCH=""
 
 echo "BSD Router Project (http://bsdrp.net) - VirtualBox lab script"
