@@ -86,7 +86,7 @@ upload(){
 }
 
 dokuwiki(){
-	URL="https://sourceforge.net/projects/bsdrp/files/BSD_Router_Project/${DEST}"
+	URL="https://sourceforge.net/projects/bsdrp/files/BSD_Router_Project/$1"
 	FILE_TYPE='
 	full
 	upgrade
@@ -94,6 +94,8 @@ dokuwiki(){
 	'
 
 	for type in ${FILE_TYPE}; do
+		TITLE_SET=false
+		OLD_TYPE=""
 		echo ""
 		echo "type: ${type}"
 		echo ""
@@ -104,19 +106,30 @@ dokuwiki(){
 
 		for file in ${FILE_LIST}; do
 			if [ "${type}" != "mtree" ]; then
-				echo "^ Type ^ Arch ^ Console ^ File ^ Checksum ^"
+				if ! ( $TITLE_SET ) && [ "${type}" != "${OLD_TYPE}" ]; then
+					echo "^ Type ^ Arch ^ Console ^ File ^ Checksum ^"
+					TITLE_SET=true
+					OLD_TYPE=${type}
+				else
+					TITLE_SET=false
+				fi
 				echo -n "| `echo ${file} | cut -d '-' -f 3`"
 				echo -n " | `echo ${file} | cut -d '-' -f 4`"
 				echo -n " | `echo ${file} | cut -d '-' -f 5 | cut -d '.' -f 1`"
 			else
-				echo "^ Arch ^ Console ^ File ^"
+				if ! ($TITLE_SET); then
+					echo "^ Arch ^ Console ^ File ^"
+					TITLE_SET=true
+                fi
 				echo -n "| `echo ${file} | cut -d '-' -f 3`"
 				echo -n " | `echo ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`"
 			fi
 			echo -n " | [[$URL/${file}/download|${file}]]"
 			if [ "${type}" != "mtree" ]; then
-				echo -n " | [[$URL/ `echo ${file} | sed -e 's/xz/sha256/g'`|"
+				echo -n " | [[$URL/`echo ${file} | sed -e 's/xz/sha256/g'` |"
 				echo -n "`echo ${file} | sed -e 's/xz/sha256/g'`]] |"
+			else
+				echo -n " |"	
 			fi
 			echo ""
 		done

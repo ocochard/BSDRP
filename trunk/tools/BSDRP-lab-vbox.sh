@@ -376,11 +376,14 @@ build_lab () {
 start_lab () {
     local i=1
 	echo "Start the lab..."
-	# Need to look in extrada for getting console type
-	if VBoxManage getextradata ${VM_TPL_NAME} Console | grep -q Serial; then
-		SERIAL=true
-	else
-		SERIAL=false
+
+	# if console mode is not forced: need to look in extrada for getting console type
+	if [ -z ${SERIAL} ]; then
+		if VBoxManage getextradata ${VM_TPL_NAME} Console | grep -q Serial; then
+			SERIAL=true
+		else
+			SERIAL=false
+		fi
 	fi
     #Enter the main loop for each VM
     while [ $i -le $NUMBER_VM ]; do
