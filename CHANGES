@@ -1,5 +1,5 @@
-Release 1.2 (not released)
-- Update base to FreeBSD 9.1-RC3
+Release 1.2
+- Update base to FreeBSD 9.1-Release
 - Add Kernel drivers: netmap (framework for fast packet I/O), Encapsulating Interface (enc), some 1OG NICs (cxgb, cxgbe, mxge, nxge), SCSI/RAID controllers, Intel ICH watchdog, ipmi, asni and virtio
 - FreeBSD patches:
 -	kern/163208 PF state key linking mismatch
@@ -9,7 +9,8 @@ Release 1.2 (not released)
 - Default kern.ipc.nmbclusters increased to 275MB
 - Re-enable DMA and disk-caching
 - Transmit and receive descriptors for igb(4) and em(4) set to max (4096)
-	=> This changes can create problems on I386 arch with less than 256Mb of RAM
+	=> This changes create problems on i386 arch with less than 256Mb of RAM
+		For solving it: Remove all line that contains hw.*.?xd in /boot/loader.conf.local
 - Migrated to the new pkg tool
 - New packages:
     - mctest (a multicast test tool)
@@ -17,7 +18,7 @@ Release 1.2 (not released)
     - security/sudo
     - sysutils/ipmitool
     - security/ipsec-tools
-- Include the man pages (Note: Only 10MB left)
+- Man pages are now included
 - Add 'system rollback': Rollback to previous version
 - Add 'system expand-data-slice': Expand the size of /data to all available space on disk and enable soft update journaling on it.
 - Redirect periodic output to a log file
