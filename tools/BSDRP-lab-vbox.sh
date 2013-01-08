@@ -36,6 +36,7 @@ set -eu
 # Global variable
 VM_TPL_NAME="BSDRP_lab_template"
 LOG_FILE="${HOME}/BSDRP_lab.log"
+DEFAULT_RAM="192"
 
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
@@ -136,7 +137,7 @@ create_template () {
 	fi
 
 	if [ -z "$RAM" ]; then
-		RAM=192
+		RAM=${DEFAULT_RAM}
 	fi
 
 	# Enabling ICH9 chipset (support 36 NIC)
@@ -288,6 +289,9 @@ build_lab () {
 	else
 		NIC_TYPE="82540EM"
 		DRIVER_TYPE="em"
+	fi
+	if [ -n "$RAM" ]; then
+        echo "- RAM: $RAM MB each"
 	fi
     echo ""
     local i=1
