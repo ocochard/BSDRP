@@ -368,4 +368,7 @@ options		ROUTETABLES=16
 # Encapsulating Interface
 device enc
 
+# Enable netmap
+device netmap
+
 # The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)

@@ -21,13 +21,6 @@ sendmail_msp_queue_enable="NO"
 #Disable dump device
 dumpdev="NO"
 
-#Increase the kernel secure level
-#Warning: This prevent to load module when entering in multi-user state!
-#http://www.freebsd.org/doc/handbook/securing-freebsd.html
-## DISABLED because too lot's of user didn't understand this behavior
-#kern_securelevel_enable="YES"
-#kern_securelevel="1"
-
 #Decrease the randomness of random(4), but should increase performance
 harvest_interrupt="NO"  # Entropy device harvests interrupt randomness
 harvest_ethernet="NO"   # Entropy device harvests ethernet randomness
@@ -36,10 +29,8 @@ harvest_p_to_p="NO"     # Entropy device harvests point-to-point randomness
 # Prevent syslog to bind a network socket
 syslogd_flags="-ss"
 
-# Polling can improve performance on old NIC that support it.
-# But because modern Ethernet controllers include intelligent IRQ management,
-# enabling polling on this modern controller can reduce performance.
-# Advice: Enable for i386 arch, disable for amd64 arch.
+# If, and only if, your NIC didn't support interrupt moderation (very old NIC)
+# you can enable polling.
 polling_enable="NO"
 
 # Enable RFC1323 extensions

@@ -1,0 +1,186 @@
+#!/bin/sh
+#
+# Network drivers/stack tuning tool for BSD Router Project 
+# http://bsdrp.net
+#
+# Copyright (c) 2013, The BSDRP Development Team 
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+# Strict script
+set -e
+set -u
+
+# Global variables
+HOST=false
+ROUTER=false
+
+# Get options passed by user
+getoption () {
+    if [ $# -ge 1 ]; then
+        FIRST_OPTION="$1"
+    else
+		usage
+		exit 1
+    fi
+    case "$FIRST_OPTION" in
+		host)
+			HOST=true
+			;;
+		router)
+            ROUTER=true
+            ;;
+		help)
+            usage
+			exit 0
+            ;;
+	esac
+}
+
+usage () {
+	echo "Usage: $0 option"
+	echo " option can be:"
+	echo " -host: tuning tips for end-host"
+	echo " -router: tuning tips for router"
+	echo " -help: display this help"
+}
+
+sysctl_atleast () {
+    # Check the sysctl parameter is at least configured to the value
+    # $1: sysctl parameter
+    # $2: recommended value
+    [ `sysctl -n $1` -lt $2 ] && echo "$1=\"$2\""
+}
+
+sysctl_equal () {
+	# Check the sysctl parameter match (equal) the value
+	# $1: sysctl parameter
+	# $2: recommended value
+	[ `sysctl -n $1` -ne $2 ] && echo "$1=\"$2\""	
+}
+
+tune () {
+	echo "#==> Start of /boot/loader.conf.local"
+	net_nic
+	($ROUTER) && net_forward
+	($ROUTER) && net_inet
+	net_netisr
+	net_netstat
+	net_mbuf
+	echo "#<== End of N/boot/loader.conf.local"
+	echo "#==> To be added to /etc/rc.conf"
+	for NIC in `ifconfig -l`; do
+		if ifconfig -m ${NIC} | egrep -q "capabilities.*VLAN_HWFILTER"; then
+			if ! ifconfig -m ${NIC} | egrep -q "options.*VLAN_HWFILTER"; then
+				echo "${NIC} support VLAN_HWFILTER but it's not enabled"
+				echo " => add the vlanhwfilter option to ifconfig_${NIC} in /etc/rc.conf"
+			fi
+		fi
+	done
+}
+
+net_nic () {
+	# em tuning
+	if ifconfig -l | egrep -q 'em[[:digit:]]'; then
+		# Need to check if there are not 82542 or 82543 (support 256 max)
+		for VALUE in hw.em.txd hw.em.rxd; do
+			sysctl_equal ${VALUE} 4096
+		done
+		sysctl_atleast hw.em.rx_process_limit 500
+		# Increasing interrupt delay is bad for a router because it add latency
+		# http://www.intel.com/design/network/applnots/ap450.htm
+		if ($HOST); then
+			for VALUE in hw.em.rx_abs_int_delay hw.em.tx_abs_int_delay; do
+            	sysctl_equal ${VALUE} 1024
+        	done
+			for VALUE in hw.em.rx_int_delay hw.em.tx_int_delay; do
+            	sysctl_equal ${VALUE} 512
+        	done
+		fi
+	fi
+	# igb tuning
+	if ifconfig -l | egrep -q 'igb[[:digit:]]'; then
+		for VALUE in hw.igb.txd hw.igb.rxd; do
+            sysctl_equal ${VALUE} 4096
+    	done
+		# http://wiki.freebsd.org/NetworkPerformanceTuning
+		sysctl_atleast hw.igb.max_interrupt_rate 32000
+		# Sho√uld mbuf be increased ifrx_process limit increased?	
+		sysctl_atleast hw.igb.rx_process_limit 500
+		# Default kern.ipc.nmbclusters is too small for multiple igb card and multicore
+		# Need to add a test [ `sysctl -n hw.ncpu` -gt 1 ] and arch (i386 don't like too much)
+		sysctl_atleast kern.ipc.nmbclusters 262144
+    fi
+	# General
+	# default value of send interface queue length
+	# If em or igb were tunned, need to change this too
+	# http://lists.freebsd.org/pipermail/freebsd-net/2012-July/032712.html	
+	sysctl_atleast net.link.ifqmaxlen 10240	
+}
+
+net_netstat () {
+	# Analysing netstat -m output and provide advice regarding the result
+	echo "TODO: netstat"
+}
+
+net_forward () {
+	# http://wiki.freebsd.org/NetworkPerformanceTuning
+	for VALUE in net.inet.ip.forwarding net.inet.ip.fastforwarding; do
+    	sysctl_equal ${VALUE} 1
+    done
+	# http://wiki.freebsd.org/NetworkPerformanceTuning
+	for VALUE in kern.random.sys.harvest.ethernet\
+	kern.random.sys.harvest.point_to_point\
+	kern.random.sys.harvest.interrupt; do
+        sysctl_equal ${VALUE} 0
+    done
+}
+
+net_inet () {
+	# http://wiki.freebsd.org/NetworkPerformanceTuning
+	for VALUE in net.inet.raw.maxdgram net.inet.raw.recvspace; do
+        sysctl_atleast ${VALUE} 16384
+    done
+	for VALUE in net.inet.ip.redirect; do
+        sysctl_equal ${VALUE} 0
+    done
+}
+
+net_netisr () {
+	# http://wiki.freebsd.org/NetworkPerformanceTuning
+	sysctl_atleast net.route.netisr_maxqlen 2048
+}
+
+net_mbuf () {
+	# kern.ipc.nmbclusters must be increased if multiple igb (man igb)
+	# Need to calculate (regarding RAM size) this value
+	# Does vm.kmem_size should be upgraded too ?
+	sysctl_atleast kern.ipc.nmbclusters 262144
+}
+###################
+## Main function ##
+###################
+
+getoption $*
+tune
