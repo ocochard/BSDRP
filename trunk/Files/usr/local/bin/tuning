@@ -59,6 +59,7 @@ getoption () {
 }
 
 usage () {
+	# Display usage
 	echo "Usage: $0 option"
 	echo " option can be:"
 	echo " -host: tuning tips for end-host"
@@ -70,17 +71,44 @@ sysctl_atleast () {
     # Check the sysctl parameter is at least configured to the value
     # $1: sysctl parameter
     # $2: recommended value
-    [ `sysctl -n $1` -lt $2 ] && echo "$1=\"$2\""
+    if [ `sysctl -n $1` -lt $2 ]; then
+		echo "$1=\"$2\""
+	fi
 }
 
 sysctl_equal () {
 	# Check the sysctl parameter match (equal) the value
 	# $1: sysctl parameter
 	# $2: recommended value
-	[ `sysctl -n $1` -ne $2 ] && echo "$1=\"$2\""	
+	if [ `sysctl -n $1` -ne $2 ]; then
+		echo "$1=\"$2\""
+	fi
+}
+
+if_have_cap () {
+	# Check if the interface have capabilities and if it's enabled return true (0)
+	# $1: if
+	# $2: capability
+    if ifconfig -m $1 | egrep -q "capabilities.*$2"; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+if_is_cap_enabled () {
+	# Check if the interface option is enabled: return true
+	# $1: if
+	# $2: capability
+	if ifconfig -m $1 | egrep -q "options.*$2"; then
+		return 0
+	else
+		return 1
+	fi
 }
 
 tune () {
+	# Major function that call the others
 	echo "#==> Start of /boot/loader.conf.local"
 	net_nic
 	($ROUTER) && net_forward
@@ -88,19 +116,26 @@ tune () {
 	net_netisr
 	net_netstat
 	net_mbuf
-	echo "#<== End of N/boot/loader.conf.local"
+	echo "#<== End of /boot/loader.conf.local"
 	echo "#==> To be added to /etc/rc.conf"
 	for NIC in `ifconfig -l`; do
-		if ifconfig -m ${NIC} | egrep -q "capabilities.*VLAN_HWFILTER"; then
-			if ! ifconfig -m ${NIC} | egrep -q "options.*VLAN_HWFILTER"; then
-				echo "${NIC} support VLAN_HWFILTER but it's not enabled"
-				echo " => add the vlanhwfilter option to ifconfig_${NIC} in /etc/rc.conf"
-			fi
-		fi
+		# If interface is not configured for vlan, ignore it
+		if egrep -q "ifconfig_vlan.*${NIC}" /etc/rc.conf; then
+			if if_have_cap ${NIC} VLAN_HWFILTER; then
+				if ! if_is_cap_enabled ${NIC} VLAN_HWFILTER; then
+					echo "${NIC} configured with vlan and support VLAN_HWFILTER"
+					echo " => add the vlanhwfilter option to ifconfig_${NIC} in /etc/rc.conf"
+				fi
+			fi # if_have_cap
+		fi # rc.conf
 	done
+	# Look for VM environnement                                                                                    
+    if sysctl -n kern.vm_guest | grep -q -v "none"; then                                                                 net_virtualized                                                                                            
+    fi  
 }
 
 net_nic () {
+	# NIC drivers tuning
 	# em tuning
 	if ifconfig -l | egrep -q 'em[[:digit:]]'; then
 		# Need to check if there are not 82542 or 82543 (support 256 max)
@@ -110,7 +145,7 @@ net_nic () {
 		sysctl_atleast hw.em.rx_process_limit 500
 		# Increasing interrupt delay is bad for a router because it add latency
 		# http://www.intel.com/design/network/applnots/ap450.htm
-		if ($HOST); then
+		if ! ($ROUTER); then
 			for VALUE in hw.em.rx_abs_int_delay hw.em.tx_abs_int_delay; do
             	sysctl_equal ${VALUE} 1024
         	done
@@ -177,6 +212,18 @@ net_mbuf () {
 	# Need to calculate (regarding RAM size) this value
 	# Does vm.kmem_size should be upgraded too ?
 	sysctl_atleast kern.ipc.nmbclusters 262144
+}
+
+net_virtualized () {
+	# Virtualized system tunable
+	# need disable hardware assisted features (need to found reference aobout this tip)
+	for NIC in `ifconfig -l`; do
+		for CAPS in RXCSUM TXCSUM VLAN_HWTAGGING VLAN_HWCSUM TSO4 VLAN_HWTSO VLAN_HWFILTER; do
+            if if_is_cap_enabled ${NIC} ${CAPS}; then                                                      
+				echo "${NIC} have ${CAPS} enabled: Disable it in a VM"
+            fi                                                                                                     
+        done # end for CAPS
+    done # end for NIC
 }
 ###################
 ## Main function ##

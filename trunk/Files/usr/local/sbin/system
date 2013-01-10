@@ -251,6 +251,7 @@ logger BSDRP system rollback complete
 
 }
 # Tune system
+# To be replaced by the tuning script
 tune () {
 	echo "Tune system for routing"
 	#https://calomel.org/network_performance.html
@@ -293,7 +294,7 @@ tune () {
 	sysctl net.inet.tcp.path_mtu_discovery=0
 	# TCP receive buffer space
 	sysctl net.inet.tcp.recvbuf_max=16777216
-	# decrease buffers for incoming data
+	# increase buffers for incoming data
 	sysctl net.inet.tcp.recvspace=8192
 	# TCP send buffer space
 	sysctl net.inet.tcp.sendbuf_max=16777216
@@ -301,8 +302,6 @@ tune () {
 	sysctl net.inet.tcp.sendspace=16384
 	# drop any UDP packets to closed ports
 	sysctl net.inet.udp.blackhole=1
-	
-
 	#sysctl net.inet.tcp.rfc1323=1
 	#sysctl net.inet.tcp.sack.enable=1
 	#sysctl net.inet.tcp.sendbuf_auto=1
@@ -340,51 +339,15 @@ sys_halt () {
 
 # Check if system is under a VM
 check_vm () {
-	ACPI=`sysctl -q dev.acpi.0.%desc`
-	# Look for Qemu
-	if echo $ACPI | grep -q QEMU; then
-       	VM_FOUND=true
-	else
+	# Look for VM environnement
+	if sysctl -n kern.vm_guest | grep -q "none"; then
 		VM_FOUND=false
-    	fi
-	# Look for VMware
-	if ! (${VM_FOUND}); then
-		if echo $ACPI | grep -q VMware; then
-       		VM_FOUND=true
-    	else
-        	VM_FOUND=false
-    	fi
-	fi
-	# Look for Virtualbox
-	if ! (${VM_FOUND}); then
-		if echo $ACPI | grep -q VBOX; then
-       		VM_FOUND=true
-    	else
-        	VM_FOUND=false
-    	fi
-	fi
-
-	# Look for KVM/Bochs
-
-	if ! (${VM_FOUND}); then
-		if echo $ACPI | grep -q BOCHS; then
-       		VM_FOUND=true
-    	else
-        	VM_FOUND=false
-    	fi
-	fi
-
-    # Need to add virtualpc, etc...
+	else
+       	VM_FOUND=true
+   	fi
     if (${VM_FOUND}); then
 		if [ "${SECOND_OPTION}" != "quiet" ]; then
         	echo "VM environnement detected"
-			echo "To use virtio modules, add theses lines in /boot/loader.conf.local:"
-			echo 'virtio_load="YES"'
-			echo 'virtio_pci_load="YES"'
-			echo 'virtio_blk_load="YES"'
-			echo 'if_vtnet_load="YES"'
-			echo 'virtio_balloon_load="YES"'
-			echo 'Then use ifconfig_vtnetX in rc.conf'
 		fi
     fi
 	
@@ -396,16 +359,14 @@ check_vm () {
 	fi
 
 	# Stupid if, but don't know how to use an "add" condition in the if
-    if (${VM_FOUND}); then
-		if (${NOT_TUNED}); then
-        	echo "WARNING: Current (Default) kern.hz value too high for a VM use!"
-        	echo 'Use "system virtualized" for lower it'
-   		fi 
+    if ( ${VM_FOUND} ) && ( ${NOT_TUNED} ); then
+       	echo "WARNING: Current (Default) kern.hz value too high for a VM use!"
+       	echo 'Use "system virtualized" for lower it'
 	fi
     exit 0
 }
 
-# Create a new image with acceptable performance under virtualization (quemu, vmware, virtualbox, etc...)
+# Tune for VM usage
 sys_virtualized () {
 
 	echo "This step will configure BSDRP for being use as a VM:"
@@ -420,7 +381,8 @@ sys_virtualized () {
 	[ "$USER_CONFIRM" = "n" ] && die "Canceling"
 	
 	mount -uw / || die "ERROR: mount -uw /"
-	
+
+	echo '# system virtualized add these lines:' >> /boot/loader.conf.local
 	if [ `echo kern.hz=100 >> /boot/loader.conf.local` ]; then
 		die "Error: Can't modify loader.conf"
 	fi
@@ -430,6 +392,7 @@ sys_virtualized () {
     echo 'virtio_blk_load="YES"' >> /boot/loader.conf.local
     echo 'if_vtnet_load="YES"' >> /boot/loader.conf.local
     echo 'virtio_balloon_load="YES"' >> /boot/loader.conf.local
+	echo 'virtio_scsi_load="YES"' >> /boot/loader.conf.local
 
 	mount -ur / || die "ERROR: mount -ur /"
 
