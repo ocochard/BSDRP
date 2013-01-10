@@ -137,6 +137,6 @@ options     ROUTETABLES=16
 # Encapsulating Interface
 device enc
 
-# Enable netmap
-device netmap
+# netmap didn't compile on xen kernel
+#device netmap
 
