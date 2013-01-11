@@ -36,7 +36,7 @@ set -eu
 # Global variable
 VM_TPL_NAME="BSDRP_lab_template"
 LOG_FILE="${HOME}/BSDRP_lab.log"
-DEFAULT_RAM="192"
+DEFAULT_RAM="256"
 
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
@@ -493,7 +493,7 @@ usage () {
         echo "  -i filename BSDRP image file name (to be used the first time only)"
         echo "  -h         Display this help"
         echo "  -l Y       Number of LAN between 0 and 9 (default: 0)"
-		echo "  -m         RAM (in MB) for each VM (default: 192)"
+		echo "  -m         RAM (in MB) for each VM (default: ${DEFAULT_RAM})"
         echo "  -n X       Number of router (between 1 and 9) full meshed (default: 1)"
        	echo "  -o CONS    Force console:vga (default if -a) or serial" 
 		echo "  -s         Stop all VM"
