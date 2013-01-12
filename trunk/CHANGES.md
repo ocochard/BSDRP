@@ -8,7 +8,36 @@
 * Netmap fixes by sync code with -current but only for em(4) and re(4) nic, not ixgbe(4)
 
 ## Installed packages
-Sames as in release 1.2
+Sames as in release 1.2:
+* NetPIPE-3.7.1                  A self-scaling network benchmark
+* bird-1.3.8                     Dynamic IP routing daemon (IPv4 version)
+* bird6-1.3.8                    Dynamic IP routing daemon (IPv6 version)
+* dlmalloc-2.8.4                 Small, fast malloc library by Doug Lea
+* fprobe-1.1_1                   Tool that collects network traffic data
+* freevrrpd-1.1                  This a VRRP RFC2338 Compliant implementation under FreeBSD
+* iperf-2.0.5                    A tool to measure maximum TCP and UDP bandwidth
+* ipfw-user-0.1                  Netmap-enabled IPFW userspace version
+* ipmitool-1.8.12_1              CLI to manage IPMI systems
+* ipsec-tools-0.8.0_3            KAME racoon IKE daemon, ipsec-tools version
+* isc-dhcp42-relay-4.2.4         The ISC Dynamic Host Configuration Protocol relay
+* isc-dhcp42-server-4.2.4_2      The ISC Dynamic Host Configuration Protocol server
+* libevent-1.4.14b_2             Provides an API to execute callback functions on certain events
+* libgcrypt-1.5.0_1              General purpose crypto library based on code used in GnuPG
+* libgpg-error-1.10              Common error values for all GnuPG components
+* mcast-tools-20061214_1         IPv6 multicast routing daemons and tools
+* mpd-5.6                        Multi-link PPP daemon based on netgraph(4)
+* mrouted-3.9.6                  Multicast routing daemon providing DVMRP for IPv4
+* net-snmp-5.7.2_1               An extendable SNMP implementation
+* openldap-client-2.4.33_1       Open source LDAP client implementation
+* pftop-0.7_1                    Utility for real-time display of statistics for pf
+* pimdd-0.2.1.0                  UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
+* pkg-1.0.3_1                    New generation package manager
+* quagga-re-0.99.17.11           A branch of popular quagga software pointed at stability
+* ssmtp-2.64                     Extremely simple MTA to get mail off the system to a mail hub
+* sudo-1.8.6.p3_1                Allow others to run commands as root
+* tmux-1.7_1                     A Terminal Multiplexer
+* ucarp-1.5.2_1                  Userlevel Common Address Redundancy Protocol
+* virtio-kmod-9.1-0.242658       virtio kernel modules port for 8.[23]/9.[01]
 
 -----------------------------------------
 # Release 1.2 (2012/12/20)
