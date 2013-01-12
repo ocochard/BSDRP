@@ -3,7 +3,7 @@
 # Upgrade tool for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2012, The BSDRP Development Team
+# Copyright (c) 2009-2013, The BSDRP Development Team
 # All rights reserved.
 # Based on the updatep1 and updatep2 script of nanoBSD
 #
@@ -41,135 +41,171 @@
 # Strict script
 set -eu
 
+# Variables
 ARCH=`uname -m`
-
-if [ "${ARCH}" = "sparc64" ]; then
-	echo "ERROR: upgrade script not adapted to ${ARCH}"
-	exit 1
-fi
 
 #Load the NANO_DRIVE (label) variable:
 . /etc/nanobsd.conf
 
-# Check and set final variable
-DST_SLICE=0
+LABEL=`cut -d '/' -f 2 /etc/nanobsd.conf`
 
-if mount | grep -q "/dev/${NANO_DRIVE}s1a on / "; then 
-	DST_SLICE=2
-	SRC_SLICE=1
-fi
-if mount | grep -q "/dev/${NANO_DRIVE}s2a on / " ; then                
-    DST_SLICE=1
-	SRC_SLICE=2
-fi
+# A usefull function (from: http://code.google.com/p/sh-die/)                                                         
+die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }     
 
-if [ $DST_SLICE = 0 ]; then
-	echo "Can't detect active slice"
-	exit 1
-fi
+mbr_get_info() {
+	if mount | grep -q "/dev/${NANO_DRIVE}s1a on / "; then 
+    	DST_SLICE="s2"
+    	SRC_SLICE="s1"
+	elif mount | grep -q "/dev/${NANO_DRIVE}s2a on / " ; then                
+    	DST_SLICE="s1"
+    	SRC_SLICE="s2"
+	else
+    	die "Can't detect active slice"
+	fi
 
-boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s${SRC_SLICE}a | awk '{ print $3; }' | cut -d s -f 1`
-label=`cut -d '/' -f 2 /etc/nanobsd.conf`
+	DST_LABEL="${LABEL}${DST_SLICE}a"
+	SRC_LABEL="${LABEL}${SRC_SLICE}a"
+	BSD_SLICE="a"
 
-# Blow away old system.
-if ! dd if=/dev/zero of=${boot_dev}s${DST_SLICE} bs=1m count=1 > /dev/null 2>&1; then
-	echo "ERROR: Can't initialize destination partition ${boot_dev}s${DST_SLICE}"
-	exit 1
-fi
+	# ufs/BSDRPs1a     N/A  aacd0s1a
+	boot_dev=/dev/`glabel status | grep ${SRC_LABEL} | awk '{ print $3; }' | cut -d s -f 1`
 
-# Copy in new system
-if ! dd of=${boot_dev}s${DST_SLICE} obs=64k; then
-	echo "ERROR: Can't install the upgrade on ${boot_dev}s${DST_SLICE}"
-	exit 1
-fi
+}
 
-# Check that it worked
-if ! fsck_ffs -n ${boot_dev}s${DST_SLICE}a; then
-	echo "ERROR: New file system ${boot_dev}s${DST_SLICE}a check failed"
-	exit 1
-fi
+vtoc_get_info() {
+	if mount | grep -q "/dev/${NANO_DRIVE}s1a on / "; then 
+    	DST_SLICE="d"
+		DST_LABEL="${LABEL}s2a"
+    	SRC_SLICE="a"
+		SRC_LABEL="${LABEL}s1a"
+	elif mount | grep -q "/dev/${NANO_DRIVE}s2a on / " ; then                
+    	DST_SLICE="a"
+		DST_LABEL="${LABEL}s1a"
+    	SRC_SLICE="d"
+		SRC_LABEL="${LABEL}s2a"
+	else
+    	die "Can't detect active slice"
+	fi
+	BSD_SLICE=""
+	# ufs/BSDRPs1a     N/A  ada1a
+	boot_dev=/dev/`glabel status | grep ${SRC_LABEL} | awk '{ print $3; }' | sed 's/.$//'`
 
-# Set Label into the new slice
-if ! tunefs -L ${label}s${DST_SLICE}a ${boot_dev}s${DST_SLICE}a; then
-	echo "ERROR: Can't put label on the new filesystem"
-	exit 1
-fi
+}
 
-# Need to tune some files on the new partition
-if [ ! -d /tmp/sysupgrade ]; then
-	mkdir /tmp/sysupgrade
-fi
+write_new_image() {
+	# Blow away old system.
+	if ! dd if=/dev/zero of=${boot_dev}${DST_SLICE} bs=1m count=1 > /dev/null 2>&1; then
+		die "ERROR: Can't initialize destination partition ${boot_dev}${DST_SLICE}"
+	fi
 
-if ! mount /dev/ufs/${label}s${DST_SLICE}a /tmp/sysupgrade; then
-	echo "ERROR: Can't mount new upgrade image"
-	exit 1
-fi
-# Kept the /boot/loader.conf.local file
-if [ -f /boot/loader.conf.local ]; then
-    if ! cp /boot/loader.conf.local /tmp/sysupgrade/boot; then
-        echo "WARNING: Can't backup /boot/loader.conf.local"
-    fi
-fi
-# 	Adapt fstab of the new system
-for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab
-	do
-	    sed -i "" "s/${label}s${SRC_SLICE}a/${label}s${DST_SLICE}a/g" $f
+	# Copy in new system
+	if ! dd of=${boot_dev}${DST_SLICE} obs=64k; then
+		die "ERROR: Can't install the upgrade on ${boot_dev}${DST_SLICE}"
+	fi
+
+	# Check that it worked
+	if ! fsck_ffs -n ${boot_dev}${DST_SLICE}${BSD_SLICE}; then
+		die "ERROR: New file system ${boot_dev}${DST_SLICE}${BSD_SLICE} check failed"
+	fi
+
+	# Set Label into the new slice
+	if ! tunefs -L ${DST_LABEL} ${boot_dev}${DST_SLICE}${BSD_SLICE}; then
+		die "ERROR: Can't put label on the new filesystem"
+	fi
+
+	# Need to tune some files on the new partition
+	if [ ! -d /tmp/sysupgrade ]; then
+		mkdir /tmp/sysupgrade
+	fi
+
+	if ! mount /dev/ufs/${DST_LABEL} /tmp/sysupgrade; then
+		die "ERROR: Can't mount new upgrade image"
+	fi
+	# Kept the /boot/loader.conf.local file
+	if [ -f /boot/loader.conf.local ]; then
+    	if ! cp /boot/loader.conf.local /tmp/sysupgrade/boot; then
+        	echo "WARNING: Can't backup /boot/loader.conf.local"
+    	fi
+	fi
+	# Adapt fstab of the new system
+	for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab; do
+	    sed -i "" "s/${SRC_LABEL}/${DST_LABEL}/g" $f
     done
 
-#	Check if their is a post-upgrade script on the newimage (This script will be start at the end of the upgrade process)
-if [ -f /tmp/sysupgrade/usr/local/sbin/post-upgrade ]; then
-	if ! cp /tmp/sysupgrade/usr/local/sbin/post-upgrade /tmp/post-upgrade; then
-		echo "WARNING: Can't copy post-upgrade script!"
+	# Check if their is a post-upgrade script on the newimage (This script will be start at the end of the upgrade process)
+	if [ -f /tmp/sysupgrade/usr/local/sbin/post-upgrade ]; then
+		if ! cp /tmp/sysupgrade/usr/local/sbin/post-upgrade /tmp/post-upgrade; then
+			echo "WARNING: Can't copy post-upgrade script!"
+		fi
 	fi
-fi
 
-if ! umount /tmp/sysupgrade; then
-	echo "ERROR: Can't umount new image"
-	exit 1
-fi 
+	if ! umount /tmp/sysupgrade; then
+		die "ERROR: Can't umount new image"
+	fi 
 
-if ! rm -r /tmp/sysupgrade; then
-	echo "WARNING: Can't remove tempdir"
-fi
-
-# Save the fstab to /cfg
-if mount | ! grep -q "/cfg"; then
-	if ! mount /cfg; then
-		echo "ERROR: Cant't mount /cfg"
-		exit 1
+	if ! rm -r /tmp/sysupgrade; then
+		echo "WARNING: Can't remove tempdir"
 	fi
-fi
-if ! cp /etc/fstab /cfg; then
-	echo "ERROR: Can't save fstab"
-	umount /cfg
-	exit 1
-fi
-if ! umount /cfg; then
-	echo "ERROR: Can't umount /cfg"
-	exit 1
-fi
+
+	# Save the fstab to /cfg
+	if mount | ! grep -q "/cfg"; then
+		if ! mount /cfg; then
+			die "ERROR: Cant't mount /cfg"
+		fi
+	fi
+	if ! cp /etc/fstab /cfg; then
+		umount /cfg
+		die "ERROR: Can't save fstab"
+	fi
+	if ! umount /cfg; then
+		die "ERROR: Can't umount /cfg"
+	fi
+}
+
+x86_boot_modif () {
+	# Change the default selection of the boot manager
+    if ! boot0cfg -s `echo ${DST_SLICE} | cut -d 's' -f 2` -t 18 -v ${boot_dev}; then
+        die "ERROR: Can't update FreeBSD bootloader"
+    fi
+	# Change the active partition
+	if ! gpart set -a active -i `echo ${DST_SLICE} | cut -d 's' -f 2` ${boot_dev}; then
+		die "ERROR: Can't update active partition"
+	fi
+}
+
+arm_boot_modif () {
+	echo "arm upgrade script not tested!"	
+	if ! gpart set -a active -i `echo ${DST_SLICE} | cut -d 's' -f 2` ${boot_dev}; then
+		die "ERROR: Can't update active partition"
+	fi
+}
+
+vtoc_boot_modif () {
+	echo "TODO:"
+	echo "eeprom boot-device=disk:${DST_SLICE}"
+	#NEED to get the bootpath variable (displayed by the freebsd bootstrap loader)
+}
+#### main function
 
 case "${ARCH}" in
         i386|amd64)
-				if ! boot0cfg -s ${DST_SLICE} -t 18 -v ${boot_dev}; then
-					echo "ERROR: Can't update FreeBSD bootloader"
-					exit 1
-				fi
-				if ! gpart set -a active -i ${DST_SLICE} ${boot_dev}; then
-					echo "ERROR: Can't update active partition"
-					exit 1
-				fi
-                ;;
+			mbr_get_info
+			write_new_image
+	    	x86_boot_modif
+            ;;
         arm)
-				echo "arm upgrade script not tested!"	
-				if ! gpart set -a active -i ${DST_SLICE} ${boot_dev}; then
-					echo "ERROR: Can't update active partition"
-					exit 1
-				fi
-                ;;
+			echo "WARNING: This script was never tested on ARM"
+			mbr_get_info
+			write_new_image
+            arm_boot_modif
+            ;;
         sparc64)
-                echo "You need to configure OBP for booting on"
-                ;;
+			vtoc_get_info
+			write_new_image
+            vtoc_boot_modif
+            ;;
+        *)
+            die "Unsupported arch!"
 esac
 
 # Log
@@ -180,5 +216,5 @@ if [ -f /tmp/post-upgrade ]; then
 	echo "Starting post-upgrade script..."
 	logger Starting post-upgrade script
 	chmod +x /tmp/post-upgrade
-	/tmp/post-upgrade /dev/ufs/${label}s${DST_SLICE}a
+	/tmp/post-upgrade /dev/ufs/${DST_LABEL}
 fi
