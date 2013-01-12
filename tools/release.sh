@@ -12,6 +12,7 @@ DRY=""
 SRC_DIR="/usr/local/BSDRP"
 OBJ_BASE_DIR="/usr/obj"
 VERSION=""
+FAST_MODE=false
 ARCH_LIST='
 i386
 i386_xenpv
@@ -24,7 +25,8 @@ serial
 
 usage () {
 	echo "$0 [ generate | upload | dokuwiki ]"
-	echo " - generate: clean and generate all arch/console images"
+	echo " - generate [fast]: clean and generate all arch/console images"
+	echo "                    fast mode avoid rebuilding all"
 	echo " - upload: Upload all images to SourceForge"
 	echo " - dokuwiki: Generate dokuwiki table of images"
 	exit 0
@@ -41,23 +43,18 @@ check_clean() {
 
 generate(){
 	[ -d ${SRC_DIR} ] || die "Doesn't found source dir: ${SRC_DIR}"
-	# cleanup obj dir
-	#for arch in ${ARCH_LIST}; do
-	#	OBJ_DIR="${OBJ_BASE_DIR}/BSDRP.${arch}"
-	#		if [ -d ${OBJ_DIR} ]; then
-	#			echo "Cleaning dir ${OBJ_DIR}..."
-#			check_clean ${OBJ_DIR}
-#			${DRY} rm -rf ${OBJ_DIR}
-#		fi
-#	done
 	
 	# Build of each arch/console
     for arch in ${ARCH_LIST}; do
 		# Initial build (update and rebuild all)
-		( cd ${SRC_DIR}
-        ${DRY} ./make.sh -u -f -y -a ${arch}
-        )
-        [ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/_.mtree ] || die "problem during initial build of ${arch}"
+		if ! ($FAST_MODE); then
+			( cd ${SRC_DIR}
+        	${DRY} ./make.sh -u -f -y -a ${arch}
+        	)
+		fi
+		if ! ($FAST_MODE); then
+        	[ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/_.mtree ] || die "problem during initial build of ${arch}"
+		fi
 		for console in ${CONSOLE_LIST}; do
 			[ "${arch}" = "i386_xenpv" -a "${console}" = "serial" ] && continue
         	( cd ${SRC_DIR}
@@ -164,6 +161,7 @@ fi
 
 if [ $# -eq 1 ]; then
 	$1
-else
-	$1 $2
+elif [ $2 = "fast" ]; then
+	FAST_MODE=true
 fi
+$1 $2
