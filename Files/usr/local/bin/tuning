@@ -119,7 +119,11 @@ tune () {
 	echo "#<== End of /boot/loader.conf.local"
 	echo "#==> To be added to /etc/rc.conf"
 	for NIC in `ifconfig -l`; do
-		# If interface is not configured for vlan, ignore it
+		#skip loopback interfaces
+        if echo $NIC | grep -q lo; then
+            continue
+        fi 
+		# Check only interface with vlan configured on them
 		if egrep -q "ifconfig_vlan.*${NIC}" /etc/rc.conf; then
 			if if_have_cap ${NIC} VLAN_HWFILTER; then
 				if ! if_is_cap_enabled ${NIC} VLAN_HWFILTER; then
@@ -130,8 +134,9 @@ tune () {
 		fi # rc.conf
 	done
 	# Look for VM environnement                                                                                    
-    if sysctl -n kern.vm_guest | grep -q -v "none"; then                                                                 net_virtualized                                                                                            
-    fi  
+    if sysctl -n kern.vm_guest | grep -q -v "none"; then
+		net_virtualized 
+    fi
 }
 
 net_nic () {
@@ -218,7 +223,11 @@ net_virtualized () {
 	# Virtualized system tunable
 	# need disable hardware assisted features (need to found reference aobout this tip)
 	for NIC in `ifconfig -l`; do
-		for CAPS in RXCSUM TXCSUM VLAN_HWTAGGING VLAN_HWCSUM TSO4 VLAN_HWTSO VLAN_HWFILTER; do
+		#skip loopback interfaces
+        if echo $NIC | grep -q lo; then
+            continue
+        fi 
+		for CAPS in RXCSUM TXCSUM TSO4; do
             if if_is_cap_enabled ${NIC} ${CAPS}; then                                                      
 				echo "${NIC} have ${CAPS} enabled: Disable it in a VM"
             fi                                                                                                     

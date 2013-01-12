@@ -50,6 +50,8 @@ if ($?prompt) then
 	# lists  the  remaining 
 	# choices (if any) whenever completion fails
 	set autolist=ambiguous
+	# recheck for new binary
+	set autorehash
 	# run the expand-history editor command
     #   before each completion attempt
 	set autoexpand
@@ -73,9 +75,6 @@ if ($?prompt) then
 
 	#Don't generate core file
 	limit coredumpsize 0
-
-	#Check the VM usage and kern.hz problem
-	/usr/local/sbin/system check-vm quiet
 
 endif
 
