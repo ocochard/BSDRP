@@ -75,14 +75,14 @@ generate(){
 }
 
 upload(){
-
-	FILE_LIST='
-    /usr/local/BSDRP/CHANGES
-    '
+	scp /usr/local/BSDRP/CHANGES cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1/README.md
+	FILE_LIST=''
 	for arch in ${ARCH_LIST}; do
-		[ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/release.done ] && FILE_LIST="${FILE_LIST} `ls ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-*`"
+		if [ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/release.done ]; then
+			FILE_LIST="${FILE_LIST} `ls ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-*`"
+			${DRY} scp ${FILE_LIST} cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1/${arch}
+		fi
 	done
-	${DRY} scp ${FILE_LIST} cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1
 }
 
 dokuwiki(){
@@ -124,9 +124,9 @@ dokuwiki(){
 				echo -n "| `echo ${file} | cut -d '-' -f 3`"
 				echo -n " | `echo ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`"
 			fi
-			echo -n " | [[$URL/${file}/download|${file}]]"
+			echo -n " | [[$URL/${arch}/${file}/download|${file}]]"
 			if [ "${type}" != "mtree" ]; then
-				echo -n " | [[$URL/`echo ${file} | sed -e 's/xz/sha256/g'` |"
+				echo -n " | [[$URL/${arch}/`echo ${file} | sed -e 's/xz/sha256/g'` |"
 				echo -n "`echo ${file} | sed -e 's/xz/sha256/g'`]] |"
 			else
 				echo -n " |"	

@@ -3,7 +3,7 @@
 # System tool for BSD Router Project 
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2012, The BSDRP Development Team 
+# Copyright (c) 2009-2013, The BSDRP Development Team 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -265,10 +265,6 @@ tune () {
 	sysctl kern.ipc.somaxconn=32768
 	# increase the limit of the open sockets
 	sysctl kern.ipc.maxsockets=204800
-	# randomized processes id's
-	sysctl kern.randompid=348
-	# reply to no more than 50 ICMP packets per sec
-	sysctl net.inet.icmp.icmplim=50
 	# do not processes any TCP options in the TCP headers
 	sysctl net.inet.ip.process_options=0
 	# do not allow ip header redirects
@@ -278,8 +274,6 @@ tune () {
 	sysctl net.inet.ip.rtminexpire=2
 	# route cache entries increased
 	sysctl net.inet.ip.rtmaxcache=256
-	# drop icmp redirects
-	sysctl net.inet.icmp.drop_redirect=1
 	# drop any TCP packets to closed ports
 	sysctl net.inet.tcp.blackhole=2
 	# no need to delay ACK's

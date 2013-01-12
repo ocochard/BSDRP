@@ -1,47 +1,59 @@
-* Bugs *
-	- if no-mandatory /data had a fsck problem, system refuse go in single user
-	- add auto-trimming of all log files that are being created
-	- should save /boot/loader.conf.local in config archive for restoring it on another router
-	- With default tunning in /boot/loader.conf.local (or /etc/sysctl.conf), configuring em NIC is no more possible: not enought mbuf available on i386 with low RAM (196MB of RAM).
+# Bugs #
 
-* Upgrading *
-	- Replacing the use of 2 systems partitions (there is not "active" partition
-	  concept on sparc64, ARM, MIPS, neither bootloader on XEN-PV) by freebsd-update ???
+* if no-mandatory /data had a fsck problem, system refuse go in single user
+* add auto-trimming of all log files that are being created
+* should save /boot/loader.conf.local in config archive for restoring it on another router
+* With default tunning in /boot/loader.conf.local (or /etc/sysctl.conf), configuring em NIC is no more possible: not enought mbuf available on i386 with low RAM (196MB of RAM).
 
-* Arch *
-	- NEED to merge lot's of common task of create_arch_diskimage() in nanobsd
-	- Sparc64: Need to fix the login bug, and add arch support to the update script (Is possible to modify the boot PROM from the OS?)
-	- arm: Need to found an arm devices for working on
-	- cross-compilation : check this URL: http://forums.freebsd.org/showthread.php?t=18147
+# Upgrading #
 
-* Authentication *
-	- Need to test PAM (Radius, TACAS+) modules
+* Replacing the use of 2 systems partitions (there is not "active" partition
+  concept on sparc64, ARM, MIPS, neither bootloader on XEN-PV) by freebsd-update ???
 
-* Multicast *
-	- Need to found IPv4 PIM-dm/sm daemon and test them
+# Arch #
 
-* misc *
-	- utf-8 support for console ?
-	- Quagga rc script: limit all quagga process message when quagga is disabled
+* NEED to merge lot's of common task of create_arch_diskimage() in nanobsd
+* Sparc64: Need to fix the login bug, and add arch support to the update script (Is possible to modify the boot PROM from the OS?)
+* arm: Need to found an arm devices for working on
+* cross-compilation : check this URL: http://forums.freebsd.org/showthread.php?t=18147
 
-* Central configuration management / Provisionning *
-	- Use cvs or subversion for maintain central management of configuration files
-	- Be compatible with a provisionning tools that generate lot's of configuration (subversion copy?)
+# Authentication #
 
-* Performance *
-	- In place of tunning, need to add a script that check the hardware, and regarding the hardware (NIC drivers, ncpu, RAM, etc...) will display some advice
+* Need to test PAM (Radius, TACAS+) modules
 
-* API *
-	- Need to check if an API (for usage as a VM in cloud for example) is a good idea
-	- Netconf: Need to check this BSD licensed:http://www.yumaworks.com/products/yuma/
+# Multicast #
 
-* labs *
-	- PAM: tacacs+, radius, ldap, etc
-	- Lab script: Generate a lab diagram in DOT language, see example in tools/bsdrp.lab.gv
-	- Lab script: Xen script to add
+* Need to found IPv4 PIM-dm/sm daemon and test them
 
-* build script *
-	- Need to add "target" mode
+# misc #
 
-nanobsd patches to study for inclusion:
+* utf-8 support for console ?
+* Quagga rc script: limit all quagga process message when quagga is disabled
+
+# Central configuration management / Provisionning #
+
+* Use cvs or subversion for maintain central management of configuration files
+* Be compatible with a provisionning tools that generate lot's of configuration (subversion copy?)
+
+# Performance #
+
+* In place of tunning, need to add a script that check the hardware, and regarding the hardware (NIC drivers, ncpu, RAM, etc...) will display some advice
+
+# API #
+
+* Need to check if an API (for usage as a VM in cloud for example) is a good idea
+* Netconf: Need to check this BSD licensed:http://www.yumaworks.com/products/yuma/
+
+# labs #
+
+* PAM: tacacs+, radius, ldap, etc
+* Lab script: Generate a lab diagram in DOT language, see example in tools/bsdrp.lab.gv
+* Lab script: Xen script to add
+
+# build script #
+
+* Need to add "target" mode
+
+# nanobsd patches to study for inclusion # 
+
 http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html
