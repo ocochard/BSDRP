@@ -11,6 +11,7 @@ allscreens_flags="MODE_261"
 
 #Disable moused
 moused_enable="NO"
+moused_ums0_enable="NO"
 
 #Disable sendmail
 sendmail_enable="NO"
@@ -30,7 +31,7 @@ harvest_p_to_p="NO"     # Entropy device harvests point-to-point randomness
 syslogd_flags="-ss"
 
 # If, and only if, your NIC didn't support interrupt moderation (very old NIC)
-# you can enable polling.
+# you can enable polling
 polling_enable="NO"
 
 # Enable RFC1323 extensions
