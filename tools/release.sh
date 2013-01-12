@@ -68,11 +68,13 @@ generate(){
 			echo "done" > ${OBJ_BASE_DIR}/BSDRP.${arch}/release.done
 		done
     done
-
+	exit 0
 }
 
 upload(){
-	scp /usr/local/BSDRP/CHANGES cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1/README.md
+	# Display the CHANGES between line "# Release X.Y" and "------" and put it in README.md
+	sed -n -e '/# Release ${VERSION}/,/----/ p' CHANGES.md > /tmp/README.md
+	scp /tmp/README.md cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1/README.md
 	FILE_LIST=''
 	for arch in ${ARCH_LIST}; do
 		if [ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/release.done ]; then
@@ -80,6 +82,7 @@ upload(){
 			${DRY} scp ${FILE_LIST} cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1/${arch}
 		fi
 	done
+	exit 0
 }
 
 dokuwiki(){
@@ -110,20 +113,22 @@ dokuwiki(){
 				else
 					TITLE_SET=false
 				fi
+				ARCH=`echo ${file} | cut -d '-' -f 4`
 				echo -n "| `echo ${file} | cut -d '-' -f 3`"
-				echo -n " | `echo ${file} | cut -d '-' -f 4`"
+				echo -n " | ${ARCH}"
 				echo -n " | `echo ${file} | cut -d '-' -f 5 | cut -d '.' -f 1`"
 			else
 				if ! ($TITLE_SET); then
 					echo "^ Arch ^ Console ^ File ^"
 					TITLE_SET=true
                 fi
-				echo -n "| `echo ${file} | cut -d '-' -f 3`"
+				ARCH=`echo ${file} | cut -d '-' -f 3`
+				echo -n "| ${ARCH}"
 				echo -n " | `echo ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`"
 			fi
-			echo -n " | [[$URL/${arch}/${file}/download|${file}]]"
+			echo -n " | [[$URL/${ARCH}/${file}/download|${file}]]"
 			if [ "${type}" != "mtree" ]; then
-				echo -n " | [[$URL/${arch}/`echo ${file} | sed -e 's/xz/sha256/g'` |"
+				echo -n " | [[$URL/${ARCH}/`echo ${file} | sed -e 's/xz/sha256/g'` |"
 				echo -n "`echo ${file} | sed -e 's/xz/sha256/g'`]] |"
 			else
 				echo -n " |"	
@@ -131,6 +136,7 @@ dokuwiki(){
 			echo ""
 		done
 	done
+	exit 0
 }
 
 # Main part
