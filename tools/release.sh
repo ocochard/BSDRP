@@ -13,11 +13,15 @@ SRC_DIR="/usr/local/BSDRP"
 OBJ_BASE_DIR="/usr/obj"
 VERSION=""
 FAST_MODE=false
-ARCH_LIST='
+if [ `uname -m` = "sparc64" ]; then
+	ARCH_LIST="sparc64"
+else
+	ARCH_LIST='
 i386
 i386_xenpv
 amd64
 '
+fi
 CONSOLE_LIST='
 vga
 serial
@@ -57,10 +61,11 @@ generate(){
 		fi
 		for console in ${CONSOLE_LIST}; do
 			[ "${arch}" = "i386_xenpv" -a "${console}" = "serial" ] && continue
+			[ "${arch}" = "sparc64" -a "${console}" = "serial" ] && continue
         	( cd ${SRC_DIR}
         	${DRY} ./make.sh -b -a ${arch} -c ${console}
         	)
-			if [ "${arch}" = "i386_xenpv" ]; then
+			if [ "${arch}" = "i386_xenpv" -o "${arch}" = "sparc64" ]; then
    				[ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-${VERSION}-${arch}.mtree.xz ] || die "problem during final build regarding of ${arch}-${console}"
 	     	else	
 				[ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-${VERSION}-${arch}-${console}.mtree.xz ] || die "problem during final build regarding of ${arch}-${console}"
