@@ -1,6 +1,7 @@
 # Release 1.3 (not released)
 
 ## New features
+* sparc64 support almost complete (just the upgrade script to fix)
 * None: It's a bug-fixes-only release.
 
 ## Bug fixes
