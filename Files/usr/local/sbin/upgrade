@@ -186,9 +186,11 @@ vtoc_boot_modif () {
 	DISK=`kenv currdev | sed 's/.$//'`
 	# Now DISK is like that: /pci@1f,0/ide@d/disk@1,0:
 	if eeprom boot-device=$DISK${DST_SLICE}; then
-		echo "WARNING: A simple reboot is not enought for the new eeprom configuration being applied:"
-		echo "- From console: an 'halt' followed by a 'boot' inside the OPB"
-		echo "- a cold-reboot"
+		# http://docs.oracle.com/cd/E19127-01/ultra25.ws/819-1892-12/nvram.html
+		# "Initiates a warm boot where most NVRAM configuration parameters are read by 
+		# OpenBoot PROM. With power cycling or a cold boot, all NVRAM configuration parameters
+		# are read by the OpenBoot PROM."
+		echo "WARNING: You need to do a cold reboot for forcing OBP to re-read just modified eeprom value"
 	else
 		echo "WARNING! Fail to eeprom boot-device=$DISK${DST_SLICE}"
 	fi
