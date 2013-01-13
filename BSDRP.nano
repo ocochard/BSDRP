@@ -572,8 +572,7 @@ usr/share/tmac/tmac.vgrind
 '
     for c in $TOOLCHAIN_TO_REMOVE
     do
-        if [ -f ${NANO_WORLDDIR}/$c ]
-        then
+        if [ -f ${NANO_WORLDDIR}/$c ]; then
             echo "Removing ${NANO_WORLDDIR}/$c"
             if ! rm -rf ${NANO_WORLDDIR}/$c ; then
                 echo "Error: Can't remove it!"
@@ -599,7 +598,6 @@ usr/share/tmac/tmac.vgrind
 	# Generate package inventory
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'pkg info' > ${NANO_OBJ}/packages.info
-
 }
 
 # Enable only serial system only
@@ -619,7 +617,6 @@ bsdrp_console_serial () {
 	echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
 	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
 	echo 'console="comconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
-
 }
 
 # Enable use of keyboard/vga and serial
@@ -641,7 +638,6 @@ bsdrp_console_dual () {
 	echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
 	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
 	echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
-
 }
 
 # Standard vga console, but permit serial port to be use as vt100 console
