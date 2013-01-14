@@ -2,7 +2,7 @@
 # VirtualBox PowerShell lab script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2011-2012, The BSDRP Development Team
+# Copyright (c) 2011-2013, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -182,7 +182,7 @@ Function create_template () {
     # Chipset PIIX3 support a maximum of 8 NIC
     # Chipset ICH9 support a maximum of 36 NIC... But need VirtualBox 4.2 minimum
     $MACHINE.ChipsetType=$ChipsetType_ICH9
-    $MACHINE.MemorySize=192
+    $MACHINE.MemorySize=256
     $MACHINE.VRAMSize=8
     $MACHINE.Description="BSD Router Project Template VM"
     $MACHINE.setBootOrder(1,$DeviceType_HardDisk)

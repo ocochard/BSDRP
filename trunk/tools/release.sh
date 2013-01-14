@@ -81,6 +81,9 @@ upload(){
 	sed -n -e '/# Release ${VERSION}/,/----/ p' CHANGES.md > /tmp/README.md
 	scp /tmp/README.md cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1/README.md
 	FILE_LIST=''
+	if [ -d ${OBJ_BASE_DIR}/BSDRP.sparc64 ]; then
+	ARCH_LIST="${ARCH_LIST}sparc64"
+	fi
 	for arch in ${ARCH_LIST}; do
 		if [ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/release.done ]; then
 			FILE_LIST="${FILE_LIST} `ls ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-*`"
@@ -97,7 +100,10 @@ dokuwiki(){
 	upgrade
 	mtree
 	'
-
+	if [ -d ${OBJ_BASE_DIR}/BSDRP.sparc64 ]; then
+		ARCH_LIST="${ARCH_LIST}sparc64"
+	fi
+	
 	for type in ${FILE_TYPE}; do
 		TITLE_SET=false
 		OLD_TYPE=""
@@ -118,7 +124,7 @@ dokuwiki(){
 				else
 					TITLE_SET=false
 				fi
-				ARCH=`echo ${file} | cut -d '-' -f 4`
+				ARCH=`basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`
 				echo -n "| `echo ${file} | cut -d '-' -f 3`"
 				echo -n " | ${ARCH}"
 				echo -n " | `echo ${file} | cut -d '-' -f 5 | cut -d '.' -f 1`"
@@ -127,7 +133,7 @@ dokuwiki(){
 					echo "^ Arch ^ Console ^ File ^"
 					TITLE_SET=true
                 fi
-				ARCH=`echo ${file} | cut -d '-' -f 3`
+				ARCH=`basename ${file} | cut -d '-' -f 3 | cut -d '.' -f 1`
 				echo -n "| ${ARCH}"
 				echo -n " | `echo ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`"
 			fi
@@ -139,8 +145,8 @@ dokuwiki(){
 				echo -n " |"	
 			fi
 			echo ""
-		done
-	done
+		done # for file
+	done # for type
 	exit 0
 }
 
