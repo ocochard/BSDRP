@@ -5,7 +5,9 @@
 
 ## Bug fixes
 * Add the missing ipfw_nat module
-* Netmap fixes by sync code with -current but only for em(4) and re(4) nic, not ixgbe(4)
+* Netmap fixes by sync code with -current
+    * Works on amd64 arch only
+    * NIC compatibles: em(4) and re(4) nic, not ixgbe(4)
 
 ## Updated packages
 * Bird to 1.3.9
