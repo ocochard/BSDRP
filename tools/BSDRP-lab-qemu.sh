@@ -3,7 +3,7 @@
 # Qemu/kvm lab test script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2012, The BSDRP Development Team
+# Copyright (c) 2009-2013, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -370,7 +370,7 @@ delete_interface_lab_linux () {
 parse_filename () {
     QEMU_ARCH=0
 	if [ -z "$RAM" ]; then
-        RAM=192
+        RAM=256
     fi
 
 	case "$OS_DETECTED" in

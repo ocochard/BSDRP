@@ -436,11 +436,11 @@ esac
 echo "# Bootloader type"  >> /tmp/${NAME}.nano
 
 case ${INPUT_CONSOLE} in
-	"vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/${NAME}.nano 
+	"-vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/${NAME}.nano 
 		echo "#Configure dual vga/serial console port" >> /tmp/${NAME}.nano
 		echo "customize_cmd bsdrp_console_dual" >> /tmp/${NAME}.nano
 		;;
-	"serial") echo "NANO_BOOTLOADER=\"boot/boot0sio\"" >> /tmp/${NAME}.nano
+	"-serial") echo "NANO_BOOTLOADER=\"boot/boot0sio\"" >> /tmp/${NAME}.nano
 		echo "#Configure serial console port" >> /tmp/${NAME}.nano
 		echo "customize_cmd bsdrp_console_serial" >> /tmp/${NAME}.nano
 		;;

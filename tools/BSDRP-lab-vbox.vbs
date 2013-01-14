@@ -1,6 +1,6 @@
 ' VirtualBox lab VBscript for BSD Router Project
 '
-' Copyright (c) 2010-2011, The BSDRP Development Team
+' Copyright (c) 2010-2013, The BSDRP Development Team
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -398,7 +398,7 @@ Function create_vm (ByVal VM_NAME)
 		
     End if
 	
-	CMD=VB_EXE & " modifyvm " & VM_NAME & " --audio none --memory 128 --vram 5 --boot1 disk --floppy disabled --biosbootmenu disabled"
+	CMD=VB_EXE & " modifyvm " & VM_NAME & " --audio none --memory 256 --vram 5 --boot1 disk --floppy disabled --biosbootmenu disabled"
 	call run(CMD,true)
 
     if VM_CONSOLE="serial" then
