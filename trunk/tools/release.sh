@@ -78,15 +78,15 @@ generate(){
 
 upload(){
 	# Display the CHANGES between line "# Release X.Y" and "------" and put it in README.md
-	sed -n -e '/# Release ${VERSION}/,/----/ p' CHANGES.md > /tmp/README.md
-	scp /tmp/README.md cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1/README.md
+	sed -n -e "/# Release ${VERSION}/,/----/ p" CHANGES.md > /tmp/README.md
+	${DRY} scp /tmp/README.md cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1
 	FILE_LIST=''
 	if [ -d ${OBJ_BASE_DIR}/BSDRP.sparc64 ]; then
-	ARCH_LIST="${ARCH_LIST}sparc64"
+		ARCH_LIST="${ARCH_LIST}sparc64"
 	fi
 	for arch in ${ARCH_LIST}; do
 		if [ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/release.done ]; then
-			FILE_LIST="${FILE_LIST} `ls ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-*`"
+			FILE_LIST=`ls ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-*`
 			${DRY} scp ${FILE_LIST} cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1/${arch}
 		fi
 	done
