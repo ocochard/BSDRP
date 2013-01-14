@@ -1,4 +1,9 @@
-# Release 1.3 (not released)
+# Release 1.4 (Not released
+
+
+
+-----------------------------------------------------
+# Release 1.3 (2013/01/14)
 
 ## New features
 * New arch available: sparc64
