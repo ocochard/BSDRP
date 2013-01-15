@@ -470,6 +470,8 @@ usr/libdata/ldscripts
 
 	# Remove some files
     FILES_TO_REMOVE='
+usr/sbin/ctladm
+usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample
 usr/share/misc/magic.mgc
 usr/share/misc/termcap.db
@@ -577,6 +579,12 @@ usr/share/tmac/tmac.vgrind
             if ! rm -rf ${NANO_WORLDDIR}/$c ; then
                 echo "Error: Can't remove it!"
             fi
+			# look for associated man page and delete it too
+			if ! find ${NANO_WORLDDIR}/usr/share/man -name `basename $c`".*.gz" -exec rm -- {} +; then
+				echo "no man page for $c"
+			fi
+		else
+			echo "Missing file to delete: $c"
         fi
     done
 	
