@@ -1,5 +1,7 @@
-# Release 1.4 (Not released
+# Release 1.4 (Not released)
 
+## Bug fixes
+* Disable "device tcl" (CAM Target Layer) that consume 32Mo of RAM
 
 
 -----------------------------------------------------
