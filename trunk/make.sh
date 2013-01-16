@@ -191,7 +191,7 @@ SKIP_REBUILD=""
 INPUT_CONSOLE="-vga"
 FAST=false
 UPDATE_SRC=false
-MDMFS=false
+TMPFS=false
 args=`getopt a:bc:dfhkuryw $*`
 
 set -- $args
@@ -284,7 +284,7 @@ do
 			shift
 			;;
 		-r)
-			MDMFS=true
+			TMPFS=true
 			shift
 			;;
 		-y)
@@ -322,21 +322,17 @@ fi
 
 if [ `sysctl -n hw.usermem` -lt 2000000000 ]; then
 	echo "WARNING: Not enough hw.usermem available, disable memory disk usage"
-	MDMFS=false
-elif [ `sysctl -n hw.usermem` -lt 4000000000 ]; then
-	MDMFS_SIZE="1500M"
-else
-	MDMFS_SIZE="3000M"
+	TMPFS=false
 fi
 
-if ($MDMFS); then
-	if mount | grep -q -e "^/dev/md[[:digit:]].*[[:space:]]/tmp/obj[[:space:]]"; then
-		echo "Existing mdmfs file system detected"
+if ($TMPFS); then
+	if mount | grep -q -e "^tmpfs[[:space:]].*/tmp/obj[[:space:]]"; then
+		echo "Existing tmpfs file system detected"
 	else
 		if [ ! -d /tmp/obj ]; then
 			mkdir /tmp/obj || die "ERROR: Cannot create /tmp/obj"
 		fi
-		mdmfs -S -s $MDMFS_SIZE md /tmp/obj || die "ERROR: Cannot create a $MDMFS_SIZE mdmfs on /tmp/obj"
+		mount -t tmpfs tmpfs /tmp/obj/ || die "ERROR: Cannot create a tmpfs on /tmp/obj"
 	fi
 	NANO_OBJ=/tmp/obj/${NAME}.${NANO_KERNEL}
 else
@@ -375,10 +371,10 @@ else
 	pprint 1 "- FAST mode (skip compression and checksumming): NO"
 fi
 
-if ($MDMFS); then
-	pprint 1 "- MDMFS: YES"
+if ($TMPFS); then
+	pprint 1 "- TMPFS: YES"
 else
-	pprint 1 "- MDMFS: NO"
+	pprint 1 "- TMPFS: NO"
 fi
 if ($DEBUG); then
 	pprint 1 "- Debug image type: YES"
@@ -621,8 +617,8 @@ else
 	pprint 1 "${NANO_OBJ}/_.mtree"
 fi
 
-if ($MDMFS); then
-	pprint 1 "Remember, remember the ${NANO_OBJ} is a RAM disk"
+if ($TMPFS); then
+	pprint 1 "Remember, remember the ${NANO_OBJ} is a tmpfs volume"
 fi
 pprint 1 "Done !"
 exit 0
