@@ -97,7 +97,7 @@ if_have_cap () {
 }
 
 if_is_cap_enabled () {
-	# Check if the interface option is enabled: return true
+	# Check if the interface capability is enabled: return true
 	# $1: if
 	# $2: capability
 	if ifconfig -m $1 | egrep -q "options.*$2"; then
@@ -109,6 +109,8 @@ if_is_cap_enabled () {
 
 tune () {
 	# Major function that call the others
+	# I'm too lazy for make difference between RO and RW sysctl value
+	#   then I put all of them in /boot/loader.conf.local
 	echo "#==> Start of /boot/loader.conf.local"
 	net_nic
 	($ROUTER) && net_forward
@@ -120,9 +122,7 @@ tune () {
 	echo "#==> To be added to /etc/rc.conf"
 	for NIC in `ifconfig -l`; do
 		#skip loopback interfaces
-        if echo $NIC | grep -q lo; then
-            continue
-        fi 
+        echo $NIC | egrep -q "lo[[:digit:]]" && continue
 		# Check only interface with vlan configured on them
 		if egrep -q "ifconfig_vlan.*${NIC}" /etc/rc.conf; then
 			if if_have_cap ${NIC} VLAN_HWFILTER; then
@@ -133,10 +133,9 @@ tune () {
 			fi # if_have_cap
 		fi # rc.conf
 	done
-	# Look for VM environnement                                                                                    
-    if sysctl -n kern.vm_guest | grep -q -v "none"; then
-		net_virtualized 
-    fi
+	
+	# Look for VM environnement
+    sysctl -n kern.vm_guest | grep -q -v "none" && net_virtualized
 }
 
 net_nic () {
@@ -220,7 +219,11 @@ net_mbuf () {
 	# kern.ipc.nmbclusters must be increased if multiple igb (man igb)
 	# Need to calculate (regarding RAM size) this value
 	# Does vm.kmem_size should be upgraded too ?
+	# igb loads 8 rings, each of 1024 per NIC
 	sysctl_atleast kern.ipc.nmbclusters 262144
+	echo "On the following output, with all your NÃ already configured"
+	echo "  check the current and total"
+	netstat -m | grep "mbuf clusters in use"
 }
 
 net_virtualized () {
@@ -228,11 +231,9 @@ net_virtualized () {
 	# need disable hardware assisted features (need to found reference aobout this tip)
 	for NIC in `ifconfig -l`; do
 		#skip loopback interfaces
-        if echo $NIC | grep -q lo; then
-            continue
-        fi 
+        echo $NIC | egrep -q "lo[[:digit:]]" && continue
 		for CAPS in RXCSUM TXCSUM TSO4; do
-            if if_is_cap_enabled ${NIC} ${CAPS}; then                                                      
+            if if_is_cap_enabled ${NIC} ${CAPS}; then
 				echo "${NIC} have ${CAPS} enabled: Disable it in a VM"
             fi                                                                                                     
         done # end for CAPS

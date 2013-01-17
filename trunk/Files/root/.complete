@@ -13,6 +13,16 @@ complete systat 'p/1/(-icmp -icmp6 -ifstat -iostat -ip -ip6 -mbufs -netstat -pig
 complete kbdcontrol 'n@-l@`ls /usr/share/syscons/keymaps | sed 's/.kbd//'`@'
 complete tcpdump	'n@-i@`ifconfig -l`@'
 
+# pkgng
+complete pkg \
+    'n/add/f:*.t{b,x}z/' \
+    'n/{audit,delete,info,remove}/`pkg query "%n-%v"`/' \
+    'n/{autoremove,clean}/n/' \
+    'n/backup/(-r -s)/f' \
+    'n/{fetch,install}/`pkg rquery "%n-%v"`/' \
+    'n/{search}/`pkg rquery "%n"`/' \
+    'n/which/f/' \
+
 # Others Command complete
 # Lot's of these command complete were found here:
 # http://hea-www.harvard.edu/~fine/Tech/tcsh.html
