@@ -50,20 +50,6 @@
 * Lab script: Generate a lab diagram in DOT language, see example in tools/bsdrp.lab.gv
 * Lab script: Xen script to add
 
-# build script #
-
-* Need to add a "target" mode
-    * This mean a different name for the build framework and BS ?
-    * Need to create a new 'BSDRP' folder, for the 'BSDRP' target like that:
-        * Put Files,patch,kernel,docs directories on this new folder
-		* Put make.conf, BSDRP.nano files on this new folder
-	* Then we can create a new 'BSDRPexp' folder for the 'BSDRPexp' target and put files/dir of this branch on it
-        * Need to configure it as a 'leaf' target of BSDRP (the Files/ directory of 'BSDRPexp' will contain only
-          the diff
-    * Remove the port list from the nanobsd configuration file can be a good idea too
-        * A simple copy/past to ports-list, and insering a source ./ports-list in place will works ??
-    * Target mode to be tested by adding a 'BSDMC' target
-
 # nanobsd patches to study for inclusion # 
 
 http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html

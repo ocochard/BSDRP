@@ -1,0 +1,11 @@
+--- etc/rc.d/mrouted.orig	2012-07-28 12:09:12.000000000 +0200
++++ etc/rc.d/mrouted	2012-07-28 12:09:26.000000000 +0200
+@@ -13,7 +13,7 @@
+ rcvar="mrouted_enable"
+ command="/usr/local/sbin/${name}"
+ pidfile="/var/run/${name}.pid"
+-required_files="/etc/${name}.conf"
++required_files="/usr/local/etc/${name}.conf"
+ extra_commands="reload"
+ 
+ load_rc_config $name

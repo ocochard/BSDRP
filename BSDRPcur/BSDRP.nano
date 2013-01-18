@@ -1,0 +1,711 @@
+# BSD Router Project NanoBSD configuration file
+# http://bsdrp.net
+#
+# NanoBSD port support added from Gitoyen:
+# http://www.gitoyen.net/Howto-NanoBSD-quagga-router 
+# Some cleanup idea taken from imp@ nanoBSD script
+# Add other parts came from the FreeNAS 8 too (iXsystems)
+#
+################## Common section #################
+
+# Console port speed
+COM_SPEED=38400
+# Where cust_pkg() finds packages to install
+NANO_PACKAGE_DIR=${NANO_TOOLS}/Pkg
+NANO_PACKAGE_LIST="*"
+
+# Need to set early the NANO_ARCH variable for being use in the add_port function
+# TARGET_ARCH was set by the make script
+NANO_ARCH=${TARGET_ARCH}
+
+# Options to put in make.conf during buildworld only
+CONF_BUILD="
+BOOT_COMCONSOLE_SPEED=${COM_SPEED}
+"
+
+# Options to put in make.conf during installworld only
+# Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
+# Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
+CONF_INSTALL=''
+
+# Options to put in make.conf during both build- & installworld.
+# See the file /usr/src/tools/build/options or man src.conf for details
+# WITHOUT_INFO= incompatible for installing devel/libtool (dependency of Quagga)
+# WITHOUT_FORTH= incompatible with boot flags (need to be confirmed).
+# WITHOUT_GROFF= incompatible with isc-dhcp-server (needed for build unused man page)
+# WITHOUT_KVM= and WITHOUT_KVM_SUPPORT= prevent buildworld to complet (don't know why)
+
+CONF_WORLD='
+MALLOC_PRODUCTION=
+WITHOUT_ACCT=
+WITHOUT_AMD=
+WITHOUT_APM=
+WITHOUT_ASSERT_DEBUG=
+WITHOUT_ATM=
+WITHOUT_AUDIT=
+WITHOUT_AUTHPF=
+WITHOUT_BIND=
+WITHOUT_BIND_DNSSEC=
+WITHOUT_BIND_ETC=
+WITHOUT_BIND_LIBS_LWRES=
+WITHOUT_BIND_MTREE=
+WITHOUT_BIND_NAMED=
+WITHOUT_BIND_UTILS=
+WITHOUT_BLUETOOTH=
+WITHOUT_BSNMP=
+WITHOUT_CALENDAR=
+WITHOUT_CAPSICUM=
+WITHOUT_CTM=
+WITHOUT_CVS=
+WITHOUT_DICT=
+WITHOUT_EXAMPLES=
+WITHOUT_FLOPPY=
+WITHOUT_FREEBSD_UPDATE=
+WITHOUT_GAMES=
+WITHOUT_GCOV=
+WITHOUT_GDB=
+WITHOUT_GPIB=
+WITHOUT_GPIO=
+WITHOUT_HTML=
+WITHOUT_IPFILTER=
+WITHOUT_IPX=
+WITHOUT_IPX_SUPPORT=
+WITHOUT_JAIL=
+WITHOUT_KERBEROS=
+WITHOUT_KERBEROS_SUPPORT=
+WITHOUT_LIB32=
+WITHOUT_LOCALES=
+WITHOUT_LOCATE=
+WITHOUT_LPR=
+WITHOUT_NCP=
+WITHOUT_NDIS=
+WITHOUT_NETCAT=
+WITHOUT_NIS=
+WITHOUT_NLS=
+WITHOUT_NLS_CATALOGS=
+WITHOUT_NS_CACHING=
+WITHOUT_PORTSNAP=
+WITHOUT_PROFILE=
+WITHOUT_QUOTAS=
+WITHOUT_RCMDS=
+WITHOUT_RESCUE=
+WITHOUT_ROUTED=
+WITHOUT_SENDMAIL=
+WITHOUT_SHAREDOCS=
+WITHOUT_SYSINSTALL=
+WITHOUT_WIRELESS=
+WITHOUT_WIRELESS_SUPPORT=
+WITHOUT_WPA_SUPPLICANT_EAPOL=
+WITHOUT_ZFS=
+WITH_IDEA=
+'
+
+# Customize commands.
+NANO_CUSTOMIZE=""
+
+# Late customize commands.
+NANO_LATE_CUSTOMIZE=""
+
+# Newfs paramters to use
+NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -m 0"
+
+# Set physical disk layout for generic USB of 256MB (244MiB)
+# Explanation:	Vendors baddly convert 256 000 000 Byte as 256MB
+# 				But, 256 000 000 Byte is 244MiB	
+# This function will set the variable NANO_MEDIASIZE, NANO_SECTS, NANO_HEADS
+# Warning : using generic-fdd (heads=64 sectors/track=32) create boot problem on WRAP
+UsbDevice generic-hdd 256
+
+# Number of code images on media (1 or 2)
+NANO_IMAGES=2
+
+# 0 -> Leave second image all zeroes so it compresses better.
+# 1 -> Initialize second image with a copy of the first
+NANO_INIT_IMG2=0
+
+# Size of code file system in 512 bytes sectors
+# If zero, size will be as large as possible.
+NANO_CODESIZE=0
+
+### HOW TO Calculate partition size ###
+# If you want a 5MB partition, do:
+# 5 * 1024 * 1024 / 512 = 10240
+
+# Size of configuration file system in 512 bytes sectors
+# Cannot be zero.
+# 15MB = 2048
+NANO_CONFSIZE=20480
+
+# Size of data file system in 512 bytes sectors
+# If zero: no partition configured.
+# If negative: max size possible
+# This filesystem is used for archive configuration and
+# for user customized scripts or tool
+NANO_DATASIZE=20480
+
+# Size of the /etc ramdisk in 512 bytes sectors
+# 10240=5MB
+NANO_RAM_ETCSIZE=10240
+
+# Size of the /tmp+/var ramdisk in 512 bytes sectors
+# 20480=10MB (usefull for log files)
+NANO_RAM_TMPVARSIZE=20480
+
+# Boot0cfg configuration mode
+NANO_BOOT0CFG="-o packet -s 1 -m 3 -t 18"
+
+# Backing type of md(4) device
+# Can be "file" or "swap"
+NANO_MD_BACKING="file"
+
+# Label name
+# Alphacharacter only
+NANO_LABEL=${NANO_NAME}
+
+# Progress Print level
+PPLEVEL=3
+
+# Add netblast/netrecieve and netmap tools
+add_netrate () {
+	#netreceive disabled because don't compile on -current (alignement error
+	TOOLS_LIST="mctest netmap netrate/netblast netrate/netsend"
+	mkdir -p ${NANO_WORLDDIR}/dev
+	mount -t devfs devfs ${NANO_WORLDDIR}/dev
+	mount -t unionfs -o noatime ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
+	mkdir -p ${NANO_WORLDDIR}/usr/workdir
+	for TOOL in ${TOOLS_LIST}; do
+		# netmap is not available on sparc64
+		if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
+            		continue
+        	fi	
+		export TOOL
+		chroot ${NANO_WORLDDIR} /bin/sh -exc \
+			'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+			MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+			UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
+		for file in `grep "^PROG" ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/Makefile | cut -d '=' -f 2`; do
+			mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
+			if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
+				if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
+					echo "WARNING: Can't delete $TOOL/$file.o"
+				fi
+			fi
+		done
+	done
+	rm -rf ${NANO_WORLDDIR}/usr/workdir
+	umount ${NANO_WORLDDIR}/usr/src
+	umount ${NANO_WORLDDIR}/dev
+}
+
+# Add Quagga BGP route injector
+add_quagga-bgp-netgen () {
+    mkdir -p ${NANO_WORLDDIR}/dev
+    mount -t devfs devfs ${NANO_WORLDDIR}/dev
+    mount -t unionfs -o noatime ${NANO_TOOLS}/tools/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/src
+    mkdir -p ${NANO_WORLDDIR}/usr/workdir
+    chroot ${NANO_WORLDDIR} /bin/sh -exc \
+            'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+			MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+			UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+            make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
+    mv ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/local/bin
+    rm ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen.o
+    rm -rf ${NANO_WORLDDIR}/usr/workdir
+    umount ${NANO_WORLDDIR}/usr/src
+    umount ${NANO_WORLDDIR}/dev
+}
+
+# Need to check if this function works with cross-compiling architecture!!!!
+# Recursive complex fonction: Generate one function for each ports
+add_port () {
+	port=`echo $1 | sed -e 's/\//_/'`
+	# Check if package allready exist
+
+	cd ${NANO_PORTS}/$1
+	# Warning: a package name can change regarding the build option
+	PKG_NAME=`env PORTSDIR=${NANO_PORTS} make package-name $2`
+	if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.txz ]; then
+	# Pkg file found: Generate add_pkg_NAME function
+		#Don't try to install pkg, the boot strap will install it
+		if [ "$1" != "ports-mgmt/pkg" ]; then
+			eval "
+			add_pkg_${port} () {
+				#Need to create ${NANO_OBJ}/ports in this add_pkg_${port} function
+				if [ ! -d \${NANO_OBJ}/ports ]; then
+					mkdir -p \${NANO_OBJ}/ports/packages
+				fi
+				mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
+				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
+					\${NANO_WORLDDIR}/usr/ports/packages
+				chroot \${NANO_WORLDDIR} /bin/sh -exc \
+               		'env ASSUME_ALWAYS_YES=true PACKAGESITE=file:///usr/ports/packages pkg add /usr/ports/packages/All/${PKG_NAME}.txz'
+				umount \${NANO_WORLDDIR}/usr/ports/packages
+				rmdir \${NANO_WORLDDIR}/usr/ports/packages
+				rmdir \${NANO_WORLDDIR}/usr/ports
+			}
+       		customize_cmd add_pkg_${port}
+       		"
+		fi
+	else
+	# No pkg file: Generate add_port_NAME function
+       	eval "
+       		add_port_${port} () {
+				#Need to create ${NANO_OBJ}/ports in this add_port_${port} function
+				if [ ! -d \${NANO_OBJ}/ports ]; then
+					mkdir -p \${NANO_OBJ}/ports/packages
+				fi
+           		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
+           		mount -t unionfs -o noatime \${NANO_SRC} \
+					\${NANO_WORLDDIR}/usr/src
+           		mount -t unionfs -o noatime \${NANO_PORTS} \
+                     \${NANO_WORLDDIR}/usr/ports
+				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
+					\${NANO_WORLDDIR}/usr/ports/packages
+              	mkdir -p \${NANO_WORLDDIR}/dev
+              	mount -t devfs devfs \${NANO_WORLDDIR}/dev
+           		mkdir -p \${NANO_WORLDDIR}/usr/pobj
+               	mkdir -p \${NANO_WORLDDIR}/usr/workdir
+               	cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
+				# Improvement: Don't know why package-recursive don't works here
+				# If a port have NO_PACKAGE, comment-it
+                if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
+                    mv \${NANO_WORLDDIR}/usr/ports/$1/Makefile \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd
+                    sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
+                fi
+		# Do not compile port with clang: net/bird meet error	
+               	chroot \${NANO_WORLDDIR} /bin/sh -exc \
+                'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+				MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
+                install package-recursive BATCH=yes -DWITH_PKGNG \
+				-DWITHOUT_X11 -DNOPORTDOCS \
+				-DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
+				rm \${NANO_WORLDDIR}/etc/resolv.conf
+               	rm -rf \${NANO_WORLDDIR}/usr/obj
+               	rm -rf \${NANO_WORLDDIR}/usr/pobj
+               	rm -rf \${NANO_WORLDDIR}/usr/workdir
+               	umount \${NANO_WORLDDIR}/dev
+				umount \${NANO_WORLDDIR}/usr/ports/packages
+               	umount \${NANO_WORLDDIR}/usr/ports
+               	umount \${NANO_WORLDDIR}/usr/src
+				rmdir \${NANO_WORLDDIR}/usr/ports/packages
+               	rmdir \${NANO_WORLDDIR}/usr/ports
+        	}
+        	customize_cmd add_port_${port}
+       	"
+	fi
+}
+
+#### Add routing related ports #####
+
+# high-performance ipfw netmap
+# Disabled because net/pfil API changes
+# add_port "net/ipfw-user"
+
+# Then we need to install net-snmp without perl modules
+add_port "net-mgmt/net-snmp" "-DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
+
+# Quagga installation
+add_port "net/quagga-re" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_SNMP -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
+# Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
+
+# Add Bird: Replace XORP that is too memory/CPU hungry:
+add_port "net/bird" "-DWITH_FIBS -DWITH_FIREWALL"
+add_port "net/bird6" "-DWITH_FIBS -DWITH_FIREWALL"
+
+# Add FreeVRRPd (netgraph dependent)
+add_port "net/freevrrpd"
+
+# Ipsec-tools
+add_port "security/ipsec-tools" "-DWITH_RC5 -DWITH_IDEA -DWITH_RADIUS -DWITH_LDAP"
+
+#pf top
+#DO NOT COMPILE on -current
+#add_port "sysutils/pftop"
+
+# Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
+# UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
+add_port "net/ucarp"
+
+# Add IPv6 multicast routing daemons and tools
+add_port "net/mcast-tools"
+
+# Add IPv4 DVMRP (multicast) routing daemon
+add_port "net/mrouted"
+
+# Add pimdd: IPv4 PIM Dense Mode daemon
+add_port "net/pimdd"
+
+# Add fprobe: Netflow probe
+add_port "net-mgmt/fprobe"
+
+# Add DHCP server and client
+add_port "net/isc-dhcp42-server"
+add_port "net/isc-dhcp42-relay"
+
+# Add sstmp, a simple MTA to get mail off the system
+add_port "mail/ssmtp"
+
+# Add tmux (screen equivalent, but better because BSD)
+add_port "sysutils/tmux"
+
+# Add ipmi tools
+add_port "sysutils/ipmitool"
+
+# Add sudo for fine permission management
+add_port "security/sudo"
+
+# Add mpd5, a multi-link PPP protocol server (netgraph dependent)
+add_port "net/mpd5"
+
+# Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
+add_port "benchmarks/netpipe" 
+add_port "benchmarks/iperf"
+
+# VM tools
+# VM tools brings too lot's of deps… Need to delete them all after installing (if there are used for build only)
+#add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
+#add_port "emulators/virtualbox-ose-additions/" "-DWITHOUT_X11 -DWITHOUT_HAL"
+
+# Add netrate tools
+customize_cmd add_netrate
+
+# Add quagga-bgp-netgen tools
+customize_cmd add_quagga-bgp-netgen
+
+cleanup_ports () {
+		# When port are build, they install build dependency that are not usefull for running the port
+		# The list of build-only package to be delete can be found like this:
+		# Fresh generate a BSDRP image, and copy packages.info to packages.info.first
+		# Restart a BSDRP image build with the "-b" option
+		# diff packages.info.first packages.info
+		set +e
+        chroot ${NANO_WORLDDIR} /bin/sh -exc \
+        'env ASSUME_ALWAYS_YES=true pkg delete -g auto* m4* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* p5-gettext* libsigsegv* pkgconf*'
+		set -e
+}
+
+customize_cmd cleanup_ports
+
+# BSDRP custom function
+bsdrp_custom () {
+	# Copy BSDRP license and authors files
+	cp -v ${NANO_TOOLS}/AUTHORS ${NANO_WORLDDIR}/root/
+	cp -v ${NANO_TOOLS}/LICENSE ${NANO_WORLDDIR}/root/
+	# Replace BSDRP_VERSION in /boot/brand.4th with the version number in etc/version
+	sed -i "" -e /BSDRP_VERSION/s//`cat ${NANO_WORLDDIR}/etc/version`/ ${NANO_WORLDDIR}/boot/brand.4th
+	# Disable reverse DNS in sshd:
+	echo "UseDNS no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
+	# Update login.conf db
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+	'cap_mkdb /etc/login.conf'
+
+	# relocate /root/.ssh to /etc/dot.root.ssh
+	# This permit to save ssh keys
+	mkdir -p ${NANO_WORLDDIR}/etc/dot.ssh.root
+	ln -s ../etc/dot.ssh.root ${NANO_WORLDDIR}/root/.ssh
+
+	# turn on noatime for /cfg
+	sed -i "" -e "/cfg/s/rw/rw,noatime/" ${NANO_WORLDDIR}/etc/fstab
+	# Add /data partition to fstab (config script use it for archiving old configurations)
+	echo "/dev/ufs/${NANO_LABEL}s4 /data ufs rw,noauto,failok 2 2" >> ${NANO_WORLDDIR}/etc/fstab
+
+	# relocate /var/cron to /etc/cron
+	# This permit to save crontab (only /etc and /usr/local/etc are saved)
+	mkdir -p ${NANO_WORLDDIR}/etc/cron
+	rm -rf ${NANO_WORLDDIR}/var/cron
+	ln -s ../etc/cron ${NANO_WORLDDIR}/var/cron	
+	
+	# Add /etc/rc.conf.misc into the /etc/default/rc.conf
+	sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
+
+	# Set Quagga permission
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+	'chown -R quagga:quagga /usr/local/etc/quagga'
+	# Put root in xorp group
+	#chroot ${NANO_WORLDDIR} /bin/sh -exc \
+    #'pw groupmod xorp -M root'
+	# Put the xorp config file in xorp group
+	#chroot ${NANO_WORLDDIR} /bin/sh -exc \
+    #'chown root:xorp /usr/local/etc/xorp.conf'
+	#chroot ${NANO_WORLDDIR} /bin/sh -exc \
+    #'chmod g+w /usr/local/etc/xorp.conf'
+
+	# Compress the kernel (save 3Mb)
+	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
+		if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
+			echo "Error during zipping the kernel"
+		fi
+	fi
+	# Remove some of the folders (without share/snmp)
+	# usr/include : 15MB
+	FOLDERS_TO_REMOVE='
+usr/local/include
+usr/local/man
+usr/local/info
+usr/local/share/doc/gettext
+usr/local/share/doc/libasprintf
+usr/local/share/doc/libiconv
+usr/local/share/doc/snmp
+usr/local/share/examples/quagga
+usr/include
+usr/share/me
+usr/share/info
+usr/share/openssl
+usr/libdata/lint
+usr/libdata/ldscripts
+'
+	for c in $FOLDERS_TO_REMOVE
+	do	
+		if [ -d ${NANO_WORLDDIR}/$c ]
+		then
+			echo "Removing ${NANO_WORLDDIR}/$c"
+			if ! rm -rf ${NANO_WORLDDIR}/$c ; then
+				echo "Error: Can't remove it!"
+			fi
+		fi
+	done
+
+	# Remove some files
+    FILES_TO_REMOVE='
+usr/sbin/ctladm
+usr/bin/ctlstat
+usr/local/etc/rc.d/freevrrpd.sh.sample
+usr/share/misc/magic.mgc
+usr/share/misc/termcap.db
+'
+    for c in ${FILES_TO_REMOVE}
+    do
+        if [ -f ${NANO_WORLDDIR}/$c ]
+        then
+			echo "Removing ${NANO_WORLDDIR}/$c"
+            if ! rm -rf ${NANO_WORLDDIR}/$c ; then
+				echo "Error: Can't remove it!"
+			fi
+        fi
+    done
+
+	# All ports are compiled, then we can remove all TOOLCHAIN files
+	# This save about 25MB.
+	# The list of these files was generated by a the output of:
+	# usr/src/tools/tools/build_option_survey
+	# Because it's a very time consuming script, output are online:
+	# http://phk.freebsd.dk/misc/build_options_stable_8_210741/
+
+TOOLCHAIN_TO_REMOVE='
+usr/bin/addr2line
+usr/bin/gnu-ar
+usr/bin/as
+usr/bin/ld
+usr/bin/nm
+usr/bin/objcopy
+usr/bin/objdump
+usr/bin/gnu-ranlib
+usr/bin/readelf
+usr/bin/size
+usr/bin/strings
+usr/bin/strip
+usr/bin/cc
+usr/bin/gcc
+usr/bin/cpp
+usr/bin/c++
+usr/bin/g++
+usr/bin/CC
+usr/bin/c++filt
+usr/bin/gcov
+usr/bin/gdb
+usr/bin/gdbtui
+usr/bin/kgdb
+usr/bin/ar
+usr/bin/ranlib
+usr/bin/c89
+usr/bin/c99
+usr/bin/sum
+usr/bin/compile_et
+usr/bin/ctags
+usr/bin/file2c
+usr/bin/gprof
+usr/bin/od
+usr/bin/indent
+usr/bin/m4
+usr/bin/lex
+usr/bin/lex++
+usr/bin/flex
+usr/bin/flex++
+usr/bin/mt
+usr/bin/mkstr
+usr/bin/rpcgen
+usr/bin/unifdef
+usr/bin/unifdefall
+usr/bin/nvi
+usr/bin/vgrind
+usr/bin/lint
+usr/bin/xstr
+usr/bin/lzdec
+usr/bin/yacc
+usr/bin/yyfix
+usr/bin/byacc
+usr/bin/lzdec
+usr/bin/clang
+usr/bin/clang++
+usr/bin/clang-cpp
+usr/bin/clang-tblgen
+usr/bin/tblgen
+usr/bin/crunchgen
+usr/bin/crunchide
+usr/libexec/cc1
+usr/libexec/cc1plus
+usr/libexec/cc1obj
+usr/libexec/vfontedpr
+usr/libexec/lint1
+usr/libexec/lint2
+usr/sbin/btxld
+usr/sbin/config
+usr/sbin/i2c
+usr/sbin/pkg_add
+usr/sbin/pkg_create
+usr/sbin/pkg_delete
+usr/sbin/pkg_info
+usr/sbin/pkg_updating
+usr/sbin/pkg_version
+usr/sbin/rmt
+usr/share/misc/gprof.flat
+usr/share/misc/gprof.callg
+usr/share/misc/vgrindefs
+usr/share/misc/vgrindefs.db
+usr/share/tmac/tmac.vgrind
+'
+    for c in $TOOLCHAIN_TO_REMOVE
+    do
+        if [ -f ${NANO_WORLDDIR}/$c ]
+        then
+            echo "Removing ${NANO_WORLDDIR}/$c"
+            if ! rm -rf ${NANO_WORLDDIR}/$c ; then
+                echo "Error: Can't remove it!"
+            fi
+        fi
+    done
+	
+	# Move termcap.small file
+	if [ -f ${NANO_WORLDDIR}/etc/termcap.small ]; then
+		mv ${NANO_WORLDDIR}/etc/termcap.small ${NANO_WORLDDIR}/usr/share/misc/termcap.db
+	fi
+
+	# Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
+    find ${NANO_WORLDDIR} -name \*.a | xargs rm
+
+	# strip binaries for ports (tips from FreeNAS 8)
+	pprint 4 "Stripping binaries and libraries"
+	for dir in $(find ${NANO_WORLDDIR}/ -name '*bin' -or -name 'lib' -maxdepth 3); do
+		for f in $(find $dir -type f); do
+			strip 2>/dev/null $f || :
+		done
+	done	
+	# Generate package inventory
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+	'pkg info' > ${NANO_OBJ}/packages.info
+
+}
+
+# Enable only serial system only
+bsdrp_console_serial () {
+	# Enable getty on console
+	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+
+    # Disable getty on syscons devices
+    sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
+
+    # Tell loader to use serial console early.
+    echo "-h" > ${NANO_WORLDDIR}/boot.config
+
+	# Customize loader.conf file:
+	echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'console="comconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
+
+}
+
+# Enable use of keyboard/vga and serial
+#
+###### Warning ####
+# BUG TO FIX: Don't boot if no serial port available!
+# Seems fixed:
+# http://lists.freebsd.org/pipermail/freebsd-hackers/2012-September/040523.html
+#
+bsdrp_console_dual () {
+    sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+
+    # Tell loader to use serial and vga console.
+    echo " -D" > ${NANO_WORLDDIR}/boot.config
+
+	# Customize loader.conf file:
+	echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
+	echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
+
+}
+
+# Standard vga console, but permit serial port to be use as vt100 console
+bsdrp_console_vga () {
+	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	
+	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
+}
+
+# Special xen console configuration
+bsdrp_console_xen () {
+	#Remove all default virtual terminal (in pv mode, need to check in hvm)
+	sed -i '' '/^ttyv/d' ${NANO_WORLDDIR}/etc/ttys
+	#Add a new xc0 console
+	echo 'xc0     "/usr/libexec/getty Pc"         vt100   on  secure' >> ${NANO_WORLDDIR}/etc/ttys
+	#Replace the default em0 by xn0 in rc.conf
+	sed -i "" -e /ifconfig_/s/em0/xn0/ ${NANO_WORLDDIR}/etc/rc.conf
+}
+
+# From FreeNAS 8
+shrink_md_fbsize()
+{
+	# We have a lot of little files on our memory disks. Let's decrease
+	# the block and frag size to fit more little files on them (this
+	# halves our space requirement by ~50% on /etc and /var on 8.x --
+	# and gives us more back on 9.x as the default block and frag size
+	# are 4 times larger).
+	sed -i '' -e 's,-S -i 4096,-S -i 4096 -b 4096 -f 512,' \
+		${NANO_WORLDDIR}/etc/rc.initdiskless
+}
+customize_cmd shrink_md_fbsize
+
+# Secure BSDRP by using schg flag
+bsdrp_secure () {
+	# TODO: Need to check if flag allready set,
+	#		otherwise it will disable it
+	chflags -R schg ${NANO_WORLDDIR}/bin
+	chflags -R schg ${NANO_WORLDDIR}/sbin
+	chflags -R schg ${NANO_WORLDDIR}/boot/kernel
+	chflags -R schg ${NANO_WORLDDIR}/libexec
+	chflags -R schg ${NANO_WORLDDIR}/lib	
+}
+
+# Install Custom scripts and config files
+customize_cmd cust_install_files
+
+# Need to execute the bsdrp_custom after the cust_install_files
+customize_cmd bsdrp_custom
+
+# Allow root login via ssh
+customize_cmd cust_allow_ssh_root
+
+# Secure BSDRP
+# TO DO: secure the BSDRP (chflags)
+#customize_cmd bsdrp_secure

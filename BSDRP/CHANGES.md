@@ -1,5 +1,8 @@
 # Release 1.4 (Not released)
 
+## New features
+* Add pfsync module
+
 ## Bug fixes
 * Disable "device tcl" (CAM Target Layer) that consume 32Mo of RAM
 
