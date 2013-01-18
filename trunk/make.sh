@@ -79,16 +79,16 @@ patch_src() {
 	# Nuke the newly created files to avoid build errors, as
 	# patch(1) will automatically append to the previously
 	# non-existent file.
-	( cd FreeBSD/src &&
+	( cd ${PROJECT_DIR}/FreeBSD/src &&
 	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
-	( cd FreeBSD/ports
+	( cd ${PROJECT_DIR}/FreeBSD/ports
 	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
 	: > ${PROJECT_DIR}/FreeBSD/.pulled
 
 	for patch in $(cd ${PROJECT_DIR}/patches && ls freebsd.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/src-patches; then
 			echo "Applying patch $patch..."
-			(cd FreeBSD/src &&
+			(cd ${PROJECT_DIR}/FreeBSD/src &&
 			patch -C -p0 < ${PROJECT_DIR}/patches/$patch &&
 			patch -E -p0 -s < ${PROJECT_DIR}/patches/$patch)
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/src-patches
@@ -97,7 +97,7 @@ patch_src() {
 	for patch in $(cd ${PROJECT_DIR}/patches && ls ports.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/ports-patches; then
 			echo "Applying patch $patch..."
-			(cd FreeBSD/ports &&
+			(cd ${PROJECT_DIR}/FreeBSD/ports &&
 			patch -C -p0 < ${PROJECT_DIR}/patches/$patch &&
 			patch -E -p0 -s < ${PROJECT_DIR}/patches/$patch)
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/ports-patches
@@ -105,7 +105,7 @@ patch_src() {
 	done
 
 	# Overwite the nanobsd script
-	cp ${PROJECT_DIR}/nanobsd.sh ${PROJECT_DIR}/FreeBSD/src/tools/tools/nanobsd
+	cp nanobsd.sh ${PROJECT_DIR}/FreeBSD/src/tools/tools/nanobsd
 	chmod +x ${PROJECT_DIR}/FreeBSD/src/tools/tools/nanobsd
 
 }
@@ -115,7 +115,7 @@ add_new_ports() {
 	for ports in $(cd ${PROJECT_DIR}/patches && ls ports.*.shar); do
 		if ! grep -q $ports ${PROJECT_DIR}/FreeBSD/ports-added; then
 			echo "Adding port $ports..."
-			(cd FreeBSD/ports &&
+			(cd ${PROJECT_DIR}/FreeBSD/ports &&
 			sh ${PROJECT_DIR}/patches/$ports)
 			echo $ports >> ${PROJECT_DIR}/FreeBSD/ports-added
 		fi
@@ -138,7 +138,7 @@ check_clean() {
 usage () {
 	(
 		echo "Usage: $0 -bdhkuryw [-a ARCH] [-c vga|serial] [-p PROJECT]"
-		echo 1 " -a   specify target architecture:"
+		echo " -a   specify target architecture:"
 		echo "      i386, i386_xenpv, i386_xenhvm, amd64 or amd64_xenhvm"
 		echo "      if not specified, use local system arch (`uname -p`)"
 		echo "      cambria (arm) and sparc64 targets are in work-in-progress state"	
@@ -179,12 +179,12 @@ INPUT_CONSOLE="-vga"
 FAST=false
 UPDATE_SRC=false
 TMPFS=false
-args=`getopt a:bc:dfhkpuryw $*`
+args=`getopt a:bc:dfhkp:uryw $*`
 
 set -- $args
 for i
 do
-		case "$i" in
+	case "$i" in
 		-a)
 			NANO_KERNEL=$2
 			shift
@@ -196,15 +196,14 @@ do
 			;;
 		-c)
 			case "$2" in
-			vga)
-				INPUT_CONSOLE="-vga"
-				;;
-			serial)
-				INPUT_CONSOLE="-serial"
-				;;
-			*)
-				echo "ERROR: Bad console type"
-				exit 1
+				vga)
+					INPUT_CONSOLE="-vga"
+					;;
+				serial)
+					INPUT_CONSOLE="-serial"
+					;;
+				*)
+					die "ERROR: Bad console type"
 			esac
 			shift
 			shift
@@ -224,16 +223,17 @@ do
 			SKIP_REBUILD="-k -n"
 			shift
 			;;
+		-p)
+			PROJECT=$2
+			shift
+			shift
+			;;
 		-u)
 			UPDATE_SRC=true
 			shift
 			;;
 		-r)
 			TMPFS=true
-			shift
-			;;
-		-t)
-			PROJECT=$2
 			shift
 			;;
 		-y)
@@ -267,55 +267,66 @@ PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
 # Loading the project variables
 . ${SCRIPT_DIR}/${PROJECT}/make.conf
 
+# Check if no previously unionfs from a MASTER_PROJECT on a PROJECT_DIR
+check_clean ${PROJECT_DIR}
+
+if [ -n ${MASTER_PROJECT} ]; then
+	# TO DO:
+	# compare value of the make.conf and adapt regarding
+	# This will permit to use the src/port of the MASTER_PROJECT (if no special patches)
+	#Best method is to works here for avoiding lot's if -z $MASTER during all the part
+	MASTER_PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"	
+	mount -t unionfs -o below ${MASTER_PROJECT_DIR}/kernels ${PROJECT_DIR}/kernels
+	mount -t unionfs -o below ${MASTER_PROJECT_DIR}/Files ${PROJECT_DIR}/Files
+fi
+
 # project version
-VERSION=`cat ${PROJECT_DIR}/Files/etc/version`
+if [ -f ${PROJECT_DIR}/Files/etc/version ]; then
+	VERSION=`cat ${PROJECT_DIR}/Files/etc/version`
+else
+	die "No Files/etc/version found"
+fi
 
-echo "PROJECT_DIR: ${PROJECT_DIR}"
-
-# Checking target ARCH
-
+# Check for a kernel
 [ -f ${PROJECT_DIR}/kernels/${NANO_KERNEL} ] || die "Can't found kernels/${NANO_KERNEL}"
-			case "${NANO_KERNEL}" in
-			"amd64" | "amd64_xenhvm" )
-				if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
-					TARGET_ARCH="amd64"
-				else
-					echo "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
-					exit 1
-				fi
-				;;
-			"i386" | "i386_xenpv" | "i386_xenhvm")
-				if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
-					TARGET_ARCH="i386"
-				else
-					echo "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
-					exit 1
-				fi
-				;;
-			"cambria")
-				if [ "${LOCAL_ARCH}" = "arm" ]; then
-					TARGET_ARCH="arm"
-					TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
-					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
-				else
-					echo "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
-					exit 1
-				fi
-				;;
-			"sparc64")
-				if [ "${LOCAL_ARCH}" = "sparc64" ]; then
-					TARGET_ARCH="sparc64"
-					TARGET_CPUTYPE=sparc64; export TARGET_CPUTYPE
-					TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
-				else
-					echo "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
-					exit 1
-				fi
-				;;
-			*)
-				echo "ERROR: Bad arch type"
-				exit 1
-			esac
+
+# Checking target ARCH cross-compilation compatibilities
+case "${NANO_KERNEL}" in
+	"amd64" | "amd64_xenhvm" )
+		if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
+			TARGET_ARCH="amd64"
+		else
+			die "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
+		fi
+		;;
+	"i386" | "i386_xenpv" | "i386_xenhvm")
+		if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
+			TARGET_ARCH="i386"
+		else
+			die "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
+		fi
+		;;
+	"cambria")
+		if [ "${LOCAL_ARCH}" = "arm" ]; then
+			TARGET_ARCH="arm"
+			TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
+			TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
+		else
+			die "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
+		fi
+		;;
+	"sparc64")
+		if [ "${LOCAL_ARCH}" = "sparc64" ]; then
+			TARGET_ARCH="sparc64"
+			TARGET_CPUTYPE=sparc64; export TARGET_CPUTYPE
+			TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
+		else
+			die "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
+		fi
+		;;
+	*)
+		die "ERROR: Bad arch type"
+esac
 	
 # Cross compilation is not possible for the ports
 
@@ -346,17 +357,17 @@ if ($TMPFS); then
 		fi
 		mount -t tmpfs tmpfs /tmp/obj/ || die "ERROR: Cannot create a tmpfs on /tmp/obj"
 	fi
-	NANO_OBJ=/tmp/obj/${NAME}.${NANO_KERNEL}
+	NANO_OBJ=/tmp/obj/${PROJECT}.${NANO_KERNEL}
 else
-	NANO_OBJ=/usr/obj/${NAME}.${NANO_KERNEL}
+	NANO_OBJ=/usr/obj/${PROJECT}.${NANO_KERNEL}
 fi
 if [ -n "${SKIP_REBUILD}" ]; then
 	if [ ! -d ${NANO_OBJ} ]; then
-		echo "ERROR: No previous object directory found, you can't skip some rebuild"
-		exit 1
+		die "ERROR: No previous object directory found, you can't skip some rebuild"
 	fi
 fi
 
+# Check if no previously tempo obj folder still mounted
 check_clean ${NANO_OBJ}
 
 # If no source installed, force installing them
@@ -412,7 +423,11 @@ echo "NANO_TOOLS=\"${PROJECT_DIR}\"" >> /tmp/${NAME}.nano
 echo "NANO_OBJ=\"${NANO_OBJ}\"" >> /tmp/${NAME}.nano
 
 # Copy the common nanobsd configuration file to /tmp
-cat ${PROJECT_DIR}/${NAME}.nano >> /tmp/${NAME}.nano
+if [ -f ${PROJECT_DIR}/${NAME}.nano ]; then
+	cat ${PROJECT_DIR}/${NAME}.nano >> /tmp/${NAME}.nano
+else
+	die "No ${NAME}.nano configuration files"
+fi
 
 # And add the customized variable to the nanobsd configuration file
 echo "############# Variable section (generated by BSDRP make.sh) ###########" >> /tmp/${NAME}.nano
@@ -492,7 +507,6 @@ export FBSD_DST_OSVERSION=$(awk '/\#define.*__FreeBSD_version/ { print $3 }' "${
 export TARGET_ARCH
 
 echo "Copying ${NANO_KERNEL} Kernel configuration file"
-
 cp ${PROJECT_DIR}/kernels/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
 
 # The xen_hvm kernel include the standard kernel, need to copy it too
@@ -519,9 +533,15 @@ fi
 echo "Launching NanoBSD build process..."
 cd ${NANOBSD_DIR}
 sh ${NANOBSD_DIR}/nanobsd.sh ${SKIP_REBUILD} -c /tmp/${NAME}.nano
+ERROR_CODE=$?
+if [ -n ${MASTER_PROJECT} ]; then
+	# unmount unionfs
+	umount ${PROJECT_DIR}/kernels
+	umount ${PROJECT_DIR}/Files
+fi
 
 # Testing exit code of NanoBSD:
-if [ $? -eq 0 ]; then
+if [ ${ERROR_CODE} -eq 0 ]; then
 	echo "NanoBSD build seems finish successfully."
 else
 	echo "ERROR: NanoBSD meet an error, check the log files here:"
