@@ -271,7 +271,7 @@ PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
 # Check if no previously unionfs from a MASTER_PROJECT on a PROJECT_DIR
 check_clean ${PROJECT_DIR}
 
-if [ -n ${MASTER_PROJECT} ]; then
+if [ -n "${MASTER_PROJECT}" ]; then
 	# TO DO:
 	# compare value of the make.conf and adapt regarding
 	# This will permit to use the src/port of the MASTER_PROJECT (if no special patches)
