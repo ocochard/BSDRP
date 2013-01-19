@@ -116,7 +116,13 @@ expand_data_slice () {
 	#Load the NANO_DRIVE (label) variable:
 	. /etc/nanobsd.conf
 
-	boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s1a | awk '{ print $3; }' | cut -d s -f 1`
+	if [ `uname -m` = "sparc64" ]; then
+		boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s1a | awk '{ print $3; }' | sed 's/.$//'`
+		echo "Not supported: sparc64 for this function"
+		exit 0
+	else
+		boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s1a | awk '{ print $3; }' | cut -d s -f 1`
+	fi
 	label=`cut -d '/' -f 2 /etc/nanobsd.conf`
 
 	if mount | grep -q "/data"; then
@@ -138,21 +144,22 @@ expand_data_slice () {
 	#
 
 	# Backup the s4 (data) partion
-	dump -0auf/tmp/s4.dump ${boot_dev}s4 || die "ERROR: dumping ${boot_dev}s4 to /tmp failed"
+	dump -0auf/tmp/s4.dump ${NANO_DRIVE}s4 || die "ERROR: dumping ${NANO_DRIVE}s4 to /tmp failed"
 
 	# Deleting partition s4
-	gpart delete -i 4 ${boot_dev} || die "Unable to /sbin/gpart delete -i 4 ${boot_dev}"
+	# Need to check the partition delete on sparc64
+	gpart delete -i 4 ${boot_dev} || die "Unable to gpart delete -i 4 ${boot_dev}"
 
 	# Recreating s4 using full disk space
-	gpart add -t freebsd ${boot_dev} || die "Unable /sbin/gpart add -t freebsd ${boot_dev}"
+	gpart add -t freebsd-ufs ${boot_dev} || die "Unable gpart add -t freebsd ${boot_dev}"
 
-	# Formatting the new partition (SUJ
+	# Formatting the new partition (SUJ)
 	LABEL=`cut -f 2 -d "/" /etc/nanobsd.conf`
 	newfs -UjL ${LABEL}s4 ${boot_dev}s4 || die "Unable to newfs -UjtL ${LABEL}s4 ${boot_dev}s4"
 
 	# Restoring the dump
 	[ -d /tmp/slice ] || mkdir -p /tmp/slice
-	mount ${boot_dev}s4 /tmp/slice || die "Unable to mount ${boot_dev}s4 /tmp/slice"
+	mount ${NANO_DRIVE}s4 /tmp/slice || die "Unable to mount ${NANO_DRIVE}s4 /tmp/slice"
 	cd /tmp/slice
 	restore rf /tmp/s4.dump || die "Unable to restore rf /tmp/s4.dump"
 	[ -f /tmp/slice/restoresymtable ] && rm -rf /tmp/slice/restoresymtable
