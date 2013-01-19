@@ -394,9 +394,6 @@ customize_cmd cleanup_ports
 
 # BSDRP custom function
 bsdrp_custom () {
-	# Copy BSDRP license and authors files
-	cp -v ${NANO_TOOLS}/AUTHORS ${NANO_WORLDDIR}/root/
-	cp -v ${NANO_TOOLS}/LICENSE ${NANO_WORLDDIR}/root/
 	# Replace BSDRP_VERSION in /boot/brand.4th with the version number in etc/version
 	sed -i "" -e /BSDRP_VERSION/s//`cat ${NANO_WORLDDIR}/etc/version`/ ${NANO_WORLDDIR}/boot/brand.4th
 	# Disable reverse DNS in sshd:

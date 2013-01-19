@@ -128,6 +128,7 @@ add_new_ports() {
 # exit with 2 if problem detected and can't clean it
 check_clean() {
 	# Patch from Warner Losh (imp@)
+	# Didn't works for unionfs
 	__a=`mount | grep $1 | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}'`
 	if [ -n "$__a" ]; then
 		echo "unmounting $__a"
@@ -275,7 +276,8 @@ if [ -n ${MASTER_PROJECT} ]; then
 	# compare value of the make.conf and adapt regarding
 	# This will permit to use the src/port of the MASTER_PROJECT (if no special patches)
 	#Best method is to works here for avoiding lot's if -z $MASTER during all the part
-	MASTER_PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"	
+	MASTER_PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
+	trap "echo 'Running exit trap code' ; check_clean ${PROJECT_DIR}" 1 2 15 EXIT
 	mount -t unionfs -o below ${MASTER_PROJECT_DIR}/kernels ${PROJECT_DIR}/kernels
 	mount -t unionfs -o below ${MASTER_PROJECT_DIR}/Files ${PROJECT_DIR}/Files
 fi
@@ -536,8 +538,8 @@ sh ${NANOBSD_DIR}/nanobsd.sh ${SKIP_REBUILD} -c /tmp/${NAME}.nano
 ERROR_CODE=$?
 if [ -n ${MASTER_PROJECT} ]; then
 	# unmount unionfs
-	umount ${PROJECT_DIR}/kernels
-	umount ${PROJECT_DIR}/Files
+	check_clean ${PROJECT_DIR}
+	trap - 1 2 15 EXIT                                                                                              
 fi
 
 # Testing exit code of NanoBSD:
