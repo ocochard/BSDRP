@@ -35,8 +35,8 @@ ident		BSDRP-SPARC64
 # Platforms supported
 #	At this time all platforms are supported, as-is.
 
-options 	SCHED_4BSD		# 4BSD scheduler
-#options 	PREEMPTION		# Enable kernel thread preemption
+options 	SCHED_ULE		# ULE scheduler
+options 	PREEMPTION		# Enable kernel thread preemption
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
 #options 	SCTP			# Stream Control Transmission Protocol
@@ -45,12 +45,13 @@ options 	FFS			# Berkeley Fast Filesystem
 #options 	UFS_ACL			# Support for access control lists
 #options 	UFS_DIRHASH		# Improve performance on big directories
 #options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
+#options 	QUOTA			# Enable disk quotas for UFS
 #options 	MD_ROOT			# MD is a potential root device
 #options 	NFSCL			# New Network Filesystem Client
 #options 	NFSD			# New Network Filesystem Server
 #options 	NFSLOCKD		# Network Lock Manager
 #options 	NFS_ROOT		# NFS usable as /, requires NFSCL
-#options 	MSDOSFS			# MSDOS Filesystem
+options 	MSDOSFS			# MSDOS Filesystem
 #options 	CD9660			# ISO 9660 Filesystem
 options 	PROCFS			# Process filesystem (requires PSEUDOFS)
 options 	PSEUDOFS		# Pseudo-filesystem framework
@@ -61,7 +62,7 @@ options 	GEOM_LABEL		# Provides labelization
 #options 	COMPAT_FREEBSD7		# Compatible with FreeBSD7
 options 	SCSI_DELAY=5000		# Delay (in ms) before probing SCSI
 #options 	KTRACE			# ktrace(1) support
-#options 	STACK			# stack(9) support
+options 	STACK			# stack(9) support
 options 	SYSVSHM			# SYSV-style shared memory
 options 	SYSVMSG			# SYSV-style message queues
 options 	SYSVSEM			# SYSV-style semaphores
@@ -69,41 +70,12 @@ options 	_KPOSIX_PRIORITY_SCHEDULING # POSIX P1003_1B real-time extensions
 options 	PRINTF_BUFR_SIZE=128	# Prevent printf output being interspersed.
 options 	HWPMC_HOOKS		# Necessary kernel hooks for hwpmc(4)
 #options 	AUDIT			# Security event auditing
+#options 	CAPABILITY_MODE		# Capsicum capability mode
+#options 	CAPABILITIES		# Capsicum capabilities
 #options 	MAC			# TrustedBSD MAC Framework
 options 	INCLUDE_CONFIG_FILE	# Include this file in kernel
-
-# altq(9). Enable the base part of the hooks with the ALTQ option. 
-# Individual disciplines must be built into the base system and can not be 
-# loaded as modules at this point. ALTQ requires a stable TSC so if yours is 
-# broken or changes with CPU throttling then you must also have the ALTQ_NOPCC 
-# option. 
-options 	ALTQ 
-options 	ALTQ_CBQ	# Class Based Queueing 
-options 	ALTQ_RED	# Random Early Detection 
-options 	ALTQ_RIO	# RED In/Out 
-options 	ALTQ_HFSC	# Hierarchical Packet Scheduler 
-options 	ALTQ_CDNR	# Traffic conditioner 
-options 	ALTQ_PRIQ	# Priority Queueing 
-options 	ALTQ_NOPCC	# Required if the TSC is unusable 
-#options 	ALTQ_DEBUG
-
-options     NO_SWAPPING # Disable swapping of stack pages
-
-# MROUTING enables the kernel multicast packet forwarder, which works 
-# with mrouted and XORP. 
-options     MROUTING        # Multicast routing  
-
-# TCP_SIGNATURE adds support for RFC 2385 (TCP-MD5) digests. These are 
-# carried in TCP option 19. This option is commonly used to protect 
-# TCP sessions (e.g. BGP) where IPSEC is not available nor desirable. 
-# This is enabled on a per-socket basis using the TCP_MD5SIG socket option. 
-# This requires the use of 'device crypto', 'options IPSEC' 
-# or 'device cryptodev'. 
-### DO NOT ENABLE THESE LINES ON SPARC64, it will crash at boot
-#device 		crypto 
-#options 	IPSEC
-#options     IPSEC_NAT_T     #NAT-T support, UDP encap of ESP
-#options 	TCP_SIGNATURE		#include support for RFC 2385
+options 	KDB			# Kernel debugger related code
+options 	KDB_TRACE		# Print a stack trace for a panic
 
 # Make an SMP-capable kernel by default
 options 	SMP			# Symmetric MultiProcessor Kernel
@@ -135,6 +107,7 @@ device		esp		# AMD Am53C974, Sun ESP and FAS families
 device		isp		# Qlogic family
 device		ispfw		# Firmware module for Qlogic host adapters
 device		mpt		# LSI-Logic MPT-Fusion
+device		mps		# LSI-Logic MPT-Fusion 2
 device		sym		# NCR/Symbios/LSI Logic 53C8XX/53C1010/53C1510D
 
 # ATA/SCSI peripherals
@@ -145,6 +118,7 @@ device		da		# Direct Access (disks)
 #device		cd		# CD
 device		pass		# Passthrough device (direct ATA/SCSI access)
 device		ses		# SCSI Environmental Services (and SAF-TE)
+#device		ctl		# CAM Target Layer
 
 # RAID controllers
 #device		amr		# AMI MegaRAID
@@ -220,7 +194,7 @@ device		random		# Entropy device
 device		ether		# Ethernet support
 device		vlan		# 802.1Q VLAN support
 device		tun		# Packet tunnel.
-device		pty		# BSD-style compatibility pseudo ttys
+#device		pty		# BSD-style compatibility pseudo ttys
 device		md		# Memory "disks"
 device		gif		# IPv6 and IPv4 tunneling
 device		faith		# IPv6-to-IPv4 relaying (translation)
@@ -238,7 +212,7 @@ device		ohci		# OHCI PCI->USB interface
 device		ehci		# EHCI PCI->USB interface (USB 2.0)
 device		usb		# USB Bus (required)
 #device		udbp		# USB Double Bulk Pipe devices (needs netgraph)
-device		uhid		# "Human Interface Devices"
+#device		uhid		# "Human Interface Devices"
 device		ukbd		# Keyboard
 #device		ulpt		# Printer
 device		umass		# Disks/Mass storage - Requires scbus and da
@@ -267,23 +241,56 @@ device		umass		# Disks/Mass storage - Requires scbus and da
 #device		ural		# Ralink Technology RT2500USB wireless NICs
 #device		zyd		# ZyDAS zb1211/zb1211b wireless NICs
 
+####### BSDRP section #####
+
+# BSDRP added NICs.
+device      cxgb    # Chelsio T3 10 Gigabit Ethernet adapter driver
+device      cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
+device      my      # Myson Technology Ethernet PCI driver
+device      mxge    # Myricom Myri10GE 10 Gigabit Ethernet adapter driver
+device      nxge    # Neterion Xframe 10GbE Server/Storage adapter driver
+
+# altq(9). Enable the base part of the hooks with the ALTQ option. 
+# Individual disciplines must be built into the base system and can not be 
+# loaded as modules at this point. ALTQ requires a stable TSC so if yours is 
+# broken or changes with CPU throttling then you must also have the ALTQ_NOPCC 
+# option. 
+options 	ALTQ 
+options 	ALTQ_CBQ	# Class Based Queueing 
+options 	ALTQ_RED	# Random Early Detection 
+options 	ALTQ_RIO	# RED In/Out 
+options 	ALTQ_HFSC	# Hierarchical Packet Scheduler 
+options 	ALTQ_CDNR	# Traffic conditioner 
+options 	ALTQ_PRIQ	# Priority Queueing 
+options 	ALTQ_NOPCC	# Required if the TSC is unusable 
+#options 	ALTQ_DEBUG
+
+options     NO_SWAPPING # Disable swapping of stack pages
+
+# MROUTING enables the kernel multicast packet forwarder, which works 
+# with mrouted and XORP. 
+options     MROUTING        # Multicast routing  
+
+# TCP_SIGNATURE adds support for RFC 2385 (TCP-MD5) digests. These are 
+# carried in TCP option 19. This option is commonly used to protect 
+# TCP sessions (e.g. BGP) where IPSEC is not available nor desirable. 
+# This is enabled on a per-socket basis using the TCP_MD5SIG socket option. 
+# This requires the use of 'device crypto', 'options IPSEC' 
+# or 'device cryptodev'. 
+### DO NOT ENABLE THESE LINES ON SPARC64, it will crash at boot
+#device 		crypto 
+#options 	IPSEC
+#options     IPSEC_NAT_T     #NAT-T support, UDP encap of ESP
+#options 	TCP_SIGNATURE		#include support for RFC 2385
+
 # Add device Polling
 options		DEVICE_POLLING
 
 # Add multiple route table support
 options		ROUTETABLES=16
 
-# eliminating data copies on socket reads and writes.
-# man 9 zero_copy
-options		ZERO_COPY_SOCKETS
-
 # Encapsulating Interface
 device enc
 
-# Kept the use of modules (for kept a small kernel) but prevent to build all modules 
-# Name are relative to /usr/src/sys/modules 
-# This line is no more used, check the variable NANO_MODULES in generated nanobsd config files
-#makeoptions    MODULES_OVERRIDE="netgraph if_ef if_bridge bridgestp if_lagg if_vlan if_gre ipfw ipdivert libalias pf"  
+# The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)
 
-# Don't use VIMAGE, the FIB usage should be enough 
-#options     VIMAGE
