@@ -173,8 +173,24 @@ net_nic () {
 		sysctl_equal hw.igb.rx_process_limit -1
 		# Default kern.ipc.nmbclusters is too small for multiple igb card and multicore
 		# Need to add a test [ `sysctl -n hw.ncpu` -gt 1 ] and arch (i386 don't like too much)
-		sysctl_atleast kern.ipc.nmbclusters 262144
+		if [ `sysctl -n hw.ncpu` -ge 4 ]; then
+			sysctl_atleast kern.ipc.nmbclusters 262144
+		fi
     fi
+	# ixgbe tuning
+	if ifconfig -l | egrep -q 'ixgbe[[:digit:]]'; then
+	# source: README in drivers source
+	#	 When using the ixgbe driver with RSS autoconfigured based on the number of
+  	# cores (the default setting) and that number is larger than 4, increase the
+ 	# memory resources allocated for the mbuf pool as follows:
+		# Warning: Where to put this valuedepends if drivers is a module or in kernel
+		if [ `sysctl -n hw.ncpu` -ge 4 ]; then
+			#loader.conf ?
+			sysctl_atleast kern.ipc.nmbclusters 262144
+			#sysctl.conf ?
+ 			sysctl_atleast kern.ipc.nmbjumbop 262144
+		fi
+	fi
 	# General
 	# default value of send interface queue length
 	# If em or igb were tunned, need to change this too

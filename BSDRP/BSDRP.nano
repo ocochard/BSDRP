@@ -223,9 +223,9 @@ add_quagga-bgp-netgen () {
 add_port () {
 	port=`echo $1 | sed -e 's/\//_/'`
 	# Check if package allready exist
-	cd ${NANO_PORTS}/$1
+	cd ${PORTS_SRC}/$1
 	# Warning: a package name can change regarding the build option
-	PKG_NAME=`env PORTSDIR=${NANO_PORTS} make package-name $2`
+	PKG_NAME=`env PORTSDIR=${PORTS_SRC} make package-name $2`
 	if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.txz ]; then
 	# Pkg file found: Generate add_pkg_NAME function
 		#Don't try to install pkg, the boot strap will install it
@@ -259,7 +259,7 @@ add_port () {
            		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
            		mount -t unionfs -o noatime \${NANO_SRC} \
 					\${NANO_WORLDDIR}/usr/src
-           		mount -t unionfs -o noatime \${NANO_PORTS} \
+           		mount -t unionfs -o noatime \${PORTS_SRC} \
                      \${NANO_WORLDDIR}/usr/ports
 				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
 					\${NANO_WORLDDIR}/usr/ports/packages

@@ -47,27 +47,27 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 update_src () {
 	echo "Updating/Installing FreeBSD and ports source"
 	
-	if [ ! -d ${PROJECT_DIR}/FreeBSD/src/.svn ]; then
+	if [ ! -d ${FREEBSD_SRC}/.svn ]; then
 		echo "Checking out source..."
-		mkdir -p ${PROJECT_DIR}/FreeBSD/src || die "Can't create ${PROJECT_DIR}/FreeBSD/src"
-		svn co svn://${SVN_SRC_PATH} ${PROJECT_DIR}/FreeBSD/src -r ${SRC_REV} || die "Can't check out sources"
+		mkdir -p ${FREEBSD_SRC} || die "Can't create ${FREEBSD_SRC}"
+		svn co svn://${SVN_SRC_PATH} ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't check out sources"
 	else
 		echo "Cleaning local patches to source..."
 		#cleaning local patced source
-		svn revert -R ${PROJECT_DIR}/FreeBSD/src
+		svn revert -R ${FREEBSD_SRC}
 		echo "Updating sources..."
-		svn update ${PROJECT_DIR}/FreeBSD/src -r ${SRC_REV} || die "Can't update FreeBSD src"
+		svn update ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't update FreeBSD src"
 	fi
-	if [ ! -d ${PROJECT_DIR}/FreeBSD/ports/.svn ]; then
+	if [ ! -d ${PORTS_SRC}/.svn ]; then
 		echo "Checking out ports source..."
-		mkdir -p ${PROJECT_DIR}/FreeBSD/ports || die "Can't create ${PROJECT_DIR}/FreeBSD/ports"
-		svn co svn://${SVN_PORTS_PATH} ${PROJECT_DIR}/FreeBSD/ports -r ${PORTS_REV} || die "Can't check out ports sources"
+		mkdir -p ${PORTS_SRC} || die "Can't create ${PORTS_SRC}"
+		svn co svn://${SVN_PORTS_PATH} ${PORTS_SRC} -r ${PORTS_REV} || die "Can't check out ports sources"
 	else
 		#cleaning local patched ports sources
 		echo "Cleaning local patches to ports..."
-		svn revert -R ${PROJECT_DIR}/FreeBSD/ports
+		svn revert -R ${PORTS_SRC}
 		echo "Updating ports sources..."
-		svn update ${PROJECT_DIR}/FreeBSD/ports -r ${PORTS_REV} || die "Can't update ports sources"
+		svn update ${PORTS_SRC} -r ${PORTS_REV} || die "Can't update ports sources"
 	fi
 }
 
@@ -79,44 +79,44 @@ patch_src() {
 	# Nuke the newly created files to avoid build errors, as
 	# patch(1) will automatically append to the previously
 	# non-existent file.
-	( cd ${PROJECT_DIR}/FreeBSD/src &&
+	( cd ${FREEBSD_SRC} &&
 	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
-	( cd ${PROJECT_DIR}/FreeBSD/ports
+	( cd ${PORTS_SRC}
 	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
 	: > ${PROJECT_DIR}/FreeBSD/.pulled
 
-	for patch in $(cd ${PROJECT_DIR}/patches && ls freebsd.*.patch); do
+	for patch in $(cd ${SRC_PATCH_DIR} && ls freebsd.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/src-patches; then
 			echo "Applying patch $patch..."
 			(cd ${PROJECT_DIR}/FreeBSD/src &&
-			patch -C -p0 < ${PROJECT_DIR}/patches/$patch &&
-			patch -E -p0 -s < ${PROJECT_DIR}/patches/$patch)
+			patch -C -p0 < ${SRC_PATCH_DIR}/$patch &&
+			patch -E -p0 -s < ${SRC_PATCH_DIR}/$patch)
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/src-patches
 		fi
 	done
-	for patch in $(cd ${PROJECT_DIR}/patches && ls ports.*.patch); do
+	for patch in $(cd ${PORT_PATCH_DIR} && ls ports.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/ports-patches; then
 			echo "Applying patch $patch..."
-			(cd ${PROJECT_DIR}/FreeBSD/ports &&
-			patch -C -p0 < ${PROJECT_DIR}/patches/$patch &&
-			patch -E -p0 -s < ${PROJECT_DIR}/patches/$patch)
+			(cd ${PORTS_SRC} &&
+			patch -C -p0 < ${PORT_PATCH_DIR}/$patch &&
+			patch -E -p0 -s < ${PORT_PATCH_DIR}/$patch)
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/ports-patches
 		fi
 	done
 
-	# Overwite the nanobsd script
-	cp nanobsd.sh ${PROJECT_DIR}/FreeBSD/src/tools/tools/nanobsd
-	chmod +x ${PROJECT_DIR}/FreeBSD/src/tools/tools/nanobsd
+	# Overwrite the nanobsd script
+	cp nanobsd.sh ${NANOBSD_DIR}/nanobsd
+	chmod +x ${NANOBSD_DIR}/nanobsd
 
 }
 
 #Add new ports in shar format
 add_new_ports() {
-	for ports in $(cd ${PROJECT_DIR}/patches && ls ports.*.shar); do
+	for ports in $(cd ${PORT_PATCH_DIR} && ls ports.*.shar); do
 		if ! grep -q $ports ${PROJECT_DIR}/FreeBSD/ports-added; then
 			echo "Adding port $ports..."
-			(cd ${PROJECT_DIR}/FreeBSD/ports &&
-			sh ${PROJECT_DIR}/patches/$ports)
+			(cd ${PORTS_SRC} &&
+			sh ${PORT_PATCH_DIR}/$ports)
 			echo $ports >> ${PROJECT_DIR}/FreeBSD/ports-added
 		fi
 	done
@@ -272,14 +272,17 @@ PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
 check_clean ${PROJECT_DIR}
 
 if [ -n "${MASTER_PROJECT}" ]; then
-	# TO DO:
-	# compare value of the make.conf and adapt regarding
-	# This will permit to use the src/port of the MASTER_PROJECT (if no special patches)
+	# Load MASTER_PROJECT make.conf
+	PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
+	. ${SCRIPT_DIR}/${MASTER_PROJECT}/make.conf
+	# overide the MASTER_PROJECT make.con with the PROJECT.conf
+	PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
+	. ${SCRIPT_DIR}/${PROJECT}/make.conf
 	#Best method is to works here for avoiding lot's if -z $MASTER during all the part
 	MASTER_PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
 	trap "echo 'Running exit trap code' ; check_clean ${PROJECT_DIR}" 1 2 15 EXIT
-	mount -t unionfs -o below ${MASTER_PROJECT_DIR}/kernels ${PROJECT_DIR}/kernels
-	mount -t unionfs -o below ${MASTER_PROJECT_DIR}/Files ${PROJECT_DIR}/Files
+	mount -t unionfs -o below,noatime,copymode=transparent ${MASTER_PROJECT_DIR}/kernels ${PROJECT_DIR}/kernels
+	mount -t unionfs -o below,noatime,copymode=transparent ${MASTER_PROJECT_DIR}/Files ${PROJECT_DIR}/Files
 fi
 
 # project version
@@ -417,7 +420,7 @@ echo "# Source tree directory" >> /tmp/${NAME}.nano
 echo "NANO_SRC=\"${FREEBSD_SRC}\"" >> /tmp/${NAME}.nano
 
 echo "# Where the port tree is" >> /tmp/${NAME}.nano
-echo "NANO_PORTS=\"${NANO_PORTS}\"" >> /tmp/${NAME}.nano
+echo "PORTS_SRC=\"${PORTS_SRC}\"" >> /tmp/${NAME}.nano
 
 echo "# Where nanobsd additional files live under the source tree" >> /tmp/${NAME}.nano
 
