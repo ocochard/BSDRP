@@ -4,8 +4,7 @@
 * Add pfsync module
 
 ## Bug fixes
-* Disable "device tcl" (CAM Target Layer) that consume 32Mo of RAM
-
+* Disable "device tcl" (CAM Target Layer) that consume 32MB of RAM
 
 -----------------------------------------------------
 # Release 1.3 (2013/01/14)

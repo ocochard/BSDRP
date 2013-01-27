@@ -109,9 +109,10 @@ if_is_cap_enabled () {
 
 tune () {
 	# Major function that call the others
-	# I'm too lazy for make difference between RO and RW sysctl value
-	#   then I put all of them in /boot/loader.conf.local
+	# RO values need to be put in /boot/loader.conf.local
+	# RW values need to be put in /etc/sysctl.conf
 	echo "#==> Start of /boot/loader.conf.local"
+	echo "#TO DO All these values doesn't works here and need to be put in s/etc/sysctl.conf"
 	net_nic
 	($ROUTER) && net_forward
 	($ROUTER) && net_inet
@@ -254,6 +255,16 @@ net_virtualized () {
             fi                                                                                                     
         done # end for CAPS
     done # end for NIC
+}
+
+timecounter () {
+	# Are the timecounter tuning usefull ?
+	TIMECOUTER_CHOICE=`sysctl -n sysctl kern.timecounter.choice`
+	if echo "${TIMECOUTER_CHOICE}" | grep -q "HPET"	; then
+		if ! sysctl -n kern.timecounter.hardware | grep -q HPET; then
+			echo "sysctl kern.timecounter.hardware=HPET"
+		fi
+	fi
 }
 ###################
 ## Main function ##
