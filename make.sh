@@ -43,30 +43,29 @@ set -eu
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # Update or install src if not installed
-# TO DO: write a small fastest_csvusp 
 update_src () {
 	echo "Updating/Installing FreeBSD and ports source"
 	
 	if [ ! -d ${FREEBSD_SRC}/.svn ]; then
-		echo "Checking out source..."
+		echo "No existing FreeBSD source tree found: Checking out source..."
 		mkdir -p ${FREEBSD_SRC} || die "Can't create ${FREEBSD_SRC}"
 		svn co svn://${SVN_SRC_PATH} ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't check out sources"
 	else
-		echo "Cleaning local patches to source..."
+		echo "Cleaning local FreeBSD patches..."
 		#cleaning local patced source
 		svn revert -R ${FREEBSD_SRC}
-		echo "Updating sources..."
+		echo "Updating FreeBSD sources..."
 		svn update ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't update FreeBSD src"
 	fi
 	if [ ! -d ${PORTS_SRC}/.svn ]; then
-		echo "Checking out ports source..."
+		echo "No existing source port tree found: Checking out ports source..."
 		mkdir -p ${PORTS_SRC} || die "Can't create ${PORTS_SRC}"
 		svn co svn://${SVN_PORTS_PATH} ${PORTS_SRC} -r ${PORTS_REV} || die "Can't check out ports sources"
 	else
 		#cleaning local patched ports sources
-		echo "Cleaning local patches to ports..."
+		echo "Cleaning local port tree patches..."
 		svn revert -R ${PORTS_SRC}
-		echo "Updating ports sources..."
+		echo "Updating ports tree sources..."
 		svn update ${PORTS_SRC} -r ${PORTS_REV} || die "Can't update ports sources"
 	fi
 }
@@ -104,13 +103,13 @@ patch_src() {
 		fi
 	done
 
-	# Overwrite the nanobsd script
+	# Overwrite the nanobsd script with our own improved nanobsd
 	cp nanobsd.sh ${NANOBSD_DIR}/nanobsd
 	chmod +x ${NANOBSD_DIR}/nanobsd
 
 }
 
-#Add new ports in shar format
+#Add new ports (in shar format)
 add_new_ports() {
 	for ports in $(cd ${PORT_PATCH_DIR} && ls ports.*.shar); do
 		if ! grep -q $ports ${PROJECT_DIR}/FreeBSD/ports-added; then
@@ -127,8 +126,8 @@ add_new_ports() {
 # exit with 1 if problem detected, but clean it
 # exit with 2 if problem detected and can't clean it
 check_clean() {
+	# Check all working dir allready mounted and unmount them
 	# Patch from Warner Losh (imp@)
-	# Didn't works for unionfs
 	__a=`mount | grep $1 | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}'`
 	if [ -n "$__a" ]; then
 		echo "unmounting $__a"
@@ -167,18 +166,33 @@ echo ""
 
 #Get argument
 
+# script (make.sh) file name
 SCRIPT=`readlink -f $0`
+# directory where make.sh file is
 SCRIPT_DIR=`dirname $SCRIPT`
+# boolean for answering YES automatically
 ALWAYS_YES=false
+# Host arch (i386, amd64, sparc64, et...)
 LOCAL_ARCH=`uname -p`
+# Project name, set by default to BSDRP, need to be an existing subdir
 PROJECT="BSDRP"
+# Target architecture for the image to build
+# Cross-complitation of ports is only supported for i386 <=> amd64
 TARGET_ARCH=${LOCAL_ARCH}
+# Kernel to use: i386 arch can have a standard kernel, or for XEN_PV, etc...
 NANO_KERNEL=${TARGET_ARCH}
+# Boolean for Generating an image in debug mode
 DEBUG=false
+# For skiping some build part (world, kernel)
 SKIP_REBUILD=""
+# Console type -vga, -console or none ""
 INPUT_CONSOLE="-vga"
+# Boolean for fast mode (skip mtree and xziping final image)
 FAST=false
+# Boolean for updating or not the source tree (FreeBSD and port tree)
 UPDATE_SRC=false
+# Boolean for using TMPFS
+# Warning: Mixing TMPFS and unionfs (like this script does) crash all FreeBSD 9.1 and below
 TMPFS=false
 args=`getopt a:bc:dfhkp:uryw $*`
 
@@ -265,20 +279,33 @@ MAKE_JOBS=$(( 2 * $(sysctl -n kern.smp.cpus)))
 
 PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
 
-# Loading the project variables
+# Loading the project variables stored in $PROJECT/make.conf
+# Once loaded, all these variables will be available:
+# -SVN_SRC_PATH: SVN path for the source tree
+# -SVN_PORTS_PATH: SVN path for the port source tree
+# -FREEBSD_SRC: directory for localy stored FreeBSD source tree 
+# -SRC_PATCH_DIR: Directory for FreeBSD patches
+# -PORTS_SRC: Directory for localy stored ports source tree
+# -PORT_PATCH_DIR: Directory for port patches
+# -NANOBSD_DIR: Where the nanobsd tree lives
+# -NANO_MODULES_ARCH: List of kernel modules to build for ARCH
+
 . ${SCRIPT_DIR}/${PROJECT}/make.conf
 
-# Check if no previously unionfs from a MASTER_PROJECT on a PROJECT_DIR
+# Check if no previously mounted unionfs dirs
 check_clean ${PROJECT_DIR}
 
 if [ -n "${MASTER_PROJECT}" ]; then
-	# Load MASTER_PROJECT make.conf
+	# It's a child project: Load MASTER_PROJECT/make.conf
+	# But set PROJECT_DIR to MASTER_PROJECT befor to call make.conf
 	PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
 	. ${SCRIPT_DIR}/${MASTER_PROJECT}/make.conf
-	# overide the MASTER_PROJECT make.con with the PROJECT.conf
+	# Now overide variables learn on MASTER_PROJECT by our child one
 	PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
 	. ${SCRIPT_DIR}/${PROJECT}/make.conf
-	#Best method is to works here for avoiding lot's if -z $MASTER during all the part
+	# For avoiding lot's if -z $MASTER during this script
+	# we unionfs mount the MASTER folders below the CHILD folder
+	# BUG: unionfs seems unstable on FreeBSD 9.1
 	MASTER_PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
 	trap "echo 'Running exit trap code' ; check_clean ${PROJECT_DIR}" 1 2 15 EXIT
 	mount -t unionfs -o below,noatime,copymode=transparent ${MASTER_PROJECT_DIR}/kernels ${PROJECT_DIR}/kernels
@@ -354,6 +381,8 @@ if [ `sysctl -n hw.usermem` -lt 2000000000 ]; then
 fi
 
 if ($TMPFS); then
+	echo "WARNING !! Using tmpfs and unionfs together need a patch for all FreeBSD previous 9.2"
+	echo "More info: http://www.freebsd.org/cgi/query-pr.cgi?pr=kern/174969"
 	if mount | grep -q -e "^tmpfs[[:space:]].*/tmp/obj[[:space:]]"; then
 		echo "Existing tmpfs file system detected"
 	else
@@ -376,7 +405,7 @@ fi
 check_clean ${NANO_OBJ}
 
 # If no source installed, force installing them
-[ -d ${PROJECT_DIR}/FreeBSD/ports/.svn ] || UPDATE_SRC=true
+[ -d ${PORTS_SRC}/.svn ] || UPDATE_SRC=true
 
 echo "Will generate an ${NAME} image with theses values:"
 echo "- Target architecture: ${NANO_KERNEL}"
@@ -413,40 +442,40 @@ fi
 ##### Generating the nanobsd configuration file ####
 
 # Theses variables must be set on the begining
-echo "# Name of this NanoBSD build.  (Used to construct workdir names)" > /tmp/${NAME}.nano
-echo "NANO_NAME=${NAME}" >> /tmp/${NAME}.nano
+echo "# Name of this NanoBSD build.  (Used to construct workdir names)" > /tmp/${PROJECT}.nano
+echo "NANO_NAME=${NAME}" >> /tmp/${PROJECT}.nano
 
-echo "# Source tree directory" >> /tmp/${NAME}.nano
-echo "NANO_SRC=\"${FREEBSD_SRC}\"" >> /tmp/${NAME}.nano
+echo "# Source tree directory" >> /tmp/${PROJECT}.nano
+echo "NANO_SRC=\"${FREEBSD_SRC}\"" >> /tmp/${PROJECT}.nano
 
-echo "# Where the port tree is" >> /tmp/${NAME}.nano
-echo "PORTS_SRC=\"${PORTS_SRC}\"" >> /tmp/${NAME}.nano
+echo "# Where the port tree is" >> /tmp/${PROJECT}.nano
+echo "PORTS_SRC=\"${PORTS_SRC}\"" >> /tmp/${PROJECT}.nano
 
-echo "# Where nanobsd additional files live under the source tree" >> /tmp/${NAME}.nano
+echo "# Where nanobsd additional files live under the source tree" >> /tmp/${PROJECT}.nano
 
-echo "NANO_TOOLS=\"${PROJECT_DIR}\"" >> /tmp/${NAME}.nano
-echo "NANO_OBJ=\"${NANO_OBJ}\"" >> /tmp/${NAME}.nano
+echo "NANO_TOOLS=\"${PROJECT_DIR}\"" >> /tmp/${PROJECT}.nano
+echo "NANO_OBJ=\"${NANO_OBJ}\"" >> /tmp/${PROJECT}.nano
 
 # Copy the common nanobsd configuration file to /tmp
 if [ -f ${PROJECT_DIR}/${NAME}.nano ]; then
-	cat ${PROJECT_DIR}/${NAME}.nano >> /tmp/${NAME}.nano
+	cat ${PROJECT_DIR}/${NAME}.nano >> /tmp/${PROJECT}.nano
 else
 	die "No ${NAME}.nano configuration files"
 fi
 
 # And add the customized variable to the nanobsd configuration file
-echo "############# Variable section (generated by BSDRP make.sh) ###########" >> /tmp/${NAME}.nano
+echo "############# Variable section (generated by BSDRP make.sh) ###########" >> /tmp/${PROJECT}.nano
 
-echo "# The default name for any image we create." >> /tmp/${NAME}.nano
-echo "NANO_IMGNAME=\"${NAME}-${VERSION}-full-${NANO_KERNEL}${INPUT_CONSOLE}.img\"" >> /tmp/${NAME}.nano
-echo "# Kernel config file to use" >> /tmp/${NAME}.nano
-echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${NAME}.nano
+echo "# The default name for any image we create." >> /tmp/${PROJECT}.nano
+echo "NANO_IMGNAME=\"${NAME}-${VERSION}-full-${NANO_KERNEL}${INPUT_CONSOLE}.img\"" >> /tmp/${PROJECT}.nano
+echo "# Kernel config file to use" >> /tmp/${PROJECT}.nano
+echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${PROJECT}.nano
 
-echo "# Parallel Make" >> /tmp/${NAME}.nano
+echo "# Parallel Make" >> /tmp/${PROJECT}.nano
 # Special ARCH commands
 # Note for modules names: They are relative to /usr/src/sys/modules
-echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${NAME}.nano
-eval echo NANO_MODULES=\\\"\${NANO_MODULES_${NANO_KERNEL}}\\\" >> /tmp/${NAME}.nano
+echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${PROJECT}.nano
+eval echo NANO_MODULES=\\\"\${NANO_MODULES_${NANO_KERNEL}}\\\" >> /tmp/${PROJECT}.nano
 case ${NANO_KERNEL} in
 	"cambria") 
 		NANO_MAKEFS="makefs -B big \
@@ -454,23 +483,23 @@ case ${NANO_KERNEL} in
 		export NANO_MAKEFS
 		;;
 	"i386_xenpv" | "i386_xenhvm" | "amd64_xenhvm" | "amd64_xenpv" )
-		#echo "add_port \"lang/python27\" \"-DNOPORTDATA\"" >> /tmp/${NAME}.nano
-		#echo "add_port \"sysutils/xen-tools\"" >> /tmp/${NAME}.nano
-		echo "#Configure xen console port" >> /tmp/${NAME}.nano
-        echo "customize_cmd bsdrp_console_xen" >> /tmp/${NAME}.nano
+		#echo "add_port \"lang/python27\" \"-DNOPORTDATA\"" >> /tmp/${PROJECT}.nano
+		#echo "add_port \"sysutils/xen-tools\"" >> /tmp/${PROJECT}.nano
+		echo "#Configure xen console port" >> /tmp/${PROJECT}.nano
+        echo "customize_cmd bsdrp_console_xen" >> /tmp/${PROJECT}.nano
 		;;
 esac
 
-echo "# Bootloader type"  >> /tmp/${NAME}.nano
+echo "# Bootloader type"  >> /tmp/${PROJECT}.nano
 
 case ${INPUT_CONSOLE} in
-	"-vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/${NAME}.nano 
-		echo "#Configure dual vga/serial console port" >> /tmp/${NAME}.nano
-		echo "customize_cmd bsdrp_console_dual" >> /tmp/${NAME}.nano
+	"-vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/${PROJECT}.nano 
+		echo "#Configure dual vga/serial console port" >> /tmp/${PROJECT}.nano
+		echo "customize_cmd bsdrp_console_dual" >> /tmp/${PROJECT}.nano
 		;;
-	"-serial") echo "NANO_BOOTLOADER=\"boot/boot0sio\"" >> /tmp/${NAME}.nano
-		echo "#Configure serial console port" >> /tmp/${NAME}.nano
-		echo "customize_cmd bsdrp_console_serial" >> /tmp/${NAME}.nano
+	"-serial") echo "NANO_BOOTLOADER=\"boot/boot0sio\"" >> /tmp/${PROJECT}.nano
+		echo "#Configure serial console port" >> /tmp/${PROJECT}.nano
+		echo "customize_cmd bsdrp_console_serial" >> /tmp/${PROJECT}.nano
 		;;
 esac
 
@@ -531,13 +560,13 @@ if ($DEBUG); then
 	echo "options	KDB_TRACE" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
 	echo "options	DDB" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
 	# Debug mode: compile gdb
-	sed -i "" '/WITHOUT_GDB/d' /tmp/${NAME}.nano
+	sed -i "" '/WITHOUT_GDB/d' /tmp/${PROJECT}.nano
 fi
 
 # Start nanobsd using the BSDRP configuration file
 echo "Launching NanoBSD build process..."
 cd ${NANOBSD_DIR}
-sh ${NANOBSD_DIR}/nanobsd.sh ${SKIP_REBUILD} -c /tmp/${NAME}.nano
+sh ${NANOBSD_DIR}/nanobsd.sh ${SKIP_REBUILD} -c /tmp/${PROJECT}.nano
 ERROR_CODE=$?
 if [ -n ${MASTER_PROJECT} ]; then
 	# unmount unionfs
