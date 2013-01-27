@@ -405,6 +405,7 @@ fi
 check_clean ${NANO_OBJ}
 
 # If no source installed, force installing them
+[ -d ${FREEBSD_SRC}/.svn ] || UPDATE_SRC=true
 [ -d ${PORTS_SRC}/.svn ] || UPDATE_SRC=true
 
 echo "Will generate an ${NAME} image with theses values:"
