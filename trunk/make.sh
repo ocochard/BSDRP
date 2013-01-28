@@ -281,6 +281,8 @@ PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
 
 # Loading the project variables stored in $PROJECT/make.conf
 # Once loaded, all these variables will be available:
+# -NAME: Name of the Project
+# -MASTER_PROJECT: For a child projet, name of the father project
 # -SVN_SRC_PATH: SVN path for the source tree
 # -SVN_PORTS_PATH: SVN path for the port source tree
 # -FREEBSD_SRC: directory for localy stored FreeBSD source tree 
