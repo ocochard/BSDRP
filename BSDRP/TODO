@@ -1,6 +1,8 @@
 # TODO List fort the BSD Router Project
 ## Bugs #
 
+* vga image in pseudo dual-console mode have still problem on some device
+  => should reverse in vga only, and add a "system dual-console" option
 * if no-mandatory /data had a fsck problem, system refuse go in single user
 * add auto-trimming of all log files that are being created
 * should save /boot/loader.conf.local in config archive for restoring it on another router

@@ -192,8 +192,17 @@ packages () {
 version () {
 	VERSION=`cat /etc/version`
 	FREEBSD_VERSION=`uname -srp`
-    	echo "BSD Router Project version: ${VERSION}"
-    	echo "Based on: ${FREEBSD_VERSION}"
+	CONSOLE="vga"
+	if [ -f /boot.config ]; then
+		grep -q D /boot.config && CONSOLE="vga (with dual mode vga/serial enabled)"
+		grep -q h /boot.config && CONSOLE="serial"
+	fi
+	grep -q xc0 /etc/ttys && CONSOLE="xen"
+   	echo "BSD Router Project version: ${VERSION}"
+	if ! echo ${FREEBSD_VERSION} | grep -q sparc64; then
+		echo "   Console: $CONSOLE"
+	fi
+   	echo "Based on: ${FREEBSD_VERSION}"
 	exit 0
 }
 
