@@ -1,0 +1,15 @@
+--- tools/tools/netrate/netreceive/netreceive.c.orig	2013-02-10 17:53:22.000000000 +0100
++++ tools/tools/netrate/netreceive/netreceive.c	2013-02-10 17:54:09.000000000 +0100
+@@ -138,10 +138,10 @@
+ 		perror("no room for pointers!");
+ 		exit(1);
+ 	}
+-	tp = (struct td_desc **)m;
++	tp = (struct td_desc **)(void *) m;
+ 	m += lb;	/* skip the pointers */
+ 	for (si = i = 0; i < nt; i++, m += td_len) {
+-		tp[i] = (struct td_desc *)m;
++		tp[i] = (struct td_desc *)(void *) m;
+ 		tp[i]->fd = s[si];
+ 		tp[i]->buflen = 65536;
+ 		tp[i]->buf = calloc(1, tp[i]->buflen);
