@@ -18,7 +18,7 @@
 static void
 usage(void)
 {
-    fprintf(stderr,"udppktgen <host> <port>\n");
+    fprintf(stderr,"bsdrp-pktgen <host> <port>\n");
 	exit(-1);
 }
 
@@ -29,7 +29,7 @@ main(int argc, char *argv[])
 	/* s: socket  number */
 	/* error: return value */
 	unsigned long port; /* UDP destination port */
-	char *dummy; /* mandatory for but not used */
+	char *dummy; /* mandatory for strtoul but not used */
 	const char *cause = NULL; /* Error explanation */
 	struct addrinfo hints, *res, *res0; 
 	/* hints: will give hints about family (4 or 6) */
@@ -38,7 +38,7 @@ main(int argc, char *argv[])
 
 	/* Initilazie the hints struct */
 	memset(&hints, 0, sizeof(hints));
-    hints.ai_family = PF_UNSPEC; /* For the moment, We didn't know what kind of family the IP given by the user is*/
+    hints.ai_family = PF_UNSPEC; /* For the moment, We didn't know what kind of family the IP given is */
     hints.ai_socktype = SOCK_DGRAM; /* It's an UDP packet generator */
 
 	/* If not a minimum of 3 argument given display usage */

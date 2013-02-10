@@ -2,7 +2,7 @@
 # $FreeBSD$
 #
 
-PROG=	pktgen
+PROG=	bsdrp-pktgen
 NO_MAN=
 
 .include <bsd.prog.mk>

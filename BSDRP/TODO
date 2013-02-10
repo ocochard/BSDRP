@@ -41,6 +41,7 @@
 ## Performance #
 
 * In place of tunning, need to add a script that check the hardware, and regarding the hardware (NIC drivers, ncpu, RAM, etc...) will display some advice
+* Need to check CPU affinity for routing process and forwardinga process (cpuset)
 
 ## API #
 
