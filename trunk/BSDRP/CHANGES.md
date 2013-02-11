@@ -2,6 +2,8 @@
 
 ## New features
 * Add pfsync,coretemp and amdtemp modules
+* Enable blackhole(8) by default for IPv4
+* netsend and netreceive updated (backported from -current)
 
 ## Bug fixes
 * Disable "device tcl" (CAM Target Layer, useless for a router) that consume 32MB of RAM
