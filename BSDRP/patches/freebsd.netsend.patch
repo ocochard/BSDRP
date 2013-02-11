@@ -1,6 +1,13 @@
---- tools/tools/netrate/netsend/netsend.c.orig	2011-11-11 05:20:22.000000000 +0100
-+++ tools/tools/netrate/netsend/netsend.c	2012-04-03 02:12:42.000000000 +0200
-@@ -29,6 +29,7 @@
+--- tools/tools/netrate/netsend/netsend.c.bak	2013-02-10 19:00:37.000000000 +0100
++++ tools/tools/netrate/netsend/netsend.c	2013-02-10 19:00:45.000000000 +0100
+@@ -23,12 +23,13 @@
+  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  * SUCH DAMAGE.
+  *
+- * $FreeBSD: releng/9.1/tools/tools/netrate/netsend/netsend.c 225334 2011-09-02 16:40:18Z marius $
++ * $FreeBSD: head/tools/tools/netrate/netsend/netsend.c 244731 2012-12-27 09:15:21Z luigi $
+  */
+ 
  #include <sys/endian.h>
  #include <sys/types.h>
  #include <sys/socket.h>
@@ -26,7 +33,47 @@
  	int packet_len;
  	void *packet;
  };
-@@ -179,9 +184,16 @@
+@@ -139,26 +144,32 @@
+ 	long finishtime;
+ 	long send_errors, send_calls;
+ 	/* do not call gettimeofday more than every 20us */
+-	long minres_ns = 20000;
++	long minres_ns = 200000;
+ 	int ic, gettimeofday_cycles;
+ 	int cur_port;
++	uint64_t n, ns;
+ 
+ 	if (clock_getres(CLOCK_REALTIME, &tmptime) == -1) {
+ 		perror("clock_getres");
+ 		return (-1);
+ 	}
+ 
++	ns = a->interval.tv_nsec;
+ 	if (timespec_ge(&tmptime, &a->interval))
+ 		fprintf(stderr,
+ 		    "warning: interval (%jd.%09ld) less than resolution (%jd.%09ld)\n",
+ 		    (intmax_t)a->interval.tv_sec, a->interval.tv_nsec,
+ 		    (intmax_t)tmptime.tv_sec, tmptime.tv_nsec);
+-	if (a->interval.tv_nsec < minres_ns) {
+-		gettimeofday_cycles = minres_ns/(tmptime.tv_nsec + 1);
+-		fprintf(stderr,
+-		    "calling time every %d cycles\n", gettimeofday_cycles);
+-	} else
+-		gettimeofday_cycles = 0;
++		/* interval too short, limit the number of gettimeofday()
++		 * calls, but also make sure there is at least one every
++		 * some 100 packets.
++		 */
++	if ((long)ns < minres_ns/100)
++		gettimeofday_cycles = 100;
++	else
++		gettimeofday_cycles = minres_ns/ns;
++	fprintf(stderr,
++	    "calling time every %d cycles\n", gettimeofday_cycles);
+ 
+ 	if (clock_gettime(CLOCK_REALTIME, &starttime) == -1) {
+ 		perror("clock_gettime");
+@@ -179,9 +190,16 @@
  	ic = gettimeofday_cycles;
  	cur_port = a->port;
  	if (a->port == a->port_max) {
@@ -46,7 +93,7 @@
  		}
  	}
  	while (1) {
-@@ -215,8 +227,13 @@
+@@ -215,8 +233,13 @@
  			a->sin.sin_port = htons(cur_port++);
  			if (cur_port > a->port_max)
  				cur_port = a->port;
@@ -60,7 +107,21 @@
  		}
  		if (ret < 0)
  			send_errors++;
-@@ -254,25 +271,48 @@
+@@ -240,6 +263,13 @@
+ 	printf("send errors:       %ld\n", send_errors);
+ 	printf("approx send rate:  %ld pps\n", (send_calls - send_errors) /
+ 	    a->duration);
++	n = send_calls - send_errors;
++	if (n > 0) {
++		ns = (tmptime.tv_sec - starttime.tv_sec) * 1000000000UL +
++			(tmptime.tv_nsec - starttime.tv_nsec);
++		n = ns / n;
++	}
++	printf("time/packet:       %u ns\n", (u_int)n);
+ 	printf("approx error rate: %ld\n", (send_errors / send_calls));
+ 	printf("waited:            %lld\n", waited);
+ 	printf("approx waits/sec:  %lld\n", (long long)(waited / a->duration));
+@@ -254,25 +284,48 @@
  	long rate, payloadsize, port;
  	char *dummy;
  	struct _a a;	/* arguments */
@@ -114,7 +175,7 @@
  	a.port = a.port_max = port;
  	if (*dummy == '-') {	/* set high port */
  		port = strtoul(dummy + 1, &dummy, 10);
-@@ -328,7 +368,10 @@
+@@ -328,7 +381,10 @@
  	    "seconds\n", payloadsize, (intmax_t)a.interval.tv_sec,
  	    a.interval.tv_nsec, a.duration);
  
