@@ -1,0 +1,11 @@
+--- sys/dev/e1000/if_lem.c.orig	2013-02-11 10:21:00.000000000 +0100
++++ sys/dev/e1000/if_lem.c	2013-02-11 10:21:20.000000000 +0100
+@@ -458,7 +458,7 @@
+ #endif
+ 
+         /* Sysctl for setting the interface flow control */
+-	lem_set_flow_cntrl(adapter, "flow_control",
++	lem_set_flow_cntrl(adapter, "fc",
+ 	    "flow control setting",
+ 	    &adapter->fc_setting, lem_fc_setting);
+ 
