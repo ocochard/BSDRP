@@ -1,11 +1,14 @@
 # Release 1.4 (Not released)
 
 ## New features
+* Update to FreeBSD 9.1-RELEASE-p1
 * Add pfsync,coretemp and amdtemp modules
 * Enable blackhole(8) by default for IPv4
 * netsend and netreceive updated (backported from -current)
+* Add 'system dual-console': Permit to enable dual vga/serial mode
 
 ## Bug fixes
+* Revert to use dual vga/serial mode on the vga image: Somes computer have buggy serial support
 * Disable "device tcl" (CAM Target Layer, useless for a router) that consume 32MB of RAM
 
 ## Updated packages
@@ -30,7 +33,7 @@ libgpg-error-1.10              Common error values for all GnuPG components
 mcast-tools-20061214_1         IPv6 multicast routing daemons and tools
 mpd-5.6                        Multi-link PPP daemon based on netgraph(4)
 mrouted-3.9.6_1                Multicast routing daemon providing DVMRP for IPv4
-net-snmp-5.7.2_1               An extendable SNMP implementation
+net-snmp-5.7.2_2               An extendable SNMP implementation
 openldap-client-2.4.33_1       Open source LDAP client implementation
 pftop-0.7_1                    Utility for real-time display of statistics for pf
 pimdd-0.2.1.0                  UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4

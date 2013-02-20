@@ -62,6 +62,7 @@ usage () {
 	echo "Usage: $0 option"
 	echo "  - check-vm            : Try to detect if used in a VM"
 	echo "  - expand-data-slice   : Permit to grow the /data partition size"
+	echo "  - dual-console        : Configure the system for dual vga/serial console"
 	echo "  - integrity filename  : Check system integrity using the given reference file"
 	echo "  - halt/stop           : Poweroff the system"
 	echo "  - help/h [option]     : Display this help message. "
@@ -71,6 +72,23 @@ usage () {
 	echo "  - tune                : Tune for routing (not persistent)"
 	echo "  - virtualized         : Optimize for a VM use"
 	exit 0
+}
+
+# dual-console
+
+dual_console () {
+	# We need to touch /boot/loader.conf.local for peristent changes
+	grep -q 'boot_multicons="YES"' /boot/loader.conf.local && die "Dual console already configured"
+	grep -q 'boot_multicons="YES"' /boot/loader.conf && die "Dual console already configured"
+	mount -uw / || die "Can't mount / in RW mode"
+	# Tell loader to use serial and vga console
+	echo "-D" > /boot.config
+    # Customize loader.conf file
+	# We don't care of removing value in /boot/loader.conf, because loader.conf.local overwrite it
+	echo '# system dual-console' >> /boot/loader.conf.local
+    echo 'boot_multicons="YES"' >> /boot/loader.conf.local
+    echo 'console="comconsole,vidconsole"' >> /boot/loader.conf.local
+	mount -ur / || die "Error for remounting / in RO mode"
 }
 
 # Check system integrity
@@ -432,6 +450,9 @@ case "$FIRST_OPTION" in
 	check-vm)
         check_vm
         ;;
+	dual-console)
+		dual_console
+		;;
 	expand-data-slice)
 		expand_data_slice
 		;;
