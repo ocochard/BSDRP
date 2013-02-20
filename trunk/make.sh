@@ -497,8 +497,10 @@ echo "# Bootloader type"  >> /tmp/${PROJECT}.nano
 
 case ${INPUT_CONSOLE} in
 	"-vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/${PROJECT}.nano 
-		echo "#Configure dual vga/serial console port" >> /tmp/${PROJECT}.nano
-		echo "customize_cmd bsdrp_console_dual" >> /tmp/${PROJECT}.nano
+		# Configuring dual_console (vga and serial) can cause problem to 
+		# some computer that have special serial port
+		echo "#Configure vga console port" >> /tmp/${PROJECT}.nano
+		echo "customize_cmd bsdrp_console_vga" >> /tmp/${PROJECT}.nano
 		;;
 	"-serial") echo "NANO_BOOTLOADER=\"boot/boot0sio\"" >> /tmp/${PROJECT}.nano
 		echo "#Configure serial console port" >> /tmp/${PROJECT}.nano
