@@ -1,0 +1,13 @@
+Index: sys/kern/kern_lock.c
+===================================================================
+--- sys/kern/kern_lock.c	(revision 245952)
++++ sys/kern/kern_lock.c	(working copy)
+@@ -489,6 +489,8 @@
+ 		case LK_DOWNGRADE:
+ 			_lockmgr_assert(lk, KA_XLOCKED | KA_NOTRECURSED,
+ 			    file, line);
++			if (flags & LK_INTERLOCK)
++				class->lc_unlock(ilk);
+ 			return (0);
+ 		}
+ 	}

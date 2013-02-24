@@ -37,7 +37,7 @@ net-snmp-5.7.2_2               An extendable SNMP implementation
 openldap-client-2.4.33_1       Open source LDAP client implementation
 pftop-0.7_1                    Utility for real-time display of statistics for pf
 pimdd-0.2.1.0                  UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-pkg-1.0.7                      New generation package manager
+pkg-1.0.8                      New generation package manager
 quagga-re-0.99.17.12           A branch of popular quagga software pointed at stability
 ssmtp-2.64                     Extremely simple MTA to get mail off the system to a mail hub
 sudo-1.8.6.p5                  Allow others to run commands as root
