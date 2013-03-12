@@ -1,0 +1,107 @@
+Index: sys/net/if.c
+===================================================================
+--- sys/net/if.c	(revision 247623)
++++ sys/net/if.c	(working copy)
+@@ -1357,7 +1357,8 @@ if_rtdel(struct radix_node *rn, void *arg)
+ 			return (0);
+ 
+ 		err = rtrequest_fib(RTM_DELETE, rt_key(rt), rt->rt_gateway,
+-				rt_mask(rt), rt->rt_flags|RTF_RNH_LOCKED,
++				rt_mask(rt),
++				rt->rt_flags|RTF_RNH_LOCKED|RTF_PINNED,
+ 				(struct rtentry **) NULL, rt->rt_fibnum);
+ 		if (err) {
+ 			log(LOG_WARNING, "if_rtdel: error %d\n", err);
+Index: sys/net/route.c
+===================================================================
+--- sys/net/route.c	(revision 247842)
++++ sys/net/route.c	(working copy)
+@@ -1112,6 +1112,16 @@ rtrequest1_fib(int req, struct rt_addrinfo *info,
+ 			error = 0;
+ 		}
+ #endif
++		if ((flags & RTF_PINNED) == 0) {
++			/*
++			 * Check if can delete target route.
++			 */
++			rt = (struct rtentry *)rnh->rnh_lookup(dst,
++			    netmask, rnh);
++			if ((rt != NULL) && (rt->rt_flags & RTF_PINNED))
++				senderr(EPERM);
++		}
++
+ 		/*
+ 		 * Remove the item from the tree and return it.
+ 		 * Complain if it is not there and do no more processing.
+@@ -1430,6 +1440,7 @@ rtinit1(struct ifaddr *ifa, int cmd, int flags, in
+ 	int didwork = 0;
+ 	int a_failure = 0;
+ 	static struct sockaddr_dl null_sdl = {sizeof(null_sdl), AF_LINK};
++	struct radix_node_head *rnh;
+ 
+ 	if (flags & RTF_HOST) {
+ 		dst = ifa->ifa_dstaddr;
+@@ -1488,7 +1499,6 @@ rtinit1(struct ifaddr *ifa, int cmd, int flags, in
+ 	 */
+ 	for ( fibnum = startfib; fibnum <= endfib; fibnum++) {
+ 		if (cmd == RTM_DELETE) {
+-			struct radix_node_head *rnh;
+ 			struct radix_node *rn;
+ 			/*
+ 			 * Look up an rtentry that is in the routing tree and
+@@ -1538,7 +1548,8 @@ rtinit1(struct ifaddr *ifa, int cmd, int flags, in
+ 		 */
+ 		bzero((caddr_t)&info, sizeof(info));
+ 		info.rti_ifa = ifa;
+-		info.rti_flags = flags | (ifa->ifa_flags & ~IFA_RTSELF);
++		info.rti_flags = flags |
++		    (ifa->ifa_flags & ~IFA_RTSELF) | RTF_PINNED;
+ 		info.rti_info[RTAX_DST] = dst;
+ 		/* 
+ 		 * doing this for compatibility reasons
+@@ -1550,6 +1561,32 @@ rtinit1(struct ifaddr *ifa, int cmd, int flags, in
+ 			info.rti_info[RTAX_GATEWAY] = ifa->ifa_addr;
+ 		info.rti_info[RTAX_NETMASK] = netmask;
+ 		error = rtrequest1_fib(cmd, &info, &rt, fibnum);
++
++		if ((error == EEXIST) && (cmd == RTM_ADD)) {
++			/*
++			 * Interface route addition failed.
++			 * Note we probably already checked
++			 * other interface addresses if given prefix exists.
++			 * Atomically delete current prefix generating
++			 * RTM_DELETE message, and retry adding
++			 * interface address.
++			 */
++			rnh = rt_tables_get_rnh(fibnum, dst->sa_family);
++			RADIX_NODE_HEAD_LOCK(rnh);
++			/* Delete old prefix */
++			info.rti_ifa = NULL;
++			info.rti_flags = RTF_RNH_LOCKED;
++			error = rtrequest1_fib(RTM_DELETE, &info, &rt, fibnum);
++			if (error == 0) {
++				info.rti_ifa = ifa;
++				info.rti_flags = flags | RTF_RNH_LOCKED |
++				    (ifa->ifa_flags & ~IFA_RTSELF) | RTF_PINNED;
++				error = rtrequest1_fib(cmd, &info, &rt, fibnum);
++			}
++			RADIX_NODE_HEAD_UNLOCK(rnh);
++		}
++
++
+ 		if (error == 0 && rt != NULL) {
+ 			/*
+ 			 * notify any listening routing agents of the change
+Index: sys/net/route.h
+===================================================================
+--- sys/net/route.h	(revision 247623)
++++ sys/net/route.h	(working copy)
+@@ -176,7 +176,7 @@ struct ortentry {
+ /*			0x20000		   unused, was RTF_WASCLONED */
+ #define RTF_PROTO3	0x40000		/* protocol specific routing flag */
+ /*			0x80000		   unused */
+-#define RTF_PINNED	0x100000	/* future use */
++#define RTF_PINNED	0x100000	/* route is immutable */
+ #define	RTF_LOCAL	0x200000 	/* route represents a local address */
+ #define	RTF_BROADCAST	0x400000	/* route represents a bcast address */
+ #define	RTF_MULTICAST	0x800000	/* route represents a mcast address */

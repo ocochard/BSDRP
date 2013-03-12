@@ -238,7 +238,7 @@ net_mbuf () {
 	# Does vm.kmem_size should be upgraded too ?
 	# igb loads 8 rings, each of 1024 per NIC
 	sysctl_atleast kern.ipc.nmbclusters 262144
-	echo "On the following output, with all your NÃ already configured"
+	echo "On the following output, with all your NIC already configured"
 	echo "  check the current and total"
 	netstat -m | grep "mbuf clusters in use"
 }

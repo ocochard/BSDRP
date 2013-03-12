@@ -1,0 +1,282 @@
+--- sys/contrib/pf/net/pf.c.orig	2013-03-11 10:59:32.000000000 +0100
++++ sys/contrib/pf/net/pf.c	2013-03-11 15:14:54.000000000 +0100
+@@ -721,6 +721,9 @@ pf_insert_src_node(struct pf_src_node **
+ 		    rule->max_src_conn_rate.limit,
+ 		    rule->max_src_conn_rate.seconds);
+ 
++#ifdef __FreeBSD__
++		TAILQ_INIT(&(*sn)->state_list);
++#endif
+ 		(*sn)->af = af;
+ 		if (rule->rule_flag & PFRULE_RULESRCTRACK ||
+ 		    rule->rpool.opts & PF_POOL_STICKYADDR)
+@@ -1454,6 +1457,9 @@ pf_purge_expired_src_nodes(int waslocked
+ #endif
+ {
+ 	struct pf_src_node		*cur, *next;
++#ifdef __FreeBSD__
++	struct pf_state			*s;
++#endif
+ 	int				 locked = waslocked;
+ 
+ #ifdef __FreeBSD__
+@@ -1487,6 +1493,12 @@ pf_purge_expired_src_nodes(int waslocked
+ 					pf_rm_rule(NULL, cur->rule.ptr);
+ 			}
+ #ifdef __FreeBSD__
++			while (!TAILQ_EMPTY(&cur->state_list)) {
++				s = TAILQ_FIRST(&cur->state_list);
++				TAILQ_REMOVE(&cur->state_list, s, srcnode_link);
++				s->src_node = NULL;
++				s->nat_src_node = NULL;
++			}
+ 			RB_REMOVE(pf_src_tree, &V_tree_src_tracking, cur);
+ 			V_pf_status.scounters[SCNT_SRC_NODE_REMOVALS]++;
+ 			V_pf_status.src_nodes--;
+@@ -1530,6 +1542,10 @@ pf_src_tree_remove_state(struct pf_state
+ #endif
+ 			s->src_node->expire = time_second + timeout;
+ 		}
++#ifdef __FreeBSD__
++		if (!TAILQ_EMPTY(&s->src_node->state_list))
++			TAILQ_REMOVE(&s->src_node->state_list, s, srcnode_link);
++#endif
+ 	}
+ 	if (s->nat_src_node != s->src_node && s->nat_src_node != NULL) {
+ 		if (--s->nat_src_node->states <= 0) {
+@@ -1543,6 +1559,10 @@ pf_src_tree_remove_state(struct pf_state
+ #endif
+ 			s->nat_src_node->expire = time_second + timeout;
+ 		}
++#ifdef __FreeBSD__
++		if (!TAILQ_EMPTY(&s->nat_src_node->state_list))
++			TAILQ_REMOVE(&s->nat_src_node->state_list, s, srcnode_link);
++#endif
+ 	}
+ 	s->src_node = s->nat_src_node = NULL;
+ }
+@@ -3950,8 +3970,18 @@ pf_create_state(struct pf_rule *r, struc
+ 		pool_put(&pf_state_pl, s);
+ #endif
+ 		return (PF_DROP);
++#ifdef __FreeBSD__
++	} else {
++		if (sn != NULL)
++			TAILQ_INSERT_HEAD(&sn->state_list, s, srcnode_link);
++		if (nsn != NULL)
++			TAILQ_INSERT_HEAD(&nsn->state_list, s, srcnode_link);
++		*sm = s;
++	}
++#else
+ 	} else
+ 		*sm = s;
++#endif
+ 
+ 	pf_set_rt_ifp(s, pd->src);	/* needs s->state_key set */
+ 	if (tag > 0) {
+--- sys/contrib/pf/net/pf_ioctl.c.orig	2013-03-11 10:59:25.000000000 +0100
++++ sys/contrib/pf/net/pf_ioctl.c	2013-03-11 15:45:36.000000000 +0100
+@@ -3760,16 +3760,14 @@ pfioctl(dev_t dev, u_long cmd, caddr_t a
+ 
+ 	case DIOCCLRSRCNODES: {
+ 		struct pf_src_node	*n;
++#ifndef __FreeBSD__
+ 		struct pf_state		*state;
+ 
+-#ifdef __FreeBSD__
+-		RB_FOREACH(state, pf_state_tree_id, &V_tree_id) {
+-#else
+ 		RB_FOREACH(state, pf_state_tree_id, &tree_id) {
+-#endif
+ 			state->src_node = NULL;
+ 			state->nat_src_node = NULL;
+ 		}
++#endif
+ #ifdef __FreeBSD__
+ 		RB_FOREACH(n, pf_src_tree, &V_tree_src_tracking) {
+ #else
+@@ -3793,6 +3791,9 @@ pfioctl(dev_t dev, u_long cmd, caddr_t a
+ 		struct pfioc_src_node_kill *psnk =
+ 		    (struct pfioc_src_node_kill *)addr;
+ 		u_int			killed = 0;
++#ifdef __FreeBSD__
++		u_int			killed_states = 0;
++#endif
+ 
+ #ifdef __FreeBSD__
+ 		RB_FOREACH(sn, pf_src_tree, &V_tree_src_tracking) {
+@@ -3808,6 +3809,15 @@ pfioctl(dev_t dev, u_long cmd, caddr_t a
+ 				&psnk->psnk_dst.addr.v.a.mask,
+ 				&sn->raddr, sn->af)) {
+ 				/* Handle state to src_node linkage */
++#ifdef __FreeBSD__
++				if (psnk->psnk_kill_linked_states) {
++					killed_states += sn->states;
++					TAILQ_FOREACH(s, &sn->state_list, srcnode_link) {
++						pf_unlink_state(s);
++					}
++				}
++				sn->states = 0;
++#else
+ 				if (sn->states != 0) {
+ 					RB_FOREACH(s, pf_state_tree_id,
+ #ifdef __FreeBSD__
+@@ -3822,6 +3832,7 @@ pfioctl(dev_t dev, u_long cmd, caddr_t a
+ 					}
+ 					sn->states = 0;
+ 				}
++#endif
+ 				sn->expire = 1;
+ 				killed++;
+ 			}
+@@ -3831,6 +3842,9 @@ pfioctl(dev_t dev, u_long cmd, caddr_t a
+ 			pf_purge_expired_src_nodes(1);
+ 
+ 		psnk->psnk_killed = killed;
++#ifdef __FreeBSD__
++		psnk->psnk_killed_states = killed_states;
++#endif
+ 		break;
+ 	}
+ 
+--- sys/contrib/pf/net/pfvar.h.orig	2013-03-11 10:59:10.000000000 +0100
++++ sys/contrib/pf/net/pfvar.h	2013-03-11 12:19:40.000000000 +0100
+@@ -739,6 +739,9 @@ struct pf_src_node {
+ 	struct pf_addr	 raddr;
+ 	union pf_rule_ptr rule;
+ 	struct pfi_kif	*kif;
++#ifdef __FreeBSD__
++	TAILQ_HEAD(, pf_state)	state_list;
++#endif
+ 	u_int64_t	 bytes[2];
+ 	u_int64_t	 packets[2];
+ 	u_int32_t	 states;
+@@ -840,6 +843,9 @@ struct pf_state {
+ 
+ 	TAILQ_ENTRY(pf_state)	 sync_list;
+ 	TAILQ_ENTRY(pf_state)	 entry_list;
++#ifdef __FreeBSD__
++	TAILQ_ENTRY(pf_state)	 srcnode_link;
++#endif
+ 	RB_ENTRY(pf_state)	 entry_id;
+ 	struct pf_state_peer	 src;
+ 	struct pf_state_peer	 dst;
+@@ -1573,6 +1579,10 @@ struct pfioc_src_node_kill {
+ 	struct pf_rule_addr psnk_src;
+ 	struct pf_rule_addr psnk_dst;
+ 	u_int		    psnk_killed;
++#ifdef __FreeBSD__
++	u_int		    psnk_killed_states;
++	u_int		    psnk_kill_linked_states;
++#endif
+ };
+ 
+ struct pfioc_state_kill {
+--- contrib/pf/pfctl/pfctl.c.orig	2013-03-08 17:55:42.000000000 +0100
++++ contrib/pf/pfctl/pfctl.c	2013-03-09 17:05:56.000000000 +0100
+@@ -237,7 +237,7 @@ usage(void)
+ 
+ 	fprintf(stderr, "usage: %s [-AdeghmNnOPqRrvz] ", __progname);
+ 	fprintf(stderr, "[-a anchor] [-D macro=value] [-F modifier]\n");
+-	fprintf(stderr, "\t[-f file] [-i interface] [-K host | network]\n");
++	fprintf(stderr, "\t[-f file] [-i interface] [-K host | network -c]\n");
+ 	fprintf(stderr, "\t[-k host | network | label | id] ");
+ 	fprintf(stderr, "[-o level] [-p device]\n");
+ 	fprintf(stderr, "\t[-s modifier] ");
+@@ -450,10 +450,10 @@ pfctl_kill_src_nodes(int dev, const char
+ 	struct pfioc_src_node_kill psnk;
+ 	struct addrinfo *res[2], *resp[2];
+ 	struct sockaddr last_src, last_dst;
+-	int killed, sources, dests;
++	int killed, sources, dests, killed_states;
+ 	int ret_ga;
+ 
+-	killed = sources = dests = 0;
++	killed = killed_states = sources = dests = 0;
+ 
+ 	memset(&psnk, 0, sizeof(psnk));
+ 	memset(&psnk.psnk_src.addr.v.a.mask, 0xff,
+@@ -488,6 +488,8 @@ pfctl_kill_src_nodes(int dev, const char
+ 		else
+ 			errx(1, "Unknown address family %d", psnk.psnk_af);
+ 
++		psnk.psnk_kill_linked_states = opts & PF_OPT_KILLLINKEDSTATES;
++
+ 		if (src_node_killers > 1) {
+ 			dests = 0;
+ 			memset(&psnk.psnk_dst.addr.v.a.mask, 0xff,
+@@ -530,20 +532,23 @@ pfctl_kill_src_nodes(int dev, const char
+ 				if (ioctl(dev, DIOCKILLSRCNODES, &psnk))
+ 					err(1, "DIOCKILLSRCNODES");
+ 				killed += psnk.psnk_killed;
++				killed_states += psnk.psnk_killed_states;
+ 			}
+ 			freeaddrinfo(res[1]);
+ 		} else {
+ 			if (ioctl(dev, DIOCKILLSRCNODES, &psnk))
+ 				err(1, "DIOCKILLSRCNODES");
+ 			killed += psnk.psnk_killed;
++			killed_states += psnk.psnk_killed_states;
+ 		}
+ 	}
+ 
+ 	freeaddrinfo(res[0]);
+ 
+ 	if ((opts & PF_OPT_QUIET) == 0)
+-		fprintf(stderr, "killed %d src nodes from %d sources and %d "
+-		    "destinations\n", killed, sources, dests);
++		fprintf(stderr, "killed %d src nodes, %d linked states, "
++		    "from %d sources and %d destinations\n", 
++		    killed, killed_states, sources, dests);
+ 	return (0);
+ }
+ 
+@@ -2019,11 +2024,14 @@ main(int argc, char *argv[])
+ 		usage();
+ 
+ 	while ((ch = getopt(argc, argv,
+-	    "a:AdD:eqf:F:ghi:k:K:mnNOo:Pp:rRs:t:T:vx:z")) != -1) {
++	    "a:AcdD:eqf:F:ghi:k:K:mnNOo:Pp:rRs:t:T:vx:z")) != -1) {
+ 		switch (ch) {
+ 		case 'a':
+ 			anchoropt = optarg;
+ 			break;
++		case 'c':
++			opts |= PF_OPT_KILLLINKEDSTATES;
++			break;
+ 		case 'd':
+ 			opts |= PF_OPT_DISABLE;
+ 			mode = O_RDWR;
+--- contrib/pf/pfctl/pfctl_parser.h.orig	2013-03-08 18:27:20.000000000 +0100
++++ contrib/pf/pfctl/pfctl_parser.h	2013-03-08 18:36:43.000000000 +0100
+@@ -51,6 +51,7 @@
+ #define PF_OPT_NUMERIC		0x1000
+ #define PF_OPT_MERGE		0x2000
+ #define PF_OPT_RECURSE		0x4000
++#define PF_OPT_KILLLINKEDSTATES	0x8000
+ 
+ #define PF_TH_ALL		0xFF
+ 
+--- contrib/pf/pfctl/pfctl.8.orig	2013-03-08 19:02:58.000000000 +0100
++++ contrib/pf/pfctl/pfctl.8	2013-03-08 20:02:35.000000000 +0100
+@@ -42,7 +42,8 @@
+ .Op Fl F Ar modifier
+ .Op Fl f Ar file
+ .Op Fl i Ar interface
+-.Op Fl K Ar host | network
++.Oo Fl K Ar host | network
++.Op Fl c Oc
+ .Xo
+ .Oo Fl k
+ .Ar host | network | label | id
+@@ -189,6 +190,10 @@ as the anchor name:
+ .Bd -literal -offset indent
+ # pfctl -a '*' -sr
+ .Ed
++.It Fl c
++When removing source tracking entries, remove state entries linked to
++them. This option can be only used in conjunction with
++.Fl K .
+ .It Fl D Ar macro Ns = Ns Ar value
+ Define
+ .Ar macro
