@@ -1,12 +1,8 @@
 # TODO List fort the BSD Router Project
 ## Bugs #
 
-* vga image in pseudo dual-console mode have still problem on some device
-  => should reverse in vga only, and add a "system dual-console" option
 * if no-mandatory /data had a fsck problem, system refuse go in single user
 * add auto-trimming of all log files that are being created
-* should save /boot/loader.conf.local in config archive for restoring it on another router
-* With default tunning in /boot/loader.conf.local (or /etc/sysctl.conf), configuring em NIC is no more possible: not enought mbuf available on i386 with low RAM (196MB of RAM).
 
 ## Upgrading #
 
@@ -37,6 +33,8 @@
 
 * Use cvs or subversion for maintain central management of configuration files
 * Be compatible with a provisionning tools that generate lot's of configuration (subversion copy?)
+* Need to check RANCID integration
+* Need to study NETCONF support
 
 ## Performance #
 

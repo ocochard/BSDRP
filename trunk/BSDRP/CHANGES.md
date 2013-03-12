@@ -2,7 +2,11 @@
 
 ## New features
 * Update to FreeBSD 9.1-RELEASE-p1
+* Extras patches:
+  * http://lists.freebsd.org/pipermail/freebsd-net/2013-March/034897.html
+  * http://lists.freebsd.org/pipermail/freebsd-net/2013-March/034801.html
 * Add pfsync,coretemp and amdtemp modules
+* Replace net-snmp by bsnmpd (with ucd and regex modules)
 * Enable blackhole(8) by default for IPv4
 * netsend and netreceive updated (backported from -current)
 * Add 'system dual-console': Permit to enable dual vga/serial mode
@@ -16,8 +20,11 @@
 
 ## Installed packages
 NetPIPE-3.7.1                  A self-scaling network benchmark
-bird-1.3.9                     Dynamic IP routing daemon (IPv4 version)
-bird6-1.3.9                    Dynamic IP routing daemon (IPv6 version)
+bird-1.3.9_1                   Dynamic IP routing daemon (IPv4 version)
+bird6-1.3.9_1                  Dynamic IP routing daemon (IPv6 version)
+bsnmp-regex-0.5_2              A bsnmpd module allowing creation of counters from log files
+bsnmp-ucd-0.3.6                A bsnmpd module that implements parts of UCD-SNMP-MIB
+bsnmptools-0.0.20060818_2      Snmp client tools
 dlmalloc-2.8.4                 Small, fast malloc library by Doug Lea
 fprobe-1.1_1                   Tool that collects network traffic data
 freevrrpd-1.1                  This a VRRP RFC2338 Compliant implementation under FreeBSD
@@ -29,18 +36,17 @@ isc-dhcp42-relay-4.2.4         The ISC Dynamic Host Configuration Protocol relay
 isc-dhcp42-server-4.2.4_2      The ISC Dynamic Host Configuration Protocol server
 libevent-1.4.14b_2             Provides an API to execute callback functions on certain events
 libgcrypt-1.5.0_1              General purpose crypto library based on code used in GnuPG
-libgpg-error-1.10              Common error values for all GnuPG components
+libgpg-error-1.11              Common error values for all GnuPG components
 mcast-tools-20061214_1         IPv6 multicast routing daemons and tools
 mpd-5.6                        Multi-link PPP daemon based on netgraph(4)
 mrouted-3.9.6_1                Multicast routing daemon providing DVMRP for IPv4
-net-snmp-5.7.2_2               An extendable SNMP implementation
-openldap-client-2.4.33_1       Open source LDAP client implementation
+openldap-client-2.4.34         Open source LDAP client implementation
 pftop-0.7_1                    Utility for real-time display of statistics for pf
 pimdd-0.2.1.0                  UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
 pkg-1.0.8                      New generation package manager
 quagga-re-0.99.17.12           A branch of popular quagga software pointed at stability
 ssmtp-2.64                     Extremely simple MTA to get mail off the system to a mail hub
-sudo-1.8.6.p5                  Allow others to run commands as root
+sudo-1.8.6.p7                  Allow others to run commands as root
 tmux-1.7_1                     A Terminal Multiplexer
 ucarp-1.5.2_1                  Userlevel Common Address Redundancy Protocol
 virtio-kmod-9.1-0.242658       virtio kernel modules port for 8.[23]/9.[01]
