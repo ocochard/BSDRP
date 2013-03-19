@@ -10,6 +10,7 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 #DRY="echo"
 DRY=""
 SRC_DIR="/usr/local/BSDRP"
+PROJECT="BSDRP"
 OBJ_BASE_DIR="/usr/obj"
 VERSION=""
 FAST_MODE=false
@@ -53,24 +54,24 @@ generate(){
 		# Initial build (update and rebuild all)
 		if ! ($FAST_MODE); then
 			( cd ${SRC_DIR}
-        	${DRY} ./make.sh -u -f -y -a ${arch}
+        	${DRY} ./make.sh -p ${PROJECT} -u -f -y -a ${arch}
         	)
 		fi
 		if ! ($FAST_MODE); then
-        	[ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/_.mtree ] || die "problem during initial build of ${arch}"
+        	[ -f ${OBJ_BASE_DIR}/${PROJECT}.${arch}/_.mtree ] || die "problem during initial build of ${arch}"
 		fi
 		for console in ${CONSOLE_LIST}; do
 			[ "${arch}" = "i386_xenpv" -a "${console}" = "serial" ] && continue
 			[ "${arch}" = "sparc64" -a "${console}" = "serial" ] && continue
         	( cd ${SRC_DIR}
-        	${DRY} ./make.sh -b -a ${arch} -c ${console}
+        	${DRY} ./make.sh -p ${PROJECT} -b -a ${arch} -c ${console}
         	)
 			if [ "${arch}" = "i386_xenpv" -o "${arch}" = "sparc64" ]; then
-   				[ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-${VERSION}-${arch}.mtree.xz ] || die "problem during final build regarding of ${arch}-${console}"
+   				[ -f ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-${VERSION}-${arch}.mtree.xz ] || die "problem during final build regarding of ${arch}-${console}"
 	     	else	
-				[ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-${VERSION}-${arch}-${console}.mtree.xz ] || die "problem during final build regarding of ${arch}-${console}"
+				[ -f ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-${VERSION}-${arch}-${console}.mtree.xz ] || die "problem during final build regarding of ${arch}-${console}"
 			fi
-			echo "done" > ${OBJ_BASE_DIR}/BSDRP.${arch}/release.done
+			echo "done" > ${OBJ_BASE_DIR}/${PROJECT}.${arch}/release.done
 		done
     done
 	exit 0
@@ -85,8 +86,8 @@ upload(){
 		ARCH_LIST="${ARCH_LIST}sparc64"
 	fi
 	for arch in ${ARCH_LIST}; do
-		if [ -f ${OBJ_BASE_DIR}/BSDRP.${arch}/release.done ]; then
-			FILE_LIST=`ls ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-*`
+		if [ -f ${OBJ_BASE_DIR}/${PROJECT}.${arch}/release.done ]; then
+			FILE_LIST=`ls ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-*`
 			${DRY} scp ${FILE_LIST} cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1/${arch}
 		fi
 	done
@@ -100,7 +101,7 @@ dokuwiki(){
 	upgrade
 	mtree
 	'
-	if [ -d ${OBJ_BASE_DIR}/BSDRP.sparc64 ]; then
+	if [ -d ${OBJ_BASE_DIR}/${PROJECT}.sparc64 ]; then
 		ARCH_LIST="${ARCH_LIST}sparc64"
 	fi
 	
@@ -112,7 +113,7 @@ dokuwiki(){
 		echo ""
 		FILE_LIST=""
  		for arch in ${ARCH_LIST}; do
-			FILE_LIST="${FILE_LIST} `ls ${OBJ_BASE_DIR}/BSDRP.${arch}/BSDRP-* | cut -d '/' -f 5 | grep ${type} | grep ".xz"`"
+			FILE_LIST="${FILE_LIST} `ls ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-* | cut -d '/' -f 5 | grep ${type} | grep ".xz"`"
     	done
 
 		for file in ${FILE_LIST}; do
@@ -173,7 +174,7 @@ fi
 if [ ! -d ${SRC_DIR} ]; then
 	echo "You need to install BSDRP source"
 else
-	VERSION=`cat ${SRC_DIR}/Files/etc/version`
+	VERSION=`cat ${SRC_DIR}/${PROJECT}/Files/etc/version`
 fi
 
 if [ $# -eq 1 ]; then
