@@ -3,8 +3,12 @@
 ## New features
 * Update to FreeBSD 9.1-RELEASE-p1
 * Extras patches:
-  * http://lists.freebsd.org/pipermail/freebsd-net/2013-March/034897.html
-  * http://lists.freebsd.org/pipermail/freebsd-net/2013-March/034801.html
+  * pf source entry removing too slow
+    http://lists.freebsd.org/pipermail/freebsd-net/2013-March/034897.html
+  * interfaces route add/delete
+    http://lists.freebsd.org/pipermail/freebsd-net/2013-March/034801.html
+  * bsnmpd SNMPv3 engine discovery is broken
+    http://www.freebsd.org/cgi/query-pr.cgi?pr=174974
 * Add pfsync,coretemp and amdtemp modules
 * Replace net-snmp by bsnmpd (with ucd and regex modules)
 * Enable blackhole(8) by default for IPv4
@@ -12,7 +16,7 @@
 * Add 'system dual-console': Permit to enable dual vga/serial mode
 
 ## Bug fixes
-* Revert to use dual vga/serial mode on the vga image: Somes computer have buggy serial support
+* Revert to use dual vga/serial mode on the vga image: Somes servers have buggy serial support
 * Disable "device tcl" (CAM Target Layer, useless for a router) that consume 32MB of RAM
 
 ## Updated packages
@@ -43,7 +47,7 @@ mrouted-3.9.6_1                Multicast routing daemon providing DVMRP for IPv4
 openldap-client-2.4.34         Open source LDAP client implementation
 pftop-0.7_1                    Utility for real-time display of statistics for pf
 pimdd-0.2.1.0                  UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-pkg-1.0.8                      New generation package manager
+pkg-1.0.9_2                    New generation package manager
 quagga-re-0.99.17.12           A branch of popular quagga software pointed at stability
 ssmtp-2.64                     Extremely simple MTA to get mail off the system to a mail hub
 sudo-1.8.6.p7                  Allow others to run commands as root
