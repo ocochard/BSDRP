@@ -423,6 +423,23 @@ bsdrp_custom () {
 	# Add /etc/rc.conf.misc into the /etc/default/rc.conf
 	sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
 
+    # configure bsnmp
+    cat <<EOF >>${NANO_WORLDDIR}/etc/snmpd.config
+
+#
+# bsnmp-ucd (8)
+#
+begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"
+
+#
+# bsnmp-regex (8)
+#
+begemotSnmpdModulePath."regex" = "/usr/local/lib/snmp_regex.so"
+           %regex
+           regexConfig = "/usr/local/etc/bsnmp-regex.conf"
+           regexSocket = "/var/run/bsnmp-regex.sock"
+EOF
+
 	# Set Quagga permission
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'chown -R quagga:quagga /usr/local/etc/quagga'
