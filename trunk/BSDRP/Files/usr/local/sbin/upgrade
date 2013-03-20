@@ -127,6 +127,14 @@ write_new_image() {
         	echo "WARNING: Can't backup /boot/loader.conf.local"
     	fi
 	fi
+	# Kept the /boot.config file if exist on source, but not on dest
+	# If "system dual-console" was used, this case is triggered
+	if [ -f /boot.config -a ! -f /tmp/sysupgrade/boot.config ]; then
+    	if ! cp /boot.config /tmp/sysupgrade/boot.config; then
+        	echo "WARNING: Can't backup /boot.config"
+    	fi
+	fi
+	
 	# Adapt fstab of the new system
 	for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab; do
 	    sed -i "" "s/${SRC_LABEL}/${DST_LABEL}/g" $f
