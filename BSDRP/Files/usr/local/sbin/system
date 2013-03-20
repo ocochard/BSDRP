@@ -96,14 +96,17 @@ integrity () {
 	[ "${SECOND_OPTION}" = "" ] && die "ERROR: Reference mtree filename missing"
 	[ ! -f ${SECOND_OPTION} ] && die "ERROR: File ${SECOND_OPTION} didn't exist."
 	FILE_TYPE=`file ${SECOND_OPTION} | cut -d : -f 2`
-	
+    echo "./etc" > /tmp/mtree-exclude
+    echo "./var" >> /tmp/mtree-exclude
+    echo "./tmp" >> /tmp/mtree-exclude
+    echo "./dev" >> /tmp/mtree-exclude
 	if echo "${FILE_TYPE}" | grep -qi "ASCII text"; then
-		cmd="mtree -f ${SECOND_OPTION} -p /"
+		cmd="mtree -f ${SECOND_OPTION} -X /tmp/mtree-exclude -p /"
 	elif echo "${FILE_TYPE}" | grep -qi bzip; then
 		# Warning, the bzipped file can be any type of file!
-		cmd="bzcat ${SECOND_OPTION} | mtree -p /"
+		cmd="bzcat ${SECOND_OPTION} | mtree -X /tmp/mtree-exclude -p /"
 	elif echo "${FILE_TYPE}" | grep -qi xz; then
-		cmd="xz -dc ${SECOND_OPTION} | mtree -p /"
+		cmd="xz -dc ${SECOND_OPTION} | mtree -X /tmp/mtree-exclude -p /"
 	else
 		die "Is the given reference mtree file a good mtree file ?"
 	fi
