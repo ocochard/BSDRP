@@ -343,6 +343,9 @@ add_port "net/mrouted"
 # Add pimdd: IPv4 PIM Dense Mode daemon
 add_port "net/pimdd"
 
+# Add tayga: userland NAT64 implementation
+add_port "net/tayga"
+
 # Add fprobe: Netflow probe
 add_port "net-mgmt/fprobe"
 

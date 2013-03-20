@@ -9,22 +9,24 @@ Listed in order of seniority along with date of first contribution.
 Reuse of existing softwares/patches:
 
 BSD Router Project (BSDRP) is based upon/includes various free software packages, listed below.
-The authors of BSDRP would like to thank the authors of these software packages for their efforts.
-
-* FreeBSD:  Copyright (c) 1995-2012 The FreeBSD Project. All rights reserved
-* Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support
-* FreeNAS 8: Lot's of idea regarding the nanobsd tunning, Copyright iXsystems
-* Quagga routing software
-* The BIRD Internet Routing Daemon 
-* Net-SNMP 
-* Idea of using glabel for disk type absraction: Scott Ullrich (pfSense)
-* "show memory" is a bourn shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
-* FreeVRRPd : Copyright (c) 2001,2002 Sebastien Petit <spe@bsdfr.org>
-* uCARP: Copyright (c) 2004-2010 Frank Denis <j at ucarp.org> 
-* fprobe: Slava Astashonok <sla@0n.ru>
+The authors of BSDRP would like to thank the authors of these software packages for their efforts:
+* FreeBSD:  Copyright (c) 1995-2013 The FreeBSD Project. All rights reserved
+* BIRD Internet Routing Daemon 
 * DHCP server and relay: Internet Systems Consortium
-* ssmtp: extremely simple MTA to get mail off the system to a mail hub
+* FreeNAS 8: Lot's of idea regarding the nanobsd tunning, Copyright iXsystems
+* Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support
+* Idea of using glabel for disk type absraction: Scott Ullrich (pfSense)
+* fprobe: Slava Astashonok <sla@0n.ru>
+* FreeVRRPd : Copyright (c) 2001,2002 Sebastien Petit <spe@bsdfr.org>
+* "show memory" is a bourn shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
 * mcast-tools: Copyright (C) 1999 WIDE Project, Copyright (c) 1998-2001 The University of Southern California/Information Sciences Institute
 * mrouted: Copyright (C) 2002 The Board of Trustees of the Leland Stanford Junior University
 * mpd: Multi-link PPP Daemon, Copyright (c) 2003-2004, Archie L. Cobbs, Michael Bretterklieber, Alexander Motin
+* Quagga routing software
+* pftop:  Can E. Acar
+* Tayga: Nathan Lutchansky, lutchann@litech.org
+* tm Copyright (c) 2008 Nicholas Marriott <nicm@users.sourceforge.net>
 * sh-die: http://code.google.com/p/sh-die/
+* ssmtp: extremely simple MTA to get mail off the system to a mail hub
+* sudo: Copyright (c) 1994-1996, 1998-2012, Todd C. Miller <Todd.Miller@courtesan.com>
+* uCARP: Copyright (c) 2004-2010 Frank Denis <j at ucarp.org> 

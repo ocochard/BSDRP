@@ -14,6 +14,7 @@
 * Enable blackhole(8) by default for IPv4
 * netsend and netreceive updated (backported from -current)
 * Add 'system dual-console': Permit to enable dual vga/serial mode
+* New package: tayga (userland stateless NAT64 daemon)
 
 ## Bug fixes
 * Revert to use dual vga/serial mode on the vga image: Somes servers have buggy serial support
@@ -51,6 +52,7 @@ pkg-1.0.9_2                    New generation package manager
 quagga-re-0.99.17.12           A branch of popular quagga software pointed at stability
 ssmtp-2.64                     Extremely simple MTA to get mail off the system to a mail hub
 sudo-1.8.6.p7                  Allow others to run commands as root
+tayga-0.9.2                    Userland stateless NAT64 daemon
 tmux-1.7_1                     A Terminal Multiplexer
 ucarp-1.5.2_1                  Userlevel Common Address Redundancy Protocol
 virtio-kmod-9.1-0.242658       virtio kernel modules port for 8.[23]/9.[01]
