@@ -437,10 +437,10 @@ begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"
 #
 # bsnmp-regex (8)
 #
-begemotSnmpdModulePath."regex" = "/usr/local/lib/snmp_regex.so"
-           %regex
-           regexConfig = "/usr/local/etc/bsnmp-regex.conf"
-           regexSocket = "/var/run/bsnmp-regex.sock"
+#begemotSnmpdModulePath."regex" = "/usr/local/lib/snmp_regex.so"
+#           %regex
+#           regexConfig = "/usr/local/etc/bsnmp-regex.conf"
+#           regexSocket = "/var/run/bsnmp-regex.sock"
 EOF
 
 	# Set Quagga permission
