@@ -1,4 +1,4 @@
-# Release 1.4 (Not released)
+# Release 1.4 (2013/03/21)
 
 ## New features
 * Update to FreeBSD 9.1-RELEASE-p1
