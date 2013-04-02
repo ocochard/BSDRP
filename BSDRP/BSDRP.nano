@@ -297,7 +297,7 @@ add_port () {
 	fi
 }
 
-#### Add routing related ports #####
+#### Ports list section #####
 
 # high-performance ipfw netmap
 add_port "net/ipfw-user"
@@ -377,6 +377,8 @@ add_port "benchmarks/iperf"
 if [ ${NANO_ARCH} != "sparc64" ]; then
 	add_port "emulators/virtio-kmod"
 fi
+
+#### End of port list section ####
 
 # Add netrate tools
 customize_cmd add_netrate
