@@ -299,7 +299,7 @@ add_port () {
 	fi
 }
 
-#### Add routing related ports #####
+#### Ports list section #####
 
 # high-performance ipfw netmap
 # Disabled because net/pfil API changes
@@ -373,9 +373,11 @@ add_port "benchmarks/netpipe"
 add_port "benchmarks/iperf"
 
 # VM tools
-# VM tools brings too lot's of deps… Need to delete them all after installing (if there are used for build only)
+# VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 #add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
 #add_port "emulators/virtualbox-ose-additions/" "-DWITHOUT_X11 -DWITHOUT_HAL"
+
+#### End of port list section ####
 
 # Add netrate tools
 customize_cmd add_netrate

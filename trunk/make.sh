@@ -310,7 +310,9 @@ if [ -n "${MASTER_PROJECT}" ]; then
 	# BUG: unionfs seems unstable on FreeBSD 9.1
 	MASTER_PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
 	trap "echo 'Running exit trap code' ; check_clean ${PROJECT_DIR}" 1 2 15 EXIT
+	[ -d ${PROJECT_DIR}/kernels ] || mkdir ${PROJECT_DIR}/kernels
 	mount -t unionfs -o below,noatime,copymode=transparent ${MASTER_PROJECT_DIR}/kernels ${PROJECT_DIR}/kernels
+	[ -d ${PROJECT_DIR}/Files ] || mkdir ${PROJECT_DIR}/Files
 	mount -t unionfs -o below,noatime,copymode=transparent ${MASTER_PROJECT_DIR}/Files ${PROJECT_DIR}/Files
 fi
 
