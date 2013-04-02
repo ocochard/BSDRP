@@ -1,14 +1,19 @@
+# Release 1.5 (not released)
+
+## New features
+* Update to FreeBSD 9.1-RELEASE-p2
+
 # Release 1.4 (2013/03/21)
 
 ## New features
 * Update to FreeBSD 9.1-RELEASE-p1
 * Extras patches:
-  * pf source entry removing too slow
-    http://lists.freebsd.org/pipermail/freebsd-net/2013-March/034897.html
-  * interfaces route add/delete
-    http://lists.freebsd.org/pipermail/freebsd-net/2013-March/034801.html
-  * bsnmpd SNMPv3 engine discovery is broken
-    http://www.freebsd.org/cgi/query-pr.cgi?pr=174974
+    * pf source entry removing too slow
+      http://lists.freebsd.org/pipermail/freebsd-net/2013-March/034897.html
+    * interfaces route add/delete
+      http://lists.freebsd.org/pipermail/freebsd-net/2013-March/034801.html
+    * bsnmpd SNMPv3 engine discovery is broken
+      http://www.freebsd.org/cgi/query-pr.cgi?pr=174974
 * Add pfsync,coretemp and amdtemp modules
 * Replace net-snmp by bsnmpd (with ucd and regex modules)
 * Enable blackhole(8) by default for IPv4
@@ -24,38 +29,38 @@
 * quagga-re to 0.99.17.12
 
 ## Installed packages
-NetPIPE-3.7.1                  A self-scaling network benchmark
-bird-1.3.9_1                   Dynamic IP routing daemon (IPv4 version)
-bird6-1.3.9_1                  Dynamic IP routing daemon (IPv6 version)
-bsnmp-regex-0.5_2              A bsnmpd module allowing creation of counters from log files
-bsnmp-ucd-0.3.6                A bsnmpd module that implements parts of UCD-SNMP-MIB
-bsnmptools-0.0.20060818_2      Snmp client tools
-dlmalloc-2.8.4                 Small, fast malloc library by Doug Lea
-fprobe-1.1_1                   Tool that collects network traffic data
-freevrrpd-1.1                  This a VRRP RFC2338 Compliant implementation under FreeBSD
-iperf-2.0.5                    A tool to measure maximum TCP and UDP bandwidth
-ipfw-user-0.1                  Netmap-enabled IPFW userspace version
-ipmitool-1.8.12_2              CLI to manage IPMI systems
-ipsec-tools-0.8.0_3            KAME racoon IKE daemon, ipsec-tools version
-isc-dhcp42-relay-4.2.4         The ISC Dynamic Host Configuration Protocol relay
-isc-dhcp42-server-4.2.4_2      The ISC Dynamic Host Configuration Protocol server
-libevent-1.4.14b_2             Provides an API to execute callback functions on certain events
-libgcrypt-1.5.0_1              General purpose crypto library based on code used in GnuPG
-libgpg-error-1.11              Common error values for all GnuPG components
-mcast-tools-20061214_1         IPv6 multicast routing daemons and tools
-mpd-5.6                        Multi-link PPP daemon based on netgraph(4)
-mrouted-3.9.6_1                Multicast routing daemon providing DVMRP for IPv4
-openldap-client-2.4.34         Open source LDAP client implementation
-pftop-0.7_1                    Utility for real-time display of statistics for pf
-pimdd-0.2.1.0                  UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-pkg-1.0.9_2                    New generation package manager
-quagga-re-0.99.17.12           A branch of popular quagga software pointed at stability
-ssmtp-2.64                     Extremely simple MTA to get mail off the system to a mail hub
-sudo-1.8.6.p7                  Allow others to run commands as root
-tayga-0.9.2                    Userland stateless NAT64 daemon
-tmux-1.7_1                     A Terminal Multiplexer
-ucarp-1.5.2_1                  Userlevel Common Address Redundancy Protocol
-virtio-kmod-9.1-0.242658       virtio kernel modules port for 8.[23]/9.[01]
+* NetPIPE-3.7.1                  A self-scaling network benchmark
+* bird-1.3.9_1                   Dynamic IP routing daemon (IPv4 version)
+* bird6-1.3.9_1                  Dynamic IP routing daemon (IPv6 version)
+* bsnmp-regex-0.5_2              A bsnmpd module allowing creation of counters from log files
+* bsnmp-ucd-0.3.6                A bsnmpd module that implements parts of UCD-SNMP-MIB
+* bsnmptools-0.0.20060818_2      Snmp client tools
+* dlmalloc-2.8.4                 Small, fast malloc library by Doug Lea
+* fprobe-1.1_1                   Tool that collects network traffic data
+* freevrrpd-1.1                  This a VRRP RFC2338 Compliant implementation under FreeBSD
+* iperf-2.0.5                    A tool to measure maximum TCP and UDP bandwidth
+* ipfw-user-0.1                  Netmap-enabled IPFW userspace version
+* ipmitool-1.8.12_2              CLI to manage IPMI systems
+* ipsec-tools-0.8.0_3            KAME racoon IKE daemon, ipsec-tools version
+* isc-dhcp42-relay-4.2.4         The ISC Dynamic Host Configuration Protocol relay
+* isc-dhcp42-server-4.2.4_2      The ISC Dynamic Host Configuration Protocol server
+* libevent-1.4.14b_2             Provides an API to execute callback functions on certain events
+* libgcrypt-1.5.0_1              General purpose crypto library based on code used in GnuPG
+* libgpg-error-1.11              Common error values for all GnuPG components
+* mcast-tools-20061214_1         IPv6 multicast routing daemons and tools
+* mpd-5.6                        Multi-link PPP daemon based on netgraph(4)
+* mrouted-3.9.6_1                Multicast routing daemon providing DVMRP for IPv4
+* openldap-client-2.4.34         Open source LDAP client implementation
+* pftop-0.7_1                    Utility for real-time display of statistics for pf
+* pimdd-0.2.1.0                  UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
+* pkg-1.0.9_2                    New generation package manager
+* quagga-re-0.99.17.12           A branch of popular quagga software pointed at stability
+* ssmtp-2.64                     Extremely simple MTA to get mail off the system to a mail hub
+* sudo-1.8.6.p7                  Allow others to run commands as root
+* tayga-0.9.2                    Userland stateless NAT64 daemon
+* tmux-1.7_1                     A Terminal Multiplexer
+* ucarp-1.5.2_1                  Userlevel Common Address Redundancy Protocol
+* virtio-kmod-9.1-0.242658       virtio kernel modules port for 8.[23]/9.[01]
 
 -----------------------------------------------------
 # Release 1.3 (2013/01/14)
