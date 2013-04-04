@@ -311,8 +311,9 @@ add_port () {
 
 # Add modules to the native FreeBSD bsnmpd daemon:
 add_port "net-mgmt/bsnmp-regex"
-add_port "net-mgmt/bsnmp-regex"
-add_port "net-mgmt/bsnmptools"
+add_port "net-mgmt/bsnmp-ucd"
+# didn't compile on -current
+#add_port "net-mgmt/bsnmptools"
 
 # Quagga installation
 add_port "net/quagga-re" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
