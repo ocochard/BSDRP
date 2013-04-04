@@ -310,10 +310,12 @@ add_port () {
 #add_port "net-mgmt/net-snmp" "-DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
 
 # Add modules to the native FreeBSD bsnmpd daemon:
-add_port "net-mgmt/bsnmp-regex"                                                                                               add_port "net-mgmt/bsnmp-regex"
+add_port "net-mgmt/bsnmp-regex"
+add_port "net-mgmt/bsnmp-regex"
 add_port "net-mgmt/bsnmptools"
 
-# Quagga installation                                                                                                         add_port "net/quagga-re" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
+# Quagga installation
+add_port "net/quagga-re" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:
@@ -327,7 +329,7 @@ add_port "net/freevrrpd"
 add_port "security/ipsec-tools" "-DWITH_RC5 -DWITH_IDEA -DWITH_RADIUS -DWITH_LDAP"
 
 #pf top
-#DO NOT COMPILE on -current
+#DO NOT COMPILE on -current
 #add_port "sysutils/pftop"
 
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
