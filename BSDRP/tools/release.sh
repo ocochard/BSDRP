@@ -1,8 +1,7 @@
 #!/bin/sh
 #This script permit to help the generation and uploading process of new images
 #It generate the dokuwiki table too
-set -eu
-
+set -e
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
@@ -10,7 +9,8 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 #DRY="echo"
 DRY=""
 SRC_DIR="/usr/local/BSDRP"
-PROJECT="BSDRP"
+[ -n "${PROJECT}" ] || PROJECT="BSDRP"
+set -u
 OBJ_BASE_DIR="/usr/obj"
 VERSION=""
 FAST_MODE=false

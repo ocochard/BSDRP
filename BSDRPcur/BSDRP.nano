@@ -646,7 +646,10 @@ bsdrp_console_serial () {
     # Disable getty on syscons devices
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
 
-    # Tell loader to use serial console early.
+	# Add bhyve compatibility
+	#echo console \"/usr/libexec/getty std.${COM_SPEED}\"   vt100   on secure >> ${NANO_WORLDDIR}/etc/ttys
+    
+	# Tell loader to use serial console early.
     echo "-h" > ${NANO_WORLDDIR}/boot.config
 
 	# Customize loader.conf file:
