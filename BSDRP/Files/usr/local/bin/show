@@ -351,6 +351,8 @@ tech-support () {
 	vmstat -z | head -1 ; vmstat -z | grep -i mbuf	
 	echo "==== mbuf usage: netstat -m ===="
 	netstat -m
+	echo "==== netstat -nxaL ===="
+	netstat -nxaL
 	echo "==== show memory ===="
 	show memory
 	echo "==== Geom stats ===="
@@ -366,8 +368,8 @@ tech-support () {
 	ifconfig -m
 	echo "=== loaded module ==="
 	kldstat -v
-	echo "==== pciconf -lvc ===="
-	pciconf -lvc
+	echo "==== pciconf -lvbc ===="
+	pciconf -lvbc
 	echo "==== devinfo -rv ==="
 	devinfo -rv
 	echo "=== dmesg ==="

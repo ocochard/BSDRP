@@ -44,7 +44,7 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # Update or install src if not installed
 update_src () {
-	echo "Updating/Installing FreeBSD and ports source"
+	echo "Updating/Installing FreeBSD source"
 	
 	if [ ! -d ${FREEBSD_SRC}/.svn ]; then
 		echo "No existing FreeBSD source tree found: Checking out source..."
@@ -57,6 +57,10 @@ update_src () {
 		echo "Updating FreeBSD sources..."
 		svn update ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't update FreeBSD src"
 	fi
+}
+
+update_port () {
+	echo "Updating/Installing ports tree"
 	if [ ! -d ${PORTS_SRC}/.svn ]; then
 		echo "No existing source port tree found: Checking out ports source..."
 		mkdir -p ${PORTS_SRC} || die "Can't create ${PORTS_SRC}"
@@ -73,16 +77,12 @@ update_src () {
 #patch the source tree
 patch_src() {
 	: > ${PROJECT_DIR}/FreeBSD/src-patches
-	: > ${PROJECT_DIR}/FreeBSD/ports-patches
-	: > ${PROJECT_DIR}/FreeBSD/ports-added
 	# Nuke the newly created files to avoid build errors, as
 	# patch(1) will automatically append to the previously
 	# non-existent file.
 	( cd ${FREEBSD_SRC} &&
 	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
-	( cd ${PORTS_SRC}
-	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
-	: > ${PROJECT_DIR}/FreeBSD/.pulled
+	: > ${PROJECT_DIR}/FreeBSD/.src_pulled
 
 	for patch in $(cd ${SRC_PATCH_DIR} && ls freebsd.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/src-patches; then
@@ -93,6 +93,23 @@ patch_src() {
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/src-patches
 		fi
 	done
+
+	# Overwrite the nanobsd script with our own improved nanobsd
+	cp nanobsd.sh ${NANOBSD_DIR}/nanobsd.sh
+	chmod +x ${NANOBSD_DIR}/nanobsd.sh
+}
+
+#patch the port tree
+#TODO: avoid copy/past with patch_src()
+patch_port() {
+	: > ${PROJECT_DIR}/FreeBSD/ports-patches
+	# Nuke the newly created files to avoid build errors, as
+	# patch(1) will automatically append to the previously
+	# non-existent file.
+	( cd ${PORTS_SRC}
+	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
+	: > ${PROJECT_DIR}/FreeBSD/.port_pulled
+
 	for patch in $(cd ${PORT_PATCH_DIR} && ls ports.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/ports-patches; then
 			echo "Applying patch $patch..."
@@ -102,15 +119,10 @@ patch_src() {
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/ports-patches
 		fi
 	done
-
-	# Overwrite the nanobsd script with our own improved nanobsd
-	cp nanobsd.sh ${NANOBSD_DIR}/nanobsd.sh
-	chmod +x ${NANOBSD_DIR}/nanobsd.sh
-
 }
 
 #Add new ports (in shar format)
-add_new_ports() {
+add_new_port() {
 	for ports in $(cd ${PORT_PATCH_DIR} && ls ports.*.shar); do
 		if ! grep -q $ports ${PROJECT_DIR}/FreeBSD/ports-added; then
 			echo "Adding port $ports..."
@@ -191,6 +203,7 @@ INPUT_CONSOLE="-vga"
 FAST=false
 # Boolean for updating or not the source tree (FreeBSD and port tree)
 UPDATE_SRC=false
+UPDATE_PORT=false
 # Boolean for using TMPFS
 # Warning: Mixing TMPFS and unionfs (like this script does) crash all FreeBSD 9.1 and below
 TMPFS=false
@@ -245,6 +258,7 @@ do
 			;;
 		-u)
 			UPDATE_SRC=true
+			UPDATE_PORT=true
 			shift
 			;;
 		-r)
@@ -410,8 +424,15 @@ check_clean ${NANO_OBJ}
 
 # If no source installed, force installing them
 [ -d ${FREEBSD_SRC}/.svn ] || UPDATE_SRC=true
-[ -d ${PORTS_SRC}/.svn ] || UPDATE_SRC=true
 
+#Check if the project uses port before installing/updating port tree
+if grep -q '^add_port[[:blank:]]\+"' ${PROJECT_DIR}/${NAME}.nano; then
+	[ -d ${PORTS_SRC}/.svn ] || UPDATE_PORT=true
+	PROJECT_WITH_PORT=true
+else
+	PROJECT_WITH_PORT=false
+	UPDATE_PORT=false
+fi
 echo "Will generate an ${NAME} image with theses values:"
 echo "- Target architecture: ${NANO_KERNEL}"
 if [ -n "${INPUT_CONSOLE}" ]; then
@@ -422,6 +443,12 @@ if ($UPDATE_SRC); then
 else
 	echo "- Source Updating/installing: NO"
 fi
+if ($UPDATE_PORT); then
+	echo "- Port tree Updating/installing: YES"
+else
+	echo "- Port tree Updating/installing: NO"
+fi
+
 if [ -z "${SKIP_REBUILD}" ]; then
 	echo "- Build the full world (take about 1 hour): YES"
 else
@@ -453,8 +480,10 @@ echo "NANO_NAME=${NAME}" >> /tmp/${PROJECT}.nano
 echo "# Source tree directory" >> /tmp/${PROJECT}.nano
 echo "NANO_SRC=\"${FREEBSD_SRC}\"" >> /tmp/${PROJECT}.nano
 
-echo "# Where the port tree is" >> /tmp/${PROJECT}.nano
-echo "PORTS_SRC=\"${PORTS_SRC}\"" >> /tmp/${PROJECT}.nano
+if ($PROJECT_WITH_PORT); then
+	echo "# Where the port tree is" >> /tmp/${PROJECT}.nano
+	echo "PORTS_SRC=\"${PORTS_SRC}\"" >> /tmp/${PROJECT}.nano
+fi
 
 echo "# Where nanobsd additional files live under the source tree" >> /tmp/${PROJECT}.nano
 
@@ -535,8 +564,14 @@ if ($UPDATE_SRC); then
 	update_src
 	echo "Patch sources..."
 	patch_src
+fi
+if ($UPDATE_PORT); then
+	echo "Update port tree..."
+    update_port
+	echo "Patch sources..."
+    patch_port
 	echo "Add ports..."
-	add_new_ports
+	add_new_port
 fi
 
 # Export some variables for using them under nanobsd
