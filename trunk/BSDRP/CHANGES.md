@@ -2,6 +2,9 @@
 
 ## New features
 * Update to FreeBSD 9.1-RELEASE-p2
+* Extras patches:
+    * bsnmpd costemic patch
+      http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
 
 # Release 1.4 (2013/03/21)
 

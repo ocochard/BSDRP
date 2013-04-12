@@ -347,7 +347,7 @@ check_cfg () {
 sys_reboot () {
 	check_cfg
 	echo "Rebooting..."
-	# Never use reboot under FreeBSD !
+	# Never use reboot(8) under FreeBSD !
 	shutdown -r now
 }
 
