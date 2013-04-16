@@ -6,6 +6,11 @@
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
 
+## Misc for developers
+* There are new scripts 
+    * bisection-gen.sh: Permit to generate a list of BSDRP image based on a list of FreeBSD svn-revision number
+    * bench-lab.sh: Permit to automatize multiple upgrade image + configuration sets + bench tests 
+
 # Release 1.4 (2013/03/21)
 
 ## New features
