@@ -10,7 +10,7 @@
 #  | Tester_1 |<--->| Device Under Test (DUT) |<--->| Tester_2 | 
 #  +----------+     +-------------------------+     +----------+
 #      |                       |                         |
-#    ------- admin network ---------------------------------
+#    -----------------admin network (ssh)--------------------
 #
 #  this script permit to:
 #  1. change configuration or upgrade image of the DUT (BSDRP based) and reboot it
@@ -28,15 +28,30 @@ BENCH_DIR="/tmp/benchs"
 # List of IMAGES (upgrade type only) to tests
 IMAGE_LIST='
 /tmp/BSDRP-244900-upgrade-amd64-serial.img
+/tmp/BSDRP-245423-upgrade-amd64-serial.img
+/tmp/BSDRP-246146-upgrade-amd64-serial.img
+/tmp/BSDRP-246792-upgrade-amd64-serial.img
 /tmp/BSDRP-247463-upgrade-amd64-serial.img
+/tmp/BSDRP-247916-upgrade-amd64-serial.img
+/tmp/BSDRP-248267-upgrade-amd64-serial.img
+/tmp/BSDRP-248584-upgrade-amd64-serial.img
+/tmp/BSDRP-248830-upgrade-amd64-serial.img
+/tmp/BSDRP-248944-upgrade-amd64-serial.img
+/tmp/BSDRP-248975-upgrade-amd64-serial.img
+/tmp/BSDRP-249022-upgrade-amd64-serial.img
+/tmp/BSDRP-249052-upgrade-amd64-serial.img
 /tmp/BSDRP-249330-upgrade-amd64-serial.img
 '
 
 # List of configurations folder to tests
 # These directory should contains the configuration files like:
-# /boot/loader.conf.local, /etc/rc.conf, /etc/sysctl.conf
+# boot/loader.conf.local, etc/rc.conf, etc/sysctl.conf, etc...
 # TO DO
-CFG_DIR_LIST=''
+CFG_DIR_LIST='
+/tmp/bench-configs/forwarding
+/tmp/bench-configs/pf
+/tmp/bench-configs/ipfw
+'
 
 # Number of iteration for the same tests (for filling ministat)
 TEST_ITER_MAX=5
@@ -70,10 +85,13 @@ IMAGE_ITER=1
 TEST_ITER=1
 
 # Counting total number of tests bench
+# And checking file/directory presence
 TOTAL_TEST=0                                                                                                                
 for IMG in ${IMAGE_LIST};  do
+	[ -f ${IMG} ] || die "Can't found file {IMG}"
 	if [ -n "${CFG_DIR_LIST}" ]; then
 		for CFG in ${CFG_DIR_LIST}; do
+			[ -d ${CFG} ] || die "Can't found directory ${CFG}"
 			TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
 		done
 	else
@@ -157,8 +175,9 @@ bench () {
 upload_cfg () {
 	# Uploading configuration to the DUT
 	# $1: Path to the directory dir that conains configurations files
-	echo "TODO: uploading cfg $1"
-	return 0
+	echo "Uploading cfg $1"
+	scp -r -2 -o "PreferredAuthentications publickey" -o "StrictHostKeyChecking no" $1/* root@${DUT_ADMIN}:/ || return 1
+	rcmd ${DUT_ADMIN} "config save" && return 0 || return 1
 }
 
 icmp_test_all () {
@@ -182,7 +201,7 @@ ssh_push_key () {
 	echo "Testing SSH connectivity with key to each devices:"
 	for HOST in ${TESTER_1_ADMIN} ${TESTER_2_ADMIN} ${DUT_ADMIN}; do
 		echo -n "  ${HOST}..."
-		if ! rcmd ${HOST} "show ver" > /dev/null 2>&1; then
+		if ! rcmd ${HOST} "uname" > /dev/null 2>&1; then
 			echo ""
 			echo -n "    Pushing ssh key to ${HOST}..."
 			if [ -f ~/.ssh/id_rsa.pub ]; then
@@ -232,10 +251,10 @@ for UPGRADE_IMAGE in ${IMAGE_LIST}; do
 			echo "Starting sub-configuration serie bench test: ${CFG}..."
 			upload_cfg ${CFG}
 			reboot_dut
-			echo "Image: ${UPGRADE_IMAGE}" > ${BENCH_DIR}/bench.${IMAGE_ITER}.${CFG_ITER}.info
-			echo "CFG: ${CFG}" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.${CFG_ITER}.info
-			echo "Start time: `date`" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.${CFG_ITER}.info
-			bench ${BENCH_DIR}/bench.${IMAGE_ITER}.${CFG_ITER}
+			echo "Image: ${UPGRADE_IMAGE}" > ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
+			echo "CFG: ${CFG}" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
+			echo "Start time: `date`" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
+			bench ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}
 			CONFIG_ITER=`expr ${CONFIG_ITER} + 1`
 		done
 	else
