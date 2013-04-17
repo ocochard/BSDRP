@@ -18,8 +18,23 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # List of SVN revision to build image for
 SVN_REV_LIST='
 244900
+245423
+246146
+246792
 247463
+247916
+248267
+248584
+248830
+248944
+248975
+249022
+249052
+249094
+249094
+249163
 249330
+249506
 '
 
 # Name of the BSDRP project
@@ -29,7 +44,8 @@ CONSOLE="serial"
 ARCH="amd64"
 
 for SVN_REV in ${SVN_REV_LIST}; do
-	echo "Building image matching revsion ${SVN_REV}..."
+	echo "Building image matching revision ${SVN_REV}..."
+	[ -f /tmp/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ] && continue
 	#Configuring SVN revision in $PROJECT/make.conf and in version
 	sed -i "" -e "/SRC_REV=/s/.*/SRC_REV=${SVN_REV}/" $PROJECT/make.conf
 	echo ${SVN_REV} > $PROJECT/Files/etc/version
