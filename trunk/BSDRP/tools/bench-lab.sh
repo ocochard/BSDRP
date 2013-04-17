@@ -122,11 +122,18 @@ bench () {
 		
 		#scp ${TESTER_2_ADMIN}:/tmp/bench.log.receiver $1.${ITER}.receiver
 		#kill ${JOB_RECEIVER}
+	
+		echo "done"
+
+		# if we did the last test, we can exit (avoid to wait for an useless reboot)
+		[ ${TEST_ITER} -eq ${TOTAL_TEST} ] && return 0
 		TEST_ITER=`expr ${TEST_ITER} + 1`
 		
-		# if we did the last test, we can exit (avoid to wait for an useless reboot)
-		echo "done"
-		[ ${TEST_ITER} -eq ${TOTAL_TEST} ] && return 0 || reboot_dut
+		# if we did the last test of the serie, we can exit and avoid an useless reboot
+		# because after this last, it will be rebooted outside this function
+		[ ${ITER} -eq ${TEST_ITER_MAX} ] && return 0	
+		
+		reboot_dut
 	done
 	return 0
 }
