@@ -35,6 +35,7 @@ IMAGE_LIST='
 # List of configurations folder to tests
 # These directory should contains the configuration files like:
 # /boot/loader.conf.local, /etc/rc.conf, /etc/sysctl.conf
+# TO DO
 CFG_DIR_LIST=''
 
 # Number of iteration for the same tests (for filling ministat)
@@ -78,59 +79,63 @@ rcmd () {
 	# $1: hostname
 	# $2: command to send
 	# return 0 if OK, 1 if not
-	if eval ${SSH_CMD} $1 $2; then
-		return 0
-	else
-		return 1
-	fi	
+	eval ${SSH_CMD} $1 $2 && return 0 || return 1
 }
 
 reboot_dut () {
 	# Reboot the dut
-	# Force a configuration saving before ?
-	# This will disconnect the ssh access, and we need to wait for timeout...
-	rcmd ${DUT_ADMIN} reboot || die "Can't reboot the DUT after bench TEST/CFG/IMG: ${TEST_ITER}/${CONFIG_ITER}/${IMAGE_ITER}"
-	sleep 5
+	# Need to wait an online return before continuing too
+	echo -n "Rebooting DUT and waiting device return online..."
+	rcmd ${DUT_ADMIN} reboot > /dev/null 2>&1
+	# || die "Can't reboot the DUT after bench TEST/CFG/IMG: ${TEST_ITER}/${CONFIG_ITER}/${IMAGE_ITER}"
+	sleep 10
+	#wait-for-dut online and in forwarding mode
+	local REBOOT_TIMEOUT=120
+	while ! rcmd ${TESTER_1_ADMIN} "ping -c 2 ${TESTER_2_LAB}" > /dev/null 2>&1; do
+		sleep 5
+		REBOOT_TIMEOUT=`expr ${REBOOT_TIMEOUT} - 1`
+		[ ${REBOOT_TIMEOUT} -eq 0 ] && die "DUT didn't switch in forwarding mode after `expr 120 \* 5` seconds"
+	done
+	echo "done"
+	return 0
 }
 
 bench () {
 	# Benching script
 	# $1: Directory/prefix-name of output log file
-	echo "bench: $1"
+	echo "Start bench serie $1"
 	for ITER in `seq 1 ${TEST_ITER_MAX}`; do
-		#wait-for-dut online and in forwarding mode
-		local REBOOT_TIMEOUT=120
-		while ! rcmd ${TESTER_1_ADMIN} "ping -c 2 ${TESTER_2_LAB}" > /dev/null 2>&1; do
-			sleep 5
-			REBOOT_TIMEOUT=`expr ${REBOOT_TIMEOUT} - 1`
-			[ ${REBOOT_TIMEOUT} -eq 0 ] && die "DUT didn't switch in forwarding mode after `expr 120 \* 5` seconds"
-		done
 		#start receiver
-		rcmd ${TESTER_2_ADMIN} "netreceive 9090" > $1.${TEST_ITER}.receiver 2>&1 &
+		rcmd ${TESTER_2_ADMIN} "netreceive 9090" > $1.${ITER}.receiver 2>&1 &
 		#|| die "Can't start receiver"
 		#JOB_RECEIVER=$!
 		
 		#Alternate method with log file stored on TESTER (if tool is verbose)	
-		#rcmd ${TESTER_2_ADMIN} "nohup netreceive 9090 \>\& /tmp/bench.log_${TEST_ITER}_receiver \&"
+		#rcmd ${TESTER_2_ADMIN} "nohup netreceive 9090 \>\& /tmp/bench.log.receiver \&"
 		#start generator
-		rcmd ${TESTER_1_ADMIN} "netblast ${TESTER_2_LAB} 9090 0 10" > $1.${TEST_ITER}.sender 2>&1 &
+		rcmd ${TESTER_1_ADMIN} "netblast ${TESTER_2_LAB} 9090 0 10" > $1.${ITER}.sender 2>&1 &
 		# || die "Can't start sender"	
 		JOB_SENDER=$!
-		echo "Waiting for end of bench ${TEST_ITER}/${TOTAL_TEST}..."
+		echo -n "Waiting for end of bench ${TEST_ITER}/${TOTAL_TEST}..."
 		wait ${JOB_SENDER}
 		rcmd ${TESTER_2_ADMIN} "pkill netreceive"
 		
-		#scp ${TESTER_2_ADMIN}:/tmp/bench.log_${TEST_ITER}_receiver $1.${TEST_ITER}.receiver
+		#scp ${TESTER_2_ADMIN}:/tmp/bench.log.receiver $1.${ITER}.receiver
 		#kill ${JOB_RECEIVER}
 		TEST_ITER=`expr ${TEST_ITER} + 1`
-		reboot_dut
+		
+		# if we did the last test, we can exit (avoid to wait for an useless reboot)
+		echo "done"
+		[ ${TEST_ITER} -eq ${TOTAL_TEST} ] && return 0 || reboot_dut
 	done
+	return 0
 }
 
 upload_cfg () {
 	# Uploading configuration to the DUT
 	# $1: Path to the directory dir that conains configurations files
-	echo "uploading cfg $1"
+	echo "TODO: uploading cfg $1"
+	return 0
 }
 
 icmp_test_all () {
@@ -138,7 +143,7 @@ icmp_test_all () {
 	local PING_ACCESS_OK=true
 	echo "Testing ICMP connectivity to each devices:"
 	for HOST in ${TESTER_1_ADMIN} ${TESTER_2_ADMIN} ${DUT_ADMIN}; do
-		echo -n "${HOST}..."
+		echo -n "  ${HOST}..."
 		if ping -c 3 ${HOST} > /dev/null 2>&1; then
 			echo "OK"
 		else
@@ -151,39 +156,53 @@ icmp_test_all () {
 
 ssh_push_key () {
 	# Pushing ssh key
+	echo "Testing SSH connectivity with key to each devices:"
 	for HOST in ${TESTER_1_ADMIN} ${TESTER_2_ADMIN} ${DUT_ADMIN}; do
+		echo -n "  ${HOST}..."
 		if ! rcmd ${HOST} "show ver" > /dev/null 2>&1; then
-			echo -n "Pushing ssh key to ${HOST}..."
+			echo ""
+			echo -n "    Pushing ssh key to ${HOST}..."
 			if [ -f ~/.ssh/id_rsa.pub ]; then
-				cat ~/.ssh/id_rsa.pub | ssh -2 -q -o "StrictHostKeyChecking no" root@${HOST} "cat >> ~/.ssh/authorized_keys"
+				cat ~/.ssh/id_rsa.pub | ssh -2 -q -o "StrictHostKeyChecking no" root@${HOST} "cat >> ~/.ssh/authorized_keys" > /dev/null 2>&1
 			elif [ -f ~/.ssh/id_dsa.pub ]; then
-				cat ~/.ssh/id_dsa.pub | ssh -2 -q -o "StrictHostKeyChecking no" root@${HOST} "cat >> ~/.ssh/authorized_keys"
+				cat ~/.ssh/id_dsa.pub | ssh -2 -q -o "StrictHostKeyChecking no" root@${HOST} "cat >> ~/.ssh/authorized_keys" > /dev/null 2>&1
+			else
+				echo "NOK"
+				die "Didn't found user public SSH key"
 			fi
+		else
+			echo "OK"
 		fi
 	done
+	return 0
 }
 
 upgrade_image () {
 	# Upgrade remote image
 	# $1 Full path to the image
-	echo "UPGRADING to $1..."
+	echo -n "Upgrading..."
 	if echo $1 | grep -q ".img.xz"; then
-		cat $1 | rcmd  ${DUT_ADMIN} "xzcat \| upgrade"
+		cat $1 | rcmd  ${DUT_ADMIN} "xzcat \| upgrade" > /dev/null 2>&1
 	else
-		cat $1 | rcmd ${DUT_ADMIN} "cat \| upgrade"
+		cat $1 | rcmd ${DUT_ADMIN} "cat \| upgrade" > /dev/null 2>&1
 	fi
+	echo "done"
+	return 0
 }
 
 ##### Main
 
+echo "BSDRP automatized upgrade/configuration-sets/benchs script"
 [ -d ${BENCH_DIR} ] || mkdir -p ${BENCH_DIR}
 [ -f ${BENCH_DIR}/bench.1.info ] && die "You really should clean-up all previous reports in ${BENCH_DIR} before to mismatch your differents results"
 
-icmp_test_all && echo "ping tests OK" || die "ICMP connectivity test failed"
+icmp_test_all || die "ICMP connectivity test failed"
 ssh-add -l > /dev/null 2 || echo "WARNING: No key loaded in ssh-agent?"
 ssh_push_key || ( echo "SSH connectivity test failed";exit 1 )
 
+echo "Starting the benchs"
 for UPGRADE_IMAGE in ${IMAGE_LIST}; do
+	echo "Testing image serie: ${UPGRADE_IMAGE}"
 	upgrade_image ${UPGRADE_IMAGE} || die "Can't upgrade to image ${UPGRADE_IMAGE}"
 	if [ -n "${CFG_DIR_LIST}" ]; then
 		for CFG in ${CFG_DIR_LIST}; do
@@ -204,4 +223,4 @@ for UPGRADE_IMAGE in ${IMAGE_LIST}; do
 		IMAGE_ITER=`expr ${IMAGE_ITER} + 1`
 	fi
 done
-echo "All bench tests were done"
+echo "All bench tests were done, result in ${BENCH_DIR}"
