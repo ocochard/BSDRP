@@ -39,15 +39,25 @@ IMAGE_LIST='
 CFG_DIR_LIST=''
 
 # Number of iteration for the same tests (for filling ministat)
-TEST_ITER_MAX=2
+TEST_ITER_MAX=5
 
 # Host IP/hostname
-TESTER_1_ADMIN="192.168.56.11"
-TESTER_2_ADMIN="192.168.56.13"
-DUT_ADMIN="192.168.56.12"
+TESTER_1_ADMIN="192.168.5.1"
+TESTER_2_ADMIN="192.168.5.2"
+DUT_ADMIN="192.168.5.3"
 
+#netblast need these information:
 TESTER_1_LAB="1.1.1.1"
 TESTER_2_LAB="2.2.2.2"
+
+#netmap pkt-gen need these information:
+TESTER_1_LAB_IF="em0"
+TESTER_1_LAB_IF_MAC="00:1b:21:d5:66:0e"
+TESTER_2_LAB_IF="em0"
+TESTER_2_LAB_IF_MAC="00:1b:21:d5:66:15"
+DUT_LAB_IF_MAC_TO_T1="00:0e:0c:de:45:de"
+DUT_LAB_IF_MAC_TO_T2="00:0e:0c:de:45:df"
+PKT_TO_SEND="100000000"
 
 # SSH Command line
 SSH_CMD="/usr/bin/ssh -x -a -q -2 -o \"PreferredAuthentications publickey\" -o \"StrictHostKeyChecking no\" -l root"
@@ -105,20 +115,26 @@ bench () {
 	# $1: Directory/prefix-name of output log file
 	echo "Start bench serie $1"
 	for ITER in `seq 1 ${TEST_ITER_MAX}`; do
-		#start receiver
-		rcmd ${TESTER_2_ADMIN} "netreceive 9090" > $1.${ITER}.receiver 2>&1 &
-		#|| die "Can't start receiver"
+		#start netreceive on TESTER2
+		#CMD="netreceive 9090"
+		#start pkt-gen on TESTER2
+		CMD="pkt-gen -i ${TESTER_2_LAB_IF} -w 8"
+
+		echo "CMD: ${CMD}" > $1.${ITER}.receiver
+		rcmd ${TESTER_2_ADMIN} "${CMD}" >> $1.${ITER}.receiver 2>&1 &
 		#JOB_RECEIVER=$!
 		
 		#Alternate method with log file stored on TESTER (if tool is verbose)	
 		#rcmd ${TESTER_2_ADMIN} "nohup netreceive 9090 \>\& /tmp/bench.log.receiver \&"
-		#start generator
-		rcmd ${TESTER_1_ADMIN} "netblast ${TESTER_2_LAB} 9090 0 10" > $1.${ITER}.sender 2>&1 &
-		# || die "Can't start sender"	
+		#start netblast on TESTER1
+		#CMD="netblast ${TESTER_2_LAB} 9090 0 10"
+		CMD="pkt-gen -i ${TESTER_1_LAB_IF} -t ${PKT_TO_SEND} -l 42 -d ${TESTER_2_LAB} -D ${DUT_LAB_IF_MAC_TO_T1} -s ${TESTER_1_LAB} -w 10"
+		echo "CMD: ${CMD}" > $1.${ITER}.sender
+		rcmd ${TESTER_1_ADMIN} "${CMD}" >> $1.${ITER}.sender 2>&1 &
 		JOB_SENDER=$!
 		echo -n "Waiting for end of bench ${TEST_ITER}/${TOTAL_TEST}..."
 		wait ${JOB_SENDER}
-		rcmd ${TESTER_2_ADMIN} "pkill netreceive"
+		rcmd ${TESTER_2_ADMIN} "pkill pkt-gen" || echo "DEBUG: Can't kill pkt-gen"
 		
 		#scp ${TESTER_2_ADMIN}:/tmp/bench.log.receiver $1.${ITER}.receiver
 		#kill ${JOB_RECEIVER}
@@ -230,4 +246,4 @@ for UPGRADE_IMAGE in ${IMAGE_LIST}; do
 		IMAGE_ITER=`expr ${IMAGE_ITER} + 1`
 	fi
 done
-echo "All bench tests were done, result in ${BENCH_DIR}"
+echo "All bench tests were done, results in ${BENCH_DIR}"
