@@ -47,15 +47,15 @@ data_2_gnuplot () {
 	if [ -n "${CFG_LIST}" ]; then
 		# For each CFG detected previously
 		for CFG_TYPE in ${CFG_LIST}; do
-			echo "# revision	pps" > ${CFG_TYPE}.plot
+			echo "# revision	pps" > ${LAB_RESULTS}/${CFG_TYPE}.data
 			# For each file regarding the CFG (one file by revision)
 			# But don't forget to exclude the allready existing CFG_TYPE.plot file from the result
 			for DATA in `ls -1 ${LAB_RESULTS} | grep "[[:punct:]]${CFG_TYPE}"`; do
 				local REV=`basename ${DATA}`
 				REV=`echo ${REV} | cut -d '.' -f 1`
 				# Get the median value regarding all test iteration
-				local PPS=`ministat -n ${DATA} | tail -n -1 | tr -s ' ' | cut -d ' ' -f 5` 
-				echo "${REV}	${PPS}" >> ${CFG_TYPE}.plot
+				local PPS=`ministat -n ${LAB_RESULTS}/${DATA} | tail -n -1 | tr -s ' ' | cut -d ' ' -f 5` 
+				echo "${REV}	${PPS}" >> ${LAB_RESULTS}/${CFG_TYPE}.data
 			done
 		done	
 	else
