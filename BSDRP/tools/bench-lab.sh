@@ -40,13 +40,15 @@ IMAGE_LIST='
 /tmp/BSDRP-248975-upgrade-amd64-serial.img
 /tmp/BSDRP-249022-upgrade-amd64-serial.img
 /tmp/BSDRP-249052-upgrade-amd64-serial.img
+/tmp/BSDRP-249094-upgrade-amd64-serial.img
+/tmp/BSDRP-249163-upgrade-amd64-serial.img
 /tmp/BSDRP-249330-upgrade-amd64-serial.img
+/tmp/BSDRP-249506-upgrade-amd64-serial.img
 '
 
 # List of configurations folder to tests
 # These directory should contains the configuration files like:
 # boot/loader.conf.local, etc/rc.conf, etc/sysctl.conf, etc...
-# TO DO
 CFG_DIR_LIST='
 /tmp/bench-configs/forwarding
 /tmp/bench-configs/pf
@@ -176,7 +178,9 @@ upload_cfg () {
 	# Uploading configuration to the DUT
 	# $1: Path to the directory dir that conains configurations files
 	echo "Uploading cfg $1"
-	scp -r -2 -o "PreferredAuthentications publickey" -o "StrictHostKeyChecking no" $1/* root@${DUT_ADMIN}:/ || return 1
+	if ! scp -r -2 -o "PreferredAuthentications publickey" -o "StrictHostKeyChecking no" $1/* root@${DUT_ADMIN}:/ > /dev/null 2>&1; then
+		return 1
+	fi
 	rcmd ${DUT_ADMIN} "config save" && return 0 || return 1
 }
 
