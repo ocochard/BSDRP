@@ -1,0 +1,175 @@
+# We need to use the GENERIC kernel for this TESTING sub-project
+#  because changes in GENERIC can be not compatible between revision
+include         GENERIC
+ident           BSDRP-AMD64
+
+nomakeoption DEBUG
+
+nooptions        SCTP
+
+nooptions        SOFTUPDATES             # Enable FFS soft updates support
+nooptions        UFS_ACL                 # Support for access control lists
+nooptions        UFS_DIRHASH             # Improve performance on big directories
+nooptions        UFS_GJOURNAL            # Enable gjournal-based UFS journaling
+nooptions        MD_ROOT                 # MD is a potential root device
+nooptions        NFSCL                   # New Network Filesystem Client
+nooptions        NFSD                    # New Network Filesystem Server
+nooptions        NFSLOCKD                # Network Lock Manager
+nooptions        NFS_ROOT                # NFS usable as /, requires NFSCL
+nooptions        CD9660                  # ISO 9660 Filesystem
+nooptions        GEOM_RAID               # Soft RAID functionality.
+nooptions        COMPAT_FREEBSD32        # Compatible with i386 binaries
+nooptions        COMPAT_FREEBSD4         # Compatible with FreeBSD4
+nooptions        COMPAT_FREEBSD5         # Compatible with FreeBSD5
+nooptions        COMPAT_FREEBSD6         # Compatible with FreeBSD6
+nooptions        COMPAT_FREEBSD7         # Compatible with FreeBSD7
+
+nooptions        AUDIT                   # Security event auditing
+nooptions        MAC                     # TrustedBSD MAC Framework
+nooptions        KDTRACE_FRAME           # Ensure frames are compiled in
+nooptions        KDTRACE_HOOKS           # Kernel DTrace hooks
+
+# Disable full debugger support use this instead:
+nooptions         DDB                     # Support DDB.
+nooptions         GDB                     # Support remote GDB.
+nooptions         DEADLKRES               # Enable the deadlock resolver
+nooptions         INVARIANTS              # Enable calls of extra sanity checking
+nooptions         INVARIANT_SUPPORT       # Extra sanity checks of internal structures, required by INVARIANTS
+nooptions         WITNESS                 # Enable checks to detect deadlocks and cycles
+nooptions         WITNESS_SKIPSPIN        # Don't run witness on spinlocks for speed
+nooptions         MALLOC_DEBUG_MAXZONES # Separate malloc(9) zones
+
+nodevice         fdc
+nodevice         ch              # SCSI media changers
+nodevice         sa              # Sequential Access (tape etc)
+nodevice         cd              # CD
+
+nodevice         psm             # PS/2 mouse
+
+nodevice         splash          # Splash screen and screen saver support
+nodevice         agp             # support several AGP chipsets
+nodevice         cbb             # cardbus (yenta) bridge
+nodevice         pccard          # PC Card (16-bit) bus
+nodevice         cardbus         # CardBus (32-bit) bus
+
+# ISA Ethernet NICs.  pccard NICs included.
+nodevice         cs              # Crystal Semiconductor CS89x0 NIC
+nodevice         ed              # NE[12]000, SMC Ultra, 3c503, DS8390 cards
+nodevice         ex              # Intel EtherExpress Pro/10 and Pro/10+
+nodevice         ep              # Etherlink III based cards
+nodevice         fe              # Fujitsu MB8696x based cards
+nodevice         sn              # SMC's 9000 series of Ethernet chips
+nodevice         xe              # Xircom pccard Ethernet
+
+nodevice         wlan            # 802.11 support
+nooptions        IEEE80211_DEBUG # enable debug msgs
+nooptions        IEEE80211_AMPDU_AGE # age frames in AMPDU reorder q's
+nooptions        IEEE80211_SUPPORT_MESH  # enable 802.11s draft support
+nodevice         wlan_wep        # 802.11 WEP support
+nodevice         wlan_ccmp       # 802.11 CCMP support
+nodevice         wlan_tkip       # 802.11 TKIP support
+nodevice         wlan_amrr       # AMRR transmit rate control algorithm
+nodevice         an              # Aironet 4500/4800 802.11 wireless NICs.
+nodevice         ath             # Atheros NIC's
+nodevice         ath_pci         # Atheros pci/cardbus glue
+nodevice         ath_hal         # pci/cardbus chip support
+nooptions        AH_SUPPORT_AR5416       # enable AR5416 tx/rx descriptors
+nodevice         ath_rate_sample # SampleRate tx rate control for ath
+nodevice         bwi             # Broadcom BCM430x/BCM431x wireless NICs.
+nodevice         bwn             # Broadcom BCM43xx wireless NICs.
+nodevice         ipw             # Intel 2100 wireless NICs.
+nodevice         iwi             # Intel 2200BG/2225BG/2915ABG wireless NICs.
+nodevice         iwn             # Intel 4965/1000/5000/6000 wireless NICs.
+nodevice         malo            # Marvell Libertas wireless NICs.
+nodevice         mwl             # Marvell 88W8363 802.11n wireless NICs.
+nodevice         ral             # Ralink Technology RT2500 wireless NICs.
+nodevice         wi              # WaveLAN/Intersil/Symbol 802.11 wireless NICs.
+nodevice         wpi             # Intel 3945ABG wireless NICs.
+
+nodevice         ulpt            # Printer
+nodevice         ums             # Mouse
+nodevice         urio            # Diamond Rio 500 MP3 player
+nodevice         u3g             # USB-based 3G modems (Option, Huawei, Sierra)
+device         uvisor          # Visor and Palm devices
+nodevice         uvscom          # USB serial support for DDI pocket's PHS
+# USB Ethernet, requires miibus
+nodevice         aue             # ADMtek USB Ethernet
+nodevice         axe             # ASIX Electronics USB Ethernet
+nodevice         cdce            # Generic USB over Ethernet
+nodevice         cue             # CATC USB Ethernet
+nodevice         kue             # Kawasaki LSI USB Ethernet
+nodevice         rue             # RealTek RTL8150 USB Ethernet
+nodevice         udav            # Davicom DM9601E USB
+# USB Wireless
+nodevice         rum             # Ralink Technology RT2501USB wireless NICs
+nodevice         run             # Ralink Technology RT2700/RT2800/RT3000 NICs.
+nodevice         uath            # Atheros AR5523 wireless NICs
+nodevice         upgt            # Conexant/Intersil PrismGT wireless NICs.
+nodevice         ural            # Ralink Technology RT2500USB wireless NICs
+nodevice         urtw            # Realtek RTL8187B/L wireless NICs
+nodevice         zyd             # ZyDAS zd1211/zd1211b wireless NICs
+
+nodevice         firewire        # FireWire bus code
+# sbp(4) works for some systems but causes boot failure on others
+nodevice         sbp             # SCSI over FireWire (Requires scbus and da)
+nodevice         fwe             # Ethernet over FireWire (non-standard!)
+nodevice         fwip            # IP over FireWire (RFC 2734,3146)
+nodevice         dcons           # Dumb console driver
+nodevice         dcons_crom      # Configuration ROM for dcons
+
+# Sound support
+nodevice         sound           # Generic sound driver (required)
+nodevice         snd_cmi         # CMedia CMI8338/CMI8738
+nodevice         snd_csa         # Crystal Semiconductor CS461x/428x
+nodevice         snd_emu10kx     # Creative SoundBlaster Live! and Audigy
+nodevice         snd_es137x      # Ensoniq AudioPCI ES137x
+nodevice         snd_hda         # Intel High Definition Audio
+nodevice         snd_ich         # Intel, NVidia and other ICH AC'97 Audio
+nodevice         snd_uaudio      # USB Audio
+nodevice         snd_via8233     # VIA VT8233x Audio
+
+# altq(9). Enable the base part of the hooks with the ALTQ option.
+# Individual disciplines must be built into the base system and can not be
+# loaded as modules at this point. ALTQ requires a stable TSC so if yours is
+# broken or changes with CPU throttling then you must also have the ALTQ_NOPCC
+# option.
+options     ALTQ
+options     ALTQ_CBQ    # Class Based Queueing
+options     ALTQ_RED    # Random Early Detection
+options     ALTQ_RIO    # RED In/Out
+options     ALTQ_HFSC   # Hierarchical Packet Scheduler
+options     ALTQ_CDNR   # Traffic conditioner
+options     ALTQ_PRIQ   # Priority Queueing
+options     ALTQ_NOPCC  # Required if the TSC is unusable
+
+options     NO_SWAPPING # Disable swapping of stack pages
+
+# MROUTING enables the kernel multicast packet forwarder, which works
+# with mrouted and XORP.
+options     MROUTING        # Multicast routing
+
+# TCP_SIGNATURE adds support for RFC 2385 (TCP-MD5) digests. These are
+# carried in TCP option 19. This option is commonly used to protect
+# TCP sessions (e.g. BGP) where IPSEC is not available nor desirable.
+# This is enabled on a per-socket basis using the TCP_MD5SIG socket option.
+# This requires the use of 'device crypto', 'options IPSEC'
+# or 'device cryptodev'.
+device      crypto
+device      cryptodev
+options     IPSEC
+options     IPSEC_NAT_T     #NAT-T support, UDP encap of ESP
+options     TCP_SIGNATURE       #include support for RFC 2385
+
+# Add device Polling
+options     DEVICE_POLLING
+
+# Add multiple route table support
+options     ROUTETABLES=16
+
+# Encapsulating Interface
+device enc
+
+# Enable netmap
+device netmap
+
+
