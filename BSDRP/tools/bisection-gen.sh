@@ -9,22 +9,32 @@
 #
 
 set -eu
+
+IMAGES_DIR="/monpool/benchs-images"
+
 # An usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 [ ! -d BSDRP ] && die "This script need to be executed from the main BSDRP dir"
 [ ! -x make.sh ] && die "This script need to be executed from the main BSDRP dir"
+[ ! -d ${IMAGES_DIR} ] && die "Can't found destination dir for storing images"
 
 # List of SVN revision to build image for
 SVN_REV_LIST='
 236884
+238765
 238851
 239774
+240232
 240233
 241610
+241909
 241913
 241955
+241923
+242014
 242082
+242623
 242624
 243443
 244323
@@ -57,20 +67,21 @@ ARCH="amd64"
 
 for SVN_REV in ${SVN_REV_LIST}; do
 	echo "Building image matching revision ${SVN_REV}..."
-	[ -f /tmp/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ] && continue
+	[ -f ${IMAGES_DIR}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ] && continue
 	#Configuring SVN revision in $PROJECT/make.conf and in version
 	sed -i "" -e "/SRC_REV=/s/.*/SRC_REV=${SVN_REV}/" $PROJECT/make.conf
+	[ ! -d $PROJECT/Files/etc ] && mkdir -p $PROJECT/Files/etc
 	echo ${SVN_REV} > $PROJECT/Files/etc/version
 	set +e
-	./make.sh -p TESTING -u -y -f -a ${ARCH} -c ${CONSOLE} > /tmp/bisec.log 2>&1
+	./make.sh -p TESTING -u -y -f -a ${ARCH} -c ${CONSOLE} > ${IMAGES_DIR}/bisec.log 2>&1
 	set -e
 	if [ ! -f /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ]; then
 			echo "Where are /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ???"
 			echo "Check error message in /tmp/bisec.log.${SVN_REV}"
-			mv /tmp/bisec.log /tmp/bisec.log.${SVN_REV}
+			mv ${IMAGES_DIR}/bisec.log ${IMAGES_DIR}/bisec.log.${SVN_REV}
 			continue
 	fi
-	mv /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}* /tmp
+	mv /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}* ${IMAGES_DIR}
 done
 
 echo "All images put in /tmp"
