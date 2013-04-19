@@ -1,20 +1,6 @@
 #!/bin/sh
-#Remove the first 15 lines and the last 10 lines (garbage):
-
-#f='bench.1.2.1.receiver'; g=`wc -l $f`; h=`echo $g | cut -d ' ' -f1`; head -n `expr $h - 10 ` $f | tail -n `expr $h - 15 `
-
-#Filter the output (still filtering "0 pps" lines… in case of):
-
-#grep -E '^main[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps$'
-
-#Keeping the number:
-
-#cut -d ' ' -f 3
-
-#Putting the output on ministat, and get the median result
-
-#ministat -n /tmp/mini | tail -n -1 | tr -s ' ' | cut -d ' ' -f 5
-
+# This script prepare the result from bench-lab.sh to be used by ministat and/or gnuplot
+# 
 set -eu
 LAB_RESULTS="/tmp/benchs"
 # Info: /tmp/benchs/bench.1.1.4.receiver
@@ -34,7 +20,7 @@ data_2_ministat () {
 	grep -E '^main[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps$' /tmp/clean.1.data | cut -d ' ' -f 3 > /tmp/clean.2.data
 	#Now we calculate the median value of this run with ministat
 	echo `ministat -n /tmp/clean.2.data | tail -n -1 | tr -s ' ' | cut -d ' ' -f 5` >> ${LAB_RESULTS}/$2
-	#rm /tmp/clean.1.data /tmp/clean.2.data
+	rm /tmp/clean.1.data /tmp/clean.2.data || die "ERROR: can't delete clean.X.data"
 	return 0
 }
 
@@ -59,7 +45,7 @@ data_2_gnuplot () {
 			done
 		done	
 	else
-		echo "TODO: plot.dat"	
+		echo "TODO: plot.dat when different configuration sets are not used"	
 	fi
 	return 0
 }
@@ -71,7 +57,7 @@ CFG=''
 CFG_LIST=''
 
 INFO_LIST=`ls -1 ${LAB_RESULTS}/*.info`
-[ -z "${INFO_LIST}" ] && die "No report files?"
+[ -z "${INFO_LIST}" ] && die "ERROR: No report files found in ${LAB_RESULTS}"
 
 for INFO in ${INFO_LIST}; do
 	# Get svn rev number
