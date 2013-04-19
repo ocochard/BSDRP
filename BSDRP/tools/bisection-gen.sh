@@ -17,6 +17,18 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # List of SVN revision to build image for
 SVN_REV_LIST='
+236884
+238851
+239774
+240233
+241610
+241913
+241955
+242082
+242624
+243443
+244323
+244585
 244900
 245423
 246146
@@ -50,10 +62,13 @@ for SVN_REV in ${SVN_REV_LIST}; do
 	sed -i "" -e "/SRC_REV=/s/.*/SRC_REV=${SVN_REV}/" $PROJECT/make.conf
 	echo ${SVN_REV} > $PROJECT/Files/etc/version
 	set +e
-	./make.sh -p TESTING -u -y -f -a ${ARCH} -c ${CONSOLE} > /dev/null 2>&1
+	./make.sh -p TESTING -u -y -f -a ${ARCH} -c ${CONSOLE} > /tmp/bisec.log 2>&1
 	set -e
 	if [ ! -f /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ]; then
-			die "Where are /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ???"
+			echo "Where are /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ???"
+			echo "Check error message in /tmp/bisec.log.${SVN_REV}"
+			mv /tmp/bisec.log /tmp/bisec.log.${SVN_REV}
+			continue
 	fi
 	mv /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}* /tmp
 done

@@ -26,25 +26,7 @@ set -eu
 BENCH_DIR="/tmp/benchs"
 
 # List of IMAGES (upgrade type only) to tests
-IMAGE_LIST='
-/tmp/BSDRP-244900-upgrade-amd64-serial.img
-/tmp/BSDRP-245423-upgrade-amd64-serial.img
-/tmp/BSDRP-246146-upgrade-amd64-serial.img
-/tmp/BSDRP-246792-upgrade-amd64-serial.img
-/tmp/BSDRP-247463-upgrade-amd64-serial.img
-/tmp/BSDRP-247916-upgrade-amd64-serial.img
-/tmp/BSDRP-248267-upgrade-amd64-serial.img
-/tmp/BSDRP-248584-upgrade-amd64-serial.img
-/tmp/BSDRP-248830-upgrade-amd64-serial.img
-/tmp/BSDRP-248944-upgrade-amd64-serial.img
-/tmp/BSDRP-248975-upgrade-amd64-serial.img
-/tmp/BSDRP-249022-upgrade-amd64-serial.img
-/tmp/BSDRP-249052-upgrade-amd64-serial.img
-/tmp/BSDRP-249094-upgrade-amd64-serial.img
-/tmp/BSDRP-249163-upgrade-amd64-serial.img
-/tmp/BSDRP-249330-upgrade-amd64-serial.img
-/tmp/BSDRP-249506-upgrade-amd64-serial.img
-'
+IMAGE_DIR="/tmp"
 
 # List of configurations folder to tests
 # These directory should contains the configuration files like:
@@ -89,18 +71,6 @@ TEST_ITER=1
 # Counting total number of tests bench
 # And checking file/directory presence
 TOTAL_TEST=0                                                                                                                
-for IMG in ${IMAGE_LIST};  do
-	[ -f ${IMG} ] || die "Can't found file {IMG}"
-	if [ -n "${CFG_DIR_LIST}" ]; then
-		for CFG in ${CFG_DIR_LIST}; do
-			[ -d ${CFG} ] || die "Can't found directory ${CFG}"
-			TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
-		done
-	else
-		TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
-	fi
-done
-
 # An usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
@@ -181,7 +151,11 @@ upload_cfg () {
 	if ! scp -r -2 -o "PreferredAuthentications publickey" -o "StrictHostKeyChecking no" $1/* root@${DUT_ADMIN}:/ > /dev/null 2>&1; then
 		return 1
 	fi
-	rcmd ${DUT_ADMIN} "config save" && return 0 || return 1
+	if rcmd ${DUT_ADMIN} "config save" > /dev/null 2>&1; then
+		return 0
+	else
+		return 1
+	fi
 }
 
 icmp_test_all () {
@@ -237,6 +211,20 @@ upgrade_image () {
 }
 
 ##### Main
+
+IMAGE_LIST=`ls -1 ${IMAGE_DIR}/BSDRP-* | grep upgrade`
+
+for IMG in ${IMAGE_LIST};  do
+	[ -f ${IMG} ] || die "Can't found file {IMG}"
+	if [ -n "${CFG_DIR_LIST}" ]; then
+		for CFG in ${CFG_DIR_LIST}; do
+			[ -d ${CFG} ] || die "Can't found directory ${CFG}"
+			TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
+		done
+	else
+		TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
+	fi
+done
 
 echo "BSDRP automatized upgrade/configuration-sets/benchs script"
 [ -d ${BENCH_DIR} ] || mkdir -p ${BENCH_DIR}
