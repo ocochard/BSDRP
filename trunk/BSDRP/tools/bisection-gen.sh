@@ -22,7 +22,7 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # List of SVN revision to build image for
 SVN_REV_LIST='
 236884
-238765
+238516
 238851
 239774
 240232
@@ -34,6 +34,10 @@ SVN_REV_LIST='
 241923
 242014
 242082
+242160
+242161
+242309
+242463
 242623
 242624
 243443
@@ -42,6 +46,7 @@ SVN_REV_LIST='
 244900
 245423
 246146
+246482
 246792
 247463
 247916
@@ -77,11 +82,11 @@ for SVN_REV in ${SVN_REV_LIST}; do
 	set -e
 	if [ ! -f /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ]; then
 			echo "Where are /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ???"
-			echo "Check error message in /tmp/bisec.log.${SVN_REV}"
+			echo "Check error message in ${IMAGES_DIR}/bisec.log.${SVN_REV}"
 			mv ${IMAGES_DIR}/bisec.log ${IMAGES_DIR}/bisec.log.${SVN_REV}
 			continue
 	fi
 	mv /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}* ${IMAGES_DIR}
 done
 
-echo "All images put in /tmp"
+echo "All images put in ${IMAGES_DIR}"
