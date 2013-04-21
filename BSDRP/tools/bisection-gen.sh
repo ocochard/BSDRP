@@ -23,7 +23,15 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 SVN_REV_LIST='
 236884
 238516
+238573
 238851
+238755
+238763
+238770
+238987
+238990
+239091
+239093
 239774
 240232
 240233
@@ -37,6 +45,9 @@ SVN_REV_LIST='
 242160
 242161
 242309
+242311
+242434
+242462
 242463
 242623
 242624
@@ -47,6 +58,8 @@ SVN_REV_LIST='
 245423
 246146
 246482
+246520
+246710
 246792
 247463
 247916
@@ -71,8 +84,11 @@ CONSOLE="serial"
 ARCH="amd64"
 
 for SVN_REV in ${SVN_REV_LIST}; do
-	echo "Building image matching revision ${SVN_REV}..."
-	[ -f ${IMAGES_DIR}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ] && continue
+	echo -n "Building image matching revision ${SVN_REV}..."
+	if [ -f ${IMAGES_DIR}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ]; then
+		echo "Already existing"
+		continue
+	fi
 	#Configuring SVN revision in $PROJECT/make.conf and in version
 	sed -i "" -e "/SRC_REV=/s/.*/SRC_REV=${SVN_REV}/" $PROJECT/make.conf
 	[ ! -d $PROJECT/Files/etc ] && mkdir -p $PROJECT/Files/etc
@@ -87,6 +103,7 @@ for SVN_REV in ${SVN_REV_LIST}; do
 			continue
 	fi
 	mv /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}* ${IMAGES_DIR}
+	echo "done"
 done
 
-echo "All images put in ${IMAGES_DIR}"
+echo "All images were put in ${IMAGES_DIR}"
