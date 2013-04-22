@@ -26,15 +26,15 @@ set -eu
 BENCH_DIR="/tmp/benchs"
 
 # List of IMAGES (upgrade type only) to tests
-IMAGE_DIR="/tmp"
+IMAGE_DIR="/monpool/benchs-images"
 
 # List of configurations folder to tests
 # These directory should contains the configuration files like:
 # boot/loader.conf.local, etc/rc.conf, etc/sysctl.conf, etc...
 CFG_DIR_LIST='
-/tmp/bench-configs/forwarding
-/tmp/bench-configs/pf
-/tmp/bench-configs/ipfw
+/monpool/bench-configs/forwarding
+/monpool/bench-configs/pf
+/monpool/bench-configs/ipfw
 '
 
 # Number of iteration for the same tests (for filling ministat)
@@ -228,7 +228,7 @@ done
 
 echo "BSDRP automatized upgrade/configuration-sets/benchs script"
 [ -d ${BENCH_DIR} ] || mkdir -p ${BENCH_DIR}
-[ -f ${BENCH_DIR}/bench.1.info ] && die "You really should clean-up all previous reports in ${BENCH_DIR} before to mismatch your differents results"
+[ -f ${BENCH_DIR}/bench.1.info -o -f ${BENCH_DIR}/bench.1.1.info ] && die "You really should clean-up all previous reports in ${BENCH_DIR} before to mismatch your differents results"
 
 icmp_test_all || die "ICMP connectivity test failed"
 ssh-add -l > /dev/null 2 || echo "WARNING: No key loaded in ssh-agent?"
