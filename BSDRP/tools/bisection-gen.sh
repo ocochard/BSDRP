@@ -20,6 +20,7 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 [ ! -d ${IMAGES_DIR} ] && die "Can't found destination dir for storing images"
 
 # List of SVN revision to build image for
+# Compile but didn't boot: 239091 to 239093
 SVN_REV_LIST='
 236884
 238516
@@ -30,8 +31,6 @@ SVN_REV_LIST='
 238770
 238987
 238990
-239091
-239093
 239774
 240232
 240233
@@ -44,8 +43,11 @@ SVN_REV_LIST='
 242082
 242160
 242161
-242309
 242311
+242336
+242361
+242386
+242413
 242434
 242462
 242463
@@ -85,7 +87,10 @@ ARCH="amd64"
 
 for SVN_REV in ${SVN_REV_LIST}; do
 	echo -n "Building image matching revision ${SVN_REV}..."
-	if [ -f ${IMAGES_DIR}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ]; then
+	if [ -f ${IMAGES_DIR}/BSDRP-${SVN_REV}-upgrade-${ARCH}-${CONSOLE}.img ]; then
+		echo "Already existing"
+		continue
+	elif [ -f ${IMAGES_DIR}/BSDRP-${SVN_REV}-upgrade-${ARCH}-${CONSOLE}.img.xz ]; then
 		echo "Already existing"
 		continue
 	fi
