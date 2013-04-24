@@ -62,8 +62,12 @@ INFO_LIST=`ls -1 ${LAB_RESULTS}/*.info`
 for INFO in ${INFO_LIST}; do
 	# Get svn rev number
 	#  Image: /tmp/BSDRP-244900-upgrade-amd64-serial.img
+	#  Image: /monpool/benchs-images/BSDRP-244900-upgrade-amd64-serial.img.xz
 	#  => 244900 
-	SVN=`grep 'Image: ' ${INFO} | cut -d '-' -f 2`
+	SVN=`grep 'Image: ' ${INFO} | cut -d ':' -f 2`
+	# =>  /monpool/benchs-images/BSDRP-244900-upgrade-amd64-serial.img.xz
+	SVN=`basename ${SVN} | cut -d '-' -f 2`
+	# => 244900
 	# Get CFG file name
 	#  CFG: /tmp/bench-configs/forwarding
 	#  => forwarding
