@@ -10,10 +10,17 @@
 
 set -eu
 
-IMAGES_DIR="/monpool/benchs-images"
+if [ $# -ne 1 ]; then
+	echo "$0 nanobsd-images-dir"
+	exit 1
+else
+	IMAGES_DIR="$1"
+fi
 
 # An usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+
+# Some little check
 
 [ ! -d BSDRP ] && die "This script need to be executed from the main BSDRP dir"
 [ ! -x make.sh ] && die "This script need to be executed from the main BSDRP dir"
@@ -47,6 +54,10 @@ SVN_REV_LIST='
 242336
 242361
 242386
+242395
+242401
+242402
+242404
 242413
 242434
 242462
@@ -73,10 +84,10 @@ SVN_REV_LIST='
 249022
 249052
 249094
-249094
 249163
 249330
 249506
+249908
 '
 
 # Name of the BSDRP project
