@@ -226,6 +226,11 @@ echo "BSDRP automatized upgrade/configuration-sets/benchs script"
 echo ""
 echo "This script will start ${TOTAL_TEST} bench tests using:"
 echo " - Number of iteration: ${TEST_ITER_MAX}"
+echo -n " - Configurations sets dir: "
+[ $# -ge 1 ] && echo "$1" || echo 'none'
+echo -n " - Nanobsd images dir: "
+[ $# -ge 2 ] && echo "$2" || echo 'none'
+
 echo ""
 
 [ -d ${BENCH_DIR} ] || mkdir -p ${BENCH_DIR}

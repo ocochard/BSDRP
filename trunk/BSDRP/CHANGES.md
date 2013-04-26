@@ -7,6 +7,11 @@
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
 * net/fprobe removed: FreeBSD's native ng_netflow supports v9
+
+## Updated packages
+* isc-dhcp42-server and relay to 4.2.5
+* tmux to 1.8
+
 ## Misc for developers
 * There are new scripts 
     * bisection-gen.sh: Permit to generate a list of BSDRP image based on a list of FreeBSD svn-revision number
