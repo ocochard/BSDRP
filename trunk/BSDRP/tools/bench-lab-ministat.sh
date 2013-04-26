@@ -11,7 +11,7 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 data_2_ministat () {
 	# Convert raw data file from bench-lab.sh for list
 	# $1 : Input file
-	# $2 : Prefix of the file
+	# $2 : Prefix of the output file
 	local LINES=`wc -l $1`
 	LINES=`echo ${LINES} | cut -d ' ' -f1`
 	# Remove the first 15 lines (garbage or not good result) and the 10 last lines (bad result too)

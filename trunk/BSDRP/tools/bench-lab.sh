@@ -22,20 +22,10 @@ set -eu
 
 ##### User modifiable variables section #####
 
+# Don't forget to modify the bench commands in bench() too !!
+
 # Bench result directory
 BENCH_DIR="/tmp/benchs"
-
-# List of IMAGES (upgrade type only) to tests
-IMAGE_DIR="/monpool/benchs-images"
-
-# List of configurations folder to tests
-# These directory should contains the configuration files like:
-# boot/loader.conf.local, etc/rc.conf, etc/sysctl.conf, etc...
-CFG_DIR_LIST='
-/monpool/bench-configs/forwarding
-/monpool/bench-configs/pf
-/monpool/bench-configs/ipfw
-'
 
 # Number of iteration for the same tests (for filling ministat)
 TEST_ITER_MAX=5
@@ -54,8 +44,8 @@ TESTER_1_LAB_IF="em0"
 TESTER_1_LAB_IF_MAC="00:1b:21:d5:66:0e"
 TESTER_2_LAB_IF="em0"
 TESTER_2_LAB_IF_MAC="00:1b:21:d5:66:15"
-DUT_LAB_IF_MAC_TO_T1="00:0e:0c:de:45:de"
-DUT_LAB_IF_MAC_TO_T2="00:0e:0c:de:45:df"
+DUT_LAB_IF_MAC_TO_T1="00:1b:78:5d:52:e2"
+DUT_LAB_IF_MAC_TO_T2="00:1b:78:5d:52:e3"
 PKT_TO_SEND="100000000"
 
 # SSH Command line
@@ -212,49 +202,74 @@ upgrade_image () {
 
 ##### Main
 
-IMAGE_LIST=`ls -1 ${IMAGE_DIR}/BSDRP-* | grep upgrade`
+#if [ $# -lt 1 ]; then
+#    echo "$0 configuration-sets-dir nanobsd-images-dir"
+#	echo "  nanobsd-images-dir: Directory where are all update nanobsd images"
+#	echo "  configuration-sets-dir: Directory that include directory for each configuration sets to test"
+#    exit 1 
+#fi
 
-for IMG in ${IMAGE_LIST};  do
+[ $# -ge 1 ] && CFG_LIST=`ls -1d $1/*` || CFG_LIST=''
+[ $# -ge 2 ] && IMAGES_LIST=`ls -1 $2/BSDRP-* | grep upgrade` || IMAGES_LIST=''
+
+for IMG in ${IMAGES_LIST};  do
 	[ -f ${IMG} ] || die "Can't found file {IMG}"
-	if [ -n "${CFG_DIR_LIST}" ]; then
-		for CFG in ${CFG_DIR_LIST}; do
+	for CFG in ${CFG_LIST}; do
 			[ -d ${CFG} ] || die "Can't found directory ${CFG}"
 			TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
 		done
-	else
-		TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
-	fi
+	TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
 done
+[ ${TOTAL_TEST} -eq 0 ] && TOTAL_TEST=${TEST_ITER_MAX}
 
 echo "BSDRP automatized upgrade/configuration-sets/benchs script"
+echo ""
+echo "This script will start ${TOTAL_TEST} bench tests using:"
+echo " - Number of iteration: ${TEST_ITER_MAX}"
+echo ""
+
 [ -d ${BENCH_DIR} ] || mkdir -p ${BENCH_DIR}
-[ -f ${BENCH_DIR}/bench.1.info -o -f ${BENCH_DIR}/bench.1.1.info ] && die "You really should clean-up all previous reports in ${BENCH_DIR} before to mismatch your differents results"
+ls ${BENCH_DIR} | grep -q bench && die "You really should clean-up all previous reports in ${BENCH_DIR} before to mismatch your differents results"
+
+echo -n "Do you want to continue ? (y/n): " 
+USER_CONFIRM=''                            
+while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do                            
+	read USER_CONFIRM <&1                                                                                           
+done                                                                                                                
+[ "$USER_CONFIRM" = "n" ] && exit 0
 
 icmp_test_all || die "ICMP connectivity test failed"
 ssh-add -l > /dev/null 2 || echo "WARNING: No key loaded in ssh-agent?"
 ssh_push_key || ( echo "SSH connectivity test failed";exit 1 )
 
 echo "Starting the benchs"
-for UPGRADE_IMAGE in ${IMAGE_LIST}; do
-	echo "Testing image serie: ${UPGRADE_IMAGE}"
-	upgrade_image ${UPGRADE_IMAGE} || die "Can't upgrade to image ${UPGRADE_IMAGE}"
-	if [ -n "${CFG_DIR_LIST}" ]; then
-		for CFG in ${CFG_DIR_LIST}; do
-			echo "Starting sub-configuration serie bench test: ${CFG}..."
-			upload_cfg ${CFG}
+if [ -n "${IMAGES_LIST}" ]; then
+	for UPGRADE_IMAGE in ${IMAGES_LIST}; do
+		echo "Testing image serie: ${UPGRADE_IMAGE}"
+		upgrade_image ${UPGRADE_IMAGE} || die "Can't upgrade to image ${UPGRADE_IMAGE}"
+		if [ -n "${CFG_DIR_LIST}" ]; then
+			for CFG in ${CFG_LIST}; do
+				echo "Starting sub-configuration serie bench test: ${CFG}..."
+				upload_cfg $1/${CFG}
+				reboot_dut
+				echo "Image: ${UPGRADE_IMAGE}" > ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
+				echo "CFG: ${CFG}" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
+				echo "Start time: `date`" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
+				bench ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}
+				CONFIG_ITER=`expr ${CONFIG_ITER} + 1`
+			done
+		else
 			reboot_dut
-			echo "Image: ${UPGRADE_IMAGE}" > ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
-			echo "CFG: ${CFG}" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
-			echo "Start time: `date`" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
-			bench ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}
-			CONFIG_ITER=`expr ${CONFIG_ITER} + 1`
-		done
-	else
-		reboot_dut
-		echo "Image: ${UPGRADE_IMAGE}" > ${BENCH_DIR}/bench.${IMAGE_ITER}.info
-		echo "Start time: `date`" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.info
-		bench ${BENCH_DIR}/bench.${IMAGE_ITER}
+			echo "Image: ${UPGRADE_IMAGE}" > ${BENCH_DIR}/bench.${IMAGE_ITER}.info
+			echo "Start time: `date`" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.info
+			bench ${BENCH_DIR}/bench.${IMAGE_ITER}
+		fi
 		IMAGE_ITER=`expr ${IMAGE_ITER} + 1`
-	fi
-done
+	done
+else
+	reboot_dut
+	echo "Image: none" > ${BENCH_DIR}/bench.info
+	echo "Start time: `date`" >> ${BENCH_DIR}/bench.info
+	bench ${BENCH_DIR}/bench
+fi # -n "${IMAGES_LIST}"
 echo "All bench tests were done, results in ${BENCH_DIR}"

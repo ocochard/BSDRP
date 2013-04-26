@@ -344,9 +344,6 @@ add_port "net/pimdd"
 # Add tayga: userland NAT64 implementation
 add_port "net/tayga"
 
-# Add fprobe: Netflow probe
-add_port "net-mgmt/fprobe"
-
 # Add DHCP server and client
 add_port "net/isc-dhcp42-server"
 add_port "net/isc-dhcp42-relay"
