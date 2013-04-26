@@ -24,12 +24,6 @@ set -eu
 
 # Don't forget to modify the bench commands in bench() too !!
 
-# Bench result directory
-BENCH_DIR="/tmp/benchs"
-
-# Number of iteration for the same tests (for filling ministat)
-TEST_ITER_MAX=5
-
 # Host IP/hostname
 TESTER_1_ADMIN="192.168.5.1"
 TESTER_2_ADMIN="192.168.5.2"
@@ -200,17 +194,68 @@ upgrade_image () {
 	return 0
 }
 
+usage () {
+	if [ $# -lt 1 ]; then
+		echo "$0 [-h] [-c configuration-sets-dir] [-i nanobsd-images-dir] [-n iteration] [-d benchs-dir]"
+		echo "  nanobsd-images-dir: Directory where are all update nanobsd images"
+		echo "  configuration-sets-dir: Directory that include directory for each configuration sets to test"
+		echo "  iteration: number of iteration to do for each test"
+		echo "  bench-dir: Where to put the results"
+		exit 1 
+	fi
+}
+
 ##### Main
 
-#if [ $# -lt 1 ]; then
-#    echo "$0 configuration-sets-dir nanobsd-images-dir"
-#	echo "  nanobsd-images-dir: Directory where are all update nanobsd images"
-#	echo "  configuration-sets-dir: Directory that include directory for each configuration sets to test"
-#    exit 1 
-#fi
+# List of configuration sets directory
+CFG_LIST=''
+# list of nanobsd upgrade image to be benched
+IMAGES_LIST=''
+# Number of iteration for the same tests (for filling ministat)
+TEST_ITER_MAX=5
+# Bench result directory
+BENCH_DIR="/tmp/benchs"
 
-[ $# -ge 1 ] && CFG_LIST=`ls -1d $1/*` || CFG_LIST=''
-[ $# -ge 2 ] && IMAGES_LIST=`ls -1 $2/BSDRP-* | grep upgrade` || IMAGES_LIST=''
+args=`getopt c:d:i:hn: $*`
+
+set -- $args
+for i
+do
+    case "$i" in
+        -c)
+			CFG_LIST=`ls -1d $2/*`			
+            shift
+            shift
+            ;;
+        -d)
+            BENCH_DIR="$2"
+            shift
+            shift
+            ;;  
+        -i)
+       		IMAGES_LIST=`ls -1 $2/BSDRP-* | grep upgrade`     
+			shift
+            shift
+            ;;
+		-h)
+			usage
+			shift
+			;;
+        -n)
+			TEST_ITER_MAX=$2	
+            shift
+			shift
+            ;;
+        --)
+            shift
+            break
+        esac
+done
+
+if [ $# -gt 0 ] ; then
+    echo "$0: Extraneous arguments supplied"
+    usage
+fi
 
 for IMG in ${IMAGES_LIST};  do
 	[ -f ${IMG} ] || die "Can't found file {IMG}"
@@ -226,11 +271,7 @@ echo "BSDRP automatized upgrade/configuration-sets/benchs script"
 echo ""
 echo "This script will start ${TOTAL_TEST} bench tests using:"
 echo " - Number of iteration: ${TEST_ITER_MAX}"
-echo -n " - Configurations sets dir: "
-[ $# -ge 1 ] && echo "$1" || echo 'none'
-echo -n " - Nanobsd images dir: "
-[ $# -ge 2 ] && echo "$2" || echo 'none'
-
+echo " - Results dir: ${BENCH_DIR}"
 echo ""
 
 [ -d ${BENCH_DIR} ] || mkdir -p ${BENCH_DIR}
@@ -252,10 +293,10 @@ if [ -n "${IMAGES_LIST}" ]; then
 	for UPGRADE_IMAGE in ${IMAGES_LIST}; do
 		echo "Testing image serie: ${UPGRADE_IMAGE}"
 		upgrade_image ${UPGRADE_IMAGE} || die "Can't upgrade to image ${UPGRADE_IMAGE}"
-		if [ -n "${CFG_DIR_LIST}" ]; then
+		if [ -n "${CFG_LIST}" ]; then
 			for CFG in ${CFG_LIST}; do
 				echo "Starting sub-configuration serie bench test: ${CFG}..."
-				upload_cfg $1/${CFG}
+				upload_cfg ${CFG}
 				reboot_dut
 				echo "Image: ${UPGRADE_IMAGE}" > ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
 				echo "CFG: ${CFG}" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
