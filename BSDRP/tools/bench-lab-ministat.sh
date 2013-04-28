@@ -2,8 +2,6 @@
 # This script prepare the result from bench-lab.sh to be used by ministat and/or gnuplot
 # 
 set -eu
-LAB_RESULTS="/tmp/benchs"
-# Info: /tmp/benchs/bench.1.1.4.receiver
 
 # An usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
@@ -56,6 +54,12 @@ SVN=''
 CFG=''
 CFG_LIST=''
 
+[ $# -ne 1 ] && die "usage: $0 benchs-directory"
+
+LAB_RESULTS="$1"
+# Info: /tmp/benchs/bench.1.1.4.receiver
+
+
 INFO_LIST=`ls -1 ${LAB_RESULTS}/*.info`
 [ -z "${INFO_LIST}" ] && die "ERROR: No report files found in ${LAB_RESULTS}"
 
@@ -76,7 +80,7 @@ for INFO in ${INFO_LIST}; do
 		CFG=`basename ${CFG}`
 		MINISTAT_FILE="${SVN}.${CFG}"
 		# If not already, add the configuration type to the list of detected configuration
-		echo ${CFG_LIST} | grep -q ${CFG} || CFG_LIST="${CFG_LIST} ${CFG}"
+		echo ${CFG_LIST} | grep -w -q ${CFG} || CFG_LIST="${CFG_LIST} ${CFG}"
 	else
 		MINISTAT_FILE="${SVN}"
 	fi
