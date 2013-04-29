@@ -134,7 +134,7 @@ bench_cfg () {
 	# $1: configuration-set dir
 	# $2: output-file-prefix	
 	echo "Starting sub-configuration serie bench test: $1..."
-	upload_cfg $1
+	upload_cfg $1 || die "Can't upload $1"
 	reboot_dut
 	echo "Image: ${UPGRADE_IMAGE}" > $2.info
 	echo "CFG: ${CFG}" >> $2.info
@@ -148,9 +148,7 @@ upload_cfg () {
 	echo "Uploading cfg $1"
 	if [ -d $1/boot ]; then
 		# Before putting file in /boot, we need to remount in RW mode
-		if rcmd ${DUT_ADMIN} "mount -uw /" > /dev/null 2>&1; then
-			return 0
-		else
+		if ! rcmd ${DUT_ADMIN} "mount -uw /" > /dev/null 2>&1; then
 			return 1
 		fi
 	fi
