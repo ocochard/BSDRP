@@ -370,8 +370,7 @@ setup_nanobsd ( ) (
 	echo "mount -o ro /dev/${NANO_DRIVE}s3" > conf/default/etc/remount
 
 	# Put /tmp on the /var ramdisk (could be symlink already)
-	rmdir tmp || true
-	rm tmp || true
+	test -d tmp && rmdir tmp || rm -f tmp
 	ln -s var/tmp tmp
 
 	) > ${NANO_OBJ}/_.dl 2>&1
@@ -424,12 +423,13 @@ populate_slice ( ) (
 	dir=$2
 	mnt=$3
 	lbl=$4
-	test -z $2 && dir=${NANO_WORLDDIR}/var/empty
-	test -d $dir || dir=${NANO_WORLDDIR}/var/empty
-	echo "Creating ${dev} with ${dir} (mounting on ${mnt})"
-	newfs_part $dev $mnt $lbl
-	cd ${dir}
-	find . -print | grep -Ev '/(CVS|\.svn)' | cpio -dumpv ${mnt}
+	echo "Creating ${dev} (mounting on ${mnt})"
+	newfs_part ${dev} ${mnt} ${lbl}
+	if [ -n "${dir}" -a -d "${dir}" ]; then
+		echo "Populating ${lbl} from ${dir}"
+		cd ${dir}
+		find . -print | grep -Ev '/(CVS|\.svn)' | cpio -dumpv ${mnt}
+	fi
 	df -i ${mnt}
 	umount ${mnt}
 )
@@ -594,7 +594,7 @@ create_i386_diskimage ( ) (
 			dd if=/dev/${MD} of=${NANO_DISKIMGDIR}/_.disk.mbr bs=512 count=1
 		else
 			echo "Writing out ${NANO_IMGNAME}..."
-			dd if=/dev/${MD} of=${IMG} bs=64k
+			dd conv=sparse if=/dev/${MD} of=${IMG} bs=64k
 		fi
 	fi
 
@@ -920,6 +920,7 @@ last_orders () (
 	# after the build completed, for instance to copy the finished
 	# image to a more convenient place:
 	# cp ${NANO_DISKIMGDIR}/_.disk.image /home/ftp/pub/nanobsd.disk
+	true
 )
 
 #######################################################################
