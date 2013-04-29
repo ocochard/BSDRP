@@ -70,6 +70,7 @@ reboot_dut () {
 	# Reboot the dut
 	# Need to wait an online return before continuing too
 	echo -n "Rebooting DUT and waiting device return online..."
+	# WARNING: If configuration was not saved, it will ask user for configuration saving
 	rcmd ${DUT_ADMIN} reboot > /dev/null 2>&1
 	# || die "Can't reboot the DUT after bench TEST/CFG/IMG: ${TEST_ITER}/${CONFIG_ITER}/${IMAGE_ITER}"
 	sleep 10
@@ -128,10 +129,31 @@ bench () {
 	return 0
 }
 
+bench_cfg () {
+	# Bench this configuration-set
+	# $1: configuration-set dir
+	# $2: output-file-prefix	
+	echo "Starting sub-configuration serie bench test: $1..."
+	upload_cfg $1
+	reboot_dut
+	echo "Image: ${UPGRADE_IMAGE}" > $2.info
+	echo "CFG: ${CFG}" >> $2.info
+	echo "Start time: `date`" >> $2.info
+	bench $2
+}
+
 upload_cfg () {
 	# Uploading configuration to the DUT
-	# $1: Path to the directory dir that conains configurations files
+	# $1: Path to the directory that contains configuration files
 	echo "Uploading cfg $1"
+	if [ -d $1/boot ]; then
+		# Before putting file in /boot, we need to remount in RW mode
+		if rcmd ${DUT_ADMIN} "mount -uw /" > /dev/null 2>&1; then
+			return 0
+		else
+			return 1
+		fi
+	fi
 	if ! scp -r -2 -o "PreferredAuthentications publickey" -o "StrictHostKeyChecking no" $1/* root@${DUT_ADMIN}:/ > /dev/null 2>&1; then
 		return 1
 	fi
@@ -143,7 +165,7 @@ upload_cfg () {
 }
 
 icmp_test_all () {
-	# Test if we can ping to all devices
+	# Test if we can ping all devices
 	local PING_ACCESS_OK=true
 	echo "Testing ICMP connectivity to each devices:"
 	for HOST in ${TESTER_1_ADMIN} ${TESTER_2_ADMIN} ${DUT_ADMIN}; do
@@ -257,20 +279,32 @@ if [ $# -gt 0 ] ; then
     usage
 fi
 
-for IMG in ${IMAGES_LIST};  do
-	[ -f ${IMG} ] || die "Can't found file {IMG}"
-	for CFG in ${CFG_LIST}; do
+if [ -n "${IMAGES_LIST}" ]; then
+	for IMG in ${IMAGES_LIST};  do
+		[ -f ${IMG} ] || die "Can't found file {IMG}"
+		for CFG in ${CFG_LIST}; do
 			[ -d ${CFG} ] || die "Can't found directory ${CFG}"
 			TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
 		done
-	TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
-done
-[ ${TOTAL_TEST} -eq 0 ] && TOTAL_TEST=${TEST_ITER_MAX}
+		TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
+	done
+elif [ -n "${CFG_LIST}" ]; then
+	 for CFG in ${CFG_LIST}; do
+		[ -d ${CFG} ] || die "Can't found directory ${CFG}"
+        TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
+	done
+else
+	TOTAL_TEST=${TEST_ITER_MAX}
+fi
 
 echo "BSDRP automatized upgrade/configuration-sets/benchs script"
 echo ""
 echo "This script will start ${TOTAL_TEST} bench tests using:"
 echo " - Number of iteration: ${TEST_ITER_MAX}"
+echo -n " - Multiples images to test: "
+[ -n "${IMAGES_LIST}" ] && echo "yes" || echo "no"
+echo -n " - Multiples configuration-sets to test: "
+[ -n "${CFG_LIST}" ] && echo "yes" || echo "no"
 echo " - Results dir: ${BENCH_DIR}"
 echo ""
 
@@ -295,13 +329,7 @@ if [ -n "${IMAGES_LIST}" ]; then
 		upgrade_image ${UPGRADE_IMAGE} || die "Can't upgrade to image ${UPGRADE_IMAGE}"
 		if [ -n "${CFG_LIST}" ]; then
 			for CFG in ${CFG_LIST}; do
-				echo "Starting sub-configuration serie bench test: ${CFG}..."
-				upload_cfg ${CFG}
-				reboot_dut
-				echo "Image: ${UPGRADE_IMAGE}" > ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
-				echo "CFG: ${CFG}" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
-				echo "Start time: `date`" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}.info
-				bench ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}
+				bench_cfg ${CFG} ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}
 				CONFIG_ITER=`expr ${CONFIG_ITER} + 1`
 			done
 		else
@@ -312,7 +340,15 @@ if [ -n "${IMAGES_LIST}" ]; then
 		fi
 		IMAGE_ITER=`expr ${IMAGE_ITER} + 1`
 	done
+# bad copy/past, need to re-think this part
+elif  [ -n "${CFG_LIST}" ]; then
+	UPGRADE_IMAGE="none"
+	for CFG in ${CFG_LIST}; do
+		bench_cfg ${CFG} ${BENCH_DIR}/bench.${CONFIG_ITER}
+        CONFIG_ITER=`expr ${CONFIG_ITER} + 1`
+   done
 else
+	UPGRADE_IMAGE="none"
 	reboot_dut
 	echo "Image: none" > ${BENCH_DIR}/bench.info
 	echo "Start time: `date`" >> ${BENCH_DIR}/bench.info
