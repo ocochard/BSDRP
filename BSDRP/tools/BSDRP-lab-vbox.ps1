@@ -342,24 +342,24 @@ Function create_template () {
 Function parse_filename () {
 	param ([string]$FILENAME)
     Write-Host "Parsing filename given for guesing ARCH and CONSOLE values:"
-    if ($FILENAME.Contains("_amd64")) {
+    if ($FILENAME.Contains("amd64")) {
         [string] $global:VM_ARCH="FreeBSD_64"
         Write-Host "- ARCH: x86-64"
         if (!($VIRTUALBOX.Host.getProcessorFeature($ProcessorFeature_HWVirtEx))) {
             write-host "[ERROR] : Your processor didn't support 64bit OS"
             clean_exit
         }
-    } elseif ($FILENAME.Contains("_i386")) {
+    } elseif ($FILENAME.Contains("i386")) {
         [string] $global:VM_ARCH="FreeBSD"
         Write-Host "- ARCH: i386"
     } else {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": parse_filename(): Can't guests arch of this image"
         clean_exit
     }
-    if ($FILENAME.Contains("_serial")) {
+    if ($FILENAME.Contains("serial")) {
         $global:SERIAL=$true
         Write-Host "- CONSOLE: serial" 
-    } elseif ($FILENAME.Contains("_vga")) {
+    } elseif ($FILENAME.Contains("vga")) {
         $global:SERIAL=$false
         Write-Host "- CONSOLE: vga"
     } else {
