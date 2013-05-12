@@ -40,6 +40,27 @@
 
 * In place of tunning, need to add a script that check the hardware, and regarding the hardware (NIC drivers, ncpu, RAM, etc...) will display some advice
 * Need to check CPU affinity for routing process and forwardinga process (cpuset)
+  like this script:
+==============
+#!/bin/sh
+
+# PROVIDE: cpuset-igb
+# REQUIRE: FILESYSTEMS
+# BEFORE:  netif
+# KEYWORD: nojail
+
+case "$1" in
+*start)
+  echo "Binding igb(4) IRQs to CPUs"
+  cpus=`sysctl -n kern.smp.cpus`
+  vmstat -ai | sed -E '/^irq.*que/!d; s/^irq([0-9]+): igb([0-9]+):que ([0-9]+).*/\1 \2 \3/' |\
+  while read irq igb que
+  do
+    cpuset -l $(( ($igb+$que) % $cpus )) -x $irq
+  done
+  ;;
+esac
+===============
 
 ## API #
 

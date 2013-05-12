@@ -71,7 +71,9 @@ update_port () {
 		svn revert -R ${PORTS_SRC}
 		echo "Updating ports tree sources..."
 		svn update ${PORTS_SRC} -r ${PORTS_REV} || die "Can't update ports sources"
-		rm ${PROJECT_DIR}/FreeBSD/ports-added
+		if [ -f ${PROJECT_DIR}/FreeBSD/ports-added ]; then
+			rm ${PROJECT_DIR}/FreeBSD/ports-added
+		fi
 	fi
 }
 
