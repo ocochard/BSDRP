@@ -9,6 +9,7 @@
 * net/fprobe removed: FreeBSD's native ng_netflow supports v9
 
 ## Updated packages
+* bird to 1.3.10
 * isc-dhcp42-server and relay to 4.2.5
 * tmux to 1.8
 
