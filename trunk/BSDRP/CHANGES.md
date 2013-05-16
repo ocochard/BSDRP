@@ -11,6 +11,7 @@
 ## Updated packages
 * bird to 1.3.10
 * isc-dhcp42-server and relay to 4.2.5
+* pkg to 1.0.12
 * tmux to 1.8
 
 ## Misc for developers

@@ -28,8 +28,10 @@
 # SUCH DAMAGE.
 #
 
-#Uncomment for debug
-#set -x
+set -eu
+
+# A usefull function (from: http://code.google.com/p/sh-die/)
+die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 check_user () {
 	NOT_ROOT=false
@@ -45,45 +47,43 @@ check_user () {
 }
 
 check_system_freebsd () {
-    if ! `pkg_info -q -E -x qemu  > /dev/null 2>&1`; then
+    NOT_FOUND=true
+    qemu-system-i386 -version > /dev/null 2>&1 && NOT_FOUND=false
+
+    if (${NOT_FOUND}); then
         echo "Error: qemu not found"
         echo "Install qemu from ports and enable kqemu"
-		echo "Installing qemu with: pkg_add -r qemu, will not enable kqemu"
-        exit 1
+		die "Installing qemu with: pkg_add -r qemu, will not enable kqemu"
     fi
 
-	KQEMU=true
-    if ! `pkg_info -q -E -x kqemu  > /dev/null 2>&1`; then
-        echo "WARNING: kqemu not found"
+    [ -f /boot/modules/kqemu ] && KQEMU=true || KQEMU=false
+    if !($KQEMU); then        
+	echo "WARNING: kqemu not found"
         echo "kqemu is not mandatory, but improve a lot the speed"
-        echo "Install kqemu with: pkg_add -r kqemu"
-		KQEMU=false
-    fi
-	
-    if ! kldstat -q -m kqemu; then
-		if $NOT_ROOT; then
-			echo "WARNING: kqemu module not loaded"
-			echo "You need to be root for loading this module"
-			KQEMU=false
-		else
-        	echo "Loading kqemu"
-        	if kldload -q kqemu; then
-            	echo "WARNING: Can't load kqemu"
-			KQEMU=false
-        	fi
-		fi
-    fi
+	echo "kqemu is available for legacy qemu and not qemu-devel"
+        echo "Install kqemu with: pkg inst kqemu-devel"
+    else
+    	if ! kldstat -q -m kqemu; then
+	    	if $NOT_ROOT; then
+				echo "WARNING: kqemu module not loaded"
+				echo "You need to be root for loading this module"
+				KQEMU=false
+			else
+        		echo "Loading kqemu"
+        		if kldload -q kqemu; then
+            		echo "WARNING: Can't load kqemu"
+				KQEMU=false
+        		fi
+			fi
+    	fi
+	fi
     if ! kldstat -q -m aio; then
 		if $NOT_ROOT; then
 			echo "ERROR: aio module not loaded (mandatory for qemu)"
-			echo "You need to be root for loading this module"
-			exit 1
+			die "You need to be root for loading this module"
 		else
         	echo "Loading module aio"
-        	if kldload -q aio; then
-            	echo "ERROR Can't load module aio"
-			exit 1
-        	fi
+        	kldload -q aio && die "ERROR Can't load module aio"
 		fi
     fi
 
@@ -94,28 +94,24 @@ check_system_linux () {
 	if ! which kvm; then
 		if ! which qemu; then
         	echo "ERROR: kvm/qemu is not installed"
-			echo "You need to install kvm"
-			exit 1
+			die "You need to install kvm"
 		fi
 	fi
 
 	if ! which tunctl; then
     	echo "ERROR: uml-utilities is not installed (tunctl)"
-        echo "You need to install tunctl: sudo apt-get -y install uml-utilities"
-        exit 1
+        die "You need to install tunctl: sudo apt-get -y install uml-utilities"
     fi
 
 	if ! which brctl; then
 		echo "ERROR: bridge-utils is not installed (brctl)"
-		echo "You need to install brctl: sudo apt-get install bridge-utils "
-		exit 1
+		die "You need to install brctl: sudo apt-get install bridge-utils "
 	fi
 }
 
 check_image () {
     if [ ! -f ${FILENAME} ]; then
-        echo "ERROR: Can't found the file ${FILENAME}"
-        exit 1
+        die "ERROR: Can't found the file ${FILENAME}"
     fi
 
     if `echo ${FILENAME} | grep -q bz2  > /dev/null 2>&1`; then
@@ -130,8 +126,7 @@ check_image () {
 	fi
 
     if ! `file -b ${FILENAME} | grep -q "boot sector"  > /dev/null 2>&1`; then
-        echo "ERROR: Not a BSDRP image??"
-        exit 1
+        die "ERROR: Not a BSDRP image??"
     fi
     
 }
@@ -148,8 +143,7 @@ case "$OS_DETECTED" in
          break
          ;;
      *)
-         echo "BUG: Function create_interfaces_shared can't be called on $OS_DETECTED system"
-         exit 1
+         die "BUG: Function create_interfaces_shared can't be called on $OS_DETECTED system"
          ;;
 esac
 }
@@ -159,8 +153,7 @@ create_interfaces_shared_freebsd () {
         echo "Creating admin bridge interface..."
         BRIDGE_IF=`ifconfig bridge create`
         if ! `ifconfig ${BRIDGE_IF} 10.0.0.254/24`; then
-            echo "Can't set IP address on ${BRIDGE_IF}"
-            exit 1
+            die "Can't set IP address on ${BRIDGE_IF}"
         fi
     else
         # Need to check if it's a bridge interface that is allready configured with 10.0.0.254"
@@ -172,8 +165,7 @@ create_interfaces_shared_freebsd () {
                     BRIDGE_IF="$NIC"
                 else
                     echo "ERROR: Interface $NIC is allready configured with 10.0.0.254"
-                    echo "Cant' configure this IP on interface $BRIDGE_IF"
-                    exit 1
+                    die "Cant' configure this IP on interface $BRIDGE_IF"
                 fi
             fi 
         done
@@ -194,35 +186,15 @@ create_interfaces_shared_linux () {
 	TAP_IF="bsdrp-admin-tap"
     if ! ifconfig $BRIDGE_IF; then
         echo "Creating admin bridge interface..."
-		if ! brctl addbr $BRIDGE_IF; then
-			echo "Can't create bridge admin interface"
-			exit 1
-		fi
-		if ! ifconfig $BRIDGE_IF up; then
-			echo "Can't put $BRIDGE_IF in up state"
-			exit 1
-		fi
-        if ! ifconfig ${BRIDGE_IF} 10.0.0.254/24; then
-            echo "Can't set IP address on ${BRIDGE_IF}"
-            exit 1
-        fi
+		brctl addbr $BRIDGE_IF || die "Can't create bridge admin interface"
+		ifconfig $BRIDGE_IF up || die "Can't put $BRIDGE_IF in up state"
+        ifconfig ${BRIDGE_IF} 10.0.0.254/24 || die "Can't set IP address on ${BRIDGE_IF}"
     fi
     #Shared TAP interface for communicating with the host
     echo "Creating admin tap interface..."
-	if ! tunctl -t $TAP_IF; then
-		echo "ERROR: Can't create tap $TAP_IF interface"
-		exit 1
-	fi
-
-	if ! brctl addif $BRIDGE_IF $TAP_IF; then
-		echo "ERROR: Can't add $TAP_IF to bridge $BRIDGE_IF"
-		exit 1
-	fi
-	
-    if ! ifconfig ${TAP_IF} up; then
-		echo "ERROR: Can't enable up ${TAP_IF}"
-		exit 1
-	fi
+	tunctl -t $TAP_IF || die "ERROR: Can't create tap $TAP_IF interface"
+	brctl addif $BRIDGE_IF $TAP_IF || die "ERROR: Can't add $TAP_IF to bridge $BRIDGE_IF"
+    ifconfig ${TAP_IF} up || die "ERROR: Can't enable up ${TAP_IF}"
     QEMU_NIC="-net nic,model=${NIC_MODEL} -net tap,ifname=${TAP_IF}"
 }
 
@@ -239,8 +211,7 @@ case "$OS_DETECTED" in
          break
          ;;
      *)
-         echo "BUG: Function create_interfaces_lab can't be called on $OS_DETECTED system"
-         exit 1
+         die "BUG: Function create_interfaces_lab can't be called on $OS_DETECTED system"
          ;;
 esac
 }
@@ -249,13 +220,9 @@ create_interfaces_lab_freebsd () {
     if ! `ifconfig | grep -q 10.0.0.254`; then
         echo "Creating admin bridge interface..."
         BRIDGE_IF=`ifconfig bridge create`
-        if ! `ifconfig ${BRIDGE_IF} 10.0.0.254/24`; then
-            echo "Can't set IP address on ${BRIDGE_IF}"
-            exit 1
-        fi
+        `ifconfig ${BRIDGE_IF} 10.0.0.254/24` || die "Can't set IP address on ${BRIDGE_IF}"
     else
-        echo "Need to found the bridge number configured with 10.0.0.254"
-        exit 1
+        die "Need to found the bridge number configured with 10.0.0.254"
     fi
     #Shared TAP interface for communicating with the host
     echo "Creating the $NUMBER_VM tap interfaces that be shared with host"
@@ -278,18 +245,9 @@ create_interfaces_lab_linux () {
 	TAP_IF="bsdrp-admin-tap"
     if ! ifconfig $BRIDGE_IF; then
         echo "Creating admin bridge interface..."
-		if ! brctl addbr $BRIDGE_IF; then
-			echo "Can't create bridge admin interface"
-			exit 1
-		fi
-		if ! ifconfig $BRIDGE_IF up; then
-			echo "Can't put $BRIDGE_IF in up state"
-			exit 1
-		fi
-        if ! ifconfig ${BRIDGE_IF} 10.0.0.254/24; then
-            echo "Can't set IP address on ${BRIDGE_IF}"
-            exit 1
-        fi
+		brctl addbr $BRIDGE_IF || die "Can't create bridge admin interface"
+		ifconfig $BRIDGE_IF up || die "Can't put $BRIDGE_IF in up state"
+        ifconfig ${BRIDGE_IF} 10.0.0.254/24 || die "Can't set IP address on ${BRIDGE_IF}"
     fi
 
     #Shared TAP interface for communicating with the host
@@ -302,14 +260,8 @@ create_interfaces_lab_linux () {
         TAP_IF="TAP_IF_$i"
         TAP_IF=`eval echo $"${TAP_IF}"`
         ifconfig ${BRIDGE_IF} addm ${TAP_IF} up
-		if ! brctl addif ${BRIDGE_IF} ${TAP_IF}; then
-			echo "ERROR: Can't add ${TAP_IF} to bridge ${BRIDGE_IF}"
-			exit 1
-		fi
-		if ! ifconfig ${TAP_IF} up; then
-			echo "ERROR: Can't enable ${TAP_IF}"
-			exit 1
-		fi
+		brctl addif ${BRIDGE_IF} ${TAP_IF} || die "ERROR: Can't add ${TAP_IF} to bridge ${BRIDGE_IF}"
+		ifconfig ${TAP_IF} up || die "ERROR: Can't enable ${TAP_IF}"
         i=`expr $i + 1`
     done
 }
@@ -328,8 +280,7 @@ case "$OS_DETECTED" in
          break
          ;;
      *)
-         echo "BUG: Function delete_interface_lab can't be called on $OS_DETECTED system"
-         exit 1
+         die "BUG: Function delete_interface_lab can't be called on $OS_DETECTED system"
          ;;
 esac
 }
@@ -398,8 +349,7 @@ parse_filename () {
          break
          ;;
      *)
-         echo "BUG: Function parse_filename can't be called on $OS_DETECTED system"
-         exit 1
+         die "BUG: Function parse_filename can't be called on $OS_DETECTED system"
          ;;
 	esac
 
@@ -542,6 +492,11 @@ set -- $args
 LAB_MODE=false
 SHARED_WITH_HOST=false
 VERBOSE=false
+FILENAME=""
+NUMBER_VM=""
+NUMBER_LAN=""
+RAM=""
+
 for i
 do
         case "$i" 
@@ -580,22 +535,13 @@ do
 done
 
 if [ "$NUMBER_VM" != "" ]; then
-    if [ $NUMBER_VM -lt 1 ]; then
-        echo "Error: Use a minimal of 2 routers in your lab."
-        exit 1
-    fi
+    [ $NUMBER_VM -lt 1 ] && die "Error: Use a minimal of 2 routers in your lab."
 
-    if [ $NUMBER_VM -ge 9 ]; then
-        echo "Error: Use a maximum of 9 routers in your lab."
-        exit 1
-    fi
+    [ $NUMBER_VM -ge 9 ] && die "Error: Use a maximum of 9 routers in your lab."
 fi
 
 if [ "$NUMBER_LAN" != "" ]; then
-    if [ $NUMBER_LAN -ge 9 ]; then
-        echo "Error: Use a maximum of 9 LAN in your lab."
-        exit 1
-    fi
+    [ $NUMBER_LAN -ge 9 ] && die "Error: Use a maximum of 9 LAN in your lab."
 else
     NUMBER_LAN=0
 fi
@@ -623,8 +569,7 @@ case "$OS_DETECTED" in
          break
          ;;
      *)
-         echo "ERROR: This script doesn't support $OS_DETECTED"
-         exit 1
+         die "ERROR: This script doesn't support $OS_DETECTED"
          ;;
 esac
 
