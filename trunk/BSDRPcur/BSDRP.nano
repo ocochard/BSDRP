@@ -303,7 +303,7 @@ add_port () {
 
 # high-performance ipfw netmap
 # Disabled because net/pfil API changes
-# add_port "net/ipfw-user"
+#add_port "net/ipfw-user"
 
 # Then we need to install net-snmp without perl modules
 # net-snmp support is not very good for FreeBSD, disable it
@@ -312,8 +312,6 @@ add_port () {
 # Add modules to the native FreeBSD bsnmpd daemon:
 add_port "net-mgmt/bsnmp-regex"
 add_port "net-mgmt/bsnmp-ucd"
-# didn't compile on -current
-#add_port "net-mgmt/bsnmptools"
 
 # Quagga installation
 add_port "net/quagga-re" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
@@ -330,8 +328,7 @@ add_port "net/freevrrpd"
 add_port "security/ipsec-tools" "-DWITH_RC5 -DWITH_IDEA -DWITH_RADIUS -DWITH_LDAP"
 
 #pf top
-#DO NOT COMPILE on -current
-#add_port "sysutils/pftop"
+add_port "sysutils/pftop"
 
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
 # UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
