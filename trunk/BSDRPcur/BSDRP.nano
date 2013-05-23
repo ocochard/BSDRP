@@ -177,6 +177,7 @@ add_netrate () {
             		continue
         	fi	
 		export TOOL
+		chroot ${NANO_WORLDDIR} /bin/sh -exc 'make clean -C /usr/src/tools/tools/${TOOL}'
 		chroot ${NANO_WORLDDIR} /bin/sh -exc \
 			'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 			MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
