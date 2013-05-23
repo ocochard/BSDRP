@@ -116,6 +116,7 @@ tune () {
 	net_nic
 	($ROUTER) && net_forward
 	($ROUTER) && net_inet
+	($ROUTER) && cpu_ht
 	net_netisr
 	net_netstat
 	net_mbuf
@@ -133,10 +134,29 @@ tune () {
 				fi
 			fi # if_have_cap
 		fi # rc.conf
+		# Check for virtualized
+		if (${VM_DETECTED}); then
+			if if_have_cap ${NIC} POLLING; then
+				if ! if_is_cap_enabled ${NIC} POLLING; then
+					# http://lists.freebsd.org/pipermail/freebsd-net/2013-May/035626.html
+					echo "In VM, ${NIC} can have better behavior if POLLING was enabled"
+					echo " => Enable polling in /etc/rc.conf.misc"
+				fi
+			fi
+			# need disable hardware assisted features (need to found reference about this tip)
+			for CAPS in RXCSUM TXCSUM TSO4; do
+            	if if_is_cap_enabled ${NIC} ${CAPS}; then
+					echo "${NIC} have ${CAPS} enabled: Disable it in a VM"
+            	fi
+        	done # end for CAPS
+		fi
 	done
-	
-	# Look for VM environnement
-    sysctl -n kern.vm_guest | grep -q -v "none" && net_virtualized
+
+}
+
+cpu_ht () {
+	# Check if HyperThreading is enabled
+	grep -q "^FreeBSD/SMP.*SMT" /var/run/dmesg.boot && echo "You should disable HyperThreading"
 }
 
 net_nic () {
@@ -243,19 +263,7 @@ net_mbuf () {
 	netstat -m | grep "mbuf clusters in use"
 }
 
-net_virtualized () {
-	# Virtualized system tunable
-	# need disable hardware assisted features (need to found reference aobout this tip)
-	for NIC in `ifconfig -l`; do
-		#skip loopback interfaces
-        echo $NIC | egrep -q "lo[[:digit:]]" && continue
-		for CAPS in RXCSUM TXCSUM TSO4; do
-            if if_is_cap_enabled ${NIC} ${CAPS}; then
-				echo "${NIC} have ${CAPS} enabled: Disable it in a VM"
-            fi                                                                                                     
-        done # end for CAPS
-    done # end for NIC
-}
+
 
 timecounter () {
 	# Are the timecounter tuning usefull ?
@@ -271,4 +279,8 @@ timecounter () {
 ###################
 
 getoption $*
+#system_inventory
+# Look for VM environnement
+sysctl -n kern.vm_guest | grep -q -v "none" && VM_DETECTED=true || VM_DETECTED=false
 tune
+echo "Done!"
