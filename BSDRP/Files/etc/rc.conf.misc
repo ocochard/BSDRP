@@ -30,8 +30,9 @@ harvest_p_to_p="NO"     # Entropy device harvests point-to-point randomness
 # Prevent syslog to bind a network socket
 syslogd_flags="-ss"
 
-# If, and only if, your NIC didn't support interrupt moderation (very old NIC)
-# you can enable polling
+# You should enable polling if, and only if:
+# - Your NIC didn't support interrupt moderation (very old NIC)
+# - You are using BSDRP in VM
 polling_enable="NO"
 
 # Enable RFC1323 extensions
