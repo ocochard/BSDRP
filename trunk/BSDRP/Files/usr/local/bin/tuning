@@ -134,6 +134,14 @@ tune () {
 				fi
 			fi # if_have_cap
 		fi # rc.conf
+		# Router should not have LRO enabled
+		if ($ROUTER); then
+			if if_have_cap ${NIC} LRO; then
+				if if_is_cap_enabled ${NIC} LRO; then
+					echo "A router should not have LRO enabled on forwarding NIC"
+				fi
+			fi
+		fi
 		# Check for virtualized
 		if (${VM_DETECTED}); then
 			if if_have_cap ${NIC} POLLING; then
