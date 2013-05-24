@@ -6,6 +6,7 @@
 	* kern/174749, kern/157796 "Unexpected change of default route"
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
+* add hwpmc modules
 * net/fprobe removed: FreeBSD's native ng_netflow supports v9
 
 ## Updated packages
