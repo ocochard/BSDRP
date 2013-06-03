@@ -1,10 +1,27 @@
---- tools/tools/netrate/netreceive/netreceive.c.orig	2013-02-10 18:58:45.000000000 +0100
-+++ tools/tools/netrate/netreceive/netreceive.c	2013-02-10 18:59:13.000000000 +0100
+diff -ruN tools/tools/netrate/netreceive.orig/Makefile tools/tools/netrate/netreceive/Makefile
+--- tools/tools/netrate/netreceive.orig/Makefile	2013-05-31 09:24:25.064855105 +0200
++++ tools/tools/netrate/netreceive/Makefile	2013-05-31 09:24:32.525495862 +0200
+@@ -1,8 +1,11 @@
+ #
+-# $FreeBSD: stable/9/tools/tools/netrate/netreceive/Makefile 139103 2004-12-21 08:47:35Z ru $
++# $FreeBSD: head/tools/tools/netrate/netreceive/Makefile 248564 2013-03-20 21:47:05Z neel $
+ #
+ 
+ PROG=	netreceive
+ NO_MAN=
++LDFLAGS += -lpthread
++
++WARNS?=	3
+ 
+ .include <bsd.prog.mk>
+diff -ruN tools/tools/netrate/netreceive.orig/netreceive.c tools/tools/netrate/netreceive/netreceive.c
+--- tools/tools/netrate/netreceive.orig/netreceive.c	2013-05-31 09:24:25.064855105 +0200
++++ tools/tools/netrate/netreceive/netreceive.c	2013-05-31 09:24:32.525495862 +0200
 @@ -23,49 +23,202 @@
   * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
   * SUCH DAMAGE.
   *
-- * $FreeBSD: releng/9.1/tools/tools/netrate/netreceive/netreceive.c 135536 2004-09-21 03:10:28Z rwatson $
+- * $FreeBSD: stable/9/tools/tools/netrate/netreceive/netreceive.c 135536 2004-09-21 03:10:28Z rwatson $
 + * $FreeBSD: head/tools/tools/netrate/netreceive/netreceive.c 244672 2012-12-25 07:29:25Z luigi $
   */
  
@@ -146,7 +163,7 @@
 +	/* now the parent collects and prints results */
 +	c0 = c1 = bc0 = bc1 = 0;
 +	clock_gettime(CLOCK_REALTIME, &then);
-+	fprintf(stderr, "start at %ld.%09ld\n", (long int)then.tv_sec, (long int)then.tv_nsec);
++	fprintf(stderr, "start at %jd.%09ld\n", (__intmax_t)then.tv_sec, then.tv_nsec);
 +	while (1) {
 +		int i, nt = nsock * nthreads;
 +		int64_t dn;
@@ -168,8 +185,8 @@
 +		pps = (pps * 1000000000) / (delta.tv_sec*1000000000 + delta.tv_nsec + 1);
 +		bps = ((bc0 - bc1) * 8000000000) / (delta.tv_sec*1000000000 + delta.tv_nsec + 1);
 +		fprintf(stderr, " %9ld pps %8.3f Mbps", (long)pps, .000001*bps);
-+		fprintf(stderr, " - %d pkts in %ld.%09ld ns\n",
-+			(int)dn, (long int)delta.tv_sec, (long int)delta.tv_nsec);
++		fprintf(stderr, " - %d pkts in %jd.%09ld ns\n",
++			(int)dn, (__intmax_t)delta.tv_sec, delta.tv_nsec);
 +		c1 = c0;
 +		bc1 = bc0;
 +	}
@@ -278,16 +295,3 @@
 +	/*NOTREACHED*/
 +	freeaddrinfo(res0);
  }
---- tools/tools/netrate/netreceive/Makefile	2013-02-10 15:25:28.000000000 +0100
-+++ tools/tools/netrate/netreceive/Makefile	2013-02-10 20:01:05.000000000 +0100
-@@ -1,8 +1,9 @@
- #
--# $FreeBSD: releng/9.1/tools/tools/netrate/netreceive/Makefile 139103 2004-12-21 08:47:35Z ru $
-+# $FreeBSD: head/tools/tools/netrate/netreceive/Makefile 244672 2012-12-25 07:29:25Z luigi $
- #
- 
- PROG=	netreceive
- NO_MAN=
-+LDFLAGS += -lpthread
- 
- .include <bsd.prog.mk>

@@ -1,11 +1,12 @@
 # Release 1.5 (not released)
 
 ## New features
-* Update to FreeBSD 9.1-RELEASE-p2
+* Upgraded to FreeBSD 9-stable (mbuf memory leak problem on 9.1)
 * Extras patches:
 	* kern/174749, kern/157796 "Unexpected change of default route"
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
+	* multi-threaded netblast (bin/179085)
 * add hwpmc modules
 * net/fprobe removed: FreeBSD's native ng_netflow supports v9
 

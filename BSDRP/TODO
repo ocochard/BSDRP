@@ -28,6 +28,7 @@
 
 * utf-8 support for console ?
 * Quagga rc script: limit all quagga process message when quagga is disabled
+* Need to publish an OVF (Open Virtualization Format) tar file
 
 ## Central configuration management / Provisionning #
 

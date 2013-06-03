@@ -36,6 +36,7 @@ CONF_INSTALL=''
 # WITHOUT_KVM= and WITHOUT_KVM_SUPPORT= prevent buildworld to complet (don't know why)
 
 CONF_WORLD='
+WITHOUT_BMAKE=
 MALLOC_PRODUCTION=
 WITHOUT_ACCT=
 WITHOUT_AMD=
@@ -371,9 +372,6 @@ add_port "benchmarks/iperf"
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 #add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
 #add_port "emulators/virtualbox-ose-additions/" "-DWITHOUT_X11 -DWITHOUT_HAL"
-if [ ${NANO_ARCH} != "sparc64" ]; then
-	add_port "emulators/virtio-kmod"
-fi
 
 #### End of port list section ####
 

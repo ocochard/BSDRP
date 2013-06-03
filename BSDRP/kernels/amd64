@@ -2,7 +2,7 @@ cpu		HAMMER
 ident		BSDRP-AMD64
 
 #makeoptions	DEBUG=-g		# Build kernel with gdb(1) debug symbols
-
+makeoptions		WITH_CTF=1	# Run ctfconvert(1) for DTrace support
 options 	SCHED_ULE		# ULE scheduler
 options 	PREEMPTION		# Enable kernel thread preemption
 options 	INET			# InterNETworking
@@ -13,6 +13,7 @@ options 	FFS			# Berkeley Fast Filesystem
 #options 	UFS_ACL			# Support for access control lists
 #options 	UFS_DIRHASH		# Improve performance on big directories
 #options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
+#options    QUOTA               # Enable disk quotas for UFS
 #options 	MD_ROOT			# MD is a potential root device
 #options 	NFSCL			# New Network Filesystem Client
 #options 	NFSD			# New Network Filesystem Server
@@ -42,11 +43,12 @@ options 	PRINTF_BUFR_SIZE=128	# Prevent printf output being interspersed.
 options 	HWPMC_HOOKS		# Necessary kernel hooks for hwpmc(4)
 #options 	AUDIT			# Security event auditing
 #options 	MAC			# TrustedBSD MAC Framework
-#options 	KDTRACE_FRAME		# Ensure frames are compiled in
-#options 	KDTRACE_HOOKS		# Kernel DTrace hooks
+options 	KDTRACE_FRAME		# Ensure frames are compiled in
+options 	KDTRACE_HOOKS		# Kernel DTrace hooks
 options 	INCLUDE_CONFIG_FILE     # Include this file in kernel
 options 	KDB			# Kernel debugger related code
 options 	KDB_TRACE		# Print a stack trace for a panic
+options		DDB_CTF			# kernel ELF linker loads CTF data
 
 # Make an SMP-capable kernel by default
 options 	SMP			# Symmetric MultiProcessor Kernel
@@ -111,6 +113,7 @@ device		ciss		# Compaq Smart RAID 5*
 device		dpt		# DPT Smartcache III, IV - See NOTES for options
 device		hptmv		# Highpoint RocketRAID 182x
 device		hptrr		# Highpoint RocketRAID 17xx, 22xx, 23xx, 25xx
+device		hpt27xx		# Highpoint RocketRAID 27xx
 device		iir		# Intel Integrated RAID
 device		ips		# IBM (Adaptec) ServeRAID
 device		mly		# Mylex AcceleRAID/eXtremeRAID
@@ -252,6 +255,8 @@ device		xl		# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 # Pseudo devices.
 device		loop		# Network loopback
 device		random		# Entropy device
+options		PADLOCK_RNG     # VIA Padlock RNG
+options		RDRAND_RNG		# Intel Bull Mountain RNG
 device		ether		# Ethernet support
 device		vlan		# 802.1Q VLAN support
 device		tun		# Packet tunnel.
@@ -307,15 +312,6 @@ device		uslcom		# SI Labs CP2101/CP2102 serial adapters
 #device		urtw		# Realtek RTL8187B/L wireless NICs
 #device		zyd		# ZyDAS zd1211/zd1211b wireless NICs
 
-# FireWire support
-#device		firewire	# FireWire bus code
-# sbp(4) works for some systems but causes boot failure on others
-#device		sbp		# SCSI over FireWire (Requires scbus and da)
-#device		fwe		# Ethernet over FireWire (non-standard!)
-#device		fwip		# IP over FireWire (RFC 2734,3146)
-#device		dcons		# Dumb console driver
-#device		dcons_crom	# Configuration ROM for dcons
-
 # Sound support
 #device		sound		# Generic sound driver (required)
 #device		snd_cmi		# CMedia CMI8338/CMI8738
@@ -326,6 +322,14 @@ device		uslcom		# SI Labs CP2101/CP2102 serial adapters
 #device		snd_ich		# Intel, NVidia and other ICH AC'97 Audio
 #device		snd_uaudio	# USB Audio
 #device		snd_via8233	# VIA VT8233x Audio
+
+# VirtIO support
+device          virtio          # Generic VirtIO bus (required)
+device          virtio_pci      # VirtIO PCI Interface
+device          vtnet           # VirtIO Ethernet device
+device          virtio_blk      # VirtIO Block device
+device          virtio_scsi     # VirtIO SCSI device
+device          virtio_balloon  # VirtIO Memory Balloon device
 
 ####### BSDRP section #####
 
