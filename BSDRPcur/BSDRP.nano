@@ -19,8 +19,8 @@ NANO_PACKAGE_LIST="*"
 NANO_ARCH=${TARGET_ARCH}
 
 # Options to put in make.conf during buildworld only
+# BOOT_COMCONSOLE_SPEED is useless because we using /boot.config with -Sspeed option
 CONF_BUILD="
-BOOT_COMCONSOLE_SPEED=${COM_SPEED}
 "
 
 # Options to put in make.conf during installworld only
@@ -132,7 +132,7 @@ NANO_CODESIZE=0
 
 # Size of configuration file system in 512 bytes sectors
 # Cannot be zero.
-# 15MB = 2048
+# about 15MB = 20480
 NANO_CONFSIZE=20480
 
 # Size of data file system in 512 bytes sectors
@@ -222,7 +222,6 @@ add_quagga-bgp-netgen () {
 add_port () {
 	port=`echo $1 | sed -e 's/\//_/'`
 	# Check if package allready exist
-
 	cd ${PORTS_SRC}/$1
 	# Warning: a package name can change regarding the build option
 	PKG_NAME=`env PORTSDIR=${PORTS_SRC} make package-name $2`
@@ -274,16 +273,14 @@ add_port () {
                     mv \${NANO_WORLDDIR}/usr/ports/$1/Makefile \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd
                     sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
                 fi
-		# Do not compile port with clang: net/bird meet error	
                	chroot \${NANO_WORLDDIR} /bin/sh -exc \
                 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 				MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
 				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-                install package-recursive BATCH=yes -DWITH_PKGNG \
-				-DWITHOUT_X11 -DNOPORTDOCS \
-				-DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
+                install package-recursive BATCH=yes -DWITH_PKGNG -DWITHOUT_X11 \
+				-DNOPORTDOCS -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
 				rm \${NANO_WORLDDIR}/etc/resolv.conf
                	rm -rf \${NANO_WORLDDIR}/usr/obj
                	rm -rf \${NANO_WORLDDIR}/usr/pobj
@@ -601,12 +598,17 @@ usr/share/tmac/tmac.vgrind
 '
     for c in $TOOLCHAIN_TO_REMOVE
     do
-        if [ -f ${NANO_WORLDDIR}/$c ]
-        then
+        if [ -f ${NANO_WORLDDIR}/$c ]; then
             echo "Removing ${NANO_WORLDDIR}/$c"
             if ! rm -rf ${NANO_WORLDDIR}/$c ; then
                 echo "Error: Can't remove it!"
             fi
+			# look for associated man page and delete it too
+			if ! find ${NANO_WORLDDIR}/usr/share/man -name `basename $c`".*.gz" -exec rm -- {} +; then
+				echo "no man page for $c"
+			fi
+		else
+			echo "Missing file to delete: $c"
         fi
     done
 	
@@ -628,7 +630,6 @@ usr/share/tmac/tmac.vgrind
 	# Generate package inventory
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'pkg info' > ${NANO_OBJ}/packages.info
-
 }
 
 # Enable only serial system only
@@ -641,17 +642,13 @@ bsdrp_console_serial () {
     # Disable getty on syscons devices
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
 
-	# Add bhyve compatibility
-	#echo console \"/usr/libexec/getty std.${COM_SPEED}\"   vt100   on secure >> ${NANO_WORLDDIR}/etc/ttys
-    
-	# Tell loader to use serial console early.
-    echo "-h" > ${NANO_WORLDDIR}/boot.config
+    # Tell loader to use serial console early.
+    echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
 
-	# Customize loader.conf file:
-	echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'console="comconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
-
+	# Don't need to customize /boot/loader.conf file because /boot.config is allready configured
+	#echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	#echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
+	#echo 'console="comconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 }
 
 # Enable use of keyboard/vga and serial
@@ -667,13 +664,12 @@ bsdrp_console_dual () {
 	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 
     # Tell loader to use serial and vga console.
-    echo " -D" > ${NANO_WORLDDIR}/boot.config
+    echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 
-	# Customize loader.conf file:
-	echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
-
+	# Don't need to customize the loader.conf file:
+	#echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	#echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
+	#echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 }
 
 # Standard vga console, but permit serial port to be use as vt100 console
@@ -681,8 +677,9 @@ bsdrp_console_vga () {
 	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-	
-	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
+
+	# Set serial console speed (but not use it)                                                               
+    echo "-S${COM_SPEED}" > ${NANO_WORLDDIR}/boot.config 
 }
 
 # Special xen console configuration
