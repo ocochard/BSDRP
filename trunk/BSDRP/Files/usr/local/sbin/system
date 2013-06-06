@@ -78,16 +78,16 @@ usage () {
 
 dual_console () {
 	# We need to touch /boot/loader.conf.local for peristent changes
-	grep -q 'boot_multicons="YES"' /boot/loader.conf.local && die "Dual console already configured"
-	grep -q 'boot_multicons="YES"' /boot/loader.conf && die "Dual console already configured"
+	grep -q Dh /boot.config && die "Dual console already configured"
 	mount -uw / || die "Can't mount / in RW mode"
 	# Tell loader to use serial and vga console
-	echo "-D" > /boot.config
-    # Customize loader.conf file
-	# We don't care of removing value in /boot/loader.conf, because loader.conf.local overwrite it
-	echo '# system dual-console' >> /boot/loader.conf.local
-    echo 'boot_multicons="YES"' >> /boot/loader.conf.local
-    echo 'console="comconsole,vidconsole"' >> /boot/loader.conf.local
+	# Because there is no /boot.config we need to get the serial speed configured first
+	SERIAL_SPEED=`grep ttyu0 /etc/ttys | cut -d'.' -f 2 | cut -d '"' -f 1`
+	# Check that we get something regarding serial speed
+	[ -z "${SERIAL_SPEED}" ] && die "Can't determine serial speed from ttyu0 on /etc/ttys"
+	[ ${SERIAL_SPEED} -lt 9600 ] && die "Incorrect serial speed value: ${SERIAL_SPEED}"
+	[ ${SERIAL_SPEED} -gt 115200 ] && die "Incorrect serial speed value: ${SERIAL_SPEED}"
+	echo "-S${SERIAL_SPEED} -Dh" > /boot.config
 	mount -ur / || die "Error for remounting / in RO mode"
 }
 

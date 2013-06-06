@@ -1,12 +1,18 @@
-#################################################################
-# For modifying this file, you need to remount in read-write    #
-# the /: mount -u rw /                                          #
-#                                                               #
-# Don't load modules not necessary for mounting local disk here #
-# But add module name to the kld_list variable in rc.conf       #
-# Example for loading the padlock crypto module:                #
-# kld_list='padlock'                                            #
-#################################################################
+##################################################################
+# For modifying this file, you need to remount in read-write     #
+# the /: mount -u rw /                                           #
+#                                                                #
+# Don't load modules not necessary for mounting local disk here: #
+# - add module name to the kld_list variable in rc.conf          #
+# Example for loading the padlock crypto module and coretemp:    #
+# kld_list='padlock coretemp'                                    #
+#																 #
+# Don't put serial/dual console port value like these here too:  #
+# - boot_serial													 #
+# - comconsole_speed											 #
+# - console														 #
+# Use /boot.config in place										 #
+##################################################################
 #
 
 ### Tune some global values ###
