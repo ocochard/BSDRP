@@ -1,24 +1,7 @@
-diff -ruN tools/tools/netrate/netsend.orig/Makefile tools/tools/netrate/netsend/Makefile
---- tools/tools/netrate/netsend.orig/Makefile	2013-05-31 09:26:34.007846895 +0200
-+++ tools/tools/netrate/netsend/Makefile	2013-05-31 09:26:44.519844665 +0200
-@@ -1,5 +1,5 @@
- #
--# $FreeBSD: stable/9/tools/tools/netrate/netsend/Makefile 139103 2004-12-21 08:47:35Z ru $
-+# $FreeBSD: head/tools/tools/netrate/netsend/Makefile 139103 2004-12-21 08:47:35Z ru $
- #
- 
- CFLAGS+=	-Wall
 diff -ruN tools/tools/netrate/netsend.orig/netsend.c tools/tools/netrate/netsend/netsend.c
 --- tools/tools/netrate/netsend.orig/netsend.c	2013-05-31 09:26:34.007846895 +0200
 +++ tools/tools/netrate/netsend/netsend.c	2013-05-31 09:26:44.519844665 +0200
-@@ -23,12 +23,13 @@
-  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-  * SUCH DAMAGE.
-  *
-- * $FreeBSD: stable/9/tools/tools/netrate/netsend/netsend.c 225334 2011-09-02 16:40:18Z marius $
-+ * $FreeBSD: head/tools/tools/netrate/netsend/netsend.c 244731 2012-12-27 09:15:21Z luigi $
-  */
- 
+@@ -29,6 +29,7 @@
  #include <sys/endian.h>
  #include <sys/types.h>
  #include <sys/socket.h>
