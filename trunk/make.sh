@@ -51,6 +51,8 @@ update_src () {
 		mkdir -p ${FREEBSD_SRC} || die "Can't create ${FREEBSD_SRC}"
 		svn co svn://${SVN_SRC_PATH} ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't check out sources"
 	else
+		#Checking repo change
+		svn info ${FREEBSD_SRC} | grep -q "${SVN_SRC_PATH}" || die "ERROR: There were svn repo changes, you need to delete ${FREEBSD_SRC}"
 		echo "Cleaning local FreeBSD patches..."
 		#cleaning local patced source
 		svn revert -R ${FREEBSD_SRC}
@@ -66,6 +68,8 @@ update_port () {
 		mkdir -p ${PORTS_SRC} || die "Can't create ${PORTS_SRC}"
 		svn co svn://${SVN_PORTS_PATH} ${PORTS_SRC} -r ${PORTS_REV} || die "Can't check out ports sources"
 	else
+		#Checking repo change
+		svn info ${PORTS_SRC} | grep -q "${SVN_PORTS_PATH}" || die "ERROR: There were svn repo changes, you need to delete ${PORTS_SRC}"
 		#cleaning local patched ports sources
 		echo "Cleaning local port tree patches..."
 		svn revert -R ${PORTS_SRC}
