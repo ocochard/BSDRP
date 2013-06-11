@@ -54,7 +54,7 @@ update_src () {
 		#Checking repo change
 		if ! svn info ${FREEBSD_SRC} | grep -q "${SVN_SRC_PATH}"; then
 			echo "WARNING: There were svn repo changes, start a svn switch"
-			svn switch svn://${SVN_SRC_PATH} ${FREEBSD_SRC} || die "Can't switch to ${SVN_SRC_PATH}"
+			svn switch --accept tc -r ${SRC_REV} svn://${SVN_SRC_PATH} ${FREEBSD_SRC} || die "Can't switch to ${SVN_SRC_PATH}"
 		fi
 		echo "Cleaning local FreeBSD patches..."
 		#cleaning local patced source
@@ -74,7 +74,7 @@ update_port () {
 		#Checking repo change
 		if ! svn info ${PORTS_SRC} | grep -q "${SVN_PORTS_PATH}"; then
 			echo "WARNING: There were svn repo changes, start a svn switch"
-			svn switch svn://${SVN_PORTS_PATH} ${PORTS_SRC} || die "Can't switch to ${SVN_PORTS_PATH}"
+			svn switch --accept tc -r ${PORTS_REV} svn://${SVN_PORTS_PATH} ${PORTS_SRC} || die "Can't switch to ${SVN_PORTS_PATH}"
 		fi
 		#cleaning local patched ports sources
 		echo "Cleaning local port tree patches..."
