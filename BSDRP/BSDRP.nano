@@ -167,7 +167,7 @@ PPLEVEL=3
 
 # Add netblast/netrecieve and netmap tools
 add_netrate () {
-	TOOLS_LIST="mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
+	TOOLS_LIST="crypto mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
 	mkdir -p ${NANO_WORLDDIR}/dev
 	mount -t devfs devfs ${NANO_WORLDDIR}/dev
 	mount -t unionfs -o noatime ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
@@ -185,15 +185,17 @@ add_netrate () {
 			UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
-		for file in `grep "^PROG" ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/Makefile | cut -d '=' -f 2`; do
-			mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
-			if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
-				if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
-					echo "WARNING: Can't delete $TOOL/$file.o"
+		for MAKE_CMD in PROG ALL; do
+			for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
+				mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
+				if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
+					if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
+						echo "WARNING: Can't delete $TOOL/$file.o"
+					fi
 				fi
-			fi
-		done
-	done
+			done # for all files
+		done # for MAKE_CMD
+	done # for TOOL
 	rm -rf ${NANO_WORLDDIR}/usr/workdir
 	umount ${NANO_WORLDDIR}/usr/src
 	umount ${NANO_WORLDDIR}/dev

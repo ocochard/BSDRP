@@ -9,6 +9,7 @@
 	* multi-threaded netblast (bin/179085)
 * add hwpmc modules
 * net/fprobe removed: FreeBSD's native ng_netflow supports v9
+* New tool: cryptotest for measuring hardware-assisted crypto performance
 
 ## Updated packages
 * bird to 1.3.10
