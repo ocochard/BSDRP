@@ -122,6 +122,14 @@ tune () {
 	net_mbuf
 	echo "#<== End of /boot/loader.conf.local"
 	echo "#==> To be added to /etc/rc.conf"
+	#Need to replace this part by a list of modules (ichsmb coretemp aesni watchdog?)
+	if grep -q AESNI /var/run/dmesg.boot ; then
+		#CPU support, check if not allready loaded
+		if ! kldstat -n aesni | grep -q aesni; then
+			echo "#CPU support AESNI crypto feature, add the module"
+			echo 'kld_list="aesni"'
+		fi
+	fi
 	for NIC in `ifconfig -l`; do
 		#skip loopback interfaces
         echo $NIC | egrep -q "lo[[:digit:]]" && continue
