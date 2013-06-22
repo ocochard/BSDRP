@@ -185,9 +185,14 @@ add_netrate () {
 			UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
-		for MAKE_CMD in PROG ALL; do
+		# each Makefile have a different variable names
+		for MAKE_CMD in PROG PROGS ALL; do
 			for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
-				mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
+				if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
+					mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
+				else
+					mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
+				fi
 				if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
 					if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
 						echo "WARNING: Can't delete $TOOL/$file.o"

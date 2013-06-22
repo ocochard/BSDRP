@@ -167,36 +167,43 @@ PPLEVEL=3
 
 # Add netblast/netrecieve and netmap tools
 add_netrate () {
-	TOOLS_LIST="crypto mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
-	mkdir -p ${NANO_WORLDDIR}/dev
-	mount -t devfs devfs ${NANO_WORLDDIR}/dev
-	mount -t unionfs -o noatime ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
-	mkdir -p ${NANO_WORLDDIR}/usr/workdir
-	for TOOL in ${TOOLS_LIST}; do
-		# netmap is not available on sparc64
-		if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
-            		continue
-        	fi	
-		export TOOL
-		chroot ${NANO_WORLDDIR} /bin/sh -exc 'make clean -C /usr/src/tools/tools/${TOOL}'
-		chroot ${NANO_WORLDDIR} /bin/sh -exc \
-			'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-			MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-			UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
-			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
-		for file in `grep "^PROG" ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/Makefile | cut -d '=' -f 2`; do
-			mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
-			if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
-				if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
-					echo "WARNING: Can't delete $TOOL/$file.o"
-				fi
-			fi
-		done
-	done
-	rm -rf ${NANO_WORLDDIR}/usr/workdir
-	umount ${NANO_WORLDDIR}/usr/src
-	umount ${NANO_WORLDDIR}/dev
+    TOOLS_LIST="crypto mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
+    mkdir -p ${NANO_WORLDDIR}/dev
+    mount -t devfs devfs ${NANO_WORLDDIR}/dev
+    mount -t unionfs -o noatime ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
+    mkdir -p ${NANO_WORLDDIR}/usr/workdir
+    for TOOL in ${TOOLS_LIST}; do
+        # netmap is not available on sparc64
+        if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
+                    continue
+            fi
+        export TOOL
+        chroot ${NANO_WORLDDIR} /bin/sh -exc 'make clean -C /usr/src/tools/tools/${TOOL}'
+        chroot ${NANO_WORLDDIR} /bin/sh -exc \
+            'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+            MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+            UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+            UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+            make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
+        # each Makefile have a different variable names
+        for MAKE_CMD in PROG PROGS ALL; do
+            for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
+                if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
+                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
+                else
+                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
+                fi
+                if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
+                    if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
+                        echo "WARNING: Can't delete $TOOL/$file.o"
+                    fi
+                fi
+            done # for all files
+        done # for MAKE_CMD
+    done # for TOOL
+    rm -rf ${NANO_WORLDDIR}/usr/workdir
+    umount ${NANO_WORLDDIR}/usr/src
+    umount ${NANO_WORLDDIR}/dev
 }
 
 # Add Quagga BGP route injector

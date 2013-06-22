@@ -1,6 +1,6 @@
 diff -ruN tools/tools/netrate/netblast.orig/Makefile tools/tools/netrate/netblast/Makefile
---- tools/tools/netrate/netblast.orig/Makefile	2013-05-31 09:10:23.616912724 +0200
-+++ tools/tools/netrate/netblast/Makefile	2013-05-31 09:11:38.304907866 +0200
+--- tools/tools/netrate/netblast.orig/Makefile	2013-06-22 01:44:25.035288939 +0200
++++ tools/tools/netrate/netblast/Makefile	2013-06-22 01:44:08.522290181 +0200
 @@ -4,5 +4,8 @@
  
  PROG=	netblast
@@ -11,8 +11,8 @@ diff -ruN tools/tools/netrate/netblast.orig/Makefile tools/tools/netrate/netblas
  
  .include <bsd.prog.mk>
 diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netblast/netblast.c
---- tools/tools/netrate/netblast.orig/netblast.c	2013-05-31 09:10:23.616912724 +0200
-+++ tools/tools/netrate/netblast/netblast.c	2013-05-31 09:11:38.304907866 +0200
+--- tools/tools/netrate/netblast.orig/netblast.c	2013-06-22 01:44:25.035288939 +0200
++++ tools/tools/netrate/netblast/netblast.c	2013-06-22 01:02:48.242460668 +0200
 @@ -32,23 +32,32 @@
  #include <sys/time.h>
  
@@ -61,7 +61,7 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
 - * SIGALRM will set a flag indicating it's time to stop.  Note that there's
 - * some overhead to the signal and timer setup, so the smaller the duration,
 - * the higher the relative overhead.
-+ * Each socket uses multiple threads so the receiver is
++ * Each socket uses multiple threads so the generator is
 + * more efficient. A collector thread runs the stats.
   */
 -static int
@@ -97,10 +97,10 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
 -		return (-1);
 -	}
 +struct td_desc {
-+    pthread_t td_id;
-+    uint64_t counter; /* tx counter */
++	pthread_t td_id;
++	uint64_t counter; /* tx counter */
 +	uint64_t send_errors; /* tx send errors */
-+    uint64_t send_calls;    /* tx send calls */
++	uint64_t send_calls;    /* tx send calls */
 +	int s;
 +	u_char *packet;
 +	u_int packet_len;
@@ -118,7 +118,7 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
  	while (global_stop_flag == 0) {
  		/*
  		 * We maintain and, if there's room, send a counter.  Note
-@@ -110,57 +99,110 @@
+@@ -110,57 +99,112 @@
  		 * operation, causing the current sequence number also to be
  		 * skipped.
  		 */
@@ -138,7 +138,7 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
  	}
 +    return NULL;
 +}
- 
++
 +static struct td_desc **
 +make_threads(int s, u_char *packet, u_int packet_len, int nthreads)
 +{
@@ -168,7 +168,7 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
 +    return tp;
 +}
 +
-+
+ 
 +static void
 +main_thread(struct td_desc **tp, long duration, struct timespec starttime, struct timespec tmptime, long payloadsize, int family, int nthreads)
 +{
@@ -187,22 +187,24 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
 +    }
 +
  	printf("\n");
- 	printf("start:             %zd.%09lu\n", starttime.tv_sec,
+-	printf("start:             %zd.%09lu\n", starttime.tv_sec,
++	printf("start:                      %zd.%09lu\n", starttime.tv_sec,
  	    starttime.tv_nsec);
- 	printf("finish:            %zd.%09lu\n", tmptime.tv_sec,
+-	printf("finish:            %zd.%09lu\n", tmptime.tv_sec,
++	printf("finish:                     %zd.%09lu\n", tmptime.tv_sec,
  	    tmptime.tv_nsec);
 -	printf("send calls:        %d\n", send_calls);
 -	printf("send errors:       %d\n", send_errors);
 -	printf("approx send rate:  %ld\n", (send_calls - send_errors) /
-+	printf("send calls:        %lu\n", send_calls);
-+	printf("send errors:       %lu\n", send_errors);
-+	printf("send success:      %lu\n", send_calls - send_errors);
-+	printf("approx send rate:  %lu\n", (send_calls - send_errors) /
++	printf("send calls:                 %lu\n", send_calls);
++	printf("send errors:                %lu\n", send_errors);
++	printf("send success:               %lu\n", send_calls - send_errors);
++	printf("approx send rate:           %lu\n", (send_calls - send_errors) /
  	    duration);
 -	printf("approx error rate: %d\n", (send_errors / send_calls));
 -
 -	return (0);
-+	printf("approx error rate: %lu\n", (send_errors / send_calls));
++	printf("approx error rate:          %lu\n", (send_errors / send_calls));
 +	printf("approx Ethernet throughput: ");
 +	if (family == AF_INET)
 +		printf("%ld Mib/s\n", ((send_calls - send_errors) / duration ) *
@@ -211,6 +213,8 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
 +		printf("%ld Mib/s\n", ((send_calls - send_errors) / duration ) *
 +		(payloadsize + 8 + 40 + 14 ) * 8 / 1000 / 1000);
 +	else printf("CAN 'T DETERMINE family type %i\n",family);
++	printf("approx payload throughput:  %ld Mib/s\n", ((send_calls - send_errors) / 
++		duration ) * payloadsize * 8 / 1000 / 1000);
  }
  
  int
@@ -224,7 +228,7 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
 +	struct addrinfo hints, *res, *res0;
 +	char *dummy;
 +	u_char *packet;
-+	int port, s, error, nthreads = 1;
++	int family, port, s, error, nthreads = 1;
 +	struct td_desc **tp;	
 +	const char *cause = NULL;
 +	struct timespec starttime, tmptime;
@@ -256,7 +260,7 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
  
  	payloadsize = strtoul(argv[3], &dummy, 10);
  	if (payloadsize < 0 || *dummy != '\0')
-@@ -168,29 +210,97 @@
+@@ -168,29 +212,97 @@
  	if (payloadsize > 32768) {
  		fprintf(stderr, "payloadsize > 32768\n");
  		return (-1);
@@ -297,17 +301,17 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
 +			cause = "socket";
 +			continue;
 +		}
- 
--	s = socket(PF_INET, SOCK_DGRAM, 0);
--	if (s == -1) {
--		perror("socket");
++
 +		if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
 +			cause = "connect";
 +			close(s);
 +			s = -1;
 +			continue;
 +		}
-+
+ 
+-	s = socket(PF_INET, SOCK_DGRAM, 0);
+-	if (s == -1) {
+-		perror("socket");
 +		break;  /* okay we got one */
 +	}
 +	if (s < 0) {
@@ -315,9 +319,7 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
  		return (-1);
 +		/*NOTREACHED*/
  	}
- 
--	if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
--		perror("connect");
++	family=res->ai_family;
 +	freeaddrinfo(res0);
 +
 +	printf("netblast %d threads sending on UDP port %d\n",
@@ -330,7 +332,9 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
 +	 * some overhead to the signal and timer setup, so the smaller the duration,
 +	 * the higher the relative overhead.
 +	 */
-+
+ 
+-	if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+-		perror("connect");
 +	if (signal(SIGALRM, signal_handler) == SIG_ERR) {
 +		perror("signal");
  		return (-1);
@@ -358,6 +362,6 @@ diff -ruN tools/tools/netrate/netblast.orig/netblast.c tools/tools/netrate/netbl
 +	}
 +
 +    tp = make_threads(s, packet, payloadsize, nthreads);
-+    main_thread(tp, duration, starttime,  tmptime, payloadsize, res->ai_family, nthreads);
++    main_thread(tp, duration, starttime,  tmptime, payloadsize, family, nthreads);
 +
  }
