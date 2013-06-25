@@ -1,13 +1,14 @@
 # Release 1.5 (not released)
 
 ## New features
-* Upgraded to FreeBSD 9-stable (mbuf memory leak problem on 9.1)
+* Upgraded to FreeBSD 9-stable (r252204)
+    * mbuf memory leak problem on 9.1
 * Extras patches:
-	* kern/174749, kern/157796 "Unexpected change of default route"
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
 	* multi-threaded netblast (bin/179085)
-* add hwpmc modules
+* add hwpmc modules for spoting performance issue
+    * Example: kldload hwpmc; pmcstat -T -S instructions
 * net/fprobe removed: FreeBSD's native ng_netflow supports v9
 * New tool: cryptotest for measuring hardware-assisted crypto performance
 * removed: rvi (CVS not in base anymore)
@@ -15,13 +16,13 @@
 ## Updated packages
 * bird to 1.3.10
 * isc-dhcp42-server and relay to 4.2.5
-* pkg to 1.0.12
+* mpd 5.7
+* pkg to 1.1.2
 * tmux to 1.8
 
-## Misc for developers
-* There are new scripts 
-    * bisection-gen.sh: Permit to generate a list of BSDRP image based on a list of FreeBSD svn-revision number
-    * bench-lab.sh: Permit to automatize multiple upgrade image + configuration sets + bench tests 
+## Misc for developers/testers
+* bisection-gen.sh: Permit to generate a list of BSDRP image based on a list of FreeBSD svn-revision number
+* bench-lab.sh: Permit to automatize multiple upgrade image + configuration sets + bench tests 
 
 # Release 1.4 (2013/03/21)
 
