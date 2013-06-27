@@ -2,16 +2,21 @@
 
 ## New features
 * Upgraded to FreeBSD 9-stable (r252204)
-    * mbuf memory leak problem on 9.1
+    * There was a mbuf memory leak problem on 9.1 (gratuitous ARP related?)
 * Extras patches:
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
 	* multi-threaded netblast (bin/179085)
-* add hwpmc modules for spoting performance issue
+* Added hwpmc modules for spoting performance issue
     * Example: kldload hwpmc; pmcstat -T -S instructions
-* net/fprobe removed: FreeBSD's native ng_netflow supports v9
 * New tool: cryptotest for measuring hardware-assisted crypto performance
-* removed: rvi (CVS not in base anymore)
+    * Example: kldload aesni; cryptotest -z 2048
+* New rc scripts:
+    * ngnetflow
+
+## Removed
+* rvi script: CVS is not is FreeBSD base anymore
+* net/fprobe: FreeBSD's native ng_netflow supports netflow v5 and v9
 
 ## Updated packages
 * bird to 1.3.10
@@ -24,6 +29,7 @@
 * bisection-gen.sh: Permit to generate a list of BSDRP image based on a list of FreeBSD svn-revision number
 * bench-lab.sh: Permit to automatize multiple upgrade image + configuration sets + bench tests 
 
+-----------------------------------------------------
 # Release 1.4 (2013/03/21)
 
 ## New features

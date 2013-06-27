@@ -1,8 +1,8 @@
 /* Simple packet (UDP) generator */
 /* With lot's of comments (I'm learning C coding) */
 
-#define PAYLOAD_STRING "0123456789"                    
-#define PAYLOAD_SIZE 10                            
+#define PAYLOAD_STRING "0123456789"
+#define PAYLOAD_SIZE 10
 
 #include <stdio.h>
 #include <stdlib.h> /* exit */
@@ -31,15 +31,15 @@ main(int argc, char *argv[])
 	unsigned long port; /* UDP destination port */
 	char *dummy; /* mandatory for strtoul but not used */
 	const char *cause = NULL; /* Error explanation */
-	struct addrinfo hints, *res, *res0; 
+	struct addrinfo hints, *res, *res0;
 	/* hints: will give hints about family (4 or 6) */
 	/* res: pointer to a struct */
 	/* res0: a linked list of struct */
 
 	/* Initilazie the hints struct */
 	memset(&hints, 0, sizeof(hints));
-    hints.ai_family = PF_UNSPEC; /* For the moment, We didn't know what kind of family the IP given is */
-    hints.ai_socktype = SOCK_DGRAM; /* It's an UDP packet generator */
+	hints.ai_family = PF_UNSPEC; /* For the moment, We didn't know what kind of family the IP given is */
+	hints.ai_socktype = SOCK_DGRAM; /* It's an UDP packet generator */
 
 	/* If not a minimum of 3 argument given display usage */
 	if(argc != 3)
@@ -52,8 +52,7 @@ main(int argc, char *argv[])
         fprintf(stderr, "Invalid port number: %s\n", argv[2]);
         usage();
         /*NOTREACHED*/
-    }              
-
+    }
 	/* The user give something as destination (ipv4, ipv6, hostname) */
 	/* We need to call getaddrinfo that will looks for information about (hints) */
 	/* argv[1]: destination server/ip */
@@ -96,7 +95,7 @@ main(int argc, char *argv[])
 	printf("Sending packet at %s, port %s\n", argv[1], argv[2]);
 	/* Infinite loop of send() */
 	for(;;) {
-		send(s, PAYLOAD_STRING, PAYLOAD_SIZE, 0);         
+		send(s, PAYLOAD_STRING, PAYLOAD_SIZE, 0);
 	}
 }
 

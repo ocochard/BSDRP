@@ -1,0 +1,81 @@
+#!/bin/sh
+
+# PROVIDE: ngnetflow
+# REQUIRE: NETWORKING
+# KEYWORD: nojail
+#
+# Add the following lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# Mandatory:
+# ngnetflow_enable (bool):  Set to NO by default.
+#               			Set it to YES to enable netflow.
+# ngnetflow_if (nic):   	Set the Source interface.
+# ngnetflow_dst (IP:PORT): 	Set the destination and port.
+#
+# Optional:
+# ngnetflow_src (IP:PORT)	Set the source ip and port.
+#							Defalt: Not used
+# ngnetflow_ver (9):		Set the netflow version to use.
+#							Default: 9
+# ngnetflow_actimeout:		Set the active timeout.
+#							Default: 1800 seconds (30 minutes)
+# ngnetflow_inactimeout:	Set the inactive timeout.
+#							Default: 15 seconds
+#
+
+. /etc/rc.subr
+
+name="ngnetflow"
+rcvar=${name}_enable
+
+command=/usr/local/sbin/${name}
+
+load_rc_config $name
+: ${ngnetflow_enable="NO"}
+: ${ngnetflow_if=""}
+: ${ngnetflow_src=""}
+: ${ngnetflow_dst="127.0.0.1:9996"}
+: ${ngnetflow_ver="9"}
+: ${ngnetflow_actimeout="1800"}
+: ${ngnetflow_inactimeout="15"}
+
+start_cmd="${name}_start"
+stop_cmd="${name}_stop"
+start_precmd="${name}_prestart"
+
+ngnetflow_prestart () {
+	kldstat -q -m ng_ether || kldload ng_ether
+}
+
+ngnetflow_start() {
+	if [ -z "${ngnetflow_if}" ]; then
+		warn "if name (ngnetflow_if) not configured"
+		return 1
+	fi
+	[ "${ngnetflow_ver}"="9" ] && version="" || version="${ngnetflow_ver}"
+	/usr/sbin/ngctl -f- <<-EOF
+mkpeer ${ngnetflow_if}: netflow lower iface0
+name ${ngnetflow_if}:lower netflow
+connect ${ngnetflow_if}: netflow: upper out0
+mkpeer netflow: ksocket export${version} inet/dgram/udp
+EOF
+	if [ -n "${ngnetflow_src}" ]; then
+		/usr/sbin/ngctl -f- <<-EOF
+msg netflow: bind inet/${ngnetflow_src}
+EOF
+	fi
+	/usr/sbin/ngctl -f- <<-EOF
+msg netflow: settimeouts { inactive = ${ngnetflow_inactimeout} active = ${ngnetflow_actimeout} }
+msg netflow:export${version} connect inet/${ngnetflow_dst}
+EOF
+
+}
+
+ngnetflow_stop() {
+	/usr/sbin/ngctl -f- <<-EOF
+shutdown netflow:
+EOF
+}
+
+run_rc_command "$1"
