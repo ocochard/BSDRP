@@ -68,7 +68,8 @@ mbr_get_info() {
 	BSD_SLICE="a"
 
 	# ufs/BSDRPs1a     N/A  aacd0s1a
-	boot_dev=/dev/`glabel status | grep ${SRC_LABEL} | awk '{ print $3; }' | cut -d s -f 1`
+	boot_dev=/dev/`glabel status | grep ${SRC_LABEL} | awk '{ print $3; }'\
+       	| cut -d s -f 1`
 
 }
 
@@ -88,7 +89,8 @@ vtoc_get_info() {
 	fi
 	BSD_SLICE=""
 	# ufs/BSDRPs1a     N/A  ada1a
-	boot_dev=/dev/`glabel status | grep ${SRC_LABEL} | awk '{ print $3; }' | sed 's/.$//'`
+	boot_dev=/dev/`glabel status | grep ${SRC_LABEL} | awk '{ print $3; }'\
+       	| sed 's/.$//'`
 
 }
 
@@ -142,9 +144,10 @@ write_new_image() {
 	# Adapt fstab of the new system
 	for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab; do
 	    sed -i "" "s/${SRC_LABEL}/${DST_LABEL}/g" $f
-    done
+	done
 
-	# Check if their is a post-upgrade script on the newimage (This script will be start at the end of the upgrade process)
+	# Check if their is a post-upgrade script on the newimage 
+	# (This script will be start at the end of the upgrade process)
 	if [ -f /tmp/sysupgrade/usr/local/sbin/post-upgrade ]; then
 		if ! cp /tmp/sysupgrade/usr/local/sbin/post-upgrade /tmp/post-upgrade; then
 			echo "WARNING: Can't copy post-upgrade script!"
