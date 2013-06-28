@@ -49,12 +49,15 @@ update_src () {
 	if [ ! -d ${FREEBSD_SRC}/.svn ]; then
 		echo "No existing FreeBSD source tree found: Checking out source..."
 		mkdir -p ${FREEBSD_SRC} || die "Can't create ${FREEBSD_SRC}"
-		svn co svn://${SVN_SRC_PATH} ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't check out sources"
+		svn co svn://${SVN_SRC_PATH} ${FREEBSD_SRC} -r ${SRC_REV} \
+		|| die "Can't check out sources"
 	else
 		#Checking repo change
 		if ! svn info ${FREEBSD_SRC} | grep -q "${SVN_SRC_PATH}"; then
 			echo "WARNING: There were svn repo changes, start a svn switch"
-			svn switch --accept tc -r ${SRC_REV} svn://${SVN_SRC_PATH} ${FREEBSD_SRC} || die "Can't switch to ${SVN_SRC_PATH}"
+			svn switch --accept tc -r ${SRC_REV} \
+			svn://${SVN_SRC_PATH} ${FREEBSD_SRC} \
+			|| die "Can't switch to ${SVN_SRC_PATH}"
 		fi
 		echo "Cleaning local FreeBSD patches..."
 		#cleaning local patced source
@@ -69,18 +72,22 @@ update_port () {
 	if [ ! -d ${PORTS_SRC}/.svn ]; then
 		echo "No existing source port tree found: Checking out ports source..."
 		mkdir -p ${PORTS_SRC} || die "Can't create ${PORTS_SRC}"
-		svn co svn://${SVN_PORTS_PATH} ${PORTS_SRC} -r ${PORTS_REV} || die "Can't check out ports sources"
+		svn co svn://${SVN_PORTS_PATH} ${PORTS_SRC} -r ${PORTS_REV} \
+		|| die "Can't check out ports sources"
 	else
 		#Checking repo change
 		if ! svn info ${PORTS_SRC} | grep -q "${SVN_PORTS_PATH}"; then
 			echo "WARNING: There were svn repo changes, start a svn switch"
-			svn switch --accept tc -r ${PORTS_REV} svn://${SVN_PORTS_PATH} ${PORTS_SRC} || die "Can't switch to ${SVN_PORTS_PATH}"
+			svn switch --accept tc -r ${PORTS_REV} \
+			svn://${SVN_PORTS_PATH} ${PORTS_SRC} \
+			|| die "Can't switch to ${SVN_PORTS_PATH}"
 		fi
 		#cleaning local patched ports sources
 		echo "Cleaning local port tree patches..."
 		svn revert -R ${PORTS_SRC}
 		echo "Updating ports tree sources..."
-		svn update ${PORTS_SRC} -r ${PORTS_REV} || die "Can't update ports sources"
+		svn update ${PORTS_SRC} -r ${PORTS_REV} \
+		|| die "Can't update ports sources"
 		if [ -f ${PROJECT_DIR}/FreeBSD/ports-added ]; then
 			rm ${PROJECT_DIR}/FreeBSD/ports-added
 		fi
@@ -94,7 +101,8 @@ patch_src() {
 	# patch(1) will automatically append to the previously
 	# non-existent file.
 	( cd ${FREEBSD_SRC} &&
-	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
+	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' \
+	| xargs -r rm -r)
 	: > ${PROJECT_DIR}/FreeBSD/.src_pulled
 
 	for patch in $(cd ${SRC_PATCH_DIR} && ls freebsd.*.patch); do
@@ -113,14 +121,15 @@ patch_src() {
 }
 
 #patch the port tree
-#TODO: avoid copy/past with patch_src()
+#TODO: avoid copy/past with patch_src()
 patch_port() {
 	: > ${PROJECT_DIR}/FreeBSD/ports-patches
 	# Nuke the newly created files to avoid build errors, as
 	# patch(1) will automatically append to the previously
 	# non-existent file.
 	( cd ${PORTS_SRC}
-	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' | xargs -r rm -r)
+	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' \
+	| xargs -r rm -r)
 	: > ${PROJECT_DIR}/FreeBSD/.port_pulled
 
 	for patch in $(cd ${PORT_PATCH_DIR} && ls ports.*.patch); do
@@ -153,7 +162,8 @@ add_new_port() {
 check_clean() {
 	# Check all working dir allready mounted and unmount them
 	# Patch from Warner Losh (imp@)
-	__a=`mount | grep $1 | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}'`
+	__a=`mount | grep $1 | awk '{print length($3), $3;}' | sort -rn \
+	    | awk '{$1=""; print;}'`
 	if [ -n "$__a" ]; then
 		echo "unmounting $__a"
 		umount $__a
@@ -338,9 +348,11 @@ if [ -n "${MASTER_PROJECT}" ]; then
 	MASTER_PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
 	trap "echo 'Running exit trap code' ; check_clean ${PROJECT_DIR}" 1 2 15 EXIT
 	[ -d ${PROJECT_DIR}/kernels ] || mkdir ${PROJECT_DIR}/kernels
-	mount -t unionfs -o below,noatime,copymode=transparent ${MASTER_PROJECT_DIR}/kernels ${PROJECT_DIR}/kernels
+	mount -t unionfs -o below,noatime,copymode=transparent \
+	${MASTER_PROJECT_DIR}/kernels ${PROJECT_DIR}/kernels
 	[ -d ${PROJECT_DIR}/Files ] || mkdir ${PROJECT_DIR}/Files
-	mount -t unionfs -o below,noatime,copymode=transparent ${MASTER_PROJECT_DIR}/Files ${PROJECT_DIR}/Files
+	mount -t unionfs -o below,noatime,copymode=transparent \
+	${MASTER_PROJECT_DIR}/Files ${PROJECT_DIR}/Files
 fi
 
 # project version
@@ -359,14 +371,14 @@ case "${NANO_KERNEL}" in
 		if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
 			TARGET_ARCH="amd64"
 		else
-			die "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
+			die "Cross compiling is supported only between i386<=>amd64"
 		fi
 		;;
 	"i386" | "i386_xenpv" | "i386_xenhvm")
 		if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
 			TARGET_ARCH="i386"
 		else
-			die "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
+			die "Cross compiling is supported only between i386<=>amd64"
 		fi
 		;;
 	"cambria")
@@ -375,7 +387,7 @@ case "${NANO_KERNEL}" in
 			TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
 			TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
 		else
-			die "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
+			die "Cross compiling is supported only between i386<=>amd64"
 		fi
 		;;
 	"sparc64")
@@ -384,7 +396,7 @@ case "${NANO_KERNEL}" in
 			TARGET_CPUTYPE=sparc64; export TARGET_CPUTYPE
 			TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
 		else
-			die "Cross compiling is not possible in your case: ${LOCAL_ARCH} => ${NANO_KERNEL}"
+			die "Cross compiling is supported only between i386<=>amd64"
 		fi
 		;;
 	*)
@@ -487,7 +499,7 @@ fi
 ##### Generating the nanobsd configuration file ####
 
 # Theses variables must be set on the begining
-echo "# Name of this NanoBSD build.  (Used to construct workdir names)" > /tmp/${PROJECT}.nano
+echo "# Name of this NanoBSD build (Used to construct workdir names)" > /tmp/${PROJECT}.nano
 echo "NANO_NAME=${NAME}" >> /tmp/${PROJECT}.nano
 
 echo "# Source tree directory" >> /tmp/${PROJECT}.nano
@@ -511,7 +523,8 @@ else
 fi
 
 # And add the customized variable to the nanobsd configuration file
-echo "############# Variable section (generated by BSDRP make.sh) ###########" >> /tmp/${PROJECT}.nano
+echo "############# Variable section (generated by BSDRP make.sh) ###########" \
+ >> /tmp/${PROJECT}.nano
 
 echo "# The default name for any image we create." >> /tmp/${PROJECT}.nano
 echo "NANO_IMGNAME=\"${NAME}-${VERSION}-full-${NANO_KERNEL}${INPUT_CONSOLE}.img\"" >> /tmp/${PROJECT}.nano
@@ -592,7 +605,8 @@ fi
 REV=`grep -m 1 REVISION= ${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"'`
 BRA=`grep -m 1 BRANCH=	${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"'`
 export FBSD_DST_RELEASE="${REV}-${BRA}"
-export FBSD_DST_OSVERSION=$(awk '/\#define.*__FreeBSD_version/ { print $3 }' "${FREEBSD_SRC}/sys/sys/param.h")
+export FBSD_DST_OSVERSION=$(awk '/\#define.*__FreeBSD_version/ { print $3 }' \
+    "${FREEBSD_SRC}/sys/sys/param.h")
 export TARGET_ARCH
 
 echo "Copying ${NANO_KERNEL} Kernel configuration file"
