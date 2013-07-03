@@ -9,10 +9,15 @@
 	* multi-threaded netblast (bin/179085)
 * Added hwpmc modules for spoting performance issue
     * Example: kldload hwpmc; pmcstat -T -S instructions
-* New tool: cryptotest for measuring hardware-assisted crypto performance
-    * Example: kldload aesni; cryptotest -z 2048
+* New tool:
+    * cryptotest for measuring hardware-assisted crypto performance
+      Example: kldload aesni; cryptotest -z 2048
+    * cxgbtool/cxgbetool tools for configuring embedded firewall in Chelsio NIC
 * New rc scripts:
     * ngnetflow
+## Bug fixes
+* fix system expand-data-slice
+* Quagga rc script create /var/log/quagga dir
 
 ## Removed
 * rvi script: CVS is not is FreeBSD base anymore
