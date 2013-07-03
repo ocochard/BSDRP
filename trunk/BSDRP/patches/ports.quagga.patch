@@ -1,0 +1,15 @@
+Index: net/quagga-re/files/quagga.in
+===================================================================
+--- net/quagga-re/files/quagga.in	(revision 322214)
++++ net/quagga-re/files/quagga.in	(working copy)
+@@ -101,6 +101,10 @@
+ 
+ case "${quagga_cmd}" in
+     start)
++	if [ ! -d /var/log/quagga ]; then
++		mkdir /var/log/quagga
++        chown quagga /var/log/quagga
++	fi
+ 	if [ ! -z ${quagga_extralibs_path} ]; then
+ 	    /sbin/ldconfig -m ${quagga_extralibs_path}
+ 	fi
