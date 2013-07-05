@@ -16,7 +16,8 @@
 * New rc scripts:
     * ngnetflow
 ## Bug fixes
-* fix system expand-data-slice
+* fix "system expand-data-slice"
+* "config save" still save the configuration even if configuration archive failed
 * Quagga rc script create /var/log/quagga dir
 
 ## Removed
