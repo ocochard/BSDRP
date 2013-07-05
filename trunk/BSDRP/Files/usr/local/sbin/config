@@ -3,7 +3,7 @@
 # Configuration tool for BSD Router Project 
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2012, The BSDRP Development Team 
+# Copyright (c) 2009-2013, The BSDRP Development Team 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,11 +28,11 @@
 # SUCH DAMAGE.
 #
 
-# Uncomment for enable the debug mode:
-#set -xv
-
 # Strict script
 set -e
+
+# A usefull function (from: http://code.google.com/p/sh-die/)
+die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # Display help
 usage () {
@@ -70,7 +70,7 @@ usage () {
 
 # value $0 is the name of the called script
 	echo "Usage: $0 option"
-    echo "  - diff     : Show diff between current and saved config"
+	echo "  - diff     : Show diff between current and saved config"
 	echo "  - save     : Save current config"
 	echo "  - apply    : Apply current config"
 	echo "  - rollback : Revert to previous config"
@@ -82,104 +82,78 @@ usage () {
 	exit 0
 }
 
-# Mount /cfg
-mount_cfg () {
-	trap "umount /cfg" 1 2 15 EXIT
-	if mount | ! grep -q "/cfg"; then
-		mount /cfg
-	fi
-}
-
 # Check if mounted
 # $1: volume to check
 # result: true or false
 is_mounted () {
-	if [ -z "$1" ]; then
-		echo "BUG: is_mounted() need argument"
-		exit 1
-	fi
-	if mount | grep -q -e "[[:space:]]$1[[:space:]]"; then
-		return 0
-	else
-		return 1
-    fi
+	[ -z "$1" ] &&  die "BUG: is_mounted() need argument"
+	mount | grep -q -e "[[:space:]]$1[[:space:]]" && return 0 || return 1
+}
+
+# Mount /cfg
+mount_cfg () {
+	#skip is already mounted
+	is_mounted /cfg && return 0
+
+	mount /cfg && return 0 || return 1
 }
 
 # Umount /cfg
 umount_cfg () {
-	umount /cfg
-	trap 1 2 15 EXIT
+	umount /cfg || echo "WARNING: Can't umount /cfg"
 }
 
 # Mount data
 mount_data () {
-	trap "umount /data" 1 2 15 EXIT
+	#Skip is already mounted
+	is_mounted /data && return 0
+
+	# call this function after testing is_mounted /data
 	# Old BSDRP (previous to 0.54) didn't have /data directory neither fstab adapted
 	# Fix this problem
 	if [ ! -d /data ]; then
-		if ! mount -o rw -u /; then
-			echo "ERROR: Can't remount root filesystem in read-write mode"
-			exit 1
-		fi
-		if ! mkdir /data; then
-			echo "ERROR: Can't create /data"
-			exit
-		fi
-		if ! mount -o ro -u /; then
+		mount -o rw -u / || \
+			die "ERROR: Can't remount root filesystem in read-write mode"
+		mkdir /data || die "ERROR: Can't create /data"
+		mount -o ro -u / || \
 			echo "WARNING: Can't remount root filesystem in read-only mode"
-		fi
 	fi
-	if ! grep -q "/data" /etc/fstab; then
+	grep -q "/data" /etc/fstab || \
 		echo "/dev/ufs/BSDRPs4 /data ufs rw,noauto 2 2" >> /etc/fstab
-	fi
 	
-	if mount | ! grep -q "/data"; then
-		if ! mount /data; then
-			echo "ERROR: Can't mount /data"
-			exit 1
-		fi
-	fi
+	mount /data && return 0 || return 1
 }
 
 # umount data
 umount_data () {
-	if ! umount /data; then
-		echo "WARNING: Can't umount /data"
-	fi
-	trap 1 2 15 EXIT
+	umount /data || echo "WARNING: Can't umount /data"
 }
 # Archive cfg
 archive_cfg () {
 	if is_mounted /data; then
-		local DATA_MOUNTED=true
+		local DATA_ALREADY_MOUNTED=true
 	else
-		local DATA_MOUNTED=false
-		mount_data
-	fi
-	#TO DO: If data allready mounted, don't unmount it
-	echo "Archiving configuration files..."
-	if [ ! -d /data/archives ]; then
-		if ! mkdir /data/archives; then
-			echo "ERROR: Can't create /data/archives"
-			exit 1
+		local DATA_ALREADY_MOUNTED=false
+		if ! mount_data; then
+			echo "WARNING: archive_cfg() : Can't mount /data"
+			return 1
 		fi
+	fi
+	echo "Archiving previous configuration files..."
+	if [ ! -d /data/archives ]; then
+		mkdir /data/archives || die "ERROR: Can't create /data/archives"
 	else
 		if [ -f /data/archives/rollback.tar.xz ]; then
-            if ! rm /data/archives/rollback.tar.xz; then
-                echo "WARNING: Can't delete /data/archives/rollback.tar.xz"
-            fi
-        fi
+            		rm /data/archives/rollback.tar.xz || \
+                	echo "WARNING: Can't delete /data/archives/rollback.tar.xz"
+            	fi
 	fi
 
 	if ! tar -cJvpf /data/archives/rollback.tar.xz -C /cfg/ . 2>/dev/null; then
-		echo "ERROR: Can't generate tar archive."
-		if ! $DATA_MOUNTED; then
-			umount_data
-		fi
-		umount_cfg
-		exit 1
+		echo "WARNING: Can't generate tar archive."
 	fi
-	if ! $DATA_MOUNTED; then
+	#If data was allready mounted, don't unmount it
+	if ! ($DATA_ALREADY_MOUNTED); then
 		umount_data
 	fi
 }
@@ -187,8 +161,8 @@ archive_cfg () {
 # TODO: Need to backup /boot/loader.conf.local in case of restoring
 #		configuration to other routers
 save_cfg () {
-	mount_cfg
-	archive_cfg
+	mount_cfg || die "ERROR: Can't mount /cfg"
+	archive_cfg || echo "WARNING: Can't archive"
 	echo "Saving configuration..."
 	(
 	cd /etc
@@ -206,10 +180,10 @@ save_cfg () {
                 	(find `dirname $i`  -print | cpio -dumpv  /cfg/ 2>/dev/null)
 					# Because the previous cpio copied all files (even unmodified), we need to delete them (dirty hack)
 					rm -rf /cfg/`dirname $i`/*
-                fi
+                		fi
 				(find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
 			fi
-		fi
+		fi # if [ -f /cfg/$i ]
 	done
 	)	
 
@@ -233,7 +207,7 @@ save_cfg () {
        	done
 	else
 		if ! mkdir -p /cfg/ssh; then
-			echo "ERROR: Can't create /cfg/ssh"
+			echo "WARNING: Can't create /cfg/ssh"
 		fi
 		(
 		cd /etc/ssh
@@ -251,23 +225,23 @@ apply_cfg () {
 	echo "TO DO: Apply configuration"
 	case "$SECOND_OPTION" in
         secure)
-            echo "TO DO: Apply config and rollback in $THIRD_OPTION minutes"
-            ;;
-		confirm)
-			echo "TO DO: Cancel the auto-rollback introduce by the apply secure"
-			;;
-		in)
-			echo "TO DO: Apply config in $THIRD_OPTION minutes"
-			;;
-		at)
-			echo "TO DO: Apply config at $THIRD_OPTION date"
-			;;
-		cancel)
-			echo "TO DO: Cancel in and at apply"
-			;;
-		*)
-			echo "This function will force routing process to reload the configuration files"
-			;;	
+		echo "TO DO: Apply config and rollback in $THIRD_OPTION minutes"
+		;;
+	confirm)
+		echo "TO DO: Cancel the auto-rollback introduce by the apply secure"
+		;;
+	in)
+		echo "TO DO: Apply config in $THIRD_OPTION minutes"
+		;;
+	at)
+		echo "TO DO: Apply config at $THIRD_OPTION date"
+		;;
+	cancel)
+		echo "TO DO: Cancel in and at apply"
+		;;
+	*)
+		echo "This function will force routing process to reload the configuration files"
+		;;	
 	esac
 	exit 0
 }
@@ -328,7 +302,7 @@ diff () {
 # Rollback to previous configuration
 rollback () {
 	echo "Rollback the archived configuration"
-	mount_data
+	mount_data || die "ERROR: Can't mount data, then can't retreive archive file"
 	# Check if archive exist
 	if [ -f /data/archives/rollback.tar.xz ]; then
 		restore_cfg /data/archives/rollback.tar.xz /etc
@@ -349,26 +323,19 @@ rollback () {
 # $2 = Destination directory
 restore_cfg ( ) {
 	if [ $1 = '' ]; then
-		echo "ERROR: Bug meet when calling restore_cfg in config"
-		echo "No argument given"
-		exit 1
+		die "BUG: restore_cfg(): No argument 1 given"
 	elif [ $2 = '' ]; then
-		echo "ERROR: Bug meet when calling restore_cfg in config"
-        echo "No second argument given"
-		exit 1
+		die "BUG: restore_cfg(): No argument 2 given"
 	fi
 	if [ ! -f $1 ]; then
-		echo "ERROR: $1 doesn't exist or isn't a file"
-		exit 1
+		die "ERROR: $1 doesn't exist or isn't a file"
 	elif [ ! -d $2 ]; then
-		echo "ERROR: $2 doesn't exist or isn't a directory"
-		exit 1
+		die "ERROR: $2 doesn't exist or isn't a directory"
 	fi
-    # Unzip the archive $1 to $2/
-    if ! tar -x -C $2/ --exclude 'fstab' -f $1; then
-    	echo "ERROR: untaring file failed."
-        exit 1
-    fi
+	# Unzip the archive $1 to $2/
+	if ! tar -x -C $2/ --exclude 'fstab' -f $1; then
+		die "ERROR: untaring file failed."
+	fi
 }
 	
 # Send configuration to an svn/cvs/scp server ?
@@ -377,34 +344,34 @@ put () {
 	# example: scp admin@backup.host.fr:filename
 	case "$SECOND_OPTION" in
         scp)
-			echo "Send saved configuration by SCP to ${THIRD_OPTION}"
-			if [ -f /tmp/config.$$.tar.xz ]; then
-				if ! rm /tmp/config.$$.tar.xz; then
-					echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
-				fi
+		echo "Send saved configuration by SCP to ${THIRD_OPTION}"
+		if [ -f /tmp/config.$$.tar.xz ]; then
+			if ! rm /tmp/config.$$.tar.xz; then
+				echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
 			fi
-			mount_cfg
-			if ! tar -cJvpf /tmp/config.$$.tar.xz -C /cfg/ . 2>/dev/null; then
-				echo "ERROR: Can't tar /cfg to /tmp/config.$$.tar.xz"
-				umount_cfg
-				exit 1
-			fi
+		fi
+		mount_cfg
+		if ! tar -cJvpf /tmp/config.$$.tar.xz -C /cfg/ . 2>/dev/null; then
+			echo "ERROR: Can't tar /cfg to /tmp/config.$$.tar.xz"
 			umount_cfg
-			if put_check_filename ${THIRD_OPTION}; then
-				if ! scp /tmp/config.$$.tar.xz ${THIRD_OPTION}; then
-					echo "ERROR: Can't scp configuration to ${THIRD_OPTION}"
-				fi
-			else
-				if ! scp /tmp/config.$$.tar.xz ${THIRD_OPTION}:${FILENAME}; then
-                    echo "ERROR: Can't scp configuration to ${THIRD_OPTION}:${FILENAME}"
-                fi
+			exit 1
+		fi
+		umount_cfg
+		if put_check_filename ${THIRD_OPTION}; then
+			if ! scp /tmp/config.$$.tar.xz ${THIRD_OPTION}; then
+				echo "ERROR: Can't scp configuration to ${THIRD_OPTION}"
 			fi
-			if [ -f /tmp/config.$$.tar.xz ]; then
-                if ! rm /tmp/config.$$.tar.xz; then
-					echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
-				fi
-            fi
-            ;;
+		else
+			if ! scp /tmp/config.$$.tar.xz ${THIRD_OPTION}:${FILENAME}; then
+				echo "ERROR: Can't scp configuration to ${THIRD_OPTION}:${FILENAME}"
+                	fi
+		fi
+		if [ -f /tmp/config.$$.tar.xz ]; then
+			if ! rm /tmp/config.$$.tar.xz; then
+				echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
+			fi
+            	fi
+            	;;
         cvs)
             echo "TO DO: CVS commit to $THIRD_OPTION"
             ;;
@@ -423,26 +390,22 @@ put () {
 # if no filename given return false (1)
 put_check_filename () {
 	if [ $1 = "" ]; then
-		echo "Bad arguments, see 'config help put' for usage"
-		exit 0
+		die "ERROR Bad arguments, see 'config help put' for usage"
 	fi
 	USERNAME=$(echo $1 | cut -d @ -f1)
 	REMOTEHOST=$(echo $1 | cut -d @ -f2 | cut -d : -f1)
 	FULLPATH=$(echo $1 | cut -d @ -f2 | cut -d : -f2)
 	if [ "${USERNAME}" = "" ]; then
-		echo "No Username given, see 'config help put' for usage"
-		exit 0
+		die "No Username given, see 'config help put' for usage"
 	elif [ ${REMOTEHOST} = "" ]; then
-		echo "No Hostname given, see 'config help put' for usage"
-        exit 0
+		die "No Hostname given, see 'config help put' for usage"
 	# If user enter login@host
 	elif [ "${FULLPATH}" = "${REMOTEHOST}" ]; then
 		FILENAME=$(hostname).tar.xz
 		return 1
 	# if user enter login@host:
 	elif [ "${FULLPATH}" = "" ]; then
-		echo "Check your syntax, see 'config help put' for usage"
-		exit 0
+		die "Check your syntax, see 'config help put' for usage"
 	# if user enter login@host:something
 	else
 		return 0
@@ -451,23 +414,22 @@ put_check_filename () {
 	
 # Get configuration from an svn/cvs/scp server
 get () {
-    # option: protocol username@host <filename>
-    # example: scp admin@backup.host.fr:/path/filename
-    case "$SECOND_OPTION" in
-        scp)
-			echo "Get configuration archive SCP from ${THIRD_OPTION}"
-			if [ -f /tmp/config.$$.tar.xz ]; then
-                if ! rm /tmp/config.$$.tar.xz; then
-					echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
-				fi
-            fi
-            if ! scp ${THIRD_OPTION} /tmp/config.$$.tar.xz; then
-				echo "ERROR: Can't download ${THIRD_OPTION}"
-				exit 1
+	# option: protocol username@host <filename>
+	# example: scp admin@backup.host.fr:/path/filename
+	case "$SECOND_OPTION" in
+	scp)
+		echo "Get configuration archive SCP from ${THIRD_OPTION}"
+		if [ -f /tmp/config.$$.tar.xz ]; then
+			if ! rm /tmp/config.$$.tar.xz; then
+				echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
 			fi
-			restore_cfg /tmp/config.$$.tar.xz /etc
-			echo "Configuration restored"
-			echo "Don't forget to confirming your restoration by a 'config save'"
+		fi
+		if ! scp ${THIRD_OPTION} /tmp/config.$$.tar.xz; then
+			die "ERROR: Can't download ${THIRD_OPTION}"
+		fi
+		restore_cfg /tmp/config.$$.tar.xz /etc
+		echo "Configuration restored"
+		echo "Don't forget to confirming your restoration by a 'config save'"
             ;;
         cvs)
             echo "TO DO: CVS commit to $THIRD_OPTION"
@@ -486,17 +448,19 @@ get () {
 # Clear all existing configuration and return to default setting
 factory () {
         echo -n "Clear all saved configuration..."
+	if ! is_mounted /cfg; then
 		mount_cfg
-        rm -rf /cfg/*
+	fi
+	rm -rf /cfg/*
         umount_cfg
-		if [ -f /boot/loader.conf.local ]; then
-			mount -uw /
-			rm -rf /boot/loader.conf.local
-			mount -ur /
-		fi
-		echo "Done"
-		echo "For confirming this action: Reboot and answer 'no' to the question about saving configuration"
-		echo "For canceling this action: Simply save the running configuration with 'config save'"
+	if [ -f /boot/loader.conf.local ]; then
+		mount -uw /
+		rm -rf /boot/loader.conf.local
+		mount -ur /
+	fi
+	echo "Done"
+	echo "For confirming this action: Reboot and answer 'no' to the question about saving configuration"
+	echo "For canceling this action: Simply save the running configuration with 'config save'"
         exit 0
 }
 
