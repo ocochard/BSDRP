@@ -1,7 +1,7 @@
 # Release 1.5 (not released)
 
 ## New features
-* Upgraded to FreeBSD 9-stable (r252204)
+* Upgraded to 9.2-BETA2 (r253718)
     * There was a mbuf memory leak problem on 9.1 (gratuitous ARP related?)
 * Extras patches:
     * bsnmpd costemic patch
