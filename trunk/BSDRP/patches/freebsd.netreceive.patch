@@ -3,7 +3,7 @@ diff -ruN tools/tools/netrate/netreceive.orig/Makefile tools/tools/netrate/netre
 +++ tools/tools/netrate/netreceive/Makefile	2013-05-31 09:24:32.525495862 +0200
 @@ -1,8 +1,11 @@
  #
--# $FreeBSD: stable/9/tools/tools/netrate/netreceive/Makefile 139103 2004-12-21 08:47:35Z ru $
+-# $FreeBSD: releng/9.2/tools/tools/netrate/netreceive/Makefile 139103 2004-12-21 08:47:35Z ru $
 +# $FreeBSD: head/tools/tools/netrate/netreceive/Makefile 248564 2013-03-20 21:47:05Z neel $
  #
  
@@ -21,7 +21,7 @@ diff -ruN tools/tools/netrate/netreceive.orig/netreceive.c tools/tools/netrate/n
   * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
   * SUCH DAMAGE.
   *
-- * $FreeBSD: stable/9/tools/tools/netrate/netreceive/netreceive.c 135536 2004-09-21 03:10:28Z rwatson $
+- * $FreeBSD: releng/9.2/tools/tools/netrate/netreceive/netreceive.c 135536 2004-09-21 03:10:28Z rwatson $
 + * $FreeBSD: head/tools/tools/netrate/netreceive/netreceive.c 244672 2012-12-25 07:29:25Z luigi $
   */
  

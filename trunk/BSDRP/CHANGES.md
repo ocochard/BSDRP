@@ -1,8 +1,7 @@
 # Release 1.5 (not released)
 
 ## New features
-* Upgraded to 9.2-BETA2 (r253718)
-    * There was a mbuf memory leak problem on 9.1 (gratuitous ARP related?)
+* Upgraded to 9.2-RC1
 * Extras patches:
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
@@ -25,10 +24,9 @@
 * net/fprobe: FreeBSD's native ng_netflow supports netflow v5 and v9
 
 ## Updated packages
-* bird to 1.3.10
+* bird to 1.3.11
 * isc-dhcp42-server and relay to 4.2.5
 * mpd 5.7
-* pkg to 1.1.2
 * tmux to 1.8
 
 ## Misc for developers/testers
