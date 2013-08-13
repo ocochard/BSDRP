@@ -32,7 +32,7 @@
 
 ## Central configuration management / Provisionning #
 
-* Use cvs or subversion for maintain central management of configuration files
+* Use cvs/subversion/others for maintain central management of configuration files
 * Be compatible with a provisionning tools that generate lot's of configuration (subversion copy?)
 * Need to check RANCID integration
 * Need to study NETCONF support
@@ -40,7 +40,7 @@
 ## Performance #
 
 * In place of tunning, need to add a script that check the hardware, and regarding the hardware (NIC drivers, ncpu, RAM, etc...) will display some advice
-* Need to check CPU affinity for routing process and forwardinga process (cpuset)
+* Need to check CPU affinity for routing process and forwarding process (cpuset)
   like this script:
 ==============
 #!/bin/sh

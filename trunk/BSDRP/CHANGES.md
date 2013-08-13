@@ -18,6 +18,7 @@
 * fix "system expand-data-slice"
 * "config save" still save the configuration even if configuration archive failed
 * Quagga rc script create /var/log/quagga dir
+* fix default syslogd flags that prevent logging to remote machines
 
 ## Removed
 * rvi script: CVS is not is FreeBSD base anymore

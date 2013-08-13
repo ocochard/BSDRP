@@ -27,8 +27,8 @@ harvest_interrupt="NO"  # Entropy device harvests interrupt randomness
 harvest_ethernet="NO"   # Entropy device harvests ethernet randomness
 harvest_p_to_p="NO"     # Entropy device harvests point-to-point randomness
 
-# Prevent syslog to bind a network socket
-syslogd_flags="-ss"
+# Operate in secure mode: Do not log messages from remote machines
+syslogd_flags="-s"
 
 # You should enable polling if, and only if:
 # - Your NIC didn't support interrupt moderation (very old NIC)
