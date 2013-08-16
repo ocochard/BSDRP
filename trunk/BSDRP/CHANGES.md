@@ -3,6 +3,8 @@
 ## New features
 * Upgraded to 9.2-RC1
 * Extras patches:
+	* Autotuning mbuf patch
+	http://lists.freebsd.org/pipermail/freebsd-stable/2013-July/074129.html
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
 	* multi-threaded netblast (bin/179085)

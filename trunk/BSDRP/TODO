@@ -78,5 +78,12 @@ esac
 
 http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html
 
-========== TO DO before release =======
-Need to validate the new netgraph netflow rc script 
+========== TO DO before next release =======
+1. Need to validate the new netgraph netflow rc script 
+2. fix cross compilation of i386 from amd64:
+cc1: warnings being treated as errors
+netblast.c: In function 'main_thread':
+netblast.c:164: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'uint64_t'
+netblast.c:165: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'uint64_t'
+netblast.c:166: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'uint64_t'
+
