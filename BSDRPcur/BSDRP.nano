@@ -66,6 +66,7 @@ WITHOUT_GDB=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
 WITHOUT_HTML=
+WITHOUT_ICONV=
 WITHOUT_IPFILTER=
 WITHOUT_IPX=
 WITHOUT_IPX_SUPPORT=
@@ -167,7 +168,7 @@ PPLEVEL=3
 
 # Add netblast/netrecieve and netmap tools
 add_netrate () {
-    TOOLS_LIST="cxgbetool cxgbtool crypto mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
+    TOOLS_LIST="cxgbetool cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
     mkdir -p ${NANO_WORLDDIR}/dev
     mount -t devfs devfs ${NANO_WORLDDIR}/dev
     mount -t unionfs -o noatime ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
@@ -469,6 +470,7 @@ EOF
 	# Remove some of the folders (without share/snmp)
 	# usr/include : 15MB
 	FOLDERS_TO_REMOVE='
+usr/libexec/bsdinstall
 usr/local/include
 usr/local/man
 usr/local/info
@@ -478,8 +480,10 @@ usr/local/share/doc/libiconv
 usr/local/share/doc/snmp
 usr/local/share/examples/quagga
 usr/include
-usr/share/me
+usr/share/examples
 usr/share/info
+usr/share/me
+usr/share/pc-sysinstall
 usr/share/openssl
 usr/libdata/lint
 usr/libdata/ldscripts
@@ -497,6 +501,7 @@ usr/libdata/ldscripts
 
 	# Remove some files
     FILES_TO_REMOVE='
+usr/sbin/bhyve
 usr/sbin/ctladm
 usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample
