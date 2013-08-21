@@ -1,7 +1,7 @@
 # Release 1.5 (not released)
 
 ## New features
-* Upgraded to 9.2-RC1
+* Upgraded to 9.2-RC2
 * Extras patches:
 	* Autotuning mbuf patch
 	http://lists.freebsd.org/pipermail/freebsd-stable/2013-July/074129.html

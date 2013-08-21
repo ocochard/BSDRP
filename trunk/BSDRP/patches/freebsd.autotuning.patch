@@ -1,20 +1,7 @@
-Index: sys/i386/include/vmparam.h
-===================================================================
---- sys/i386/include/vmparam.h	(revision 253035)
-+++ sys/i386/include/vmparam.h	(working copy)
-@@ -202,4 +202,8 @@
- 
- #define	ZERO_REGION_SIZE	(64 * 1024)	/* 64KB */
- 
-+#ifndef VM_MAX_AUTOTUNE_MAXUSERS
-+#define VM_MAX_AUTOTUNE_MAXUSERS 384
-+#endif
-+
- #endif /* _MACHINE_VMPARAM_H_ */
 Index: sys/kern/kern_mbuf.c
 ===================================================================
---- sys/kern/kern_mbuf.c	(revision 253035)
-+++ sys/kern/kern_mbuf.c	(working copy)
+--- sys/kern/kern_mbuf.c	(revision 254514)
++++ sys/kern/kern_mbuf.c	(revision 254515)
 @@ -1,6 +1,6 @@
  /*-
   * Copyright (c) 2004, 2005,
@@ -48,9 +35,15 @@ Index: sys/kern/kern_mbuf.c
  int nmbclusters;		/* limits number of mbuf clusters */
  int nmbjumbop;			/* limits number of page size jumbo clusters */
  int nmbjumbo9;			/* limits number of 9k jumbo clusters */
-@@ -103,32 +105,51 @@
+@@ -102,33 +104,57 @@
+ int nmbjumbo16;			/* limits number of 16k jumbo clusters */
  struct mbstat mbstat;
  
++static quad_t maxmbufmem;	/* overall real memory limit for all mbufs */
++
++SYSCTL_QUAD(_kern_ipc, OID_AUTO, maxmbufmem, CTLFLAG_RDTUN, &maxmbufmem, 0,
++    "Maximum real memory allocateable to various mbuf types");
++
  /*
 - * tunable_mbinit() has to be run before init_maxsockets() thus
 - * the SYSINIT order below is SI_ORDER_MIDDLE while init_maxsockets()
@@ -60,7 +53,7 @@ Index: sys/kern/kern_mbuf.c
  static void
  tunable_mbinit(void *dummy)
  {
-+	quad_t realmem, maxmbufmem;
++	quad_t realmem;
  
 -	/* This has to be done before VM init. */
 +	/*
@@ -71,7 +64,7 @@ Index: sys/kern/kern_mbuf.c
 +	realmem = qmin((quad_t)physmem * PAGE_SIZE,
 +	    vm_map_max(kmem_map) - vm_map_min(kmem_map));
 +	maxmbufmem = realmem / 2;
-+	TUNABLE_QUAD_FETCH("kern.maxmbufmem", &maxmbufmem);
++	TUNABLE_QUAD_FETCH("kern.ipc.maxmbufmem", &maxmbufmem);
 +	if (maxmbufmem > realmem / 4 * 3)
 +		maxmbufmem = realmem / 4 * 3;
 +
@@ -109,7 +102,7 @@ Index: sys/kern/kern_mbuf.c
  
  static int
  sysctl_nmbclusters(SYSCTL_HANDLER_ARGS)
-@@ -136,11 +157,13 @@
+@@ -136,11 +162,12 @@
  	int error, newnmbclusters;
  
  	newnmbclusters = nmbclusters;
@@ -120,12 +113,12 @@ Index: sys/kern/kern_mbuf.c
 +		if (newnmbclusters > nmbclusters &&
 +		    nmbufs >= nmbclusters + nmbjumbop + nmbjumbo9 + nmbjumbo16) {
  			nmbclusters = newnmbclusters;
- 			uma_zone_set_max(zone_clust, nmbclusters);
-+			nmbclusters = uma_zone_get_max(zone_clust);
+-			uma_zone_set_max(zone_clust, nmbclusters);
++			nmbclusters = uma_zone_set_max(zone_clust, nmbclusters);
  			EVENTHANDLER_INVOKE(nmbclusters_change);
  		} else
  			error = EINVAL;
-@@ -157,11 +180,13 @@
+@@ -157,11 +184,12 @@
  	int error, newnmbjumbop;
  
  	newnmbjumbop = nmbjumbop;
@@ -136,12 +129,12 @@ Index: sys/kern/kern_mbuf.c
 +		if (newnmbjumbop > nmbjumbop &&
 +		    nmbufs >= nmbclusters + nmbjumbop + nmbjumbo9 + nmbjumbo16) {
  			nmbjumbop = newnmbjumbop;
- 			uma_zone_set_max(zone_jumbop, nmbjumbop);
-+			nmbjumbop = uma_zone_get_max(zone_jumbop);
+-			uma_zone_set_max(zone_jumbop, nmbjumbop);
++			nmbjumbop = uma_zone_set_max(zone_jumbop, nmbjumbop);
  		} else
  			error = EINVAL;
  	}
-@@ -169,9 +194,8 @@
+@@ -169,9 +197,8 @@
  }
  SYSCTL_PROC(_kern_ipc, OID_AUTO, nmbjumbop, CTLTYPE_INT|CTLFLAG_RW,
  &nmbjumbop, 0, sysctl_nmbjumbop, "IU",
@@ -152,7 +145,7 @@ Index: sys/kern/kern_mbuf.c
  static int
  sysctl_nmbjumbo9(SYSCTL_HANDLER_ARGS)
  {
-@@ -178,11 +202,13 @@
+@@ -178,11 +205,12 @@
  	int error, newnmbjumbo9;
  
  	newnmbjumbo9 = nmbjumbo9;
@@ -160,15 +153,15 @@ Index: sys/kern/kern_mbuf.c
 +	error = sysctl_handle_int(oidp, &newnmbjumbo9, 0, req);
  	if (error == 0 && req->newptr) {
 -		if (newnmbjumbo9> nmbjumbo9) {
-+		if (newnmbjumbo9 > nmbjumbo9&&
++		if (newnmbjumbo9 > nmbjumbo9 &&
 +		    nmbufs >= nmbclusters + nmbjumbop + nmbjumbo9 + nmbjumbo16) {
  			nmbjumbo9 = newnmbjumbo9;
- 			uma_zone_set_max(zone_jumbo9, nmbjumbo9);
-+			nmbjumbo9 = uma_zone_get_max(zone_jumbo9);
+-			uma_zone_set_max(zone_jumbo9, nmbjumbo9);
++			nmbjumbo9 = uma_zone_set_max(zone_jumbo9, nmbjumbo9);
  		} else
  			error = EINVAL;
  	}
-@@ -190,7 +216,7 @@
+@@ -190,7 +218,7 @@
  }
  SYSCTL_PROC(_kern_ipc, OID_AUTO, nmbjumbo9, CTLTYPE_INT|CTLFLAG_RW,
  &nmbjumbo9, 0, sysctl_nmbjumbo9, "IU",
@@ -177,7 +170,7 @@ Index: sys/kern/kern_mbuf.c
  
  static int
  sysctl_nmbjumbo16(SYSCTL_HANDLER_ARGS)
-@@ -198,11 +224,13 @@
+@@ -198,11 +226,12 @@
  	int error, newnmbjumbo16;
  
  	newnmbjumbo16 = nmbjumbo16;
@@ -188,12 +181,12 @@ Index: sys/kern/kern_mbuf.c
 +		if (newnmbjumbo16 > nmbjumbo16 &&
 +		    nmbufs >= nmbclusters + nmbjumbop + nmbjumbo9 + nmbjumbo16) {
  			nmbjumbo16 = newnmbjumbo16;
- 			uma_zone_set_max(zone_jumbo16, nmbjumbo16);
-+			nmbjumbo16 = uma_zone_get_max(zone_jumbo16);
+-			uma_zone_set_max(zone_jumbo16, nmbjumbo16);
++			nmbjumbo16 = uma_zone_set_max(zone_jumbo16, nmbjumbo16);
  		} else
  			error = EINVAL;
  	}
-@@ -212,7 +240,27 @@
+@@ -212,7 +241,26 @@
  &nmbjumbo16, 0, sysctl_nmbjumbo16, "IU",
      "Maximum number of mbuf 16k jumbo clusters allowed");
  
@@ -207,15 +200,14 @@ Index: sys/kern/kern_mbuf.c
 +	if (error == 0 && req->newptr) {
 +		if (newnmbufs > nmbufs) {
 +			nmbufs = newnmbufs;
-+			uma_zone_set_max(zone_mbuf, nmbufs);
-+			nmbufs = uma_zone_get_max(zone_mbuf);
++			nmbufs = uma_zone_set_max(zone_mbuf, nmbufs);
 +			EVENTHANDLER_INVOKE(nmbufs_change);
 +		} else
 +			error = EINVAL;
 +	}
 +	return (error);
 +}
-+SYSCTL_PROC(_kern_ipc, OID_AUTO, nmbuf, CTLTYPE_INT|CTLFLAG_RW,
++SYSCTL_PROC(_kern_ipc, OID_AUTO, nmbufs, CTLTYPE_INT|CTLFLAG_RW,
 +&nmbufs, 0, sysctl_nmbufs, "IU",
 +    "Maximum number of mbufs allowed");
  
@@ -305,11 +297,39 @@ Index: sys/kern/kern_mbuf.c
  
  	m = (struct mbuf *)mem;
  	flags = (unsigned long)arg;
+Index: sys/kern/uipc_socket.c
+===================================================================
+--- sys/kern/uipc_socket.c	(revision 254514)
++++ sys/kern/uipc_socket.c	(revision 254515)
+@@ -282,7 +282,7 @@
+ {
+ 
+ 	TUNABLE_INT_FETCH("kern.ipc.maxsockets", &maxsockets);
+-	maxsockets = imax(maxsockets, imax(maxfiles, nmbclusters));
++	maxsockets = imax(maxsockets, maxfiles);
+ }
+ SYSINIT(param, SI_SUB_TUNABLES, SI_ORDER_ANY, init_maxsockets, NULL);
+ 
+@@ -298,12 +298,9 @@
+ 	newmaxsockets = maxsockets;
+ 	error = sysctl_handle_int(oidp, &newmaxsockets, 0, req);
+ 	if (error == 0 && req->newptr) {
+-		if (newmaxsockets > maxsockets) {
++		if (newmaxsockets > maxsockets &&
++		    newmaxsockets <= maxfiles) {
+ 			maxsockets = newmaxsockets;
+-			if (maxsockets > ((maxfiles / 4) * 3)) {
+-				maxfiles = (maxsockets * 5) / 4;
+-				maxfilesperproc = (maxfiles * 9) / 10;
+-			}
+ 			EVENTHANDLER_INVOKE(maxsockets_change);
+ 		} else
+ 			error = EINVAL;
 Index: sys/kern/subr_param.c
 ===================================================================
---- sys/kern/subr_param.c	(revision 253035)
-+++ sys/kern/subr_param.c	(working copy)
-@@ -286,26 +286,40 @@
+--- sys/kern/subr_param.c	(revision 254514)
++++ sys/kern/subr_param.c	(revision 254515)
+@@ -287,26 +287,40 @@
  		maxusers = physpages / (2 * 1024 * 1024 / PAGE_SIZE);
  		if (maxusers < 32)
  			maxusers = 32;
@@ -360,7 +380,7 @@ Index: sys/kern/subr_param.c
  	
  	/*
  	 * Cannot be changed after boot.
-@@ -314,7 +328,13 @@
+@@ -315,7 +329,13 @@
  	TUNABLE_INT_FETCH("kern.nbuf", &nbuf);
  	TUNABLE_INT_FETCH("kern.bio_transient_maxcnt", &bio_transient_maxcnt);
  
@@ -375,7 +395,7 @@ Index: sys/kern/subr_param.c
  	TUNABLE_INT_FETCH("kern.ncallout", &ncallout);
  
  	/*
-@@ -322,12 +342,12 @@
+@@ -323,12 +343,12 @@
  	 * max(1/64 of main memory, 512KB)).  See sys_pipe.c for more details.
  	 */
  	maxpipekva = (physpages / 64) * PAGE_SIZE;
@@ -389,38 +409,10 @@ Index: sys/kern/subr_param.c
  }
  
  /*
-Index: sys/kern/uipc_socket.c
-===================================================================
---- sys/kern/uipc_socket.c	(revision 253035)
-+++ sys/kern/uipc_socket.c	(working copy)
-@@ -282,7 +282,7 @@
- {
- 
- 	TUNABLE_INT_FETCH("kern.ipc.maxsockets", &maxsockets);
--	maxsockets = imax(maxsockets, imax(maxfiles, nmbclusters));
-+	maxsockets = imax(maxsockets, maxfiles);
- }
- SYSINIT(param, SI_SUB_TUNABLES, SI_ORDER_ANY, init_maxsockets, NULL);
- 
-@@ -298,12 +298,9 @@
- 	newmaxsockets = maxsockets;
- 	error = sysctl_handle_int(oidp, &newmaxsockets, 0, req);
- 	if (error == 0 && req->newptr) {
--		if (newmaxsockets > maxsockets) {
-+		if (newmaxsockets > maxsockets &&
-+		    newmaxsockets <= maxfiles) {
- 			maxsockets = newmaxsockets;
--			if (maxsockets > ((maxfiles / 4) * 3)) {
--				maxfiles = (maxsockets * 5) / 4;
--				maxfilesperproc = (maxfiles * 9) / 10;
--			}
- 			EVENTHANDLER_INVOKE(maxsockets_change);
- 		} else
- 			error = EINVAL;
 Index: sys/sys/eventhandler.h
 ===================================================================
---- sys/sys/eventhandler.h	(revision 253035)
-+++ sys/sys/eventhandler.h	(working copy)
+--- sys/sys/eventhandler.h	(revision 254514)
++++ sys/sys/eventhandler.h	(revision 254515)
 @@ -253,6 +253,7 @@
  
  typedef void (*uma_zone_chfn)(void *);
@@ -431,8 +423,8 @@ Index: sys/sys/eventhandler.h
  #endif /* SYS_EVENTHANDLER_H */
 Index: sys/sys/mbuf.h
 ===================================================================
---- sys/sys/mbuf.h	(revision 253035)
-+++ sys/sys/mbuf.h	(working copy)
+--- sys/sys/mbuf.h	(revision 254514)
++++ sys/sys/mbuf.h	(revision 254515)
 @@ -396,7 +396,6 @@
   *
   * The rest of it is defined in kern/kern_mbuf.c
@@ -441,3 +433,25 @@ Index: sys/sys/mbuf.h
  extern uma_zone_t	zone_mbuf;
  extern uma_zone_t	zone_clust;
  extern uma_zone_t	zone_pack;
+Index: sys/sys
+===================================================================
+--- sys/sys	(revision 254514)
++++ sys/sys	(revision 254515)
+
+Property changes on: sys/sys
+___________________________________________________________________
+Modified: svn:mergeinfo
+   Merged /head/sys/sys:r243631,243639,243668,245575
+Index: sys/i386/include/vmparam.h
+===================================================================
+--- sys/i386/include/vmparam.h	(revision 254514)
++++ sys/i386/include/vmparam.h	(revision 254515)
+@@ -202,4 +202,8 @@
+ 
+ #define	ZERO_REGION_SIZE	(64 * 1024)	/* 64KB */
+ 
++#ifndef VM_MAX_AUTOTUNE_MAXUSERS
++#define VM_MAX_AUTOTUNE_MAXUSERS 384
++#endif
++
+ #endif /* _MACHINE_VMPARAM_H_ */
