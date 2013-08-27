@@ -54,7 +54,7 @@ update_src () {
 	else
 		#Checking repo change
 		if ! svn info ${FREEBSD_SRC} | grep -q "${SVN_SRC_PATH}"; then
-			echo "WARNING: There were svn repo changes, start a svn switch"
+			echo "WARNING: svn repo changed, svn switch started..."
 			svn switch --accept tc -r ${SRC_REV} \
 			svn://${SVN_SRC_PATH} ${FREEBSD_SRC} \
 			|| die "Can't switch to ${SVN_SRC_PATH}"
@@ -77,7 +77,7 @@ update_port () {
 	else
 		#Checking repo change
 		if ! svn info ${PORTS_SRC} | grep -q "${SVN_PORTS_PATH}"; then
-			echo "WARNING: There were svn repo changes, start a svn switch"
+			echo "WARNING: svn repo changed, svn switch started..."
 			svn switch --accept tc -r ${PORTS_REV} \
 			svn://${SVN_PORTS_PATH} ${PORTS_SRC} \
 			|| die "Can't switch to ${SVN_PORTS_PATH}"
@@ -534,7 +534,9 @@ echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${PROJECT}.nano
 echo "# Parallel Make" >> /tmp/${PROJECT}.nano
 # Special ARCH commands
 # Note for modules names: They are relative to /usr/src/sys/modules
-echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${PROJECT}.nano
+# Disable make -j X DPrevent to generate 9.2 from a  -current (r254936) host
+#echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${PROJECT}.nano
+echo 'NANO_PMAKE="make"' >> /tmp/${PROJECT}.nano
 eval echo NANO_MODULES=\\\"\${NANO_MODULES_${NANO_KERNEL}}\\\" >> /tmp/${PROJECT}.nano
 case ${NANO_KERNEL} in
 	"cambria") 

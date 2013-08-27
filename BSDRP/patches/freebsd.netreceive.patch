@@ -1,11 +1,7 @@
 diff -ruN tools/tools/netrate/netreceive.orig/Makefile tools/tools/netrate/netreceive/Makefile
 --- tools/tools/netrate/netreceive.orig/Makefile	2013-05-31 09:24:25.064855105 +0200
 +++ tools/tools/netrate/netreceive/Makefile	2013-05-31 09:24:32.525495862 +0200
-@@ -1,8 +1,11 @@
- #
--# $FreeBSD: releng/9.2/tools/tools/netrate/netreceive/Makefile 139103 2004-12-21 08:47:35Z ru $
-+# $FreeBSD: head/tools/tools/netrate/netreceive/Makefile 248564 2013-03-20 21:47:05Z neel $
- #
+@@ -4,5 +4,8 @@
  
  PROG=	netreceive
  NO_MAN=
