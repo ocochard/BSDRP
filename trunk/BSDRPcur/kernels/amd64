@@ -261,8 +261,8 @@ device		xl		# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 # Pseudo devices.
 device		loop		# Network loopback
 device		random		# Entropy device
-options 	PADLOCK_RNG	# VIA Padlock RNG
-options 	RDRAND_RNG	# Intel Bull Mountain RNG
+device 		padlock_rng	# VIA Padlock RNG
+device	 	rdrand_rng	# Intel Bull Mountain RNG
 device		ether		# Ethernet support
 device		vlan		# 802.1Q VLAN support
 device		tun		# Packet tunnel.
