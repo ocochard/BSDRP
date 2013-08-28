@@ -25,21 +25,21 @@ set -eu
 # Don't forget to modify the bench commands in bench() too !!
 
 # Host IP/hostname
-TESTER_1_ADMIN="192.168.5.1"
-TESTER_2_ADMIN="192.168.5.2"
-DUT_ADMIN="192.168.5.3"
+TESTER_1_ADMIN="192.168.1.1"
+TESTER_2_ADMIN="192.168.1.3"
+DUT_ADMIN="192.168.1.2"
 
 #netblast need these information:
 TESTER_1_LAB="1.1.1.1"
-TESTER_2_LAB="2.2.2.2"
+TESTER_2_LAB="2.2.2.3"
 
 #netmap pkt-gen need these information:
-TESTER_1_LAB_IF="em0"
-TESTER_1_LAB_IF_MAC="00:1b:21:d5:66:0e"
-TESTER_2_LAB_IF="em0"
-TESTER_2_LAB_IF_MAC="00:1b:21:d5:66:15"
-DUT_LAB_IF_MAC_TO_T1="00:1b:78:5d:52:e2"
-DUT_LAB_IF_MAC_TO_T2="00:1b:78:5d:52:e3"
+TESTER_1_LAB_IF="igb2"
+TESTER_1_LAB_IF_MAC="00:1b:21:d4:3f:2a"
+TESTER_2_LAB_IF="igb3"
+TESTER_2_LAB_IF_MAC="00:1b:21:c4:95:7b"
+DUT_LAB_IF_MAC_TO_T1="00:1b:21:d3:8f:3e"
+DUT_LAB_IF_MAC_TO_T2="00:1b:21:d3:8f:3f"
 PKT_TO_SEND="100000000"
 
 # SSH Command line
@@ -70,7 +70,7 @@ reboot_dut () {
 	# Reboot the dut
 	# Need to wait an online return before continuing too
 	echo -n "Rebooting DUT and waiting device return online..."
-	# WARNING: If configuration was not saved, it will ask user for configuration saving
+	# WARNING: If configuration was not saved, it will ask user for configuration saving
 	rcmd ${DUT_ADMIN} reboot > /dev/null 2>&1
 	# || die "Can't reboot the DUT after bench TEST/CFG/IMG: ${TEST_ITER}/${CONFIG_ITER}/${IMAGE_ITER}"
 	sleep 10
@@ -93,7 +93,7 @@ bench () {
 		#start netreceive on TESTER2
 		#CMD="netreceive 9090"
 		#start pkt-gen on TESTER2
-		CMD="pkt-gen -i ${TESTER_2_LAB_IF} -w 8"
+		CMD="pkt-gen -f rx -i ${TESTER_2_LAB_IF} -w 8"
 
 		echo "CMD: ${CMD}" > $1.${ITER}.receiver
 		rcmd ${TESTER_2_ADMIN} "${CMD}" >> $1.${ITER}.receiver 2>&1 &
@@ -103,7 +103,9 @@ bench () {
 		#rcmd ${TESTER_2_ADMIN} "nohup netreceive 9090 \>\& /tmp/bench.log.receiver \&"
 		#start netblast on TESTER1
 		#CMD="netblast ${TESTER_2_LAB} 9090 0 10"
-		CMD="pkt-gen -i ${TESTER_1_LAB_IF} -t ${PKT_TO_SEND} -l 42 -d ${TESTER_2_LAB} -D ${DUT_LAB_IF_MAC_TO_T1} -s ${TESTER_1_LAB} -w 10"
+		CMD="pkt-gen -f tx -i ${TESTER_1_LAB_IF} -t ${PKT_TO_SEND} -l 42 \
+		-d ${TESTER_2_LAB} -D ${DUT_LAB_IF_MAC_TO_T1} -s ${TESTER_1_LAB} \
+    	-w 8"
 		echo "CMD: ${CMD}" > $1.${ITER}.sender
 		rcmd ${TESTER_1_ADMIN} "${CMD}" >> $1.${ITER}.sender 2>&1 &
 		JOB_SENDER=$!

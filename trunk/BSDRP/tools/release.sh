@@ -82,7 +82,7 @@ upload(){
 	sed -n -e "/# Release ${VERSION}/,/----/ p" ${PROJECT}/CHANGES.md > /tmp/README.md
 	${DRY} scp /tmp/README.md cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1
 	FILE_LIST=''
-	if [ -d ${OBJ_BASE_DIR}/${PROJECT}.BSDRP.sparc64 ]; then
+	if [ -d ${OBJ_BASE_DIR}/${PROJECT}.sparc64 ]; then
 		ARCH_LIST="${ARCH_LIST}sparc64"
 	fi
 	for arch in ${ARCH_LIST}; do
