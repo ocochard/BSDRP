@@ -14,8 +14,10 @@ data_2_ministat () {
 	LINES=`echo ${LINES} | cut -d ' ' -f1`
 	# Remove the first 15 lines (garbage or not good result) and the 10 last lines (bad result too)
 	head -n `expr ${LINES} - 10` $1 | tail -n `expr ${LINES} - 10 - 15` > /tmp/clean.1.data
-	# Filter the output (still filtering "0 pps" lines… in case of) and kept only the numbers:
-	grep -E '^main[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps$' /tmp/clean.1.data | cut -d ' ' -f 3 > /tmp/clean.2.data
+	# Filter the output (still filtering "0 pps" lines in case of) and kept only the numbers:
+	# example of good line:
+	# main_thread [1078] 550657 pps (551207 pkts in 1000999 usec)
+	grep -E '^main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' /tmp/clean.1.data | cut -d ' ' -f 3 > /tmp/clean.2.data
 	#Now we calculate the median value of this run with ministat
 	echo `ministat -n /tmp/clean.2.data | tail -n -1 | tr -s ' ' | cut -d ' ' -f 5` >> ${LAB_RESULTS}/$2
 	rm /tmp/clean.1.data /tmp/clean.2.data || die "ERROR: can't delete clean.X.data"
@@ -89,7 +91,6 @@ for INFO in ${INFO_LIST}; do
 	#   => list all file like /tmp/benchs/bench.1.1.*.receiver
 	DATA_LIST=`echo ${INFO} | sed 's/info/*/g'`
 	DATA_LIST=`ls -1 ${DATA_LIST} | grep receiver`
-
 	# clean allready existing ministat
 	[ -f ${LAB_RESULTS}/${MINISTAT_FILE} ] && rm ${LAB_RESULTS}/${MINISTAT_FILE}
 	for DATA in ${DATA_LIST}; do
