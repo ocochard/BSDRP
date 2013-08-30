@@ -5,6 +5,7 @@
 * Extras patches:
 	* Autotuning mbuf patch
 	http://lists.freebsd.org/pipermail/freebsd-stable/2013-July/074129.html
+	* pf UDP NAT patch (kern/181690)
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
 	* multi-threaded netblast (bin/179085)

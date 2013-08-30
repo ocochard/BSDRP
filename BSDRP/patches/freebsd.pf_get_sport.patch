@@ -1,0 +1,49 @@
+Index: sys/contrib/pf/net/pf_lb.c
+===================================================================
+--- sys/contrib/pf/net/pf_lb.c	(revision 255043)
++++ sys/contrib/pf/net/pf_lb.c	(working copy)
+@@ -338,9 +338,9 @@
+ 	do {
+ 		key.af = af;
+ 		key.proto = proto;
+-		PF_ACPY(&key.addr[1], daddr, key.af);
+-		PF_ACPY(&key.addr[0], naddr, key.af);
+-		key.port[1] = dport;
++		PF_ACPY(&key.addr[0], daddr, key.af);
++		PF_ACPY(&key.addr[1], naddr, key.af);
++		key.port[0] = dport;
+ 
+ 		/*
+ 		 * port search; start random, step;
+@@ -349,11 +349,11 @@
+ 		if (!(proto == IPPROTO_TCP || proto == IPPROTO_UDP ||
+ 		    proto == IPPROTO_ICMP)) {
+ 			key.port[0] = dport;
+-			if (pf_find_state_all(&key, PF_IN, NULL) == NULL)
++			if (pf_find_state_all(&key, PF_OUT, NULL) == NULL)
+ 				return (0);
+ 		} else if (low == 0 && high == 0) {
+ 			key.port[0] = *nport;
+-			if (pf_find_state_all(&key, PF_IN, NULL) == NULL)
++			if (pf_find_state_all(&key, PF_OUT, NULL) == NULL)
+ 				return (0);
+ 		} else if (low == high) {
+ 			key.port[0] = htons(low);
+@@ -377,7 +377,7 @@
+ #endif
+ 			/* low <= cut <= high */
+ 			for (tmp = cut; tmp <= high; ++(tmp)) {
+-				key.port[0] = htons(tmp);
++				key.port[1] = htons(tmp);
+ 				if (pf_find_state_all(&key, PF_IN, NULL) ==
+ #ifdef __FreeBSD__
+ 				    NULL) {
+@@ -389,7 +389,7 @@
+ 				}
+ 			}
+ 			for (tmp = cut - 1; tmp >= low; --(tmp)) {
+-				key.port[0] = htons(tmp);
++				key.port[1] = htons(tmp);
+ 				if (pf_find_state_all(&key, PF_IN, NULL) ==
+ #ifdef __FreeBSD__
+ 				    NULL) {
