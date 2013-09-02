@@ -309,7 +309,7 @@ add_port () {
 #### Ports list section #####
 
 # high-performance ipfw netmap
-add_port "net/ipfw-user"
+#add_port "net/ipfw-user"
 
 # Then we need to install net-snmp without perl modules
 # net-snmp support is not very good for FreeBSD, disable it

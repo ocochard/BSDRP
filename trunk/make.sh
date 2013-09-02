@@ -117,6 +117,7 @@ patch_src() {
 
 	# Overwrite the nanobsd script with our own improved nanobsd
 	cp nanobsd.sh ${NANOBSD_DIR}/nanobsd.sh
+	env
 	chmod +x ${NANOBSD_DIR}/nanobsd.sh
 }
 
@@ -534,7 +535,7 @@ echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${PROJECT}.nano
 echo "# Parallel Make" >> /tmp/${PROJECT}.nano
 # Special ARCH commands
 # Note for modules names: They are relative to /usr/src/sys/modules
-# Disable make -j X DPrevent to generate 9.2 from a  -current (r254936) host
+# Disable make -j X :Prevent to run "make buildworld" 9.2 from a -current (r254936) host
 #echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${PROJECT}.nano
 echo 'NANO_PMAKE="make"' >> /tmp/${PROJECT}.nano
 eval echo NANO_MODULES=\\\"\${NANO_MODULES_${NANO_KERNEL}}\\\" >> /tmp/${PROJECT}.nano
