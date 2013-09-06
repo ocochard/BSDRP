@@ -45,6 +45,7 @@ stop_cmd="${name}_stop"
 start_precmd="${name}_prestart"
 
 ngnetflow_prestart () {
+	#Need to manually load ng_ether.ko
 	kldstat -q -m ng_ether || kldload ng_ether
 }
 
