@@ -526,6 +526,7 @@ usr/bin/strings
 usr/bin/strip
 usr/bin/cc
 usr/bin/gcc
+usr/bin/gcpp
 usr/bin/cpp
 usr/bin/c++
 usr/bin/g++

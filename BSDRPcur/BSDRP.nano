@@ -61,7 +61,9 @@ WITHOUT_EXAMPLES=
 WITHOUT_FLOPPY=
 WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
+WITHOUT_GCC=
 WITHOUT_GCOV=
+WITHOUT_GNUCXX=
 WITHOUT_GDB=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
@@ -99,6 +101,7 @@ WITHOUT_WIRELESS_SUPPORT=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
 WITHOUT_ZFS=
 WITH_IDEA=
+WITH_LDNS_UTILS=
 '
 
 # Customize commands.
@@ -397,7 +400,7 @@ cleanup_ports () {
 		# diff packages.info.first packages.info
 		set +e
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'env ASSUME_ALWAYS_YES=true pkg delete -g auto* m4* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* p5-gettext* libsigsegv* pkgconf*'
+        'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* m4* gcc-* gmake* gmp-* libtool* gawk* perl* gettext* bison* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
 		set -e
 }
 
@@ -541,6 +544,7 @@ usr/bin/strings
 usr/bin/strip
 usr/bin/cc
 usr/bin/gcc
+usr/bin/gcpp
 usr/bin/cpp
 usr/bin/c++
 usr/bin/g++
