@@ -22,9 +22,10 @@ The authors of BSDRP would like to thank the authors of these software packages 
 * mcast-tools: Copyright (C) 1999 WIDE Project, Copyright (c) 1998-2001 The University of Southern California/Information Sciences Institute
 * mrouted: Copyright (C) 2002 The Board of Trustees of the Leland Stanford Junior University
 * mpd: Multi-link PPP Daemon, Copyright (c) 2003-2004, Archie L. Cobbs, Michael Bretterklieber, Alexander Motin
-* Quagga routing software
+* OpenVPN: Copyright (c) 2009-2013 OpenVPN Technologies, Inc.
 * pftop:  Can E. Acar
 * Tayga: Nathan Lutchansky, lutchann@litech.org
+* Quagga routing software
 * tm Copyright (c) 2008 Nicholas Marriott <nicm@users.sourceforge.net>
 * sh-die: http://code.google.com/p/sh-die/
 * ssmtp: extremely simple MTA to get mail off the system to a mail hub

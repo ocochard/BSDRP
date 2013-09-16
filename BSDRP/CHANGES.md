@@ -1,7 +1,7 @@
 # Release 1.5 (not released)
 
 ## New features
-* Upgraded to 9.2-RC3
+* Upgraded to 9.2-RC4
 * Extras patches:
 	* Autotuning mbuf patch
 	http://lists.freebsd.org/pipermail/freebsd-stable/2013-July/074129.html
@@ -16,6 +16,7 @@
     * cryptotest for measuring hardware-assisted crypto performance
       Example: kldload aesni; cryptotest -z 2048
     * cxgbtool/cxgbetool tools for configuring embedded firewall in Chelsio NIC
+	* OpenVPN
 * New rc scripts:
     * ngnetflow
 ## Bug fixes

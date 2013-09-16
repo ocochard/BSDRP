@@ -7,6 +7,8 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # General variables
 #DRY="echo"
+# Set PROJECT variable like this example:
+# env PROJECT=BSDRPcur BSDRP/tools/release.sh
 DRY=""
 SRC_DIR="/usr/local/BSDRP"
 [ -n "${PROJECT}" ] || PROJECT="BSDRP"
