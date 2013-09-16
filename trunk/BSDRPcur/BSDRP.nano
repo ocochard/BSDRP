@@ -62,8 +62,8 @@ WITHOUT_FLOPPY=
 WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
 WITHOUT_GCOV=
-WITHOUT_GNUCXX=
 WITHOUT_GDB=
+WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
 WITHOUT_HTML=
@@ -96,6 +96,7 @@ WITHOUT_SENDMAIL=
 WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
 WITHOUT_SYSINSTALL=
+WITHOUT_UNBOUND=
 WITHOUT_WIRELESS=
 WITHOUT_WIRELESS_SUPPORT=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
@@ -375,6 +376,9 @@ add_port "security/sudo"
 
 # Add mpd5, a multi-link PPP protocol server (netgraph dependent)
 add_port "net/mpd5"
+
+# Add openvpn
+add_port "security/openvpn"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netpipe" 
