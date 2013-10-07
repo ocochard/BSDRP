@@ -44,13 +44,6 @@ WITHOUT_ASSERT_DEBUG=
 WITHOUT_ATM=
 WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
-WITHOUT_BIND=
-WITHOUT_BIND_DNSSEC=
-WITHOUT_BIND_ETC=
-WITHOUT_BIND_LIBS_LWRES=
-WITHOUT_BIND_MTREE=
-WITHOUT_BIND_NAMED=
-WITHOUT_BIND_UTILS=
 WITHOUT_BLUETOOTH=
 WITHOUT_CALENDAR=
 WITHOUT_CAPSICUM=
@@ -187,7 +180,7 @@ add_netrate () {
         chroot ${NANO_WORLDDIR} /bin/sh -exc 'make clean -C /usr/src/tools/tools/${TOOL}'
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
             'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-            MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+            MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
             UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
             UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
             make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
@@ -220,7 +213,7 @@ add_quagga-bgp-netgen () {
     mkdir -p ${NANO_WORLDDIR}/usr/workdir
     chroot ${NANO_WORLDDIR} /bin/sh -exc \
             'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-			MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+			MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
 			UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
             make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
@@ -252,6 +245,9 @@ add_port () {
 				mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
 				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
 					\${NANO_WORLDDIR}/usr/ports/packages
+				# Run ldconfig before
+				chroot \${NANO_WORLDDIR} /bin/sh -exc '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
+				# Start the build
 				chroot \${NANO_WORLDDIR} /bin/sh -exc \
                		'env ASSUME_ALWAYS_YES=true PACKAGESITE=file:///usr/ports/packages pkg add /usr/ports/packages/All/${PKG_NAME}.txz'
 				umount \${NANO_WORLDDIR}/usr/ports/packages
@@ -281,20 +277,22 @@ add_port () {
            		mkdir -p \${NANO_WORLDDIR}/usr/pobj
                	mkdir -p \${NANO_WORLDDIR}/usr/workdir
                	cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
-				# Improvement: Don't know why package-recursive don't works here
 				# If a port have NO_PACKAGE, comment-it
                 if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
                     mv \${NANO_WORLDDIR}/usr/ports/$1/Makefile \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd
                     sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
                 fi
+				# Run ldconfig before
+				chroot \${NANO_WORLDDIR} /bin/sh -exc '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
+				# Start the build
                	chroot \${NANO_WORLDDIR} /bin/sh -exc \
                 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-				MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+				MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
 				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-                install package-recursive BATCH=yes -DWITH_PKGNG -DWITHOUT_X11 \
-				-DNOPORTDOCS -DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
+                install package BATCH=yes -DWITH_PKGNG -DWITHOUT_X11 \
+				-DNOPORTDOCS -DNOPORTEXAMPLES -DWITHOUT_NLS -DWITH_SSP_PORTS $2 clean'
 				rm \${NANO_WORLDDIR}/etc/resolv.conf
                	rm -rf \${NANO_WORLDDIR}/usr/obj
                	rm -rf \${NANO_WORLDDIR}/usr/pobj
@@ -313,6 +311,11 @@ add_port () {
 
 #### Ports list section #####
 
+#bapt@ broke the "make package-recurisve" and he doesn't want to fix it using the fallacious argument of "it's dirty"
+#=> Need to manually list all the package to install
+
+add_port "ports-mgmt/pkg"
+
 # high-performance ipfw netmap
 # Disabled because net/pfil API changes
 #add_port "net/ipfw-user"
@@ -326,17 +329,21 @@ add_port "net-mgmt/bsnmp-regex"
 add_port "net-mgmt/bsnmp-ucd"
 
 # Quagga installation
+add_port "devel/libdlmalloc"
+add_port "security/libgpg-error"
+add_port "security/libgcrypt"
 add_port "net/quagga-re" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:
-add_port "net/bird" "-DWITH_FIBS -DWITH_FIREWALL"
-add_port "net/bird6" "-DWITH_FIBS -DWITH_FIREWALL"
+add_port "net/bird" "-DWITH_FIREWALL"
+add_port "net/bird6"
 
 # Add FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
 
 # Ipsec-tools
+add_port "net/openldap24-client"
 add_port "security/ipsec-tools" "-DWITH_RC5 -DWITH_IDEA -DWITH_RADIUS -DWITH_LDAP"
 
 #pf top
@@ -366,6 +373,7 @@ add_port "net/isc-dhcp42-relay"
 add_port "mail/ssmtp"
 
 # Add tmux (screen equivalent, but better because BSD)
+add_port "devel/libevent"
 add_port "sysutils/tmux"
 
 # Add ipmi tools
@@ -378,7 +386,10 @@ add_port "security/sudo"
 add_port "net/mpd5"
 
 # Add openvpn
-add_port "security/openvpn"
+# Need to fix problem during package generation here
+#add_port "security/easy-rsa"
+#add_port "archivers/lzo2"
+#add_port "security/openvpn"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netpipe" 
@@ -487,6 +498,7 @@ usr/local/share/doc/libasprintf
 usr/local/share/doc/libiconv
 usr/local/share/doc/snmp
 usr/local/share/examples/quagga
+usr/local/share/examples/ipsec-tools
 usr/include
 usr/share/examples
 usr/share/info

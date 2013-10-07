@@ -65,6 +65,7 @@ generate(){
 		for console in ${CONSOLE_LIST}; do
 			[ "${arch}" = "i386_xenpv" -a "${console}" = "serial" ] && continue
 			[ "${arch}" = "sparc64" -a "${console}" = "serial" ] && continue
+			[ ! -f ${PROJECT}/kernels/${arch} ] && continue
         	( cd ${SRC_DIR}
         	${DRY} ./make.sh -p ${PROJECT} -b -a ${arch} -c ${console}
         	)
