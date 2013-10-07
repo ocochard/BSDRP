@@ -51,6 +51,7 @@ options		PROCDESC	# Support for process descriptors
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
 #options	DDB_CTF			# Kernel ELF linker loads CTF data
 options 	INCLUDE_CONFIG_FILE     # Include this file in kernel
+options		XENHVM		#  Include Xen support
 options 	KDB			# Kernel debugger related code
 options 	KDB_TRACE		# Print a stack trace for a panic
 
@@ -309,6 +310,9 @@ device		virtio_blk	# VirtIO Block device
 device		virtio_scsi	# VirtIO SCSI device
 device		virtio_balloon	# VirtIO Memory Balloon device
 
+# Xen support
+device		xenpci		# Generic Xen bus
+
 # VMware support
 device		vmx			# VMware VMXNET3 Ethernet
 
@@ -338,8 +342,6 @@ options     ALTQ_CDNR   # Traffic conditioner
 options     ALTQ_PRIQ   # Priority Queueing
 options     ALTQ_NOPCC  # Required if the TSC is unusable
 #options    ALTQ_DEBUG
-
-options     NO_SWAPPING # Disable swapping of stack pages
 
 # MROUTING enables the kernel multicast packet forwarder, which works
 # with mrouted and XORP.

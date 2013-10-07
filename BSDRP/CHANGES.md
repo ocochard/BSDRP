@@ -1,7 +1,7 @@
 # Release 1.5 (not released)
 
 ## New features
-* Upgraded to 9.2-RC4
+* Upgraded to 9.2-RELEASE
 * Extras patches:
 	* Autotuning mbuf patch
 	http://lists.freebsd.org/pipermail/freebsd-stable/2013-July/074129.html
@@ -10,6 +10,7 @@
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
 	* multi-threaded netblast (bin/179085)
+* Add stf — 6to4 tunnel interface module
 * Added hwpmc modules for spoting performance issue
     * Example: kldload hwpmc; pmcstat -T -S instructions
 * New tool:

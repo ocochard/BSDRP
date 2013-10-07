@@ -356,8 +356,6 @@ options     ALTQ_PRIQ   # Priority Queueing
 options     ALTQ_NOPCC  # Required if the TSC is unusable
 #options    ALTQ_DEBUG
 
-options     NO_SWAPPING # Disable swapping of stack pages
-
 # MROUTING enables the kernel multicast packet forwarder, which works
 # with mrouted and XORP.
 options     MROUTING        # Multicast routing

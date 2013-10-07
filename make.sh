@@ -332,7 +332,7 @@ PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
 . ${SCRIPT_DIR}/${PROJECT}/make.conf
 
 # Check if no previously mounted unionfs dirs
-check_clean ${PROJECT_DIR}
+check_clean ${PROJECT}.${TARGET_ARCH}
 
 if [ -n "${MASTER_PROJECT}" ]; then
 	# It's a child project: Load MASTER_PROJECT/make.conf
@@ -346,7 +346,7 @@ if [ -n "${MASTER_PROJECT}" ]; then
 	# we unionfs mount the MASTER folders below the CHILD folder
 	# BUG: unionfs seems unstable on FreeBSD 9.1
 	MASTER_PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
-	trap "echo 'Running exit trap code' ; check_clean ${PROJECT_DIR}" 1 2 15 EXIT
+	trap "echo 'Running exit trap code' ; check_clean ${PROJECT}.${TARGET_ARCH}" 1 2 15 EXIT
 	[ -d ${PROJECT_DIR}/kernels ] || mkdir ${PROJECT_DIR}/kernels
 	mount -t unionfs -o below,noatime,copymode=transparent \
 	${MASTER_PROJECT_DIR}/kernels ${PROJECT_DIR}/kernels
@@ -535,11 +535,13 @@ echo "# Parallel Make" >> /tmp/${PROJECT}.nano
 # Special ARCH commands
 # Note for modules names: They are relative to /usr/src/sys/modules
 # Warning: Need to use devel/fmake for building previous world from a 10.X if -j is used
-# if host == 10.X and target < 10.X then don't use -j
+# if host == 10.X and target < 10.X then use fmake
 echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${PROJECT}.nano
 if uname -r | grep -q 10; then
 	if ! [ ${PROJECT} = "BSDRPcur" ]; then
-		echo "NANO_PMAKE=\"make\"" >> /tmp/${PROJECT}.nano
+    	which -s fmake || die "You need fmake installed on the host: devel/fmake"
+		echo "NANO_PMAKE=\"/usr/local/bin/fmake\"" >> /tmp/${PROJECT}.nano
+		#echo "NANO_PMAKE=\"make\"" >> /tmp/${PROJECT}.nano
 	fi
 fi
 eval echo NANO_MODULES=\\\"\${NANO_MODULES_${NANO_KERNEL}}\\\" >> /tmp/${PROJECT}.nano
@@ -646,7 +648,7 @@ sh ${NANOBSD_DIR}/nanobsd.sh ${SKIP_REBUILD} -c /tmp/${PROJECT}.nano
 ERROR_CODE=$?
 if [ -n ${MASTER_PROJECT} ]; then
 	# unmount unionfs
-	check_clean ${PROJECT_DIR}
+	check_clean ${NANO_OBJ}
 	trap - 1 2 15 EXIT                                                                                              
 fi
 
