@@ -50,6 +50,9 @@ NANO_TOOLS=tools/tools/nanobsd
 NANO_PACKAGE_DIR=${NANO_SRC}/${NANO_TOOLS}/Pkg
 NANO_PACKAGE_LIST="*"
 
+# List of directories to copy on the destination image
+NANO_DIRS_INSTALL="${NANO_TOOLS}/Files"
+
 # Object tree directory
 # default is subdir of /usr/obj
 #NANO_OBJ=""
@@ -1008,8 +1011,10 @@ cust_allow_ssh_root () (
 # Install the stuff under ./Files
 
 cust_install_files () (
-	cd ${NANO_TOOLS}/Files
-	find . -print | grep -Ev '/(CVS|\.svn)' | cpio -Ldumpv ${NANO_WORLDDIR}
+	for dir in ${NANO_DIRS_INSTALL}; do
+		cd ${dir}
+		find . -print | grep -Ev '/(CVS|\.svn)' | cpio -Ldumpv ${NANO_WORLDDIR}
+	done
 )
 
 #######################################################################
