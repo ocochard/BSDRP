@@ -228,7 +228,6 @@ FAST=false
 UPDATE_SRC=false
 UPDATE_PORT=false
 # Boolean for using TMPFS
-# Warning: Mixing TMPFS and unionfs (like this script does) crash all FreeBSD 9.1 and below
 TMPFS=false
 args=`getopt a:bc:dfhkp:uryw $*`
 
@@ -315,6 +314,8 @@ MAKE_JOBS=$(( 2 * $(sysctl -n kern.smp.cpus)))
 [ -d ${SCRIPT_DIR}/${PROJECT} ] || die "Can't found target ${PROJECT}"
 
 PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
+KERNELS_DIR="${PROJECT_DIR}/kernels"
+NANO_DIRS_INSTALL="${PROJECT_DIR}/Files"
 
 # Loading the project variables stored in $PROJECT/make.conf
 # Once loaded, all these variables will be available:
@@ -331,7 +332,8 @@ PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
 
 . ${SCRIPT_DIR}/${PROJECT}/make.conf
 
-# Check if no previously mounted unionfs dirs
+
+# Check if no previously mounted dirs
 check_clean ${PROJECT}.${TARGET_ARCH}
 
 if [ -n "${MASTER_PROJECT}" ]; then
@@ -342,28 +344,29 @@ if [ -n "${MASTER_PROJECT}" ]; then
 	# Now overide variables learn on MASTER_PROJECT by our child one
 	PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
 	. ${SCRIPT_DIR}/${PROJECT}/make.conf
-	# For avoiding lot's if -z $MASTER during this script
-	# we unionfs mount the MASTER folders below the CHILD folder
-	# BUG: unionfs seems unstable on FreeBSD 9.1
 	MASTER_PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
 	trap "echo 'Running exit trap code' ; check_clean ${PROJECT}.${TARGET_ARCH}" 1 2 15 EXIT
-	[ -d ${PROJECT_DIR}/kernels ] || mkdir ${PROJECT_DIR}/kernels
-	mount -t unionfs -o below,noatime,copymode=transparent \
-	${MASTER_PROJECT_DIR}/kernels ${PROJECT_DIR}/kernels
-	[ -d ${PROJECT_DIR}/Files ] || mkdir ${PROJECT_DIR}/Files
-	mount -t unionfs -o below,noatime,copymode=transparent \
-	${MASTER_PROJECT_DIR}/Files ${PROJECT_DIR}/Files
+	# If there is no kernels config on sub-project, use the master dir
+	[ -d ${PROJECT_DIR}/kernels ] ||
+	  KERNELS_DIR="${MASTER_PROJECT_DIR}/kernels"
+	if [ -d ${PROJECT_DIR}/Files ]; then
+		NANO_DIRS_INSTALL="${MASTER_PROJECT_DIR}/Files ${PROJECT_DIR}/Files"
+	else
+		NANO_DIRS_INSTALL="${MASTER_PROJECT_DIR}/Files"
+	fi
 fi
 
 # project version
-if [ -f ${PROJECT_DIR}/Files/etc/version ]; then
-	VERSION=`cat ${PROJECT_DIR}/Files/etc/version`
-else
-	die "No Files/etc/version found"
-fi
+for dir in ${NANO_DIRS_INSTALL}; do
+	if [ -f ${dir}/etc/version ]; then
+		VERSION=`cat ${dir}/etc/version`
+	else
+		die "No ${dir}/etc/version found"
+	fi
+done
 
 # Check for a kernel
-[ -f ${PROJECT_DIR}/kernels/${NANO_KERNEL} ] || die "Can't found kernels/${NANO_KERNEL}"
+[ -f ${KERNELS_DIR}/${NANO_KERNEL} ] || die "Can't found kernels/${NANO_KERNEL}"
 
 # Checking target ARCH cross-compilation compatibilities
 case "${NANO_KERNEL}" in
@@ -424,8 +427,6 @@ if [ `sysctl -n hw.usermem` -lt 2000000000 ]; then
 fi
 
 if ($TMPFS); then
-	echo "WARNING !! Using tmpfs and unionfs together need a patch for all FreeBSD previous 9.2"
-	echo "More info: http://www.freebsd.org/cgi/query-pr.cgi?pr=kern/174969"
 	if mount | grep -q -e "^tmpfs[[:space:]].*/tmp/obj[[:space:]]"; then
 		echo "Existing tmpfs file system detected"
 	else
@@ -514,6 +515,7 @@ echo "# Where nanobsd additional files live under the source tree" >> /tmp/${PRO
 
 echo "NANO_TOOLS=\"${PROJECT_DIR}\"" >> /tmp/${PROJECT}.nano
 echo "NANO_OBJ=\"${NANO_OBJ}\"" >> /tmp/${PROJECT}.nano
+echo "NANO_DIRS_INSTALL=\"${NANO_DIRS_INSTALL}\"" >> /tmp/${PROJECT}.nano
 
 # Copy the common nanobsd configuration file to /tmp
 if [ -f ${PROJECT_DIR}/${NAME}.nano ]; then
@@ -535,6 +537,7 @@ echo "# Parallel Make" >> /tmp/${PROJECT}.nano
 # Special ARCH commands
 # Note for modules names: They are relative to /usr/src/sys/modules
 # Warning: Need to use devel/fmake for building previous world from a 10.X if -j is used
+# fmake -j doesn't work for the installworld only (works for for buildworld & buildkernel)
 # if host == 10.X and target < 10.X then use fmake
 echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${PROJECT}.nano
 if uname -r | grep -q 10; then
@@ -619,15 +622,15 @@ export FBSD_DST_OSVERSION=$(awk '/\#define.*__FreeBSD_version/ { print $3 }' \
 export TARGET_ARCH
 
 echo "Copying ${NANO_KERNEL} Kernel configuration file"
-cp ${PROJECT_DIR}/kernels/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
+cp ${KERNELS_DIR}/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
 
 # The xen_hvm kernel include the standard kernel, need to copy it too
 case ${NANO_KERNEL} in
 	"amd64_xenhvm")
-		cp ${PROJECT_DIR}/kernels/amd64 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
+		cp ${KERNELS_DIR}/amd64 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
 		;;
 	"i386_xenhvm")
-		cp ${PROJECT_DIR}/kernels/i386 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
+		cp ${KERNELS_DIR}/i386 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
         ;;	
 esac
 
@@ -647,7 +650,7 @@ cd ${NANOBSD_DIR}
 sh ${NANOBSD_DIR}/nanobsd.sh ${SKIP_REBUILD} -c /tmp/${PROJECT}.nano
 ERROR_CODE=$?
 if [ -n ${MASTER_PROJECT} ]; then
-	# unmount unionfs
+	# unmount previosly mounted dir (old unionfs code???)
 	check_clean ${NANO_OBJ}
 	trap - 1 2 15 EXIT                                                                                              
 fi
