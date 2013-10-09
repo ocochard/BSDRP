@@ -264,11 +264,9 @@ add_port () {
 		#Need to create ${NANO_OBJ}/ports in this add_port_${port} function
 		[ -d \${NANO_OBJ}/ports ] ||
 		  mkdir -p \${NANO_OBJ}/ports/packages
-       		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
        		mount -t nullfs \${NANO_SRC} \${NANO_WORLDDIR}/usr/src
 		mkdir -p \${NANO_WORLDDIR}/usr/ports
-       		mount -t nullfs \${PORTS_SRC} \
-               	  \${NANO_WORLDDIR}/usr/ports
+       		mount -t nullfs \${PORTS_SRC} \${NANO_WORLDDIR}/usr/ports
 		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
 		mount -t nullfs \${NANO_OBJ}/ports/packages \
 		  \${NANO_WORLDDIR}/usr/ports/packages
