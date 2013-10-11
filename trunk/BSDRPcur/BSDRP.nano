@@ -83,6 +83,7 @@ WITHOUT_PORTSNAP=
 WITHOUT_PROFILE=
 WITHOUT_QUOTAS=
 WITHOUT_RCMDS=
+WITHOUT_RCS=
 WITHOUT_RESCUE=
 WITHOUT_ROUTED=
 WITHOUT_SENDMAIL=
@@ -290,7 +291,8 @@ add_port () {
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   install package BATCH=yes -DWITH_PKGNG -DWITHOUT_X11 \
-		  -DNOPORTDOCS -DNOPORTEXAMPLES -DWITHOUT_NLS -DWITH_SSP_PORTS $2 clean'
+		  -DNOPORTDOCS -DNOPORTEXAMPLES -DWITHOUT_NLS -DWITH_SSP_PORTS \
+		  -DNO_STAGE $2 clean'
 		rm \${NANO_WORLDDIR}/etc/resolv.conf
                	rm -rf \${NANO_WORLDDIR}/usr/obj
                	rm -rf \${NANO_WORLDDIR}/usr/pobj
@@ -384,10 +386,9 @@ add_port "security/sudo"
 add_port "net/mpd5"
 
 # Add openvpn
-# Need to fix problem during package generation here
-#add_port "security/easy-rsa"
-#add_port "archivers/lzo2"
-#add_port "security/openvpn"
+add_port "security/easy-rsa"
+add_port "archivers/lzo2"
+add_port "security/openvpn"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netpipe" 
