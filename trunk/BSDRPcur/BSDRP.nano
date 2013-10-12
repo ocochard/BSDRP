@@ -487,9 +487,12 @@ EOF
 	fi
 	# Remove some of the folders (without share/snmp)
 	# usr/include : 15MB
+	# usr/local/lib/perl5 is a dirty hack
+	#   pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/)
 	FOLDERS_TO_REMOVE='
 usr/libexec/bsdinstall
 usr/local/include
+usr/local/lib/perl5
 usr/local/man
 usr/local/info
 usr/local/share/doc/gettext
