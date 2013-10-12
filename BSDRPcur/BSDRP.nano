@@ -97,7 +97,6 @@ WITHOUT_WPA_SUPPLICANT_EAPOL=
 WITHOUT_ZFS=
 WITH_GCC=
 WITH_IDEA=
-WITH_LDNS_UTILS=
 '
 
 # Customize commands.
@@ -416,6 +415,11 @@ cleanup_ports () {
 		set +e
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
         'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* m4* gcc-* gmake* gmp-* libtool* gawk* perl* gettext* bison* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
+		# usr/local/lib/perl5 : Dirty hack
+		#   pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
+		#   pkg didn't delete all MAN1 page related to perl too
+		[ -d ${NANO_WORLDDIR}/usr/local/lib/perl5 ] && rm -rf ${NANO_WORLDDIR}/usr/local/lib/perl5
+		[ -f ${NANO_WORLDDIR}/usr/local/man/man1/perl.1 ] && rm ${NANO_WORLDDIR}/usr/local/man/man1/perl*
 		set -e
 }
 
@@ -487,12 +491,9 @@ EOF
 	fi
 	# Remove some of the folders (without share/snmp)
 	# usr/include : 15MB
-	# usr/local/lib/perl5 is a dirty hack
-	#   pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/)
 	FOLDERS_TO_REMOVE='
 usr/libexec/bsdinstall
 usr/local/include
-usr/local/lib/perl5
 usr/local/man
 usr/local/info
 usr/local/share/doc/gettext
