@@ -7,12 +7,13 @@ options 	SCHED_ULE		# ULE scheduler
 options 	PREEMPTION		# Enable kernel thread preemption
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
-#options 	SCTP			# Stream Control Transmission Protocol
+options 	TCP_OFFLOAD		# TCP offload
+options 	SCTP			# Stream Control Transmission Protocol
 options 	FFS			# Berkeley Fast Filesystem
-#options 	SOFTUPDATES		# Enable FFS soft updates support
-#options 	UFS_ACL			# Support for access control lists
-#options 	UFS_DIRHASH		# Improve performance on big directories
-#options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
+options 	SOFTUPDATES		# Enable FFS soft updates support
+options 	UFS_ACL			# Support for access control lists
+options 	UFS_DIRHASH		# Improve performance on big directories
+options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
 #options    QUOTA               # Enable disk quotas for UFS
 #options 	MD_ROOT			# MD is a potential root device
 #options 	NFSCL			# New Network Filesystem Client
@@ -24,7 +25,7 @@ options 	MSDOSFS			# MSDOS Filesystem
 options 	PROCFS			# Process filesystem (requires PSEUDOFS)
 options 	PSEUDOFS		# Pseudo-filesystem framework
 options 	GEOM_PART_GPT		# GUID Partition Tables.
-#options 	GEOM_RAID		# Soft RAID functionality.
+options 	GEOM_RAID		# Soft RAID functionality.
 options 	GEOM_LABEL		# Provides labelization
 #options 	COMPAT_FREEBSD32	# Compatible with i386 binaries
 #options 	COMPAT_FREEBSD4		# Compatible with FreeBSD4
@@ -48,7 +49,7 @@ options 	KDTRACE_HOOKS		# Kernel DTrace hooks
 options 	INCLUDE_CONFIG_FILE     # Include this file in kernel
 options 	KDB			# Kernel debugger related code
 options 	KDB_TRACE		# Print a stack trace for a panic
-options		DDB_CTF			# kernel ELF linker loads CTF data
+options 	DDB_CTF			# kernel ELF linker loads CTF data
 
 # Make an SMP-capable kernel by default
 options 	SMP			# Symmetric MultiProcessor Kernel
@@ -112,6 +113,7 @@ device		arcmsr		# Areca SATA II RAID
 device		ciss		# Compaq Smart RAID 5*
 device		dpt		# DPT Smartcache III, IV - See NOTES for options
 device		hptmv		# Highpoint RocketRAID 182x
+device		hptnr		# Highpoint DC7280, R750
 device		hptrr		# Highpoint RocketRAID 17xx, 22xx, 23xx, 25xx
 device		hpt27xx		# Highpoint RocketRAID 27xx
 device		iir		# Intel Integrated RAID
@@ -256,8 +258,8 @@ device		xl		# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 # Pseudo devices.
 device		loop		# Network loopback
 device		random		# Entropy device
-options		PADLOCK_RNG     # VIA Padlock RNG
-options		RDRAND_RNG		# Intel Bull Mountain RNG
+options 	PADLOCK_RNG	# VIA Padlock RNG
+options 	RDRAND_RNG	# Intel Bull Mountain RNG
 device		ether		# Ethernet support
 device		vlan		# 802.1Q VLAN support
 device		tun		# Packet tunnel.
@@ -325,16 +327,21 @@ device		uslcom		# SI Labs CP2101/CP2102 serial adapters
 #device		snd_via8233	# VIA VT8233x Audio
 
 # VirtIO support
-device          virtio          # Generic VirtIO bus (required)
-device          virtio_pci      # VirtIO PCI Interface
-device          vtnet           # VirtIO Ethernet device
-device          virtio_blk      # VirtIO Block device
-device          virtio_scsi     # VirtIO SCSI device
-device          virtio_balloon  # VirtIO Memory Balloon device
+device		virtio		# Generic VirtIO bus (required)
+device		virtio_pci	# VirtIO PCI Interface
+device		vtnet		# VirtIO Ethernet device
+device		virtio_blk	# VirtIO Block device
+device		virtio_scsi	# VirtIO SCSI device
+device		virtio_balloon	# VirtIO Memory Balloon device
 
 ####### BSDRP section #####
 
-# BSDRP added NICs.
+# MMC/SD
+device      mmc     # MMC/SD bus
+device      mmcsd       # MMC/SD memory card
+device      sdhci       # Generic PCI SD Host Controller
+
+# NICs
 device      cxgb    # Chelsio T3 10 Gigabit Ethernet adapter driver
 device      cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
 device      my      # Myson Technology Ethernet PCI driver

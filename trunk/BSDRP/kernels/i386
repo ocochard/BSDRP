@@ -1,23 +1,3 @@
-#
-# BSDRP-I386 -- BSD Router Project kernel configuration file for FreeBSD/i386
-#
-# For more information on this file, please read the config(5) manual page,
-# and/or the handbook section on Kernel Configuration Files:
-#
-#    http://www.FreeBSD.org/doc/en_US.ISO8859-1/books/handbook/kernelconfig-config.html
-#
-# The handbook is also available locally in /usr/share/doc/handbook
-# if you've installed the doc distribution, otherwise always see the
-# FreeBSD World Wide Web server (http://www.FreeBSD.org/) for the
-# latest information.
-#
-# An exhaustive list of options and more detailed explanations of the
-# device lines is also present in the ../../conf/NOTES and NOTES files.
-# If you are in doubt as to the purpose or necessity of a line, check first
-# in NOTES.
-#
-# $FreeBSD: src/sys/i386/conf/GENERIC,v 1.553.2.7.2.1 2011/11/11 04:20:22 kensmith Exp $
-
 cpu		I486_CPU
 cpu		I586_CPU
 cpu		I686_CPU
@@ -29,12 +9,13 @@ options 	SCHED_ULE		# ULE scheduler
 options 	PREEMPTION		# Enable kernel thread preemption
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
-#options 	SCTP			# Stream Control Transmission Protocol
+options 	TCP_OFFLOAD		# TCP offload
+options 	SCTP			# Stream Control Transmission Protocol
 options 	FFS			# Berkeley Fast Filesystem
-#options 	SOFTUPDATES		# Enable FFS soft updates support
-#options 	UFS_ACL			# Support for access control lists
-#options 	UFS_DIRHASH		# Improve performance on big directories
-#options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
+options 	SOFTUPDATES		# Enable FFS soft updates support
+options 	UFS_ACL			# Support for access control lists
+options 	UFS_DIRHASH		# Improve performance on big directories
+options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
 #options    QUOTA               # Enable disk quotas for UFS
 #options 	MD_ROOT			# MD is a potential root device
 #options 	NFSCL			# New Network Filesystem Client
@@ -46,7 +27,7 @@ options 	MSDOSFS			# MSDOS Filesystem
 options 	PROCFS			# Process filesystem (requires PSEUDOFS)
 options 	PSEUDOFS		# Pseudo-filesystem framework
 options 	GEOM_PART_GPT		# GUID Partition Tables.
-#options		GEOM_RAID		# Soft RAID functionality.
+options 	GEOM_RAID		# Soft RAID functionality.
 options 	GEOM_LABEL		# Provides labelization
 #options 	COMPAT_FREEBSD4		# Compatible with FreeBSD4
 #options 	COMPAT_FREEBSD5		# Compatible with FreeBSD5
@@ -63,8 +44,6 @@ options 	PRINTF_BUFR_SIZE=128	# Prevent printf output being interspersed.
 options 	KBD_INSTALL_CDEV	# install a CDEV entry in /dev
 options 	HWPMC_HOOKS		# Necessary kernel hooks for hwpmc(4)
 #options 	AUDIT			# Security event auditing
-#options	CAPABILITY_MODE     # Capsicum capability mode
-#options	CAPABILITIES        # Capsicum capabilities
 #options	MAC         # TrustedBSD MAC Framework
 options		KDTRACE_HOOKS       # Kernel DTrace hooks
 options     INCLUDE_CONFIG_FILE     # Include this file in kernel
@@ -131,7 +110,7 @@ device		da		# Direct Access (disks)
 #device		cd		# CD
 device		pass		# Passthrough device (direct ATA/SCSI access)
 device		ses		# Enclosure Services (SES and SAF-TE)
-#device      ctl     # CAM Target Layer
+#device 	ctl     # CAM Target Layer
 
 # RAID controllers interfaced to the SCSI subsystem
 device		amr		# AMI MegaRAID
@@ -140,6 +119,7 @@ device		asr		# DPT SmartRAID V, VI and Adaptec SCSI RAID
 device		ciss		# Compaq Smart RAID 5*
 device		dpt		# DPT Smartcache III, IV - See NOTES for options
 device		hptmv		# Highpoint RocketRAID 182x
+device		hptnr		# Highpoint DC7280, R750
 device		hptrr		# Highpoint RocketRAID 17xx, 22xx, 23xx, 25xx
 device		hpt27xx		# Highpoint RocketRAID 27xx
 device		iir		# Intel Integrated RAID
@@ -166,7 +146,7 @@ device		atkbd		# AT keyboard
 device		kbdmux		# keyboard multiplexer
 
 device		vga		# VGA video card driver
-options		VESA		# Add support for VESA BIOS Extensions (VBE)
+options 	VESA		# Add support for VESA BIOS Extensions (VBE)
 
 #device		splash		# Splash screen and screen saver support
 
@@ -198,7 +178,7 @@ device		uart		# Generic UART driver
 #device		ppi     # Parallel port interface device
 #device     vpo     # Requires scbus and da
 
-device      puc     # Multi I/O cards and multi-channel UARTs
+device		puc		# Multi I/O cards and multi-channel UARTs
 
 # PCI Ethernet NICs.
 device		bxe		# Broadcom BCM57710/BCM57711/BCM57711E 10Gb Ethernet
@@ -225,8 +205,8 @@ device		cas		# Sun Cassini/Cassini+ and NS DP83065 Saturn
 device		dc		# DEC/Intel 21143 and various workalikes
 device		et		# Agere ET1310 10/100/Gigabit Ethernet
 device		fxp		# Intel EtherExpress PRO/100B (82557, 82558)
-device      gem     # Sun GEM/Sun ERI/Apple GMAC
-device      hme     # Sun HME (Happy Meal Ethernet)
+device		gem		# Sun GEM/Sun ERI/Apple GMAC
+device		hme		# Sun HME (Happy Meal Ethernet)
 device		jme		# JMicron JMC250 Gigabit/JMC260 Fast Ethernet
 device		lge		# Level 1 LXT1001 gigabit Ethernet
 device		msk		# Marvell/SysKonnect Yukon II Gigabit Ethernet
@@ -264,12 +244,12 @@ device		xe		# Xircom pccard Ethernet
 # Pseudo devices.
 device		loop		# Network loopback
 device		random		# Entropy device
-options     PADLOCK_RNG     # VIA Padlock RNG
-options     RDRAND_RNG      # Intel Bull Mountain RNG
+options 	PADLOCK_RNG	# VIA Padlock RNG
+options 	RDRAND_RNG	# Intel Bull Mountain RNG
 device		ether		# Ethernet support
 device		vlan		# 802.1Q VLAN support
 device		tun		# Packet tunnel.
-device      pty     # BSD-style compatibility pseudo ttys
+device		pty		# BSD-style compatibility pseudo ttys
 device		md		# Memory "disks"
 device		gif		# IPv6 and IPv4 tunneling
 device		faith		# IPv6-to-IPv4 relaying (translation)
@@ -300,14 +280,22 @@ device		umass		# Disks/Mass storage - Requires scbus and da
 #device      snd_ich     # Intel, NVidia and other ICH AC'97 Audio
 #device      snd_via8233 # VIA VT8233x Audio
 
+# VirtIO support
+device		virtio		# Generic VirtIO bus (required)
+device		virtio_pci	# VirtIO PCI Interface
+device		vtnet		# VirtIO Ethernet device
+device		virtio_blk	# VirtIO Block device
+device		virtio_scsi	# VirtIO SCSI device
+device		virtio_balloon	# VirtIO Memory Balloon device
+
+####### BSDRP section #####
+
 # MMC/SD
 device		mmc     # MMC/SD bus
 device		mmcsd       # MMC/SD memory card
 device		sdhci       # Generic PCI SD Host Controller
 
-####### BSDRP section #####
-
-# BSDRP added NICs.
+# added NICs
 device      cxgb    # Chelsio T3 10 Gigabit Ethernet adapter driver
 device      cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
 device      my      # Myson Technology Ethernet PCI driver
