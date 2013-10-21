@@ -89,7 +89,6 @@ function set_API_enums() {
             ChipsetType_PIIX3 = 1;
             ChipsetType_ICH9 = 2;
 			
-			
 			MachineState_Null = 0;
 			MachineState_PoweredOff = 1;
 			MachineState_Saved = 2;
@@ -131,6 +130,7 @@ function set_API_enums() {
             NetworkAttachmentType_Internal = 3;
             NetworkAttachmentType_HostOnly = 4;
             NetworkAttachmentType_Generic = 5;
+            NetworkAttachmentType_NATNetwork = 6;
             
 			NetworkAdapterPromiscModePolicy_Deny = 1;
 			NetworkAdapterPromiscModePolicy_AllowNetwork = 2;
@@ -526,7 +526,7 @@ Function modify_nic () {
 	if ($VIRTIO) {
 		$ADAPTER.adapterType=$NetworkAdapterType_Virtio
 	} else {
-		$ADAPTER.adapterType=$NetworkAdapterType_I82540E
+		$ADAPTER.adapterType=$NetworkAdapterType_I82540EM
     }
 	
     $ADAPTER.MACAddress=$MAC
