@@ -37,3 +37,7 @@ polling_enable="NO"
 
 # Enable RFC1323 extensions
 tcp_extensions="YES"
+
+# Fix GRE interface not in RUNNING state bug
+# http://www.freebsd.org/cgi/query-pr.cgi?pr=kern/164475
+fixgre_enable="YES"

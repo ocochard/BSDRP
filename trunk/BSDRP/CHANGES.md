@@ -25,6 +25,7 @@
 * "config save" still save the configuration even if configuration archive failed
 * Quagga rc script create /var/log/quagga dir
 * fix default syslogd flags that prevent logging to remote machines
+* Dirty fix regarding GRE interface not in RUNNING state (kern/164475)
 
 ## Removed
 * rvi script: CVS is not is FreeBSD base anymore
