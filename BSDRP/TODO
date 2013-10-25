@@ -30,6 +30,7 @@
 * Quagga rc script: limit all quagga process message when quagga is disabled
 * Need to publish an OVF (Open Virtualization Format) tar file
 * Re-write script that read/write rc.conf or rc.conf.local with sysrc(8)
+* kern/181699 : patch to include
 
 ## Central configuration management / Provisionning #
 
