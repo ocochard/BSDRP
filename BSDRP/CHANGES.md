@@ -1,4 +1,4 @@
-# Release 1.5 (2013/10/26)
+# Release 1.5 (2013/10/27)
 
 ## New features
 * Upgraded to 9.2-RELEASE
