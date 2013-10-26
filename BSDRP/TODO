@@ -30,7 +30,7 @@
 * Quagga rc script: limit all quagga process message when quagga is disabled
 * Need to publish an OVF (Open Virtualization Format) tar file
 * Re-write script that read/write rc.conf or rc.conf.local with sysrc(8)
-* kern/181699 : patch to include
+* A netgraph documentation "for dummies" like this: http://nexus.org.ua/weblog/message/406/
 
 ## Central configuration management / Provisionning #
 
@@ -79,6 +79,3 @@ esac
 ## nanobsd patches to study for inclusion # 
 
 http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html
-
-========== TO DO before next release =======
-1. Need to validate the new netgraph netflow rc script 
