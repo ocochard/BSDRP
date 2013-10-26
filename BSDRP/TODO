@@ -82,5 +82,3 @@ http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html
 
 ========== TO DO before next release =======
 1. Need to validate the new netgraph netflow rc script 
-2. Need to check openvpn
-3. Need to fix the cp -Rp chflags error message (chflags("dest-dir",0x800)  ERR#45 'Operation not supported')
