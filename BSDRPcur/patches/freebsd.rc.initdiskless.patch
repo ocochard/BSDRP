@@ -1,0 +1,13 @@
+Index: etc/rc.initdiskless
+===================================================================
+--- etc/rc.initdiskless	(revision 255918)
++++ etc/rc.initdiskless	(working copy)
+@@ -354,7 +354,7 @@
+ 	subdir=${j##*/}
+ 	if [ -d $j -a ! -f $j.cpio.gz  ]; then
+ 	    create_md $subdir
+-	    cp -Rp $j/ /$subdir
++	    cp -Rp $j/ /$subdir > /dev/null 2>&1
+ 	fi
+     done
+     for j in /conf/$i/*.cpio.gz ; do

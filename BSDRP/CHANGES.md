@@ -1,7 +1,11 @@
+# Release 1.51 (not released)
+* Upgraded to FreeBSD 10.0-BETA2
+
+-----------------------------------------------------
 # Release 1.5 (2013/10/27)
 
 ## New features
-* Upgraded to 9.2-RELEASE
+* Upgraded to FreeBSD 9.2-RELEASE
 * Extras patches:
 	* Autotuning mbuf patch
 	http://lists.freebsd.org/pipermail/freebsd-stable/2013-July/074129.html
@@ -13,7 +17,7 @@
 * Add stf — 6to4 tunnel interface module
 * Added hwpmc modules for spoting performance issue
     * Example: kldload hwpmc; pmcstat -T -S instructions
-* New tool:
+* New tools:
     * cryptotest for measuring hardware-assisted crypto performance
       Example: kldload aesni; cryptotest -z 2048
     * cxgbtool/cxgbetool tools for configuring embedded firewall in Chelsio NIC
@@ -40,6 +44,39 @@
 ## Misc for developers/testers
 * bisection-gen.sh: Permit to generate a list of BSDRP image based on a list of FreeBSD svn-revision number
 * bench-lab.sh: Permit to automatize multiple upgrade image + configuration sets + bench tests 
+
+## Installed packages
+* NetPIPE-3.7.1
+* bird-1.3.11_2
+* bird6-1.3.11_1
+* bsnmp-regex-0.6
+* bsnmp-ucd-0.4.0
+* dlmalloc-2.8.6
+* easy-rsa-2.2.0.m
+* freevrrpd-1.1
+* iperf-2.0.5
+* ipmitool-1.8.12_4
+* ipsec-tools-0.8.0_3
+* isc-dhcp42-relay-4.2.5
+* isc-dhcp42-server-4.2.5
+* libevent-1.4.14b_2
+* libgcrypt-1.5.3
+* libgpg-error-1.12
+* lzo2-2.06_1
+* mcast-tools-20061214_1
+* mpd-5.7
+* mrouted-3.9.6_1
+* openldap-client-2.4.36
+* openvpn-2.3.2
+* pftop-0.7_2
+* pimdd-0.2.1.0_1
+* pkg-1.1.4_8
+* quagga-re-0.99.17.12_1
+* ssmtp-2.64
+* sudo-1.8.8
+* tayga-0.9.2
+* tmux-1.8_1
+* ucarp-1.5.2_2
 
 -----------------------------------------------------
 # Release 1.4 (2013/03/21)

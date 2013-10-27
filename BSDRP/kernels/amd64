@@ -2,19 +2,19 @@ cpu		HAMMER
 ident		BSDRP-AMD64
 
 #makeoptions	DEBUG=-g		# Build kernel with gdb(1) debug symbols
-makeoptions		WITH_CTF=1	# Run ctfconvert(1) for DTrace support
+
 options 	SCHED_ULE		# ULE scheduler
 options 	PREEMPTION		# Enable kernel thread preemption
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
 options 	TCP_OFFLOAD		# TCP offload
-options 	SCTP			# Stream Control Transmission Protocol
+#options 	SCTP			# Stream Control Transmission Protocol
 options 	FFS			# Berkeley Fast Filesystem
-options 	SOFTUPDATES		# Enable FFS soft updates support
-options 	UFS_ACL			# Support for access control lists
-options 	UFS_DIRHASH		# Improve performance on big directories
-options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
-#options    QUOTA               # Enable disk quotas for UFS
+#options 	SOFTUPDATES		# Enable FFS soft updates support
+#options 	UFS_ACL			# Support for access control lists
+#options 	UFS_DIRHASH		# Improve performance on big directories
+#options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
+#options 	QUOTA			# Enable disk quotas for UFS
 #options 	MD_ROOT			# MD is a potential root device
 #options 	NFSCL			# New Network Filesystem Client
 #options 	NFSD			# New Network Filesystem Server
@@ -43,13 +43,18 @@ options 	PRINTF_BUFR_SIZE=128	# Prevent printf output being interspersed.
 #options 	KBD_INSTALL_CDEV	# install a CDEV entry in /dev
 options 	HWPMC_HOOKS		# Necessary kernel hooks for hwpmc(4)
 #options 	AUDIT			# Security event auditing
+#options	CAPABILITY_MODE		# Capsicum capability mode
+#options	CAPABILITIES		# Capsicum capabilities
+options		PROCDESC	# Support for process descriptors
 #options 	MAC			# TrustedBSD MAC Framework
-options 	KDTRACE_FRAME		# Ensure frames are compiled in
-options 	KDTRACE_HOOKS		# Kernel DTrace hooks
+#options 	KDTRACE_FRAME		# Ensure frames are compiled in
+#options 	KDTRACE_HOOKS		# Kernel DTrace hooks
+#options	DDB_CTF			# Kernel ELF linker loads CTF data
 options 	INCLUDE_CONFIG_FILE     # Include this file in kernel
-options 	KDB			# Kernel debugger related code
-options 	KDB_TRACE		# Print a stack trace for a panic
-options 	DDB_CTF			# kernel ELF linker loads CTF data
+
+# Debugging support.  Always need this:
+options 	KDB			# Enable kernel debugger support.
+options 	KDB_TRACE		# Print a stack trace for a panic.
 
 # Make an SMP-capable kernel by default
 options 	SMP			# Symmetric MultiProcessor Kernel
@@ -67,7 +72,6 @@ device		pci
 # ATA controllers
 device		ahci		# AHCI-compatible SATA controllers
 device		ata		# Legacy ATA/SATA controllers
-options 	ATA_CAM		# Handle legacy controllers with CAM
 options 	ATA_STATIC_ID	# Static device numbering
 device		mvs		# Marvell 88SX50XX/88SX60XX/88SX70XX/SoC SATA
 device		siis		# SiliconImage SiI3124/SiI3132/SiI3531 SATA
@@ -164,14 +168,13 @@ device		uart		# Generic UART driver
 #device		ppc
 #device		ppbus		# Parallel port bus (required)
 #device		lpt		# Printer
-#device		plip		# TCP/IP over parallel
 #device		ppi		# Parallel port interface device
 #device		vpo		# Requires scbus and da
 
 device		puc		# Multi I/O cards and multi-channel UARTs
 
 # PCI Ethernet NICs.
-device		bxe		# Broadcom BCM57710/BCM57711/BCM57711E 10Gb Ethernet
+device		bxe		# Broadcom NetXtreme II BCM5771X/BCM578XX 10GbE
 device		de		# DEC/Intel DC21x4x (``Tulip'')
 device		em		# Intel PRO/1000 Gigabit Ethernet Family
 device		igb		# Intel PRO/1000 PCIE Server Gigabit Family
@@ -239,10 +242,12 @@ device		xl		# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 #device		wlan_tkip	# 802.11 TKIP support
 #device		wlan_amrr	# AMRR transmit rate control algorithm
 #device		an		# Aironet 4500/4800 802.11 wireless NICs.
-#device		ath		# Atheros NIC's
+#device		ath		# Atheros NICs
 #device		ath_pci		# Atheros pci/cardbus glue
 #device		ath_hal		# pci/cardbus chip support
 #options 	AH_SUPPORT_AR5416	# enable AR5416 tx/rx descriptors
+#options 	AH_AR5416_INTERRUPT_MITIGATION	# AR5416 interrupt mitigation
+#options 	ATH_ENABLE_11N	# Enable 802.11n support for AR5416 and later
 #device		ath_rate_sample	# SampleRate tx rate control for ath
 #device		bwi		# Broadcom BCM430x/BCM431x wireless NICs.
 #device		bwn		# Broadcom BCM43xx wireless NICs.
@@ -258,12 +263,11 @@ device		xl		# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 # Pseudo devices.
 device		loop		# Network loopback
 device		random		# Entropy device
-options 	PADLOCK_RNG	# VIA Padlock RNG
-options 	RDRAND_RNG	# Intel Bull Mountain RNG
+device		padlock_rng	# VIA Padlock RNG
+device		rdrand_rng	# Intel Bull Mountain RNG
 device		ether		# Ethernet support
 device		vlan		# 802.1Q VLAN support
 device		tun		# Packet tunnel.
-device		pty		# BSD-style compatibility pseudo ttys
 device		md		# Memory "disks"
 device		gif		# IPv6 and IPv4 tunneling
 device		faith		# IPv6-to-IPv4 relaying (translation)
@@ -275,45 +279,14 @@ device		firmware	# firmware assist module
 device		bpf		# Berkeley packet filter
 
 # USB support
-#options 	USB_DEBUG	# enable debug msgs
+options 	USB_DEBUG	# enable debug msgs
 device		uhci		# UHCI PCI->USB interface
 device		ohci		# OHCI PCI->USB interface
 device		ehci		# EHCI PCI->USB interface (USB 2.0)
 device		xhci		# XHCI PCI->USB interface (USB 3.0)
 device		usb		# USB Bus (required)
-#device		udbp		# USB Double Bulk Pipe devices (needs netgraph)
-device		uhid		# "Human Interface Devices"
 device		ukbd		# Keyboard
-#device		ulpt		# Printer
 device		umass		# Disks/Mass storage - Requires scbus and da
-#device		ums		# Mouse
-#device		urio		# Diamond Rio 500 MP3 player
-# USB Serial devices
-#device		u3g		# USB-based 3G modems (Option, Huawei, Sierra)
-device		uark		# Technologies ARK3116 based serial adapters
-device		ubsa		# Belkin F5U103 and compatible serial adapters
-device		uftdi		# For FTDI usb serial adapters
-device		uipaq		# Some WinCE based devices
-device		uplcom		# Prolific PL-2303 serial adapters
-device		uslcom		# SI Labs CP2101/CP2102 serial adapters
-#device		uvisor		# Visor and Palm devices
-#device		uvscom		# USB serial support for DDI pocket's PHS
-# USB Ethernet, requires miibus
-#device		aue		# ADMtek USB Ethernet
-#device		axe		# ASIX Electronics USB Ethernet
-#device		cdce		# Generic USB over Ethernet
-#device		cue		# CATC USB Ethernet
-#device		kue		# Kawasaki LSI USB Ethernet
-#device		rue		# RealTek RTL8150 USB Ethernet
-#device		udav		# Davicom DM9601E USB
-# USB Wireless
-#device		rum		# Ralink Technology RT2501USB wireless NICs
-#device		run		# Ralink Technology RT2700/RT2800/RT3000 NICs.
-#device		uath		# Atheros AR5523 wireless NICs
-#device		upgt		# Conexant/Intersil PrismGT wireless NICs.
-#device		ural		# Ralink Technology RT2500USB wireless NICs
-#device		urtw		# Realtek RTL8187B/L wireless NICs
-#device		zyd		# ZyDAS zd1211/zd1211b wireless NICs
 
 # Sound support
 #device		sound		# Generic sound driver (required)
@@ -323,30 +296,42 @@ device		uslcom		# SI Labs CP2101/CP2102 serial adapters
 #device		snd_es137x	# Ensoniq AudioPCI ES137x
 #device		snd_hda		# Intel High Definition Audio
 #device		snd_ich		# Intel, NVidia and other ICH AC'97 Audio
-#device		snd_uaudio	# USB Audio
 #device		snd_via8233	# VIA VT8233x Audio
+
+# MMC/SD
+device		mmc		# MMC/SD bus
+device		mmcsd		# MMC/SD memory card
+device		sdhci		# Generic PCI SD Host Controller
 
 # VirtIO support
 device		virtio		# Generic VirtIO bus (required)
-device		virtio_pci	# VirtIO PCI Interface
+device		virtio_pci	# VirtIO PCI device
 device		vtnet		# VirtIO Ethernet device
 device		virtio_blk	# VirtIO Block device
 device		virtio_scsi	# VirtIO SCSI device
 device		virtio_balloon	# VirtIO Memory Balloon device
 
+# HyperV drivers
+device		hyperv		# HyperV drivers 
+
+# Xen HVM Guest Optimizations
+# NOTE: XENHVM depends on xenpci.  They must be added or removed together.
+options 	XENHVM		# Xen HVM kernel infrastructure
+device		xenpci		# Xen HVM Hypervisor services driver
+
+# VMware support
+device		vmx			# VMware VMXNET3 Ethernet
+
+
 ####### BSDRP section #####
 
-# MMC/SD
-device      mmc     # MMC/SD bus
-device      mmcsd       # MMC/SD memory card
-device      sdhci       # Generic PCI SD Host Controller
-
-# NICs
+# BSDRP added NICs.
 device      cxgb    # Chelsio T3 10 Gigabit Ethernet adapter driver
 device      cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
 device      my      # Myson Technology Ethernet PCI driver
 device      mxge    # Myricom Myri10GE 10 Gigabit Ethernet adapter driver
 device      nxge    # Neterion Xframe 10GbE Server/Storage adapter driver
+device		qlxge	# QLogic 8100 Series 10 Gigabit Ethernet
 
 # altq(9). Enable the base part of the hooks with the ALTQ option.
 # Individual disciplines must be built into the base system and can not be
@@ -384,10 +369,6 @@ options     DEVICE_POLLING
 
 # Add multiple route table support
 options     ROUTETABLES=16
-
-#Enable the use of the IP forward feature
-#Disabled because Reduce PPS
-#options        IPFIREWALL_FORWARD
 
 # Encapsulating Interface
 device enc

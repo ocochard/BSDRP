@@ -4,19 +4,20 @@ cpu		I686_CPU
 ident	BSDRP-I386
 
 #makeoptions DEBUG=-g        # Build kernel with gdb(1) debug symbols
-makeoptions     WITH_CTF=1  # Run ctfconvert(1) for DTrace support
+#makeoptions WITH_CTF=1      # Run ctfconvert(1) for DTrace support
+
 options 	SCHED_ULE		# ULE scheduler
 options 	PREEMPTION		# Enable kernel thread preemption
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
 options 	TCP_OFFLOAD		# TCP offload
-options 	SCTP			# Stream Control Transmission Protocol
+#options 	SCTP			# Stream Control Transmission Protocol
 options 	FFS			# Berkeley Fast Filesystem
-options 	SOFTUPDATES		# Enable FFS soft updates support
-options 	UFS_ACL			# Support for access control lists
-options 	UFS_DIRHASH		# Improve performance on big directories
-options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
-#options    QUOTA               # Enable disk quotas for UFS
+#options 	SOFTUPDATES		# Enable FFS soft updates support
+#options 	UFS_ACL			# Support for access control lists
+#options 	UFS_DIRHASH		# Improve performance on big directories
+#options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
+#options 	QUOTA			# Enable disk quotas for UFS
 #options 	MD_ROOT			# MD is a potential root device
 #options 	NFSCL			# New Network Filesystem Client
 #options 	NFSD			# New Network Filesystem Server
@@ -44,12 +45,17 @@ options 	PRINTF_BUFR_SIZE=128	# Prevent printf output being interspersed.
 options 	KBD_INSTALL_CDEV	# install a CDEV entry in /dev
 options 	HWPMC_HOOKS		# Necessary kernel hooks for hwpmc(4)
 #options 	AUDIT			# Security event auditing
+#options	CAPABILITY_MODE     # Capsicum capability mode
+#options	CAPABILITIES        # Capsicum capabilities
+options     PROCDESC    # Support for process descriptors
 #options	MAC         # TrustedBSD MAC Framework
-options		KDTRACE_HOOKS       # Kernel DTrace hooks
+#options	KDTRACE_HOOKS       # Kernel DTrace hooks
+#options	DDB_CTF         # Kernel ELF linker loads CTF data
 options     INCLUDE_CONFIG_FILE     # Include this file in kernel
-options     KDB         # Kernel debugger related code
-options     KDB_TRACE       # Print a stack trace for a panic
-options     DDB_CTF         # kernel ELF linker loads CTF data
+
+# Debugging support.  Always need this:
+options 	KDB			# Enable kernel debugger support.
+options 	KDB_TRACE		# Print a stack trace for a panic.
 
 # To make an SMP kernel, the next two lines are needed
 options 	SMP			# Symmetric MultiProcessor Kernel
@@ -69,7 +75,6 @@ device		pci
 # ATA controllers
 device		ahci		# AHCI-compatible SATA controllers
 device		ata		# Legacy ATA/SATA controllers
-options 	ATA_CAM		# Handle legacy controllers with CAM
 options 	ATA_STATIC_ID	# Static device numbering
 device		mvs		# Marvell 88SX50XX/88SX60XX/88SX70XX/SoC SATA
 device		siis		# SiliconImage SiI3124/SiI3132/SiI3531 SATA
@@ -87,6 +92,7 @@ device		hptiop		# Highpoint RocketRaid 3xxx series
 device		isp		# Qlogic family
 #device		ispfw		# Firmware for QLogic HBAs- normally a module
 device		mpt		# LSI-Logic MPT-Fusion
+device		mps		# LSI-Logic MPT-Fusion 2
 #device		ncr		# NCR/Symbios Logic
 device		sym		# NCR/Symbios Logic (newer chipsets + those of `ncr')
 device		trm		# Tekram DC395U/UW/F DC315U adapters
@@ -110,7 +116,7 @@ device		da		# Direct Access (disks)
 #device		cd		# CD
 device		pass		# Passthrough device (direct ATA/SCSI access)
 device		ses		# Enclosure Services (SES and SAF-TE)
-#device 	ctl     # CAM Target Layer
+#device		ctl		# CAM Target Layer
 
 # RAID controllers interfaced to the SCSI subsystem
 device		amr		# AMI MegaRAID
@@ -174,14 +180,13 @@ device		uart		# Generic UART driver
 #device		ppc
 #device		ppbus       # Parallel port bus (required)
 #device		lpt     # Printer
-#device		plip        # TCP/IP over parallel
 #device		ppi     # Parallel port interface device
 #device     vpo     # Requires scbus and da
 
 device		puc		# Multi I/O cards and multi-channel UARTs
 
 # PCI Ethernet NICs.
-device		bxe		# Broadcom BCM57710/BCM57711/BCM57711E 10Gb Ethernet
+device		bxe		# Broadcom NetXtreme II BCM5771X/BCM578XX 10GbE
 device		de		# DEC/Intel DC21x4x (``Tulip'')
 device		em		# Intel PRO/1000 Gigabit Ethernet Family
 device		igb		# Intel PRO/1000 PCIE Server Gigabit Family
@@ -244,12 +249,11 @@ device		xe		# Xircom pccard Ethernet
 # Pseudo devices.
 device		loop		# Network loopback
 device		random		# Entropy device
-options 	PADLOCK_RNG	# VIA Padlock RNG
-options 	RDRAND_RNG	# Intel Bull Mountain RNG
+device		padlock_rng	# VIA Padlock RNG
+device		rdrand_rng	# Intel Bull Mountain RNG
 device		ether		# Ethernet support
 device		vlan		# 802.1Q VLAN support
 device		tun		# Packet tunnel.
-device		pty		# BSD-style compatibility pseudo ttys
 device		md		# Memory "disks"
 device		gif		# IPv6 and IPv4 tunneling
 device		faith		# IPv6-to-IPv4 relaying (translation)
@@ -280,22 +284,30 @@ device		umass		# Disks/Mass storage - Requires scbus and da
 #device      snd_ich     # Intel, NVidia and other ICH AC'97 Audio
 #device      snd_via8233 # VIA VT8233x Audio
 
+# MMC/SD
+device		mmc		# MMC/SD bus
+device		mmcsd		# MMC/SD memory card
+device		sdhci		# Generic PCI SD Host Controller
+
 # VirtIO support
 device		virtio		# Generic VirtIO bus (required)
-device		virtio_pci	# VirtIO PCI Interface
+device		virtio_pci	# VirtIO PCI device
 device		vtnet		# VirtIO Ethernet device
 device		virtio_blk	# VirtIO Block device
 device		virtio_scsi	# VirtIO SCSI device
 device		virtio_balloon	# VirtIO Memory Balloon device
 
+# Xen HVM Guest Optimizations
+# NOTE: XENHVM depends on xenpci.  They must be added or removed together.
+options 	XENHVM		# Xen HVM kernel infrastructure
+device		xenpci		# Xen HVM Hypervisor services driver
+
+# VMware support
+device		vmx		# VMware VMXNET3 Ethernet
+
 ####### BSDRP section #####
 
-# MMC/SD
-device		mmc     # MMC/SD bus
-device		mmcsd       # MMC/SD memory card
-device		sdhci       # Generic PCI SD Host Controller
-
-# added NICs
+# BSDRP added NICs.
 device      cxgb    # Chelsio T3 10 Gigabit Ethernet adapter driver
 device      cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
 device      my      # Myson Technology Ethernet PCI driver
@@ -343,10 +355,6 @@ options		DEVICE_POLLING
 
 # Add multiple route table support
 options		ROUTETABLES=16
-
-#Enable the use of the IP forward feature
-#Reduce PPS
-#options     IPFIREWALL_FORWARD
 
 # Encapsulating Interface
 device enc
