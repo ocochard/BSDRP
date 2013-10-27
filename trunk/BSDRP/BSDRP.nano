@@ -44,17 +44,9 @@ WITHOUT_ASSERT_DEBUG=
 WITHOUT_ATM=
 WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
-WITHOUT_BIND=
-WITHOUT_BIND_DNSSEC=
-WITHOUT_BIND_ETC=
-WITHOUT_BIND_LIBS_LWRES=
-WITHOUT_BIND_MTREE=
-WITHOUT_BIND_NAMED=
-WITHOUT_BIND_UTILS=
 WITHOUT_BLUETOOTH=
 WITHOUT_CALENDAR=
 WITHOUT_CAPSICUM=
-WITHOUT_CLANG=
 WITHOUT_CTM=
 WITHOUT_CVS=
 WITHOUT_DICT=
@@ -64,9 +56,11 @@ WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
 WITHOUT_GCOV=
 WITHOUT_GDB=
+WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
 WITHOUT_HTML=
+WITHOUT_ICONV=
 WITHOUT_IPFILTER=
 WITHOUT_IPX=
 WITHOUT_IPX_SUPPORT=
@@ -89,16 +83,19 @@ WITHOUT_PORTSNAP=
 WITHOUT_PROFILE=
 WITHOUT_QUOTAS=
 WITHOUT_RCMDS=
+WITHOUT_RCS=
 WITHOUT_RESCUE=
 WITHOUT_ROUTED=
 WITHOUT_SENDMAIL=
 WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
 WITHOUT_SYSINSTALL=
+WITHOUT_UNBOUND=
 WITHOUT_WIRELESS=
 WITHOUT_WIRELESS_SUPPORT=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
 WITHOUT_ZFS=
+WITH_GCC=
 WITH_IDEA=
 '
 
@@ -169,43 +166,43 @@ PPLEVEL=3
 
 # Add netblast/netrecieve and netmap tools
 add_netrate () {
-	TOOLS_LIST="cxgbetool cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
-	mkdir -p ${NANO_WORLDDIR}/dev
-	mount -t devfs devfs ${NANO_WORLDDIR}/dev
-	mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
-	mkdir -p ${NANO_WORLDDIR}/usr/workdir
-	for TOOL in ${TOOLS_LIST}; do
-		# netmap is not available on sparc64
-		if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
-            		continue
-        	fi	
-		export TOOL
-		chroot ${NANO_WORLDDIR} /bin/sh -exc 'make clean -C /usr/src/tools/tools/${TOOL}'
-		chroot ${NANO_WORLDDIR} /bin/sh -exc \
-			'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-			MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-			UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
-			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
-		# each Makefile have a different variable names
-		for MAKE_CMD in PROG PROGS ALL; do
-			for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
-				if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
-					mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
-				else
-					mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
-				fi
-				if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
-					if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
-						echo "WARNING: Can't delete $TOOL/$file.o"
-					fi
-				fi
-			done # for all files
-		done # for MAKE_CMD
-	done # for TOOL
-	rm -rf ${NANO_WORLDDIR}/usr/workdir
-	umount ${NANO_WORLDDIR}/usr/src
-	umount ${NANO_WORLDDIR}/dev
+    TOOLS_LIST="cxgbetool cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
+    mkdir -p ${NANO_WORLDDIR}/dev
+    mount -t devfs devfs ${NANO_WORLDDIR}/dev
+    mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
+    mkdir -p ${NANO_WORLDDIR}/usr/workdir
+    for TOOL in ${TOOLS_LIST}; do
+        # netmap is not available on sparc64
+        if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
+                    continue
+            fi
+        export TOOL
+        chroot ${NANO_WORLDDIR} /bin/sh -exc 'make clean -C /usr/src/tools/tools/${TOOL}'
+        chroot ${NANO_WORLDDIR} /bin/sh -exc \
+            'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+            MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+            UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+            UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+            make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
+        # each Makefile have a different variable names
+        for MAKE_CMD in PROG PROGS ALL; do
+            for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
+                if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
+                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
+                else
+                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
+                fi
+                if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
+                    if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
+                        echo "WARNING: Can't delete $TOOL/$file.o"
+                    fi
+                fi
+            done # for all files
+        done # for MAKE_CMD
+    done # for TOOL
+    rm -rf ${NANO_WORLDDIR}/usr/workdir
+    umount ${NANO_WORLDDIR}/usr/src
+    umount ${NANO_WORLDDIR}/dev
 }
 
 # Add Quagga BGP route injector
@@ -250,46 +247,46 @@ add_port () {
 					\${NANO_WORLDDIR}/usr/ports/packages
 				# Run ldconfig before
 				chroot \${NANO_WORLDDIR} /bin/sh -exc '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
-               			# Start the build	
+				# Start the build
 				chroot \${NANO_WORLDDIR} /bin/sh -exc \
                		'env ASSUME_ALWAYS_YES=true PACKAGESITE=file:///usr/ports/packages pkg add /usr/ports/packages/All/${PKG_NAME}.txz'
 				umount \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports
 			}
-       			customize_cmd add_pkg_${port}
-       			"
+       		customize_cmd add_pkg_${port}
+       		"
 		fi
 	else
 	# No pkg file: Generate add_port_NAME function
        	eval "
        	add_port_${port} () {
 		#Need to create ${NANO_OBJ}/ports in this add_port_${port} function
-		[ -d \${NANO_OBJ}/ports ] || 
+		[ -d \${NANO_OBJ}/ports ] ||
 		  mkdir -p \${NANO_OBJ}/ports/packages
-           	mount -t nullfs \${NANO_SRC} \${NANO_WORLDDIR}/usr/src
+       		mount -t nullfs \${NANO_SRC} \${NANO_WORLDDIR}/usr/src
 		mkdir -p \${NANO_WORLDDIR}/usr/ports
-           	mount -t nullfs \${PORTS_SRC} \${NANO_WORLDDIR}/usr/ports
+       		mount -t nullfs \${PORTS_SRC} \${NANO_WORLDDIR}/usr/ports
 		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
 		mount -t nullfs \${NANO_OBJ}/ports/packages \
 		  \${NANO_WORLDDIR}/usr/ports/packages
-              	mkdir -p \${NANO_WORLDDIR}/dev
-              	mount -t devfs devfs \${NANO_WORLDDIR}/dev
-           	mkdir -p \${NANO_WORLDDIR}/usr/pobj
-               	mkdir -p \${NANO_WORLDDIR}/usr/workdir
-               	cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
+       		mkdir -p \${NANO_WORLDDIR}/dev
+       		mount -t devfs devfs \${NANO_WORLDDIR}/dev
+       		mkdir -p \${NANO_WORLDDIR}/usr/pobj
+       		mkdir -p \${NANO_WORLDDIR}/usr/workdir
+       		cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
 		# If a port have NO_PACKAGE, comment-it
-                if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
+               	if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
                		mv \${NANO_WORLDDIR}/usr/ports/$1/Makefile \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd
-                        sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
-                fi
+               		sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
+               	fi
 		# Run ldconfig before
 		chroot \${NANO_WORLDDIR} /bin/sh -exc '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
-               	# Start the build	
-		chroot \${NANO_WORLDDIR} /bin/sh -exc \
-                  'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+		# Start the build
+       		chroot \${NANO_WORLDDIR} /bin/sh -exc \
+               	  'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-	  	  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   install package BATCH=yes -DWITH_PKGNG -DWITHOUT_X11 \
@@ -319,6 +316,7 @@ add_port () {
 add_port "ports-mgmt/pkg"
 
 # high-performance ipfw netmap
+# Disabled because net/pfil API changes
 #add_port "net/ipfw-user"
 
 # Then we need to install net-snmp without perl modules
@@ -389,7 +387,7 @@ add_port "net/mpd5"
 # Add openvpn
 add_port "security/easy-rsa"
 add_port "archivers/lzo2"
-add_port "security/openvpn" "-DWITHOUT_EASYRSA"
+add_port "security/openvpn"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netpipe" 
@@ -416,7 +414,7 @@ cleanup_ports () {
 		# diff packages.info.first packages.info
 		set +e
         chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'env ASSUME_ALWAYS_YES=true pkg delete -g auto* m4* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* p5-gettext* libsigsegv* pkgconf*'
+        'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* m4* gcc-* gmake* gmp-* libtool* gawk* perl* gettext* bison* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
 		# usr/local/lib/perl5 : Dirty hack
 		#   pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
 		#   pkg didn't delete all MAN1 page related to perl too
@@ -456,12 +454,8 @@ bsdrp_custom () {
 	# Add /etc/rc.conf.misc into the /etc/default/rc.conf
 	sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
 
-	# Set Quagga permission
-	chroot ${NANO_WORLDDIR} /bin/sh -exc \
-	'chown -R quagga:quagga /usr/local/etc/quagga'
-
-	# configure bsnmp
-	cat <<EOF >>${NANO_WORLDDIR}/etc/snmpd.config
+    # configure bsnmp
+    cat <<EOF >>${NANO_WORLDDIR}/etc/snmpd.config
 
 #
 # bsnmp-ucd (8)
@@ -476,6 +470,11 @@ begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"
 #           regexConfig = "/usr/local/etc/bsnmp-regex.conf"
 #           regexSocket = "/var/run/bsnmp-regex.sock"
 EOF
+
+	# Set Quagga permission
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+	'chown -R quagga:quagga /usr/local/etc/quagga'
+
 	# Compress the kernel (save 3Mb)
 	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
 		if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
@@ -485,7 +484,9 @@ EOF
 	# Remove some of the folders (without share/snmp)
 	# usr/include : 15MB
 	FOLDERS_TO_REMOVE='
+usr/libexec/bsdinstall
 usr/local/include
+usr/local/man
 usr/local/info
 usr/local/share/doc/gettext
 usr/local/share/doc/libasprintf
@@ -494,8 +495,10 @@ usr/local/share/doc/snmp
 usr/local/share/examples/quagga
 usr/local/share/examples/ipsec-tools
 usr/include
-usr/share/me
+usr/share/examples
 usr/share/info
+usr/share/me
+usr/share/pc-sysinstall
 usr/share/openssl
 usr/libdata/lint
 usr/libdata/ldscripts
@@ -513,6 +516,7 @@ usr/libdata/ldscripts
 
 	# Remove some files
     FILES_TO_REMOVE='
+usr/sbin/bhyve
 usr/sbin/ctladm
 usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample
@@ -671,7 +675,6 @@ bsdrp_console_serial () {
     echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
 
 	# Don't need to customize /boot/loader.conf file because /boot.config is allready configured
-	# http://lists.freebsd.org/pipermail/freebsd-stable/2013-June/073679.html
 	#echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
 	#echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
 	#echo 'console="comconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
