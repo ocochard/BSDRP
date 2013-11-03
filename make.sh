@@ -530,17 +530,7 @@ echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${PROJECT}.nano
 echo "# Parallel Make" >> /tmp/${PROJECT}.nano
 # Special ARCH commands
 # Note for modules names: They are relative to /usr/src/sys/modules
-# Warning: Need to use devel/fmake for building previous world from a 10.X if -j is used
-# fmake -j doesn't work for the installworld only (works for for buildworld & buildkernel)
-# if host == 10.X and target < 10.X then use fmake
 echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\"" >> /tmp/${PROJECT}.nano
-if uname -r | grep -q 10; then
-	if ! [ ${PROJECT} = "BSDRPcur" ]; then
-    	which -s fmake || die "You need fmake installed on the host: devel/fmake"
-		echo "NANO_PMAKE=\"/usr/local/bin/fmake\"" >> /tmp/${PROJECT}.nano
-		#echo "NANO_PMAKE=\"make\"" >> /tmp/${PROJECT}.nano
-	fi
-fi
 eval echo NANO_MODULES=\\\"\${NANO_MODULES_${NANO_KERNEL}}\\\" >> /tmp/${PROJECT}.nano
 case ${NANO_KERNEL} in
 	"cambria") 
