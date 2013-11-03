@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Olivier Cochard-Labbé
+ * Copyright (c) 2011 Olivier Cochard-Labbé (olivier@cochard.me)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,7 +68,7 @@ main(int argc, char *argv[])
 		/* Do not generate invalid networks */
 		if ( a > 223 ) {
 			fprintf(stderr, "Maximum number of valid networks reached: %lu\n", i);
-		exit(-1);
+			exit(-1);
 		}
 		b = 0;
 		while ( b < 255 ) {

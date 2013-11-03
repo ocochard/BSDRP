@@ -18,7 +18,7 @@
 static void
 usage(void)
 {
-    fprintf(stderr,"bsdrp-pktgen <host> <port>\n");
+	fprintf(stderr,"bsdrp-pktgen <host> <port>\n");
 	exit(-1);
 }
 
@@ -48,49 +48,51 @@ main(int argc, char *argv[])
 	/* convert the string "port" to unsigned_long */
 	port = strtoul(argv[2], &dummy, 10);
 	/* now we can check the boundary of the port number */
-    if (port < 1 || port > 65535 || *dummy != '\0') {
-        fprintf(stderr, "Invalid port number: %s\n", argv[2]);
-        usage();
-        /*NOTREACHED*/
-    }
+	if (port < 1 || port > 65535 || *dummy != '\0') {
+		fprintf(stderr, "Invalid port number: %s\n", argv[2]);
+		usage();
+		/*NOTREACHED*/
+	}
 	/* The user give something as destination (ipv4, ipv6, hostname) */
 	/* We need to call getaddrinfo that will looks for information about (hints) */
 	/* argv[1]: destination server/ip */
 	/* argv[2]: destination port */
 	/* If successfull, res0 is a linked list of addrinfo structures */
-    error = getaddrinfo(argv[1], argv[2], &hints, &res0);
-    if (error) {
-        perror(gai_strerror(error));
-        return (-1);
-        /*NOTREACHED*/
-    }
+	error = getaddrinfo(argv[1], argv[2], &hints, &res0);
+	if (error) {
+	        perror(gai_strerror(error));
+	        return (-1);
+	        /*NOTREACHED*/
+	}
 
 	/* We will try all results given in the res0 list one by one */
-    s = -1;
-    for (res = res0; res; res = res->ai_next) {
-        s = socket(res->ai_family, res->ai_socktype, 0);
-        if (s < 0) {
-            cause = "socket";
-            continue;
-        }
+	s = -1;
+	for (res = res0; res; res = res->ai_next) {
+		s = socket(res->ai_family, res->ai_socktype, 0);
+		/* socket failed */
+		if (s < 0) {
+			cause = "socket";
+			continue;
+		}
 
-        if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
-            cause = "connect";
-            close(s);
-            s = -1;
-            continue;
-        }
+		/* Try a connection to the socket */
+		if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
+			cause = "connect";
+			close(s);
+			s = -1;
+			continue;
+		}
 
-        break;  /* okay we got one */
-    }
-    if (s < 0) {
-        perror(cause);
-        return (-1);
-        /*NOTREACHED*/
-    }
+		break;  /* okay we got one */
+	}
+	if (s < 0) {
+		perror(cause);
+		return (-1);
+		/*NOTREACHED*/
+	}
 
 	/* we have our socket, we don't need the list res0 anymore */
-    freeaddrinfo(res0);
+	freeaddrinfo(res0);
 
 	printf("Sending packet at %s, port %s\n", argv[1], argv[2]);
 	/* Infinite loop of send() */
