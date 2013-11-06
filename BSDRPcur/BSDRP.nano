@@ -346,7 +346,7 @@ add_port "net/openldap24-client"
 add_port "security/ipsec-tools" "-DWITH_RC5 -DWITH_IDEA -DWITH_RADIUS -DWITH_LDAP"
 
 #pf top
-add_port "sysutils/pftop"
+#add_port "sysutils/pftop"
 
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
 # UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd

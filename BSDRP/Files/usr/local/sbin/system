@@ -53,14 +53,9 @@ usage () {
 		echo "Note: Do not keep the reference mtree file on the router!"
 		exit 0
 		;;
-	virtualized)
-		echo "Optimize the system for running as a VM"
-		exit 0
-		;;
 	esac
 	# value $0 is the name of the called script
 	echo "Usage: $0 option"
-	echo "  - check-vm            : Try to detect if used in a VM"
 	echo "  - expand-data-slice   : Permit to grow the /data partition size"
 	echo "  - dual-console        : Configure the system for dual vga/serial console"
 	echo "  - integrity filename  : Check system integrity using the given reference file"
@@ -69,8 +64,6 @@ usage () {
 	echo "    if [option] given, display more detail about the option"
     echo "  - reboot/reload       : Restart the system"
 	echo "  - rollback            : Revert to previous version"
-	echo "  - tune                : Tune for routing (not persistent)"
-	echo "  - virtualized         : Optimize for a VM use"
 	exit 0
 }
 
@@ -286,58 +279,6 @@ echo "BSDRP system rollback complete"
 logger BSDRP system rollback complete
 
 }
-# Tune system
-# To be replaced by the tuning script
-tune () {
-	echo "Tune system for routing"
-	#https://calomel.org/network_performance.html
-	#
-	# kernel socket buffer space
-	sysctl kern.ipc.maxsockbuf=16777216
-	# kernel mbuf space raised 275MB of kernel dedicated ram
-	# Warning: need to change vm.kmem_size to 1G minimum
-	sysctl kern.ipc.nmbclusters=262144
-	# size of the listen queue for accepting new TCP connections
-	sysctl kern.ipc.somaxconn=32768
-	# increase the limit of the open sockets
-	sysctl kern.ipc.maxsockets=204800
-	# do not processes any TCP options in the TCP headers
-	sysctl net.inet.ip.process_options=0
-	# do not allow ip header redirects
-	sysctl net.inet.ip.redirect=0
-	# route cache expire in two seconds
-	sysctl net.inet.ip.rtexpire=2
-	sysctl net.inet.ip.rtminexpire=2
-	# route cache entries increased
-	sysctl net.inet.ip.rtmaxcache=256
-	# drop any TCP packets to closed ports
-	sysctl net.inet.tcp.blackhole=2
-	# no need to delay ACK's
-	sysctl net.inet.tcp.delayed_ack=0
-	# drop TCP packets which have SYN and FIN set
-	sysctl net.inet.tcp.drop_synfin=1
-	# close lost tcp connections in 7.5 seconds (default 30)
-	sysctl net.inet.tcp.msl=7500
-    # do not create TIME_WAIT state for localhost
-	sysctl net.inet.tcp.nolocaltimewait=1
-	# disable MTU path discovery
-	sysctl net.inet.tcp.path_mtu_discovery=0
-	# TCP receive buffer space
-	sysctl net.inet.tcp.recvbuf_max=16777216
-	# increase buffers for incoming data
-	sysctl net.inet.tcp.recvspace=8192
-	# TCP send buffer space
-	sysctl net.inet.tcp.sendbuf_max=16777216
-	# decrease buffers for outgoing data
-	sysctl net.inet.tcp.sendspace=16384
-	# drop any UDP packets to closed ports
-	sysctl net.inet.udp.blackhole=1
-	#sysctl net.inet.tcp.rfc1323=1
-	#sysctl net.inet.tcp.sack.enable=1
-	#sysctl net.inet.tcp.sendbuf_auto=1
-	#sysctl net.inet.tcp.hostcache.expire=1
-	echo "Done, but warning: Theses changes are not persistent !"
-}
 
 # Check if cfg was modified
 check_cfg () {
@@ -365,64 +306,6 @@ sys_halt () {
 	echo "Power halting..."
 	# Never use halt under FreeBSD !
 	shutdown -p now
-}
-
-# Check if system is under a VM
-check_vm () {
-	# Look for VM environnement
-	sysctl -n kern.vm_guest | grep -q "none" &&  VM_FOUND=false \
-		|| VM_FOUND=true
-	if (${VM_FOUND}); then
-		[ "${SECOND_OPTION}" != "quiet" ] \
-		    && echo "VM environnement detected"
-	fi
-
-	KERN_HZ=`sysctl -n kern.hz`
-	[ ${KERN_HZ} -gt 100 ] && NOT_TUNED=true || NOT_TUNED=false
-
-	if ( ${VM_FOUND} ) && ( ${NOT_TUNED} ); then
-       		echo "WARNING: Current (Default) kern.hz value too high for a VM use!"
-       		echo 'Use "system virtualized" for lower it'
-	fi
-	exit 0
-}
-
-# Tune for VM usage
-sys_virtualized () {
-
-	echo "This step will configure BSDRP for being use as a VM:"
-	echo "- Reduce kern.hz to 100"
-	echo "- Load virtio modules"
-	echo "- Load if_vmx ethernet drivers (if present)"
-	echo -n "Do you want to continue ? (y/n): "
-	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]
-	do
-        read USER_CONFIRM <&1
-	done
-	
-	[ "$USER_CONFIRM" = "n" ] && die "Canceling"
-	
-	mount -uw / || die "ERROR: mount -uw /"
-
-	echo '# system virtualized add these lines:' >> /boot/loader.conf.local
-	if [ `echo kern.hz=100 >> /boot/loader.conf.local` ]; then
-		die "Error: Can't modify loader.conf"
-	fi
-	echo 'virtio_load="YES"' >> /boot/loader.conf.local
-	echo 'virtio_load="YES"' >> /boot/loader.conf.local
-	echo 'virtio_pci_load="YES"' >> /boot/loader.conf.local
-	echo 'virtio_blk_load="YES"' >> /boot/loader.conf.local
-	echo 'if_vtnet_load="YES"' >> /boot/loader.conf.local
-	echo 'virtio_balloon_load="YES"' >> /boot/loader.conf.local
-	echo 'virtio_scsi_load="YES"' >> /boot/loader.conf.local
-	[ -f /boot/kernel/if_vmx.ko ] && \
-	  echo 'if_vmx_load="YES"' >> /boot/loader.conf.local
-
-	mount -ur / || die "ERROR: mount -ur /"
-
-	echo "A reboot is needed for apply changes."
-	echo "Don't forget to modify rc.conf for declaring ifconfig_vtnetX of _vmx NIC devices"
-	exit 0
 }
 
 ###################
@@ -475,12 +358,6 @@ case "$FIRST_OPTION" in
 		;;
 	rollback)
 		rollback
-		;;
-    tune)
-        tune
-        ;;
-	virtualized)
-		sys_virtualized
 		;;
 	*)
 		usage
