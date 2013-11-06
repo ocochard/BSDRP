@@ -1,5 +1,5 @@
 # Release 1.51 (not released)
-* Upgraded to FreeBSD 10.0-BETA2
+* Upgraded to FreeBSD 10.0-BETA3
 
 -----------------------------------------------------
 # Release 1.5 (2013/10/27)

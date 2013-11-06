@@ -181,7 +181,7 @@ net_nic () {
 	if ifconfig -l | egrep -q 'em[[:digit:]]'; then
 		# Need to check if there are not 82542 or 82543 (support 256 max)
 		for VALUE in hw.em.txd hw.em.rxd; do
-			sysctl_equal ${VALUE} 4096
+			sysctl_equal ${VALUE} 2048
 		done
 		# Disabling limit of rx frame
 		#sysctl_atleast hw.em.rx_process_limit 500
@@ -200,7 +200,7 @@ net_nic () {
 	# igb tuning
 	if ifconfig -l | egrep -q 'igb[[:digit:]]'; then
 		for VALUE in hw.igb.txd hw.igb.rxd; do
-            sysctl_equal ${VALUE} 4096
+            sysctl_equal ${VALUE} 2048
     	done
 		# http://wiki.freebsd.org/NetworkPerformanceTuning
 		sysctl_atleast hw.igb.max_interrupt_rate 32000
