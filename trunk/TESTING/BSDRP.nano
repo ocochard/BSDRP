@@ -20,7 +20,6 @@ NANO_ARCH=${TARGET_ARCH}
 
 # Options to put in make.conf during buildworld only
 CONF_BUILD="
-BOOT_COMCONSOLE_SPEED=${COM_SPEED}
 "
 
 # Options to put in make.conf during installworld only
@@ -44,13 +43,6 @@ WITHOUT_ASSERT_DEBUG=
 WITHOUT_ATM=
 WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
-WITHOUT_BIND=
-WITHOUT_BIND_DNSSEC=
-WITHOUT_BIND_ETC=
-WITHOUT_BIND_LIBS_LWRES=
-WITHOUT_BIND_MTREE=
-WITHOUT_BIND_NAMED=
-WITHOUT_BIND_UTILS=
 WITHOUT_BLUETOOTH=
 WITHOUT_CALENDAR=
 WITHOUT_CAPSICUM=
@@ -63,9 +55,11 @@ WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
 WITHOUT_GCOV=
 WITHOUT_GDB=
+WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
 WITHOUT_HTML=
+WITHOUT_ICONV=
 WITHOUT_IPFILTER=
 WITHOUT_IPX=
 WITHOUT_IPX_SUPPORT=
@@ -83,15 +77,19 @@ WITHOUT_NIS=
 WITHOUT_NLS=
 WITHOUT_NLS_CATALOGS=
 WITHOUT_NS_CACHING=
+WITHOUT_PC_SYSINSTALL=
 WITHOUT_PORTSNAP=
 WITHOUT_PROFILE=
 WITHOUT_QUOTAS=
 WITHOUT_RCMDS=
+WITHOUT_RCS=
 WITHOUT_RESCUE=
 WITHOUT_ROUTED=
 WITHOUT_SENDMAIL=
 WITHOUT_SHAREDOCS=
+WITHOUT_SVNLITE=
 WITHOUT_SYSINSTALL=
+WITHOUT_UNBOUND=
 WITHOUT_WIRELESS=
 WITHOUT_WIRELESS_SUPPORT=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
@@ -132,7 +130,7 @@ NANO_CODESIZE=0
 
 # Size of configuration file system in 512 bytes sectors
 # Cannot be zero.
-# 15MB = 2048
+# about 15MB = 20480
 NANO_CONFSIZE=20480
 
 # Size of data file system in 512 bytes sectors
@@ -166,46 +164,54 @@ PPLEVEL=3
 
 # Add netblast/netrecieve and netmap tools
 add_netrate () {
-	TOOLS_LIST="mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
-	mkdir -p ${NANO_WORLDDIR}/dev
-	mount -t devfs devfs ${NANO_WORLDDIR}/dev
-	mount -t unionfs -o noatime ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
-	mkdir -p ${NANO_WORLDDIR}/usr/workdir
-	for TOOL in ${TOOLS_LIST}; do
-		# netmap is not available on sparc64
-		if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
-            		continue
-        	fi	
-		export TOOL
-		chroot ${NANO_WORLDDIR} /bin/sh -exc \
-			'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-			MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-			UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
-			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
-		for file in `grep "^PROG" ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/Makefile | cut -d '=' -f 2`; do
-			mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
-			if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
-				if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
-					echo "WARNING: Can't delete $TOOL/$file.o"
-				fi
-			fi
-		done
-	done
-	rm -rf ${NANO_WORLDDIR}/usr/workdir
-	umount ${NANO_WORLDDIR}/usr/src
-	umount ${NANO_WORLDDIR}/dev
+    TOOLS_LIST="cxgbetool cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
+    mkdir -p ${NANO_WORLDDIR}/dev
+    mount -t devfs devfs ${NANO_WORLDDIR}/dev
+    mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
+    mkdir -p ${NANO_WORLDDIR}/usr/workdir
+    for TOOL in ${TOOLS_LIST}; do
+        # netmap is not available on sparc64
+        if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
+                    continue
+            fi
+        export TOOL
+        chroot ${NANO_WORLDDIR} /bin/sh -exc 'make clean -C /usr/src/tools/tools/${TOOL}'
+        chroot ${NANO_WORLDDIR} /bin/sh -exc \
+            'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+            MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+            UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+            UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+            make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
+        # each Makefile have a different variable names
+        for MAKE_CMD in PROG PROGS ALL; do
+            for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
+                if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
+                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
+                else
+                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
+                fi
+                if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
+                    if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
+                        echo "WARNING: Can't delete $TOOL/$file.o"
+                    fi
+                fi
+            done # for all files
+        done # for MAKE_CMD
+    done # for TOOL
+    rm -rf ${NANO_WORLDDIR}/usr/workdir
+    umount ${NANO_WORLDDIR}/usr/src
+    umount ${NANO_WORLDDIR}/dev
 }
 
 # Add Quagga BGP route injector
 add_quagga-bgp-netgen () {
     mkdir -p ${NANO_WORLDDIR}/dev
     mount -t devfs devfs ${NANO_WORLDDIR}/dev
-    mount -t unionfs -o noatime ${NANO_TOOLS}/tools/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/src
+    mount -t nullfs ${NANO_TOOLS}/tools/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/src
     mkdir -p ${NANO_WORLDDIR}/usr/workdir
     chroot ${NANO_WORLDDIR} /bin/sh -exc \
             'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-			MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+			MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
 			UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
             make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
@@ -216,104 +222,7 @@ add_quagga-bgp-netgen () {
     umount ${NANO_WORLDDIR}/dev
 }
 
-# Need to check if this function works with cross-compiling architecture!!!!
-# Recursive complex fonction: Generate one function for each ports
-add_port () {
-	port=`echo $1 | sed -e 's/\//_/'`
-	# Check if package allready exist
-
-	cd ${PORTS_SRC}/$1
-	# Warning: a package name can change regarding the build option
-	PKG_NAME=`env PORTSDIR=${PORTS_SRC} make package-name $2`
-	if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.txz ]; then
-	# Pkg file found: Generate add_pkg_NAME function
-		#Don't try to install pkg, the boot strap will install it
-		if [ "$1" != "ports-mgmt/pkg" ]; then
-			eval "
-			add_pkg_${port} () {
-				#Need to create ${NANO_OBJ}/ports in this add_pkg_${port} function
-				if [ ! -d \${NANO_OBJ}/ports ]; then
-					mkdir -p \${NANO_OBJ}/ports/packages
-				fi
-				mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
-				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
-					\${NANO_WORLDDIR}/usr/ports/packages
-				chroot \${NANO_WORLDDIR} /bin/sh -exc \
-               		'env ASSUME_ALWAYS_YES=true PACKAGESITE=file:///usr/ports/packages pkg add /usr/ports/packages/All/${PKG_NAME}.txz'
-				umount \${NANO_WORLDDIR}/usr/ports/packages
-				rmdir \${NANO_WORLDDIR}/usr/ports/packages
-				rmdir \${NANO_WORLDDIR}/usr/ports
-			}
-       		customize_cmd add_pkg_${port}
-       		"
-		fi
-	else
-	# No pkg file: Generate add_port_NAME function
-       	eval "
-       		add_port_${port} () {
-				#Need to create ${NANO_OBJ}/ports in this add_port_${port} function
-				if [ ! -d \${NANO_OBJ}/ports ]; then
-					mkdir -p \${NANO_OBJ}/ports/packages
-				fi
-           		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
-           		mount -t unionfs -o noatime \${NANO_SRC} \
-					\${NANO_WORLDDIR}/usr/src
-           		mount -t unionfs -o noatime \${PORTS_SRC} \
-                     \${NANO_WORLDDIR}/usr/ports
-				mount -t unionfs -o noatime \${NANO_OBJ}/ports/packages \
-					\${NANO_WORLDDIR}/usr/ports/packages
-              	mkdir -p \${NANO_WORLDDIR}/dev
-              	mount -t devfs devfs \${NANO_WORLDDIR}/dev
-           		mkdir -p \${NANO_WORLDDIR}/usr/pobj
-               	mkdir -p \${NANO_WORLDDIR}/usr/workdir
-               	cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
-				# Improvement: Don't know why package-recursive don't works here
-				# If a port have NO_PACKAGE, comment-it
-                if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
-                    mv \${NANO_WORLDDIR}/usr/ports/$1/Makefile \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd
-                    sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
-                fi
-		# Do not compile port with clang: net/bird meet error	
-               	chroot \${NANO_WORLDDIR} /bin/sh -exc \
-                'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-				MACHINE=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
-				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-                install package-recursive BATCH=yes -DWITH_PKGNG \
-				-DWITHOUT_X11 -DNOPORTDOCS \
-				-DNOPORTEXAMPLES -DWITHOUT_NLS $2 clean'
-				rm \${NANO_WORLDDIR}/etc/resolv.conf
-               	rm -rf \${NANO_WORLDDIR}/usr/obj
-               	rm -rf \${NANO_WORLDDIR}/usr/pobj
-               	rm -rf \${NANO_WORLDDIR}/usr/workdir
-               	umount \${NANO_WORLDDIR}/dev
-				umount \${NANO_WORLDDIR}/usr/ports/packages
-               	umount \${NANO_WORLDDIR}/usr/ports
-               	umount \${NANO_WORLDDIR}/usr/src
-				rmdir \${NANO_WORLDDIR}/usr/ports/packages
-               	rmdir \${NANO_WORLDDIR}/usr/ports
-        	}
-        	customize_cmd add_port_${port}
-       	"
-	fi
-}
-
 #### Ports list section #####
-
-cleanup_ports () {
-		# When port are build, they install build dependency that are not usefull for running the port
-		# The list of build-only package to be delete can be found like this:
-		# Fresh generate a BSDRP image, and copy packages.info to packages.info.first
-		# Restart a BSDRP image build with the "-b" option
-		# diff packages.info.first packages.info
-		set +e
-        chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'env ASSUME_ALWAYS_YES=true pkg delete -g auto* m4* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* p5-gettext* libsigsegv* pkgconf*'
-		set -e
-}
-
-#customize_cmd cleanup_ports
 
 # BSDRP custom function
 bsdrp_custom () {
@@ -353,6 +262,7 @@ bsdrp_custom () {
 	# Remove some of the folders (without share/snmp)
 	# usr/include : 15MB
 	FOLDERS_TO_REMOVE='
+usr/libexec/bsdinstall
 usr/local/include
 usr/local/man
 usr/local/info
@@ -361,9 +271,12 @@ usr/local/share/doc/libasprintf
 usr/local/share/doc/libiconv
 usr/local/share/doc/snmp
 usr/local/share/examples/quagga
+usr/local/share/examples/ipsec-tools
 usr/include
-usr/share/me
+usr/share/examples
 usr/share/info
+usr/share/me
+usr/share/pc-sysinstall
 usr/share/openssl
 usr/libdata/lint
 usr/libdata/ldscripts
@@ -381,6 +294,7 @@ usr/libdata/ldscripts
 
 	# Remove some files
     FILES_TO_REMOVE='
+usr/sbin/bhyve
 usr/sbin/ctladm
 usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample
@@ -420,6 +334,7 @@ usr/bin/strings
 usr/bin/strip
 usr/bin/cc
 usr/bin/gcc
+usr/bin/gcpp
 usr/bin/cpp
 usr/bin/c++
 usr/bin/g++
@@ -490,12 +405,17 @@ usr/share/tmac/tmac.vgrind
 '
     for c in $TOOLCHAIN_TO_REMOVE
     do
-        if [ -f ${NANO_WORLDDIR}/$c ]
-        then
+        if [ -f ${NANO_WORLDDIR}/$c ]; then
             echo "Removing ${NANO_WORLDDIR}/$c"
             if ! rm -rf ${NANO_WORLDDIR}/$c ; then
                 echo "Error: Can't remove it!"
             fi
+			# look for associated man page and delete it too
+			if ! find ${NANO_WORLDDIR}/usr/share/man -name `basename $c`".*.gz" -exec rm -- {} +; then
+				echo "no man page for $c"
+			fi
+		else
+			echo "Missing file to delete: $c"
         fi
     done
 	
@@ -514,7 +434,9 @@ usr/share/tmac/tmac.vgrind
 			strip 2>/dev/null $f || :
 		done
 	done	
-
+	# Generate package inventory
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+	'pkg info' > ${NANO_OBJ}/packages.info
 }
 
 # Enable only serial system only
@@ -527,16 +449,8 @@ bsdrp_console_serial () {
     # Disable getty on syscons devices
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
 
-	# Add bhyve compatibility
-	#echo console \"/usr/libexec/getty std.${COM_SPEED}\"   vt100   on secure >> ${NANO_WORLDDIR}/etc/ttys
-    
-	# Tell loader to use serial console early.
-    echo "-h" > ${NANO_WORLDDIR}/boot.config
-
-	# Customize loader.conf file:
-	echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'console="comconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
+    # Tell loader to use serial console early.
+    echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
 
 }
 
@@ -553,13 +467,12 @@ bsdrp_console_dual () {
 	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 
     # Tell loader to use serial and vga console.
-    echo " -D" > ${NANO_WORLDDIR}/boot.config
+    echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 
-	# Customize loader.conf file:
-	echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
-	echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
-
+	# Don't need to customize the loader.conf file:
+	#echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
+	#echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
+	#echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 }
 
 # Standard vga console, but permit serial port to be use as vt100 console
@@ -567,8 +480,9 @@ bsdrp_console_vga () {
 	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-	
-	echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
+
+	# Set serial console speed (but not use it)                                                               
+    echo "-S${COM_SPEED}" > ${NANO_WORLDDIR}/boot.config 
 }
 
 # Special xen console configuration
