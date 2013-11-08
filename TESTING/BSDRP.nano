@@ -435,8 +435,8 @@ usr/share/tmac/tmac.vgrind
 		done
 	done	
 	# Generate package inventory
-	chroot ${NANO_WORLDDIR} /bin/sh -exc \
-	'pkg info' > ${NANO_OBJ}/packages.info
+	#chroot ${NANO_WORLDDIR} /bin/sh -exc \
+	#'pkg info' > ${NANO_OBJ}/packages.info
 }
 
 # Enable only serial system only
