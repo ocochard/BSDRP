@@ -40,6 +40,9 @@ TESTER_2_LAB_IF="igb3"
 TESTER_2_LAB_IF_MAC="00:1b:21:c4:95:7b"
 DUT_LAB_IF_MAC_TO_T1="00:1b:21:d3:8f:3e"
 DUT_LAB_IF_MAC_TO_T2="00:1b:21:d3:8f:3f"
+#Right-now, pkt-gen didn't support src/dst IP range, just src/dst port range
+TESTER_1_LAB_NET="1.3.3.1"
+TESTER_2_LAB_NET="2.3.3.1:2000-2.3.3.1:4000"
 PKT_TO_SEND="100000000"
 
 # SSH Command line
@@ -104,7 +107,7 @@ bench () {
 		#start netblast on TESTER1
 		#CMD="netblast ${TESTER_2_LAB} 9090 0 10"
 		CMD="pkt-gen -f tx -i ${TESTER_1_LAB_IF} -t ${PKT_TO_SEND} -l 42 \
-		-d ${TESTER_2_LAB} -D ${DUT_LAB_IF_MAC_TO_T1} -s ${TESTER_1_LAB} \
+		-d ${TESTER_2_LAB_NET} -D ${DUT_LAB_IF_MAC_TO_T1} -s ${TESTER_1_LAB_NET} \
     	-w 8"
 		echo "CMD: ${CMD}" > $1.${ITER}.sender
 		rcmd ${TESTER_1_ADMIN} "${CMD}" >> $1.${ITER}.sender 2>&1 &
