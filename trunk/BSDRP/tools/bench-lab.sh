@@ -106,7 +106,7 @@ bench () {
 		#rcmd ${TESTER_2_ADMIN} "nohup netreceive 9090 \>\& /tmp/bench.log.receiver \&"
 		#start netblast on TESTER1
 		#CMD="netblast ${TESTER_2_LAB} 9090 0 10"
-		CMD="pkt-gen -f tx -i ${TESTER_1_LAB_IF} -t ${PKT_TO_SEND} -l 42 \
+		CMD="pkt-gen -f tx -i ${TESTER_1_LAB_IF} -t ${PKT_TO_SEND} -l 60 \
 		-d ${TESTER_2_LAB_NET} -D ${DUT_LAB_IF_MAC_TO_T1} -s ${TESTER_1_LAB_NET} \
     	-w 8"
 		echo "CMD: ${CMD}" > $1.${ITER}.sender

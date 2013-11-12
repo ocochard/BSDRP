@@ -282,13 +282,13 @@ logger BSDRP system rollback complete
 
 # Check if cfg was modified
 check_cfg () {
+	# Testing /etc/rc.conf
+	sh /etc/rc.conf && die "There is an error in /etc/rc.conf file"
 	echo "Checking if configuration is saved..."
 	# Don't know why I can't test the exist value of config diff quit in my if
 	set +e
 	config diff quiet
-	if [ $? -eq 1 ]; then
-        	ask_save
-	fi
+	[ $? -eq 1 ] && ask_save
 	set -e
 }
 
