@@ -1,13 +1,13 @@
 #!/bin/sh
 #
 # Bench-lab for BSD Router Project 
-# http://bsdrp.net
+# http://bsdrp.net/documentation/examples/freebsd_performance_regression_lab
 # 
 # Purpose:
 #  This script permit to automatize benching multiple BSDRP images and/or configuration parameters.
 #  In a lab like this one:
 #  +----------+     +-------------------------+     +----------+ 
-#  | Tester_1 |<--->| Device Under Test (DUT) |<--->| Tester_2 | 
+#  | Sender   |<--->| Device Under Test (DUT) |<--->| Receiver | 
 #  +----------+     +-------------------------+     +----------+
 #      |                       |                         |
 #    -----------------admin network (ssh)--------------------
@@ -21,36 +21,12 @@
 set -eu
 
 ##### User modifiable variables section #####
-
-# Don't forget to modify the bench commands in bench() too !!
-
-# Host IP/hostname
-TESTER_1_ADMIN="192.168.1.1"
-TESTER_2_ADMIN="192.168.1.3"
-DUT_ADMIN="192.168.1.2"
-
-#netblast need these information:
-TESTER_1_LAB="1.1.1.1"
-TESTER_2_LAB="2.2.2.3"
-
-#netmap pkt-gen need these information:
-TESTER_1_LAB_IF="igb2"
-TESTER_1_LAB_IF_MAC="00:1b:21:d4:3f:2a"
-TESTER_2_LAB_IF="igb3"
-TESTER_2_LAB_IF_MAC="00:1b:21:c4:95:7b"
-DUT_LAB_IF_MAC_TO_T1="00:1b:21:d3:8f:3e"
-DUT_LAB_IF_MAC_TO_T2="00:1b:21:d3:8f:3f"
-#Right-now, pkt-gen didn't support src/dst IP range, just src/dst port range
-TESTER_1_LAB_NET="1.3.3.1"
-TESTER_2_LAB_NET="2.3.3.1:2000-2.3.3.1:4000"
-PKT_TO_SEND="100000000"
-
 # SSH Command line
 SSH_CMD="/usr/bin/ssh -x -a -q -2 -o \"PreferredAuthentications publickey\" -o \"StrictHostKeyChecking no\" -l root"
 
 ###### End of user modifiable variable section #####
 
-# Counters
+# Default Counters
 CONFIG_ITER=1
 IMAGE_ITER=1
 TEST_ITER=1
@@ -60,6 +36,7 @@ TEST_ITER=1
 TOTAL_TEST=0                                                                                                                
 # An usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+
 
 rcmd () {
 	# Send remote command
@@ -75,14 +52,13 @@ reboot_dut () {
 	echo -n "Rebooting DUT and waiting device return online..."
 	# WARNING: If configuration was not saved, it will ask user for configuration saving
 	rcmd ${DUT_ADMIN} reboot > /dev/null 2>&1
-	# || die "Can't reboot the DUT after bench TEST/CFG/IMG: ${TEST_ITER}/${CONFIG_ITER}/${IMAGE_ITER}"
-	sleep 10
+	sleep 20
 	#wait-for-dut online and in forwarding mode
-	local REBOOT_TIMEOUT=120
-	while ! rcmd ${TESTER_1_ADMIN} "ping -c 2 ${TESTER_2_LAB}" > /dev/null 2>&1; do
+	local TIMEOUT=${REBOOT_TIMEOUT}
+	while ! rcmd ${IS_DUT_ONLINE_TARGET} "${IS_DUT_ONLINE_CMD}" > /dev/null 2>&1; do
 		sleep 5
-		REBOOT_TIMEOUT=`expr ${REBOOT_TIMEOUT} - 1`
-		[ ${REBOOT_TIMEOUT} -eq 0 ] && die "DUT didn't switch in forwarding mode after `expr 120 \* 5` seconds"
+		TIMEOUT=`expr ${TIMEOUT} - 1`
+		[ ${TIMEOUT} -eq 0 ] && die "DUT didn't switch in forwarding mode after `expr ${REBOOT_TIMEOUT} \* 5` seconds"
 	done
 	echo "done"
 	return 0
@@ -93,30 +69,21 @@ bench () {
 	# $1: Directory/prefix-name of output log file
 	echo "Start bench serie $1"
 	for ITER in `seq 1 ${TEST_ITER_MAX}`; do
-		#start netreceive on TESTER2
-		#CMD="netreceive 9090"
-		#start pkt-gen on TESTER2
-		CMD="pkt-gen -f rx -i ${TESTER_2_LAB_IF} -w 8"
-
-		echo "CMD: ${CMD}" > $1.${ITER}.receiver
-		rcmd ${TESTER_2_ADMIN} "${CMD}" >> $1.${ITER}.receiver 2>&1 &
+		#start receiving tool on RECEIVER
+		echo "CMD: ${RECEIVER_START_CMD}" > $1.${ITER}.receiver
+		rcmd ${RECEIVER_ADMIN} "${RECEIVER_START_CMD}" >> $1.${ITER}.receiver 2>&1 &
 		#JOB_RECEIVER=$!
 		
-		#Alternate method with log file stored on TESTER (if tool is verbose)	
-		#rcmd ${TESTER_2_ADMIN} "nohup netreceive 9090 \>\& /tmp/bench.log.receiver \&"
-		#start netblast on TESTER1
-		#CMD="netblast ${TESTER_2_LAB} 9090 0 10"
-		CMD="pkt-gen -f tx -i ${TESTER_1_LAB_IF} -t ${PKT_TO_SEND} -l 60 \
-		-d ${TESTER_2_LAB_NET} -D ${DUT_LAB_IF_MAC_TO_T1} -s ${TESTER_1_LAB_NET} \
-    	-w 8"
-		echo "CMD: ${CMD}" > $1.${ITER}.sender
-		rcmd ${TESTER_1_ADMIN} "${CMD}" >> $1.${ITER}.sender 2>&1 &
+		#Alternate method with log file stored on RECEIVER (if tool is verbose)	
+		#rcmd ${RECEIVER_ADMIN} "nohup netreceive 9090 \>\& /tmp/bench.log.receiver \&"
+		echo "CMD: ${SENDER_START_CMD}" > $1.${ITER}.sender
+		rcmd ${SENDER_ADMIN} "${SENDER_START_CMD}" >> $1.${ITER}.sender 2>&1 &
 		JOB_SENDER=$!
 		echo -n "Waiting for end of bench ${TEST_ITER}/${TOTAL_TEST}..."
 		wait ${JOB_SENDER}
-		rcmd ${TESTER_2_ADMIN} "pkill pkt-gen" || echo "DEBUG: Can't kill pkt-gen"
+		rcmd ${RECEIVER_ADMIN} "${RECEIVER_STOP_CMD}" || echo "DEBUG: Can't kill pkt-gen"
 		
-		#scp ${TESTER_2_ADMIN}:/tmp/bench.log.receiver $1.${ITER}.receiver
+		#scp ${RECEIVER_ADMIN}:/tmp/bench.log.receiver $1.${ITER}.receiver
 		#kill ${JOB_RECEIVER}
 	
 		echo "done"
@@ -171,9 +138,9 @@ icmp_test_all () {
 	# Test if we can ping all devices
 	local PING_ACCESS_OK=true
 	echo "Testing ICMP connectivity to each devices:"
-	for HOST in ${TESTER_1_ADMIN} ${TESTER_2_ADMIN} ${DUT_ADMIN}; do
+	for HOST in ${SENDER_ADMIN} ${RECEIVER_ADMIN} ${DUT_ADMIN}; do
 		echo -n "  ${HOST}..."
-		if ping -c 3 ${HOST} > /dev/null 2>&1; then
+		if ping -c 2 ${HOST} > /dev/null 2>&1; then
 			echo "OK"
 		else
 			echo "NOK"
@@ -186,7 +153,7 @@ icmp_test_all () {
 ssh_push_key () {
 	# Pushing ssh key
 	echo "Testing SSH connectivity with key to each devices:"
-	for HOST in ${TESTER_1_ADMIN} ${TESTER_2_ADMIN} ${DUT_ADMIN}; do
+	for HOST in ${SENDER_ADMIN} ${RECEIVER_ADMIN} ${DUT_ADMIN}; do
 		echo -n "  ${HOST}..."
 		if ! rcmd ${HOST} "uname" > /dev/null 2>&1; then
 			echo ""
@@ -221,17 +188,21 @@ upgrade_image () {
 
 usage () {
 	if [ $# -lt 1 ]; then
-		echo "$0 [-h] [-c configuration-sets-dir] [-i nanobsd-images-dir] [-n iteration] [-d benchs-dir]"
-		echo "  nanobsd-images-dir: Directory where are all update nanobsd images"
-		echo "  configuration-sets-dir: Directory that include directory for each configuration sets to test"
-		echo "  iteration: number of iteration to do for each test"
-		echo "  bench-dir: Where to put the results"
+		echo "$0 [-h] [-f bench-lab-config] [-c configuration-sets-dir] [-i nanobsd-images-dir] [-n iteration] [-d benchs-dir]"
+		echo "
+		bench-lab-configureation file: File that define all lab bench parameters
+		nanobsd-images-dir: Directory where are all update nanobsd images
+		configuration-sets-dir: Directory that include directory for each configuration sets to test
+		iteration: number of iteration to do for each test
+		bench-dir: Where to put the results"
 		exit 1 
 	fi
 }
 
 ##### Main
 
+# Bench configuration file
+BENCH_CONFIG=''
 # List of configuration sets directory
 CFG_LIST=''
 # list of nanobsd upgrade image to be benched
@@ -241,39 +212,44 @@ TEST_ITER_MAX=5
 # Bench result directory
 BENCH_DIR="/tmp/benchs"
 
-args=`getopt c:d:i:hn: $*`
+args=`getopt c:d:f:i:hn: $*`
 
 set -- $args
 for i
 do
     case "$i" in
         -c)
-			CFG_LIST=`ls -1d $2/*`			
-            shift
-            shift
-            ;;
+		CFG_LIST=`ls -1d $2/*`			
+		shift
+           	shift
+		;;
         -d)
-            BENCH_DIR="$2"
-            shift
-            shift
-            ;;  
+		BENCH_DIR="$2"
+		shift
+		shift
+		;; 
+	-f)
+		BENCH_CONFIG="$2"
+		shift
+		shift
+		;;	
         -i)
-       		IMAGES_LIST=`ls -1 $2/BSDRP-* | grep upgrade`     
-			shift
-            shift
-            ;;
-		-h)
-			usage
-			shift
-			;;
+		IMAGES_LIST=`ls -1 $2/BSDRP-* | grep upgrade`     
+		shift
+		shift
+		;;
+	-h)
+		usage
+		shift
+		;;
         -n)
-			TEST_ITER_MAX=$2	
-            shift
-			shift
-            ;;
+		TEST_ITER_MAX=$2	
+		shift
+		shift
+		;;
         --)
-            shift
-            break
+		shift
+		break
         esac
 done
 
@@ -281,6 +257,11 @@ if [ $# -gt 0 ] ; then
     echo "$0: Extraneous arguments supplied"
     usage
 fi
+
+#### Loading configuration file ####
+[ -z  "${BENCH_CONFIG}" ] && die "No configuration file given: -f is mandatory"
+[ -f ${BENCH_CONFIG} ] || die "Can't found configuration file"
+. ${BENCH_CONFIG}
 
 if [ -n "${IMAGES_LIST}" ]; then
 	for IMG in ${IMAGES_LIST};  do
