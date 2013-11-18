@@ -16,6 +16,10 @@
 * arm: Need to found an arm devices for working on
 * cross-compilation : check this URL: http://forums.freebsd.org/showthread.php?t=18147
 
+## Boot loader ##
+* FreeBSD boot0 (sys/boot/i386/boot0) is highly optimized ASM code and use int 0x14 for COM port access (limited to 9600 bauds).
+    => Is possible to use UART in place for highly baud rate ? 
+
 ## Authentication #
 
 * Need to test PAM (Radius, TACAS+) modules

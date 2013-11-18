@@ -249,7 +249,7 @@ add_port () {
 				chroot \${NANO_WORLDDIR} /bin/sh -exc '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
 				# Start the build
 				chroot \${NANO_WORLDDIR} /bin/sh -exc \
-               		'env ASSUME_ALWAYS_YES=true PACKAGESITE=file:///usr/ports/packages pkg add /usr/ports/packages/All/${PKG_NAME}.txz'
+               		'env SIGNATURE_TYPE=NONE ASSUME_ALWAYS_YES=true PACKAGESITE=file:///usr/ports/packages pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
 				umount \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports
