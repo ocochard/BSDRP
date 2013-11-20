@@ -21,7 +21,6 @@ if [ `uname -m` = "sparc64" ]; then
 else
 	ARCH_LIST='
 i386
-i386_xenpv
 amd64
 '
 fi
