@@ -52,6 +52,7 @@ LABEL=`cut -d '/' -f 2 /etc/nanobsd.conf`
 # A usefull function (from: http://code.google.com/p/sh-die/)                                                         
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }     
 
+# Get Label information for MBR
 mbr_get_info() {
 	if mount | grep -q "/dev/${NANO_DRIVE}s1a on / "; then 
     	DST_SLICE="s2"
@@ -73,6 +74,7 @@ mbr_get_info() {
 
 }
 
+# Get label information for Sun VTOC
 vtoc_get_info() {
 	if mount | grep -q "/dev/${NANO_DRIVE}s1a on / "; then 
     	DST_SLICE="d"
@@ -234,8 +236,8 @@ case "${ARCH}" in
 esac
 
 # Log
-echo "BSDRP Upgrade complete"
-logger BSDRP Upgrade complete
+echo "${LABEL} Upgrade complete"
+logger ${LABEL} Upgrade complete
 
 if [ -f /tmp/post-upgrade ]; then
 	echo "Starting post-upgrade script..."
