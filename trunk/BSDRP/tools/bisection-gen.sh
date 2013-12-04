@@ -29,9 +29,13 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # List of SVN revision to build image for
 # Compile but didn't boot: 239091 to 239093
 SVN_REV_LIST='
-257506
-257657
-257715
+255202
+255488
+256185
+256842
+257482
+258080
+258675
 '
 
 # Name of the BSDRP project

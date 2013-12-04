@@ -61,7 +61,9 @@ NANO_DIRS_INSTALL="${NANO_TOOLS}/Files"
 # default is ${NANO_OBJ}
 #NANO_DISKIMGDIR=""
 
-# Parallel Make
+# Make & Parallel Make
+# Setting NANO_PMAKE to 'make -j 12' didn't works during installworld
+NANO_MAKE="make"
 NANO_PMAKE="make -j 3"
 
 # The default name for any image we create.
@@ -268,7 +270,7 @@ install_world ( ) (
 
 	cd ${NANO_SRC}
 	env TARGET_ARCH=${NANO_ARCH} \
-	${NANO_PMAKE} __MAKE_CONF=${NANO_MAKE_CONF_INSTALL} installworld \
+	${NANO_MAKE} __MAKE_CONF=${NANO_MAKE_CONF_INSTALL} installworld \
 		DESTDIR=${NANO_WORLDDIR} \
 		> ${NANO_OBJ}/_.iw 2>&1
 	chflags -R noschg ${NANO_WORLDDIR}
@@ -281,7 +283,7 @@ install_etc ( ) (
 
 	cd ${NANO_SRC}
 	env TARGET_ARCH=${NANO_ARCH} \
-	${NANO_PMAKE} __MAKE_CONF=${NANO_MAKE_CONF_INSTALL} distribution \
+	${NANO_MAKE} __MAKE_CONF=${NANO_MAKE_CONF_INSTALL} distribution \
 		DESTDIR=${NANO_WORLDDIR} \
 		> ${NANO_OBJ}/_.etc 2>&1
 	# make.conf doesn't get created by default, but some ports need it
@@ -302,7 +304,7 @@ install_kernel ( ) (
 	fi
 
 	cd ${NANO_SRC}
-	env TARGET_ARCH=${NANO_ARCH} ${NANO_PMAKE} installkernel \
+	env TARGET_ARCH=${NANO_ARCH} ${NANO_MAKE} installkernel \
 		DESTDIR=${NANO_WORLDDIR} \
 		__MAKE_CONF=${NANO_MAKE_CONF_INSTALL} \
 		${kernconfdir:+"KERNCONFDIR="}${kernconfdir} \
@@ -1216,7 +1218,7 @@ fi
 if $do_clean ; then
 	true
 else
-	NANO_PMAKE="${NANO_PMAKE} -DNO_CLEAN"
+	NANO_MAKE="${NANO_PMAKE} -DNO_CLEAN"
 fi
 
 # Override user's NANO_DRIVE if they specified a NANO_LABEL
@@ -1237,6 +1239,7 @@ export NANO_DRIVE
 export NANO_HEADS
 export NANO_IMAGES
 export NANO_IMGNAME
+export NANO_MAKE
 export NANO_MAKE_CONF_BUILD
 export NANO_MAKE_CONF_INSTALL
 export NANO_MEDIASIZE
