@@ -1,5 +1,12 @@
 # Release 1.51 (not released)
-* Upgraded to FreeBSD 10.0-BETA4
+* Upgraded to FreeBSD 10.0-PRERELEASE
+
+## New features
+
+## Bug fixes
+
+## Updated packages
+*  bird to 1.4.0
 
 -----------------------------------------------------
 # Release 1.5 (2013/10/27)

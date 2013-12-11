@@ -335,8 +335,8 @@ add_port "net/quagga-re" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:
-add_port "net/bird" "-DWITH_FIREWALL"
-add_port "net/bird6"
+add_port "net/bird" "-DWITH_FIREWALL" "-DWITH_AGG"
+add_port "net/bird6" "-DWITH_FIREWALL" "-DWITH_AGG"
 
 # Add FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
