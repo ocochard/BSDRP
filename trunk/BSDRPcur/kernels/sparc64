@@ -131,6 +131,7 @@ device		atkbd		# AT keyboard
 device		kbdmux		# keyboard multiplexer
 
 # syscons is the default console driver, resembling an SCO console
+device		vt
 #device		sc
 #device		creator		# Creator, Creator3D and Elite3D framebuffers
 #device		machfb		# ATI Mach64 framebuffers
