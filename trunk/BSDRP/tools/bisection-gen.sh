@@ -36,6 +36,7 @@ SVN_REV_LIST='
 257482
 258080
 258675
+259551
 '
 
 # Name of the BSDRP project

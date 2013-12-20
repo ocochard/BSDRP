@@ -31,9 +31,6 @@ CONFIG_ITER=1
 IMAGE_ITER=1
 TEST_ITER=1
 
-# Counting total number of tests bench
-# And checking file/directory presence
-TOTAL_TEST=0                                                                                                                
 # An usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
@@ -211,6 +208,9 @@ IMAGES_LIST=''
 TEST_ITER_MAX=5
 # Bench result directory
 BENCH_DIR="/tmp/benchs"
+# Counting total number of tests bench
+# And checking file/directory presence
+TOTAL_TEST=0                                                                                                                
 
 args=`getopt c:d:f:i:hn: $*`
 
@@ -263,23 +263,41 @@ fi
 [ -f ${BENCH_CONFIG} ] || die "Can't found configuration file"
 . ${BENCH_CONFIG}
 
-if [ -n "${IMAGES_LIST}" ]; then
-	for IMG in ${IMAGES_LIST};  do
-		[ -f ${IMG} ] || die "Can't found file {IMG}"
-		for CFG in ${CFG_LIST}; do
+[ -z "${IMAGES_LIST}" ] && IMAGES_LIST="none"
+[ -z "${CFG_LIST}" ] && CFG_LIST="none"
+
+#Calculating the number of test to do
+#Notice that the big "bench part" that follow is on the same alogrithm that this loop
+INC_DONE=false
+for UPGRADE_IMAGE in ${IMAGES_LIST};  do
+	if [ ! "${UPGRADE_IMAGE}" = "none" ]; then 
+		[ -f ${UPGRADE_IMAGE} ] || die "Can't found file {IMG}"
+	fi
+	for CFG in ${CFG_LIST}; do
+		if [ ! "${CFG}" = "none" ]; then
 			[ -d ${CFG} ] || die "Can't found directory ${CFG}"
-			TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
-		done
+			# Check if bench allready done
+			# We need to cleanup the filename that is in the form:
+			# BSDRP-259551-upgrade-amd64-serial.imga
+			# For getting only the SVN number
+			SVN_NUMBER=`basename ${UPGRADE_IMAGE} | cut -d '-' -f 2`
+			CFG=`basename ${CFG}`
+			if [ ! -f ${BENCH_DIR}/bench.${SVN_NUMBER}.${CFG}.1 ]; then
+			  TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
+			  INC_DONE=true
+			fi
+		fi
+	done
+	if !(${INC_DONE}); then
 		TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
-	done
-elif [ -n "${CFG_LIST}" ]; then
-	 for CFG in ${CFG_LIST}; do
-		[ -d ${CFG} ] || die "Can't found directory ${CFG}"
-        TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
-	done
-else
-	TOTAL_TEST=${TEST_ITER_MAX}
+		INC_DONE=true
+	fi
+done
+if !(${INC_DONE}); then
+	TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
+	INC_DONE=true
 fi
+
 
 echo "BSDRP automatized upgrade/configuration-sets/benchs script"
 echo ""
@@ -307,35 +325,34 @@ ssh-add -l > /dev/null 2 || echo "WARNING: No key loaded in ssh-agent?"
 ssh_push_key || ( echo "SSH connectivity test failed";exit 1 )
 
 echo "Starting the benchs"
-if [ -n "${IMAGES_LIST}" ]; then
-	for UPGRADE_IMAGE in ${IMAGES_LIST}; do
+for UPGRADE_IMAGE in ${IMAGES_LIST}; do
+	BENCH_DONE=false
+	if [ ! "${UPGRADE_IMAGE}" = "none" ]; then
 		echo "Testing image serie: ${UPGRADE_IMAGE}"
 		upgrade_image ${UPGRADE_IMAGE} || die "Can't upgrade to image ${UPGRADE_IMAGE}"
-		if [ -n "${CFG_LIST}" ]; then
-			for CFG in ${CFG_LIST}; do
-				bench_cfg ${CFG} ${BENCH_DIR}/bench.${IMAGE_ITER}.${CONFIG_ITER}
-				CONFIG_ITER=`expr ${CONFIG_ITER} + 1`
-			done
-		else
-			reboot_dut
-			echo "Image: ${UPGRADE_IMAGE}" > ${BENCH_DIR}/bench.${IMAGE_ITER}.info
-			echo "Start time: `date`" >> ${BENCH_DIR}/bench.${IMAGE_ITER}.info
-			bench ${BENCH_DIR}/bench.${IMAGE_ITER}
-		fi
-		IMAGE_ITER=`expr ${IMAGE_ITER} + 1`
-	done
-# bad copy/past, need to re-think this part
-elif  [ -n "${CFG_LIST}" ]; then
-	UPGRADE_IMAGE="none"
+		SVN_NUMBER=.`basename ${UPGRADE_IMAGE} | cut -d '-' -f 2`
+	else
+		SVN_NUMBER=''
+	fi
 	for CFG in ${CFG_LIST}; do
-		bench_cfg ${CFG} ${BENCH_DIR}/bench.${CONFIG_ITER}
-        CONFIG_ITER=`expr ${CONFIG_ITER} + 1`
-   done
-else
-	UPGRADE_IMAGE="none"
-	reboot_dut
-	echo "Image: none" > ${BENCH_DIR}/bench.info
-	echo "Start time: `date`" >> ${BENCH_DIR}/bench.info
-	bench ${BENCH_DIR}/bench
-fi # -n "${IMAGES_LIST}"
+		if [ ! "${CFG}" = "none" ]; then
+			# Check if bench already done regarding this image
+			CFG_SET=.`basename ${CFG}`
+			if [ -f ${BENCH_DIR}/bench${SVN_NUMBER}${CFG_SET}.1 ] ; then
+				echo "Allready did bench test regarding image ${UPGRADE_IMAGE} and cfg-set ${CFG_SET}"
+				continue
+			else	
+				bench_cfg ${CFG} ${BENCH_DIR}/bench${SVN_NUMBER}${CFG_SET}
+				BENCH_DONE=true
+			fi
+		fi
+	done
+	if !($BENCH_DONE); then
+		reboot_dut
+		echo "Image: ${UPGRADE_IMAGE}" > ${BENCH_DIR}/bench${SVN_NUMBER}.info
+		echo "Start time: `date`" >> ${BENCH_DIR}/bench${SVN_NUMBER}.info
+		bench ${BENCH_DIR}/bench${SVN_NUMBER}
+	fi
+done
+
 echo "All bench tests were done, results in ${BENCH_DIR}"

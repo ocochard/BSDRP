@@ -41,6 +41,7 @@ WITHOUT_ACCT=
 WITHOUT_AMD=
 WITHOUT_APM=
 WITHOUT_ASSERT_DEBUG=
+WITHOUT_ATF=
 WITHOUT_ATM=
 WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
@@ -247,9 +248,24 @@ add_port () {
 					\${NANO_WORLDDIR}/usr/ports/packages
 				# Run ldconfig before
 				chroot \${NANO_WORLDDIR} /bin/sh -exc '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
-				# Start the build
+				# Start the pkg add
+				# Create the repo configuration file
+				mkdir -p \${NANO_WORLDDIR}/usr/local/etc/pkg/repos
+				cat <<EOF > \${NANO_WORLDDIR}/usr/local/etc/pkg/repos/myrepo.conf
+myrepo: {
+ url: 'file:///usr/ports/packages',
+ enabled: true,
+ signature_type: 'none',
+ assume_always_yes: true
+}
+FreeBSD: {
+    enabled: false
+}
+EOF
+				# Bug with pkg: not using the "-d" option prevent to install the package with error message "pkg fail to extract static"
+				# Need to force assume_always_yes for avoiding bootstrap pkg confirmation too
 				chroot \${NANO_WORLDDIR} /bin/sh -exc \
-               		'env SIGNATURE_TYPE=NONE ASSUME_ALWAYS_YES=true PACKAGESITE=file:///usr/ports/packages pkg add /usr/ports/packages/All/${PKG_NAME}.txz'
+               		'env ASSUME_ALWAYS_YES=true pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
 				umount \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports
