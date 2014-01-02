@@ -6,21 +6,65 @@
 # This archive contains:
 #
 #	net/pimd
+#	net/pimd/Makefile
+#	net/pimd/pkg-descr
+#	net/pimd/distinfo
 #	net/pimd/files
 #	net/pimd/files/patch-config.mk
 #	net/pimd/files/pimd.in
-#	net/pimd/pkg-descr
-#	net/pimd/distinfo
-#	net/pimd/Makefile
 #
 echo c - net/pimd
 mkdir -p net/pimd > /dev/null 2>&1
+echo x - net/pimd/Makefile
+sed 's/^X//' >net/pimd/Makefile << 'fc0f211ff378f71bada5166c68e231fb'
+X# $FreeBSD$
+X
+XPORTNAME=	pimd
+XPORTVERSION=	2.1.8
+XCATEGORIES=	net
+XMASTER_SITES=	ftp://troglobit.com/pimd/
+X
+XMAINTAINER=	olivier@cochard.me
+XCOMMENT=	Lightweight stand-alone PIM-SM v2 multicast routing daemon
+X
+XLICENSE=	BSD
+X
+XUSE_BZIP2=	yes
+X
+XMAN8=		${PORTNAME}
+X
+XPLIST_FILES=	etc/pimd.conf.sample \
+X		etc/rc.d/pimd \
+X		sbin/pimd
+X
+Xpost-patch:
+X	${REINPLACE_CMD} -e 's|/etc/|${PREFIX}/etc/|g' \
+X	${WRKSRC}/pathnames.h
+X
+Xdo-install:
+X	${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${PREFIX}/sbin/
+X	${INSTALL_DATA} ${WRKSRC}/${PORTNAME}.conf ${STAGEDIR}${PREFIX}/etc/${PORTNAME}.conf.sample
+X	${INSTALL_SCRIPT} ${FILESDIR}/${PORTNAME}.in ${STAGEDIR}${PREFIX}/etc/rc.d/${PORTNAME}
+X.include <bsd.port.mk>
+fc0f211ff378f71bada5166c68e231fb
+echo x - net/pimd/pkg-descr
+sed 's/^X//' >net/pimd/pkg-descr << '0c01841db8cd781da1b8789f75ed9f6c'
+Xpimd is , a lightweight, stand-alone implementation of Protocol Independent 
+XMulticast-Sparse Mode
+X
+XWWW: http://troglobit.com/pimd.html
+0c01841db8cd781da1b8789f75ed9f6c
+echo x - net/pimd/distinfo
+sed 's/^X//' >net/pimd/distinfo << '2d30d8273cb298c7bf5fd70f6d9392e7'
+XSHA256 (pimd-2.1.8.tar.bz2) = 01016940543a0a6131d4e6c91b595d47e187012c59a298eec14c3dbc38564b3a
+XSIZE (pimd-2.1.8.tar.bz2) = 163976
+2d30d8273cb298c7bf5fd70f6d9392e7
 echo c - net/pimd/files
 mkdir -p net/pimd/files > /dev/null 2>&1
 echo x - net/pimd/files/patch-config.mk
 sed 's/^X//' >net/pimd/files/patch-config.mk << 'b85fb7e72bb8e240c2b014eb7ef7d661'
-X--- config.mk.orig	2013-12-13 09:58:23.771609654 +0100
-X+++ config.mk	2013-12-13 09:59:28.572605331 +0100
+X--- config.mk.orig	2011-10-22 17:16:01.000000000 +0200
+X+++ config.mk	2014-01-01 21:31:27.761607772 +0100
 X@@ -59,10 +59,10 @@
 X ## FreeBSD-3.x, FreeBSD-4.x
 X # Seems to already have ip_mroute.h and pim.h, add -Iinclude/freebsd if
@@ -41,10 +85,9 @@ X # GNU/Linux systems do not seem to ship pim.h and pim_var.h,
 X # use local include/netinet
 X # For uClibc based Linux systems, add -DHAVE_STRLCPY to DEFS
 X-INCLUDES      = -Iinclude
-X-DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
-X-EXTRA_OBJS    = strlcpy.o pidfile.o
 X+#INCLUDES      = -Iinclude
-X+#DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
+X DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
+X-EXTRA_OBJS    = strlcpy.o pidfile.o
 X+#EXTRA_OBJS    = strlcpy.o pidfile.o
 X 
 b85fb7e72bb8e240c2b014eb7ef7d661
@@ -78,49 +121,5 @@ Xload_rc_config $name
 Xrun_rc_command "$1"
 X
 b705718607067d0954575fd7807ad5ba
-echo x - net/pimd/pkg-descr
-sed 's/^X//' >net/pimd/pkg-descr << '0c01841db8cd781da1b8789f75ed9f6c'
-Xpimd is , a lightweight, stand-alone implementation of Protocol Independent 
-XMulticast-Sparse Mode
-X
-XWWW: http://troglobit.com/pimd.html
-0c01841db8cd781da1b8789f75ed9f6c
-echo x - net/pimd/distinfo
-sed 's/^X//' >net/pimd/distinfo << '2d30d8273cb298c7bf5fd70f6d9392e7'
-XSHA256 (pimd-2.1.8.tar.bz2) = 01016940543a0a6131d4e6c91b595d47e187012c59a298eec14c3dbc38564b3a
-XSIZE (pimd-2.1.8.tar.bz2) = 163976
-2d30d8273cb298c7bf5fd70f6d9392e7
-echo x - net/pimd/Makefile
-sed 's/^X//' >net/pimd/Makefile << 'fc0f211ff378f71bada5166c68e231fb'
-X# $FreeBSD$
-X
-XPORTNAME=	pimd
-XPORTVERSION=	2.1.8
-XCATEGORIES=	net
-XMASTER_SITES=	ftp://troglobit.com/pimd/
-X
-XMAINTAINER=	olivier@cochard.me
-XCOMMENT=	Lightweight stand-alone PIM-SM v2 multicast routing daemon
-X
-XLICENSE=	BSD
-X
-XUSE_BZIP2=	yes
-X
-XMAN8=		${PORTNAME}
-X
-XPLIST_FILES=	etc/pimd.conf.sample \
-X		etc/rc.d/pimd \
-X		sbin/pimd
-X
-Xpost-patch:
-X	${REINPLACE_CMD} -e 's|/etc/|${PREFIX}/etc/|g' \
-X	${WRKSRC}/pathnames.h
-X
-Xdo-install:
-X	${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${PREFIX}/sbin/
-X	${INSTALL_DATA} ${WRKSRC}/${PORTNAME}.conf ${STAGEDIR}${PREFIX}/etc/${PORTNAME}.conf.sample
-X	${INSTALL_SCRIPT} ${FILESDIR}/${PORTNAME}.in ${STAGEDIR}${PREFIX}/etc/rc.d/${PORTNAME}
-X.include <bsd.port.mk>
-fc0f211ff378f71bada5166c68e231fb
 exit
 
