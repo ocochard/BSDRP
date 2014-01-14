@@ -7,7 +7,6 @@
 #
 #	net/pimd
 #	net/pimd/files
-#	net/pimd/files/patch-config.mk
 #	net/pimd/files/pimd.in
 #	net/pimd/Makefile
 #	net/pimd/pkg-descr
@@ -17,39 +16,6 @@ echo c - net/pimd
 mkdir -p net/pimd > /dev/null 2>&1
 echo c - net/pimd/files
 mkdir -p net/pimd/files > /dev/null 2>&1
-echo x - net/pimd/files/patch-config.mk
-sed 's/^X//' >net/pimd/files/patch-config.mk << 'b85fb7e72bb8e240c2b014eb7ef7d661'
-X--- config.mk.orig	2014-01-06 09:40:16.000000000 +0100
-X+++ config.mk	2014-01-10 10:15:18.688897140 +0100
-X@@ -59,9 +59,9 @@
-X # GNU/Linux systems do not seem to ship pim.h and pim_var.h,
-X # use local include/netinet
-X # For uClibc based Linux systems, add -DHAVE_STRLCPY to DEFS
-X-INCLUDES      = -Iinclude
-X-DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
-X-EXTRA_OBJS    = strlcpy.o pidfile.o
-X+#INCLUDES      = -Iinclude
-X+#DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
-X+#EXTRA_OBJS    = strlcpy.o pidfile.o
-X 
-X ## FreeBSD	-D__FreeBSD__ is defined by the OS
-X ## Verified on FreeBSD-9.2, ...
-X@@ -71,10 +71,10 @@
-X # For older versions, add the following to INCLUDES below:
-X #   -Iinclude/freebsd if ip_mroute.h or in.h is missing, and
-X #   -Iinclude         if pim.h is missing
-X-#INCLUDES     =
-X-#DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY
-X-#EXTRA_OBJS   = pidfile.o
-X-#EXTRA_LIBS   =
-X+INCLUDES     =
-X+DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY
-X+EXTRA_OBJS   = pidfile.o
-X+EXTRA_LIBS   =
-X 
-X ## NetBSD	-DNetBSD is defined by the OS
-X ## Verified on NetBSD 6.1.2, ...
-b85fb7e72bb8e240c2b014eb7ef7d661
 echo x - net/pimd/files/pimd.in
 sed 's/^X//' >net/pimd/files/pimd.in << 'b705718607067d0954575fd7807ad5ba'
 X#!/bin/sh
@@ -86,18 +52,21 @@ X
 XPORTNAME=	pimd
 XPORTVERSION=	2.1.8
 XCATEGORIES=	net
-XMASTER_SITES=   http://github.com/${GITHUB_USER}/${GITHUB_REPO}/tarball/${GITVERSION}/
+XMASTER_SITES=	http://github.com/${GITHUB_USER}/${GITHUB_REPO}/tarball/${GITVERSION}/
 XDISTNAME=	${GITHUB_USER}-${GITHUB_REPO}-${GITVERSION}
 X
 XMAINTAINER=	olivier@cochard.me
 XCOMMENT=	Lightweight stand-alone PIM-SM v2 multicast routing daemon
 X
-XGITHUB_USER=	troglobit
-XGITHUB_REPO=	pimd
-XGITVERSION=	afe15a9
-X
 XLICENSE=	BSD
 X
+XWRKSRC=	${WRKDIR}/${GITHUB_USER}-${GITHUB_REPO}-978564c
+X
+XGITHUB_USER=	troglobit
+XGITHUB_REPO=	pimd
+XGITVERSION=	978564cc00
+X
+XHAS_CONFIGURE=	yes
 XUSE_BZIP2=	yes
 X
 XMAN8=		${PORTNAME}
@@ -125,8 +94,8 @@ XWWW: http://troglobit.com/pimd.html
 0c01841db8cd781da1b8789f75ed9f6c
 echo x - net/pimd/distinfo
 sed 's/^X//' >net/pimd/distinfo << '2d30d8273cb298c7bf5fd70f6d9392e7'
-XSHA256 (troglobit-pimd-afe15a9.tar.bz2) = 394c7da2aaa7ce654b792c4a9f58d92397aadf51761dd1a648b5e63186697d1a
-XSIZE (troglobit-pimd-afe15a9.tar.bz2) = 216379
+XSHA256 (troglobit-pimd-978564cc00.tar.bz2) = 62b7e5ee00e29413888c0790cf08eacce256b18dc56e4d424235dc926e346add
+XSIZE (troglobit-pimd-978564cc00.tar.bz2) = 216608
 2d30d8273cb298c7bf5fd70f6d9392e7
 exit
 
