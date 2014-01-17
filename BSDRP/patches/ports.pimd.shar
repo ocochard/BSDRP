@@ -8,6 +8,7 @@
 #	net/pimd
 #	net/pimd/files
 #	net/pimd/files/pimd.in
+#	net/pimd/files/patch-igmp.c
 #	net/pimd/Makefile
 #	net/pimd/pkg-descr
 #	net/pimd/distinfo
@@ -45,6 +46,23 @@ Xload_rc_config $name
 Xrun_rc_command "$1"
 X
 b705718607067d0954575fd7807ad5ba
+echo x - net/pimd/files/patch-igmp.c
+sed 's/^X//' >net/pimd/files/patch-igmp.c << '7c70d2b1acbcb0da8c11828e61074c85'
+X--- igmp.c.orig	2014-01-15 12:44:13.730996694 +0100
+X+++ igmp.c	2014-01-15 12:44:17.343999780 +0100
+X@@ -169,7 +169,11 @@
+X #ifdef RAW_INPUT_IS_RAW
+X     ipdatalen = ntohs(ip->ip_len) - iphdrlen;
+X #else
+X+ #if __FreeBSD_version >= 1000000
+X+	ipdatalen = ip->ip_len - iphdrlen;
+X+ #else
+X     ipdatalen = ip->ip_len;
+X+ #endif
+X #endif
+X     if (iphdrlen + ipdatalen != recvlen) {
+X 	logit(LOG_WARNING, 0, "Received packet from %s shorter (%u bytes) than hdr+data length (%u+%u)",
+7c70d2b1acbcb0da8c11828e61074c85
 echo x - net/pimd/Makefile
 sed 's/^X//' >net/pimd/Makefile << 'fc0f211ff378f71bada5166c68e231fb'
 X# $FreeBSD$

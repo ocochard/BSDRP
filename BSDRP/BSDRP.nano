@@ -358,11 +358,11 @@ add_port "net/bird6" "-DWITH_FIREWALL" "-DWITH_AGG"
 add_port "net/freevrrpd"
 
 # Ipsec-tools (IKEv1)
-#add_port "net/openldap24-client"
-#add_port "security/ipsec-tools" "-DWITH_RC5 -DWITH_IDEA -DWITH_RADIUS -DWITH_LDAP"
+add_port "net/openldap24-client"
+add_port "security/ipsec-tools" "-DWITH_RC5 -DWITH_IDEA -DWITH_RADIUS -DWITH_LDAP"
 
 # IKEv2
-add_port "security/racoon2"
+#add_port "security/racoon2"
 
 #pf top
 add_port "sysutils/pftop"

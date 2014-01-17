@@ -1,5 +1,5 @@
 # Release 1.51 (not released)
-* Upgraded to FreeBSD 10.0-RC5
+* Upgraded to FreeBSD 10.0-RELEASE
 
 ## New features
 
