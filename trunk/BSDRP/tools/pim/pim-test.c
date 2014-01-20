@@ -1,5 +1,6 @@
 /* PIM Sparse Mode multicast routing test
- * Purpose: There is a problem between FreeBSD 9.2 and 10.0, it's a small regression test
+ * Purpose: There is a problem between FreeBSD 9.2 and 10.0, it's a small regression test
+ * Code write as-a-book (without function for natural human ready)… just because it's a learning code.
  * source: man pages like multicast(4) and pim(4)
  * http://www.freebsd.org/doc/en/books/developers-handbook/sockets-essential-functions.html
 */
@@ -147,7 +148,7 @@ int main(void)
 	}
 
 	/* We still need to create a vif for PIM-register virtual interface
-	 * But what IP to use (kept the last one used)????
+	 * But what IP to use (kept the last one used)????
 	*/
 	//printf("Creating PIM-register vif using %s...", address);
 	printf("Creating PIM-register vif...");
@@ -172,8 +173,7 @@ int main(void)
     pim_s4 = socket(AF_INET, SOCK_RAW, IPPROTO_PIM);
 	if (pim_s4 < 0) perror("socket");
 
-
-	/* TO DO: Testing if PIM packet are received */
+	/* TO DO: Testing if PIM packet are received */
 
 	/* Exit */
 	/* Delete Multicast vif */
