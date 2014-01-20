@@ -91,6 +91,7 @@ WITHOUT_SENDMAIL=
 WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
 WITHOUT_SYSINSTALL=
+WITHOUT_TESTS=
 WITHOUT_UNBOUND=
 WITHOUT_WIRELESS=
 WITHOUT_WIRELESS_SUPPORT=
@@ -380,7 +381,7 @@ add_port "net/mrouted"
 # Add pimdd: IPv4 PIM Dense Mode daemon
 add_port "net/pimdd"
 
-# Add pimd (need to debug it)
+# Add pimd: IPv4 PIM Sparse Mode daemon (need to debug it)
 add_port "net/pimd"
 
 # Add tayga: userland NAT64 implementation
