@@ -1,8 +1,10 @@
 /* PIM Sparse Mode multicast routing test
- * Purpose: There is a problem between FreeBSD 9.2 and 10.0, it's a small regression test
+ * Purpose: There is a problem between FreeBSD 9.2 and 10.0 regarding pimd (PIM-SM daemon):
+ * Need to write a small regression test for helping to spot the problem.
  * Code write as-a-book (without function for natural human ready)… just because it's a learning code.
- * source: man pages like multicast(4) and pim(4)
+ * sources used: man pages like multicast(4) and pim(4)
  * http://www.freebsd.org/doc/en/books/developers-handbook/sockets-essential-functions.html
+ * http://www.cs.unc.edu/~jeffay/dirt/FAQ/comp249-001-F99/mcast-socket.html
 */
 
 #include <stdio.h>
@@ -13,19 +15,27 @@
 #include <arpa/inet.h> /* ntoa */
 //#include <netinet/in.h> /* sockaddr_in : no complains without????*/
 #include <sys/socket.h>
-#include <netinet/in.h> /* IPPROTO_* */
+#include <netinet/in.h> /* IPPROTO_*, ALLRTRS_GROUP, etc... */
 #include <netinet/ip_mroute.h> /* vifctl, MRT_INIT, etc.. */
+#include <netinet/pim.h> /* INADDR_ALLPIM_ROUTERS_GROUP */
 #include <ifaddrs.h> /* getifaddrs, Note: <net/if.h> must be include before this */
 
 int main(void)
 {
 	/* Concept:
 	 * 1. Create an IGMP RAW socket
-	 * 2. Use this IGMP RAW socket for enabling multicast routing
-	 * 3. Use the IGMP RAW socket for enabling PIM multicast routing
-	 * 4. For each network interface: a corresponding multicast interface need
-	 * to be added (vif)
-	 * 5. For PIM Sparse mode: Create a vif for the PIM-Register
+	 * 2. Enable multicast routing using the IGMP RAW socket
+	 *    This action update some filters for receiving ALLRTRS_GROUP (224.0.0.2) :
+	 *      we can see incoming packet with a tcpdump -p after
+	 *      but ifmcstat didn't display ALLRTRS_GROUP !?!
+	 * 3. Enable PIM multicast routing still using IGMP RAW socket
+	 *    Same problem regarding filter for ALLPIM_ROUTERS_GROUP (224.0.0.13) with ifmcstat 
+	 * 4. For each network interface:
+	 *    - a corresponding multicast interface need to be added (vif)
+	 *    - And they need to subscribe to ALLRTRS_GROUP, ALLRPTS_GROUP and ALLPIM_ROUTERS_GROUP
+	*       with IP_ADD_MEMBERSHIP
+	 *    to be added (vif)
+	 * 5. Add a vif for the PIM-Register (PIM Sparse mode only)
 	 * 6. Create a PIM RAW socket for sending/receiving PIM
 	*/
 
@@ -35,18 +45,17 @@ int main(void)
 	 *operations below require certain privilege (i.e., root privilege):
 	*/
 
-	int error, mrouter_s4;
+	int mrouter_s4;
 	mrouter_s4 = socket(AF_INET, SOCK_RAW, IPPROTO_IGMP);
 	if (mrouter_s4 < 0)
-		perror("socket");
+		perror("Failed to open IGMP RAW socket");
 
 	/* After the multicast routing socket is open, it can be used to enable or
 	disable multicast forwarding in the kernel: */
 
 	int v = 1;        /* 1 to enable, or 0 to disable */
-	error = setsockopt(mrouter_s4, IPPROTO_IP, MRT_INIT, (void *)&v, sizeof(v));
-	if (error < 0) {
-		perror("You need a multicast enabled kernel (options MROUTING)");
+	if (setsockopt(mrouter_s4, IPPROTO_IP, MRT_INIT, (void *)&v, sizeof(v)) < 0) {
+		perror("Failed to enable multicast routing: You need a multicast enabled kernel (options MROUTING)");
 		exit(-1);
 		/*NOTREACHED*/
 	}
@@ -54,9 +63,8 @@ int main(void)
 	/* And it can be used to enable or disable PIM processing in the
 	kernel.*/
 	v = 1;        /* 1 to enable, or 0 to disable */
-	error = setsockopt(mrouter_s4, IPPROTO_IP, MRT_PIM, (void *)&v, sizeof(v));
-	if (error < 0) {
-		perror("Can't enable PIM processing!?");
+	if (setsockopt(mrouter_s4, IPPROTO_IP, MRT_PIM, (void *)&v, sizeof(v)) < 0) {
+		perror("Failde to enable PIM processing");
 		exit(-1);
 		/*NOTREACHED*/
 	}
@@ -137,13 +145,34 @@ int main(void)
 			vc.vifc_threshold = 1; /* minimum TTL to be forwarded to this vif */
 			vc.vifc_rate_limit = 0; /* is no longer supported in FreeBSD */
 			vc.vifc_lcl_addr = *addr_ptr; /* struct in_addr */
-			error = setsockopt(mrouter_s4, IPPROTO_IP, MRT_ADD_VIF, (void *)&vc,
-		sizeof(vc));
-			if (error < 0) perror("Can't create vif!");
+			if (setsockopt(mrouter_s4, IPPROTO_IP, MRT_ADD_VIF, (void *)&vc,
+		sizeof(vc)) < 0)
+				perror("Can't create vif!");
 			else {
 				printf("done :vif %d.\n", vif_index);
 				vif_index ++;
 			}
+			/* Now we need to subscribe to ALLRTRS_GROUP (224.0.0.2)
+			 *  with IP_ADD_MEMBERSHIP that use struct ip_mreq
+			 *
+			 * Argument structure for IP_ADD_MEMBERSHIP and IP_DROP_MEMBERSHIP.
+			 * struct ip_mreq {
+			 *        struct  in_addr imr_multiaddr;  * IP multicast address of group *
+			 *        struct  in_addr imr_interface;  * local IP address of interface *
+			 *};
+			*/
+
+			struct ip_mreq mreq;
+			mreq.imr_multiaddr.s_addr =  htonl(INADDR_ALLRTRS_GROUP);
+			mreq.imr_interface = vc.vifc_lcl_addr;
+		    if (setsockopt(mrouter_s4, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq,sizeof(mreq)) < 0)
+				perror("Failed to add membership ALLRTRS_GROUP");
+			mreq.imr_multiaddr.s_addr =  htonl(INADDR_ALLPIM_ROUTERS_GROUP);
+		    if (setsockopt(mrouter_s4, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq,sizeof(mreq)) < 0)
+				perror("Failed to add membership ALLPIM_ROUTERS_GROUP");
+			mreq.imr_multiaddr.s_addr =  htonl(INADDR_ALLRPTS_GROUP);
+		    if (setsockopt(mrouter_s4, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq,sizeof(mreq)) < 0)
+				perror("Failed to add membership ALLRPTS_GROUP");
 		}
 	}
 
@@ -157,9 +186,9 @@ int main(void)
 	vc.vifc_threshold = 1; /* minimum TTL to be forwarded to this vif */
 	vc.vifc_rate_limit = 0; /* is no longer supported in FreeBSD */
 	/* vc.vifc_lcl_addr = *addr_ptr; */
-	error = setsockopt(mrouter_s4, IPPROTO_IP, MRT_ADD_VIF, (void *)&vc,
-	sizeof(vc));
-	if (error < 0) perror("Can't create vif!");
+	if (setsockopt(mrouter_s4, IPPROTO_IP, MRT_ADD_VIF, (void *)&vc,
+	sizeof(vc)) < 0)
+		perror("Can't create vif!");
 	else printf("done (vif %d).\n", vif_index);
 	//vif_index ++;
 
@@ -169,37 +198,79 @@ int main(void)
 	/* Now that PIM processing is enabled, we need to open a new socket for PIM */
 
 	/* IPv4 */
-    int pim_s4;
-    pim_s4 = socket(AF_INET, SOCK_RAW, IPPROTO_PIM);
-	if (pim_s4 < 0) perror("socket");
+	int pim_s4;
+	pim_s4 = socket(AF_INET, SOCK_RAW, IPPROTO_PIM);
+	if (pim_s4 < 0) perror("Failed to create PIM RAW socket");
 
-	/* TO DO: Testing if PIM packet are received */
+	/* We need to bind the previous socket created before read on them */
+	struct sockaddr_in igmp_sockaddr_in, pim_sockaddr_in;
+	memset(&igmp_sockaddr_in, 0, sizeof(igmp_sockaddr_in));
+	memset(&pim_sockaddr_in, 0, sizeof(pim_sockaddr_in));
+
+	igmp_sockaddr_in.sin_family = AF_INET;
+    //igmp_sockaddr_in.sin_addr.s_addr = htonl(INADDR_ALLRTRS_GROUP);
+    //igmp_sockaddr_in.sin_port = htons(DEFAULT_PORT);
+    //igmp_sockaddr_in.sin_len = sizeof(igmp_sockaddr_in);
+
+	if (bind(mrouter_s4, (struct sockaddr *)&igmp_sockaddr_in, sizeof(igmp_sockaddr_in)) < 0) {
+		perror("Could not bind to IGMP socket");
+		exit (-1);
+	}
+
+	pim_sockaddr_in.sin_family = AF_INET;
+	//pim_sockaddr_in.sin_addr.s_addr = htonl(INADDR_ALLPIM_ROUTERS_GROUP);
+	if (bind(pim_s4, (struct sockaddr *)&pim_sockaddr_in, sizeof(pim_sockaddr_in)) < 0) {
+		perror("Could not bind to PIM socket");
+		exit (-1);
+	}
+
+
+	/* Loop that wait for PIM packet */
+
+	/* We will use recvfrom:
+	 * recvfrom(int s, void * restrict buf, size_t len, int flags,
+	 * struct sockaddr * restrict from, socklen_t * restrict fromlen);
+	*/
+	int saddr_size, data_size;
+	struct sockaddr saddr;
+	saddr_size = sizeof saddr;
+	unsigned char *buffer = (unsigned char *)malloc(65536); /* big size */
+
+	printf("Waiting for receiving packet on the IGMP RAW socket...\n");
+	while(1)
+    {
+		/* Last parameter of recvfrom is a socklen_t *
+		 * need to convert the pointer to saddr_size with (socklen_t*)&
+		 */
+        data_size = recvfrom(mrouter_s4 , buffer , 65536 , 0 , &saddr , (socklen_t*)&saddr_size);
+        if(data_size <0 ) printf("Recvfrom error , failed to get packets\n");
+		else printf("get a packet!");
+    }
 
 	/* Exit */
 	/* Delete Multicast vif */
 
 	for (vifi_t vifi = 0 ; vifi <= vif_index; ++vifi) {
 		printf("Deleting vif %d...",vifi);
-		error = setsockopt(mrouter_s4, IPPROTO_IP, MRT_DEL_VIF, (void *)&vifi,
-		sizeof(vifi));
-		if (error < 0) perror("Can't delete vif!");
+		/* TO DO: Unregister them before */
+		if (setsockopt(mrouter_s4, IPPROTO_IP, MRT_DEL_VIF, (void *)&vifi,
+		sizeof(vifi)) < 0)
+			perror("Can't delete vif!");
 		else printf("done\n");
 	}
 
 	/* Need to disable mcast routing ???? */
 
 	v = 0;        /* 1 to enable, or 0 to disable */
-	error = setsockopt(mrouter_s4, IPPROTO_IP, MRT_PIM, (void *)&v, sizeof(v));
-	if (error < 0) perror("Can't disable PIM processing");
+	if (setsockopt(mrouter_s4, IPPROTO_IP, MRT_PIM, (void *)&v, sizeof(v)) < 0)
+		perror("Can't disable PIM processing");
 
 	v = 0;        /* 1 to enable, or 0 to disable */
-	error = setsockopt(mrouter_s4, IPPROTO_IP, MRT_INIT, (void *)&v, sizeof(v));
-	if (error < 0) perror("Can't disable multicast routing");
+	if (setsockopt(mrouter_s4, IPPROTO_IP, MRT_INIT, (void *)&v, sizeof(v)) < 0)
+		perror("Can't disable multicast routing");
 
 	/* Closing socket */
-	//error = close(pim_s4);
 	if (close(pim_s4) < 0) perror("close");
-	//error = close(mrouter_s4);
 	if (close(mrouter_s4)< 0) perror("close");
 
 }
