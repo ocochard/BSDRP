@@ -27,11 +27,11 @@ int main(void)
 	 * 2. Enable multicast routing using the IGMP RAW socket
 	 *    This action update some filters for receiving ALLRTRS_GROUP (224.0.0.2) :
 	 *      we can see incoming packet with a tcpdump -p after
-	 *      but ifmcstat didn't display ALLRTRS_GROUP !?!
+	 *      but ifmcstat didn't display ALLRTRS_GROUP: Need to manually IP_ADD_MEMBERSHIP
 	 * 3. Enable PIM multicast routing still using IGMP RAW socket
-	 *    Same problem regarding filter for ALLPIM_ROUTERS_GROUP (224.0.0.13) with ifmcstat 
+	 *    Same problem regarding filter for ALLPIM_ROUTERS_GROUP (224.0.0.13) with ifmcstat
 	 * 4. For each network interface:
-	 *    - a corresponding multicast interface need to be added (vif)
+	 *    - a corresponding multicast interface (vif) need to be added
 	 *    - And they need to subscribe to ALLRTRS_GROUP, ALLRPTS_GROUP and ALLPIM_ROUTERS_GROUP
 	*       with IP_ADD_MEMBERSHIP
 	 *    to be added (vif)
@@ -93,7 +93,7 @@ int main(void)
 	memset(&vc, 0, sizeof(vc)); /* initialization (copy 0xlenght of vc into vc)*/
 
 	/* We need to get all Network interface list and their IPv4 addresses first
-	 * For this action, getifaddrs(3) is used
+	 * For this action, getifaddrs(3) is used and it need to use a struct ifaddrs
 	*/
 
 	struct ifaddrs *ifap,*ifa;
@@ -113,7 +113,6 @@ int main(void)
 	 *     char            sa_data[14];  * actually longer; address value *
 	 * };
 	 * sockaddr_in can be mapped to sockaddr if AF_INET:
-	 * Socket address, internet style.
 	 * struct sockaddr_in {
 	 *	uint8_t		sin_len;
 	 *	sa_family_t	sin_family;
@@ -138,7 +137,7 @@ int main(void)
 			addr_ptr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
 			/* inet(3) */
 			inet_ntop(ifa->ifa_addr->sa_family,addr_ptr,address,sizeof(address));
-			printf("%s (%s)...",ifa->ifa_name, address);
+			printf("- %s (%s)...",ifa->ifa_name, address);
 			/* Assign all vifctl fields as appropriate */
 			vc.vifc_vifi = vif_index; /* must be unique per vif */
 			vc.vifc_flags = 0; /* set for pim_register only */
@@ -149,10 +148,10 @@ int main(void)
 		sizeof(vc)) < 0)
 				perror("Can't create vif!");
 			else {
-				printf("done :vif %d.\n", vif_index);
+				printf("done: vif %d\n", vif_index);
 				vif_index ++;
 			}
-			/* Now we need to subscribe to ALLRTRS_GROUP (224.0.0.2)
+			/* Now we need to subscribe to each mcast groups usefull for a router
 			 *  with IP_ADD_MEMBERSHIP that use struct ip_mreq
 			 *
 			 * Argument structure for IP_ADD_MEMBERSHIP and IP_DROP_MEMBERSHIP.
@@ -165,14 +164,20 @@ int main(void)
 			struct ip_mreq mreq;
 			mreq.imr_multiaddr.s_addr =  htonl(INADDR_ALLRTRS_GROUP);
 			mreq.imr_interface = vc.vifc_lcl_addr;
+			printf("   Subscribing to %s...",inet_ntoa(mreq.imr_multiaddr));
 		    if (setsockopt(mrouter_s4, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq,sizeof(mreq)) < 0)
 				perror("Failed to add membership ALLRTRS_GROUP");
+			else printf("done\n");
 			mreq.imr_multiaddr.s_addr =  htonl(INADDR_ALLPIM_ROUTERS_GROUP);
+			printf("   Subscribing to %s...",inet_ntoa(mreq.imr_multiaddr));
 		    if (setsockopt(mrouter_s4, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq,sizeof(mreq)) < 0)
 				perror("Failed to add membership ALLPIM_ROUTERS_GROUP");
+			else printf("done\n");
 			mreq.imr_multiaddr.s_addr =  htonl(INADDR_ALLRPTS_GROUP);
+			printf("   Subscribing to %s...",inet_ntoa(mreq.imr_multiaddr));
 		    if (setsockopt(mrouter_s4, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq,sizeof(mreq)) < 0)
 				perror("Failed to add membership ALLRPTS_GROUP");
+			else printf("done\n");
 		}
 	}
 
@@ -227,6 +232,7 @@ int main(void)
 
 	/* Loop that wait for PIM packet */
 
+	/* Need to check: https://stackoverflow.com/questions/822964/linux-socket-programming-debug */
 	/* We will use recvfrom:
 	 * recvfrom(int s, void * restrict buf, size_t len, int flags,
 	 * struct sockaddr * restrict from, socklen_t * restrict fromlen);
@@ -247,12 +253,12 @@ int main(void)
 		else printf("get a packet!");
     }
 
-	/* Exit */
+	/* End: Need to cleanup */
 	/* Delete Multicast vif */
 
 	for (vifi_t vifi = 0 ; vifi <= vif_index; ++vifi) {
-		printf("Deleting vif %d...",vifi);
 		/* TO DO: Unregister them before */
+		printf("Deleting vif %d...",vifi);
 		if (setsockopt(mrouter_s4, IPPROTO_IP, MRT_DEL_VIF, (void *)&vifi,
 		sizeof(vifi)) < 0)
 			perror("Can't delete vif!");
