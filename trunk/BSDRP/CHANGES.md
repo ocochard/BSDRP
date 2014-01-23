@@ -1,5 +1,14 @@
 # Release 1.51 (not released)
 * Upgraded to FreeBSD 10.0-RELEASE
+* Extras patches:
+	* PIM regression patched
+	* pf UDP NAT patch (kern/181690)
+	* Fix Realtek 8111G NIC support (misc/181703)
+    * bsnmpd costemic patch
+      http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
+	* multi-threaded netblast (bin/179085)
+* Default configuration:
+	* Do not enable sshd by default (this generate host key with not-user defined hostname)
 
 ## New features
 
