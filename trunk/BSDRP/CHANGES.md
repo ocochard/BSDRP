@@ -9,6 +9,8 @@
 	* multi-threaded netblast (bin/179085)
 * Default configuration:
 	* Do not enable sshd by default (this generate host key with not-user defined hostname)
+* mpd5: provide example scripts for if-up and if-down
+	
 
 ## New features
 
