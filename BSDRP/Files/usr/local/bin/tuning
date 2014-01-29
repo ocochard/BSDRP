@@ -242,9 +242,8 @@ net_netstat () {
 
 net_forward () {
 	# http://wiki.freebsd.org/NetworkPerformanceTuning
-	for VALUE in net.inet.ip.forwarding net.inet.ip.fastforwarding; do
-    	sysctl_equal ${VALUE} 1
-    done
+	sysctl_equal net.inet.ip.forwarding 1
+	[ ! `sysrc -n ipsec_enable` == "YES" ] || sysctl_equal net.inet.ip.fastforwarding 1
 	# http://wiki.freebsd.org/NetworkPerformanceTuning
 	for VALUE in kern.random.sys.harvest.ethernet\
 	kern.random.sys.harvest.point_to_point\

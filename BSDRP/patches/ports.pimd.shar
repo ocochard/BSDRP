@@ -78,11 +78,11 @@ XCOMMENT=	Lightweight stand-alone PIM-SM v2 multicast routing daemon
 X
 XLICENSE=	BSD
 X
-XWRKSRC=	${WRKDIR}/${GITHUB_USER}-${GITHUB_REPO}-978564c
+XWRKSRC=	${WRKDIR}/${GITHUB_USER}-${GITHUB_REPO}-${GITVERSION}
 X
 XGITHUB_USER=	troglobit
 XGITHUB_REPO=	pimd
-XGITVERSION=	978564cc00
+XGITVERSION=	a66e7ba
 X
 XHAS_CONFIGURE=	yes
 XUSE_BZIP2=	yes
@@ -112,8 +112,8 @@ XWWW: http://troglobit.com/pimd.html
 0c01841db8cd781da1b8789f75ed9f6c
 echo x - net/pimd/distinfo
 sed 's/^X//' >net/pimd/distinfo << '2d30d8273cb298c7bf5fd70f6d9392e7'
-XSHA256 (troglobit-pimd-978564cc00.tar.bz2) = 62b7e5ee00e29413888c0790cf08eacce256b18dc56e4d424235dc926e346add
-XSIZE (troglobit-pimd-978564cc00.tar.bz2) = 216608
+XSHA256 (troglobit-pimd-a66e7ba.tar.bz2) = d1209a626ebbd3da14af7705b08930defb1f499e1dc2de1f771ac105d0cf1e61
+XSIZE (troglobit-pimd-a66e7ba.tar.bz2) = 217602
 2d30d8273cb298c7bf5fd70f6d9392e7
 exit
 
