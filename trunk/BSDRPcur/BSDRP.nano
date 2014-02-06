@@ -47,7 +47,6 @@ WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
 WITHOUT_BLUETOOTH=
 WITHOUT_CALENDAR=
-WITHOUT_CAPSICUM=
 WITHOUT_CTM=
 WITHOUT_CVS=
 WITHOUT_DICT=
@@ -115,7 +114,7 @@ NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -m 0"
 # 				But, 256 000 000 Byte is 244MiB	
 # This function will set the variable NANO_MEDIASIZE, NANO_SECTS, NANO_HEADS
 # Warning : using generic-fdd (heads=64 sectors/track=32) create boot problem on WRAP
-UsbDevice generic-hdd 256
+UsbDevice generic-hdd 512
 
 # Number of code images on media (1 or 2)
 NANO_IMAGES=2
@@ -385,8 +384,8 @@ add_port "net/pimd"
 add_port "net/tayga"
 
 # Add DHCP server and client
-add_port "net/isc-dhcp42-server"
-add_port "net/isc-dhcp42-relay"
+add_port "net/isc-dhcp43-server"
+add_port "net/isc-dhcp43-relay"
 
 # Add sstmp, a simple MTA to get mail off the system
 add_port "mail/ssmtp"

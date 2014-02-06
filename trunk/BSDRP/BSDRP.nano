@@ -115,7 +115,7 @@ NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -m 0"
 # 				But, 256 000 000 Byte is 244MiB	
 # This function will set the variable NANO_MEDIASIZE, NANO_SECTS, NANO_HEADS
 # Warning : using generic-fdd (heads=64 sectors/track=32) create boot problem on WRAP
-UsbDevice generic-hdd 256
+UsbDevice generic-hdd 512
 
 # Number of code images on media (1 or 2)
 NANO_IMAGES=2
@@ -389,8 +389,8 @@ add_port "net/pimd"
 add_port "net/tayga"
 
 # Add DHCP server and client
-add_port "net/isc-dhcp42-server"
-add_port "net/isc-dhcp42-relay"
+add_port "net/isc-dhcp43-server"
+add_port "net/isc-dhcp43-relay"
 
 # Add sstmp, a simple MTA to get mail off the system
 add_port "mail/ssmtp"
@@ -412,6 +412,9 @@ add_port "net/mpd5"
 add_port "security/easy-rsa"
 add_port "archivers/lzo2"
 add_port "security/openvpn"
+add_port "security/openvpn-auth-radius"
+#ldap bring full gcc deps
+#add_port "security/openvpn-auth-ldap"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netpipe" 

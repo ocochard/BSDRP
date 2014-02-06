@@ -123,7 +123,7 @@ tune () {
 	echo "#<== End of /boot/loader.conf.local"
 	echo "#==> To be added to /etc/rc.conf"
 	#Need to replace this part by a list of modules (ichsmb coretemp aesni watchdog?)
-	if grep -q AESNI /var/run/dmesg.boot ; then
+	if grep -q grep 'Feature.*AESNI' /var/run/dmesg.boot ; then
 		#CPU support, check if not allready loaded
 		if ! kldstat -n aesni | grep -q aesni; then
 			echo "#CPU support AESNI crypto feature, add the module"
@@ -243,7 +243,12 @@ net_netstat () {
 net_forward () {
 	# http://wiki.freebsd.org/NetworkPerformanceTuning
 	sysctl_equal net.inet.ip.forwarding 1
-	[ ! `sysrc -n ipsec_enable` == "YES" ] || sysctl_equal net.inet.ip.fastforwarding 1
+	if [ ! `sysrc -n ipsec_enable` == "YES" ]; then
+		sysctl_equal net.inet.ip.fastforwarding 1
+		echo "IPSec configuration detected"
+		echo "Check if your hardware support one of these crypto accelerator modules:"
+		echo " aesni(4), glxsb(4), hifn(4), ipsec(4), padlock(4), safe(4) or ubsec(4)"
+	fi
 	# http://wiki.freebsd.org/NetworkPerformanceTuning
 	for VALUE in kern.random.sys.harvest.ethernet\
 	kern.random.sys.harvest.point_to_point\

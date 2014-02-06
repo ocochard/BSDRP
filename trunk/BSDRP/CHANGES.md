@@ -1,7 +1,11 @@
 # Release 1.51 (not released)
+
+## New features
+* Image requierement changed to 512MB flash
+=> TO DO: update upgrade process
 * Upgraded to FreeBSD 10.0-RELEASE
 * Extras patches:
-	* PIM regression patched
+	* PIM routing regression patched
 	* pf UDP NAT patch (kern/181690)
 	* Fix Realtek 8111G NIC support (misc/181703)
     * bsnmpd costemic patch
@@ -10,14 +14,53 @@
 * Default configuration:
 	* Do not enable sshd by default (this generate host key with not-user defined hostname)
 * mpd5: provide example scripts for if-up and if-down
-	
-
-## New features
+* openvpn: radius module added
 
 ## Bug fixes
 
 ## Updated packages
-*  bird to 1.4.0
+* bird to 1.4.0
+* ipsec-tools to 0.8.1
+* isc-dhcp-server to 4.3
+
+## To fix before release
+* ipsec-tools 0.8.1 is broken
+* pimdd is broken
+
+## Installed packages
+* NetPIPE-3.7.1
+* bird-1.4.0_2
+* bird6-1.4.0_2
+* bsnmp-regex-0.6
+* bsnmp-ucd-0.4.0
+* dlmalloc-2.8.6
+* easy-rsa-2.2.0.m
+* freevrrpd-1.1
+* iperf-2.0.5
+* ipmitool-1.8.12_4
+* ipsec-tools-0.8.1_3
+* isc-dhcp43-relay-4.3.0
+* isc-dhcp43-server-4.3.0
+* libevent-1.4.14b_3
+* libgcrypt-1.5.3
+* libgpg-error-1.12
+* lzo2-2.06_2
+* mcast-tools-20061214_1
+* mpd5-5.7
+* mrouted-3.9.6_1
+* openldap-client-2.4.38
+* openvpn-2.3.2
+* openvpn-auth-radius-2.1_1
+* pftop-0.7_2
+* pimd-2.1.8
+* pimdd-0.2.1.0_1
+* pkg-1.2.6
+* quagga-re-0.99.17.12_1
+* ssmtp-2.64_1
+* sudo-1.8.8
+* tayga-0.9.2
+* tmux-1.8_1
+* ucarp-1.5.2_2
 
 -----------------------------------------------------
 # Release 1.5 (2013/10/27)
