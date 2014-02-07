@@ -5,7 +5,8 @@
 => TO DO: update upgrade process
 * Upgraded to FreeBSD 10.0-RELEASE
 * Extras patches:
-	* PIM routing regression patched
+	* PIM routing regression patched (r261024)
+	* IPFW fwd for IPv4 fix (r260702)
 	* pf UDP NAT patch (kern/181690)
 	* Fix Realtek 8111G NIC support (misc/181703)
     * bsnmpd costemic patch
@@ -15,6 +16,7 @@
 	* Do not enable sshd by default (this generate host key with not-user defined hostname)
 * mpd5: provide example scripts for if-up and if-down
 * openvpn: radius module added
+* Lab script: New script with bhyve support
 
 ## Bug fixes
 
