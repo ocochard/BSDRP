@@ -30,29 +30,32 @@
 
 set -eu
 
-usage() {
-	# $1: Cause of displaying usage
-	[ $# -eq 1 ] && echo $1
-	echo "Usage: $0 [-hv] -i FreeBSD-disk-image.img [-n router-number] [-l LAN-number]"
-	echo " -d           Destroy VM"
-	echo " -h           Display this help"
-	echo " -i filename  FreeBSD file image"
-	echo " -l X         Number of LAN common to all VM (between 0 and 9)"
-	echo " -m X         RAM in Mb (default 256)"
-	echo " -n X         Number of routers (between 2 and 9) full meshed (default 1)"
-	echo " This script needs to be executed with superuser privileges"
-	echo ""
-    exit 1
-}
-
 ### Global variables ###
 WRK_DIR="/tmp/BSDRP"
 VM_TEMPLATE=${WRK_DIR}/vm_template
 VM_NAME="BSDRP"
+CORE="1"
 NUMBER_VM="1"
 FILE=""
 LAN=0
 RAM="256M"
+
+usage() {
+	# $1: Cause of displaying usage
+	[ $# -eq 1 ] && echo $1
+	echo "Usage: $0 [-dhp] -i FreeBSD-disk-image.img [-n vm-number] [-l LAN-number]"
+	echo " -c			Number of core per VM (default ${CORE})"
+	echo " -d           Delete All VMs, including the template"
+	echo " -h           Display this help"
+	echo " -i filename  FreeBSD file image"
+	echo " -l X         Number of LAN common to all VM (default ${LAN})"
+	echo " -m X         RAM size (default ${RAM})"
+	echo " -n X         Number of VM full meshed (default ${NUMBER_VM})"
+	echo " -p           Patch FreeBSD disk-image for serial output"
+	echo " This script needs to be executed with superuser privileges"
+	echo ""
+    exit 1
+}
 
 ### Functions ####
 # A usefull function (from: http://code.google.com/p/sh-die/)
@@ -122,7 +125,7 @@ adapt_image_console () {
 	mount | grep -q "${WRK_DIR}/mnt"  && umount -f ${WRK_DIR}/mnt
 
 	MD=`mdconfig -a ${VM_TEMPLATE}`
-	fsck_ufs -y /dev/$MD"s1a" > /dev/null 2>&1 || die "Error regarding the image given"
+	fsck_ufs -y /dev/$MD"s1a" > /dev/null 2>&1 || die "Error regarding the FreeBSD image given"
 	mount /dev/$MD"s1a" ${WRK_DIR}/mnt  || die "Can't mount the image"
 
 	if ! grep -q 'console "/usr/libexec/getty std.9600"' ${WRK_DIR}/mnt/etc/ttys; then
@@ -131,19 +134,19 @@ adapt_image_console () {
 console "/usr/libexec/getty std.9600"   vt100   on   secure
 EOF
 fi
-	umount ${WRK_DIR}/mnt || "die can't unmount the BSDRP image"
+	umount ${WRK_DIR}/mnt || "die can't unmount the disk image"
 	mdconfig -du $MD || "die can't destroy md image"
 }
 
-destroy_all_vm() {
-	echo "TO DO: get an ls of number of VM disk"
-	NUMBER_VM=`find ${WRK_DIR} -name "${VM_NAME}_*" | wc -l`
-#	local i=1
-#	while [ $i -le $NUMBER_VM ]; do
-#		bhyvectl --vm=${VM_NAME}_$1 --destroy && echo "destroying guest" \
-#			&& rm ${WRK_DIR}/${VM_NAME}_$1 \
-#			|| echo "can't destroy vm ${VM_NAME}_$1"
-#	done
+erase_all_vm() {
+	local VM_LIST=`find ${WRK_DIR} -name "${VM_NAME}_*"`
+	local i=1
+	for i in ${VM_LIST}; do
+		local VM=`basename $i`
+		destroy_vm ${VM}
+		rm $i || echo "can't erase vm $i"
+	done
+	rm ${VM_TEMPLATE}
 	return 0
 }
 
@@ -171,6 +174,7 @@ run_vm() {
 	destroy_vm ${VM_NAME}_$1
 	# load a FreeBSD guest inside a bhyve virtual machine
 	eval VM_LOAD_$1=\"bhyveload -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm$1A \${VM_NAME}_$1\"
+	#eval echo DEBUG \${VM_LOAD_$1}
 	eval \${VM_LOAD_$1}
 	# c: Number of guest virtual CPUs
 	# m: RAM
@@ -184,13 +188,16 @@ run_vm() {
 	# P: Force guest virtual CPUs to be pinned to host CPUs
 	# s: Configure a virtual PCI slot and function.
 	# S: Configure legacy ISA slot and function 
-	VM_COMMON="bhyve -c 1 -m ${RAM} -AI -H -P -s 0,hostbridge"
+	# PCI 0: hostbridge
+	# PCI 1: Network NIC
+	# PCI 2: Hard drive
+	# PCI 3: lpc (serial)
+	#   Note: It's not possible to have "hole" in PCI assignement
+	VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 3:0,lpc"
 	eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\$1A\"
-	eval VM_DISK_$1=\"-s 3,virtio-blk,\${WRK_DIR}/\${VM_NAME}_$1\"
-	eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \
-		\${VM_NAME}_$1
-	echo "start a cu -l /dev/nmdm$1B for connecting VM ${VM_NAME}_$1's serial console"
-	
+	eval VM_DISK_$1=\"-s 2:0,virtio-blk,\${WRK_DIR}/\${VM_NAME}_$1\"
+	#eval echo DEBUG \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_NAME}_$1
+	eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} ${VM_NAME}_$1 &
 }
 
 create_interface() {
@@ -221,19 +228,19 @@ create_interface() {
 
 #### Main ####
 
-[ $# -lt 1 ] && usage "ERROR: No argument given"
+[ $# -lt 1 -a ! -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ `id -u` -ne 0 ] && usage "ERROR: not executed as root"
 
-args=`getopt i:dhcl:m:n:sv $*`
+args=`getopt dhi:l:m:n:p $*`
 
 set -- $args
 for i; do
 	case "$i"
 	in
 	-d)
-		destroy_all_vm
+		erase_all_vm
 		destroy_all_if
-		exit
+		return 0
 		shift
 		;;
 	-h)
@@ -260,26 +267,41 @@ for i; do
 		shift
 		shift
 		;;
+	-p)
+		PATCH_SERIAL=true
+		shift
+		shift
+		;;
 	--)
 		shift
 		break
         esac
 done #for
 
-[ ! -f ${VM_TEMPLATE} -a -z ${FILE} ] && usage "ERROR: No previous template \
+# Check user input
+[ ! -f ${VM_TEMPLATE} -a -z "${FILE}" ] && usage "ERROR: No previous template \
 	neither image filename given"
-[ -z ${NUMBER_VM} ] && usage "ERROR: No VM number given"
+#[ -z "${FILE}" -a ( ${PATCH_SERIAL} ) ] && usage "Image filename mandatory for patching it"
+# Should we check for NUMBER_VM and LAN number boundaries ?
+# If default number of VM and LAN, then create at least one LAN
+[ ${NUMBER_VM} -eq 1 -a ${LAN} -eq 0 ] && LAN=1
 
 check_bhyve_support
 
 # if input image given, need to prepare it
 if [ -n "${FILE}" ]; then
 	uncompress_image
-	adapt_image_console
+	( ${PATCH_SERIAL} ) && adapt_image_console
 fi
 
 # Clean-up previous interfaces if existing
 destroy_all_if
+
+echo "BSD Router Project (http://bsdrp.net) - bhyve full-meshed lab script"
+echo "Setting-up a virtual envirronement with $NUMBER_VM VM(s):"
+echo "- Each VM have ${CORE} core(s) and ${RAM} RAM"
+echo "- $LAN LAN between all VM"
+echo "- Full mesh Ethernet links between each VM"
 
 i=1                                                                   
 # Enter the main loop for each VM                                            
@@ -307,21 +329,23 @@ while [ $i -le $NUMBER_VM ]; do
 	while [ $j -le $NUMBER_VM ]; do
 		# Skip if i = j
 		if [ $i -ne $j ]; then
-			echo "vtnet${NIC_NUMBER} connected to VM ${VM_NAME}_${j}."
+			echo "- vtnet${NIC_NUMBER} connected to VM ${VM_NAME}_${j}."
+			SUB_PCI=${NIC_NUMBER}
 			NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
 			# Need to manage correct mac address
 			[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
 			[ $j -le 9 ] && MAC_J="0$j" || MAC_J="$j"
-			# We allways use "low number - high number"
+			# We allways use "low number - high number" for identify cables
+			# Note: bhyve PCI sub-id need to start at 0 (NIC_NUMBER - 1)
 			if [ $i -le $j ]; then
 				BRIDGE_IF=$( create_interface MESH_${i}-${j} bridge )
 				TAP_IF=$( create_interface MESH_${i}-${j}_${i} tap ${BRIDGE_IF} )
-				eval VM_NET_${i}=\"\${VM_NET_${i}} -s 2:\${NIC_NUMBER},virtio-net,\
+				eval VM_NET_${i}=\"\${VM_NET_${i}} -s 1:\${SUB_PCI},virtio-net,\
 ${TAP_IF},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
 			else
 				BRIDGE_IF=$( create_interface MESH_${j}-${i} bridge )
 				TAP_IF=$( create_interface MESH_${j}-${i}_${i} tap ${BRIDGE_IF} )
-				eval VM_NET_${i}=\"\${VM_NET_${i}} -s 2:\${NIC_NUMBER},virtio-net,\
+				eval VM_NET_${i}=\"\${VM_NET_${i}} -s 1:\${SUB_PCI},virtio-net,\
 ${TAP_IF},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
             fi
         fi
@@ -338,11 +362,12 @@ ${TAP_IF},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 		# Need to manage correct mac address
         [ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
         [ $j -le 9 ] && MAC_J="0$i" || MAC_J="$i"
-        echo "vtnet${NIC_NUMBER} connected to LAN number ${j}."
+        echo "- vtnet${NIC_NUMBER} connected to LAN number ${j}"
+		SUB_PCI=${NIC_NUMBER}
         NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
 		BRIDGE_IF=$( create_interface LAN_${j} bridge )
 		TAP_IF=$( create_interface LAN_${j}_${i} tap ${BRIDGE_IF} ) 
-		eval VM_NET_${i}=\"\${VM_NET_${i}} -s 2:\${NIC_NUMBER},virtio-net,\
+		eval VM_NET_${i}=\"\${VM_NET_${i}} -s 1:\${SUB_PCI},virtio-net,\
 ${TAP_IF},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
            j=`expr $j + 1`
 	done # while [ $j -le $LAN ]
@@ -351,5 +376,11 @@ ${TAP_IF},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
 	run_vm $i
 	i=`expr $i + 1`
 done # Main loop: while [ $i -le $NUMBER_VM ]
-#destroy_vm
 
+i=1
+# Enter tips main loop for each VM
+echo "For connecting to VM'serial console, you can use:"
+while [ $i -le $NUMBER_VM ]; do
+	echo "- VM ${VM_NAME}_${i} : cu -l /dev/nmdm${i}B"
+	i=`expr $i + 1`
+done
