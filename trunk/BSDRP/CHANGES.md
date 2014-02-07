@@ -1,8 +1,11 @@
 # Release 1.51 (not released)
 
+## Special note
+* Minimum disk size requierement increased to 512MB:
+    * Install images (full) are 512MB size
+    * Update images are still 256MB size
+
 ## New features
-* Image requierement changed to 512MB flash
-=> TO DO: update upgrade process
 * Upgraded to FreeBSD 10.0-RELEASE
 * Extras patches:
 	* PIM routing regression patched (r261024)
