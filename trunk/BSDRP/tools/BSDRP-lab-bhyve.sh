@@ -39,6 +39,7 @@ NUMBER_VM="1"
 FILE=""
 LAN=0
 RAM="256M"
+PATCH_SERIAL=false
 
 usage() {
 	# $1: Cause of displaying usage
@@ -345,7 +346,7 @@ while [ $i -le $NUMBER_VM ]; do
 	while [ $j -le $NUMBER_VM ]; do
 		# Skip if i = j
 		if [ $i -ne $j ]; then
-			echo "- vtnet${NIC_NUMBER} connected to VM ${VM_NAME}_${j}."
+			echo "- vtnet${NIC_NUMBER} connected to VM ${j}."
 			# PCI_SLOT must be between 0 and 7
 			# Need to increase PCI_BUS number if slot is more than 7
 		
