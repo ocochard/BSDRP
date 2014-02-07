@@ -278,7 +278,7 @@ build_lab () {
         while [ $j -le $NUMBER_VM ]; do
             if [ $i -ne $j ]; then
                 echo "${DRIVER_TYPE}${NIC_NUMBER} connected to Router${j}."
-                NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
+                NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
                 if [ $i -le $j ]; then
 					#Need to manage correct mac address
 					[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
@@ -302,7 +302,7 @@ build_lab () {
 						die "[ERROR] Can't add NIC ${NIC_NUMBER} (full mesh) to VM $i"
                 fi
             fi
-            j=`expr $j + 1` 
+            j=$(( $j + 1 ))
         done
         #Enter in the LAN NIC loop
         local j=1
@@ -312,7 +312,7 @@ build_lab () {
 			[ $j -le 9 ] && MAC_J="0$i" || MAC_J="$i"
             
 			echo "${DRIVER_TYPE}${NIC_NUMBER} connected to LAN number ${j}."
-            NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
+            NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
             VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} intnet \
 				--nictype${NIC_NUMBER} ${NIC_TYPE} \
 				--intnet${NIC_NUMBER} LAN10${j} \
@@ -320,14 +320,14 @@ build_lab () {
 				--nicpromisc${NIC_NUMBER} allow-vms \
 				>> ${LOG_FILE} 2>&1 && \
 				die "[ERROR] Can't add NIC ${NIC_NUMBER} (LAN) to VM $i"
-            j=`expr $j + 1`
+            j=$(( $j + 1 ))
         done
 		if ($HOSTONLY_NIC); then
 			#Need to manage correct mac address
 			[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
 			
 			echo "${DRIVER_TYPE}${NIC_NUMBER} connected to shared-with-host LAN."
-			NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
+			NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
 			VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly \
 				--hostonlyadapter${NIC_NUMBER} ${HOSTONLY_NIC_NAME} \
 				--nictype${NIC_NUMBER} ${NIC_TYPE} \
@@ -335,7 +335,7 @@ build_lab () {
 				--nicpromisc${NIC_NUMBER} allow-vms >> ${LOG_FILE} 2>&1 || \
 				die "[ERROR] Can't add NIC ${NIC_NUMBER} (Host only) to VM $i"
 		fi
-    i=`expr $i + 1`
+    i=$(( $i + 1 ))
     done
 }
 
@@ -368,7 +368,7 @@ start_lab () {
         else
             echo "Connect to router ${i}: connect a ${VBOX_OUTPUT} client on port 590${i}"
         fi
-        i=`expr $i + 1`
+        i=$(( $i + 1 ))
     done
 
 	if ($HOSTONLY_NIC); then
@@ -501,7 +501,7 @@ esac
 WORKING_DIR=`VBoxManage list systemproperties | grep "Default machine folder" | cut -d ":" -f 2 | tr -s " " | sed '1s/^.//'`
 MAX_NIC=`VBoxManage list systemproperties | grep "Maximum ICH9 Network Adapter count" | cut -d ":" -f 2 | tr -s " " | sed '1s/^.//'`
 # A full mesh network consume, on each machine, N-1 VNIC
-MAX_VM=`expr $MAX_NIC + 1`
+MAX_VM=$(( $MAX_NIC + 1 ))
 
 set -- $args
 for i
@@ -614,8 +614,8 @@ fi
 #Count the number of available NIC
 
 ($HOSTONLY_NIC) && TOTAL_NIC=1 || TOTAL_NIC=0
-TOTAL_NIC=`expr $TOTAL_NIC + $LAN` || true
-TOTAL_NIC=`expr $TOTAL_NIC + $NUMBER_VM - 1` || true
+TOTAL_NIC=$(( $TOTAL_NIC + $LAN )) || true
+TOTAL_NIC=$(( $TOTAL_NIC + $NUMBER_VM - 1 )) || true
 [ $TOTAL_NIC -gt $MAX_NIC ] && die "[ERROR] you can't have more than $MAX_NIC VNIC by VM"
 
 if ! check_vm ${VM_TPL_NAME}; then

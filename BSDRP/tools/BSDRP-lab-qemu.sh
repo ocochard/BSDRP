@@ -3,7 +3,7 @@
 # Qemu/kvm lab test script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2013, The BSDRP Development Team
+# Copyright (c) 2009-2014, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -236,7 +236,7 @@ create_interfaces_lab_freebsd () {
         TAP_IF=`eval echo $"${TAP_IF}"`
         ifconfig ${BRIDGE_IF} addm ${TAP_IF} up
         ifconfig ${TAP_IF} up
-        i=`expr $i + 1`
+        i=$(( $i + 1 ))
     done
 }
 
@@ -262,7 +262,7 @@ create_interfaces_lab_linux () {
         ifconfig ${BRIDGE_IF} addm ${TAP_IF} up
 		brctl addif ${BRIDGE_IF} ${TAP_IF} || die "ERROR: Can't add ${TAP_IF} to bridge ${BRIDGE_IF}"
 		ifconfig ${TAP_IF} up || die "ERROR: Can't enable ${TAP_IF}"
-        i=`expr $i + 1`
+        i=$(( $i + 1 ))
     done
 }
 
@@ -293,7 +293,7 @@ delete_interface_lab_freebsd () {
         if ! ifconfig ${TAP_IF} destroy; then
 			echo "WARNING: Can't destroy ${TAP_IF}"
 		fi
-        i=`expr $i + 1`
+        i=$(( $i + 1 ))
     done
     if ! ifconfig ${BRIDGE_IF} destroy; then
 		echo "WARNING: Can't destroy ${BRIDGE_IF}"
@@ -306,7 +306,7 @@ delete_interface_lab_linux () {
         TAP_IF="TAP_IF_$i"
         TAP_IF=`eval echo $"${TAP_IF}"`
         tunctl -d ${TAP_IF}
-        i=`expr $i + 1`
+        i=$(( $i + 1 ))
     done
     if ! ifconfig ${BRIDGE_IF} down; then
         echo "WARNING: Can't disable ${BRIDGE_IF}"
@@ -393,7 +393,7 @@ start_lab_vm () {
         if ($SHARED_WITH_HOST); then
             NIC_NUMBER=0
             echo "em${NIC_NUMBER} connected to shared with host LAN, configure IP 10.0.0.${i}/8 on this."
-            NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
+            NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
             QEMU_ADMIN_NIC="-net nic,macaddr=AA:AA:00:00:00:0${i},vlan=0,model=${NIC_MODEL} -net tap,vlan=0,ifname=${TAP_IF}"
         else
             QEMU_ADMIN_NIC=""
@@ -406,23 +406,23 @@ start_lab_vm () {
         while [ $j -le $NUMBER_VM ]; do
             if [ $i -ne $j ]; then
                 echo "em${NIC_NUMBER} connected to Router${j}."
-                NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
+                NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
                 if [ $i -le $j ]; then
                     QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=AA:AA:00:00:0${i}:${i}${j},vlan=${i}${j},model=${NIC_MODEL} -net socket,mcast=230.0.0.1:100${i}${j},vlan=${i}${j}"
                 else
                     QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=AA:AA:00:00:0${i}:${j}${i},vlan=${j}${i},model=${NIC_MODEL} -net socket,mcast=230.0.0.1:100${j}${i},vlan=${j}${i}"
                 fi
             fi
-            j=`expr $j + 1` 
+            j=$(( $j + 1 ))
         done
         #Enter in the LAN NIC loop
         j=1
         QEMU_LAN_NIC=""
         while [ $j -le $NUMBER_LAN ]; do
             echo "em${NIC_NUMBER} connected to LAN number ${j}."
-            NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
+            NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
             QEMU_LAN_NIC="${QEMU_LAN_NIC} -net nic,macaddr=CC:CC:00:00:0${j}:0${i},vlan=10${j},model=${NIC_MODEL} -net socket,mcast=230.0.0.1:1000${j},vlan=10${j}"
-            j=`expr $j + 1`
+            j=$(( $j + 1 ))
         done
         if ($SERIAL); then
             QEMU_OUTPUT="-nographic -vga none -serial telnet::800${i},server,nowait -serial mon:telnet::900${i},server,nowait"
@@ -436,7 +436,7 @@ start_lab_vm () {
 			echo ${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} ${QEMU_LAN_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
 		fi
         ${QEMU_ARCH} -snapshot -hda ${FILENAME} ${QEMU_OUTPUT} ${QEMU_NAME} ${QEMU_ADMIN_NIC} ${QEMU_PP_NIC} ${QEMU_LAN_NIC} -pidfile /tmp/BSDRP-$i.pid -daemonize
-        i=`expr $i + 1`
+        i=$(( $i + 1 ))
     done
 
     #Now wait for each qemu process end before continue
@@ -446,7 +446,7 @@ start_lab_vm () {
         do
             sleep 1
         done
-        i=`expr $i + 1`
+        i=$(( $i + 1 ))
     done
     
 }

@@ -54,8 +54,8 @@ reboot_dut () {
 	local TIMEOUT=${REBOOT_TIMEOUT}
 	while ! rcmd ${IS_DUT_ONLINE_TARGET} "${IS_DUT_ONLINE_CMD}" > /dev/null 2>&1; do
 		sleep 5
-		TIMEOUT=`expr ${TIMEOUT} - 1`
-		[ ${TIMEOUT} -eq 0 ] && die "DUT didn't switch in forwarding mode after `expr ${REBOOT_TIMEOUT} \* 5` seconds"
+		TIMEOUT=$(( ${TIMEOUT} - 1 ))
+		[ ${TIMEOUT} -eq 0 ] && die "DUT didn't switch in forwarding mode after $(( ${REBOOT_TIMEOUT} * 5 )) seconds"
 	done
 	echo "done"
 	return 0
@@ -87,7 +87,7 @@ bench () {
 
 		# if we did the last test, we can exit (avoid to wait for an useless reboot)
 		[ ${TEST_ITER} -eq ${TOTAL_TEST} ] && return 0
-		TEST_ITER=`expr ${TEST_ITER} + 1`
+		TEST_ITER=$(( ${TEST_ITER} + 1 ))
 		
 		# if we did the last test of the serie, we can exit and avoid an useless reboot
 		# because after this last, it will be rebooted outside this function
@@ -283,18 +283,18 @@ for UPGRADE_IMAGE in ${IMAGES_LIST};  do
 			SVN_NUMBER=`basename ${UPGRADE_IMAGE} | cut -d '-' -f 2`
 			CFG=`basename ${CFG}`
 			if [ ! -f ${BENCH_DIR}/bench.${SVN_NUMBER}.${CFG}.1 ]; then
-			  TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
+			  TOTAL_TEST=$(( ${TOTAL_TEST} + 1 * ${TEST_ITER_MAX} ))
 			  INC_DONE=true
 			fi
 		fi
 	done
 	if !(${INC_DONE}); then
-		TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
+		TOTAL_TEST=$(( ${TOTAL_TEST} + 1 * ${TEST_ITER_MAX} ))
 		INC_DONE=true
 	fi
 done
 if !(${INC_DONE}); then
-	TOTAL_TEST=`expr ${TOTAL_TEST} + 1 \* ${TEST_ITER_MAX}`
+	TOTAL_TEST=$(( ${TOTAL_TEST} + 1 * ${TEST_ITER_MAX} ))
 	INC_DONE=true
 fi
 
