@@ -44,7 +44,7 @@ usage() {
 	# $1: Cause of displaying usage
 	[ $# -eq 1 ] && echo $1
 	echo "Usage: $0 [-dhp] -i FreeBSD-disk-image.img [-n vm-number] [-l LAN-number]"
-	echo " -c			Number of core per VM (default ${CORE})"
+	echo " -c           Number of core per VM (default ${CORE})"
 	echo " -d           Delete All VMs, including the template"
 	echo " -h           Display this help"
 	echo " -i filename  FreeBSD file image"
@@ -52,6 +52,7 @@ usage() {
 	echo " -m X         RAM size (default ${RAM})"
 	echo " -n X         Number of VM full meshed (default ${NUMBER_VM})"
 	echo " -p           Patch FreeBSD disk-image for serial output"
+	echo " -w dirname   Working directory (default ${WRK_DIR})"
 	echo " This script needs to be executed with superuser privileges"
 	echo ""
     exit 1
@@ -139,14 +140,17 @@ fi
 }
 
 erase_all_vm() {
+	# We can display vm by looking in /dev/vmm
+	# Search for VM disk image
 	local VM_LIST=`find ${WRK_DIR} -name "${VM_NAME}_*"`
 	local i=1
 	for i in ${VM_LIST}; do
+		echo "Deleting VM $i..."
 		local VM=`basename $i`
 		destroy_vm ${VM}
 		rm $i || echo "can't erase vm $i"
 	done
-	rm ${VM_TEMPLATE}
+	[ -f ${VM_TEMPLATE} ] && rm ${VM_TEMPLATE}
 	return 0
 }
 
@@ -189,11 +193,11 @@ run_vm() {
 	# s: Configure a virtual PCI slot and function.
 	# S: Configure legacy ISA slot and function 
 	# PCI 0: hostbridge
-	# PCI 1: Network NIC
+	# PCI 1: lpc (serial)
 	# PCI 2: Hard drive
-	# PCI 3: lpc (serial)
+	# PCI 3 and next: Network NIC
 	#   Note: It's not possible to have "hole" in PCI assignement
-	VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 3:0,lpc"
+	VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 1:0,lpc"
 	eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\$1A\"
 	eval VM_DISK_$1=\"-s 2:0,virtio-blk,\${WRK_DIR}/\${VM_NAME}_$1\"
 	#eval echo DEBUG \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_NAME}_$1
@@ -231,12 +235,17 @@ create_interface() {
 [ $# -lt 1 -a ! -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ `id -u` -ne 0 ] && usage "ERROR: not executed as root"
 
-args=`getopt dhi:l:m:n:p $*`
+args=`getopt c:dhi:l:m:n:pw: $*`
 
 set -- $args
 for i; do
 	case "$i"
 	in
+	-c)
+		CORE=$2
+		shift
+		shift
+		;;
 	-d)
 		erase_all_vm
 		destroy_all_if
@@ -272,6 +281,13 @@ for i; do
 		shift
 		shift
 		;;
+	-w)
+		WRK_DIR=$2
+		[ -d $2 ] || usage "ERROR: Working directory not found"
+		VM_TEMPLATE=${WRK_DIR}/vm_template
+		shift
+		shift
+		;;
 	--)
 		shift
 		break
@@ -282,7 +298,6 @@ done #for
 [ ! -f ${VM_TEMPLATE} -a -z "${FILE}" ] && usage "ERROR: No previous template \
 	neither image filename given"
 #[ -z "${FILE}" -a ( ${PATCH_SERIAL} ) ] && usage "Image filename mandatory for patching it"
-# Should we check for NUMBER_VM and LAN number boundaries ?
 # If default number of VM and LAN, then create at least one LAN
 [ ${NUMBER_VM} -eq 1 -a ${LAN} -eq 0 ] && LAN=1
 
@@ -299,8 +314,9 @@ destroy_all_if
 
 echo "BSD Router Project (http://bsdrp.net) - bhyve full-meshed lab script"
 echo "Setting-up a virtual envirronement with $NUMBER_VM VM(s):"
+echo "- Working directory: ${WRK_DIR}"
 echo "- Each VM have ${CORE} core(s) and ${RAM} RAM"
-echo "- $LAN LAN between all VM"
+echo "- $LAN LAN(s) between all VM"
 echo "- Full mesh Ethernet links between each VM"
 
 i=1                                                                   
@@ -310,7 +326,7 @@ while [ $i -le $NUMBER_VM ]; do
 	cp ${VM_TEMPLATE} ${WRK_DIR}/${VM_NAME}_$i
 	# Network_config
 	NIC_NUMBER=0
-    echo "VM ${VM_NAME}_$i have the following NIC:"
+    echo "VM $i have the following NIC:"
 
 	# Entering the Meshed NIC loop NIC loop
 	# Now generate X (X-1)/2 full meshed link
@@ -330,57 +346,67 @@ while [ $i -le $NUMBER_VM ]; do
 		# Skip if i = j
 		if [ $i -ne $j ]; then
 			echo "- vtnet${NIC_NUMBER} connected to VM ${VM_NAME}_${j}."
-			SUB_PCI=${NIC_NUMBER}
-			NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
+			# PCI_SLOT must be between 0 and 7
+			# Need to increase PCI_BUS number if slot is more than 7
+		
+			PCI_BUS=$(( ${NIC_NUMBER} / 8 ))
+			PCI_SLOT=$(( ${NIC_NUMBER} - 8 * ${PCI_BUS} ))
+			# All PCI_BUS before 3 are already used
+			PCI_BUS=$(( ${PCI_BUS} + 3 ))
 			# Need to manage correct mac address
 			[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
 			[ $j -le 9 ] && MAC_J="0$j" || MAC_J="$j"
 			# We allways use "low number - high number" for identify cables
-			# Note: bhyve PCI sub-id need to start at 0 (NIC_NUMBER - 1)
 			if [ $i -le $j ]; then
 				BRIDGE_IF=$( create_interface MESH_${i}-${j} bridge )
 				TAP_IF=$( create_interface MESH_${i}-${j}_${i} tap ${BRIDGE_IF} )
-				eval VM_NET_${i}=\"\${VM_NET_${i}} -s 1:\${SUB_PCI},virtio-net,\
+				eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
 ${TAP_IF},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
 			else
 				BRIDGE_IF=$( create_interface MESH_${j}-${i} bridge )
 				TAP_IF=$( create_interface MESH_${j}-${i}_${i} tap ${BRIDGE_IF} )
-				eval VM_NET_${i}=\"\${VM_NET_${i}} -s 1:\${SUB_PCI},virtio-net,\
+				eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
 ${TAP_IF},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
-            fi
-        fi
-        j=`expr $j + 1`
+			fi
+			NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
+		fi
+		j=$(( $j + 1 ))
 	done # while [ $j -le $NUMBER_VM ] (
-    j=1
+	j=1
 	# Entering in the LAN NIC loop
 	#    VM1         VM2        VM3
 	# (LAN_1_1)   (LAN_1_1)  (LAN_1_3)
 	#     |           |          |
 	#    -------LAN_1-------------
 	#
-    while [ $j -le $LAN ]; do
+	while [ $j -le $LAN ]; do
 		# Need to manage correct mac address
-        [ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
-        [ $j -le 9 ] && MAC_J="0$i" || MAC_J="$i"
-        echo "- vtnet${NIC_NUMBER} connected to LAN number ${j}"
-		SUB_PCI=${NIC_NUMBER}
-        NIC_NUMBER=`expr ${NIC_NUMBER} + 1`
+		[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
+		[ $j -le 9 ] && MAC_J="0$i" || MAC_J="$i"
+		echo "- vtnet${NIC_NUMBER} connected to LAN number ${j}"
+		# PCI_SLOT must be between 0 and 7
+		# Need to increase PCI_BUS number if slot is more than 7
+		PCI_BUS=$(( ${NIC_NUMBER} / 8 ))
+		PCI_SLOT=$(( ${NIC_NUMBER} - 8 * ${PCI_BUS} ))
+		# All PCI_BUS before 3 are already used
+		PCI_BUS=$(( ${PCI_BUS} + 3 ))
 		BRIDGE_IF=$( create_interface LAN_${j} bridge )
 		TAP_IF=$( create_interface LAN_${j}_${i} tap ${BRIDGE_IF} ) 
-		eval VM_NET_${i}=\"\${VM_NET_${i}} -s 1:\${SUB_PCI},virtio-net,\
+		eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
 ${TAP_IF},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
-           j=`expr $j + 1`
+        NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
+        j=$(( $j + 1 ))
 	done # while [ $j -le $LAN ]
 
 	# Start VM
 	run_vm $i
-	i=`expr $i + 1`
+	i=$(( $i + 1 ))
 done # Main loop: while [ $i -le $NUMBER_VM ]
 
 i=1
 # Enter tips main loop for each VM
 echo "For connecting to VM'serial console, you can use:"
 while [ $i -le $NUMBER_VM ]; do
-	echo "- VM ${VM_NAME}_${i} : cu -l /dev/nmdm${i}B"
-	i=`expr $i + 1`
+	echo "- VM ${i} : cu -l /dev/nmdm${i}B"
+	i=$(( $i + 1 ))
 done
