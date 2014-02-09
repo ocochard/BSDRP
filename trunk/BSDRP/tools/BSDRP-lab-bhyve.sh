@@ -52,7 +52,7 @@ usage() {
 	echo " -l X         Number of LAN common to all VM (default ${LAN})"
 	echo " -m X         RAM size (default ${RAM})"
 	echo " -n X         Number of VM full meshed (default ${NUMBER_VM})"
-	echo " -p           Patch FreeBSD disk-image for serial output"
+	echo " -p           Patch FreeBSD disk-image for serial output (useless with BSDRP images)"
 	echo " -w dirname   Working directory (default ${WRK_DIR})"
 	echo " This script needs to be executed with superuser privileges"
 	echo ""
@@ -284,7 +284,7 @@ for i; do
 		;;
 	-w)
 		WRK_DIR=$2
-		[ -d $2 ] || usage "ERROR: Working directory not found"
+		[ -d ${WRK_DIR} ] || usage "ERROR: Working directory not found"
 		VM_TEMPLATE=${WRK_DIR}/vm_template
 		shift
 		shift
@@ -301,6 +301,8 @@ done #for
 #[ -z "${FILE}" -a ( ${PATCH_SERIAL} ) ] && usage "Image filename mandatory for patching it"
 # If default number of VM and LAN, then create at least one LAN
 [ ${NUMBER_VM} -eq 1 -a ${LAN} -eq 0 ] && LAN=1
+
+[ -d ${WRK_DIR} ] || mkdir -p ${WRK_DIR}
 
 check_bhyve_support
 

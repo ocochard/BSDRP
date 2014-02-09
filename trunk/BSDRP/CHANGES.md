@@ -1,7 +1,7 @@
 # Release 1.51 (not released)
 
 ## Special note
-* Minimum disk size requierement increased to 512MB:
+* Minimum disk size requierement increased to 512MB for new install:
     * Install images (full) are 512MB size
     * Update images are still 256MB size
 
@@ -27,6 +27,7 @@
 * bird to 1.4.0
 * ipsec-tools to 0.8.1
 * isc-dhcp-server to 4.3
+* ipsec-tools to 0.8.1
 
 ## To fix before release
 * ipsec-tools 0.8.1 is broken
