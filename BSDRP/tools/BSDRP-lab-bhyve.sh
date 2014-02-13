@@ -52,6 +52,7 @@ usage() {
 	echo " -l X         Number of LAN common to all VM (default ${LAN})"
 	echo " -m X         RAM size (default ${RAM})"
 	echo " -n X         Number of VM full meshed (default ${NUMBER_VM})"
+	echo " -s           Stop all VM"
 	echo " -p           Patch FreeBSD disk-image for serial output (useless with BSDRP images)"
 	echo " -w dirname   Working directory (default ${WRK_DIR})"
 	echo " This script needs to be executed with superuser privileges"
@@ -155,6 +156,13 @@ erase_all_vm() {
 	return 0
 }
 
+stop_all_vm() {
+	local VM_LIST=`find /dev/vmm -name "${VM_NAME}_*"`
+	for i in ${VM_LIST}; do
+		destroy_vm `basename $i`
+	done
+}
+
 destroy_all_if() {
 	IF_LIST=`ifconfig -l`
 	for i in ${IF_LIST}; do
@@ -167,7 +175,7 @@ destroy_all_if() {
 destroy_vm() {
 	# $1: VM name
 	# Check if this VM exist by small query
-	if bhyvectl --vm=$1 --get-vmcs-vpid  > /dev/null 2>&1; then
+	if [ -e /dev/vmm/$1 ]; then
 		bhyvectl --vm=$1 --destroy || die "Can't destroy VM $1"
 	fi
 	return 0
@@ -236,7 +244,7 @@ create_interface() {
 [ $# -lt 1 -a ! -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ `id -u` -ne 0 ] && usage "ERROR: not executed as root"
 
-args=`getopt c:dhi:l:m:n:pw: $*`
+args=`getopt c:dhi:l:m:n:spw: $*`
 
 set -- $args
 for i; do
@@ -280,6 +288,11 @@ for i; do
 	-p)
 		PATCH_SERIAL=true
 		shift
+		shift
+		;;
+	-s)
+		stop_all_vm
+		return 0
 		shift
 		;;
 	-w)

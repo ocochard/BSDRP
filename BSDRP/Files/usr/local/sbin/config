@@ -95,7 +95,6 @@ is_mounted () {
 mount_cfg () {
 	#skip is already mounted
 	is_mounted /cfg && return 0
-
 	mount /cfg && return 0 || return 1
 }
 
@@ -145,9 +144,9 @@ archive_cfg () {
 		mkdir /data/archives || die "ERROR: Can't create /data/archives"
 	else
 		if [ -f /data/archives/rollback.tar.xz ]; then
-            		rm /data/archives/rollback.tar.xz || \
-                	echo "WARNING: Can't delete /data/archives/rollback.tar.xz"
-            	fi
+       		rm /data/archives/rollback.tar.xz || \
+           	echo "WARNING: Can't delete /data/archives/rollback.tar.xz"
+       	fi
 	fi
 
 	if ! tar -cJvpf /data/archives/rollback.tar.xz -C /cfg/ . 2>/dev/null; then
@@ -181,7 +180,7 @@ save_cfg () {
                 	(find `dirname $i`  -print | cpio -dumpv  /cfg/ 2>/dev/null)
 					# Because the previous cpio copied all files (even unmodified), we need to delete them (dirty hack)
 					rm -rf /cfg/`dirname $i`/*
-                		fi
+           		fi
 				(find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
 			fi
 		fi # if [ -f /cfg/$i ]
@@ -192,28 +191,23 @@ save_cfg () {
 	(
 	cd /cfg
 	for i in "$@" `find * -type f`; do
-		if [ ! -f /etc/$i ]; then
-			rm -rf /cfg/$i
-		fi
+		[ -f /etc/$i ] || rm -rf /cfg/$i
 	done
 	)
 
-	# save ssh keys (conrtibution: to be reviewed)
+	# save ssh keys (contribution: to be reviewed)
 	if [ -d /cfg/ssh ]; then
-		cd /etc/ssh || die "can't cd /etc/ssh"
-		for i in "$@" `find ssh_host_* -type f`; do
-        	if ! cmp -s /etc/ssh/$i /cfg/ssh/$i; then
-				cp -pfv /etc/ssh/$i /cfg/ssh/$i 2>/dev/null
-			fi
-       	done
-	else
-		if ! mkdir -p /cfg/ssh; then
-			echo "WARNING: Can't create /cfg/ssh"
+		if [ -f /etc/ssh/ssh_host_key ]; then
+			cd /etc/ssh || die "can't cd /etc/ssh"
+			for i in "$@" `find ssh_host_* -type f`; do
+        		if ! cmp -s /etc/ssh/$i /cfg/ssh/$i; then
+					cp -pfv /etc/ssh/$i /cfg/ssh/$i 2>/dev/null
+				fi
+       		done
 		fi
-		(
-		cd /etc/ssh
-		cp ssh_host_* /cfg/ssh 2>/dev/null
-		)
+	else
+		mkdir -p /cfg/ssh || echo "WARNING: Can't create /cfg/ssh"
+		cp /etc/ssh/ssh_host_* /cfg/ssh 2>/dev/null
 	fi
 
 	umount_cfg
@@ -312,20 +306,12 @@ rollback () {
 # $1 = Source archive filename (.tar.xz)
 # $2 = Destination directory
 restore_cfg ( ) {
-	if [ $1 = '' ]; then
-		die "BUG: restore_cfg(): No argument 1 given"
-	elif [ $2 = '' ]; then
-		die "BUG: restore_cfg(): No argument 2 given"
-	fi
-	if [ ! -f $1 ]; then
-		die "ERROR: $1 doesn't exist or isn't a file"
-	elif [ ! -d $2 ]; then
-		die "ERROR: $2 doesn't exist or isn't a directory"
-	fi
+	[ $# -lt 2 ] && die "BUG: restore_cfg(): no enought argument"
+	[ -f $1 ] || die "ERROR: $1 doesn't exist or isn't a file"
+	[ -d $2 ] || die "ERROR: $2 doesn't exist or isn't a directory"
 	# Unzip the archive $1 to $2/
-	if ! tar -x -C $2/ --exclude 'fstab' -f $1; then
+	tar -x -C $2/ --exclude 'fstab' -f $1 || \
 		die "ERROR: untaring file failed."
-	fi
 }
 	
 # Send configuration to an svn/cvs/scp server ?
@@ -333,12 +319,11 @@ put () {
 	# option: protocol username@host <filename>
 	# example: scp admin@backup.host.fr:filename
 	case "$SECOND_OPTION" in
-        scp)
+    scp)
 		echo "Send saved configuration by SCP to ${THIRD_OPTION}"
 		if [ -f /tmp/config.$$.tar.xz ]; then
-			if ! rm /tmp/config.$$.tar.xz; then
+			rm /tmp/config.$$.tar.xz || \
 				echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
-			fi
 		fi
 		mount_cfg
 		if ! tar -cJvpf /tmp/config.$$.tar.xz -C /cfg/ . 2>/dev/null; then
@@ -348,27 +333,24 @@ put () {
 		fi
 		umount_cfg
 		if put_check_filename ${THIRD_OPTION}; then
-			if ! scp /tmp/config.$$.tar.xz ${THIRD_OPTION}; then
+			scp /tmp/config.$$.tar.xz ${THIRD_OPTION} || \
 				echo "ERROR: Can't scp configuration to ${THIRD_OPTION}"
-			fi
 		else
-			if ! scp /tmp/config.$$.tar.xz ${THIRD_OPTION}:${FILENAME}; then
+			scp /tmp/config.$$.tar.xz ${THIRD_OPTION}:${FILENAME} || \
 				echo "ERROR: Can't scp configuration to ${THIRD_OPTION}:${FILENAME}"
-                	fi
 		fi
 		if [ -f /tmp/config.$$.tar.xz ]; then
-			if ! rm /tmp/config.$$.tar.xz; then
+			rm /tmp/config.$$.tar.xz || \
 				echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
-			fi
-            	fi
-            	;;
-        cvs)
-            echo "TO DO: CVS commit to $THIRD_OPTION"
-            ;;
-        svn)
-            echo "TO DO: SVN commit to $THIRD_OPTION"
-            ;;
-        *)
+        fi
+      	;;
+	cvs)
+		echo "TO DO: CVS commit to $THIRD_OPTION"
+		;;
+	svn)
+        echo "TO DO: SVN commit to $THIRD_OPTION"
+        ;;
+    *)
         echo "Bad arguments, see 'config help put' for usage"
         ;;
     esac
@@ -379,18 +361,16 @@ put () {
 # Check the user input for put options
 # if no filename given return false (1)
 put_check_filename () {
-	if [ $1 = "" ]; then
-		die "ERROR Bad arguments, see 'config help put' for usage"
-	fi
+	[ $# -lt 1 ] && die "ERROR: Bad Bad arguments, see 'config help put' for usage"
 	USERNAME=$(echo $1 | cut -d @ -f1)
 	REMOTEHOST=$(echo $1 | cut -d @ -f2 | cut -d : -f1)
 	FULLPATH=$(echo $1 | cut -d @ -f2 | cut -d : -f2)
-	if [ "${USERNAME}" = "" ]; then
+	[ "${USERNAME}" = "" ] && \
 		die "No Username given, see 'config help put' for usage"
-	elif [ ${REMOTEHOST} = "" ]; then
+	[ ${REMOTEHOST} = "" ] && \
 		die "No Hostname given, see 'config help put' for usage"
 	# If user enter login@host
-	elif [ "${FULLPATH}" = "${REMOTEHOST}" ]; then
+	if [ "${FULLPATH}" = "${REMOTEHOST}" ]; then
 		FILENAME=$(hostname).tar.xz
 		return 1
 	# if user enter login@host:
@@ -410,24 +390,22 @@ get () {
 	scp)
 		echo "Get configuration archive SCP from ${THIRD_OPTION}"
 		if [ -f /tmp/config.$$.tar.xz ]; then
-			if ! rm /tmp/config.$$.tar.xz; then
+			rm /tmp/config.$$.tar.xz || \
 				echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
-			fi
 		fi
-		if ! scp ${THIRD_OPTION} /tmp/config.$$.tar.xz; then
+		scp ${THIRD_OPTION} /tmp/config.$$.tar.xz || \
 			die "ERROR: Can't download ${THIRD_OPTION}"
-		fi
 		restore_cfg /tmp/config.$$.tar.xz /etc
 		echo "Configuration restored"
 		echo "Don't forget to confirming your restoration by a 'config save'"
-            ;;
-        cvs)
-            echo "TO DO: CVS commit to $THIRD_OPTION"
-            ;;
-        svn)
-            echo "TO DO: SVN commit to $THIRD_OPTION"
-            ;;
-        *)
+        ;;
+	cvs)
+        echo "TO DO: CVS commit to $THIRD_OPTION"
+        ;;
+    svn)
+        echo "TO DO: SVN commit to $THIRD_OPTION"
+        ;;
+    *)
         echo "Bad arguments, see 'config help get' for usage"
         ;;
     esac
@@ -437,12 +415,10 @@ get () {
 
 # Clear all existing configuration and return to default setting
 factory () {
-        echo -n "Clear all saved configuration..."
-	if ! is_mounted /cfg; then
-		mount_cfg
-	fi
-	rm -rf /cfg/*
-        umount_cfg
+    echo -n "Clear all saved configuration..."
+	is_mounted /cfg || mount_cfg
+	rm -rf /cfg/*  || echo "WARNING: Error during rm -rf /cfg/"
+    umount_cfg
 	if [ -f /boot/loader.conf.local ]; then
 		mount -uw /
 		rm -rf /boot/loader.conf.local
@@ -451,7 +427,7 @@ factory () {
 	echo "Done"
 	echo "For confirming this action: Reboot and answer 'no' to the question about saving configuration"
 	echo "For canceling this action: Simply save the running configuration with 'config save'"
-        exit 0
+    exit 0
 }
 
 ###################

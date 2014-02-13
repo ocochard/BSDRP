@@ -44,7 +44,7 @@
 * freevrrpd-1.1
 * iperf-2.0.5
 * ipmitool-1.8.12_4
-* ipsec-tools-0.8.1_3
+* ipsec-tools-0.8.1_4
 * isc-dhcp43-relay-4.3.0
 * isc-dhcp43-server-4.3.0
 * libevent-1.4.14b_3
@@ -63,7 +63,7 @@
 * pkg-1.2.6
 * quagga-re-0.99.17.12_1
 * ssmtp-2.64_1
-* sudo-1.8.8
+* sudo-1.8.9.p5
 * tayga-0.9.2
 * tmux-1.8_1
 * ucarp-1.5.2_2

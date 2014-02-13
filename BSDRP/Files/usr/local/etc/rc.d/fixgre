@@ -7,7 +7,7 @@
 . /etc/rc.subr
 
 name="fixgre"
-rcvar=`set_rcvar`
+rcvar=${name}_enable
 
 start_cmd="start_cmd"
 
