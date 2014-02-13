@@ -1,6 +1,7 @@
 #!/bin/sh
 #This script permit to help the generation and uploading process of new images
 #It generate the dokuwiki table too
+# cut -d ' ' -f 1 /usr/obj/BSDRP.amd64/packages.info | sed 's/^/* /g'
 set -e
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
