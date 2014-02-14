@@ -195,21 +195,6 @@ save_cfg () {
 	done
 	)
 
-	# save ssh keys (contribution: to be reviewed)
-	if [ -d /cfg/ssh ]; then
-		if [ -f /etc/ssh/ssh_host_key ]; then
-			cd /etc/ssh || die "can't cd /etc/ssh"
-			for i in "$@" `find ssh_host_* -type f`; do
-        		if ! cmp -s /etc/ssh/$i /cfg/ssh/$i; then
-					cp -pfv /etc/ssh/$i /cfg/ssh/$i 2>/dev/null
-				fi
-       		done
-		fi
-	else
-		mkdir -p /cfg/ssh || echo "WARNING: Can't create /cfg/ssh"
-		cp /etc/ssh/ssh_host_* /cfg/ssh 2>/dev/null
-	fi
-
 	umount_cfg
 	echo "Done."
 	exit 0
