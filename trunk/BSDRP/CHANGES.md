@@ -6,7 +6,7 @@
     * Update images are still 256MB size
 
 ## New features
-* Upgraded to FreeBSD 10.0-RELEASE
+* Upgraded to FreeBSD 10-STABLE (10.0-RELEASE have too lot's of regression)
 * Extras patches:
 	* PIM routing regression patched (r261024)
 	* IPFW fwd for IPv4 fix (r260702)
