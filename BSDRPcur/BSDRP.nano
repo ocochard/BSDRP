@@ -114,7 +114,7 @@ NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -m 0"
 # 				But, 256 000 000 Byte is 244MiB	
 # This function will set the variable NANO_MEDIASIZE, NANO_SECTS, NANO_HEADS
 # Warning : using generic-fdd (heads=64 sectors/track=32) create boot problem on WRAP
-UsbDevice generic-hdd 512
+UsbDevice generic-hdd 256
 
 # Number of code images on media (1 or 2)
 NANO_IMAGES=2
@@ -372,7 +372,7 @@ add_port "net/ucarp"
 add_port "net/mcast-tools"
 
 # Add IPv4 DVMRP (multicast) routing daemon
-add_port "net/mrouted"
+#add_port "net/mrouted"
 
 # Add pimdd: IPv4 PIM Dense Mode daemon
 add_port "net/pimdd"
@@ -407,6 +407,7 @@ add_port "net/mpd5"
 add_port "security/easy-rsa"
 add_port "archivers/lzo2"
 add_port "security/openvpn"
+add_port "security/openvpn-auth-radius"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netpipe" 
@@ -507,12 +508,8 @@ usr/libexec/bsdinstall
 usr/local/include
 usr/local/man
 usr/local/info
-usr/local/share/doc/gettext
-usr/local/share/doc/libasprintf
-usr/local/share/doc/libiconv
-usr/local/share/doc/snmp
-usr/local/share/examples/quagga
-usr/local/share/examples/ipsec-tools
+usr/local/share/doc
+usr/local/share/examples
 usr/include
 usr/share/examples
 usr/share/info
@@ -535,6 +532,8 @@ usr/libdata/ldscripts
 
 	# Remove some files
     FILES_TO_REMOVE='
+sbin/hastd
+sbin/hastctl
 usr/sbin/bhyve
 usr/sbin/ctladm
 usr/bin/ctlstat
