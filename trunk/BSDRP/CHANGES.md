@@ -6,17 +6,15 @@
     * Update images are still 256MB size
 
 ## New features
-* Upgraded to FreeBSD 10-STABLE (10.0-RELEASE have too lot's of regression)
+* Upgraded to FreeBSD 10-STABLE (10.0-RELEASE has too lot's of regression)
 * Extras patches:
-	* PIM routing regression patched (r261024)
-	* IPFW fwd for IPv4 fix (r260702)
 	* pf UDP NAT patch (kern/181690)
 	* Fix Realtek 8111G NIC support (misc/181703)
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
 	* multi-threaded netblast (bin/179085)
 * Default configuration:
-	* Do not enable sshd by default (this generate host key with not-user defined hostname)
+	* Do not enable sshd by default
 * mpd5: provide example scripts for if-up and if-down
 * openvpn: radius module added
 * Lab script: New script with bhyve support

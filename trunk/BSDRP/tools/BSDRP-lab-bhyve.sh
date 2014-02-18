@@ -157,10 +157,13 @@ erase_all_vm() {
 }
 
 stop_all_vm() {
-	local VM_LIST=`find /dev/vmm -name "${VM_NAME}_*"`
-	for i in ${VM_LIST}; do
-		destroy_vm `basename $i`
-	done
+	if [ -e /dev/vmm ]; then
+		local VM_LIST=`find /dev/vmm -name "${VM_NAME}_*"`
+		for i in ${VM_LIST}; do
+			destroy_vm `basename $i`
+		done
+	fi
+	return 0
 }
 
 destroy_all_if() {
@@ -201,14 +204,14 @@ run_vm() {
 	# P: Force guest virtual CPUs to be pinned to host CPUs
 	# s: Configure a virtual PCI slot and function.
 	# S: Configure legacy ISA slot and function 
-	# PCI 0: hostbridge
-	# PCI 1: lpc (serial)
-	# PCI 2: Hard drive
-	# PCI 3 and next: Network NIC
+	# PCI 0:0 hostbridge
+	# PCI 0:1 lpc (serial)
+	# PCI 1:0 Hard drive
+	# PCI 2:0 and next: Network NIC
 	#   Note: It's not possible to have "hole" in PCI assignement
-	VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 1:0,lpc"
+	VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
 	eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\$1A\"
-	eval VM_DISK_$1=\"-s 2:0,virtio-blk,\${WRK_DIR}/\${VM_NAME}_$1\"
+	eval VM_DISK_$1=\"-s 1:0,virtio-blk,\${WRK_DIR}/\${VM_NAME}_$1\"
 	#eval echo DEBUG \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_NAME}_$1
 	eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} ${VM_NAME}_$1 &
 }
@@ -367,8 +370,8 @@ while [ $i -le $NUMBER_VM ]; do
 		
 			PCI_BUS=$(( ${NIC_NUMBER} / 8 ))
 			PCI_SLOT=$(( ${NIC_NUMBER} - 8 * ${PCI_BUS} ))
-			# All PCI_BUS before 3 are already used
-			PCI_BUS=$(( ${PCI_BUS} + 3 ))
+			# All PCI_BUS before 2 are already used
+			PCI_BUS=$(( ${PCI_BUS} + 2 ))
 			# Need to manage correct mac address
 			[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
 			[ $j -le 9 ] && MAC_J="0$j" || MAC_J="$j"
@@ -404,8 +407,8 @@ ${TAP_IF},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 		# Need to increase PCI_BUS number if slot is more than 7
 		PCI_BUS=$(( ${NIC_NUMBER} / 8 ))
 		PCI_SLOT=$(( ${NIC_NUMBER} - 8 * ${PCI_BUS} ))
-		# All PCI_BUS before 3 are already used
-		PCI_BUS=$(( ${PCI_BUS} + 3 ))
+		# All PCI_BUS before 2 are already used
+		PCI_BUS=$(( ${PCI_BUS} + 2 ))
 		BRIDGE_IF=$( create_interface LAN_${j} bridge )
 		TAP_IF=$( create_interface LAN_${j}_${i} tap ${BRIDGE_IF} ) 
 		eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
