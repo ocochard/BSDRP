@@ -341,8 +341,8 @@ echo "- Full mesh Ethernet links between each VM"
 i=1                                                                   
 # Enter the main loop for each VM                                            
 while [ $i -le $NUMBER_VM ]; do
-	# Clone VM disk
-	cp ${VM_TEMPLATE} ${WRK_DIR}/${VM_NAME}_$i
+	# Clone VM disk only if it didn't already exists
+	[ -f ${WRK_DIR}/${VM_NAME}_$i ] || cp ${VM_TEMPLATE} ${WRK_DIR}/${VM_NAME}_$i
 	# Network_config
 	NIC_NUMBER=0
     echo "VM $i have the following NIC:"
