@@ -388,7 +388,7 @@ add_port "net/isc-dhcp43-server"
 add_port "net/isc-dhcp43-relay"
 
 # Add sstmp, a simple MTA to get mail off the system
-add_port "mail/ssmtp"
+#add_port "mail/ssmtp"
 
 # Add tmux (screen equivalent, but better because BSD)
 add_port "devel/libevent"

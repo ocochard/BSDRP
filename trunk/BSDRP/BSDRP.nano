@@ -110,14 +110,6 @@ NANO_LATE_CUSTOMIZE=""
 # Newfs paramters to use
 NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -m 0"
 
-# Set physical disk layout for generic USB of 256MB (244MiB)
-# Explanation:	Vendors baddly convert 256 000 000 Byte as 256MB
-# 				But, 256 000 000 Byte is 244MiB	
-# This function will set the variable NANO_MEDIASIZE, NANO_SECTS, NANO_HEADS
-# Warning : using generic-fdd (heads=64 sectors/track=32) create boot problem on WRAP
-#UsbDevice generic-hdd 512
-UsbDevice generic-hdd 256
-
 # Number of code images on media (1 or 2)
 NANO_IMAGES=2
 
@@ -462,6 +454,11 @@ bsdrp_custom () {
 	# Update login.conf db
 	chroot ${NANO_WORLDDIR} /bin/sh -exc \
 	'cap_mkdb /etc/login.conf'
+
+	# Disable privilege separation on latest version of sshd
+	# Prevent "fatal: ssh_sandbox_child: failed to limit the network socket [preauth]"
+	# Even with capsicum
+	echo "UsePrivilegeSeparation no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
 
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys

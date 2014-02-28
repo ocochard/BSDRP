@@ -178,6 +178,7 @@ usage () {
 		echo " -h   display this help message"
 		echo " -k   suppress buildkernel"
 		echo " -p   project name to build"
+		echo " -s   size in MB of the target disk (default: 256)"
 		echo " -u   update all src (freebsd and ports)"
 		echo " -r   use a memory disk as destination dir" 
 		echo " -y   Answer yes to all confirmation"
@@ -223,7 +224,7 @@ UPDATE_SRC=false
 UPDATE_PORT=false
 # Boolean for using TMPFS
 TMPFS=false
-args=`getopt a:bc:dfhkp:uryw $*`
+args=`getopt a:bc:dfhkp:s:uryw $*`
 
 set -- $args
 for i
@@ -281,6 +282,11 @@ do
 			TMPFS=true
 			shift
 			;;
+		-s)
+			DISK_SIZE=$2
+			shift
+			shift
+			;;
 		-y)
 			ALWAYS_YES=true
 			shift
@@ -323,6 +329,7 @@ NANO_DIRS_INSTALL="${PROJECT_DIR}/Files"
 # -PORT_PATCH_DIR: Directory for port patches
 # -NANOBSD_DIR: Where the nanobsd tree lives
 # -NANO_MODULES_ARCH: List of kernel modules to build for ARCH
+# -DISK_SIZE: Target size of the flash disk media
 
 . ${SCRIPT_DIR}/${PROJECT}/make.conf
 
@@ -332,7 +339,7 @@ check_clean ${PROJECT}.${TARGET_ARCH}
 
 if [ -n "${MASTER_PROJECT}" ]; then
 	# It's a child project: Load MASTER_PROJECT/make.conf
-	# But set PROJECT_DIR to MASTER_PROJECT befor to call make.conf
+	# But set PROJECT_DIR to MASTER_PROJECT before calling make.conf
 	PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
 	. ${SCRIPT_DIR}/${MASTER_PROJECT}/make.conf
 	# Now overide variables learn on MASTER_PROJECT by our child one
@@ -404,16 +411,13 @@ esac
 
 # Cambria is not compatible with vga output
 if [ "${TARGET_ARCH}" = "arm" ] ; then
-	if [ "${INPUT_CONSOLE}" = "-vga" ] ; then
+	[ "${INPUT_CONSOLE}" = "-vga" ] && \
 		echo "Gateworks Cambria platform didn't have vga board: Changing console to serial"
-	fi
 	INPUT_CONSOLE="-serial"
 fi
 
 # Sparc64 is console agnostic
-if [ "${TARGET_ARCH}" = "sparc64" ] ; then
-	INPUT_CONSOLE=""
-fi
+[ "${TARGET_ARCH}" = "sparc64" ]  && INPUT_CONSOLE=""
 
 if [ `sysctl -n hw.usermem` -lt 2000000000 ]; then
 	echo "WARNING: Not enough hw.usermem available, disable memory disk usage"
@@ -434,9 +438,8 @@ else
 	NANO_OBJ=/usr/obj/${PROJECT}.${NANO_KERNEL}
 fi
 if [ -n "${SKIP_REBUILD}" ]; then
-	if [ ! -d ${NANO_OBJ} ]; then
+	[ -d ${NANO_OBJ} ] || \
 		die "ERROR: No previous object directory found, you can't skip some rebuild"
-	fi
 fi
 
 # Check if no previously tempo obj folder still mounted
@@ -455,41 +458,26 @@ else
 fi
 echo "Will generate an ${NAME} image with theses values:"
 echo "- Target architecture: ${NANO_KERNEL}"
-if [ -n "${INPUT_CONSOLE}" ]; then
-	echo "- Console : ${INPUT_CONSOLE}"
-fi
-if ($UPDATE_SRC); then
-	echo "- Source Updating/installing: YES"
-else
-	echo "- Source Updating/installing: NO"
-fi
-if ($UPDATE_PORT); then
-	echo "- Port tree Updating/installing: YES"
-else
-	echo "- Port tree Updating/installing: NO"
-fi
+[ -n "${INPUT_CONSOLE}" ] && echo "- Console : ${INPUT_CONSOLE}"
 
-if [ -z "${SKIP_REBUILD}" ]; then
-	echo "- Build the full world (take about 1 hour): YES"
-else
-	echo "- Build the full world (take about 1 hour): NO"
-fi
-if (${FAST}); then
-	echo "- FAST mode (skip compression and checksumming): YES"
-else
-	echo "- FAST mode (skip compression and checksumming): NO"
-fi
+echo "- Target disk size (in MB): ${DISK_SIZE}"
+echo -n "- Source Updating/installing: "
+($UPDATE_SRC) && echo "YES" || echo "NO"
 
-if ($TMPFS); then
-	echo "- TMPFS: YES"
-else
-	echo "- TMPFS: NO"
-fi
-if ($DEBUG); then
-	echo "- Debug image type: YES"
-else
-	echo "- Debug image type: NO"
-fi
+echo -n "- Port tree Updating/installing: "
+($UPDATE_PORT) && echo "YES" || echo "NO"
+
+echo -n "- Build the full world (take about 1 hour): "
+[ -z "${SKIP_REBUILD}" ] && echo "YES" || echo "NO"
+
+echo -n "- FAST mode (skip compression and checksumming): "
+(${FAST}) && echo "YES" || echo "NO"
+
+echo -n "- TMPFS: "
+($TMPFS) && echo "YES" || echo "NO"
+
+echo -n "- Debug image type: "
+($DEBUG) && echo "YES" || echo "NO"
 
 ##### Generating the nanobsd configuration file ####
 
@@ -526,6 +514,14 @@ echo "# The default name for any image we create." >> /tmp/${PROJECT}.nano
 echo "NANO_IMGNAME=\"${NAME}-${VERSION}-full-${NANO_KERNEL}${INPUT_CONSOLE}.img\"" >> /tmp/${PROJECT}.nano
 echo "# Kernel config file to use" >> /tmp/${PROJECT}.nano
 echo "NANO_KERNEL=${NANO_KERNEL}" >> /tmp/${PROJECT}.nano
+
+# Set physical disk layout for generic USB of 256MB (244MiB)
+# Explanation:  Vendors baddly convert 256 000 000 Byte as 256MB
+#               But, 256 000 000 Byte is 244MiB
+# This function will set the variable NANO_MEDIASIZE, NANO_SECTS, NANO_HEADS
+# Warning : using generic-fdd (heads=64 sectors/track=32) create boot problem on WRAP
+echo "# Target disk size" >> /tmp/${PROJECT}.nano
+echo "UsbDevice generic-hdd ${DISK_SIZE}" >> /tmp/${PROJECT}.nano
 
 echo "# Parallel Make" >> /tmp/${PROJECT}.nano
 # Special ARCH commands
@@ -748,8 +744,7 @@ else
 	echo "${NANO_OBJ}/_.mtree"
 fi
 
-if ($TMPFS); then
-	echo "Remember, remember the ${NANO_OBJ} is a tmpfs volume"
-fi
+($TMPFS) && echo "Remember, remember the ${NANO_OBJ} is a tmpfs volume"
+
 echo "Done !"
 exit 0
