@@ -214,6 +214,8 @@ run_vm() {
 	eval VM_DISK_$1=\"-s 1:0,virtio-blk,\${WRK_DIR}/\${VM_NAME}_$1\"
 	#eval echo DEBUG \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_NAME}_$1
 	eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} ${VM_NAME}_$1 &
+	# Dirty fix for perventing bhyve bug that sometimes need input from console for unpausing
+	echo >> /dev/nmdm$1B
 }
 
 create_interface() {
@@ -341,8 +343,10 @@ echo "- Full mesh Ethernet links between each VM"
 i=1                                                                   
 # Enter the main loop for each VM                                            
 while [ $i -le $NUMBER_VM ]; do
-	# Clone VM disk only if it didn't already exists
-	[ -f ${WRK_DIR}/${VM_NAME}_$i ] || cp ${VM_TEMPLATE} ${WRK_DIR}/${VM_NAME}_$i
+	# Erase already existing VM disk only if:
+	#   a image is given
+	#   OR it didn't already exists
+	[ ! -f ${WRK_DIR}/${VM_NAME}_$i -o -n "${FILE}" ] && cp ${VM_TEMPLATE} ${WRK_DIR}/${VM_NAME}_$i
 	# Network_config
 	NIC_NUMBER=0
     echo "VM $i have the following NIC:"
