@@ -253,7 +253,7 @@ add_port () {
 				mkdir -p \${NANO_WORLDDIR}/usr/local/etc/pkg/repos
 				cat <<EOF > \${NANO_WORLDDIR}/usr/local/etc/pkg/repos/myrepo.conf
 myrepo: {
- url: 'file:///usr/ports/packages',
+ url: file:///usr/ports/packages,
  enabled: true,
  signature_type: 'none',
  assume_always_yes: true
@@ -665,7 +665,7 @@ usr/share/tmac/tmac.vgrind
 	fi
 
 	# Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
-    find ${NANO_WORLDDIR} -name \*.a | xargs rm
+    find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
 
 	# strip binaries for ports (tips from FreeNAS 8)
 	pprint 4 "Stripping binaries and libraries"

@@ -16,8 +16,8 @@ data_2_ministat () {
 	head -n `expr ${LINES} - 10` $1 | tail -n `expr ${LINES} - 10 - 15` > /tmp/clean.1.data
 	# Filter the output (still filtering "0 pps" lines in case of) and kept only the numbers:
 	# example of good line:
-	# main_thread [1078] 550657 pps (551207 pkts in 1000999 usec)
-	grep -E '^main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' /tmp/clean.1.data | cut -d ' ' -f 3 > /tmp/clean.2.data
+	# 290.703575 main_thread [1441] 729113 pps (730571 pkts in 1002000 usec)
+	grep -E 'main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' /tmp/clean.1.data | cut -d ' ' -f 4 > /tmp/clean.2.data
 	#Now we calculate the median value of this run with ministat
 	echo `ministat -n /tmp/clean.2.data | tail -n -1 | tr -s ' ' | cut -d ' ' -f 5` >> ${LAB_RESULTS}/$2
 	rm /tmp/clean.1.data /tmp/clean.2.data || die "ERROR: can't delete clean.X.data"
@@ -45,7 +45,7 @@ data_2_gnuplot () {
 			done
 		done	
 	else
-		echo "TODO: plot.dat when different configuration sets are not used"	
+		echo "TODO: plot.dat when different configuration sets are not used"	
 	fi
 	return 0
 }
@@ -56,11 +56,11 @@ SVN=''
 CFG=''
 CFG_LIST=''
 
-[ $# -ne 1 ] && die "usage: $0 benchs-directory"
+[ $# -ne 1 ] && die "usage: $0 benchs-directory"
+[ -d $1 ] || die "usage: $0 benchs-directory"
 
 LAB_RESULTS="$1"
 # Info: /tmp/benchs/bench.1.1.4.receiver
-
 
 INFO_LIST=`ls -1 ${LAB_RESULTS}/*.info`
 [ -z "${INFO_LIST}" ] && die "ERROR: No report files found in ${LAB_RESULTS}"
@@ -97,7 +97,6 @@ for INFO in ${INFO_LIST}; do
 		data_2_ministat ${DATA} ${MINISTAT_FILE}
 	done # for DATA
 done # for REPORT
-
 data_2_gnuplot
 
 echo "Done"
