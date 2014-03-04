@@ -3,7 +3,7 @@
 # Upgrade tool for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2013, The BSDRP Development Team
+# Copyright (c) 2009-2014, The BSDRP Development Team
 # All rights reserved.
 # Based on the updatep1 and updatep2 script of nanoBSD
 #
@@ -98,38 +98,31 @@ vtoc_get_info() {
 
 write_new_image() {
 	# Blow away old system.
-	if ! dd if=/dev/zero of=${boot_dev}${DST_SLICE} bs=1m count=1 > /dev/null 2>&1; then
+	dd if=/dev/zero of=${boot_dev}${DST_SLICE} bs=1m count=1 > /dev/null 2>&1 || \
 		die "ERROR: Can't initialize destination partition ${boot_dev}${DST_SLICE}"
-	fi
 
 	# Copy in new system
-	if ! dd of=${boot_dev}${DST_SLICE} obs=64k; then
+	dd of=${boot_dev}${DST_SLICE} obs=64k || \
 		die "ERROR: Can't install the upgrade on ${boot_dev}${DST_SLICE}"
-	fi
 
 	# Check that it worked
-	if ! fsck_ffs -n ${boot_dev}${DST_SLICE}${BSD_SLICE}; then
+	fsck_ffs -n ${boot_dev}${DST_SLICE}${BSD_SLICE} || \
 		die "ERROR: New file system ${boot_dev}${DST_SLICE}${BSD_SLICE} check failed"
-	fi
 
 	# Set Label into the new slice
-	if ! tunefs -L ${DST_LABEL} ${boot_dev}${DST_SLICE}${BSD_SLICE}; then
+	tunefs -L ${DST_LABEL} ${boot_dev}${DST_SLICE}${BSD_SLICE} || \
 		die "ERROR: Can't put label on the new filesystem"
-	fi
 
 	# Need to tune some files on the new partition
-	if [ ! -d /tmp/sysupgrade ]; then
-		mkdir /tmp/sysupgrade
-	fi
+	[ -d /tmp/sysupgrade ] || mkdir /tmp/sysupgrade
 
-	if ! mount /dev/ufs/${DST_LABEL} /tmp/sysupgrade; then
+	mount /dev/ufs/${DST_LABEL} /tmp/sysupgrade || \
 		die "ERROR: Can't mount new upgrade image"
-	fi
+	
 	# Kept the /boot/loader.conf.local file
 	if [ -f /boot/loader.conf.local ]; then
-    	if ! cp /boot/loader.conf.local /tmp/sysupgrade/boot; then
+    	cp /boot/loader.conf.local /tmp/sysupgrade/boot || \
         	echo "WARNING: Can't backup /boot/loader.conf.local"
-    	fi
 	fi
 
 	# Preserve /boot.config if it's different or not existing
@@ -137,9 +130,8 @@ write_new_image() {
 	# If user have changed serial speed, this case is triggered
 	if [ -f /boot.config ]; then
 		if ! cmp -s /boot.config /tmp/sysupgrade/boot.config; then
-			if ! cp /boot.config /tmp/sysupgrade/boot.config; then
+			cp /boot.config /tmp/sysupgrade/boot.config || \
        			echo "WARNING: Can't backup /boot.config"
-   			fi
 		fi
 	fi
 	
@@ -151,50 +143,38 @@ write_new_image() {
 	# Check if their is a post-upgrade script on the newimage 
 	# (This script will be start at the end of the upgrade process)
 	if [ -f /tmp/sysupgrade/usr/local/sbin/post-upgrade ]; then
-		if ! cp /tmp/sysupgrade/usr/local/sbin/post-upgrade /tmp/post-upgrade; then
+		cp /tmp/sysupgrade/usr/local/sbin/post-upgrade /tmp/post-upgrade || \
 			echo "WARNING: Can't copy post-upgrade script!"
-		fi
 	fi
 
-	if ! umount /tmp/sysupgrade; then
-		die "ERROR: Can't umount new image"
-	fi 
+	umount /tmp/sysupgrade || die "ERROR: Can't umount new image"
 
-	if ! rm -r /tmp/sysupgrade; then
-		echo "WARNING: Can't remove tempdir"
-	fi
+	rm -r /tmp/sysupgrade || echo "WARNING: Can't remove tempdir"
 
 	# Save the fstab to /cfg
 	if mount | ! grep -q "/cfg"; then
-		if ! mount /cfg; then
-			die "ERROR: Cant't mount /cfg"
-		fi
+		mount /cfg || die "ERROR: Cant't mount /cfg"
 	fi
 	if ! cp /etc/fstab /cfg; then
-		umount /cfg
+		umount /cfg || echo "Can't unmount /cfg"
 		die "ERROR: Can't save fstab"
 	fi
-	if ! umount /cfg; then
-		die "ERROR: Can't umount /cfg"
-	fi
+	umount /cfg || die "ERROR: Can't umount /cfg"
 }
 
 x86_boot_modif () {
 	# Change the default selection of the boot manager
-    if ! boot0cfg -s `echo ${DST_SLICE} | cut -d 's' -f 2` -t 18 -v ${boot_dev}; then
+    boot0cfg -s `echo ${DST_SLICE} | cut -d 's' -f 2` -t 18 -v ${boot_dev} || \
         die "ERROR: Can't update FreeBSD bootloader"
-    fi
 	# Change the active partition
-	if ! gpart set -a active -i `echo ${DST_SLICE} | cut -d 's' -f 2` ${boot_dev}; then
+	gpart set -a active -i `echo ${DST_SLICE} | cut -d 's' -f 2` ${boot_dev} || \
 		die "ERROR: Can't update active partition"
-	fi
 }
 
 arm_boot_modif () {
 	echo "arm upgrade script not tested!"	
-	if ! gpart set -a active -i `echo ${DST_SLICE} | cut -d 's' -f 2` ${boot_dev}; then
+	gpart set -a active -i `echo ${DST_SLICE} | cut -d 's' -f 2` ${boot_dev} || \
 		die "ERROR: Can't update active partition"
-	fi
 }
 
 vtoc_boot_modif () {
