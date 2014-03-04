@@ -253,7 +253,7 @@ add_port () {
 				mkdir -p \${NANO_WORLDDIR}/usr/local/etc/pkg/repos
 				cat <<EOF > \${NANO_WORLDDIR}/usr/local/etc/pkg/repos/myrepo.conf
 myrepo: {
- url: file:///usr/ports/packages,
+ url: "file:///usr/ports/packages",
  enabled: true,
  signature_type: 'none',
  assume_always_yes: true

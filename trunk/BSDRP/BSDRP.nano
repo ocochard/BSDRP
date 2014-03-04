@@ -47,7 +47,6 @@ WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
 WITHOUT_BLUETOOTH=
 WITHOUT_CALENDAR=
-WITHOUT_CAPSICUM=
 WITHOUT_CTM=
 WITHOUT_CVS=
 WITHOUT_DICT=
@@ -457,8 +456,8 @@ bsdrp_custom () {
 
 	# Disable privilege separation on latest version of sshd
 	# Prevent "fatal: ssh_sandbox_child: failed to limit the network socket [preauth]"
-	# Even with capsicum
-	echo "UsePrivilegeSeparation no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
+	# without capsicum (world and kernel)
+	# echo "UsePrivilegeSeparation no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
 
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys
