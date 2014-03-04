@@ -243,8 +243,8 @@ net_netstat () {
 net_forward () {
 	# http://wiki.freebsd.org/NetworkPerformanceTuning
 	sysctl_equal net.inet.ip.forwarding 1
-	if [ ! `sysrc -n ipsec_enable` == "YES" ]; then
-		sysctl_equal net.inet.ip.fastforwarding 1
+	if [ `sysrc -n ipsec_enable` == "YES" ]; then
+		sysctl_equal net.inet.ip.fastforwarding 0
 		echo "IPSec configuration detected"
 		echo "Check if your hardware support one of these crypto accelerator modules:"
 		echo " aesni(4), glxsb(4), hifn(4), ipsec(4), padlock(4), safe(4) or ubsec(4)"
