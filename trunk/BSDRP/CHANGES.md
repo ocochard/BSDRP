@@ -13,6 +13,7 @@
     * bsnmpd costemic patch
       http://lists.freebsd.org/pipermail/freebsd-net/2013-April/035171.html
 	* multi-threaded netblast (bin/179085)
+    * Fix netmap's pkt-gen checksum bug (bin/187149)
 * Default configuration:
 	* Do not enable sshd by default
 * mpd5: provide example scripts for if-up and if-down
@@ -26,6 +27,7 @@
 * ipsec-tools to 0.8.1
 * isc-dhcp-server to 4.3
 * ipsec-tools to 0.8.1
+* tmux to 1.9.a
 
 ## To fix before release
 * ipsec-tools 0.8.1 is broken
@@ -53,7 +55,7 @@
 * mpd5-5.7
 * mrouted-3.9.6_1
 * openldap-client-2.4.38
-* openvpn-2.3.2
+* openvpn-2.3.2_1
 * openvpn-auth-radius-2.1_1
 * pftop-0.7_2
 * pimd-2.1.8
@@ -63,7 +65,7 @@
 * ssmtp-2.64_1
 * sudo-1.8.9.p5
 * tayga-0.9.2
-* tmux-1.8_1
+* tmux-1.9.a
 * ucarp-1.5.2_2
 
 -----------------------------------------------------

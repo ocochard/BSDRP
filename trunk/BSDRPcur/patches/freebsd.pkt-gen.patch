@@ -1,6 +1,6 @@
 Index: tools/tools/netmap/pkt-gen.c
 ===================================================================
---- tools/tools/netmap/pkt-gen.c	(revision 262618)
+--- tools/tools/netmap/pkt-gen.c	(revision 262817)
 +++ tools/tools/netmap/pkt-gen.c	(working copy)
 @@ -546,6 +546,7 @@
  {
@@ -36,3 +36,26 @@ Index: tools/tools/netmap/pkt-gen.c
  }
  
  /*
+@@ -1820,11 +1840,11 @@
+ 		    req->nr_arg2);
+ 		for (i = 0; i <= req->nr_tx_rings; i++) {
+ 			D("   TX%d at 0x%lx", i,
+-			    (char *)NETMAP_TXRING(nifp, i) - (char *)nifp);
++			    (unsigned long)((char *)NETMAP_TXRING(nifp, i) - (char *)nifp));
+ 		}
+ 		for (i = 0; i <= req->nr_rx_rings; i++) {
+ 			D("   RX%d at 0x%lx", i,
+-			    (char *)NETMAP_RXRING(nifp, i) - (char *)nifp);
++			    (unsigned long)((char *)NETMAP_RXRING(nifp, i) - (char *)nifp));
+ 		}
+ 	}
+ 
+@@ -1879,7 +1899,7 @@
+ 	}
+ 	if (g.td_body == sender_body)
+ 	    D("Sending %d packets every  %ld.%09ld s",
+-			g.burst, g.tx_period.tv_sec, g.tx_period.tv_nsec);
++			g.burst, (long)g.tx_period.tv_sec, g.tx_period.tv_nsec);
+ 	/* Wait for PHY reset. */
+ 	D("Wait %d secs for phy reset", wait_link);
+ 	sleep(wait_link);

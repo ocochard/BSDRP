@@ -57,14 +57,14 @@ usage () {
 		echo "Options for put:"
 		echo " - scp username@host:/path/filename.tar.xz"
 		echo "	 send the configuration to a remote host"
-		echo "  if no /path/filename given, the destination file will be named: hostname.tar.xz"
+		echo "   if no /path/filename given, the destination file will be named: hostname.tar.xz"
 		exit 0
 		;;
 	get)
 		echo "Options for get:"
 		echo " - scp username@host:/path/filename.tar.xz"
 		echo "	 retrieve the configuration from a remote host"
-		echo "  if no /path/filename given, it will try to download a file named: hostname.tar.xz"
+		echo "   if no /path/filename given, it will try to download a file named: hostname.tar.xz"
 		exit 0
 		;;
 	esac
@@ -301,32 +301,26 @@ restore_cfg ( ) {
 	
 # Send configuration to an svn/cvs/scp server ?
 put () {
-	# option: protocol username@host <filename>
+	# option: protocol username@host:/path/filename
 	# example: scp admin@backup.host.fr:filename
 	case "$SECOND_OPTION" in
     scp)
 		echo "Send saved configuration by SCP to ${THIRD_OPTION}"
 		if [ -f /tmp/config.$$.tar.xz ]; then
 			rm /tmp/config.$$.tar.xz || \
-				echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
+				die "WARNING: Can't delete /tmp/config.$$.tar.xz"
 		fi
 		mount_cfg
 		if ! tar -cJvpf /tmp/config.$$.tar.xz -C /cfg/ . 2>/dev/null; then
-			echo "ERROR: Can't tar /cfg to /tmp/config.$$.tar.xz"
 			umount_cfg
-			exit 1
+			die "ERROR: Can't tar /cfg to /tmp/config.$$.tar.xz"
 		fi
 		umount_cfg
-		if put_check_filename ${THIRD_OPTION}; then
-			scp /tmp/config.$$.tar.xz ${THIRD_OPTION} || \
-				echo "ERROR: Can't scp configuration to ${THIRD_OPTION}"
-		else
-			scp /tmp/config.$$.tar.xz ${THIRD_OPTION}:${FILENAME} || \
-				echo "ERROR: Can't scp configuration to ${THIRD_OPTION}:${FILENAME}"
-		fi
+		scp /tmp/config.$$.tar.xz ${THIRD_OPTION} || \
+			die "ERROR: Can't scp configuration to ${THIRD_OPTION}"
 		if [ -f /tmp/config.$$.tar.xz ]; then
 			rm /tmp/config.$$.tar.xz || \
-				echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
+				die "WARNING: Can't delete /tmp/config.$$.tar.xz"
         fi
       	;;
 	cvs)
