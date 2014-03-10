@@ -411,6 +411,7 @@ add_port "security/openvpn-auth-radius"
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netpipe" 
 add_port "benchmarks/iperf"
+add_port "benchmarks/iperf3"
 
 # VM tools
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)

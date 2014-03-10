@@ -55,16 +55,15 @@ usage () {
 		;;
 	put)
 		echo "Options for put:"
-		echo " - scp username@host:/path/filename.tar.xz"
+		echo " - scp username@host:[/path/filename]"
 		echo "	 send the configuration to a remote host"
-		echo "   if no /path/filename given, the destination file will be named: hostname.tar.xz"
+		echo "   if no destination filename given, it will be named: hostname.tar.xz"
 		exit 0
 		;;
 	get)
 		echo "Options for get:"
 		echo " - scp username@host:/path/filename.tar.xz"
 		echo "	 retrieve the configuration from a remote host"
-		echo "   if no /path/filename given, it will try to download a file named: hostname.tar.xz"
 		exit 0
 		;;
 	esac
@@ -301,26 +300,27 @@ restore_cfg ( ) {
 	
 # Send configuration to an svn/cvs/scp server ?
 put () {
-	# option: protocol username@host:/path/filename
+	# option: protocol username@host:/path/[filename]
 	# example: scp admin@backup.host.fr:filename
+	CONFIG_FILE="${HOST}.tar.xz"
 	case "$SECOND_OPTION" in
     scp)
 		echo "Send saved configuration by SCP to ${THIRD_OPTION}"
-		if [ -f /tmp/config.$$.tar.xz ]; then
-			rm /tmp/config.$$.tar.xz || \
-				die "WARNING: Can't delete /tmp/config.$$.tar.xz"
+		if [ -f /tmp/${CONFIG_FILE} ]; then
+			rm /tmp/${CONFIG_FILE} || \
+				die "WARNING: Can't delete previous /tmp/${CONFIG_FILE}"
 		fi
 		mount_cfg
-		if ! tar -cJvpf /tmp/config.$$.tar.xz -C /cfg/ . 2>/dev/null; then
+		if ! tar -cJvpf /tmp/${CONFIG_FILE} -C /cfg/ . 2>/dev/null; then
 			umount_cfg
-			die "ERROR: Can't tar /cfg to /tmp/config.$$.tar.xz"
+			die "ERROR: Can't tar /cfg to /tmp/${CONFIG_FILE}"
 		fi
 		umount_cfg
-		scp /tmp/config.$$.tar.xz ${THIRD_OPTION} || \
-			die "ERROR: Can't scp configuration to ${THIRD_OPTION}"
-		if [ -f /tmp/config.$$.tar.xz ]; then
-			rm /tmp/config.$$.tar.xz || \
-				die "WARNING: Can't delete /tmp/config.$$.tar.xz"
+		scp /tmp/${CONFIG_FILE} ${THIRD_OPTION} || \
+			die "ERROR: Can't scp ${CONFIG_FILE} to ${THIRD_OPTION}"
+		if [ -f /tmp/${CONFIG_FILE} ]; then
+			rm /tmp/${CONFIG_FILE} || \
+				die "WARNING: Can't delete /tmp/${CONFIG_FILE}"
         fi
       	;;
 	cvs)
@@ -365,18 +365,19 @@ put_check_filename () {
 get () {
 	# option: protocol username@host <filename>
 	# example: scp admin@backup.host.fr:/path/filename
+	CONFIG_FILE="${HOST}.tar.xz"
 	case "$SECOND_OPTION" in
 	scp)
 		echo "Get configuration archive SCP from ${THIRD_OPTION}"
-		if [ -f /tmp/config.$$.tar.xz ]; then
-			rm /tmp/config.$$.tar.xz || \
-				echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
+		if [ -f /tmp/${CONFIG_FILE} ]; then
+			rm /tmp/${CONFIG_FILE} || \
+				die "Can't delete previous /tmp/${CONFIG_FILE}"
 		fi
-		scp ${THIRD_OPTION} /tmp/config.$$.tar.xz || \
+		scp ${THIRD_OPTION} /tmp/${CONFIG_FILE} || \
 			die "ERROR: Can't download ${THIRD_OPTION}"
-		restore_cfg /tmp/config.$$.tar.xz /etc
+		restore_cfg /tmp/${CONFIG_FILE} /etc
 		echo "Configuration restored"
-		echo "Don't forget to confirming your restoration by a 'config save'"
+		echo "Don't forget confirming your restoration by a 'config save'"
         ;;
 	cvs)
         echo "TO DO: CVS commit to $THIRD_OPTION"
