@@ -90,7 +90,7 @@ nodevice         ulpt            # Printer
 nodevice         ums             # Mouse
 nodevice         urio            # Diamond Rio 500 MP3 player
 nodevice         u3g             # USB-based 3G modems (Option, Huawei, Sierra)
-device         uvisor          # Visor and Palm devices
+nodevice         uvisor          # Visor and Palm devices
 nodevice         uvscom          # USB serial support for DDI pocket's PHS
 # USB Ethernet, requires miibus
 nodevice         aue             # ADMtek USB Ethernet

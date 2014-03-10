@@ -40,12 +40,12 @@ WITHOUT_ACCT=
 WITHOUT_AMD=
 WITHOUT_APM=
 WITHOUT_ASSERT_DEBUG=
+WITHOUT_ATF=
 WITHOUT_ATM=
 WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
 WITHOUT_BLUETOOTH=
 WITHOUT_CALENDAR=
-WITHOUT_CAPSICUM=
 WITHOUT_CTM=
 WITHOUT_CVS=
 WITHOUT_DICT=
@@ -89,6 +89,7 @@ WITHOUT_SENDMAIL=
 WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
 WITHOUT_SYSINSTALL=
+WITHOUT_TESTS=
 WITHOUT_UNBOUND=
 WITHOUT_WIRELESS=
 WITHOUT_WIRELESS_SUPPORT=
@@ -105,13 +106,6 @@ NANO_LATE_CUSTOMIZE=""
 
 # Newfs paramters to use
 NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -m 0"
-
-# Set physical disk layout for generic USB of 256MB (244MiB)
-# Explanation:	Vendors baddly convert 256 000 000 Byte as 256MB
-# 				But, 256 000 000 Byte is 244MiB	
-# This function will set the variable NANO_MEDIASIZE, NANO_SECTS, NANO_HEADS
-# Warning : using generic-fdd (heads=64 sectors/track=32) create boot problem on WRAP
-UsbDevice generic-hdd 256
 
 # Number of code images on media (1 or 2)
 NANO_IMAGES=2
@@ -266,12 +260,8 @@ usr/libexec/bsdinstall
 usr/local/include
 usr/local/man
 usr/local/info
-usr/local/share/doc/gettext
-usr/local/share/doc/libasprintf
-usr/local/share/doc/libiconv
-usr/local/share/doc/snmp
-usr/local/share/examples/quagga
-usr/local/share/examples/ipsec-tools
+usr/local/share/doc
+usr/local/share/examples
 usr/include
 usr/share/examples
 usr/share/info
@@ -294,6 +284,8 @@ usr/libdata/ldscripts
 
 	# Remove some files
     FILES_TO_REMOVE='
+sbin/hastd
+sbin/hastctl
 usr/sbin/bhyve
 usr/sbin/ctladm
 usr/bin/ctlstat
@@ -425,7 +417,7 @@ usr/share/tmac/tmac.vgrind
 	fi
 
 	# Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
-    find ${NANO_WORLDDIR} -name \*.a | xargs rm
+    find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
 
 	# strip binaries for ports (tips from FreeNAS 8)
 	pprint 4 "Stripping binaries and libraries"
@@ -469,10 +461,6 @@ bsdrp_console_dual () {
     # Tell loader to use serial and vga console.
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 
-	# Don't need to customize the loader.conf file:
-	#echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	#echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
-	#echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 }
 
 # Standard vga console, but permit serial port to be use as vt100 console

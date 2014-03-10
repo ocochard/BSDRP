@@ -69,6 +69,9 @@ for SVN_REV in ${SVN_REV_LIST}; do
 	if [ ! -f /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ]; then
 			echo "Where are /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ???"
 			echo "Check error message in ${IMAGES_DIR}/bisec.log.${SVN_REV}"
+			for i in _.bw _.bk _.iw _.ik; do
+				[ -f /usr/obj/${PROJECT}.${ARCH}/$i ] && mv /usr/obj/${PROJECT}.${ARCH}/$i ${IMAGES_DIR}/bisec.log.$i.${SVN_REV}
+			done
 			mv ${IMAGES_DIR}/bisec.log ${IMAGES_DIR}/bisec.log.${SVN_REV}
 			continue
 	fi

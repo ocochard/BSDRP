@@ -36,7 +36,7 @@ data_2_gnuplot () {
 			echo "# revision	pps" > ${LAB_RESULTS}/${CFG_TYPE}.data
 			# For each file regarding the CFG (one file by revision)
 			# But don't forget to exclude the allready existing CFG_TYPE.plot file from the result
-			for DATA in `ls -1 ${LAB_RESULTS} | grep "[[:punct:]]${CFG_TYPE}"`; do
+			for DATA in `ls -1 ${LAB_RESULTS} | grep "[[:punct:]]${CFG_TYPE}$"`; do
 				local REV=`basename ${DATA}`
 				REV=`echo ${REV} | cut -d '.' -f 1`
 				# Get the median value regarding all test iteration
@@ -65,6 +65,7 @@ LAB_RESULTS="$1"
 INFO_LIST=`ls -1 ${LAB_RESULTS}/*.info`
 [ -z "${INFO_LIST}" ] && die "ERROR: No report files found in ${LAB_RESULTS}"
 
+echo "Summaring results..."
 for INFO in ${INFO_LIST}; do
 	# Get svn rev number
 	#  Image: /tmp/BSDRP-244900-upgrade-amd64-serial.img
@@ -97,6 +98,7 @@ for INFO in ${INFO_LIST}; do
 		data_2_ministat ${DATA} ${MINISTAT_FILE}
 	done # for DATA
 done # for REPORT
+echo "Gnuplot generation..."
 data_2_gnuplot
 
 echo "Done"
