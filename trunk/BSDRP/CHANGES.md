@@ -7,6 +7,7 @@
 
 ## New features
 * Upgraded to FreeBSD 10-STABLE (10.0-RELEASE has too lot's of regression)
+* New modules: HyperV
 * Extras patches:
 	* pf UDP NAT patch (kern/181690)
 	* Fix Realtek 8111G NIC support (misc/181703)
@@ -17,6 +18,8 @@
 * Default configuration:
 	* Do not enable sshd by default
 * mpd5: provide example scripts for if-up and if-down
+* New packages:
+    * iperf3
 * openvpn: radius module added
 * Lab script: New script with bhyve support
 
