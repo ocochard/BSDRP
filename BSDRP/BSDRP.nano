@@ -225,7 +225,11 @@ add_port () {
 	# Check if package allready exist
 	cd ${PORTS_SRC}/$1
 	# Warning: a package name can change regarding the build option
-	PKG_NAME=`env PORTSDIR=${PORTS_SRC} make package-name $2`
+	if [ $# -gt 1 ]; then
+		PKG_NAME=`env PORTSDIR=${PORTS_SRC} make package-name "$2"`
+	else
+		PKG_NAME=`env PORTSDIR=${PORTS_SRC} make package-name`
+	fi
 	if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.txz ]; then
 	# Pkg file found: Generate add_pkg_NAME function
 		#Don't try to install pkg, the boot strap will install it
@@ -299,8 +303,8 @@ EOF
 		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-                  install package BATCH=yes -DWITH_PKGNG -DWITHOUT_X11 \
-		  -DNOPORTDOCS -DNOPORTEXAMPLES -DWITHOUT_NLS -DWITH_SSP_PORTS \
+                  install package BATCH=yes -DWITH_PKGNG \
+		  -DNOPORTDOCS -DNOPORTEXAMPLES WITHOUT=\"NLS X11\" -DWITH_SSP_PORTS \
 		  -DNO_STAGE $2 clean'
 		rm \${NANO_WORLDDIR}/etc/resolv.conf
                	rm -rf \${NANO_WORLDDIR}/usr/obj
@@ -341,19 +345,19 @@ add_port "net-mgmt/bsnmp-ucd"
 add_port "devel/libdlmalloc"
 add_port "security/libgpg-error"
 add_port "security/libgcrypt"
-add_port "net/quagga-re" "-DWITH_ISISD -DWITH_OSPF_NSSA -DWITH_OSPF_OPAQUE_LSA -DWITH_TCPSOCKETS -DWITH_DLMALLOC -DWITH_VTYSH"
+add_port "net/quagga-re" "WITH=\"DLMALLOC ISISD OSPF_NSSA OSPF_OPAQUE_LSA TCPSOCKETS\""
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:
-add_port "net/bird" "-DWITH_FIREWALL" "-DWITH_AGG"
-add_port "net/bird6" "-DWITH_FIREWALL" "-DWITH_AGG"
+add_port "net/bird" "WITH=\"FIREWALL AGG\""
+add_port "net/bird6" "WITH=\"FIREWALL AGG\""
 
 # Add FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
 
 # Ipsec-tools (IKEv1)
 add_port "net/openldap24-client"
-add_port "security/ipsec-tools" "-DWITH_RC5 -DWITH_IDEA -DWITH_RADIUS -DWITH_LDAP"
+add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # IKEv2
 #add_port "security/racoon2"
@@ -388,8 +392,8 @@ add_port "net/isc-dhcp43-relay"
 add_port "mail/ssmtp"
 
 # Add tmux (screen equivalent, but better because BSD)
-add_port "devel/libevent"
-add_port "sysutils/tmux"
+add_port "devel/libevent2"
+add_port "sysutils/tmux" "WITH=\"LIBEVENT2\""
 
 # Add ipmi tools
 add_port "sysutils/ipmitool"

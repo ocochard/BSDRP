@@ -49,18 +49,18 @@ update_src () {
 	if [ ! -d ${FREEBSD_SRC}/.svn ]; then
 		echo "No existing FreeBSD source tree found: Checking out source..."
 		mkdir -p ${FREEBSD_SRC} || die "Can't create ${FREEBSD_SRC}"
-		svn co svn://${SVN_SRC_PATH} ${FREEBSD_SRC} -r ${SRC_REV} \
+		${SVN_CMD} co svn://${SVN_SRC_PATH} ${FREEBSD_SRC} -r ${SRC_REV} \
 		|| die "Can't check out sources"
 	else
 		#Checking repo change
-		if ! svn info ${FREEBSD_SRC} | grep -q "${SVN_SRC_PATH}"; then
+		if ! ${SVN_CMD} info ${FREEBSD_SRC} | grep -q "${SVN_SRC_PATH}"; then
 			die "svn repo changed: delete your source tree with rm -rf ${FREEBSD_SRC}"
 		fi
 		echo "Cleaning local FreeBSD patches..."
 		#cleaning local patced source
-		svn revert -R ${FREEBSD_SRC}
+		${SVN_CMD} revert -R ${FREEBSD_SRC}
 		echo "Updating FreeBSD sources..."
-		svn update ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't update FreeBSD src"
+		${SVN_CMD} update ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't update FreeBSD src"
 	fi
 }
 
@@ -69,18 +69,18 @@ update_port () {
 	if [ ! -d ${PORTS_SRC}/.svn ]; then
 		echo "No existing source port tree found: Checking out ports source..."
 		mkdir -p ${PORTS_SRC} || die "Can't create ${PORTS_SRC}"
-		svn co svn://${SVN_PORTS_PATH} ${PORTS_SRC} -r ${PORTS_REV} \
+		${SVN_CMD} co svn://${SVN_PORTS_PATH} ${PORTS_SRC} -r ${PORTS_REV} \
 		|| die "Can't check out ports sources"
 	else
 		#Checking repo change
-		if ! svn info ${PORTS_SRC} | grep -q "${SVN_PORTS_PATH}"; then
+		if ! ${SVN_CMD} info ${PORTS_SRC} | grep -q "${SVN_PORTS_PATH}"; then
 			die "svn repo changed, delete your source tree with rm -rf ${PORTS_SRC}"
 		fi
 		#cleaning local patched ports sources
 		echo "Cleaning local port tree patches..."
-		svn revert -R ${PORTS_SRC}
+		${SVN_CMD} revert -R ${PORTS_SRC}
 		echo "Updating ports tree sources..."
-		svn update ${PORTS_SRC} -r ${PORTS_REV} \
+		${SVN_CMD} update ${PORTS_SRC} -r ${PORTS_REV} \
 		|| die "Can't update ports sources"
 		if [ -f ${PROJECT_DIR}/FreeBSD/ports-added ]; then
 			rm ${PROJECT_DIR}/FreeBSD/ports-added
@@ -95,7 +95,7 @@ patch_src() {
 	# patch(1) will automatically append to the previously
 	# non-existent file.
 	( cd ${FREEBSD_SRC} &&
-	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' \
+	${SVN_CMD} status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' \
 	| xargs -r rm -r)
 	: > ${PROJECT_DIR}/FreeBSD/.src_pulled
 
@@ -122,7 +122,7 @@ patch_port() {
 	# patch(1) will automatically append to the previously
 	# non-existent file.
 	( cd ${PORTS_SRC}
-	svn status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' \
+	${SVN_CMD} status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' \
 	| xargs -r rm -r)
 	: > ${PROJECT_DIR}/FreeBSD/.port_pulled
 
@@ -196,6 +196,7 @@ echo ""
 
 #Get argument
 
+SVN_CMD=`which svn` || SVN_CMD=`which svnlite`
 # script (make.sh) file name
 SCRIPT=`readlink -f $0`
 # directory where make.sh file is
