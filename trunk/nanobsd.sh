@@ -61,8 +61,7 @@ NANO_DIRS_INSTALL="${NANO_TOOLS}/Files"
 # default is ${NANO_OBJ}
 #NANO_DISKIMGDIR=""
 
-# Make & Parallel Make
-# Setting NANO_PMAKE to 'make -j 12' didn't works during installworld
+# Make & parallel Make
 NANO_MAKE="make"
 NANO_PMAKE="make -j 3"
 
@@ -91,7 +90,7 @@ NANO_CUSTOMIZE=""
 NANO_LATE_CUSTOMIZE=""
 
 # Newfs paramters to use
-NANO_NEWFS="-t -b 4096 -f 512 -i 8192 -O1 -U"
+NANO_NEWFS="-b 4096 -f 512 -i 8192 -U"
 
 # The drive name of the media at runtime
 NANO_DRIVE=ad0
@@ -168,6 +167,10 @@ NANO_CFGDIR=""
 # Directory to populate /data from
 NANO_DATADIR=""
 
+# src.conf to use when building the image. Defaults to /dev/null for the sake
+# of determinism.
+SRCCONF=${SRCCONF:=/dev/null}
+ 
 #######################################################################
 #
 # The functions which do the real work.
@@ -198,7 +201,6 @@ make_conf_build ( ) (
 
 	echo "${CONF_WORLD}" > ${NANO_MAKE_CONF_BUILD}
 	echo "${CONF_BUILD}" >> ${NANO_MAKE_CONF_BUILD}
-	echo "SRCCONF=/dev/null" >> ${NANO_MAKE_CONF_BUILD}
 )
 
 build_world ( ) (
@@ -207,17 +209,20 @@ build_world ( ) (
 
 	cd ${NANO_SRC}
 	env TARGET_ARCH=${NANO_ARCH} ${NANO_PMAKE} \
+		SRCCONF=${SRCCONF} \
 		__MAKE_CONF=${NANO_MAKE_CONF_BUILD} buildworld \
 		> ${MAKEOBJDIRPREFIX}/_.bw 2>&1
 )
 
 build_kernel ( ) (
+	local extra
+
 	pprint 2 "build kernel ($NANO_KERNEL)"
 	pprint 3 "log: ${MAKEOBJDIRPREFIX}/_.bk"
 
 	(
 	if [ -f ${NANO_KERNEL} ] ; then
-		kernconfdir=$(realpath $(dirname ${NANO_KERNEL}))
+		extra="KERNCONFDIR=$(realpath $(dirname ${NANO_KERNEL}))"
 		kernconf=$(basename ${NANO_KERNEL})
 	else
 		kernconf=${NANO_KERNEL}
@@ -227,13 +232,11 @@ build_kernel ( ) (
 	# unset these just in case to avoid compiler complaints
 	# when cross-building
 	unset TARGET_CPUTYPE
-	unset TARGET_BIG_ENDIAN
 	# Note: DISABLE build all modules (official nanobsd builds all)
 	env TARGET_ARCH=${NANO_ARCH} ${NANO_PMAKE} buildkernel \
-		__MAKE_CONF=${NANO_MAKE_CONF_BUILD} \
-		${kernconfdir:+"KERNCONFDIR="}${kernconfdir} \
-		KERNCONF=${kernconf} \
-		MODULES_OVERRIDE="${NANO_MODULES}"
+		SRCCONF=${SRCCONF} \
+		${extra} __MAKE_CONF=${NANO_MAKE_CONF_BUILD} \
+		KERNCONF=${kernconf}
 	) > ${MAKEOBJDIRPREFIX}/_.bk 2>&1
 )
 
@@ -261,7 +264,6 @@ make_conf_install ( ) (
 
 	echo "${CONF_WORLD}" > ${NANO_MAKE_CONF_INSTALL}
 	echo "${CONF_INSTALL}" >> ${NANO_MAKE_CONF_INSTALL}
-	echo "SRCCONF=/dev/null" >> ${NANO_MAKE_CONF_INSTALL}
 )
 
 install_world ( ) (
@@ -270,7 +272,8 @@ install_world ( ) (
 
 	cd ${NANO_SRC}
 	env TARGET_ARCH=${NANO_ARCH} \
-	${NANO_MAKE} __MAKE_CONF=${NANO_MAKE_CONF_INSTALL} installworld \
+	${NANO_MAKE} SRCCONF=${SRCCONF} \
+		__MAKE_CONF=${NANO_MAKE_CONF_INSTALL} installworld \
 		DESTDIR=${NANO_WORLDDIR} \
 		> ${NANO_OBJ}/_.iw 2>&1
 	chflags -R noschg ${NANO_WORLDDIR}
@@ -283,7 +286,8 @@ install_etc ( ) (
 
 	cd ${NANO_SRC}
 	env TARGET_ARCH=${NANO_ARCH} \
-	${NANO_MAKE} __MAKE_CONF=${NANO_MAKE_CONF_INSTALL} distribution \
+	${NANO_MAKE} SRCCONF=${SRCCONF} \
+		__MAKE_CONF=${NANO_MAKE_CONF_INSTALL} distribution \
 		DESTDIR=${NANO_WORLDDIR} \
 		> ${NANO_OBJ}/_.etc 2>&1
 	# make.conf doesn't get created by default, but some ports need it
@@ -292,12 +296,14 @@ install_etc ( ) (
 )
 
 install_kernel ( ) (
+	local extra
+
 	pprint 2 "install kernel ($NANO_KERNEL)"
 	pprint 3 "log: ${NANO_OBJ}/_.ik"
 
 	(
 	if [ -f ${NANO_KERNEL} ] ; then
-		kernconfdir=$(realpath $(dirname ${NANO_KERNEL}))
+		extra="KERNCONFDIR=$(realpath $(dirname ${NANO_KERNEL}))"
 		kernconf=$(basename ${NANO_KERNEL})
 	else
 		kernconf=${NANO_KERNEL}
@@ -306,8 +312,8 @@ install_kernel ( ) (
 	cd ${NANO_SRC}
 	env TARGET_ARCH=${NANO_ARCH} ${NANO_MAKE} installkernel \
 		DESTDIR=${NANO_WORLDDIR} \
-		__MAKE_CONF=${NANO_MAKE_CONF_INSTALL} \
-		${kernconfdir:+"KERNCONFDIR="}${kernconfdir} \
+		SRCCONF=${SRCCONF} \
+		${extra} __MAKE_CONF=${NANO_MAKE_CONF_INSTALL} \
 		KERNCONF=${kernconf} \
 		MODULES_OVERRIDE="${NANO_MODULES}"
 	) > ${NANO_OBJ}/_.ik 2>&1
@@ -609,8 +615,8 @@ create_i386_diskimage ( ) (
 	fi
 	mdconfig -d -u $MD
 
-	trap - 1 2 15 EXIT
-	trap "nano_cleanup" EXIT
+	trap - 1 2 15
+	trap nano_cleanup EXIT
 
 	) > ${NANO_OBJ}/_.di 2>&1
 )
@@ -914,8 +920,8 @@ create_sparc64_diskimage ( ) (
     fi
     mdconfig -d -u $MD
 
-    trap - 1 2 15 EXIT
-	trap "nano_cleanup" EXIT
+    trap - 1 2 15
+	trap nano_cleanup EXIT
 
     ) > ${NANO_OBJ}/_.di 2>&1
 )
@@ -1193,7 +1199,8 @@ if [ $# -gt 0 ] ; then
 	echo "$0: Extraneous arguments supplied"
 	usage
 fi
-trap "nano_cleanup" EXIT
+
+trap nano_cleanup EXIT
 
 #######################################################################
 # Setup and Export Internal variables
