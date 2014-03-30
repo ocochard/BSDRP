@@ -309,7 +309,7 @@ if [ $# -gt 0 ] ; then
 fi
 
 # Number of jobs
-MAKE_JOBS=$(( 2 * $(sysctl -n kern.smp.cpus)))
+MAKE_JOBS=$(sysctl -n kern.smp.cpus)
 
 # Checking TARGET folder
 [ -d ${SCRIPT_DIR}/${PROJECT} ] || die "Can't found target ${PROJECT}"

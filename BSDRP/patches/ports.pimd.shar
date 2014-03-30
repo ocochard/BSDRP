@@ -7,6 +7,7 @@
 #
 #	net/pimd
 #	net/pimd/files
+#	net/pimd/files/patch-configure
 #	net/pimd/files/pimd.in
 #	net/pimd/files/patch-igmp.c
 #	net/pimd/Makefile
@@ -17,6 +18,26 @@ echo c - net/pimd
 mkdir -p net/pimd > /dev/null 2>&1
 echo c - net/pimd/files
 mkdir -p net/pimd/files > /dev/null 2>&1
+echo x - net/pimd/files/patch-configure
+sed 's/^X//' >net/pimd/files/patch-configure << '3f5975fedbcffbd0e1cb7a6ab13167f8'
+X--- configure.orig	2014-03-15 08:17:04.429114684 +0100
+X+++ configure	2014-03-15 08:17:13.251112793 +0100
+X@@ -191,8 +191,13 @@
+X 
+X         FreeBSD)
+X                 heading
+X+			KERN_VER=`sysctl -n sysctl kern.osreldate`
+X 	        echo "INCLUDES     =" >> $CFG
+X-	        echo "DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY" >> $CFG
+X+			if [ "$KERN_VER" -ge 1100012 ]; then
+X+				echo "DEFS        += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DHAVE_STRTONUM -DHAVE_STRLCPY" >> $CFG
+X+			else
+X+	        	echo "DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY" >> $CFG
+X+			fi
+X 	        echo "EXTRA_OBJS   = pidfile.o" >> $CFG
+X 	        echo "EXTRA_LIBS   =" >> $CFG
+X 	        ;;
+3f5975fedbcffbd0e1cb7a6ab13167f8
 echo x - net/pimd/files/pimd.in
 sed 's/^X//' >net/pimd/files/pimd.in << 'b705718607067d0954575fd7807ad5ba'
 X#!/bin/sh
@@ -48,13 +69,13 @@ X
 b705718607067d0954575fd7807ad5ba
 echo x - net/pimd/files/patch-igmp.c
 sed 's/^X//' >net/pimd/files/patch-igmp.c << '7c70d2b1acbcb0da8c11828e61074c85'
-X--- igmp.c.orig	2014-01-15 12:44:13.730996694 +0100
-X+++ igmp.c	2014-01-15 12:44:17.343999780 +0100
-X@@ -169,7 +169,11 @@
+X--- igmp.c.orig	2014-01-28 22:22:42.000000000 +0100
+X+++ igmp.c	2014-03-15 08:17:22.211112437 +0100
+X@@ -174,7 +174,11 @@
 X #ifdef RAW_INPUT_IS_RAW
 X     ipdatalen = ntohs(ip->ip_len) - iphdrlen;
 X #else
-X+ #if __FreeBSD_version >= 1000000
+X+ #if __FreeBSD_version >= 1000000 && __FreeBSD_version < 1100012
 X+	ipdatalen = ip->ip_len - iphdrlen;
 X+ #else
 X     ipdatalen = ip->ip_len;
