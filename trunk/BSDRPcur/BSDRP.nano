@@ -344,8 +344,10 @@ add_port "net-mgmt/bsnmp-ucd"
 add_port "devel/libdlmalloc"
 add_port "security/libgpg-error"
 add_port "security/libgcrypt"
-add_port "net/quagga-re" "WITH=\"DLMALLOC ISISD OSPF_NSSA OSPF_OPAQUE_LSA TCPSOCKETS\""
+##add_port "net/quagga-re" "WITH=\"DLMALLOC ISISD OSPF_NSSA OSPF_OPAQUE_LSA TCPSOCKETS\""
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
+add_port "net/zebra"
+add_port "net/fping"
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:
 add_port "net/bird" "WITH=\"FIREWALL AGG\""
@@ -490,8 +492,8 @@ begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"
 EOF
 
 	# Set Quagga permission
-	chroot ${NANO_WORLDDIR} /bin/sh -exc \
-	'chown -R quagga:quagga /usr/local/etc/quagga'
+##	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+##	'chown -R quagga:quagga /usr/local/etc/quagga'
 
 	# Compress the kernel (save 3Mb)
 	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
