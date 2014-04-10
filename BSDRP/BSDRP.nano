@@ -250,7 +250,7 @@ add_port () {
 				mkdir -p \${NANO_WORLDDIR}/usr/local/etc/pkg/repos
 				cat <<EOF > \${NANO_WORLDDIR}/usr/local/etc/pkg/repos/myrepo.conf
 myrepo: {
- url: 'file:///usr/ports/packages',
+ url: "file:///usr/ports/packages",
  enabled: true,
  signature_type: 'none',
  assume_always_yes: true
@@ -349,18 +349,14 @@ add_port "net/quagga-re" "WITH=\"DLMALLOC ISISD OSPF_NSSA OSPF_OPAQUE_LSA TCPSOC
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:
-add_port "net/bird" "WITH=\"FIREWALL AGG\""
-add_port "net/bird6" "WITH=\"FIREWALL AGG\""
+add_port "net/bird" "WITH=\"FIREWALL\""
+add_port "net/bird6" "WITH=\"FIREWALL\""
 
 # Add FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
 
-# Ipsec-tools (IKEv1)
-add_port "net/openldap24-client"
-add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
-
-# IKEv2
-#add_port "security/racoon2"
+# IKEv1 and IKEv2
+add_port "security/strongswan" "WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
 
 #pf top
 add_port "sysutils/pftop"
@@ -415,7 +411,6 @@ add_port "security/openvpn-auth-radius"
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netpipe" 
 add_port "benchmarks/iperf"
-add_port "benchmarks/iperf3"
 
 # VM tools
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
