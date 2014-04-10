@@ -7,7 +7,7 @@
 
 ## New features
 * Upgraded to FreeBSD 10-STABLE (10.0-RELEASE has too lot's of regression)
-* New modules: HyperV
+* New kernel modules added: HyperV
 * Extras patches:
 	* pf UDP NAT patch (kern/181690)
 	* Fix Realtek 8111G NIC support (misc/181703)
@@ -19,56 +19,53 @@
 	* Do not enable sshd by default
 * mpd5: provide example scripts for if-up and if-down
 * New packages:
-    * iperf3
+    * security/strongswan replace racoon
 * openvpn: radius module added
 * Lab script: New script with bhyve support
 
 ## Bug fixes
 
 ## Updated packages
-* bird to 1.4.0
+* bird to 1.4.2
 * ipsec-tools to 0.8.1
 * isc-dhcp-server to 4.3
-* ipsec-tools to 0.8.1
 * tmux to 1.9.a
 
 ## To fix before release
-* ipsec-tools 0.8.1 is broken
+* Need to test strongswan
 * pimdd is broken
 
 ## Installed packages
 * NetPIPE-3.7.1
-* bird-1.4.0_2
-* bird6-1.4.0_2
+* bird-1.4.2
+* bird6-1.4.2
 * bsnmp-regex-0.6
 * bsnmp-ucd-0.4.0
 * dlmalloc-2.8.6
 * easy-rsa-2.2.0.m
 * freevrrpd-1.1
 * iperf-2.0.5
-* ipmitool-1.8.12_4
-* ipsec-tools-0.8.1_4
+* ipmitool-1.8.12_5
 * isc-dhcp43-relay-4.3.0
-* isc-dhcp43-server-4.3.0
-* libevent-1.4.14b_3
-* libgcrypt-1.5.3
+* isc-dhcp43-server-4.3.0_1
+* libevent2-2.0.21
+* libgcrypt-1.5.3_1
 * libgpg-error-1.12
 * lzo2-2.06_2
 * mcast-tools-20061214_1
 * mpd5-5.7
-* mrouted-3.9.6_1
-* openldap-client-2.4.38
 * openvpn-2.3.2_1
 * openvpn-auth-radius-2.1_1
 * pftop-0.7_2
 * pimd-2.1.8
 * pimdd-0.2.1.0_1
-* pkg-1.2.6
+* pkg-1.2.7_2
 * quagga-re-0.99.17.12_1
 * ssmtp-2.64_1
-* sudo-1.8.9.p5
+* strongswan-5.1.1_1
+* sudo-1.8.10.p2
 * tayga-0.9.2
-* tmux-1.9.a
+* tmux-1.9.a_1
 * ucarp-1.5.2_2
 
 -----------------------------------------------------
