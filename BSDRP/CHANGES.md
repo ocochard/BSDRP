@@ -9,6 +9,7 @@
 * Upgraded to FreeBSD 10-STABLE (10.0-RELEASE has too lot's of regression)
 * New kernel modules added: HyperV
 * Extras patches:
+	* pfSense's net.isr patch: net.isr.maxthreads=ncpu and compliant with polling
 	* pf UDP NAT patch (kern/181690)
 	* Fix Realtek 8111G NIC support (misc/181703)
     * bsnmpd costemic patch
