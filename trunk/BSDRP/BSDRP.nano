@@ -296,7 +296,6 @@ EOF
 		# Run ldconfig before
 		chroot \${NANO_WORLDDIR} /bin/sh -exc '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
 		# Start the build
-		# Need to replace old WITHOUT by OPTIONS_UNSET=X11,NLS
        		chroot \${NANO_WORLDDIR} /bin/sh -exc \
                	  'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
