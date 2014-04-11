@@ -27,7 +27,6 @@
 
 ## Updated packages
 * bird to 1.4.2
-* ipsec-tools to 0.8.1
 * isc-dhcp-server to 4.3
 * tmux to 1.9.a
 
