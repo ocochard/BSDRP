@@ -5,7 +5,7 @@ Index: tools/tools/netrate/netblast/Makefile
 @@ -4,5 +4,8 @@
  
  PROG=	netblast
- NO_MAN=
+ MAN=
 +LDFLAGS += -lpthread
  
 +WARNS?= 3
