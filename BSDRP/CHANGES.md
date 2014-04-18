@@ -32,7 +32,7 @@
 * tmux to 1.9.a
 
 ## To fix before release
-* Need to test strongswan
+* Need to test strongswan (and improve rc script)
 * pimdd is broken
 
 ## Installed packages
