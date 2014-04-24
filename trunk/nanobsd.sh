@@ -26,6 +26,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
+# $FreeBSD: head/tools/tools/nanobsd/nanobsd.sh 264861 2014-04-24 02:02:46Z imp $
 #
 
 set -e
@@ -50,8 +51,8 @@ NANO_TOOLS=tools/tools/nanobsd
 NANO_PACKAGE_DIR=${NANO_SRC}/${NANO_TOOLS}/Pkg
 NANO_PACKAGE_LIST="*"
 
-# List of directories to copy on the destination image
-NANO_DIRS_INSTALL="${NANO_TOOLS}/Files"
+# where package metadata gets placed
+NANO_PKG_META_BASE=/var/db
 
 # Object tree directory
 # default is subdir of /usr/obj
@@ -178,6 +179,18 @@ SRCCONF=${SRCCONF:=/dev/null}
 #
 #######################################################################
 
+# run in the world chroot, errors fatal
+CR()
+{
+	chroot ${NANO_WORLDDIR} /bin/sh -exc "$*"
+}
+
+# run in the world chroot, errors not fatal
+CR0()
+{
+	chroot ${NANO_WORLDDIR} /bin/sh -c "$*" || true
+}
+
 nano_cleanup ( ) (
 	if [ $? -ne 0 ]; then
 		echo "Error encountered.  Check for errors in last log file." 1>&2
@@ -232,7 +245,8 @@ build_kernel ( ) (
 	# unset these just in case to avoid compiler complaints
 	# when cross-building
 	unset TARGET_CPUTYPE
-	# Note: DISABLE build all modules (official nanobsd builds all)
+	# Note: We intentionally build all modules, not only the ones in
+	# NANO_MODULES so the built world can be reused by multiple images.
 	env TARGET_ARCH=${NANO_ARCH} ${NANO_PMAKE} buildkernel \
 		SRCCONF=${SRCCONF} \
 		${extra} __MAKE_CONF=${NANO_MAKE_CONF_BUILD} \
@@ -428,6 +442,12 @@ newfs_part ( ) (
 	mount -o async ${dev} ${mnt}
 )
 
+# Convenient spot to work around any umount issues that your build environment
+# hits by overriding this method.
+nano_umount () (
+	umount ${1}
+)
+
 populate_slice ( ) (
 	local dev dir mnt lbl
 	dev=$1
@@ -442,7 +462,7 @@ populate_slice ( ) (
 		find . -print | grep -Ev '/(CVS|\.svn|\.hg|\.git)' | cpio -dumpv ${mnt}
 	fi
 	df -i ${mnt}
-	umount ${mnt}
+	nano_umount ${mnt}
 )
 
 populate_cfg_slice ( ) (
@@ -466,7 +486,7 @@ generate_mtree ( ) (
     ( cd ${mnt} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,sha256digest -X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
 
     ( cd ${mnt} && du -k ) > ${NANO_OBJ}/_.du
-    umount ${mnt}
+	nano_umount ${mnt}
 )
 
 create_i386_diskimage ( ) (
@@ -583,7 +603,7 @@ create_i386_diskimage ( ) (
 		do
 			sed -i "" "s=${NANO_DRIVE}s1=${NANO_DRIVE}s2=g" $f
 		done
-		umount ${MNT}
+		nano_umount ${MNT}
 		# Override the label from the first partition so we
 		# don't confuse glabel with duplicates.
 		if [ ! -z ${NANO_LABEL} ]; then
@@ -1037,7 +1057,7 @@ cust_pkg () (
 	fi
 
 	# Copy packages into chroot
-	mkdir -p ${NANO_WORLDDIR}/Pkg
+	mkdir -p ${NANO_WORLDDIR}/Pkg ${NANO_WORLDDIR}/${NANO_PKG_META_BASE}/pkg
 	(
 		cd ${NANO_PACKAGE_DIR}
 		find ${NANO_PACKAGE_LIST} -print |
@@ -1052,18 +1072,17 @@ cust_pkg () (
 	while true
 	do
 		# Record how many we have now
-		have=`ls ${NANO_WORLDDIR}/var/db/pkg | wc -l`
+		have=`ls ${NANO_WORLDDIR}/${NANO_PKG_META_BASE}/pkg | wc -l`
 
 		# Attempt to install more packages
 		# ...but no more than 200 at a time due to pkg_add's internal
 		# limitations.
-		chroot ${NANO_WORLDDIR} sh -c \
-			'ls Pkg/*tbz | xargs -n 200 pkg_add -F' || true
+		CR0 'ls Pkg/*tbz | xargs -n 200 env PKG_DBDIR='${NANO_PKG_META_BASE}'/pkg pkg_add -v -F'
 
 		# See what that got us
-		now=`ls ${NANO_WORLDDIR}/var/db/pkg | wc -l`
+		now=`ls ${NANO_WORLDDIR}/${NANO_PKG_META_BASE}/pkg | wc -l`
 		echo "=== NOW $now"
-		ls ${NANO_WORLDDIR}/var/db/pkg
+		ls ${NANO_WORLDDIR}/${NANO_PKG_META_BASE}/pkg
 		echo "==="
 
 
@@ -1104,9 +1123,8 @@ cust_pkgng () (
 	)
 
 	#Bootstrap pkg
-	chroot ${NANO_WORLDDIR} sh -c \
-		"env ASSUME_ALWAYS_YES=YES SIGNATURE_TYPE=none /usr/sbin/pkg add /Pkg/${_NANO_PKG_PACKAGE}"
-	chroot ${NANO_WORLDDIR} sh -c "pkg -N >/dev/null 2>&1;"
+	CR env ASSUME_ALWAYS_YES=YES SIGNATURE_TYPE=none /usr/sbin/pkg add /Pkg/${_NANO_PKG_PACKAGE}
+	CR pkg -N >/dev/null 2>&1
 	if [ "$?" -ne "0" ]; then
 		echo "FAILED: pkg bootstrapping faied"
 		exit 2
@@ -1122,19 +1140,15 @@ cust_pkgng () (
 	while true
 	do
 		# Record how many we have now
-		have=`chroot ${NANO_WORLDDIR} sh -c \
-			'env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg info | /usr/bin/wc -l'`
+ 		have=$(CR env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg info | /usr/bin/wc -l)
 
 		# Attempt to install more packages
-		chroot ${NANO_WORLDDIR} sh -c \
-			'ls Pkg/*txz | xargs env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg add ' || true
+		CR0 'ls 'Pkg/*txz' | xargs env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg add'
 
 		# See what that got us
-		now=`chroot ${NANO_WORLDDIR} sh -c \
-			'env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg info | /usr/bin/wc -l'`
+ 		now=$(CR env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg info | /usr/bin/wc -l)
 		echo "=== NOW $now"
-		chroot ${NANO_WORLDDIR} sh -c \
-			'env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg info'
+		CR env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg info
 		echo "==="
 		if [ $now -eq $todo ] ; then
 			echo "DONE $now packages"
@@ -1151,18 +1165,18 @@ cust_pkgng () (
 # Convenience function:
 # 	Register all args as customize function.
 
-customize_cmd () {
+customize_cmd () (
 	NANO_CUSTOMIZE="$NANO_CUSTOMIZE $*"
-}
+)
 
 #######################################################################
 # Convenience function:
 # 	Register all args as late customize function to run just before
 #	image creation.
 
-late_customize_cmd () {
+late_customize_cmd () (
 	NANO_LATE_CUSTOMIZE="$NANO_LATE_CUSTOMIZE $*"
-}
+)
 
 #######################################################################
 #
@@ -1172,14 +1186,14 @@ late_customize_cmd () {
 
 # Progress Print
 #	Print $2 at level $1.
-pprint() {
+pprint() (
     if [ "$1" -le $PPLEVEL ]; then
 	runtime=$(( `date +%s` - $NANO_STARTTIME ))
 	printf "%s %.${1}s %s\n" "`date -u -r $runtime +%H:%M:%S`" "#####" "$2" 1>&3
     fi
-}
+)
 
-usage () {
+usage () (
 	(
 	echo "Usage: $0 [-bfiknqvw] [-c config_file]"
 	echo "	-b	suppress builds (both kernel and world)"
@@ -1193,7 +1207,7 @@ usage () {
 	echo "	-c	specify config file"
 	) 1>&2
 	exit 2
-}
+)
 
 #######################################################################
 # Parse arguments
@@ -1294,7 +1308,8 @@ fi
 if $do_clean ; then
 	true
 else
-	NANO_MAKE="${NANO_PMAKE} -DNO_CLEAN"
+	NANO_MAKE="${NANO_MAKE} -DNO_CLEAN"
+	NANO_PMAKE="${NANO_PMAKE} -DNO_CLEAN"
 fi
 
 # Override user's NANO_DRIVE if they specified a NANO_LABEL

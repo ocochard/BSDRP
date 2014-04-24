@@ -34,6 +34,7 @@
 ## To fix before release
 * Need to test strongswan (and improve rc script)
 * pimdd is broken
+* If a new packages brings new users, how to add them to existing modified /etc/passwd|groups?
 
 ## Installed packages
 * NetPIPE-3.7.1
