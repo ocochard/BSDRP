@@ -171,9 +171,8 @@ add_netrate () {
                     continue
             fi
         export TOOL
-        chroot ${NANO_WORLDDIR} /bin/sh -exc 'make clean -C /usr/src/tools/tools/${TOOL}'
-        chroot ${NANO_WORLDDIR} /bin/sh -exc \
-            'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+        CR 'make clean -C /usr/src/tools/tools/${TOOL}'
+        CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
             MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
             UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
             UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
@@ -205,12 +204,11 @@ add_quagga-bgp-netgen () {
     mount -t devfs devfs ${NANO_WORLDDIR}/dev
     mount -t nullfs ${NANO_TOOLS}/tools/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/src
     mkdir -p ${NANO_WORLDDIR}/usr/workdir
-    chroot ${NANO_WORLDDIR} /bin/sh -exc \
-            'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-			MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-			UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
-			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-            make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
+    CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+		MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+		UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+        make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
     mv ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/local/bin
     rm ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen.o
     rm -rf ${NANO_WORLDDIR}/usr/workdir
@@ -244,7 +242,7 @@ add_port () {
 				mount -t nullfs \${NANO_OBJ}/ports/packages \
 					\${NANO_WORLDDIR}/usr/ports/packages
 				# Run ldconfig before
-				chroot \${NANO_WORLDDIR} /bin/sh -exc '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
+				CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
 				# Start the pkg add
 				# Create the repo configuration file
 				mkdir -p \${NANO_WORLDDIR}/usr/local/etc/pkg/repos
@@ -261,8 +259,7 @@ FreeBSD: {
 EOF
 			# Bug with pkg: not using the "-d" option prevent to install the package with error message "pkg fail to extract static"
 			# Need to force assume_always_yes for avoiding bootstrap pkg confirmation too
-				chroot \${NANO_WORLDDIR} /bin/sh -exc \
-               		'env ASSUME_ALWAYS_YES=true pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
+				CR 'env ASSUME_ALWAYS_YES=true pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
 				umount \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports
@@ -289,22 +286,42 @@ EOF
        		mkdir -p \${NANO_WORLDDIR}/usr/workdir
        		cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
 		# If a port have NO_PACKAGE, comment-it
-               	if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
+              	if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
                		mv \${NANO_WORLDDIR}/usr/ports/$1/Makefile \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd
                		sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
                	fi
 		# Run ldconfig before
-		chroot \${NANO_WORLDDIR} /bin/sh -exc '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
+		CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
 		# Start the build
-       		chroot \${NANO_WORLDDIR} /bin/sh -exc \
-               	  'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+		# With staging (mandatory for creating user packag during "install"),
+		# there is a bug if we use one command "make install package":
+		# It failed during do-package call. We had to do a "make install" && "make package"
+		# But this method failed if the port didn't support staging :-(
+		# Now I have to found a solution for avoiding this two same long command
+			if grep -q NO_STAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
+   					CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
 		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   install package BATCH=yes -DWITH_PKGNG \
-		  -DNOPORTDOCS -DNOPORTEXAMPLES WITHOUT=\"NLS X11\" -DWITH_SSP_PORTS \
-		  -DNO_STAGE $2 clean'
+		  WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+			else
+       			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
+                  install BATCH=yes -DWITH_PKGNG \
+		  WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+          		CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
+                  package BATCH=yes -DWITH_PKGNG \
+		  WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+			fi
 		rm \${NANO_WORLDDIR}/etc/resolv.conf
                	rm -rf \${NANO_WORLDDIR}/usr/obj
                	rm -rf \${NANO_WORLDDIR}/usr/pobj
@@ -433,8 +450,7 @@ cleanup_ports () {
 		# Restart a BSDRP image build with the "-b" option
 		# diff packages.info.first packages.info
 		set +e
-        chroot ${NANO_WORLDDIR} /bin/sh -exc \
-        'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* m4* gcc-* gmake* gmp-* libtool* gawk* perl* gettext* bison* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
+        	CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* m4* gcc-* gmake* gmp-* libtool* gawk* perl* gettext* bison* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
 		# usr/local/lib/perl5 : Dirty hack
 		#   pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
 		#   pkg didn't delete all MAN1 page related to perl too
@@ -452,8 +468,7 @@ bsdrp_custom () {
 	# Disable reverse DNS in sshd:
 	echo "UseDNS no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
 	# Update login.conf db
-	chroot ${NANO_WORLDDIR} /bin/sh -exc \
-	'cap_mkdb /etc/login.conf'
+	CR 'cap_mkdb /etc/login.conf'
 
 	# Disable privilege separation on latest version of sshd
 	# Prevent "fatal: ssh_sandbox_child: failed to limit the network socket [preauth]"
@@ -497,8 +512,7 @@ begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"
 EOF
 
 	# Set Quagga permission
-	chroot ${NANO_WORLDDIR} /bin/sh -exc \
-	'chown -R quagga:quagga /usr/local/etc/quagga'
+	CR 'chown -R quagga:quagga /usr/local/etc/quagga'
 
 	# Compress the kernel (save 3Mb)
 	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
@@ -635,12 +649,6 @@ usr/libexec/lint2
 usr/sbin/btxld
 usr/sbin/config
 usr/sbin/i2c
-usr/sbin/pkg_add
-usr/sbin/pkg_create
-usr/sbin/pkg_delete
-usr/sbin/pkg_info
-usr/sbin/pkg_updating
-usr/sbin/pkg_version
 usr/sbin/rmt
 usr/share/misc/gprof.flat
 usr/share/misc/gprof.callg
@@ -680,8 +688,7 @@ usr/share/tmac/tmac.vgrind
 		done
 	done	
 	# Generate package inventory
-	chroot ${NANO_WORLDDIR} /bin/sh -exc \
-	'pkg info' > ${NANO_OBJ}/packages.info
+	CR 'pkg info' > ${NANO_OBJ}/packages.info
 }
 
 # Enable only serial system only
