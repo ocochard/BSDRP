@@ -1165,18 +1165,18 @@ cust_pkgng () (
 # Convenience function:
 # 	Register all args as customize function.
 
-customize_cmd () (
+customize_cmd () {
 	NANO_CUSTOMIZE="$NANO_CUSTOMIZE $*"
-)
+}
 
 #######################################################################
 # Convenience function:
 # 	Register all args as late customize function to run just before
 #	image creation.
 
-late_customize_cmd () (
+late_customize_cmd () {
 	NANO_LATE_CUSTOMIZE="$NANO_LATE_CUSTOMIZE $*"
-)
+}
 
 #######################################################################
 #
@@ -1193,7 +1193,7 @@ pprint() (
     fi
 )
 
-usage () (
+usage () {
 	(
 	echo "Usage: $0 [-bfiknqvw] [-c config_file]"
 	echo "	-b	suppress builds (both kernel and world)"
@@ -1207,7 +1207,7 @@ usage () (
 	echo "	-c	specify config file"
 	) 1>&2
 	exit 2
-)
+}
 
 #######################################################################
 # Parse arguments
