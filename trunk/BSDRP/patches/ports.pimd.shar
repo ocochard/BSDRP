@@ -8,6 +8,7 @@
 #	net/pimd
 #	net/pimd/files
 #	net/pimd/files/patch-configure
+#	net/pimd/files/patch-routesock.c
 #	net/pimd/files/pimd.in
 #	net/pimd/files/patch-igmp.c
 #	net/pimd/Makefile
@@ -38,6 +39,29 @@ X 	        echo "EXTRA_OBJS   = pidfile.o" >> $CFG
 X 	        echo "EXTRA_LIBS   =" >> $CFG
 X 	        ;;
 3f5975fedbcffbd0e1cb7a6ab13167f8
+echo x - net/pimd/files/patch-routesock.c
+sed 's/^X//' >net/pimd/files/patch-routesock.c << '882fd52afac8bcb918b113fb92c3d013'
+X--- routesock.c 2014-04-13 12:56:38.000000000 +0300
+X+++ routesock.c 2014-04-14 23:19:34.000000000 +0300
+X@@ -97,8 +97,6 @@
+X     int on = 0;
+X #endif
+X
+X-    pid = getpid();
+X-
+X     routing_socket = socket(PF_ROUTE, SOCK_RAW, 0);
+X     if (routing_socket < 0) {
+X        logit(LOG_ERR, errno, "Failed creating routing socket");
+X@@ -213,6 +211,8 @@
+X        return FALSE;
+X     }
+X
+X+    pid = getpid();
+X+
+X     while (1) {
+X        rlen = read(routing_socket, &m_rtmsg, sizeof(m_rtmsg));
+X        if (rlen < 0) {
+882fd52afac8bcb918b113fb92c3d013
 echo x - net/pimd/files/pimd.in
 sed 's/^X//' >net/pimd/files/pimd.in << 'b705718607067d0954575fd7807ad5ba'
 X#!/bin/sh

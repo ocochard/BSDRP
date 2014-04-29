@@ -545,6 +545,9 @@ usr/libdata/ldscripts
 
 	# Remove some files
     FILES_TO_REMOVE='
+boot/boot1.efi
+boot/boot1.efifat
+boot/loader.efi
 sbin/hastd
 sbin/hastctl
 usr/sbin/bhyve

@@ -53,6 +53,8 @@ options 	CAPABILITIES		# Capsicum capabilities
 #options 	KDTRACE_HOOKS		# Kernel DTrace hooks
 #options	DDB_CTF			# Kernel ELF linker loads CTF data
 options 	INCLUDE_CONFIG_FILE	# Include this file in kernel
+
+# Debugging support.  Always need this:
 options 	KDB			# Kernel debugger related code
 options 	KDB_TRACE		# Print a stack trace for a panic
 
@@ -220,7 +222,7 @@ device		tx			# SMC EtherPower II (83c170 ``EPIC'')
 device		vge			# VIA VT612x gigabit Ethernet
 device		vr			# VIA Rhine, Rhine II
 device		wb			# Winbond W89C840F
-device		xl		# 3Com 3c90x (``Boomerang'', ``Cyclone'')
+device		xl			# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 
 # ISA Ethernet NICs.  pccard NICs included.
 #device		cs			# Crystal Semiconductor CS89x0 NIC
