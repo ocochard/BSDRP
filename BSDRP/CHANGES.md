@@ -27,19 +27,22 @@
 ## Bug fixes
 
 ## Updated packages
-* bird to 1.4.2
-* isc-dhcp-server to 4.3
-* tmux to 1.9.a
+ * bird to 1.4.3
+ * isc-dhcp-server to 4.3
+ * tmux to 1.9.a
+ * openvpn ot 2.3.3
 
 ## To fix before release
-* Need to test strongswan (and improve rc script)
-* pimdd is broken
+* To test: test strongswan (and improve rc script)
+* To test: pimd (seems working on -current but bug on 10-stable)
+* To test: pimdd
+* netstat -gW is broken
 * If a new packages brings new users, how to add them to existing modified /etc/passwd|groups?
 
 ## Installed packages
 * NetPIPE-3.7.1
-* bird-1.4.2
-* bird6-1.4.2
+* bird-1.4.3
+* bird6-1.4.3
 * bsnmp-regex-0.6
 * bsnmp-ucd-0.4.0
 * dlmalloc-2.8.6
@@ -49,13 +52,13 @@
 * ipmitool-1.8.12_5
 * isc-dhcp43-relay-4.3.0
 * isc-dhcp43-server-4.3.0_1
-* libevent2-2.0.21
-* libgcrypt-1.5.3_1
-* libgpg-error-1.12
-* lzo2-2.06_2
+* libevent2-2.0.21_1
+* libgcrypt-1.5.3_2
+* libgpg-error-1.13
+* lzo2-2.06_3
 * mcast-tools-20061214_1
 * mpd5-5.7
-* openvpn-2.3.2_1
+* openvpn-2.3.3
 * openvpn-auth-radius-2.1_1
 * pftop-0.7_2
 * pimd-2.1.8
