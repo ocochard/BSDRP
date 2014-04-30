@@ -36,7 +36,7 @@
 * To test: test strongswan (and improve rc script)
 * To test: pimd (seems working on -current but bug on 10-stable)
 * To test: pimdd
-* netstat -gW is broken
+* netstat -gW is broken (fixed on -current, waiting for MFC)
 * If a new packages brings new users, how to add them to existing modified /etc/passwd|groups?
 
 ## Installed packages
