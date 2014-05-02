@@ -693,7 +693,7 @@ bsdrp_console_serial () {
 	# Enable getty on console
 	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
 
     # Disable getty on syscons devices
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
@@ -717,7 +717,7 @@ bsdrp_console_serial () {
 bsdrp_console_dual () {
     sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
 
     # Tell loader to use serial and vga console.
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
@@ -732,7 +732,7 @@ bsdrp_console_dual () {
 bsdrp_console_vga () {
 	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
 
 	# Set serial console speed (but not use it)                                                               
     echo "-S${COM_SPEED}" > ${NANO_WORLDDIR}/boot.config 
