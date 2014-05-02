@@ -68,18 +68,26 @@ usage () {
 }
 
 # dual-console
-
+# $1: Serial speed
 dual_console () {
+	[ $# -eq 0 ] && SERIAL_SPEED="" || SERIAL_SPEED=$1
 	# We need to touch /boot/loader.conf.local for peristent changes
 	grep -q Dh /boot.config && die "Dual console already configured"
-	mount -uw / || die "Can't mount / in RW mode"
 	# Tell loader to use serial and vga console
 	# Because there is no /boot.config we need to get the serial speed configured first
-	SERIAL_SPEED=`grep ttyu0 /etc/ttys | cut -d'.' -f 2 | cut -d '"' -f 1`
+	# We will use the serial speed value already configured in /etc/ttys
+	# But this value is set to "3wire" for FreeBSD 11, then we need to ask user for a value in this case
+	if [ -z ${SERIAL_SPEED} ]; then
+		egrep -q 'ttyu0.*std.*' /etc/ttys && \
+		SERIAL_SPEED=`grep ttyu0 /etc/ttys | cut -d'.' -f 2 | cut -d '"' -f 1`
+	fi
 	# Check that we get something regarding serial speed
-	[ -z "${SERIAL_SPEED}" ] && die "Can't determine serial speed from ttyu0 on /etc/ttys"
+	[ -z "${SERIAL_SPEED}" ] && die "Can't determine serial speed from ttyu0
+	on /etc/ttys, add the speed value to your command: 9600, 19200, 38400,
+	   57600 and 115200"
 	[ ${SERIAL_SPEED} -lt 9600 ] && die "Incorrect serial speed value: ${SERIAL_SPEED}"
 	[ ${SERIAL_SPEED} -gt 115200 ] && die "Incorrect serial speed value: ${SERIAL_SPEED}"
+	mount -uw / || die "Can't mount / in RW mode"
 	echo "-S${SERIAL_SPEED} -Dh" > /boot.config
 	mount -ur / || die "Error for remounting / in RO mode"
 }
@@ -339,7 +347,7 @@ case "$FIRST_OPTION" in
         check_vm
         ;;
 	dual-console)
-		dual_console
+		dual_console ${SECOND_OPTION}
 		;;
 	expand-data-slice)
 		expand_data_slice
