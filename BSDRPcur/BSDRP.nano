@@ -216,6 +216,33 @@ add_quagga-bgp-netgen () {
     umount ${NANO_WORLDDIR}/dev
 }
 
+# Add Quagga BGP route injector
+add_apuled () {
+    mkdir -p ${NANO_WORLDDIR}/dev
+    mount -t devfs devfs ${NANO_WORLDDIR}/dev
+	mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
+	mkdir -p ${NANO_WORLDDIR}/tmp/apuled
+    mount -t nullfs ${NANO_TOOLS}/tools/apuled ${NANO_WORLDDIR}/tmp/apuled
+    mkdir -p ${NANO_WORLDDIR}/usr/workdir
+    CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+		MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+		UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+        make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/'
+    mv ${NANO_WORLDDIR}/tmp/apuled/apuled.ko ${NANO_WORLDDIR}/boot/modules/
+	CR 'make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/ clean'
+	FILES='@ machine x86'
+	for FILE in ${FILES}; do
+		rm ${NANO_WORLDDIR}/tmp/apuled/${FILE}
+	done	
+    rm -rf ${NANO_WORLDDIR}/usr/workdir
+    umount ${NANO_WORLDDIR}/usr/src
+	umount ${NANO_WORLDDIR}/tmp/apuled
+    umount ${NANO_WORLDDIR}/dev
+	rm -r ${NANO_WORLDDIR}/tmp/apuled
+}
+
+
 # Need to check if this function works with cross-compiling architecture!!!!
 # Recursive complex fonction: Generate one function for each ports
 add_port () {
@@ -441,6 +468,9 @@ customize_cmd add_netrate
 
 # Add quagga-bgp-netgen tools
 customize_cmd add_quagga-bgp-netgen
+
+# Add PC Engine APU led drivers
+customize_cmd add_apuled
 
 cleanup_ports () {
 	# When port are build, they install build dependency that are not usefull for running the port

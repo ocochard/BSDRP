@@ -30,4 +30,6 @@ The authors of BSDRP would like to thank the authors of these software packages 
 * sh-die: http://code.google.com/p/sh-die/
 * ssmtp: extremely simple MTA to get mail off the system to a mail hub
 * sudo: Copyright (c) 1994-1996, 1998-2012, Todd C. Miller <Todd.Miller@courtesan.com>
-* uCARP: Copyright (c) 2004-2010 Frank Denis <j at ucarp.org> 
+* uCARP: Copyright (c) 2004-2010 Frank Denis <j at ucarp.org>
+* PC Engines APU led drivers: Larry Baird
+
