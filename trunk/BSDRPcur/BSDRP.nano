@@ -216,7 +216,7 @@ add_quagga-bgp-netgen () {
     umount ${NANO_WORLDDIR}/dev
 }
 
-# Add Quagga BGP route injector
+# Add PC Engines APU LED drivers module
 add_apuled () {
     mkdir -p ${NANO_WORLDDIR}/dev
     mount -t devfs devfs ${NANO_WORLDDIR}/dev
