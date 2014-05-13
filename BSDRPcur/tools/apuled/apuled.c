@@ -48,16 +48,19 @@
 
 #define AMDSB_SMBUS_DEVID               0x43851002
 
-#define GPIO_REGION_OFFSET		0x100
-#define GPIO_REGION_SIZE		0x100
 /* SB8xx RRG 2.3.3. */
 #define AMDSB8_PM_WDT_EN                0x24
 
 /* Here are some magic numbers from APU BIOS. */
+#define GPIO_OFFSET			0x100
 #define GPIO_187      			187       // MODESW
+#define GPIO_188      			188       // Unknown ??
 #define GPIO_189      			189       // LED1#
 #define GPIO_190      			190       // LED2#
 #define GPIO_191      			191       // LED3#
+
+#define LED_ON           		0x08
+#define LED_OFF          		0xC8
 
 struct apuled {
 	struct resource *res;
@@ -151,9 +154,9 @@ apu_led_callback(void *ptr, int onoff)
 	value = bus_read_1(led->res, led->offset);
 
 	if ( onoff )
-		value &= 0x80;
+		value = LED_ON;
 	else
-		value |= 0xc8;
+		value = LED_OFF;
 
 	bus_write_1(led->res, led->offset, value);
 }
@@ -190,7 +193,7 @@ apuled_probe(device_t dev)
 {
 	struct resource         *res;
 	int			rc;
-	uint32_t		addr;
+	uint32_t		gpio_mmio_base;
 	int			i;
 	int			rid;
 
@@ -201,10 +204,11 @@ apuled_probe(device_t dev)
 	if ( ! hw_is_apu() )
 		return (ENXIO);
 
+	/* Find the ACPImmioAddr base address */
 	rc = bus_set_resource(dev, SYS_RES_IOPORT, 0, AMDSB_PMIO_INDEX,
 	    AMDSB_PMIO_WIDTH);
 	if (rc != 0) {
-		device_printf(dev, "bus_set_resource for find address\n");
+		device_printf(dev, "bus_set_resource for find address failed\n");
 		return (ENXIO);
 	}
 
@@ -217,21 +221,21 @@ apuled_probe(device_t dev)
 	}
 
 	/* Find base address of memory mapped WDT registers. */
-	for (addr = 0, i = 0; i < 4; i++) {
-		addr <<= 8;
+	for (gpio_mmio_base = 0, i = 0; i < 4; i++) {
+		gpio_mmio_base <<= 8;
 		bus_write_1(res, 0, AMDSB8_PM_WDT_EN + 3 - i);
-		addr |= bus_read_1(res, 1);
+		gpio_mmio_base |= bus_read_1(res, 1);
 	}
-	addr &= 0xFFFFF000;
+	gpio_mmio_base &= 0xFFFFF000;
 
 	if ( bootverbose )
-		device_printf(dev, "Base adddress is 0x%x\n", addr);
+		device_printf(dev, "MMIO base adddress is 0x%x\n", gpio_mmio_base);
 
 	bus_release_resource(dev, SYS_RES_IOPORT, rid, res);
 	bus_delete_resource(dev, SYS_RES_IOPORT, rid);
 
-	rc = bus_set_resource(dev, SYS_RES_MEMORY, 0, addr + GPIO_REGION_OFFSET,
-	    GPIO_REGION_SIZE);
+	rc = bus_set_resource(dev, SYS_RES_MEMORY, 0,
+	    gpio_mmio_base + GPIO_OFFSET + GPIO_187, GPIO_191 - GPIO_187);
 	if (rc != 0) {
 		device_printf(dev, "bus_set_resource for memory region failed\n");
 		return (ENXIO);
@@ -267,7 +271,7 @@ apuled_attach(device_t dev)
 		snprintf( name, sizeof(name), "led%d", i + 1 );
 
 		sc->sc_led[ i ].res = sc->sc_res;
-		sc->sc_led[ i ].offset = GPIO_189 + i;
+		sc->sc_led[ i ].offset = GPIO_189 - GPIO_187 + i;
 
 		sc->sc_led[ i ].led = led_create(apu_led_callback,
 		    &sc->sc_led[ i ], name);
@@ -337,7 +341,7 @@ modesw_read(struct cdev *dev, struct uio *uio, int ioflag) {
         int error;
 
 	/* Is mode switch pressed? */
-	value = bus_read_1(sc->sc_res, GPIO_187);
+	value = bus_read_1(sc->sc_res, GPIO_187 - GPIO_187 );
 	if (value == 0x28 )
 		ch = '1';
 	else
@@ -354,3 +358,4 @@ modesw_close(struct cdev *dev __unused, int flags __unused, int fmt __unused,
 {
 	return (0);
 }
+
