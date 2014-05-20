@@ -1,11 +1,10 @@
 #!/bin/sh
 #
-# Upgrade tool for BSD Router Project
+# Post-upgrade fixup tool for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2012, The BSDRP Development Team
+# Copyright (c) 2009-2014, The BSDRP Development Team
 # All rights reserved.
-# Based on the updatep1 and updatep2 script of nanoBSD
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,10 +30,11 @@
 
 set -e
 
-if [ $# -lt 1 ]; then
-	echo "ERROR: This script should be call by update"
-	exit 1
-fi
+# A usefull function (from: http://code.google.com/p/sh-die/)
+die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+
+[ $# -lt 1 ] && die "ERROR: This script should be call by update"
+
 DST=$1
 set -u
 mount_newpart () {
@@ -42,9 +42,7 @@ mount_newpart () {
     	mkdir /tmp/sysupgrade
 		if ! mount ${DST} /tmp/sysupgrade; then
 			echo "ERROR: Can't mount new partition"
-			if ! rm -r /tmp/sysupgrade; then
-				echo "and can't clean /tmp/sysupgrade"
-			fi
+			rm -r /tmp/sysupgrade || echo "and can't clean /tmp/sysupgrade"
     		exit 1
 		fi
 	fi
@@ -52,14 +50,8 @@ mount_newpart () {
 
 umount_newpart () {
 	if mount | grep -q "${DST} on /tmp/sysupgrade"; then	
-		if ! umount /tmp/sysupgrade; then
-    		echo "ERROR: Can't umount new partition"
-    		exit 1
-		fi
-
-		if ! rm -r /tmp/sysupgrade; then
-    		echo "WARNING: Can't remove tempdir"
-		fi
+		umount /tmp/sysupgrade || die "ERROR: Can't umount new partition"
+		rm -r /tmp/sysupgrade || echo "WARNING: Can't remove tempdir"
 	fi
 }
 
@@ -68,11 +60,14 @@ if grep -q '^1.1$' /etc/version; then
 	mount_newpart
 	# Kept the /boot/loader.conf.local file
 	if [ -f /boot/loader.conf.local ]; then
-    	if ! cp /boot/loader.conf.local /tmp/sysupgrade/boot; then
-        	echo "WARNING: Can't backup /boot/loader.conf.local"
-    	fi
+    	cp /boot/loader.conf.local /tmp/sysupgrade/boot || echo "WARNING: Can't backup /boot/loader.conf.local"
 	fi
 fi
+
+# If we need to add new users (because local /etc/master.passw was modified by just changing the root password, the new one will be ignored)
+#   echo 'blablalba' >> /etc/master.passwd
+#   pwd_mkdb -C /etc/master.passwd && pwd_mkdb -p /etc/master.passwd || die "error"
+#   config save
 
 umount_newpart
 exit 0
