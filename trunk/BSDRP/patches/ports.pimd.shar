@@ -21,16 +21,14 @@ echo c - net/pimd/files
 mkdir -p net/pimd/files > /dev/null 2>&1
 echo x - net/pimd/files/patch-configure
 sed 's/^X//' >net/pimd/files/patch-configure << '3f5975fedbcffbd0e1cb7a6ab13167f8'
-X--- configure.orig	2014-03-15 08:17:04.429114684 +0100
-X+++ configure	2014-03-15 08:17:13.251112793 +0100
-X@@ -191,8 +191,13 @@
-X 
+X--- configure.orig	2014-01-28 22:22:42.000000000 +0100
+X+++ configure	2014-06-07 22:42:32.225943111 +0200
+X@@ -192,7 +192,11 @@
 X         FreeBSD)
 X                 heading
-X+			KERN_VER=`sysctl -n sysctl kern.osreldate`
 X 	        echo "INCLUDES     =" >> $CFG
 X-	        echo "DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY" >> $CFG
-X+			if [ "$KERN_VER" -ge 1100012 ]; then
+X+			if [ `sysctl -n sysctl kern.osreldate` -ge 1100012 ]; then
 X+				echo "DEFS        += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DHAVE_STRTONUM -DHAVE_STRLCPY" >> $CFG
 X+			else
 X+	        	echo "DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY" >> $CFG
@@ -121,7 +119,7 @@ X
 XMAINTAINER=	olivier@cochard.me
 XCOMMENT=	Lightweight stand-alone PIM-SM v2 multicast routing daemon
 X
-XLICENSE=	BSD
+XLICENSE=	BSD3CLAUSE
 X
 XWRKSRC=	${WRKDIR}/${GITHUB_USER}-${GITHUB_REPO}-${GITVERSION}
 X
@@ -130,13 +128,12 @@ XGITHUB_REPO=	pimd
 XGITVERSION=	a66e7ba
 X
 XHAS_CONFIGURE=	yes
-XUSE_BZIP2=	yes
-X
-XMAN8=		${PORTNAME}
+XUSES=	tar:bzip2
 X
 XPLIST_FILES=	etc/pimd.conf.sample \
 X		etc/rc.d/pimd \
-X		sbin/pimd
+X		sbin/pimd \
+X		man/man8/${PORTNAME}.8.gz
 X
 Xpost-patch:
 X	${REINPLACE_CMD} -e 's|/etc/|${PREFIX}/etc/|g' \
@@ -146,6 +143,8 @@ Xdo-install:
 X	${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${PREFIX}/sbin/
 X	${INSTALL_DATA} ${WRKSRC}/${PORTNAME}.conf ${STAGEDIR}${PREFIX}/etc/${PORTNAME}.conf.sample
 X	${INSTALL_SCRIPT} ${FILESDIR}/${PORTNAME}.in ${STAGEDIR}${PREFIX}/etc/rc.d/${PORTNAME}
+X	${INSTALL_MAN} ${WRKSRC}/${PORTNAME}.8 ${STAGEDIR}${PREFIX}/man/man8/
+X
 X.include <bsd.port.mk>
 fc0f211ff378f71bada5166c68e231fb
 echo x - net/pimd/pkg-descr

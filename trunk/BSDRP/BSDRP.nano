@@ -141,8 +141,8 @@ NANO_DATASIZE=20480
 NANO_RAM_ETCSIZE=10240
 
 # Size of the /tmp+/var ramdisk in 512 bytes sectors
-# 20480=10MB (usefull for log files)
-NANO_RAM_TMPVARSIZE=20480
+# 40960=20MB (usefull for log files)
+NANO_RAM_TMPVARSIZE=40960
 
 # Boot0cfg configuration mode
 NANO_BOOT0CFG="-o packet -s 1 -m 3 -t 18"
@@ -373,11 +373,15 @@ add_port "net/bird6" "WITH=\"FIREWALL\""
 # Add FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
 
-# IKEv1 and IKEv2
+# IKEv1
+add_port "net/openldap24-client"
+add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
+
+# IKEv2
 add_port "security/strongswan" "WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
 
 #pf top
-add_port "sysutils/pftop"
+#add_port "sysutils/pftop"
 
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
 # UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
@@ -398,9 +402,14 @@ add_port "net/pimd"
 # Add tayga: userland NAT64 implementation
 add_port "net/tayga"
 
+# Add dnsmasq (DHCP server, DNS forwarder)
+add_port "math/gmp"
+add_port "security/nettle"
+add_port "dns/dnsmasq"
+
 # Add DHCP server and client
-add_port "net/isc-dhcp43-server"
-add_port "net/isc-dhcp43-relay"
+#add_port "net/isc-dhcp43-server"
+#add_port "net/isc-dhcp43-relay"
 
 # Add sstmp, a simple MTA to get mail off the system
 add_port "mail/ssmtp"
@@ -427,7 +436,7 @@ add_port "security/openvpn-auth-radius"
 #add_port "security/openvpn-auth-ldap"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
-add_port "benchmarks/netpipe" 
+#add_port "benchmarks/netpipe" 
 add_port "benchmarks/iperf"
 
 # VM tools
@@ -512,7 +521,8 @@ begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"
 EOF
 
 	# Set Quagga permission
-	CR 'chown -R quagga:quagga /usr/local/etc/quagga'
+	[ grep -q quagga ${NANO_WORLDDIR}/etc/passwd ] && \
+		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
 
 	# Compress the kernel (save 3Mb)
 	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
