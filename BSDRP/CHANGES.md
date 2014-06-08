@@ -18,54 +18,55 @@
     * Fix netmap's pkt-gen checksum bug (bin/187149)
 * Default configuration:
 	* Do not enable sshd by default
+    * Bump the ramdisk size /var to 20MB
 * mpd5: provide example scripts for if-up and if-down
+* Removed packages:
+	* NetPIPE
+	* isc-dhcp replaced by dns/dnsmasq (DHCP server, DHCP relay, DNS forwarder)
 * New packages:
-    * security/strongswan replace racoon
+    * security/strongswan: IKEv2
 * openvpn: radius module added
 * Lab script: New script with bhyve support
 
-## Bug fixes
+## Known bugs (Need some C knowledge to fix them)
+* pimd and pimdd are broken
 
 ## Updated packages
  * bird to 1.4.3
- * isc-dhcp-server to 4.3
+ * ipmitoo to 1.8.14
  * tmux to 1.9.a
- * openvpn ot 2.3.3
-
-## To fix before release
-* To test: test strongswan (and improve rc script)
-* To test: pimd (seems working on -current but bug on 10-stable)
-* To test: pimdd
+ * openvpn to 2.3.4
 
 ## Installed packages
-* NetPIPE-3.7.1
 * bird-1.4.3
 * bird6-1.4.3
 * bsnmp-regex-0.6
 * bsnmp-ucd-0.4.0
 * dlmalloc-2.8.6
+* dnsmasq-2.71,1
 * easy-rsa-2.2.0.m
 * freevrrpd-1.1
+* gmp-5.1.3_2
 * iperf-2.0.5
-* ipmitool-1.8.12_5
-* isc-dhcp43-relay-4.3.0
-* isc-dhcp43-server-4.3.0_1
+* ipmitool-1.8.14
+* ipsec-tools-0.8.1_6
 * libevent2-2.0.21_1
 * libgcrypt-1.5.3_2
-* libgpg-error-1.13
+* libgpg-error-1.13_1
 * lzo2-2.06_3
 * mcast-tools-20061214_1
-* mpd5-5.7
-* openvpn-2.3.3
+* mpd5-5.7_1
+* nettle-2.7.1
+* openldap-client-2.4.39
+* openvpn-2.3.4
 * openvpn-auth-radius-2.1_1
-* pftop-0.7_2
 * pimd-2.1.8
 * pimdd-0.2.1.0_1
 * pkg-1.2.7_2
 * quagga-re-0.99.17.12_1
 * ssmtp-2.64_1
-* strongswan-5.1.1_1
-* sudo-1.8.10.p2
+* strongswan-5.1.3
+* sudo-1.8.10.p3
 * tayga-0.9.2
 * tmux-1.9.a_1
 * ucarp-1.5.2_2

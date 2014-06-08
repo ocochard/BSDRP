@@ -318,7 +318,7 @@ build_lab () {
 				--intnet${NIC_NUMBER} LAN10${j} \
 				--macaddress${NIC_NUMBER} CCCC0000${MAC_J}${MAC_I} \
 				--nicpromisc${NIC_NUMBER} allow-vms \
-				>> ${LOG_FILE} 2>&1 && \
+				>> ${LOG_FILE} 2>&1 || \
 				die "[ERROR] Can't add NIC ${NIC_NUMBER} (LAN) to VM $i"
             j=$(( $j + 1 ))
         done
