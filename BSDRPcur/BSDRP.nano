@@ -541,7 +541,7 @@ begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"
 EOF
 
 	# Set Quagga permission
-	[ grep -q quagga ${NANO_WORLDDIR}/etc/passwd ] && \
+	grep -q quagga ${NANO_WORLDDIR}/etc/passwd && \
 		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
 
 	# Compress the kernel (save 3Mb)

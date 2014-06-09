@@ -397,19 +397,19 @@ add_port "net/mcast-tools"
 add_port "net/pimdd"
 
 # Add pimd: IPv4 PIM Sparse Mode daemon (need to debug it)
-add_port "net/pimd"
+add_port "net/pimd-devel"
 
 # Add tayga: userland NAT64 implementation
 add_port "net/tayga"
 
 # Add dnsmasq (DHCP server, DNS forwarder)
-add_port "math/gmp"
-add_port "security/nettle"
-add_port "dns/dnsmasq"
-
+#add_port "math/gmp"
+#add_port "security/nettle"
+#add_port "dns/dnsmasq"
 # Add DHCP server and client
-#add_port "net/isc-dhcp43-server"
+add_port "net/isc-dhcp43-server"
 #add_port "net/isc-dhcp43-relay"
+add_port "net/dhcprelya"
 
 # Add sstmp, a simple MTA to get mail off the system
 add_port "mail/ssmtp"
@@ -459,7 +459,7 @@ cleanup_ports () {
 		# Restart a BSDRP image build with the "-b" option
 		# diff packages.info.first packages.info
 		set +e
-        	CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* m4* gcc-* gmake* gmp-* libtool* gawk* perl* gettext* bison* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
+        	CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* m4* gcc-* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
 		# usr/local/lib/perl5 : Dirty hack
 		#   pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
 		#   pkg didn't delete all MAN1 page related to perl too
@@ -521,7 +521,7 @@ begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"
 EOF
 
 	# Set Quagga permission
-	[ grep -q quagga ${NANO_WORLDDIR}/etc/passwd ] && \
+	grep -q quagga ${NANO_WORLDDIR}/etc/passwd && \
 		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
 
 	# Compress the kernel (save 3Mb)
@@ -701,11 +701,14 @@ usr/share/tmac/tmac.vgrind
 	CR 'pkg info' > ${NANO_OBJ}/packages.info
 }
 
+# Since r267236 in 10-stable (10.1), 'off' was replaced by 'onifconsole' 
+# and 'dialup' by 'vt100'
+
 # Enable only serial system only
 bsdrp_console_serial () {
 	# Enable getty on console
-	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+#	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+#	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 
     # Disable getty on syscons devices
@@ -721,21 +724,15 @@ bsdrp_console_serial () {
 }
 
 # Enable use of keyboard/vga and serial
-#
-###### Warning ####
-# BUG TO FIX: Don't boot if no serial port available!
-# Seems fixed:
-# http://lists.freebsd.org/pipermail/freebsd-hackers/2012-September/040523.html
-#
 bsdrp_console_dual () {
-    sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	# sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+	# sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 
     # Tell loader to use serial and vga console.
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 
-	# Don't need to customize the loader.conf file:
+	# Don't need to customize the loader.conf file because /boot.config is allready configured:
 	#echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
 	#echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
 	#echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
@@ -743,12 +740,12 @@ bsdrp_console_dual () {
 
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
-	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	# sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+	# sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 
-	# Set serial console speed (but not use it)                                                               
-    echo "-S${COM_SPEED}" > ${NANO_WORLDDIR}/boot.config 
+	# Tell loader to use vga and serial (boot0 will be vga only)                                                               
+    echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 
 }
 
 # Special xen console configuration
