@@ -22,11 +22,16 @@
 * mpd5: provide example scripts for if-up and if-down
 * Removed packages:
 	* NetPIPE
-	* isc-dhcp replaced by dns/dnsmasq (DHCP server, DHCP relay, DNS forwarder)
+	* isc-dhcp-relay replaced by dhcprelya
 * New packages:
     * security/strongswan: IKEv2
 * openvpn: radius module added
 * Lab script: New script with bhyve support
+
+===== UPGRADE PROCESS WARNING to add to update script !! ===
+
+1. CARP migration
+2. isc-dhcpd-relay migration
 
 ## Known bugs (Need some C knowledge to fix them)
 * pimd and pimdd are broken
@@ -42,25 +47,24 @@
 * bird6-1.4.3
 * bsnmp-regex-0.6
 * bsnmp-ucd-0.4.0
+* dhcprelya-4.8
 * dlmalloc-2.8.6
-* dnsmasq-2.71,1
 * easy-rsa-2.2.0.m
 * freevrrpd-1.1
-* gmp-5.1.3_2
 * iperf-2.0.5
 * ipmitool-1.8.14
 * ipsec-tools-0.8.1_6
+* isc-dhcp43-server-4.3.0_1
 * libevent2-2.0.21_1
 * libgcrypt-1.5.3_2
 * libgpg-error-1.13_1
 * lzo2-2.06_3
 * mcast-tools-20061214_1
 * mpd5-5.7_1
-* nettle-2.7.1
 * openldap-client-2.4.39
 * openvpn-2.3.4
 * openvpn-auth-radius-2.1_1
-* pimd-2.1.8
+* pimd-devel-2.1.8
 * pimdd-0.2.1.0_1
 * pkg-1.2.7_2
 * quagga-re-0.99.17.12_1
@@ -69,7 +73,6 @@
 * sudo-1.8.10.p3
 * tayga-0.9.2
 * tmux-1.9.a_1
-* ucarp-1.5.2_2
 
 -----------------------------------------------------
 # Release 1.5 (2013/10/27)
