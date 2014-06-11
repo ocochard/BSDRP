@@ -1,9 +1,4 @@
-# Release 1.51 (not released)
-
-## Special note
-* Minimum disk size requierement increased to 512MB for new install:
-    * Install images (full) are 512MB size
-    * Update images are still 256MB size
+# Release 1.51 (2014/06/11)
 
 ## New features
 * Upgraded to FreeBSD 10-STABLE (10.0-RELEASE has too lot's of regression)
@@ -28,9 +23,14 @@
 * openvpn: radius module added
 * Lab script: New script with bhyve support
 
+## Special note
+* Minimum disk size requierement increased to 512MB for new install:
+    * Install (full) images are now 512MB size
+    * Update images are still 256MB size
+
 ## Important upgrade notes
 * CARP configuration need to be upgraded: https://www.freebsd.org/doc/handbook/carp.html
-* isc-dhcpd-relay was replaced by dhcprelya: Just need to replace dhcrelay_* lines by dhcprelya_* in rc.conf
+* isc-dhcpd-relay was replaced by dhcprelya: replace dhcrelay_* lines by dhcprelya_* in rc.conf
 
 ## Known bugs (Need some C knowledge to fix them)
 * pimd and pimdd are broken
