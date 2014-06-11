@@ -28,10 +28,9 @@
 * openvpn: radius module added
 * Lab script: New script with bhyve support
 
-===== UPGRADE PROCESS WARNING to add to update script !! ===
-
-1. CARP migration
-2. isc-dhcpd-relay migration
+## Important upgrade notes
+* CARP configuration need to be upgraded: https://www.freebsd.org/doc/handbook/carp.html
+* isc-dhcpd-relay was replaced by dhcprelya: Just need to replace dhcrelay_* lines by dhcprelya_* in rc.conf
 
 ## Known bugs (Need some C knowledge to fix them)
 * pimd and pimdd are broken
@@ -73,6 +72,7 @@
 * sudo-1.8.10.p3
 * tayga-0.9.2
 * tmux-1.9.a_1
+* ucarp-1.5.2_2
 
 -----------------------------------------------------
 # Release 1.5 (2013/10/27)
