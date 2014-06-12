@@ -1,3 +1,51 @@
+# Release 1.6 (not released)
+
+
+=== UPGRADE PROCEDURE if your installation is older than BSDRP 1.51 ===
+
+BSDRP now needs a 512MB disk and no more a 256MB.
+If you had installed BSDRP on a 256MB disk: You can't upgrade it to this version.
+But you installed it on a 512MB disk, here is how to resize the partitionning system.
+
+0. Check if you need to care about this special upgrade procedure
+gpart show | grep -q '(227M)' && echo "You don't need to follow the special upgrade procedure" || echo "You have to follow the procedure, go to step 1"
+
+1. Check the active partition (needs to be the number 1)
+
+Type this command and read the result:
+mount /dev/ufs/BSDRPs1a && echo "You're running from the good partiton, go directly to step 3" || echo "You need to change the active partition: go to step 2"
+
+2. swaping active partition
+just do an same image upgrade and reboot:
+
+cat /dev/da0s2 | upgrade
+reboot
+
+
+3. resize the partition.
+Warning: if you had saved some datas on /data, you need to backup it
+
+Then enter these commands:
+
+gpart delete -i 4 da0
+gpart delete -i 3 da0
+gpart delete -i 2 da0
+gpart resize -i 1 -s 465884 da0
+gpart commit da0s1
+gpart add -t freebsd -i 2 -s 465884 da0
+gpart add -t freebsd -i 3 -s 32193 da0
+gpart add -t freebsd -i 4 da0
+newfs -b 4096 -f 512 -i 8192 -U -L BSDRPs3 /dev/da0s3
+newfs -b 4096 -f 512 -i 8192 -U -L BSDRPs4 /dev/da0s4
+config save
+
+=> No need to reboot
+
+4. Upgrade
+
+
+-----------------------------------------------------
+
 # Release 1.51 (2014/06/11)
 
 ## New features
