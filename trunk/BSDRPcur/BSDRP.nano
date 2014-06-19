@@ -91,6 +91,7 @@ WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
 WITHOUT_SYSINSTALL=
 WITHOUT_TESTS=
+WITHOUT_VT_SUPPORT=
 WITHOUT_UNBOUND=
 WITHOUT_WIRELESS=
 WITHOUT_WIRELESS_SUPPORT=
@@ -733,6 +734,7 @@ bsdrp_console_serial () {
 	# Since r266895, console is set as onifconsole
 	#sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
 	#sed -i "" -e /ttyu0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	# Since r267591, 3wire is enabled
 	# Set 3wire speed for ttyu0
 	sed -i "" -e /ttyu0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
 
@@ -758,7 +760,8 @@ bsdrp_console_serial () {
 bsdrp_console_dual () {
     #sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
 	#sed -i "" -e /ttyu0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
+	# Since r267591, 3wire is enabled
+	#sed -i "" -e /ttyu0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
 
     # Tell loader to use serial and vga console.
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
@@ -773,7 +776,8 @@ bsdrp_console_dual () {
 bsdrp_console_vga () {
 	#sed -i "" -e /tty[du]0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
 	#sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
+	# Since r267591, 3wire is enabled
+	#sed -i "" -e /tty[du]0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
 
 	# Set serial console speed (but not use it)                                                               
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 
