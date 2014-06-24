@@ -7,7 +7,8 @@ update_motd=NO
 blanktime="NO"
 
 #Increase the vga console resolution to 1024x768x8
-allscreens_flags="MODE_261"
+#This feature create problem on vmware console
+#allscreens_flags="MODE_261"
 
 #Disable moused
 moused_enable="NO"
