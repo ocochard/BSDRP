@@ -196,6 +196,7 @@ save_cfg () {
 
 	umount_cfg
 	echo "Done."
+	logger Configuration saved
 	exit 0
 }
 

@@ -1,5 +1,9 @@
-# Release 1.6 (not released)
+# Release 1.52 (not released)
 
+## New features
+
+## Bug fixes
+* Disable high-resolution on VGA console: color problem on VMware and VirtualBox
 
 === UPGRADE PROCEDURE if your installation is older than BSDRP 1.51 ===
 
