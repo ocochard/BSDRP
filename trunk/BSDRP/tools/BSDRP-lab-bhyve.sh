@@ -105,7 +105,7 @@ uncompress_image () {
 		bunzip2 --decompress --stdout ${FILE} > ${VM_TEMPLATE} || \
 			die "Can't bunzip2 image file"
 		;;
-	"x86 boot sector")
+	"boot sector")
 		cp ${FILE} ${VM_TEMPLATE}
 		return 0
 		;;
