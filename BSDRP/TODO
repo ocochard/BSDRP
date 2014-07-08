@@ -4,21 +4,15 @@
 * if no-mandatory /data had a fsck problem, system refuse go in single user
 * add auto-trimming of all log files that are being created
 
-## Upgrading #
-
-* Replacing the use of 2 systems partitions (there is not "active" partition
-  concept on sparc64, ARM, MIPS, neither bootloader on XEN-PV) by freebsd-update ???
-
 ## Arch #
 
 * NEED to merge lot's of common task of create_arch_diskimage() in nanobsd
-* Sparc64: Need to fix the login bug, and add arch support to the update script (Is possible to modify the boot PROM from the OS?)
-* arm: Need to found an arm devices for working on
-* cross-compilation : check this URL: http://forums.freebsd.org/showthread.php?t=18147
 
 ## Boot loader ##
 * FreeBSD boot0 (sys/boot/i386/boot0) is highly optimized ASM code and use int 0x14 for COM port access (limited to 9600 bauds).
     => Is possible to use UART in place for highly baud rate ? 
+* How to add UEFI bootloader ? (available on -current), because some x86_64 machine didn't have UEFI compability (PC Engine APU)
+* Using GPT partition in place of MBR ?
 
 ## Authentication #
 
@@ -30,10 +24,9 @@
 
 ## misc #
 
-* utf-8 support for console ?
+* Is utf-8 support for console usefull ?
 * Quagga rc script: limit all quagga process message when quagga is disabled
 * Need to publish an OVF (Open Virtualization Format) tar file
-* Re-write script that read/write rc.conf or rc.conf.local with sysrc(8)
 * A netgraph documentation "for dummies" like this: http://nexus.org.ua/weblog/message/406/
 
 ## Central configuration management / Provisionning #
@@ -78,7 +71,6 @@ esac
 
 * PAM: tacacs+, radius, ldap, etc
 * Lab script: Generate a lab diagram in DOT language, see example in tools/bsdrp.lab.gv
-* Lab script: Xen script to add
 
 ## nanobsd patches to study for inclusion # 
 
