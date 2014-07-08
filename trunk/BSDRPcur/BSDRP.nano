@@ -733,11 +733,11 @@ usr/share/tmac/tmac.vgrind
 # Enable only serial system only
 bsdrp_console_serial () {
 	# Since r266895, console is set as onifconsole
-	#sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
 	#sed -i "" -e /ttyu0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 	# Since r267591, 3wire is enabled
 	# Set 3wire speed for ttyu0
-	sed -i "" -e /ttyu0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
+	#sed -i "" -e /ttyu0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
 
     # Disable getty on syscons devices
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
