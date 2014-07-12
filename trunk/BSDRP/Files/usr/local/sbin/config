@@ -3,7 +3,7 @@
 # Configuration tool for BSD Router Project 
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2013, The BSDRP Development Team 
+# Copyright (c) 2009-2014, The BSDRP Development Team 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -151,6 +151,7 @@ archive_cfg () {
 	if ! tar -cJvpf /data/archives/rollback.tar.xz -C /cfg/ . 2>/dev/null; then
 		echo "WARNING: Can't generate tar archive."
 	fi
+	
 	#If data was allready mounted, don't unmount it
 	if ! ($DATA_ALREADY_MOUNTED); then
 		umount_data
@@ -177,8 +178,8 @@ save_cfg () {
 				#But this method copy all files in this directory too :-(
 				if [ ! -d /cfg/`dirname $i` ]; then
                 	(find `dirname $i`  -print | cpio -dumpv  /cfg/ 2>/dev/null)
-					# Because the previous cpio copied all files (even unmodified), we need to delete them (dirty hack)
-					rm -rf /cfg/`dirname $i`/*
+				# Because the previous cpio copied all files (even unmodified), we need to delete them (dirty hack)
+				rm -rf /cfg/`dirname $i`/*
            		fi
 				(find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
 			fi
@@ -282,8 +283,7 @@ rollback () {
 		exit 1
 	fi
 	umount_data
-	echo "Done."
-	echo "TO DO: need to force process to reload config"
+	echo "Done: You need to reload for applying changes."
 	exit 0
 }
 
@@ -305,7 +305,7 @@ put () {
 	# example: scp admin@backup.host.fr:filename
 	CONFIG_FILE="${HOST}.tar.xz"
 	case "$SECOND_OPTION" in
-    scp)
+    	scp)
 		echo "Send saved configuration by SCP to ${THIRD_OPTION}"
 		if [ -f /tmp/${CONFIG_FILE} ]; then
 			rm /tmp/${CONFIG_FILE} || \
@@ -322,17 +322,17 @@ put () {
 		if [ -f /tmp/${CONFIG_FILE} ]; then
 			rm /tmp/${CONFIG_FILE} || \
 				die "WARNING: Can't delete /tmp/${CONFIG_FILE}"
-        fi
-      	;;
+        	fi
+      		;;
 	cvs)
 		echo "TO DO: CVS commit to $THIRD_OPTION"
 		;;
 	svn)
-        echo "TO DO: SVN commit to $THIRD_OPTION"
-        ;;
-    *)
-        echo "Bad arguments, see 'config help put' for usage"
-        ;;
+        	echo "TO DO: SVN commit to $THIRD_OPTION"
+        	;;
+	*)
+        	echo "Bad arguments, see 'config help put' for usage"
+        	;;
     esac
 
 	exit 0
@@ -379,18 +379,18 @@ get () {
 		restore_cfg /tmp/${CONFIG_FILE} /etc
 		echo "Configuration restored"
 		echo "Don't forget confirming your restoration by a 'config save'"
-        ;;
+        	;;
 	cvs)
-        echo "TO DO: CVS commit to $THIRD_OPTION"
-        ;;
-    svn)
-        echo "TO DO: SVN commit to $THIRD_OPTION"
-        ;;
-    *)
-        echo "Bad arguments, see 'config help get' for usage"
-        ;;
-    esac
-    exit 0
+        	echo "TO DO: CVS commit to $THIRD_OPTION"
+       		;;
+    	svn)
+        	echo "TO DO: SVN commit to $THIRD_OPTION"
+        	;;
+    	*)
+        	echo "Bad arguments, see 'config help get' for usage"
+        	;;
+    	esac
+	exit 0
 }
 	
 

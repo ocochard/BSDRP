@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# BSD Router Project: Auto enable polling for interface that support it
+# BSD Router Project: Disable LRO and TSO feature on all interface
 #
-# Copyright (c) 2009-2013, The BSDRP Development Team 
+# Copyright (c) 2014, The BSDRP Development Team 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,63 +25,46 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# PROVIDE: polling
+# PROVIDE: disablelrotso
 # REQUIRE: netif
 # KEYWORD: nojail
 #
 # Add the following to /etc/rc.conf[.local] to enable this service
 #
-# polling_enable="YES"
+# disablelrotso_enable="YES"
 #
 
 . /etc/rc.subr
 
-polling_enable=${polling_enable-"NO"}
+disablelrotso=${disablelrotso_enable-"NO"}
 
-name="polling"
+name="disablelrotso"
 rcvar=${name}_enable
 
 start_cmd="${name}_start"
 stop_cmd="${name}_stop"
 
-# List of supported drivers
-# Get from the "man polling"
-SUPPORTED_DEVICES="bge dc em fwe fwip fxp ixgb nfe nge re rl sf sis ste stge vge vr xl"
-# Get the list of detected devices
+# Get the list of Ethernet devices
 DETECTED_DEVICES=`ifconfig -l "ether"`
 
-polling_start()
+disablelrotso_start()
 {
-	# If the device support it, enable polling:
+	# Disable LRO and TSO on all detected interface:
 	for DETECTED in ${DETECTED_DEVICES}
 	do
-		for SUPPORTED in ${SUPPORTED_DEVICES}
-		do
-			if echo ${DETECTED} | /usr/bin/grep -q "${SUPPORTED}"; then
-				echo -n "Try to enable polling for: ${DETECTED}..."
-				ifconfig ${DETECTED} polling && echo "done" || echo "failed"
-			else
-				break
-			fi
-		done
+		echo -n "Try to disable tso and lro for: ${DETECTED}..."
+		ifconfig ${DETECTED} -tso4 -tso6 -lro && echo "done" || echo "failed"
 	done
 exit 0
 }
 
-polling_stop()
+disablelrotso_stop()
 {
-	# Disable polling on all interface that support it:
+	# Re-enable LRO and TSO on all interface that support it:
 	for DETECTED in ${DETECTED_DEVICES}
 	do
-		for SUPPORTED in ${SUPPORTED_DEVICES}
-		do
-			if echo ${DETECTED} | /usr/bin/grep -q "${SUPPORTED}"; then 	
-				echo -n "Try to disable polling for: ${DETECTED}..."
-				ifconfig ${DETECTED} -polling && echo "done" || echo "failed"
-			else
-				break
-			fi
-		done
+		echo -n "Try to re-enable tso and lro : ${DETECTED}..."
+		ifconfig ${DETECTED} tso4 tso6 lro && echo "done" || echo "failed"
 	done
 exit 0
 }

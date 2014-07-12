@@ -92,7 +92,7 @@ WITHOUT_SVNLITE=
 WITHOUT_SYSINSTALL=
 WITHOUT_TESTS=
 WITHOUT_UNBOUND=
-WITHOUT_VT_SUPPORT=
+WITHOUT_VT=
 WITHOUT_WIRELESS=
 WITHOUT_WIRELESS_SUPPORT=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
@@ -363,8 +363,9 @@ add_port "net-mgmt/bsnmp-ucd"
 # Quagga installation
 add_port "devel/libdlmalloc"
 add_port "security/libgpg-error"
+add_port "print/indexinfo"
 add_port "security/libgcrypt"
-add_port "net/quagga-re" "WITH=\"DLMALLOC ISISD OSPF_NSSA OSPF_OPAQUE_LSA TCPSOCKETS\""
+add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_NSSA OSPF_OPAQUE_LSA TCPSOCKETS\""
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Add Bird: Replace XORP that is too memory/CPU hungry:
@@ -708,8 +709,9 @@ usr/share/tmac/tmac.vgrind
 # Enable only serial system only
 bsdrp_console_serial () {
 	# Enable getty on console
-#	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
-#	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	# Since r266895, console is set as onifconsole
+    sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
+	# sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 
     # Disable getty on syscons devices
