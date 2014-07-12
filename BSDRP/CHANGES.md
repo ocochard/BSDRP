@@ -1,9 +1,13 @@
 # Release 1.52 (not released)
 
 ## New features
+* Replace quagga-re by quagga: quagga-re seems no more updated
+* Disable LRO and TSO on all interfaces by default (edit /etc/rc.conf.misc and change disablelrotso_enable to "NO" for revert back)
+    * These NIC features are great for a router but not for a router
 
 ## Bug fixes
 * Disable high-resolution on VGA console: color problem on VMware and VirtualBox
+* fix RC polling script that tried to enable polling on all interfaces
 
 === UPGRADE PROCEDURE if your installation is older than BSDRP 1.51 ===
 
