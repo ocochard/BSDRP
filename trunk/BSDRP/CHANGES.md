@@ -3,7 +3,7 @@
 ## New features
 * Replace quagga-re by quagga: quagga-re seems no more updated
 * Disable LRO and TSO on all interfaces by default (edit /etc/rc.conf.misc and change disablelrotso_enable to "NO" for revert back)
-    * These NIC features are great for a router but not for a router
+    * More information about here: http://bsdrp.net/documentation/technical_docs/performance?&#nic_drivers_tuning
 
 ## Bug fixes
 * Disable high-resolution on VGA console: color problem on VMware and VirtualBox

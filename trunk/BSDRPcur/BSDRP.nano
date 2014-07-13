@@ -390,8 +390,10 @@ add_port "net-mgmt/bsnmp-ucd"
 
 # Quagga installation
 add_port "devel/libdlmalloc"
+add_port "print/indexinfo"
 add_port "security/libgpg-error"
 add_port "security/libgcrypt"
+add_port "devel/readline"
 add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_NSSA OSPF_OPAQUE_LSA TCPSOCKETS\""
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 

@@ -89,22 +89,14 @@ if_have_cap () {
 	# Check if the interface have capabilities and if it's enabled return true (0)
 	# $1: if
 	# $2: capability
-    if ifconfig -m $1 | egrep -q "capabilities.*$2"; then
-		return 0
-	else
-		return 1
-	fi
+    ifconfig -m $1 | egrep -q "capabilities.*$2" && return 0 || return 1
 }
 
 if_is_cap_enabled () {
 	# Check if the interface capability is enabled: return true
 	# $1: if
 	# $2: capability
-	if ifconfig -m $1 | egrep -q "options.*$2"; then
-		return 0
-	else
-		return 1
-	fi
+	ifconfig -m $1 | egrep -q "options.*$2" && return 0 || return 1
 }
 
 tune () {
@@ -112,25 +104,26 @@ tune () {
 	# RO values need to be put in /boot/loader.conf.local
 	# RW values need to be put in /etc/sysctl.conf
 	echo "#==> Start of /boot/loader.conf.local"
-	echo "#TO DO All these values doesn't works here and need to be put in s/etc/sysctl.conf"
+	echo "#TO DO All these values doesn't works here and need to be put in /etc/sysctl.conf"
 	net_nic
 	($ROUTER) && net_forward
 	($ROUTER) && net_inet
 	($ROUTER) && cpu_ht
 	net_netisr
-	net_netstat
-	net_mbuf
+	# Autombuf tunning avoid the need fo checking them
+	# net_mbuf
 	echo "#<== End of /boot/loader.conf.local"
+	net_netstat
 	echo "#==> To be added to /etc/rc.conf"
 	#Need to replace this part by a list of modules (ichsmb coretemp aesni watchdog?)
-	if grep -q grep 'Feature.*AESNI' /var/run/dmesg.boot ; then
+	if grep -q 'Feature.*AESNI' /var/run/dmesg.boot ; then
 		#CPU support, check if not allready loaded
-		if ! kldstat -n aesni | grep -q aesni; then
+		if ! kldstat -n aesni 2>&1 | grep -q aesni; then
 			echo "#CPU support AESNI crypto feature, add the module"
 			echo 'kld_list="aesni"'
 		fi
 	fi
-	for NIC in `ifconfig -l`; do
+	for NIC in `ifconfig -l "ether"`; do
 		#skip loopback interfaces
         echo $NIC | egrep -q "lo[[:digit:]]" && continue
 		# Check only interface with vlan configured on them
@@ -142,13 +135,12 @@ tune () {
 				fi
 			fi # if_have_cap
 		fi # rc.conf
-		# Router should not have LRO enabled
+		# Router should not have LRO/TSO4/TSO6 enabled
 		if ($ROUTER); then
-			if if_have_cap ${NIC} LRO; then
-				if if_is_cap_enabled ${NIC} LRO; then
-					echo "A router should not have LRO enabled on forwarding NIC"
-				fi
-			fi
+			for CAP in LRO TSO4 TSO6; do
+				if_is_cap_enabled ${NIC} ${CAP} && \
+					echo "A router MUST NOT have ${CAP} enabled on forwarding NIC"
+			done
 		fi
 		# Check for virtualized
 		if (${VM_DETECTED}); then
@@ -160,11 +152,10 @@ tune () {
 				fi
 			fi
 			# need disable hardware assisted features (need to found reference about this tip)
-			for CAPS in RXCSUM TXCSUM TSO4; do
-            	if if_is_cap_enabled ${NIC} ${CAPS}; then
-					echo "${NIC} have ${CAPS} enabled: Disable it in a VM"
-            	fi
-        	done # end for CAPS
+			for CAP in RXCSUM TXCSUM TSO4 TSO6; do
+            	if_is_cap_enabled ${NIC} ${CAP} && \
+					echo "${NIC} have ${CAP} enabled: Disable it in a VM"
+        	done # end for CAP
 		fi
 	done
 
@@ -178,7 +169,7 @@ cpu_ht () {
 net_nic () {
 	# NIC drivers tuning
 	# em tuning
-	if ifconfig -l | egrep -q 'em[[:digit:]]'; then
+	if ifconfig -l "ether" | egrep -q 'em[[:digit:]]'; then
 		# Need to check if there are not 82542 or 82543 (support 256 max)
 		for VALUE in hw.em.txd hw.em.rxd; do
 			sysctl_equal ${VALUE} 2048
@@ -198,7 +189,7 @@ net_nic () {
 		fi
 	fi
 	# igb tuning
-	if ifconfig -l | egrep -q 'igb[[:digit:]]'; then
+	if ifconfig -l "ether" | egrep -q 'igb[[:digit:]]'; then
 		for VALUE in hw.igb.txd hw.igb.rxd; do
             sysctl_equal ${VALUE} 2048
     	done
@@ -210,12 +201,10 @@ net_nic () {
 		sysctl_equal hw.igb.rx_process_limit -1
 		# Default kern.ipc.nmbclusters is too small for multiple igb card and multicore
 		# Need to add a test [ `sysctl -n hw.ncpu` -gt 1 ] and arch (i386 don't like too much)
-		if [ `sysctl -n hw.ncpu` -ge 4 ]; then
-			sysctl_atleast kern.ipc.nmbclusters 262144
-		fi
+		[ `sysctl -n hw.ncpu` -ge 4 ] && sysctl_atleast kern.ipc.nmbclusters 262144
     fi
 	# ixgbe tuning
-	if ifconfig -l | egrep -q 'ixgbe[[:digit:]]'; then
+	if ifconfig -l "ether" | egrep -q 'ixgbe[[:digit:]]'; then
 	# source: README in drivers source
 	#	 When using the ixgbe driver with RSS autoconfigured based on the number of
   	# cores (the default setting) and that number is larger than 4, increase the
@@ -289,9 +278,8 @@ timecounter () {
 	# Are the timecounter tuning usefull ?
 	TIMECOUTER_CHOICE=`sysctl -n sysctl kern.timecounter.choice`
 	if echo "${TIMECOUTER_CHOICE}" | grep -q "HPET"	; then
-		if ! sysctl -n kern.timecounter.hardware | grep -q HPET; then
+		sysctl -n kern.timecounter.hardware | grep -q HPET || \
 			echo "sysctl kern.timecounter.hardware=HPET"
-		fi
 	fi
 }
 ###################
