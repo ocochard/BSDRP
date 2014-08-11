@@ -233,10 +233,6 @@ add_apuled () {
         make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/'
     mv ${NANO_WORLDDIR}/tmp/apuled/apuled.ko ${NANO_WORLDDIR}/boot/modules/
 	CR 'make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/ clean'
-	FILES='@ machine x86'
-	for FILE in ${FILES}; do
-		rm ${NANO_WORLDDIR}/tmp/apuled/${FILE}
-	done	
     rm -rf ${NANO_WORLDDIR}/usr/workdir
     umount ${NANO_WORLDDIR}/usr/src
 	umount ${NANO_WORLDDIR}/tmp/apuled
