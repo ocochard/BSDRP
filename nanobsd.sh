@@ -594,15 +594,21 @@ create_i386_diskimage ( ) (
 	}
 	' > ${NANO_OBJ}/_.gpart
 
-	trap "echo 'Running exit trap code' ; df -i ${MNT} ; umount ${MNT} || true ; mdconfig -d -u $MD" 1 2 15 EXIT
+	trap "echo 'Running exit trap code' ; df -i ${MNT} ; nano_umount ${MNT} || true ; mdconfig -d -u $MD" 1 2 15 EXIT
 
 	sh ${NANO_OBJ}/_.gpart
 	gpart show ${MD}
 	fdisk ${MD}
 	# XXX: params
 	# XXX: pick up cached boot* files, they may not be in image anymore.
-	boot0cfg -B -b ${NANO_WORLDDIR}/${NANO_BOOTLOADER} ${NANO_BOOT0CFG} ${MD}
-	bsdlabel -w -B -b ${NANO_WORLDDIR}/boot/boot ${MD}s1
+	if [ -f ${NANO_WORLDDIR}/${NANO_BOOTLOADER} ]; then
+		boot0cfg -B -b ${NANO_WORLDDIR}/${NANO_BOOTLOADER} ${NANO_BOOT0CFG} ${MD}
+	fi
+	if [ -f ${NANO_WORLDDIR}/boot/boot ]; then
+		bsdlabel -w -B -b ${NANO_WORLDDIR}/boot/boot ${MD}s1
+	else
+		bsdlabel -w ${MD}s1
+	fi
 	bsdlabel ${MD}s1
 
 	# Create first image
