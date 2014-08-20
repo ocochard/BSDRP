@@ -115,9 +115,9 @@ uncompress_image () {
 	esac
 
 	# Once unzip, we need to re-check the format
-	FILE_TYPE=`file -b ${VM_TEMPLATE} | cut -d ';' -f 1`
-	[ "${FILE_TYPE}" == "x86 boot sector" ] || \
-		die "Didn't detect image format:  ${FILE_TYPE}"
+	if ! file -b ${VM_TEMPLATE} | grep "boot sector"; then
+		die "Not a correct image format ?"
+	fi	
 
 	return 0
 
@@ -189,36 +189,43 @@ destroy_vm() {
 
 run_vm() {
 	# $1: VM number
-	# Destroy previous is allready exist
+	# Destroy previous if allready exist
 	destroy_vm ${VM_NAME}_$1
-	# load a FreeBSD guest inside a bhyve virtual machine
-	eval VM_LOAD_$1=\"bhyveload -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm$1A \${VM_NAME}_$1\"
-	#eval echo DEBUG \${VM_LOAD_$1}
-	eval \${VM_LOAD_$1}
-	# c: Number of guest virtual CPUs
-	# m: RAM
-	# A: Generate ACPI tables.  Required for FreeBSD/amd64 guests
-	# I: Allow devices behind the LPC PCI-ISA bridge to be configured.
-	#     The only supported devices are the TTY-class devices, com1
-	#     and com2.
-	# H: Yield the virtual CPU thread when a HLT instruction is detected.
-	#    If this option is not specified, virtual CPUs will use 100% of a
-	#    host CPU
-	# P: Force guest virtual CPUs to be pinned to host CPUs
-	# s: Configure a virtual PCI slot and function.
-	# S: Configure legacy ISA slot and function 
-	# PCI 0:0 hostbridge
-	# PCI 0:1 lpc (serial)
-	# PCI 1:0 Hard drive
-	# PCI 2:0 and next: Network NIC
-	#   Note: It's not possible to have "hole" in PCI assignement
-	VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
-	eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\$1A\"
-	eval VM_DISK_$1=\"-s 1:0,virtio-blk,\${WRK_DIR}/\${VM_NAME}_$1\"
-	#eval echo DEBUG \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_NAME}_$1
-	eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} ${VM_NAME}_$1 &
-	# Dirty fix for perventing bhyve bug that sometimes need input from console for unpausing
-	echo >> /dev/nmdm$1B
+	# Need an infinite loop: This permit to do a reboot initated from the VM
+	while [ 1 ]; do
+		# load a FreeBSD guest inside a bhyve virtual machine
+		eval VM_LOAD_$1=\"bhyveload -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm$1A \${VM_NAME}_$1\"
+		#eval echo DEBUG \${VM_LOAD_$1}
+		eval \${VM_LOAD_$1}
+		# c: Number of guest virtual CPUs
+		# m: RAM
+		# A: Generate ACPI tables.  Required for FreeBSD/amd64 guests
+		# I: Allow devices behind the LPC PCI-ISA bridge to be configured.
+		#     The only supported devices are the TTY-class devices, com1
+		#     and com2.
+		# H: Yield the virtual CPU thread when a HLT instruction is detected.
+		#    If this option is not specified, virtual CPUs will use 100% of a
+		#    host CPU
+		# P: Force guest virtual CPUs to be pinned to host CPUs
+		# s: Configure a virtual PCI slot and function.
+		# S: Configure legacy ISA slot and function 
+		# PCI 0:0 hostbridge
+		# PCI 0:1 lpc (serial)
+		# PCI 1:0 Hard drive
+		# PCI 2:0 and next: Network NIC
+		#   Note: It's not possible to have "hole" in PCI assignement
+		VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
+		eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\$1A\"
+		eval VM_DISK_$1=\"-s 1:0,virtio-blk,\${WRK_DIR}/\${VM_NAME}_$1\"
+		#eval echo DEBUG \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_NAME}_$1
+		eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} ${VM_NAME}_$1
+		# Check bhyve exit code, and if error: exit the infinite loop
+		if [ $? -ne 0 ]; then
+        	break
+    	fi
+		# Dirty fix for perventing bhyve bug that sometimes need input from console for unpausing
+		echo >> /dev/nmdm$1B
+	done
 }
 
 create_interface() {
@@ -431,7 +438,7 @@ ${TAP_IF},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
 	done # while [ $j -le $LAN ]
 
 	# Start VM
-	run_vm $i
+	run_vm $i &
 	i=$(( $i + 1 ))
 done # Main loop: while [ $i -le $NUMBER_VM ]
 
