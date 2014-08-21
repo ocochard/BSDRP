@@ -71,11 +71,12 @@ check_bhyve_support () {
 	# Check if processor support bhyve
 	grep -q 'Features.*POPCNT' /var/run/dmesg.boot || die \
 		"Your CPU does not support POPCNT."
-
 	# Check if bhyve vmm is loaded
 	load_module vmm
 	# Same for serial console nmdm
 	load_module nmdm
+	# Enable net.link.tap.up_on_open
+	sysctl net.link.tap.up_on_open=1 || echo "Warning: Can't enable net.link.tap.up_on_open"
 }
 
 load_module () {
