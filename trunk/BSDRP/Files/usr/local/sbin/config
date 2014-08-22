@@ -166,8 +166,9 @@ save_cfg () {
 	echo "Saving configuration..."
 	(
 	cd /etc
-	for i in "$@" `find * -type f`; do
-		if [ -f /cfg/$i ]; then
+	# Looking for all files AND symlinks in /etc
+	for i in "$@" `find * \( -type l -o -type f \)`; do
+		if [ -e /cfg/$i ]; then
 			if ! cmp -s /etc/$i /cfg/$i; then
 				cp -pfv /etc/$i /cfg/$i 2>/dev/null
 			fi
@@ -183,15 +184,15 @@ save_cfg () {
            		fi
 				(find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
 			fi
-		fi # if [ -f /cfg/$i ]
+		fi # if [ -e /cfg/$i ]
 	done
 	)	
 
-	# Deleting file on /cfg that are no more in /etc
+	# Deleting file or symlink on /cfg that are no more in /etc
 	(
 	cd /cfg
-	for i in "$@" `find * -type f`; do
-		[ -f /etc/$i ] || rm -rf /cfg/$i
+	for i in "$@" `find * \( -type l -o -type f \)`; do
+		[ -e /etc/$i ] || rm -rf /cfg/$i
 	done
 	)
 
