@@ -1,0 +1,33 @@
+Index: net/bird/files/patch-sysdep-bsd-sysio.h
+===================================================================
+--- net/bird/files/patch-sysdep-bsd-sysio.h	(revision 0)
++++ net/bird/files/patch-sysdep-bsd-sysio.h	(working copy)
+@@ -0,0 +1,13 @@
++--- sysdep/bsd/sysio.h.orig	2014-04-01 11:24:10.000000000 +0200
+++++ sysdep/bsd/sysio.h	2014-05-03 14:19:20.777616874 +0200
++@@ -225,8 +225,8 @@
++   set_inaddr(&ip->ip_src, s->saddr);
++   set_inaddr(&ip->ip_dst, s->daddr);
++ 
++-#ifdef __OpenBSD__
++-  /* OpenBSD expects ip_len in network order, other BSDs expect host order */
+++#if defined(__OpenBSD__) || (__FreeBSD_version >= 1100030)
+++  /* OpenBSD and FreeBSD (since 11) expects ip_len in network order, other BSDs expect host order */
++   ip->ip_len = htons(ip->ip_len);
++ #endif
++ }
+
+Property changes on: net/bird/files/patch-sysdep-bsd-sysio.h
+___________________________________________________________________
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property

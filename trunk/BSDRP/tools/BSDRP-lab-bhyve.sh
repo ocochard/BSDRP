@@ -75,8 +75,10 @@ check_bhyve_support () {
 	load_module vmm
 	# Same for serial console nmdm
 	load_module nmdm
+	# Same for if_tap
+	load_module if_tap
 	# Enable net.link.tap.up_on_open
-	sysctl net.link.tap.up_on_open=1 || echo "Warning: Can't enable net.link.tap.up_on_open"
+	sysctl net.link.tap.up_on_open=1 > /dev/null 2>&1 || echo "Warning: Can't enable net.link.tap.up_on_open"
 }
 
 load_module () {
@@ -116,7 +118,7 @@ uncompress_image () {
 	esac
 
 	# Once unzip, we need to re-check the format
-	if ! file -b ${VM_TEMPLATE} | grep "boot sector"; then
+	if ! file -b ${VM_TEMPLATE} | grep -q "boot sector"; then
 		die "Not a correct image format ?"
 	fi	
 

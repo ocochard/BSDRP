@@ -28,7 +28,7 @@ X         FreeBSD)
 X                 heading
 X 	        echo "INCLUDES     =" >> $CFG
 X-	        echo "DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY" >> $CFG
-X+			if [ `sysctl -n sysctl kern.osreldate` -ge 1100012 ]; then
+X+			if [ `sysctl -n sysctl kern.osreldate` -ge 1100030 ]; then
 X+				echo "DEFS        += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DHAVE_STRTONUM -DHAVE_STRLCPY" >> $CFG
 X+			else
 X+	        	echo "DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY" >> $CFG
@@ -97,7 +97,7 @@ X@@ -174,7 +174,11 @@
 X #ifdef RAW_INPUT_IS_RAW
 X     ipdatalen = ntohs(ip->ip_len) - iphdrlen;
 X #else
-X+ #if __FreeBSD_version >= 1000000 && __FreeBSD_version < 1100012
+X+ #if __FreeBSD_version >= 1000000 && __FreeBSD_version < 1100030
 X+	ipdatalen = ip->ip_len - iphdrlen;
 X+ #else
 X     ipdatalen = ip->ip_len;

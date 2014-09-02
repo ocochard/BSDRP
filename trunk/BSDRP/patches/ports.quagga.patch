@@ -1,7 +1,7 @@
-Index: net/quagga-re/files/patch-lib-zebra.h
+Index: net/quagga/files/patch-lib-zebra.h
 ===================================================================
---- net/quagga-re/files/patch-lib-zebra.h	(revision 0)
-+++ net/quagga-re/files/patch-lib-zebra.h	(working copy)
+--- files/patch-lib-zebra.h	(revision 0)
++++ files/patch-lib-zebra.h	(working copy)
 @@ -0,0 +1,12 @@
 +--- lib/zebra.h.orig	2014-03-16 09:54:05.510349508 +0100
 ++++ lib/zebra.h	2014-03-16 10:57:36.640087484 +0100
@@ -11,12 +11,12 @@ Index: net/quagga-re/files/patch-lib-zebra.h
 +  */
 +-#if defined(__NetBSD__) || defined(__FreeBSD__) \
 ++#if defined(__NetBSD__) \
-++   || (defined(__FreeBSD__) && (__FreeBSD_version < 1100012)) \
+++   || (defined(__FreeBSD__) && (__FreeBSD_version < 1100030)) \
 +    || (defined(__OpenBSD__) && (OpenBSD < 200311)) \
 +    || (defined(SUNOS_5) && defined(WORDS_BIGENDIAN))
 + #define HAVE_IP_HDRINCL_BSD_ORDER
 
-Property changes on: net/quagga-re/files/patch-lib-zebra.h
+Property changes on: net/quagga/files/patch-lib-zebra.h
 ___________________________________________________________________
 Added: svn:mime-type
 ## -0,0 +1 ##
@@ -30,18 +30,16 @@ Added: svn:eol-style
 ## -0,0 +1 ##
 +native
 \ No newline at end of property
-Index: net/quagga-re/files/quagga.in
+Index: net/quagga/Makefile
 ===================================================================
---- net/quagga-re/files/quagga.in	(revision 348325)
-+++ net/quagga-re/files/quagga.in	(working copy)
-@@ -101,6 +101,10 @@
+--- net/quagga/Makefile	(revision 366911)
++++ net/quagga/Makefile	(working copy)
+@@ -3,7 +3,7 @@
  
- case "${quagga_cmd}" in
-     start)
-+	if [ ! -d /var/log/quagga ]; then
-+		mkdir /var/log/quagga
-+        chown quagga /var/log/quagga
-+	fi
- 	if [ ! -z ${quagga_extralibs_path} ]; then
- 	    /sbin/ldconfig -m ${quagga_extralibs_path}
- 	fi
+ PORTNAME=	quagga
+ PORTVERSION=	0.99.22.4
+-PORTREVISION=	3
++PORTREVISION=	4
+ CATEGORIES=	net ipv6
+ MASTER_SITES=	SAVANNAH
+ MASTER_SITE_SUBDIR=	quagga
