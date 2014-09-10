@@ -20,6 +20,7 @@ alias halt		'system halt'
 alias reboot	'system reboot'
 alias wr		'config save'
 alias tmux		tmux -u
+alias please 'sudo \!-1'
 
 #Ugly patch because birdc is compiled for using /usr/local/var/run
 alias birdc		'birdc -s /var/run/bird.ctl'
