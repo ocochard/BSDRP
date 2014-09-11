@@ -8,6 +8,47 @@
 ## Bug fixes
 * Disable high-resolution on VGA console: color problem on VMware and VirtualBox
 * fix RC polling script that tried to enable polling on all interfaces
+* fix ipsec startup script: Display a warning message in place of exiting
+* fixed setkey with TCP signature
+
+## Updated packages
+* bird to 1.4.4
+* quagga-re 0.99.17.12 to quagga 0.99.22.4
+* strongswan to 5.2.0
+
+## Package list
+* bird-1.4.4
+* bird6-1.4.4
+* bsnmp-regex-0.6_1
+* bsnmp-ucd-0.4.0
+* dhcprelya-4.8_1
+* dlmalloc-2.8.6
+* easy-rsa-2.2.0.m
+* freevrrpd-1.1
+* indexinfo-0.2
+* iperf-2.0.5
+* ipmitool-1.8.14_1
+* ipsec-tools-0.8.1_7
+* isc-dhcp43-server-4.3.1
+* libevent2-2.0.21_2
+* libgcrypt-1.6.1_5
+* libgpg-error-1.13_1
+* lzo2-2.08
+* mcast-tools-20061214_1
+* mpd5-5.7_1
+* openldap-client-2.4.39_2
+* openvpn-2.3.4
+* openvpn-auth-radius-2.1_2
+* pimd-devel-2.1.8
+* pimdd-0.2.1.0_1
+* pkg-1.3.7
+* quagga-0.99.22.4_4
+* ssmtp-2.64_1
+* strongswan-5.2.0_1
+* sudo-1.8.10.p3_1
+* tayga-0.9.2
+* tmux-1.9.a_2
+* ucarp-1.5.2_2
 
 === UPGRADE PROCEDURE if your installation is older than BSDRP 1.51 ===
 
