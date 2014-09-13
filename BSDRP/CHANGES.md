@@ -1,18 +1,23 @@
-# Release 1.52 (not released)
+# Release 1.52 (2014/09/13)
 
 ## New features
-* Replace quagga-re by quagga: quagga-re seems no more updated
-* Disable LRO and TSO on all interfaces by default (edit /etc/rc.conf.misc and change disablelrotso_enable to "NO" for revert back)
-    * More information about here: http://bsdrp.net/documentation/technical_docs/performance?&#nic_drivers_tuning
+* quagga-re replaced by quagga: quagga-re seems no more updated
+* Disable LRO and TSO on all interfaces by default
+    * For reverting, edit /etc/rc.conf.misc and set disablelrotso_enable to "NO"
+    * More information about why disabling LRO/TSO on a router here: http://bsdrp.net/documentation/technical_docs/performance?&#nic_drivers_tuning
 
 ## Bug fixes
-* Disable high-resolution on VGA console: color problem on VMware and VirtualBox
+* Disable high-resolution on VGA console: This created colors problem on VMware and VirtualBox graphical screen
 * fix RC polling script that tried to enable polling on all interfaces
 * fix ipsec startup script: Display a warning message in place of exiting
 * fixed setkey with TCP signature
 
+## Developer's corner
+* Sources migrated from SourceForge to github (https://github.com/ocochard/BSDRP)
+
 ## Updated packages
 * bird to 1.4.4
+* isc-dhcp43-server to 4.3.1
 * quagga-re 0.99.17.12 to quagga 0.99.22.4
 * strongswan to 5.2.0
 
