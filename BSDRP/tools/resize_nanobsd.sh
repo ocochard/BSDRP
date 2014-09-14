@@ -44,7 +44,7 @@ resize() {
 	echo -n "Checking partition size..."
 	partition_size=`gpart show -p ${boot_dev} | grep ${boot_dev}s1 | tr -s ' ' | cut -d ' ' -f 3`
 	[ -z "${partition_size}" ] && die "Can't read the primary partition size"
-	if [ ${partition_size} -ge 465856 ]; then
+	if [ ${partition_size} -ge 465822 ]; then
 		echo "compliant"
 		return 0
 	else
@@ -85,9 +85,8 @@ boot_dev=`glabel status | grep BSDRPs1 | awk '{ print $3; }'\  | cut -d s -f 1`
 disk_size=`gpart show ${boot_dev} | grep MBR | tr -s ' ' | cut -d ' ' -f 3`
 [ -z "${disk_size}" ] && die "Can't read the disk size"
 
-# In theory the minimum disk size should be 999937, but my USB key was a little smaller
-# This didn't prevent to use it: The /data partition has a size of 9M in place of 16M at the end
-[ ${disk_size} -lt 983776 ] && die "Your disk is too small for allowing an upgrade to BSDRP 1.51 (512MB minimum)"
+# 1 000 000 sector at 512B
+[ ${disk_size} -lt 1000000 ] && die "Your disk is too small for allowing an upgrade to BSDRP 1.51 (512MB minimum)"
 
 echo "compliant"
 echo "Checking BSDRP minimum version..."
