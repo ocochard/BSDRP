@@ -2,7 +2,7 @@
 # VirtualBox PowerShell lab script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2011-2013, The BSDRP Development Team
+# Copyright (c) 2011-2014, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,7 @@ $erroractionpreference = "Stop"
 
 #### Variables #####
 [string] $VM_TPL_NAME="BSDRP_lab_template"
+[string] $REG_FILE=[Environment]::GetFolderPath("Desktop")+"/BSDRP-Putty-sessions.reg"
 
 #### enumeration types######
 # PowerShell can't import type library from a COM Object
@@ -160,8 +161,8 @@ Function create_template () {
 	# Define $VM_ARCH and $SERIAL from the filename
     $null = parse_filename $FILENAME
 
-    # check if there allready exist folder, and delete it
-    # Case where there allready a folder: Script break between converting RAW to VDI and registering the VDI, 
+    # check if there already exist folder, and delete it
+    # Case where there already a folder: Script break between converting RAW to VDI and registering the VDI, 
     # then deleting the template from the manager
     $VM_DIR=$VIRTUALBOX.SystemProperties.DefaultMachineFolder + "\$VM_TPL_NAME"
     
@@ -240,7 +241,11 @@ Function create_template () {
     $VDI_FILE=$VIRTUALBOX.SystemProperties.DefaultMachineFolder + "\$VM_TPL_NAME\$VM_TPL_NAME.vdi"
     
     #Call VBoxManage.exe for converting the given .img to VDI.
-    $VB_MANAGE ='"' + $env:VBOX_INSTALL_PATH + "VBoxManage.exe" + '"'
+    #Previous to VirtualBox 4.3.12, the install path was VBOX_INSTALL_PATH
+    #But since 4.3.12 it's VBOX_MSI_INSTALL_PATH
+    if ($env:VBOX_INSTALL_PATH) { $VB_MANAGE ='"' + $env:VBOX_INSTALL_PATH + "VBoxManage.exe" + '"' }
+    if ($env:VBOX_MSI_INSTALL_PATH) { $VB_MANAGE ='"' + $env:VBOX_MSI_INSTALL_PATH + "VBoxManage.exe" + '"' }
+    #$VB_MANAGE ='"' + $env:VBOX_INSTALL_PATH + "VBoxManage.exe" + '"'
     
     $CMD="convertfromraw " + '"' + $FILENAME +'" "' + $VDI_FILE + '"'
 
@@ -336,7 +341,7 @@ Function create_template () {
     
 } # End function create_template
 
-# Parse the BSDRP filename given (is a i386 or amd64, is a vga or serial)
+# Parse the BSDRP file-name given (is a i386 or amd64, is a vga or serial)
 # Modify the global variable:VM_ARCH and CONSOLE
 # TO DO: return the results in place of using global variables
 Function parse_filename () {
@@ -411,7 +416,7 @@ Function clone_vm () {
         clean_exit
 	}
 	
-	 # Wait for end of clonning the VM...
+	 # Wait for end of cloning the VM...
     try { $PROGRESS.waitForCompletion(-1) }
     catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Wait for end of clonning $CLONE_NAME process failed"
@@ -702,6 +707,10 @@ Function clean_exit () {
 Function start_lab () {
     # Start all routers
     param ([int]$NUMBER_VM)
+	# Generate the Registry file
+	Set-Content -Value "Windows Registry Editor Version 5.00" -Path $REG_FILE
+	Add-Content -Value "" -Path $REG_FILE
+	
     for ($i=1;$i -le $NUMBER_VM;$i++) {
         # Open the MACHINE object
         try {$MACHINE=$VIRTUALBOX.findMachine("BSDRP_lab_R$i")}
@@ -734,6 +743,17 @@ Function start_lab () {
             Write-Host "Detail: " $($error)
             clean_exit
         }
+		
+		# Add this session to the REG_file
+		Add-Content -Value "[HKEY_CURRENT_USER\Software\9bis.com\KiTTY\Sessions\BSDRP_lab_R$i]" -Path $REG_FILE
+		Add-Content -Value "`"Present`"=dword:00000001" -Path $REG_FILE
+		Add-Content -Value "`"WinTitle`"=`"BSDRP_lab_R$i`"" -Path $REG_FILE
+		Add-Content -Value "`"Protocol`"=`"serial`"" -Path $REG_FILE
+		Add-Content -Value "`"TerminalType`"=`"xterm`"" -Path $REG_FILE
+		Add-Content -Value "`"TerminalSpeed`"=`"38400,38400`"" -Path $REG_FILE
+		Add-Content -Value "`"SerialLine`"=`"\\\\.\\pipe\\BSDRP_lab_R$i`"" -Path $REG_FILE
+		Add-Content -Value "`"SerialSpeed`"=dword:00009600" -Path $REG_FILE
+		
     } # Endfor
     Write-Host "All routers started, connect to them using:"
     Write-Host " - For BSDRP vga release, with mstsc (included in MS Windows): "
@@ -741,6 +761,7 @@ Function start_lab () {
     write-host " - For BSDRP serial and vga release: Configure PuTTY to connect to:"
     write-host "     connection type: Serial"
     write-host "     serial line: \\.\pipe\BSDRP_lab_Rx (replacing x by router number)"
+	write-host "            A BSDRP-lab.reg file created on your desktop allow you to configure all putty/kitty sessions"
     #write-host "     baud : 115200"
 }
 
@@ -812,13 +833,7 @@ Function stop_lab () {
             Write-Host "Detail: " $($error)
         }
     } # Endfor
-    Write-Host "All routers started, connect to them using:"
-    Write-Host " - For BSDRP vga release, with mstsc (included in MS Windows): "
-    write-host "     mstsc /v:127.0.0.1:505x (replacing x by router number)"
-    write-host " - For BSDRP serial and vga release: Configure PuTTY to connect to:"
-    write-host "     connection type: Serial"
-    write-host "     serial line: \\.\pipe\BSDRP_lab_Rx (replacing x by router number)"
-    #write-host "     baud : 115200"
+    Write-Host "All routers stopped."
 }
 #### Main ####
 
