@@ -1,0 +1,3 @@
+# ignore downloaded FreeBSD source and porttree
+BSDRP/FreeBSD
+BSDRPcur/FreeBSD

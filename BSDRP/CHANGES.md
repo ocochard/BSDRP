@@ -1,9 +1,10 @@
 # Release 1.52 (2014/09/13)
 
 ## New features
+* Upgraded to FreeBSD 10-stable rev 271528 (close to 10.1)
 * quagga-re replaced by quagga: quagga-re seems no more updated
 * Disable LRO and TSO on all interfaces by default
-    * For reverting, edit /etc/rc.conf.misc and set disablelrotso_enable to "NO"
+    * For reverting, edit /etc/rc.conf.misc and set disablelrotso_enable to NO
     * More information about why disabling LRO/TSO on a router here: http://bsdrp.net/documentation/technical_docs/performance?&#nic_drivers_tuning
 
 ## Bug fixes

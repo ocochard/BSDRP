@@ -167,10 +167,13 @@ add_netrate () {
     mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
     mkdir -p ${NANO_WORLDDIR}/usr/workdir
     for TOOL in ${TOOLS_LIST}; do
-        # netmap is not available on sparc64
+        # netmap is not available on sparc64, and disabled for i386
         if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
-                    continue
-            fi
+		continue
+        fi
+        if [ ${NANO_ARCH} = "i386" -a ${TOOL} = "netmap" ]; then
+		continue
+        fi
         export TOOL
         CR 'make clean -C /usr/src/tools/tools/${TOOL}'
         CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
