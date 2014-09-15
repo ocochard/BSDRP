@@ -753,6 +753,14 @@ Function start_lab () {
 		Add-Content -Value "`"TerminalSpeed`"=`"38400,38400`"" -Path $REG_FILE
 		Add-Content -Value "`"SerialLine`"=`"\\\\.\\pipe\\BSDRP_lab_R$i`"" -Path $REG_FILE
 		Add-Content -Value "`"SerialSpeed`"=dword:00009600" -Path $REG_FILE
+        	Add-Content -Value "[HKEY_CURRENT_USER\Software\SimonTatham\PuTTY\Sessions\BSDRP_lab_R$i]" -Path $REG_FILE
+        	Add-Content -Value "`"Present`"=dword:00000001" -Path $REG_FILE
+		Add-Content -Value "`"WinTitle`"=`"BSDRP_lab_R$i`"" -Path $REG_FILE
+		Add-Content -Value "`"Protocol`"=`"serial`"" -Path $REG_FILE
+		Add-Content -Value "`"TerminalType`"=`"xterm`"" -Path $REG_FILE
+		Add-Content -Value "`"TerminalSpeed`"=`"38400,38400`"" -Path $REG_FILE
+		Add-Content -Value "`"SerialLine`"=`"\\\\.\\pipe\\BSDRP_lab_R$i`"" -Path $REG_FILE
+		Add-Content -Value "`"SerialSpeed`"=dword:00009600" -Path $REG_FILE
 		
     } # Endfor
     Write-Host "All routers started, connect to them using:"
@@ -761,7 +769,7 @@ Function start_lab () {
     write-host " - For BSDRP serial and vga release: Configure PuTTY to connect to:"
     write-host "     connection type: Serial"
     write-host "     serial line: \\.\pipe\BSDRP_lab_Rx (replacing x by router number)"
-	write-host "            A BSDRP-lab.reg file created on your desktop allow you to configure all putty/kitty sessions"
+    write-host "            A BSDRP-lab.reg file created on your desktop allow you to configure all putty/kitty sessions"
     #write-host "     baud : 115200"
 }
 
