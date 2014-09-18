@@ -1,3 +1,8 @@
+# Release 1.53 (not released)
+
+## Bug fixes
+* /data directory was missing on some images
+
 # Release 1.52 (2014/09/13)
 
 ## New features
