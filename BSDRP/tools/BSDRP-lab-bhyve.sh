@@ -351,7 +351,7 @@ fi
 destroy_all_if
 
 echo "BSD Router Project (http://bsdrp.net) - bhyve full-meshed lab script"
-echo "Setting-up a virtual envirronement with $NUMBER_VM VM(s):"
+echo "Setting-up a virtual lab with $NUMBER_VM VM(s):"
 echo "- Working directory: ${WRK_DIR}"
 echo "- Each VM have ${CORE} core(s) and ${RAM} RAM"
 echo "- $LAN LAN(s) between all VM"

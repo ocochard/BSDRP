@@ -1,7 +1,12 @@
 # Release 1.53 (not released)
 
+## New features
+* Upgraded to FreeBSD 10.1-BETA2 (rev XXX)
+* Enable flowtable (sysctl -d net.flowtable. for more information about)
+
 ## Bug fixes
 * /data directory was missing on some images
+* 'config save' didn't follow symlink anymore
 
 # Release 1.52 (2014/09/13)
 

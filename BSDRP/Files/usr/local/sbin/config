@@ -167,13 +167,15 @@ save_cfg () {
 	(
 	cd /etc
 	# Looking for all files AND symlinks in /etc
+	# symlinks because user can create symlink in /usr/local/etc/rc.d as example (multipe openvpn)
 	for i in "$@" `find * \( -type l -o -type f \)`; do
 		if [ -e /cfg/$i ]; then
-			if ! cmp -s /etc/$i /cfg/$i; then
+			# Don't forget to add -h option to cmp, because some software (like freeradius) install symlink to /dev/random
+			if ! cmp -hs /etc/$i /cfg/$i; then
 				cp -pfv /etc/$i /cfg/$i 2>/dev/null
 			fi
 		else
-			if ! cmp -s /conf/base/etc/$i /etc/$i; then
+			if ! cmp -hs /conf/base/etc/$i /etc/$i; then
 				#cpio didn't preserve owner/permission on non-existant directory
 				#Need to check if destination dir exists, and if not create it
 				#But this method copy all files in this directory too :-(
@@ -248,12 +250,12 @@ diff () {
 	cd /etc
 	for i in "$@" `find * -type f`; do
 		if [ -f ${REFERENCE}/$i ]; then
-			if ! cmp -s /etc/$i ${REFERENCE}/$i; then
+			if ! cmp -hs /etc/$i ${REFERENCE}/$i; then
 				echo "1" > /tmp/DIFF_FOUND
 				[ ! "$SECOND_OPTION" = "quiet" ] && find $i -print || break
 			fi
 		elif [ ! "$SECOND_OPTION" = "conf/base/etc" ]; then
-			if ! cmp -s /conf/base/etc/$i /etc/$i; then
+			if ! cmp -hs /conf/base/etc/$i /etc/$i; then
 				echo "1" > /tmp/DIFF_FOUND
 				[ ! "$SECOND_OPTION" = "quiet" ] && find $i -print || break
 			fi

@@ -387,5 +387,8 @@ device enc
 # Enable netmap
 device netmap
 
+# flowtable cache
+options     FLOWTABLE
+
 # The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)
 
