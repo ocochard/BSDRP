@@ -1,0 +1,305 @@
+Index: sys/netinet/tcp_subr.c
+===================================================================
+--- sys/netinet/tcp_subr.c	(revision 272207)
++++ sys/netinet/tcp_subr.c	(working copy)
+@@ -1913,56 +1913,21 @@
+ }
+ 
+ /*
+- * Compute TCP-MD5 hash of a TCP segment. (RFC2385)
+- *
+- * Parameters:
+- * m		pointer to head of mbuf chain
+- * _unused	
+- * len		length of TCP segment data, excluding options
+- * optlen	length of TCP segment options
+- * buf		pointer to storage for computed MD5 digest
+- * direction	direction of flow (IPSEC_DIR_INBOUND or OUTBOUND)
+- *
+- * We do this over ip, tcphdr, segment data, and the key in the SADB.
+- * When called from tcp_input(), we can be sure that th_sum has been
+- * zeroed out and verified already.
+- *
+- * Return 0 if successful, otherwise return -1.
+- *
+  * XXX The key is retrieved from the system's PF_KEY SADB, by keying a
+  * search with the destination IP address, and a 'magic SPI' to be
+  * determined by the application. This is hardcoded elsewhere to 1179
+- * right now. Another branch of this code exists which uses the SPD to
+- * specify per-application flows but it is unstable.
+- */
+-int
+-tcp_signature_compute(struct mbuf *m, int _unused, int len, int optlen,
+-    u_char *buf, u_int direction)
++*/
++struct secasvar *
++tcp_get_sav(struct mbuf *m, u_int direction)
+ {
+ 	union sockaddr_union dst;
+-#ifdef INET
+-	struct ippseudo ippseudo;
+-#endif
+-	MD5_CTX ctx;
+-	int doff;
++	struct secasvar *sav;
+ 	struct ip *ip;
+-#ifdef INET
+-	struct ipovly *ipovly;
+-#endif
+-	struct secasvar *sav;
+-	struct tcphdr *th;
+ #ifdef INET6
+ 	struct ip6_hdr *ip6;
+-	struct in6_addr in6;
+ 	char ip6buf[INET6_ADDRSTRLEN];
+-	uint32_t plen;
+-	uint16_t nhdr;
+ #endif
+-	u_short savecsum;
+ 
+-	KASSERT(m != NULL, ("NULL mbuf chain"));
+-	KASSERT(buf != NULL, ("NULL signature pointer"));
+-
+ 	/* Extract the destination from the IP header in the mbuf. */
+ 	bzero(&dst, sizeof(union sockaddr_union));
+ 	ip = mtod(m, struct ip *);
+@@ -1988,7 +1953,7 @@
+ 		break;
+ #endif
+ 	default:
+-		return (EINVAL);
++		return (NULL);
+ 		/* NOTREACHED */
+ 		break;
+ 	}
+@@ -2003,9 +1968,61 @@
+ 			    ip6_sprintf(ip6buf, &dst.sin6.sin6_addr) :
+ #endif
+ 			"(unsupported)"));
+-		return (EINVAL);
+ 	}
+ 
++	return (sav);
++}
++
++/*
++ * Compute TCP-MD5 hash of a TCP segment. (RFC2385)
++ *
++ * Parameters:
++ * m		pointer to head of mbuf chain
++ * len		length of TCP segment data, excluding options
++ * optlen	length of TCP segment options
++ * buf		pointer to storage for computed MD5 digest
++ * sav		pointer to security assosiation
++ *
++ * We do this over ip, tcphdr, segment data, and the key in the SADB.
++ * When called from tcp_input(), we can be sure that th_sum has been
++ * zeroed out and verified already.
++ *
++ * Releases reference to SADB key before return. 
++ *
++ * Return 0 if successful, otherwise return -1.
++ *
++ */
++int
++tcp_signature_do_compute(struct mbuf *m, int len, int optlen,
++    u_char *buf, struct secasvar *sav)
++{
++#ifdef INET
++	struct ippseudo ippseudo;
++#endif
++	MD5_CTX ctx;
++	int doff;
++	struct ip *ip;
++#ifdef INET
++	struct ipovly *ipovly;
++#endif
++	struct tcphdr *th;
++#ifdef INET6
++	struct ip6_hdr *ip6;
++	struct in6_addr in6;
++	uint32_t plen;
++	uint16_t nhdr;
++#endif
++	u_short savecsum;
++
++	KASSERT(m != NULL, ("NULL mbuf chain"));
++	KASSERT(buf != NULL, ("NULL signature pointer"));
++
++	/* Extract the destination from the IP header in the mbuf. */
++	ip = mtod(m, struct ip *);
++#ifdef INET6
++	ip6 = NULL;	/* Make the compiler happy. */
++#endif
++
+ 	MD5Init(&ctx);
+ 	/*
+ 	 * Step 1: Update MD5 hash with IP(v6) pseudo-header.
+@@ -2062,7 +2079,7 @@
+ 		break;
+ #endif
+ 	default:
+-		return (EINVAL);
++		return (-1);
+ 		/* NOTREACHED */
+ 		break;
+ 	}
+@@ -2096,6 +2113,23 @@
+ }
+ 
+ /*
++ * Compute TCP-MD5 hash of a TCP segment. (RFC2385)
++ *
++ * Return 0 if successful, otherwise return -1.
++ */
++int
++tcp_signature_compute(struct mbuf *m, int _unused, int len, int optlen,
++    u_char *buf, u_int direction)
++{
++	struct secasvar *sav;
++
++	if ((sav = tcp_get_sav(m, direction)) == NULL)
++		return (-1);
++
++	return (tcp_signature_do_compute(m, len, optlen, buf, sav));
++}
++
++/*
+  * Verify the TCP-MD5 hash of a TCP segment. (RFC2385)
+  *
+  * Parameters:
+Index: sys/netinet/tcp_syncache.c
+===================================================================
+--- sys/netinet/tcp_syncache.c	(revision 272207)
++++ sys/netinet/tcp_syncache.c	(working copy)
+@@ -121,7 +121,7 @@
+ static void	 syncache_drop(struct syncache *, struct syncache_head *);
+ static void	 syncache_free(struct syncache *);
+ static void	 syncache_insert(struct syncache *, struct syncache_head *);
+-static int	 syncache_respond(struct syncache *);
++static int	 syncache_respond(struct syncache *, struct syncache_head *, int);
+ static struct	 socket *syncache_socket(struct syncache *, struct socket *,
+ 		    struct mbuf *m);
+ static int	 syncache_sysctl_count(SYSCTL_HANDLER_ARGS);
+@@ -477,7 +477,7 @@
+ 			free(s, M_TCPLOG);
+ 		}
+ 
+-		(void) syncache_respond(sc);
++		syncache_respond(sc, sch, 1);
+ 		TCPSTAT_INC(tcps_sc_retransmitted);
+ 		syncache_timeout(sc, sch, 0);
+ 	}
+@@ -1223,7 +1223,7 @@
+ 			    s, __func__);
+ 			free(s, M_TCPLOG);
+ 		}
+-		if (syncache_respond(sc) == 0) {
++		if (syncache_respond(sc, sch, 1) == 0) {
+ 			sc->sc_rxmits = 0;
+ 			syncache_timeout(sc, sch, 1);
+ 			TCPSTAT_INC(tcps_sndacks);
+@@ -1335,11 +1335,9 @@
+ 	}
+ #ifdef TCP_SIGNATURE
+ 	/*
+-	 * If listening socket requested TCP digests, and received SYN
++	 * If listening socket requested TCP digests, OR received SYN
+ 	 * contains the option, flag this in the syncache so that
+ 	 * syncache_respond() will do the right thing with the SYN+ACK.
+-	 * XXX: Currently we always record the option by default and will
+-	 * attempt to use it in syncache_respond().
+ 	 */
+ 	if (to->to_flags & TOF_SIGNATURE || ltflags & TF_SIGNATURE)
+ 		sc->sc_flags |= SCF_SIGNATURE;
+@@ -1369,7 +1367,7 @@
+ 	/*
+ 	 * Do a standard 3-way handshake.
+ 	 */
+-	if (syncache_respond(sc) == 0) {
++	if (syncache_respond(sc, sch, 0) == 0) {
+ 		if (V_tcp_syncookies && V_tcp_syncookiesonly && sc != &scs)
+ 			syncache_free(sc);
+ 		else if (sc != &scs)
+@@ -1397,7 +1395,7 @@
+ }
+ 
+ static int
+-syncache_respond(struct syncache *sc)
++syncache_respond(struct syncache *sc, struct syncache_head *sch, int locked)
+ {
+ 	struct ip *ip = NULL;
+ 	struct mbuf *m;
+@@ -1408,6 +1406,9 @@
+ #ifdef INET6
+ 	struct ip6_hdr *ip6 = NULL;
+ #endif
++#ifdef TCP_SIGNATURE
++	struct secasvar *sav;
++#endif
+ 
+ 	hlen =
+ #ifdef INET6
+@@ -1518,8 +1519,29 @@
+ 		if (sc->sc_flags & SCF_SACK)
+ 			to.to_flags |= TOF_SACKPERM;
+ #ifdef TCP_SIGNATURE
+-		if (sc->sc_flags & SCF_SIGNATURE)
+-			to.to_flags |= TOF_SIGNATURE;
++		sav = NULL;
++		if (sc->sc_flags & SCF_SIGNATURE) {
++			sav = tcp_get_sav(m, IPSEC_DIR_OUTBOUND);
++			if (sav != NULL)
++				to.to_flags |= TOF_SIGNATURE;
++			else {
++
++				/*
++				 * We've got SCF_SIGNATURE flag
++				 * inherited from listening socket,
++				 * but to SADB key for given source
++				 * address. Assume signature is not
++				 * required and remove signature flag
++				 * instead of silently dropping
++				 * connection.
++				 */
++				if (locked == 0)
++					SCH_LOCK(sch);
++				sc->sc_flags &= ~SCF_SIGNATURE;
++				if (locked == 0)
++					SCH_UNLOCK(sch);
++			}
++		}
+ #endif
+ 		optlen = tcp_addoptions(&to, (u_char *)(th + 1));
+ 
+@@ -1530,8 +1552,8 @@
+ 
+ #ifdef TCP_SIGNATURE
+ 		if (sc->sc_flags & SCF_SIGNATURE)
+-			tcp_signature_compute(m, 0, 0, optlen,
+-			    to.to_signature, IPSEC_DIR_OUTBOUND);
++			tcp_signature_do_compute(m, 0, optlen,
++			    to.to_signature, sav);
+ #endif
+ #ifdef INET6
+ 		if (sc->sc_inc.inc_flags & INC_ISIPV6)
+Index: sys/netinet/tcp_var.h
+===================================================================
+--- sys/netinet/tcp_var.h	(revision 272207)
++++ sys/netinet/tcp_var.h	(working copy)
+@@ -697,9 +697,15 @@
+ 	    struct mbuf *, int);
+ void	 tcp_setpersist(struct tcpcb *);
+ #ifdef TCP_SIGNATURE
++struct secasvar;
++struct secasvar *tcp_get_sav(struct mbuf *, u_int);
++int	 tcp_signature_do_compute(struct mbuf *, int, int, u_char *,
++	    struct secasvar *);
+ int	 tcp_signature_compute(struct mbuf *, int, int, int, u_char *, u_int);
+ int	 tcp_signature_verify(struct mbuf *, int, int, int, struct tcpopt *,
+ 	    struct tcphdr *, u_int);
++int	tcp_signature_check(struct mbuf *m, int off0, int tlen, int optlen,
++	    struct tcpopt *to, struct tcphdr *th, u_int tcpbflag);
+ #endif
+ void	 tcp_slowtimo(void);
+ struct tcptemp *
