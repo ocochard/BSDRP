@@ -1,7 +1,7 @@
 # Release 1.53 (not released)
 
 ## New features
-* Upgraded to FreeBSD 10.1-BETA2 (rev XXX)
+* Upgraded to FreeBSD 10.1-RC1 (rev XXX)
 * Enable flowtable (sysctl -d net.flowtable. for more information about)
 
 ## Bug fixes
