@@ -31,6 +31,7 @@ hw.em.txd="2048"
 # Warning: Don't do this one a one core machine (it will be unresponsive under high network load)
 hw.igb.rx_process_limit="-1"
 hw.em.rx_process_limit="-1"
+hw.ix.rx_process_limit="-1"
 # Increase the maximum number of interrupts per second generated 
 # by single igb(4)-driven NIC.
 # Bench results:

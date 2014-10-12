@@ -23,11 +23,6 @@ sendmail_msp_queue_enable="NO"
 #Disable dump device
 dumpdev="NO"
 
-#Decrease the randomness of random(4), but should increase performance
-harvest_interrupt="NO"  # Entropy device harvests interrupt randomness
-harvest_ethernet="NO"   # Entropy device harvests ethernet randomness
-harvest_p_to_p="NO"     # Entropy device harvests point-to-point randomness
-
 # Operate in secure mode: Do not log messages from remote machines
 syslogd_flags="-s"
 

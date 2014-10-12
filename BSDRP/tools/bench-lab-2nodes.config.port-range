@@ -7,16 +7,12 @@
 #|   Packet generator and receiver   |      |         Device under Test        |
 #|                                   |      |                                  |
 #| ix0: 8.8.8.1 (a0:36:9f:1e:1e:d8)  |=====>| ix0: 8.8.8.2 (a0:36:9f:1e:28:14) |
-#|      2001:db8:8::1                |      |      2001:db8:8::2               |
 #|                                   |      |                                  |
 #| ix1: 9.9.9.1 (a0:36:9f:1e:1e:da)  |<=====| ix1: 9.9.9.2 (a0:36:9f:1e:28:16) |
-#|      2001:db8:9::1                |      |      2001:db8:9::2               |
 #|                                   |      |                                  |
 #|                                   |      |        static routes             |
 #|                                   |      |      8.0.0.0/8 => 8.8.8.1        |
 #|                                   |      |      9.0.0.0/8 => 9.9.9.1        |
-#|                                   |      | 2001:db8:8:://48 =>2001:db8:8::1 |
-#|                                   |      | 2001:db8:9:://48 =>2001:db8:9::1 |
 #+-----------------------------------+      +----------------------------------+
 # Admin network IP
 SENDER_ADMIN="192.168.1.1"
@@ -47,7 +43,7 @@ IS_DUT_ONLINE_TARGET=${DUT_ADMIN}
 IS_DUT_ONLINE_CMD="ping -c 2 ${RECEIVER_LAB_IP}"
 
 #Bench commands
-RECEIVER_START_CMD="pkt-gen -f rx -i ${RECEIVER_LAB_IF} -w 8"
+RECEIVER_START_CMD="pkt-gen -f rx -i ${RECEIVER_LAB_IF} -w 4"
 RECEIVER_STOP_CMD="pkill pkt-gen"
 SENDER_START_CMD="pkt-gen -f tx -i ${SENDER_LAB_IF} -n ${PKT_TO_SEND} -l 60 \
         -d ${RECEIVER_LAB_NET} -D ${DUT_LAB_IF_MAC_SENDER_SIDE} -s ${SENDER_LAB_NET} \
