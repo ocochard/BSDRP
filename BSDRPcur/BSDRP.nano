@@ -439,8 +439,11 @@ add_port "net/isc-dhcp43-server"
 #add_port "net/isc-dhcp43-relay"
 add_port "net/dhcprelya"
 
-# Add sstmp, a simple MTA to get mail off the system (replaced by DMA)
+# Add sstmp, a simple MTA to get mail off the system (replaced by included DMA)
 #add_port "mail/ssmtp"
+
+# Add monit, a managing and monitoring processes tool
+add_port "sysutils/monit"
 
 # Add tmux (screen equivalent, but better because BSD)
 add_port "devel/libevent2"

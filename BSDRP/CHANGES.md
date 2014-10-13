@@ -1,12 +1,18 @@
 # Release 1.53 (not released)
 
 ## New features
-* Upgraded to FreeBSD 10.1-RC1 (rev XXX)
-* Enable flowtable (sysctl -d net.flowtable. for more information about)
+* Upgraded to FreeBSD 10.1-PRERELEASE (rev XXX)
+* Replaced ssmtp by dma (DragonFly Mail Agent): FreeBSD 11.0 will include DMA, then prepare the change
 
 ## Bug fixes
 * /data directory was missing on some images
 * 'config save' didn't follow symlink anymore
+
+## New packages
+* monit: Process monitoring tool
+* dma: DragonFly Mail Agent
+
+-----------------------------------------------------
 
 # Release 1.52 (2014/09/13)
 
