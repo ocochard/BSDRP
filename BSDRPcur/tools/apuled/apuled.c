@@ -127,10 +127,10 @@ hw_is_apu( void )
 	char *maker;
 	char *product;
 
-	maker = getenv("smbios.system.maker");
+	maker = kern_getenv("smbios.system.maker");
 	if (maker != NULL) {
 		if ( 0 == strcmp( "PC Engines", maker ) ) {
-			product = getenv("smbios.system.product");
+			product = kern_getenv("smbios.system.product");
 			if (product != NULL) {
 				if ( 0 == strcmp( "APU", product ) )
 					apu = 1;

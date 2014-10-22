@@ -605,7 +605,6 @@ usr/bin/as
 usr/bin/ld
 usr/bin/nm
 usr/bin/objcopy
-usr/bin/objdump
 usr/bin/gnu-ranlib
 usr/bin/readelf
 usr/bin/size

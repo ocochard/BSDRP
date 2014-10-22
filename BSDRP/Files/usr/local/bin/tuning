@@ -119,8 +119,8 @@ tune () {
 	if grep -q 'Feature.*AESNI' /var/run/dmesg.boot ; then
 		#CPU support, check if not allready loaded
 		if ! kldstat -n aesni 2>&1 | grep -q aesni; then
-			echo "#CPU support AESNI crypto feature, add the module"
-			echo 'kld_list="aesni"'
+			echo "#CPU has AESNI feature, you should load the modules"
+			echo 'kld_list="cryptodev aesni"'
 		fi
 	fi
 	for NIC in `ifconfig -l "ether"`; do
