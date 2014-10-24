@@ -20,7 +20,7 @@ Index: net/bird/files/bird.in
  : ${bird_config="%%PREFIX%%/etc/bird.conf"}
  
 -command_args="-c $bird_config"
-+command_args="-P /var/run/$name.pid -c $bird_config"
++command_args="-P /var/run/${name}.pid -c $bird_config"
  
  run_rc_command "$1"
 Index: net/bird/files/bird6.in
@@ -32,6 +32,6 @@ Index: net/bird/files/bird6.in
  : ${bird6_config="%%PREFIX%%/etc/bird6.conf"}
  
 -command_args="-c $bird6_config"
-+command_args="-P /var/run/$name.pid -c $bird6_config"
++command_args="-P /var/run/${name}.pid -c $bird6_config"
  
  run_rc_command "$1"
