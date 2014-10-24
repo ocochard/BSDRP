@@ -1,0 +1,37 @@
+Index: net/bird/Makefile
+===================================================================
+--- net/bird/Makefile	(revision 371428)
++++ net/bird/Makefile	(working copy)
+@@ -3,7 +3,7 @@
+ 
+ PORTNAME?=	bird
+ PORTVERSION=	1.4.4
+-PORTREVISION=	1
++PORTREVISION=	2
+ CATEGORIES=	net
+ MASTER_SITES=	ftp://bird.network.cz/pub/bird/ \
+ 		http://bird.mpls.in/distfiles/bird/
+Index: net/bird/files/bird.in
+===================================================================
+--- net/bird/files/bird.in	(revision 371428)
++++ net/bird/files/bird.in	(working copy)
+@@ -29,6 +29,6 @@
+ : ${bird_enable="NO"}
+ : ${bird_config="%%PREFIX%%/etc/bird.conf"}
+ 
+-command_args="-c $bird_config"
++command_args="-P /var/run/$name.pid -c $bird_config"
+ 
+ run_rc_command "$1"
+Index: net/bird/files/bird6.in
+===================================================================
+--- net/bird/files/bird6.in	(revision 371428)
++++ net/bird/files/bird6.in	(working copy)
+@@ -29,6 +29,6 @@
+ : ${bird6_enable="NO"}
+ : ${bird6_config="%%PREFIX%%/etc/bird6.conf"}
+ 
+-command_args="-c $bird6_config"
++command_args="-P /var/run/$name.pid -c $bird6_config"
+ 
+ run_rc_command "$1"
