@@ -3,10 +3,12 @@
 ## New features
 * Upgraded to FreeBSD 10.1-PRERELEASE (rev XXX)
 * Replaced ssmtp by dma (DragonFly Mail Agent): FreeBSD 11.0 will include DMA, then prepare the change
+* Kernel: add Emulex OneConnect 10Gb NIC drivers (oce)
 
 ## Bug fixes
 * /data directory was missing on some images
 * 'config save' didn't follow symlink anymore
+* fix 'system dual-console' on serial image
 
 ## New packages
 * monit: Process monitoring tool

@@ -87,6 +87,8 @@ dual_console () {
 	   57600 and 115200"
 	[ ${SERIAL_SPEED} -lt 9600 ] && die "Incorrect serial speed value: ${SERIAL_SPEED}"
 	[ ${SERIAL_SPEED} -gt 115200 ] && die "Incorrect serial speed value: ${SERIAL_SPEED}"
+    # On serial version, syscon devices was disabled, need to re-enable them:
+    sed -i "" -e '/^ttyv[0-7]/s/off /on /' /etc/ttys
 	mount -uw / || die "Can't mount / in RW mode"
 	echo "-S${SERIAL_SPEED} -Dh" > /boot.config
 	mount -ur / || die "Error for remounting / in RO mode"
