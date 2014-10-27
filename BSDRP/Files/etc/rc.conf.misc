@@ -15,10 +15,7 @@ moused_enable="NO"
 moused_ums0_enable="NO"
 
 #Disable sendmail
-sendmail_enable="NO"
-sendmail_submit_enable="NO"
-sendmail_outbound_enable="NO"
-sendmail_msp_queue_enable="NO"
+sendmail_enable="NONE"
 
 #Disable dump device
 dumpdev="NO"

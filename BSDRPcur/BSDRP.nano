@@ -92,8 +92,8 @@ WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
 WITHOUT_SYSINSTALL=
 WITHOUT_TESTS=
-WITHOUT_VT=
 WITHOUT_UNBOUND=
+WITHOUT_VT=
 WITHOUT_WIRELESS=
 WITHOUT_WIRELESS_SUPPORT=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
@@ -439,8 +439,6 @@ add_port "net/isc-dhcp43-server"
 #add_port "net/isc-dhcp43-relay"
 add_port "net/dhcprelya"
 
-# Add sstmp, a simple MTA to get mail off the system (replaced by included DMA)
-#add_port "mail/ssmtp"
 
 # Add monit, a managing and monitoring processes tool
 add_port "sysutils/monit"
