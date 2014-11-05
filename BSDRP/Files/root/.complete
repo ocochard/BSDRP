@@ -10,7 +10,12 @@ complete ifconfig   'p/1/`ifconfig -l`/' 'n/*/(add alias -alias anycast arp -ar 
 	-vlanmtu -vlanhwtag -vlanhwfilter -vlanhwtso vnet -vnet polling -polling create destroy metric mtu netmask \
 	prefixlen phase monitor -monitor up)/'
 complete systat 'p/1/(-icmp -icmp6 -ifstat -iostat -ip -ip6 -mbufs -netstat -pigs -swap -tcp -vmstat)/'
-complete kbdcontrol 'n@-l@`ls /usr/share/syscons/keymaps | sed 's/.kbd//'`@'
+if (-d /usr/share/syscons/keymaps) then
+	complete kbdcontrol 'n@-l@`ls /usr/share/syscons/keymaps | sed 's/.kbd//'`@'
+else if (-d /usr/share/vt/keymaps/) then
+	complete kbdcontrol 'n@-l@`ls /usr/share/vt/keymaps | sed 's/.kbd//'`@'
+endif
+
 complete tcpdump	'n@-i@`ifconfig -l`@'
 
 # pkgng

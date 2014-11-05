@@ -20,23 +20,24 @@ NANO_ARCH=${TARGET_ARCH}
 
 # Options to put in make.conf during buildworld only
 # BOOT_COMCONSOLE_SPEED is useless because we using /boot.config with -Sspeed option
-CONF_BUILD="
-"
+CONF_BUILD='
+MALLOC_PRODUCTION=
+'
 
 # Options to put in make.conf during installworld only
 # Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
 # Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
-CONF_INSTALL=''
+# We would compile symbol files, but not install them by default
+CONF_INSTALL='
+WITHOUT_KERNEL_SYMBOLS=
+'
 
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options or man src.conf for details
-# WITHOUT_INFO= incompatible for installing devel/libtool (dependency of Quagga)
-# WITHOUT_FORTH= incompatible with boot flags (need to be confirmed).
-# WITHOUT_GROFF= incompatible with isc-dhcp-server (needed for build unused man page)
+# WITHOUT_FORTH= mandatory for the boot-loader
+# WITHOUT_GROFF= Ports needs for build man page
 # WITHOUT_KVM= and WITHOUT_KVM_SUPPORT= prevent buildworld to complet (don't know why)
-
 CONF_WORLD='
-MALLOC_PRODUCTION=
 WITHOUT_ACCT=
 WITHOUT_AMD=
 WITHOUT_APM=
@@ -168,7 +169,7 @@ add_netrate () {
     mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
     mkdir -p ${NANO_WORLDDIR}/usr/workdir
     for TOOL in ${TOOLS_LIST}; do
-        # netmap is not available on sparc64, and disabled for i386
+        # netmap is not available on sparc64, and disabled on i386
         if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
 		continue
         fi
@@ -488,11 +489,6 @@ bsdrp_custom () {
 	# Update login.conf db
 	CR 'cap_mkdb /etc/login.conf'
 
-	# Disable privilege separation on latest version of sshd
-	# Prevent "fatal: ssh_sandbox_child: failed to limit the network socket [preauth]"
-	# without capsicum (world and kernel)
-	# echo "UsePrivilegeSeparation no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
-
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys
 	mkdir -p ${NANO_WORLDDIR}/etc/dot.ssh.root
@@ -535,7 +531,7 @@ EOF
 	grep -q quagga ${NANO_WORLDDIR}/etc/passwd && \
 		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
 
-	# Compress the kernel (save 3Mb)
+	# Compress the kernel (save 10Mb)
 	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
 		if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
 			echo "Error during zipping the kernel"
@@ -716,46 +712,28 @@ usr/share/tmac/tmac.vgrind
 
 # Enable only serial system only
 bsdrp_console_serial () {
-	# Enable getty on console
-	# Since r266895, console is set as onifconsole
+	# Force getty to be enabled on serial
     sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
-	# sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-
-    # Disable getty on syscons devices
+	# Use 3wire in place of forcing serial speed
+	sed -i "" -e /tty[du]0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
+    # Disable getty on syscons devices (prevent error messages if no vga device)
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
-
-    # Tell loader to use serial console early.
+    # Tell loader to use only serial console early with relative high baud speed
     echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
-
-	# Don't need to customize /boot/loader.conf file because /boot.config is allready configured
-	#echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	#echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
-	#echo 'console="comconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 }
 
 # Enable use of keyboard/vga and serial
 bsdrp_console_dual () {
-	# sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
-	# sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-
-    # Tell loader to use serial and vga console.
+	# Use 3wire in place of forcing serial speed
+	sed -i "" -e /tty[du]0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
+    # Tell loader to use serial and vga console, set baud speed
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
-
-	# Don't need to customize the loader.conf file because /boot.config is allready configured:
-	#echo 'boot_multicons="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	#echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
-	#echo 'console="comconsole,vidconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
 }
 
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
-	# sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
-	# sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-
-	# Tell loader to use vga and serial (boot0 will be vga only)                                                               
+	sed -i "" -e /tty[du]0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
+	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)                                                               
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 
 }
 
