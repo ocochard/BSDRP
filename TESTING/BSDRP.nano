@@ -19,23 +19,26 @@ NANO_PACKAGE_LIST="*"
 NANO_ARCH=${TARGET_ARCH}
 
 # Options to put in make.conf during buildworld only
-CONF_BUILD="
-"
+# BOOT_COMCONSOLE_SPEED is useless because we using /boot.config with -Sspeed option
+CONF_BUILD='
+MALLOC_PRODUCTION=
+'
 
 # Options to put in make.conf during installworld only
 # Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
 # Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
-CONF_INSTALL=''
+# We would compile symbol files, but not install them by default
+CONF_INSTALL='
+WITHOUT_KERNEL_SYMBOLS=
+'
 
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options or man src.conf for details
-# WITHOUT_INFO= incompatible for installing devel/libtool (dependency of Quagga)
-# WITHOUT_FORTH= incompatible with boot flags (need to be confirmed).
-# WITHOUT_GROFF= incompatible with isc-dhcp-server (needed for build unused man page)
+# WITHOUT_FORTH= Needed for bootloader.
+# WITHOUT_GROFF= incompatible with isc-dhcp-server (needed for build  man page)
 # WITHOUT_KVM= and WITHOUT_KVM_SUPPORT= prevent buildworld to complet (don't know why)
 
 CONF_WORLD='
-MALLOC_PRODUCTION=
 WITHOUT_ACCT=
 WITHOUT_AMD=
 WITHOUT_APM=
@@ -89,14 +92,15 @@ WITHOUT_ROUTED=
 WITHOUT_SENDMAIL=
 WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
+WITHOUT_SYSCONS=
 WITHOUT_SYSINSTALL=
 WITHOUT_TESTS=
-WITHOUT_VT=
 WITHOUT_UNBOUND=
 WITHOUT_WIRELESS=
 WITHOUT_WIRELESS_SUPPORT=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
 WITHOUT_ZFS=
+WITH_GCC=
 WITH_IDEA=
 '
 
@@ -141,8 +145,8 @@ NANO_DATASIZE=20480
 NANO_RAM_ETCSIZE=10240
 
 # Size of the /tmp+/var ramdisk in 512 bytes sectors
-# 20480=10MB (usefull for log files)
-NANO_RAM_TMPVARSIZE=20480
+# 40960=20MB (usefull for log files)
+NANO_RAM_TMPVARSIZE=40960
 
 # Boot0cfg configuration mode
 NANO_BOOT0CFG="-o packet -s 1 -m 3 -t 18"
@@ -166,13 +170,16 @@ add_netrate () {
     mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
     mkdir -p ${NANO_WORLDDIR}/usr/workdir
     for TOOL in ${TOOLS_LIST}; do
-        # netmap is not available on sparc64
+        # netmap is not available on sparc64, and disabled on i386
         if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
-                    continue
-            fi
+        	continue
+        fi
+		if [ ${NANO_ARCH} = "i386" -a ${TOOL} = "netmap" ]; then
+			continue
+		fi
         export TOOL
-		CR 'make clean -C /usr/src/tools/tools/${TOOL}'
-        CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+        CR 'make clean -C /usr/src/tools/tools/${TOOL}'
+       	CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
             MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
             UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
             UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
@@ -204,7 +211,7 @@ add_quagga-bgp-netgen () {
     mount -t devfs devfs ${NANO_WORLDDIR}/dev
     mount -t nullfs ${NANO_TOOLS}/tools/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/src
     mkdir -p ${NANO_WORLDDIR}/usr/workdir
-	CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+    CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
 		UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
@@ -236,6 +243,8 @@ bsdrp_custom () {
 	sed -i "" -e "/cfg/s/rw/rw,noatime/" ${NANO_WORLDDIR}/etc/fstab
 	# Add /data partition to fstab (config script use it for archiving old configurations)
 	echo "/dev/ufs/${NANO_LABEL}s4 /data ufs rw,noauto,failok 2 2" >> ${NANO_WORLDDIR}/etc/fstab
+    # There is a problem around june 2014 with nanobsd: It didn't generate anymore the /data directory
+    [ -d ${NANO_WORLDDIR}/data ] || mkdir -p ${NANO_WORLDDIR}/data
 
 	# relocate /var/cron to /etc/cron
 	# This permit to save crontab (only /etc and /usr/local/etc are saved)
@@ -246,7 +255,7 @@ bsdrp_custom () {
 	# Add /etc/rc.conf.misc into the /etc/default/rc.conf
 	sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
 
-	# Compress the kernel (save 3Mb)
+	# Compress the kernel (save 10Mb)
 	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
 		if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
 			echo "Error during zipping the kernel"
@@ -267,6 +276,7 @@ usr/share/info
 usr/share/me
 usr/share/pc-sysinstall
 usr/share/openssl
+usr/share/syscons
 usr/libdata/lint
 usr/libdata/ldscripts
 '
@@ -320,7 +330,6 @@ usr/bin/as
 usr/bin/ld
 usr/bin/nm
 usr/bin/objcopy
-usr/bin/objdump
 usr/bin/gnu-ranlib
 usr/bin/readelf
 usr/bin/size
@@ -384,12 +393,6 @@ usr/libexec/lint2
 usr/sbin/btxld
 usr/sbin/config
 usr/sbin/i2c
-usr/sbin/pkg_add
-usr/sbin/pkg_create
-usr/sbin/pkg_delete
-usr/sbin/pkg_info
-usr/sbin/pkg_updating
-usr/sbin/pkg_version
 usr/sbin/rmt
 usr/share/misc/gprof.flat
 usr/share/misc/gprof.callg
@@ -436,6 +439,7 @@ usr/share/tmac/tmac.vgrind
 # Enable only serial system only
 bsdrp_console_serial () {
 	# Enable getty on console
+	sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
@@ -472,7 +476,7 @@ bsdrp_console_vga () {
 	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 
 	# Set serial console speed (but not use it)                                                               
-    echo "-S${COM_SPEED}" > ${NANO_WORLDDIR}/boot.config 
+    echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 
 }
 
 # Special xen console configuration
