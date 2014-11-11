@@ -1,18 +1,58 @@
 # Release 1.53 (not released)
 
 ## New features
-* Upgraded to FreeBSD 10.1-PRERELEASE (rev XXX)
-* Replaced ssmtp by dma (DragonFly Mail Agent): FreeBSD 11.0 will include DMA, then prepare the change
+* Upgraded to FreeBSD 10.1
+* Replaced package: ssmtp by dma (DragonFly Mail Agent): FreeBSD 11.0 will include DMA in base
 * Kernel: add Emulex OneConnect 10Gb NIC drivers (oce)
+* Distribute kernel debug (symbols) archive
 
 ## Bug fixes
 * /data directory was missing on some images
-* 'config save' didn't follow symlink anymore
+* Prevent 'config save' to follow symlink
 * fix 'system dual-console' on serial image
 
 ## New packages
 * monit: Process monitoring tool
 * dma: DragonFly Mail Agent
+
+## Updated packages
+* quagga 0.99.22.4 to 0.99.23.1
+* openvpn 2.3.4 to 2.3.5
+
+## Package list
+* bird-1.4.4_2
+* bird6-1.4.4_2
+* bsnmp-regex-0.6_1
+* bsnmp-ucd-0.4.1
+* dhcprelya-4.8_1
+* dlmalloc-2.8.6
+* dma-v0.9_1,1
+* easy-rsa-2.2.0.m
+* freevrrpd-1.1_1
+* indexinfo-0.2
+* iperf-2.0.5
+* ipmitool-1.8.14_1
+* ipsec-tools-0.8.1_7
+* isc-dhcp43-server-4.3.1
+* libevent2-2.0.21_3
+* libgcrypt-1.6.1_5
+* libgpg-error-1.17
+* lzo2-2.08_1
+* mcast-tools-20061214_1
+* monit-5.10
+* mpd5-5.7_1
+* openldap-client-2.4.40
+* openvpn-2.3.5
+* openvpn-auth-radius-2.1_2
+* pimd-devel-2.1.8
+* pimdd-0.2.1.0_1
+* pkg-1.3.8_3
+* quagga-0.99.23.1_2
+* strongswan-5.2.0_1
+* sudo-1.8.11.p1
+* tayga-0.9.2
+* tmux-1.9.a_2
+* ucarp-1.5.2_2
 
 -----------------------------------------------------
 

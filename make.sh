@@ -173,7 +173,6 @@ usage () {
 		echo "      cambria (arm) and sparc64 targets are in work-in-progress state"	
 		echo " -b   suppress buildworld and buildkernel"
 		echo " -c   specify console type: vga (default) or serial"
-		echo " -d   generate image with debug feature enabled"
 		echo " -f   fast mode, skip: images compression and checksums"
 		echo " -h   display this help message"
 		echo " -k   suppress buildkernel"
@@ -212,8 +211,6 @@ PROJECT="BSDRP"
 TARGET_ARCH=${LOCAL_ARCH}
 # Kernel to use: i386 arch can have a standard kernel, or for XEN_PV, etc...
 NANO_KERNEL=${TARGET_ARCH}
-# Boolean for Generating an image in debug mode
-DEBUG=false
 # For skiping some build part (world, kernel)
 SKIP_REBUILD=""
 # Console type -vga, -console or none ""
@@ -252,10 +249,6 @@ do
 					die "ERROR: Bad console type"
 			esac
 			shift
-			shift
-			;;
-		-d)
-			DEBUG=true
 			shift
 			;;
 		-f)
@@ -477,9 +470,6 @@ echo -n "- FAST mode (skip compression and checksumming): "
 echo -n "- TMPFS: "
 ($TMPFS) && echo "YES" || echo "NO"
 
-echo -n "- Debug image type: "
-($DEBUG) && echo "YES" || echo "NO"
-
 ##### Generating the nanobsd configuration file ####
 
 # Theses variables must be set on the begining
@@ -615,16 +605,6 @@ case ${NANO_KERNEL} in
         ;;	
 esac
 
-# Debug mode: add debug features to the kernel:
-if ($DEBUG); then
-	echo "makeoptions	DEBUG=-g" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
-	echo "options	KDB" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
-	echo "options	KDB_TRACE" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
-	echo "options	DDB" >> ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/${NANO_KERNEL}
-	# Debug mode: compile gdb
-	sed -i "" '/WITHOUT_GDB/d' /tmp/${PROJECT}.nano
-fi
-
 # Start nanobsd using the BSDRP configuration file
 echo "Launching NanoBSD build process..."
 cd ${NANOBSD_DIR}
@@ -654,12 +634,16 @@ if [ ! -f ${NANO_OBJ}/_.disk.image ]; then
 	exit 1
 fi
 
-# We start by renaming/xzing the upgrade image
-if ($DEBUG);then
-	FILENAME="${NAME}-${VERSION}-upgrade-${NANO_KERNEL}${INPUT_CONSOLE}-DEBUG.img"
-else
-	FILENAME="${NAME}-${VERSION}-upgrade-${NANO_KERNEL}${INPUT_CONSOLE}.img"
+# Renaming debug/symbol files archive
+if [ -f ${NANO_OBJ}/debug.tar.xz ]; then
+	FILENAME="${NAME}-${VERSION}-debug-${NANO_KERNEL}.tar.xz"
+	mv ${NANO_OBJ}/debug.tar.xz ${NANO_OBJ}/${FILENAME}
+	echo "Debug files archive here:"
+	echo "${NANO_OBJ}/${FILENAME}"
 fi
+
+# Renaming and compressing upgrade image
+FILENAME="${NAME}-${VERSION}-upgrade-${NANO_KERNEL}${INPUT_CONSOLE}.img"
 
 #Remove old upgrade images if present
 [ -f ${NANO_OBJ}/${FILENAME} ] && rm ${NANO_OBJ}/${FILENAME}
@@ -684,11 +668,7 @@ else
 fi
 
 # Now renamning/xzing the full image
-if ($DEBUG); then
-	FILENAME="${NAME}-${VERSION}-full-${NANO_KERNEL}${INPUT_CONSOLE}-DEBUG.img"
-else
-	FILENAME="${NAME}-${VERSION}-full-${NANO_KERNEL}${INPUT_CONSOLE}.img"
-fi
+FILENAME="${NAME}-${VERSION}-full-${NANO_KERNEL}${INPUT_CONSOLE}.img"
 
 #Remove old images if present
 [ -f ${NANO_OBJ}/${FILENAME}.xz ] && rm ${NANO_OBJ}/${FILENAME}.xz

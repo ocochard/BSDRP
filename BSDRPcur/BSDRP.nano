@@ -28,9 +28,7 @@ MALLOC_PRODUCTION=
 # Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
 # Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
 # We would compile symbol files, but not install them by default
-CONF_INSTALL='
-WITHOUT_KERNEL_SYMBOLS=
-'
+CONF_INSTALL=''
 
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options or man src.conf for details
@@ -600,6 +598,8 @@ boot/loader.efi
 sbin/hastd
 sbin/hastctl
 usr/sbin/bhyve
+usr/sbin/bhyvectl
+usr/sbin/bhyveload
 usr/sbin/ctladm
 usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample
@@ -725,6 +725,15 @@ usr/share/tmac/tmac.vgrind
 	# Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
     find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
 
+	# Moving kerned & world debug symbols into debug.tar.xz file
+	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
+		if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
+			mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+		fi
+		mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+		tar cfvZ ${NANO_OBJ}/debug.tar.xz -C ${NANO_WORLDDIR}/usr/lib debug
+	fi
+	[ -d ${NANO_WORLDDIR}/usr/lib/debug ] && rm -rf ${NANO_WORLDDIR}/usr/lib/debug
 	# strip binaries for ports (tips from FreeNAS 8)
 	pprint 4 "Stripping binaries and libraries"
 	for dir in $(find ${NANO_WORLDDIR}/ -name '*bin' -or -name 'lib' -maxdepth 3); do
