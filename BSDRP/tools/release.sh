@@ -104,6 +104,7 @@ dokuwiki(){
 	full
 	upgrade
 	mtree
+	debug
 	'
 	if [ -d ${OBJ_BASE_DIR}/${PROJECT}.sparc64 ]; then
 		ARCH_LIST="${ARCH_LIST}sparc64"
@@ -121,19 +122,7 @@ dokuwiki(){
     	done
 
 		for file in ${FILE_LIST}; do
-			if [ "${type}" != "mtree" ]; then
-				if ! ( $TITLE_SET ) && [ "${type}" != "${OLD_TYPE}" ]; then
-					echo "^ Type ^ Arch ^ Console ^ File ^ Checksum ^"
-					TITLE_SET=true
-					OLD_TYPE=${type}
-				else
-					TITLE_SET=false
-				fi
-				ARCH=`basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`
-				echo -n "| `echo ${file} | cut -d '-' -f 3`"
-				echo -n " | ${ARCH}"
-				echo -n " | `echo ${file} | cut -d '-' -f 5 | cut -d '.' -f 1`"
-			else
+			if [ "${type}" == "mtree" ]; then
 				if ! ($TITLE_SET); then
 					echo "^ Arch ^ Console ^ File ^"
 					TITLE_SET=true
@@ -141,14 +130,37 @@ dokuwiki(){
 				ARCH=`basename ${file} | cut -d '-' -f 3 | cut -d '.' -f 1`
 				echo -n "| ${ARCH}"
 				echo -n " | `echo ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`"
+			elif [ "${type}" == "debug" ]; then
+				if ! ($TITLE_SET); then
+					echo "^ Arch ^ File ^"
+					TITLE_SET=true
+				fi
+				ARCH=`basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`
+				echo -n "| ${ARCH}"
+			else
+				if ! ( $TITLE_SET ) && [ "${type}" != "${OLD_TYPE}" ]; then
+					#echo "^ Type ^ Arch ^ Console ^ File ^ Checksum ^"
+					echo "^ Arch ^ Console ^ File ^ Checksum ^"
+					TITLE_SET=true
+					OLD_TYPE=${type}
+				else
+					TITLE_SET=false
+				fi
+				ARCH=`basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`
+				#echo -n "| `echo ${file} | cut -d '-' -f 3`"
+				echo -n " | ${ARCH}"
+				echo -n " | `echo ${file} | cut -d '-' -f 5 | cut -d '.' -f 1`"
 			fi
 			echo -n " | [[$URL/${ARCH}/${file}/download|${file}]]"
-			if [ "${type}" != "mtree" ]; then
+			case ${type} in
+			mtree | debug)
+				echo -n " |"
+				;;
+			*)
 				echo -n " | [[$URL/${ARCH}/`echo ${file} | sed -e 's/xz/sha256/g'` |"
 				echo -n "`echo ${file} | sed -e 's/xz/sha256/g'`]] |"
-			else
-				echo -n " |"	
-			fi
+				;;
+			esac
 			echo ""
 		done # for file
 	done # for type

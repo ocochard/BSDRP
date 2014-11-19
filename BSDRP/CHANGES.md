@@ -1,13 +1,13 @@
-# Release 1.53 (not released)
+# Release 1.53 (2015/11/19)
 
 ## New features
 * Upgraded to FreeBSD 10.1
 * Replaced package: ssmtp by dma (DragonFly Mail Agent): FreeBSD 11.0 will include DMA in base
-* Kernel: add Emulex OneConnect 10Gb NIC drivers (oce)
+* Kernel: Enable dtrace and add Emulex OneConnect 10Gb NIC drivers (oce)
 * Distribute kernel debug (symbols) archive
 
 ## Bug fixes
-* /data directory was missing on some images
+* /data directory was missing on i386 full-images
 * Prevent 'config save' to follow symlink
 * fix 'system dual-console' on serial image
 

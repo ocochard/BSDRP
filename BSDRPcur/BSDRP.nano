@@ -555,11 +555,12 @@ EOF
 		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
 
 	# Compress the kernel (save 10Mb)
-	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
-		if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
-			echo "Error during zipping the kernel"
-		fi
-	fi
+	# Disabling: dtrace didn't support compressed kernel
+	#if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
+	#	if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
+	#		echo "Error during zipping the kernel"
+	#	fi
+	#fi
 	# Remove some of the folders (without share/snmp)
 	# usr/include : 15MB
 	FOLDERS_TO_REMOVE='

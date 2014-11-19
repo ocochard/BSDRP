@@ -530,11 +530,12 @@ EOF
 		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
 
 	# Compress the kernel (save 10Mb)
-	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
-		if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
-			echo "Error during zipping the kernel"
-		fi
-	fi
+	# Disabling: dtrace didn't support compressed kernel
+	#if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
+	#	if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
+	#		echo "Error during zipping the kernel"
+	#	fi
+	#fi
 	# Remove some of the folders (without share/snmp)
 	# usr/include : 15MB
 	FOLDERS_TO_REMOVE='
@@ -725,7 +726,7 @@ bsdrp_console_serial () {
 	# Force getty to be enabled on serial
     sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
 	# Use 3wire in place of forcing serial speed
-	sed -i "" -e /tty[du]0/s/std.9600/3wire/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du]0/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
     # Disable getty on syscons devices (prevent error messages if no vga device)
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
     # Tell loader to use only serial console early with relative high baud speed
