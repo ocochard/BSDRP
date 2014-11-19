@@ -148,7 +148,7 @@ dokuwiki(){
 				fi
 				ARCH=`basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`
 				#echo -n "| `echo ${file} | cut -d '-' -f 3`"
-				echo -n " | ${ARCH}"
+				echo -n "| ${ARCH}"
 				echo -n " | `echo ${file} | cut -d '-' -f 5 | cut -d '.' -f 1`"
 			fi
 			echo -n " | [[$URL/${ARCH}/${file}/download|${file}]]"

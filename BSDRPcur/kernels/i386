@@ -115,7 +115,7 @@ device		da			# Direct Access (disks)
 #device		sa			# Sequential Access (tape etc)
 #device		cd			# CD
 device		pass			# Passthrough device (direct ATA/SCSI access)
-#device		ses			# Enclosure Services (SES and SAF-TE)
+device		ses			# Enclosure Services (SES and SAF-TE)
 #device		ctl			# CAM Target Layer
 
 # RAID controllers interfaced to the SCSI subsystem
@@ -260,7 +260,6 @@ device		vlan			# 802.1Q VLAN support
 device		tun			# Packet tunnel.
 device		md			# Memory "disks"
 device		gif			# IPv6 and IPv4 tunneling
-device		faith			# IPv6-to-IPv4 relaying (translation)
 device		firmware		# firmware assist module
 
 # The `bpf' device enables the Berkeley Packet Filter.
@@ -366,7 +365,5 @@ options		ROUTETABLES=16
 # Encapsulating Interface
 device enc
 
-# Enable netmap
-device netmap
 
 # The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)
