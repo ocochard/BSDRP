@@ -1,3 +1,12 @@
+# Release 1.54 (not released)
+
+## New features
+
+## Updated packages
+* openvpn to 2.3.6
+
+-----------------------------------------------------
+
 # Release 1.53 (2015/11/19)
 
 ## New features

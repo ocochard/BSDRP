@@ -22,33 +22,23 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # Some little check
 
-[ ! -d BSDRP ] && die "This script need to be executed from the main BSDRP dir"
-[ ! -x make.sh ] && die "This script need to be executed from the main BSDRP dir"
+[ ! -d BSDRP ] && die "This script need to be executed from the main BSDRP dir"
+[ ! -x make.sh ] && die "This script need to be executed from the main BSDRP dir"
 [ ! -d ${IMAGES_DIR} ] && die "Can't found destination dir for storing images"
 
 # List of SVN revision to build image for
-# Compile but didn't boot: 239091 to 239093
-# didn't compile: 257256 to 257272
-# 262341 to 262487
+# 265145 to 274745
 SVN_REV_LIST='
-265145
-265645
-266145
-266645
-267145
-267645
-268245
-268645
-269145
-269645
-271145
-271645
-272145
-272645
-273245
-273645
-274145
-274745
+273280
+273300
+273320
+273415
+273445
+273800
+273900
+273580
+273610
+273620
 '
 
 # Name of the BSDRP project
