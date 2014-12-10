@@ -1,6 +1,7 @@
 # Release 1.54 (not released)
 
 ## New features
+* Upgraded to FreeBSD 10.1-RELEASE-p1
 
 ## Updated packages
 * openvpn to 2.3.6
