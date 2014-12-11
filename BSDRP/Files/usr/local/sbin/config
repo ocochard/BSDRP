@@ -170,11 +170,13 @@ save_cfg () {
 	# symlinks because user can create symlink in /usr/local/etc/rc.d as example (multipe openvpn)
 	for i in "$@" `find * \( -type l -o -type f \)`; do
 		if [ -e /cfg/$i ]; then
-			# Don't forget to add -h option to cmp, because some software (like freeradius) install symlink to /dev/random
+            # If this file was previously saved, compare the saved-version (/cfg) and the running-version (/etc)
+			# Instruct cmp to not follow symbolic links, because some software (like freeradius) install symlink to /dev/random
 			if ! cmp -hs /etc/$i /cfg/$i; then
 				cp -pfv /etc/$i /cfg/$i 2>/dev/null
 			fi
 		else
+            # If this file was'nt previously saved, compare the running-version (/etc) and the default-version (/conf/base/etc)
 			if ! cmp -hs /conf/base/etc/$i /etc/$i; then
 				#cpio didn't preserve owner/permission on non-existant directory
 				#Need to check if destination dir exists, and if not create it
@@ -188,6 +190,11 @@ save_cfg () {
 			fi
 		fi # if [ -e /cfg/$i ]
 	done
+    
+    #New empty directories need to be saved too
+    for i in "$@" `find * -type d ! -path "cron/tabs"`; do
+        [ -d /cfg/$i -o -d /conf/base/etc/$i ] || cp -av /etc/$i /cfg/$i
+    done
 	)	
 
 	# Deleting file or symlink on /cfg that are no more in /etc
