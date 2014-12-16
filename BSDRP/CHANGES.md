@@ -5,6 +5,7 @@
 
 ## Updated packages
 * openvpn to 2.3.6
+* strongswan to 5.2.1
 
 -----------------------------------------------------
 
