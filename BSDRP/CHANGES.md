@@ -4,7 +4,9 @@
 * Upgraded to FreeBSD 10.1-RELEASE-p3
 
 ## Updated packages
+* bird to 1.4.5
 * openvpn to 2.3.6
+* pimd to 2.2.0
 * strongswan to 5.2.1
 
 -----------------------------------------------------
