@@ -1,7 +1,8 @@
 # Release 1.54 (not released)
 
-## New features
-* Upgraded to FreeBSD 10.1-RELEASE-p3
+## Bug fixes
+* Upgraded to FreeBSD 10.1-RELEASE-p3 (FreeBSD security issue)
+* 'config save' correctly backup new empty directories
 
 ## Updated packages
 * bird to 1.4.5

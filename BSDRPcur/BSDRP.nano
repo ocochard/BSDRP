@@ -773,7 +773,6 @@ bsdrp_console_serial () {
 # http://lists.freebsd.org/pipermail/freebsd-hackers/2012-September/040523.html
 #
 bsdrp_console_dual () {
-
     # Tell loader to use serial and vga console.
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 
@@ -781,7 +780,6 @@ bsdrp_console_dual () {
 
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
-
 	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 
 }
