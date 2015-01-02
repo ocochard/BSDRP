@@ -10,6 +10,41 @@
 * pimd to 2.2.0
 * strongswan to 5.2.1
 
+## Package list
+* bird-1.4.5_1
+* bird6-1.4.5_1
+* bsnmp-regex-0.6_1
+* bsnmp-ucd-0.4.1
+* dhcprelya-4.8_1
+* dlmalloc-2.8.6
+* dma-v0.9_1,1
+* easy-rsa-2.2.0.m
+* freevrrpd-1.1_1
+* indexinfo-0.2.2
+* iperf-2.0.5
+* ipmitool-1.8.14_1
+* ipsec-tools-0.8.1_7
+* isc-dhcp43-server-4.3.1
+* libevent2-2.0.21_3
+* libgcrypt-1.6.1_5
+* libgpg-error-1.17
+* lzo2-2.08_1
+* mcast-tools-20061214_1
+* monit-5.11
+* mpd5-5.7_1
+* openldap-client-2.4.40_1
+* openvpn-2.3.6_1
+* openvpn-auth-radius-2.1_2
+* pimd-2.2.0
+* pimdd-0.2.1.0_1
+* pkg-1.4.3
+* quagga-0.99.23.1_2
+* strongswan-5.2.1
+* sudo-1.8.11.p1
+* tayga-0.9.2
+* tmux-1.9a
+* ucarp-1.5.2_2
+
 -----------------------------------------------------
 
 # Release 1.53 (2014/11/19)
