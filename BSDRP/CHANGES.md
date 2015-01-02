@@ -1,7 +1,7 @@
-# Release 1.54 (not released)
+# Release 1.54 (2015/01/02)
 
 ## Bug fixes
-* Upgraded to FreeBSD 10.1-RELEASE-p3 (FreeBSD security issue)
+* Upgraded to FreeBSD 10.1-RELEASE-p3
 * 'config save' correctly backup new empty directories
 
 ## Updated packages
@@ -12,7 +12,7 @@
 
 -----------------------------------------------------
 
-# Release 1.53 (2015/11/19)
+# Release 1.53 (2014/11/19)
 
 ## New features
 * Upgraded to FreeBSD 10.1
