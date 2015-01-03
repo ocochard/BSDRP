@@ -166,10 +166,10 @@ save_cfg () {
 	echo "Saving configuration..."
 	(
 	cd /etc
-	# Looking for all files AND symlinks in /etc
-	# symlinks because user can create symlink in /usr/local/etc/rc.d as example (multipe openvpn)
+	# Looking for all regular files AND symlinks in /etc
+	# symlinks: user can create symlink in /usr/local/etc/rc.d as example (multipe openvpn)
 	for i in "$@" `find * \( -type l -o -type f \)`; do
-		if [ -e /cfg/$i ]; then
+		if [ -f /cfg/$i -o -h /cfg/$i ]; then
             # If this file was previously saved, compare the saved-version (/cfg) and the running-version (/etc)
 			# Instruct cmp to not follow symbolic links, because some software (like freeradius) install symlink to /dev/random
 			if ! cmp -hs /etc/$i /cfg/$i; then

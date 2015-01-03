@@ -1,8 +1,8 @@
 Index: tools/tools/netmap/pkt-gen.c
 ===================================================================
---- tools/tools/netmap/pkt-gen.c	(revision 270129)
+--- tools/tools/netmap/pkt-gen.c	(revision 276525)
 +++ tools/tools/netmap/pkt-gen.c	(working copy)
-@@ -561,6 +561,7 @@
+@@ -563,6 +563,7 @@
  {
  	uint32_t a;
  	uint16_t p;
@@ -10,7 +10,7 @@ Index: tools/tools/netmap/pkt-gen.c
  	struct ip *ip = &pkt->ip;
  	struct udphdr *udp = &pkt->udp;
  
-@@ -595,6 +596,24 @@
+@@ -597,6 +598,24 @@
  	ip->ip_dst.s_addr = htonl(g->dst_ip.start);
      } while (0);
      // update checksum
@@ -35,3 +35,12 @@ Index: tools/tools/netmap/pkt-gen.c
  }
  
  /*
+@@ -1817,7 +1836,7 @@
+ 
+ 	}
+ 
+-	if (g.ifname == NULL) {
++	if (!g.ifname) {
+ 		D("missing ifname");
+ 		usage();
+ 	}
