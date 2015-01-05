@@ -65,7 +65,7 @@ X
 XHAS_CONFIGURE=	yes
 XUSES=	tar:bzip2
 X
-XPLIST_FILES=	etc/pimd.conf.sample \
+XPLIST_FILES=	"@sample etc/pimd.conf.sample" \
 X		etc/rc.d/pimd \
 X		sbin/pimd \
 X		man/man8/pimd.8.gz
@@ -75,10 +75,10 @@ X	${REINPLACE_CMD} -e 's|/etc/|${PREFIX}/etc/|g' \
 X	${WRKSRC}/pathnames.h
 X
 Xdo-install:
-X	${INSTALL_PROGRAM} ${WRKSRC}/${GH_PROJECT} ${STAGEDIR}${PREFIX}/sbin/
-X	${INSTALL_DATA} ${WRKSRC}/${GH_PROJECT}.conf ${STAGEDIR}${PREFIX}/etc/${GH_PROJECT}.conf.sample
-X	${INSTALL_SCRIPT} ${FILESDIR}/${GH_PROJECT}.in ${STAGEDIR}${PREFIX}/etc/rc.d/${GH_PROJECT}
-X	${INSTALL_MAN} ${WRKSRC}/${GH_PROJECT}.8 ${STAGEDIR}${PREFIX}/man/man8/
+X	${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${PREFIX}/sbin/
+X	${INSTALL_DATA} ${WRKSRC}/${PORTNAME}.conf ${STAGEDIR}${PREFIX}/etc/${PORTNAME}.conf.sample
+X	${INSTALL_SCRIPT} ${FILESDIR}/${PORTNAME}.in ${STAGEDIR}${PREFIX}/etc/rc.d/${PORTNAME}
+X	${INSTALL_MAN} ${WRKSRC}/${PORTNAME}.8 ${STAGEDIR}${PREFIX}/man/man8/
 X
 X.include <bsd.port.mk>
 fc0f211ff378f71bada5166c68e231fb

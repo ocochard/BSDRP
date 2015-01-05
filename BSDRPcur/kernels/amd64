@@ -116,8 +116,6 @@ device		ses			# Enclosure Services (SES and SAF-TE)
 # RAID controllers interfaced to the SCSI subsystem
 device		amr			# AMI MegaRAID
 device		arcmsr			# Areca SATA II RAID
-#XXX it is not 64-bit clean, -scottl
-#device		asr			# DPT SmartRAID V, VI and Adaptec SCSI RAID
 device		ciss			# Compaq Smart RAID 5*
 device		dpt			# DPT Smartcache III, IV - See NOTES for options
 device		hptmv			# Highpoint RocketRAID 182x
@@ -361,8 +359,7 @@ options     ALTQ_PRIQ   # Priority Queueing
 #options     ALTQ_NOPCC  # Required if the TSC is unusable
 #options    ALTQ_DEBUG
 
-# MROUTING enables the kernel multicast packet forwarder, which works
-# with mrouted and XORP.
+# MROUTING enables the kernel multicast packet forwarder
 options     MROUTING        # Multicast routing
 
 # TCP_SIGNATURE adds support for RFC 2385 (TCP-MD5) digests. These are

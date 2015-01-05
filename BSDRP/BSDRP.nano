@@ -396,7 +396,7 @@ add_port "net/ucarp"
 add_port "net/mcast-tools"
 
 # Add IPv4 DVMRP (multicast) routing daemon
-#add_port "net/mrouted"
+add_port "net/mrouted"
 
 # Add pimdd: IPv4 PIM Dense Mode daemon
 add_port "net/pimdd"
