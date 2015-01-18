@@ -388,6 +388,9 @@ add_port "security/strongswan" "WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND 
 #pf top
 #add_port "sysutils/pftop"
 
+#IP accounting tool
+add_port "net-mgmt/pmacct"
+
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
 # UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
 add_port "net/ucarp"
@@ -446,7 +449,7 @@ add_port "security/openvpn-auth-radius"
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 #add_port "benchmarks/netpipe" 
 add_port "benchmarks/iperf"
-
+ 
 # VM tools
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 #add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"

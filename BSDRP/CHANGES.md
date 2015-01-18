@@ -1,3 +1,15 @@
+# Release 1.55 (not released)
+
+## New packages
+* pmacct (http://www.pmacct.net/)
+
+## Bug fixes
+* Re-add mrouted
+* pf anchor fixes (PR/XXXX and PR/YYYY)
+
+-----------------------------------------------------
+
+
 # Release 1.54 (2015/01/02)
 
 ## Bug fixes
