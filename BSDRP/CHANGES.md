@@ -1,9 +1,11 @@
 # Release 1.55 (not released)
 
+
 ## New packages
 * pmacct (http://www.pmacct.net/)
 
 ## Bug fixes
+* Upgraded to FreeBSD 10.1-RELEASE-p5
 * Re-add mrouted
 * pf anchor fixes (PR/XXXX and PR/YYYY)
 
