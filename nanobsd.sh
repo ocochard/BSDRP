@@ -461,7 +461,7 @@ newfs_part ( ) (
 # Convenient spot to work around any umount issues that your build environment
 # hits by overriding this method.
 nano_umount () (
-	umount ${1}
+	umount ${1} || umount -f ${1}
 )
 
 populate_slice ( ) (
