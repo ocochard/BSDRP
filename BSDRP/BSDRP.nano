@@ -351,9 +351,8 @@ add_port "ports-mgmt/pkg"
 
 ## Add your custom port list here (not before the ports/mgmt/pkg!) ##
 
-# high-performance ipfw netmap
-# Disabled because net/pfil API changes
-#add_port "net/ipfw-user"
+# high-performance (bridge only) netmap-ipfw
+add_port "net/netmap-ipfw"
 
 # Then we need to install net-snmp without perl modules
 # net-snmp support is not very good for FreeBSD, disable it
