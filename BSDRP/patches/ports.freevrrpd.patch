@@ -1,0 +1,79 @@
+Index: net/freevrrpd/Makefile
+===================================================================
+--- net/freevrrpd/Makefile	(revision 375744)
++++ net/freevrrpd/Makefile	(working copy)
+@@ -2,22 +2,27 @@
+ # $FreeBSD$
+ 
+ PORTNAME=	freevrrpd
+-PORTVERSION=	1.1
+-PORTREVISION=	1
++PORTVERSION=	1.2
+ CATEGORIES=	net
+-MASTER_SITES=	http://opensource.kewego.com/freevrrpd/
+-DISTFILES=	${PORTNAME}-${PORTVERSION}${EXTRACT_SUFX}:DEFAULT,freebsd
+ 
+ MAINTAINER=	spe@phear.org
+-COMMENT=	This a VRRP RFC2338 Compliant implementation under FreeBSD
++COMMENT=	This a VRRP v2 and v3 implementation under FreeBSD
+ 
++LICENSE=	BSD2CLAUSE
++
++USE_GITHUB=	yes
++GH_ACCOUNT=	gvnn3
++GH_COMMIT=	06dee72465
++GH_TAGNAME=	${GH_COMMIT}
++
++WRKSRC=	${WRKDIR}/${GH_ACCOUNT}-FreeVRRPd-06dee72
+ MAKE_ENV=	PTHREAD_CFLAGS="${PTHREAD_CFLAGS}" \
+ 		PTHREAD_LIBS="${PTHREAD_LIBS}"
+ 
+ do-install:
+-	@${INSTALL_PROGRAM} ${WRKSRC}/freevrrpd ${STAGEDIR}${PREFIX}/sbin
+-	@${INSTALL_DATA} ${WRKSRC}/freevrrpd.conf.sample ${STAGEDIR}${PREFIX}/etc
+-	@${INSTALL_SCRIPT} ${WRKSRC}/rc.d/freevrrpd ${STAGEDIR}${PREFIX}/etc/rc.d
+-	@${INSTALL_MAN} ${WRKSRC}/${PORTNAME}.8 ${STAGEDIR}${MANPREFIX}/man/man8
++	${INSTALL_PROGRAM} ${WRKSRC}/freevrrpd ${STAGEDIR}${PREFIX}/sbin
++	${INSTALL_DATA} ${WRKSRC}/freevrrpd.conf.sample ${STAGEDIR}${PREFIX}/etc
++	${INSTALL_SCRIPT} ${WRKSRC}/rc.d/freevrrpd ${STAGEDIR}${PREFIX}/etc/rc.d
++	${INSTALL_MAN} ${WRKSRC}/${PORTNAME}.8 ${STAGEDIR}${MANPREFIX}/man/man8
+ 
+ .include <bsd.port.mk>
+Index: net/freevrrpd/distinfo
+===================================================================
+--- net/freevrrpd/distinfo	(revision 375744)
++++ net/freevrrpd/distinfo	(working copy)
+@@ -1,2 +1,2 @@
+-SHA256 (freevrrpd-1.1.tar.gz) = 46027e724f82100bb532773f8b7d16ad7603c32c70f054cf0dbc4ba0e81101d0
+-SIZE (freevrrpd-1.1.tar.gz) = 41945
++SHA256 (freevrrpd-1.2.tar.gz) = 34664c37e9a03d471d5315939dba089aee11ba915be53d4ad72b1b51007e16d1
++SIZE (freevrrpd-1.2.tar.gz) = 41665
+Index: net/freevrrpd/files/patch-vrrp_network.c
+===================================================================
+--- net/freevrrpd/files/patch-vrrp_network.c	(revision 375744)
++++ net/freevrrpd/files/patch-vrrp_network.c	(working copy)
+@@ -1,6 +1,5 @@
+-# $FreeBSD$
+---- vrrp_network.c.orig	2014-05-04 01:27:14.212855362 +0200
+-+++ vrrp_network.c	2014-05-04 01:27:50.289959806 +0200
++--- vrrp_network.c.orig	2015-02-02 12:39:57.436986775 +0100
+++++ vrrp_network.c	2015-02-02 12:46:08.958975456 +0100
+ @@ -113,7 +113,7 @@
+  	 iph->ip_hl = 5;
+  	 iph->ip_v = 4;
+Index: net/freevrrpd/pkg-descr
+===================================================================
+--- net/freevrrpd/pkg-descr	(revision 375744)
++++ net/freevrrpd/pkg-descr	(working copy)
+@@ -1,9 +1,9 @@
+ freevrrpd is a VRRP (Virtual Router Redundancy Protocol) implementation
+ daemon under FreeBSD, NetBSD and OpenBSD.
+ This daemon has been rewritten from scratch and is not based on
+-existing projects.  In this second public release, you can find:
++existing projects.  In this third public release, you can find:
+ 
+-       * A daemon RFC 2338 Compliant adapted on FreeBSD systems
++       * A daemon RFC 2338, 3768 and 5798 Compliant adapted on FreeBSD systems
+        * Implementation of Virtual Adresses
+        * Support for multiples VRID
+        * Master announce state by sending multicast packets via BPF

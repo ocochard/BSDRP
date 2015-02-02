@@ -3,7 +3,7 @@
 # Bhyve lab script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2013-2014, The BSDRP Development Team
+# Copyright (c) 2013-2015, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -363,6 +363,7 @@ while [ $i -le $NUMBER_VM ]; do
 	# Erase already existing VM disk only if:
 	#   a image is given
 	#   OR it didn't already exists
+	# TO DO: Need to use UFS or ZFS snapshot in place of copying the full disk
 	[ ! -f ${WRK_DIR}/${VM_NAME}_$i -o -n "${FILE}" ] && cp ${VM_TEMPLATE} ${WRK_DIR}/${VM_NAME}_$i
 	# Network_config
 	NIC_NUMBER=0
