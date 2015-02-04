@@ -48,6 +48,8 @@ WITHOUT_AUTHPF=
 WITHOUT_AUTOFS=
 WITHOUT_BHYVE=
 WITHOUT_BLUETOOTH=
+WITHOUT_BOOTPARAMD=
+WITHOUT_BOOTPD=
 WITHOUT_BSDINSTALL=
 WITHOUT_CALENDAR=
 WITHOUT_CCD=
@@ -56,6 +58,7 @@ WITHOUT_CVS=
 WITHOUT_DICT=
 WITHOUT_EE=
 WITHOUT_EXAMPLES=
+WITHOUT_FINGER=
 WITHOUT_FLOPPY=
 WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
@@ -90,6 +93,7 @@ WITHOUT_PC_SYSINSTALL=
 WITHOUT_PORTSNAP=
 WITHOUT_PROFILE=
 WITHOUT_QUOTAS=
+WITHOUT_RBOOTD=
 WITHOUT_RCMDS=
 WITHOUT_RCS=
 WITHOUT_RESCUE=
@@ -102,6 +106,8 @@ WITHOUT_SYSINSTALL=
 WITHOUT_TALK=
 WITHOUT_TESTS=
 WITHOUT_TESTS_SUPPORT=
+WITHOUT_TFTP=
+WITHOUT_TIMED=
 WITHOUT_UNBOUND=
 WITHOUT_USB_GADGET_EXAMPLES=
 WITHOUT_WIRELESS=
@@ -385,9 +391,6 @@ add_port "ports-mgmt/pkg"
 
 ## Add your custom port list here (not before the ports/mgmt/pkg!) ##
 
-# high-performance ipfw netmap
-add_port "net/netmap-ipfw"
-
 # Then we need to install net-snmp without perl modules
 # net-snmp support is not very good for FreeBSD, disable it
 #add_port "net-mgmt/net-snmp" "-DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
@@ -408,6 +411,9 @@ add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_NSSA OSPF_OPAQUE_LSA TCPSOCKET
 # Add Bird
 add_port "net/bird"
 add_port "net/bird6"
+
+# high-performance ipfw netmap
+add_port "net/netmap-ipfw"
 
 # Add FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
