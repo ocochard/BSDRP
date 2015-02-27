@@ -40,6 +40,8 @@ hw.ix.rx_process_limit="-1"
 # Bench results:
 # http://bsdrp.net/documentation/examples/forwarding_performance_lab_of_a_superserver_5018a-ftn4#igb_4_num_queues_and_max_interrupt_rate_impact_on_forwarding_rate
 hw.igb.max_interrupt_rate="16000"
+# Allow unsupported SFP
+hw.ix.unsupported_sfp="1"
 
 ### link tunning ###
 # Increase interface send queue length

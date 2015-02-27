@@ -7,6 +7,10 @@
 * Upgraded to FreeBSD 10.1-RELEASE-p5
 * Re-add mrouted and netmap-ipfw
 * pf anchor fixes (PR/196314 and PR/183198)
+* Allow unsupported SFP on Intel NIC by default
+
+## Updated packages
+* ipsec-tools to 0.8.2
 
 -----------------------------------------------------
 

@@ -351,9 +351,6 @@ add_port "ports-mgmt/pkg"
 
 ## Add your custom port list here (not before the ports/mgmt/pkg!) ##
 
-# high-performance (bridge only) netmap-ipfw
-add_port "net/netmap-ipfw"
-
 # Then we need to install net-snmp without perl modules
 # net-snmp support is not very good for FreeBSD, disable it
 #add_port "net-mgmt/net-snmp" "-DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
@@ -373,6 +370,9 @@ add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\""
 # Add Bird: Replace XORP that is too memory/CPU hungry:
 add_port "net/bird"
 add_port "net/bird6"
+
+# high-performance (bridge only) netmap-ipfw
+add_port "net/netmap-ipfw"
 
 # Add FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"

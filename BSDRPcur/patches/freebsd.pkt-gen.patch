@@ -35,12 +35,3 @@ Index: tools/tools/netmap/pkt-gen.c
  }
  
  /*
-@@ -1817,7 +1836,7 @@
- 
- 	}
- 
--	if (g.ifname == NULL) {
-+	if (!g.ifname) {
- 		D("missing ifname");
- 		usage();
- 	}
