@@ -1,10 +1,13 @@
 # Release 1.55 (not released)
 
+## New features
+* Enable infiniband (OFED) drivers and add mlx4
+
 ## New packages
 * pmacct (http://www.pmacct.net/)
 
 ## Bug fixes
-* Upgraded to FreeBSD 10.1-RELEASE-p5
+* Upgraded to FreeBSD 10.1-RELEASE-p6
 * Re-add mrouted and netmap-ipfw
 * pf anchor fixes (PR/196314 and PR/183198)
 * Allow unsupported SFP on Intel NIC by default
