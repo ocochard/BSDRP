@@ -13,6 +13,7 @@
 * Allow unsupported SFP on Intel NIC by default
 
 ## Updated packages
+* quagga to 0.99.24
 * ipsec-tools to 0.8.2
 
 -----------------------------------------------------
