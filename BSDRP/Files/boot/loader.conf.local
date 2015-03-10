@@ -16,7 +16,10 @@
 #
 
 ### Text console in VT mode (we didn't use graphic)
-hw.vga.textmode=1
+hw.vga.textmode="1"
+
+### Don't wait for USB (can prevent correct reboot)
+hw.usb.no_shutdown_wait="1"
 
 ### Tune some global values ###
 net.fibs="16"		# Numbers of FIB

@@ -2,6 +2,7 @@
 
 ## New features
 * Enable infiniband (OFED) drivers and add mlx4
+* Enable ICMP reply from incoming interface for non-local packets by default
 
 ## New packages
 * pmacct (http://www.pmacct.net/)
@@ -15,6 +16,7 @@
 ## Updated packages
 * quagga to 0.99.24
 * ipsec-tools to 0.8.2
+* monit to 5.12.1
 
 -----------------------------------------------------
 
