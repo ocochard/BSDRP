@@ -1,0 +1,18 @@
+Mandatory
+	- Automount all connected device, but excluding own /cfg and /data
+	- Saving .xbmc the first time take a lot's of time !
+	- Force configuration saving before reboot/shutdown
+
+Drivers/x config
+	- sound configuration: How to configure HDMI sound output ?
+	- Add support for the legacy nvidia drivers
+	"The NVIDIA ION LE GPU is supported through the NVIDIA 340.xx legacy drivers.
+     346.47 drivers will ignore this GPU."
+
+Size
+	- Current binary size: 549M… Need to remove about 50M
+	- /usr/local: 567M
+	- /usr/local/share: 103M
+
+graphics/cairo: can't build with -DWITH_GL because it doesn't find GL/glx.h (but multimedia/libva works)
+	- Need to check if CFLAGS include -I/usr/local/include

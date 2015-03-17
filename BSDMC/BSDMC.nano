@@ -1,15 +1,14 @@
-# BSD Router Project NanoBSD configuration file
-# http://bsdrp.net
+# BSD Media Center NanoBSD configuration file
 #
 # NanoBSD port support added from Gitoyen:
 # http://www.gitoyen.net/Howto-NanoBSD-quagga-router 
 # Some cleanup idea taken from imp@ nanoBSD script
-# Add other parts came from the FreeNAS 8 too (iXsystems)
 #
 ################## Common section #################
 
 # Console port speed
 COM_SPEED=38400
+
 # Where cust_pkg() finds packages to install
 NANO_PACKAGE_DIR=${NANO_TOOLS}/Pkg
 NANO_PACKAGE_LIST="*"
@@ -35,6 +34,7 @@ CONF_INSTALL=''
 # WITHOUT_FORTH= mandatory for the boot-loader
 # WITHOUT_GROFF= Ports needs for build man page
 # WITHOUT_KVM= and WITHOUT_KVM_SUPPORT= prevent buildworld to complet (don't know why)
+
 CONF_WORLD='
 WITHOUT_ACCT=
 WITHOUT_AMD=
@@ -45,6 +45,8 @@ WITHOUT_ATM=
 WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
 WITHOUT_BLUETOOTH=
+WITHOUT_BSDINSTALL=
+WITHOUT_BSNMP=
 WITHOUT_CALENDAR=
 WITHOUT_CTM=
 WITHOUT_CVS=
@@ -59,9 +61,9 @@ WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
 WITHOUT_HTML=
-WITHOUT_ICONV=
 WITHOUT_INFO=
 WITHOUT_IPFILTER=
+WITHOUT_IPFW=
 WITHOUT_IPX=
 WITHOUT_IPX_SUPPORT=
 WITHOUT_JAIL=
@@ -71,14 +73,21 @@ WITHOUT_LIB32=
 WITHOUT_LOCALES=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
+WITHOUT_MAN=
+WITHOUT_MAN_UTILS=
 WITHOUT_NCP=
 WITHOUT_NDIS=
 WITHOUT_NETCAT=
+WITHOUT_NETGRAPH=
+WITHOUT_NETGRAPH_SUPPORT=
 WITHOUT_NIS=
 WITHOUT_NLS=
 WITHOUT_NLS_CATALOGS=
 WITHOUT_NS_CACHING=
 WITHOUT_PC_SYSINSTALL=
+WITHOUT_PAM=
+WITHOUT_PAM_SUPPORT=
+WITHOUT_PPP= 
 WITHOUT_PORTSNAP=
 WITHOUT_PROFILE=
 WITHOUT_QUOTAS=
@@ -89,17 +98,13 @@ WITHOUT_ROUTED=
 WITHOUT_SENDMAIL=
 WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
+WITHOUT_SYSCONS=
 WITHOUT_SYSINSTALL=
 WITHOUT_TESTS=
+WITHOUT_TESTS_SUPPORT=
 WITHOUT_UNBOUND=
-WITHOUT_VT=
-WITHOUT_WIRELESS=
-WITHOUT_WIRELESS_SUPPORT=
-WITHOUT_WPA_SUPPLICANT_EAPOL=
+WITHOUT_USB_GADGET_EXAMPLES=
 WITHOUT_ZFS=
-WITH_GCC=
-WITH_IDEA=
-WITH_OFED=
 '
 
 # Customize commands.
@@ -128,22 +133,22 @@ NANO_CODESIZE=0
 
 # Size of configuration file system in 512 bytes sectors
 # Cannot be zero.
-# about 15MB = 20480
-NANO_CONFSIZE=20480
+# 10MB = 2048
+NANO_CONFSIZE=40960
 
 # Size of data file system in 512 bytes sectors
 # If zero: no partition configured.
 # If negative: max size possible
 # This filesystem is used for archive configuration and
 # for user customized scripts or tool
-NANO_DATASIZE=20480
+NANO_DATASIZE=40960
 
 # Size of the /etc ramdisk in 512 bytes sectors
-# 10240=5MB
-NANO_RAM_ETCSIZE=10240
+# 10240=5Mb
+NANO_RAM_ETCSIZE=40960
 
 # Size of the /tmp+/var ramdisk in 512 bytes sectors
-# 40960=20MB (usefull for log files)
+# 20480=10Mb (usefull for log files)
 NANO_RAM_TMPVARSIZE=40960
 
 # Boot0cfg configuration mode
@@ -159,67 +164,6 @@ NANO_LABEL=${NANO_NAME}
 
 # Progress Print level
 PPLEVEL=3
-
-# Add netblast/netrecieve and netmap tools
-add_netrate () {
-    TOOLS_LIST="cxgbetool cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
-    mkdir -p ${NANO_WORLDDIR}/dev
-    mount -t devfs devfs ${NANO_WORLDDIR}/dev
-    mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
-    mkdir -p ${NANO_WORLDDIR}/usr/workdir
-    for TOOL in ${TOOLS_LIST}; do
-        # netmap is not available on sparc64, and disabled on i386
-        if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
-		continue
-        fi
-        if [ ${NANO_ARCH} = "i386" -a ${TOOL} = "netmap" ]; then
-		continue
-        fi
-        export TOOL
-        CR 'make clean -C /usr/src/tools/tools/${TOOL}'
-        CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-            MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-            UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
-            UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-            make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
-        # each Makefile have a different variable names
-        for MAKE_CMD in PROG PROGS ALL; do
-            for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
-                if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
-                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
-                else
-                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
-                fi
-                if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
-                    if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
-                        echo "WARNING: Can't delete $TOOL/$file.o"
-                    fi
-                fi
-            done # for all files
-        done # for MAKE_CMD
-    done # for TOOL
-    rm -rf ${NANO_WORLDDIR}/usr/workdir
-    umount ${NANO_WORLDDIR}/usr/src
-    umount ${NANO_WORLDDIR}/dev
-}
-
-# Add Quagga BGP route injector
-add_quagga-bgp-netgen () {
-    mkdir -p ${NANO_WORLDDIR}/dev
-    mount -t devfs devfs ${NANO_WORLDDIR}/dev
-    mount -t nullfs ${NANO_TOOLS}/tools/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/src
-    mkdir -p ${NANO_WORLDDIR}/usr/workdir
-    CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-		MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
-		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-        make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
-    mv ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/local/bin
-    rm ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen.o
-    rm -rf ${NANO_WORLDDIR}/usr/workdir
-    umount ${NANO_WORLDDIR}/usr/src
-    umount ${NANO_WORLDDIR}/dev
-}
 
 # Need to check if this function works with cross-compiling architecture!!!!
 # Recursive complex fonction: Generate one function for each ports
@@ -310,7 +254,7 @@ EOF
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   install package BATCH=yes -DWITH_PKGNG \
-		  WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+		  WITHOUT=\"NLS DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
 			else
        			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
@@ -318,14 +262,14 @@ EOF
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   install BATCH=yes -DWITH_PKGNG \
-		  WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+		  WITHOUT=\"NLS DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
           		CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
 		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   package BATCH=yes -DWITH_PKGNG \
-		  WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+		  WITHOUT=\"NLS DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
 			fi
 		rm \${NANO_WORLDDIR}/etc/resolv.conf
                	rm -rf \${NANO_WORLDDIR}/usr/obj
@@ -345,128 +289,243 @@ EOF
 
 #### Ports list section #####
 
-# bapt@ broke the "make package-recurisve" and he doesn't want to fix it using
-#  the fallacious argument of "it's dirty"
-# => Need to manually list all the package to install
-# Meanwhile, you can use "make package-depends-list | cut -d ' ' -f3" on a port
-# for getting all its unordered running dependency.
-# And you can use a grep "depends on .* - not found" /usr/obj/project/_.cust.add_port_port-name
-# for getting the ordered list
-
 add_port "ports-mgmt/pkg"
 
-## Add your custom port list here (not before the ports/mgmt/pkg!) ##
+# Add other filesystem support (for playing local media files)
+#add_port "sysutils/fusefs-ntfs"
+#add_port "sysutils/fusefs-exfat"
+#add_port "sysutils/fusefs-ext4fuse"
+#add_port "sysutils/automount"
 
-# Then we need to install net-snmp without perl modules
-# net-snmp support is not very good for FreeBSD, disable it
-#add_port "net-mgmt/net-snmp" "-DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
+# Python
+    add_port "print/indexinfo"
+   add_port "devel/readline"
+   add_port "devel/libffi"
+  add_port "lang/python27"
+ add_port "lang/python2"
+add_port "lang/python"
 
-# Add modules to the native FreeBSD bsnmpd daemon:
-add_port "net-mgmt/bsnmp-regex"
-add_port "net-mgmt/bsnmp-ucd"
+# Perl
+add_port "lang/perl5.18"
 
-# Quagga installation
-add_port "devel/libdlmalloc"
-add_port "print/indexinfo"
-add_port "security/libgpg-error"
-add_port "security/libgcrypt"
-add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
-# Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
+# Add xorg-minimal (and all its package-depends-list)
+  add_port "devel/libpthread-stubs"
+   add_port "misc/pciids"
+  add_port "devel/libpciaccess"
+ add_port "graphics/libdrm"
+ add_port "devel/llvm35"
+   add_port "x11/kbproto"
+    add_port "x11/xproto"
+   add_port "x11/libXau"
+   add_port "x11/libXdmcp"
+    add_port "textproc/libxml2"
+   add_port "x11/libxcb"
+  add_port "x11/libX11"
+   add_port "x11/xextproto"
+  add_port "x11/libXext"
+   add_port "x11/videoproto"
+  add_port "x11/libXv"
+ add_port "x11/libXvMC"
+   add_port "x11/xf86vidmodeproto"
+  add_port "x11/libXxf86vm"
+   add_port "textproc/expat2"
+     add_port "x11/dri2proto"
+     add_port "x11/fixesproto"
+    add_port "x11/libXfixes"
+    add_port "x11/damageproto"
+   add_port "x11/libXdamage"
+   add_port "devel/libdevq"
+   add_port "x11/libxshmfence"
+  add_port "graphics/libglapi"
+add_port "graphics/dri"
+add_port "graphics/libGL"
+ add_port "x11/libICE"
+add_port "x11/libSM"
+ add_port "x11-fonts/fontsproto"
+ add_port "print/freetype2"
+ add_port "x11-fonts/libfontenc"
+add_port "x11-fonts/libXfont"
+ add_port "x11/libxkbfile"
+add_port "x11/xkbcomp"
+add_port "x11/xkeyboard-config"
+add_port "x11-fonts/font-util"
+ add_port "x11/xineramaproto"
+add_port "x11/libXinerama"
+ add_port "x11-toolkits/libXt"
+ add_port "x11-toolkits/libXmu"
+   add_port "x11/printproto"
+  add_port "x11/libXp"
+  add_port "x11/libXpm"
+ add_port "x11-toolkits/libXaw"
+  add_port "x11/xf86miscproto"
+ add_port "x11/libXxf86misc"
+ add_port "x11/libxkbui"
+ add_port "x11/pixman"
+add_port "x11-servers/xorg-server"
 
-# Add Bird: Replace XORP that is too memory/CPU hungry:
-add_port "net/bird"
-add_port "net/bird6"
+# xorg-minimal
+add_port "devel/gettext-runtime"
+  add_port "x11/inputproto"
+ add_port "x11/libXi"
+add_port "x11-drivers/xf86-input-mouse"
+add_port "x11-drivers/xf86-input-keyboard"
+add_port "x11/xinit"
+add_port "x11/xauth"
+add_port "x11-drivers/xf86-video-vesa"
+add_port "x11/xorg-minimal"
 
-# high-performance (bridge only) netmap-ipfw
-add_port "net/netmap-ipfw"
+# xorg-drivers
+  add_port "x11/renderproto"
+ add_port "x11/libXrender"
+ add_port "x11-drivers/xf86-video-openchrome"
+  add_port "x11/xcb-util"
+ add_port "x11-drivers/xf86-video-intel"
+ add_port "x11-drivers/xf86-video-ati"
+ add_port "x11-drivers/xf86-video-r128"
+ add_port "x11-drivers/xf86-video-nv"
+ add_port "x11-drivers/xf86-video-mach64"
+add_port "x11-drivers/xorg-drivers"
 
-# Add FreeVRRPd (netgraph dependent)
-add_port "net/freevrrpd"
+# nvidia (VDPAU)
+ add_port "x11/glproto"
+#add_port "x11/nvidia-driver" "WITHOUT=\"LINUX\""
+add_port "x11/nvidia-driver-340" "WITHOUT=\"LINUX\""
 
-# IKEv1
-add_port "net/openldap24-client"
-add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
+# xrandr
+  add_port "x11/randrproto"
+ add_port "x11/libXrandr"
+add_port "x11/xrandr"
 
-# IKEv2
-add_port "security/strongswan" "WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
+#slim, for autologon
+ add_port "graphics/jpeg"
+ add_port "graphics/png"
+  add_port "sysutils/gnome_subr"
+ add_port "devel/dbus"
+ add_port "x11-fonts/libXft"
+ add_port "x11-fonts/fontconfig"
+add_port "x11/slim" "WITHOUT=\"PAM CONSOLEKIT\""
+add_port "x11-themes/slim-themes"
 
-#pf top
-#add_port "sysutils/pftop"
+#lirc for remotecontrol
+ add_port "comms/libirman"
+ add_port "devel/libffi"
+#  add_port "devel/boost-libs"
+ add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
+add_port "comms/lirc" "WITH=\"MINIMAL\""
 
-#IP accounting tool
-add_port "net-mgmt/pmacct"
+#ffmpeg
+#add_port "multimedia/ffmpeg" "-DWITH_VAAPI -DWITH_VDPAU -DWITH_FAAC"
 
-# Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
-# UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
-add_port "net/ucarp"
-
-# Add IPv6 multicast routing daemons and tools
-add_port "net/mcast-tools"
-
-# Add IPv4 DVMRP (multicast) routing daemon
-add_port "net/mrouted"
-
-# Add pimdd: IPv4 PIM Dense Mode daemon
-add_port "net/pimdd"
-
-# Add pimd: IPv4 PIM Sparse Mode daemon
-add_port "net/pimd"
-
-# Add tayga: userland NAT64 implementation
-add_port "net/tayga"
-
-# Add dnsmasq (DHCP server, DNS forwarder)
-#add_port "math/gmp"
-#add_port "security/nettle"
-#add_port "dns/dnsmasq"
-# Add DHCP server and client
-add_port "net/isc-dhcp43-server"
-#add_port "net/isc-dhcp43-relay"
-add_port "net/dhcprelya"
-
-# Add sstmp, a simple MTA to get mail off the system
-add_port "mail/dma"
-
-# Add monit, a managing and monitoring processes tool
-add_port "sysutils/monit"
-
-# Add tmux (screen equivalent, but better because BSD)
-add_port "devel/libevent2"
-add_port "sysutils/tmux" "WITH=\"LIBEVENT2\""
-
-# Add ipmi tools
-add_port "sysutils/ipmitool"
-
-# Add sudo for fine permission management
-add_port "security/sudo"
-
-# Add mpd5, a multi-link PPP protocol server (netgraph dependent)
-add_port "net/mpd5"
-
-# Add openvpn
-add_port "security/easy-rsa"
-add_port "archivers/lzo2"
-add_port "security/openvpn"
-add_port "security/openvpn-auth-radius"
-#ldap bring full gcc deps
-#add_port "security/openvpn-auth-ldap"
-
-# Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
-#add_port "benchmarks/netpipe" 
-add_port "benchmarks/iperf"
- 
-# VM tools
-# VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
-#add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
-#add_port "emulators/virtualbox-ose-additions/" "-DWITHOUT_X11 -DWITHOUT_HAL"
+#kodi
+   add_port "converters/libiconv"
+   add_port "devel/pcre"
+  add_port "devel/glib20"
+  add_port "x11/xcb-util-renderutil"
+ add_port "graphics/cairo"
+  add_port "misc/hicolor-icon-theme"
+  add_port "misc/shared-mime-info"
+   add_port "x11/compositeproto"
+  add_port "x11/libXcomposite"
+   add_port "devel/gettext-runtime"
+   add_port "devel/gobject-introspection"
+  add_port "accessibility/atk"
+  add_port "x11/libXcursor"
+   add_port "graphics/jbigkit"
+   add_port "graphics/tiff"
+   add_port "graphics/jpeg"
+   add_port "graphics/jasper"
+  add_port "graphics/gdk-pixbuf2"
+    add_port "graphics/graphite2"
+    add_port "devel/icu"
+   add_port "print/harfbuzz"
+      add_port "x11-fonts/mkfontscale"
+     add_port "x11-fonts/mkfontdir"
+    add_port "x11-fonts/font-bh-ttf"
+    add_port "x11-fonts/dejavu"
+    add_port "x11-fonts/encodings"
+    add_port "x11-fonts/font-misc-ethiopic"
+    add_port "x11-fonts/font-misc-meltho"
+   add_port "x11-fonts/xorg-fonts-truetype"
+  add_port "x11-toolkits/pango"
+ add_port "graphics/gtk-update-icon-cache"
+  add_port "devel/talloc"
+  add_port "devel/tevent"
+  add_port "databases/tdb"
+ add_port "net/samba-nmblookup"
+ add_port "security/libssh"
+  add_port "x11/xf86dgaproto"
+ add_port "x11/libXxf86dga"
+  add_port "x11/recordproto"
+ add_port "x11/libXtst"
+  add_port "x11/dmxproto"
+ add_port "x11/libdmx"
+ add_port "x11/xdpyinfo"
+  add_port "graphics/libGLU"
+ add_port "graphics/freeglut"
+ add_port "graphics/glew"
+ add_port "graphics/mesa-demos"
+ add_port "devel/py-setuptools27"
+ add_port "databases/sqlite3"
+ add_port "databases/py-sqlite3"
+ add_port "databases/mysql56-client"
+  add_port "x11/scrnsaverproto"
+ add_port "x11/libXScrnSaver"
+ add_port "devel/sdl20"
+ add_port "graphics/giflib"
+ add_port "graphics/webp"
+  add_port "graphics/aalib"
+  add_port "devel/sdl12"
+ add_port "graphics/sdl_image"
+ add_port "www/libmicrohttpd"
+ add_port "multimedia/libvdpau"
+ add_port "multimedia/libva"
+ add_port "net/samba-libsmbclient"
+ add_port "multimedia/librtmp"
+  add_port "security/libgpg-error"
+  add_port "security/libgcrypt"
+ add_port "multimedia/libbdplus"
+ add_port "multimedia/libaacs"
+ add_port "multimedia/libbluray"
+ add_port "multimedia/libcec"
+# add_port "audio/libao"
+# add_port "audio/shairplay"
+ add_port "devel/libplist"
+ add_port "devel/yajl"
+ add_port "textproc/libxslt"
+ add_port "textproc/tinyxml"
+ add_port "audio/taglib"
+  add_port "audio/libogg"
+ add_port "audio/libvorbis"
+  add_port "audio/flac"
+ add_port "audio/libsndfile"
+ add_port "audio/libsamplerate"
+ add_port "multimedia/libmpeg2"
+ add_port "audio/libmodplug"
+# add_port "devel/libltdl"
+ add_port "x11-toolkits/gtk20" "WITHOUT=\"CUPS\""
+ add_port "converters/recode"
+   add_port "converters/p5-Unicode-String"
+  add_port "converters/p5-Unicode-Map8"
+ add_port "converters/enca"
+ add_port "converters/fribidi"
+ add_port "devel/boost-libs"
+  add_port "security/ca_root_nss"
+ add_port "ftp/curl"
+  add_port "dns/libidn"
+  add_port "security/libtasn1"
+  add_port "security/p11-kit"
+   add_port "math/gmp"
+  add_port "security/nettle"
+  add_port "security/trousers"
+ add_port "security/gnutls"
+  add_port "audio/libcddb"
+ add_port "sysutils/libcdio"
+ add_port "archivers/lzo2"
+ add_port "multimedia/libass"
+ add_port "devel/libltdl"
+add_port "multimedia/kodi" "WITH=\"NONFREE\" WITHOUT=\"AVAHI AIRPLAY AIRTUNES\""
 
 #### End of port list section ####
-
-# Add netrate tools
-customize_cmd add_netrate
-
-# Add quagga-bgp-netgen tools
-customize_cmd add_quagga-bgp-netgen
 
 cleanup_ports () {
 		# When port are build, they install build dependency that are not usefull for running the port
@@ -475,7 +534,7 @@ cleanup_ports () {
 		# Restart a BSDRP image build with the "-b" option
 		# diff packages.info.first packages.info
 		set +e
-        	CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* m4* gcc-* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
+        	CR 'env ASSUME_ALWAYS_YES=true pkg delete -g nvidia-driver* cmake* evieext* gperf* bdftopcf* nasm* autoconf* automake* gmake* libtool* libcheck* xorg-macro* makedepend* gawk* help2man* p5-gettext* p5-XML-Parser* glproto* intltool*'
 		# usr/local/lib/perl5 : Dirty hack
 		#   pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
 		#   pkg didn't delete all MAN1 page related to perl too
@@ -486,26 +545,66 @@ cleanup_ports () {
 
 customize_cmd cleanup_ports
 
-# BSDRP custom function
-bsdrp_custom () {
+# BSD Media Center custom function
+BSDMC_custom () {
 	# Replace BSDRP_VERSION in /boot/brand.4th with the version number in etc/version
 	sed -i "" -e /BSDRP_VERSION/s//`cat ${NANO_WORLDDIR}/etc/version`/ ${NANO_WORLDDIR}/boot/brand.4th
+
+	# Copy nvidia-driver package
+	if ls ${NANO_OBJ}/ports/packages/All/nvidia-driver*.txz > /dev/null 2>&1; then
+		cp -v ${NANO_OBJ}/ports/packages/All/nvidia-driver*.txz ${NANO_WORLDDIR}/root/
+	fi
 	# Disable reverse DNS in sshd:
 	echo "UseDNS no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
 	# Update login.conf db
-	CR 'cap_mkdb /etc/login.conf'
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+	'cap_mkdb /etc/login.conf'
 
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys
 	mkdir -p ${NANO_WORLDDIR}/etc/dot.ssh.root
 	ln -s ../etc/dot.ssh.root ${NANO_WORLDDIR}/root/.ssh
 
+	# Add KODI user with home to /usr/local/etc/kodi
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+    'echo "kodi::0:french:::KODI User:/usr/local/etc/kodi:csh:kodi" | adduser -f -'
+	# Add kodi user to other group
+	chroot ${NANO_WORLDDIR} /bin/sh -exc 'pw usermod kodi -G operator,dialer'
+	cp ${NANO_WORLDDIR}/root/.cshrc ${NANO_WORLDDIR}/usr/local/etc/kodi
+	cp ${NANO_WORLDDIR}/root/.complete ${NANO_WORLDDIR}/usr/local/etc/kodi
+	chroot ${NANO_WORLDDIR} /bin/sh -exc \
+    'chown -R kodi:wheel /usr/local/etc/kodi'
+
+	# Fix an hal/Consolekit missing folders:
+	# The problem is with cpio that didn't copy empty dir, then this step is useless :-(
+	FOLDERS_TO_CREATE='
+usr/local/share/hal/fdi/preprobe
+usr/local/lib/ConsoleKit/run-seat.d
+usr/local/lib/ConsoleKit/run-session.d
+'
+	for c in ${FOLDERS_TO_CREATE}
+	do	
+		if [ -d ${NANO_WORLDDIR}/$c ]; then
+			echo "Folder ${NANO_WORLDDIR}/$c allready exist"
+			echo "check:"
+			ls ${NANO_WORLDDIR}/usr/local/share/hal/fdi
+		else
+			echo "Creating ${NANO_WORLDDIR}/$c"
+			if ! mkdir -p ${NANO_WORLDDIR}/$c ; then
+				echo "Error: Can't create it!"
+			fi
+		fi
+	done
+
 	# turn on noatime for /cfg
 	sed -i "" -e "/cfg/s/rw/rw,noatime/" ${NANO_WORLDDIR}/etc/fstab
 	# Add /data partition to fstab (config script use it for archiving old configurations)
-	echo "/dev/ufs/${NANO_LABEL}s4 /data ufs rw,noauto,failok 2 2" >> ${NANO_WORLDDIR}/etc/fstab
+    echo "/dev/ufs/${NANO_LABEL}s4 /data ufs rw,noauto 2 2" >> ${NANO_WORLDDIR}/etc/fstab
 	# There is a problem around june 2014 with nanobsd: It didn't generate anymore the /data directory
 	[ -d ${NANO_WORLDDIR}/data ] || mkdir -p ${NANO_WORLDDIR}/data
+
+	# turn on procfs (needed by hal)
+	echo "proc /proc procfs rw 0 0" >> ${NANO_WORLDDIR}/etc/fstab
 
 	# relocate /var/cron to /etc/cron
 	# This permit to save crontab (only /etc and /usr/local/etc are saved)
@@ -513,51 +612,30 @@ bsdrp_custom () {
 	rm -rf ${NANO_WORLDDIR}/var/cron
 	ln -s ../etc/cron ${NANO_WORLDDIR}/var/cron	
 	
-	# Add /etc/rc.conf.misc into the /etc/default/rc.conf
-	sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
-
-    # configure bsnmp
-    cat <<EOF >>${NANO_WORLDDIR}/etc/snmpd.config
-
-#
-# bsnmp-ucd (8)
-#
-begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"
-
-#
-# bsnmp-regex (8)
-#
-#begemotSnmpdModulePath."regex" = "/usr/local/lib/snmp_regex.so"
-#           %regex
-#           regexConfig = "/usr/local/etc/bsnmp-regex.conf"
-#           regexSocket = "/var/run/bsnmp-regex.sock"
-EOF
-
-	# Set Quagga permission
-	grep -q quagga ${NANO_WORLDDIR}/etc/passwd && \
-		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
-
-	# Compress the kernel (save 10Mb)
-	# Disabling: dtrace didn't support compressed kernel
-	#if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
-	#	if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
-	#		echo "Error during zipping the kernel"
-	#	fi
-	#fi
-	# Remove some of the folders (without share/snmp)
-	# usr/include : 15MB
+	# Compress the kernel (save 3Mb)
+	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
+		if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
+			echo "Error during zipping the kernel"
+		fi
+	fi
+	# Remove some of the folders
 	FOLDERS_TO_REMOVE='
-usr/libexec/bsdinstall
-usr/local/include
 usr/local/man
 usr/local/info
 usr/local/share/doc
 usr/local/share/examples
+usr/local/share/gir-1.0
+usr/local/share/gtk-doc
+usr/local/share/licenses
+usr/local/share/mesa-demos
 usr/include
 usr/share/examples
-usr/share/info
-usr/share/me
 usr/share/pc-sysinstall
+usr/share/groff_font
+usr/share/tmac
+usr/share/me
+usr/share/info
+usr/share/man
 usr/share/openssl
 usr/libdata/lint
 usr/libdata/ldscripts
@@ -573,6 +651,15 @@ usr/libdata/ldscripts
 		fi
 	done
 
+	# Need to remove all file in /usr/local/include expect python
+	(
+	cd  ${NANO_WORLDDIR}/usr/local/include
+	for r in `ls | grep -v python`; do
+		rm -rf $r
+	done
+	)	
+
+
 	# Remove some files
     FILES_TO_REMOVE='
 boot/boot1.efi
@@ -585,7 +672,6 @@ usr/sbin/bhyvectl
 usr/sbin/bhyveload
 usr/sbin/ctladm
 usr/bin/ctlstat
-usr/local/etc/rc.d/freevrrpd.sh.sample
 usr/share/misc/magic.mgc
 usr/share/misc/termcap.db
 '
@@ -666,6 +752,7 @@ usr/bin/clang++
 usr/bin/clang-cpp
 usr/bin/clang-tblgen
 usr/bin/tblgen
+
 usr/bin/crunchgen
 usr/bin/crunchide
 usr/libexec/cc1
@@ -724,82 +811,43 @@ usr/share/tmac/tmac.vgrind
 			strip 2>/dev/null $f || :
 		done
 	done	
+
+	# Configure autologon/autostart of X
+	echo "P|Pc|Pc console:\\" >> ${NANO_WORLDDIR}/etc/gettytab
+    echo "    :ht:np:sp#115200:" >> ${NANO_WORLDDIR}/etc/gettytab
+
 	# Generate package inventory
 	CR 'pkg info' > ${NANO_OBJ}/packages.info
-}
 
-
-# Enable only serial system only
-bsdrp_console_serial () {
-	# Force getty to be enabled on serial
-    sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
-	# Set serial speed (3wire is available since 11 only)
-	sed -i "" -e /tty[du]0/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-    # Disable getty on syscons devices (prevent error messages if no vga device)
-    sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
-    # Tell loader to use only serial console early with relative high baud speed
-    echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
-}
-
-# Enable use of keyboard/vga and serial
-bsdrp_console_dual () {
-	# Set serial speed (3wire is available since 11 only)
-	sed -i "" -e /tty[du]0/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-    # Tell loader to use serial and vga console, set baud speed
-    echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 }
 
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
 	# Set serial speed ((3wire is available since 11 only)
 	sed -i "" -e /tty[du]0/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)                                                               
-    echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 
-}
-
-# Special xen console configuration
-bsdrp_console_xen () {
-	#Remove all default virtual terminal (in pv mode, need to check in hvm)
-	sed -i '' '/^ttyv/d' ${NANO_WORLDDIR}/etc/ttys
-	#Add a new xc0 console
-	echo 'xc0     "/usr/libexec/getty Pc"         vt100   on  secure' >> ${NANO_WORLDDIR}/etc/ttys
-	#Replace the default em0 by xn0 in rc.conf
-	sed -i "" -e /ifconfig_/s/em0/xn0/ ${NANO_WORLDDIR}/etc/rc.conf
+	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)
+	echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 }
 
 # From FreeNAS 8
 shrink_md_fbsize()
 {
-	# We have a lot of little files on our memory disks. Let's decrease
-	# the block and frag size to fit more little files on them (this
-	# halves our space requirement by ~50% on /etc and /var on 8.x --
-	# and gives us more back on 9.x as the default block and frag size
-	# are 4 times larger).
-	sed -i '' -e 's,-S -i 4096,-S -i 4096 -b 4096 -f 512,' \
-		${NANO_WORLDDIR}/etc/rc.initdiskless
+    # We have a lot of little files on our memory disks. Let's decrease
+    # the block and frag size to fit more little files on them (this
+    # halves our space requirement by ~50% on /etc and /var on 8.x --
+    # and gives us more back on 9.x as the default block and frag size
+    # are 4 times larger).
+    sed -i '' -e 's,-S -i 4096,-S -i 4096 -b 4096 -f 512,' \
+        ${NANO_WORLDDIR}/etc/rc.initdiskless
 }
 customize_cmd shrink_md_fbsize
-
-# Secure BSDRP by using schg flag
-bsdrp_secure () {
-	# TODO: Need to check if flag allready set,
-	#		otherwise it will disable it
-	chflags -R schg ${NANO_WORLDDIR}/bin
-	chflags -R schg ${NANO_WORLDDIR}/sbin
-	chflags -R schg ${NANO_WORLDDIR}/boot/kernel
-	chflags -R schg ${NANO_WORLDDIR}/libexec
-	chflags -R schg ${NANO_WORLDDIR}/lib	
-}
 
 # Install Custom scripts and config files
 customize_cmd cust_install_files
 
-# Need to execute the bsdrp_custom after the cust_install_files
-customize_cmd bsdrp_custom
+# Need to execute the BSDMC_custom after the cust_install_files
+customize_cmd BSDMC_custom
 
 # Allow root login via ssh
 customize_cmd cust_allow_ssh_root
 
-# Secure BSDRP
-# TO DO: secure the BSDRP (chflags)
-#customize_cmd bsdrp_secure

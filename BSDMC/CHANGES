@@ -1,0 +1,11 @@
+Release 0.2
+
+- Based on FreeBSD 10.1
+
+============
+Release 0.1
+
+First Release that include:
+- Base FreeBSD 9.1
+- Customized script (autoconfig, config, upgrade, etc.)
+- Xorg/nvidia-driver/slim/xbmc/lirc

@@ -1,0 +1,364 @@
+#!/bin/sh
+#
+# Show tool for BSD Router Project 
+# http://bsdrp.net
+#
+# Copyright (c) 2009-2010, The BSDRP Development Team 
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+# Uncomment for enable the debug mode:
+# set -xv
+
+# Strict script
+set -e
+set -u
+
+# Get options passed by user
+getoption () {
+	if [ $# -ge 1 ]; then
+		FIRST_OPTION="$1"
+	else
+		FIRST_OPTION=""
+	fi
+	if [ $# -ge 2 ]; then
+		SECOND_OPTION="$2"
+	else
+		SECOND_OPTION=""
+	fi
+	if [ $# -ge 3 ]; then
+		THIRD_OPTION="$3"
+	else
+		THIRD_OPTION=""
+	fi
+
+	case "$FIRST_OPTION" in
+		authors|author)
+			authors
+			;;
+        help|h)
+            usage
+            ;;
+		ifstat)
+			ifstat
+			;;
+        license|lic)
+            license
+            ;;
+		zone)
+			zone
+			;;
+		mbuf)
+			mbuf
+			;;
+        memory|mem)
+            memory
+            ;;
+		mroute|mcast)
+			mroute
+			;;
+		mtraffic)
+			mtraffic
+			;;
+		packages|package)
+			packages
+			;;
+        process|proc)
+            process
+            ;;
+        route)
+            route
+            ;;
+		tech-support)
+			tech-support
+			;;
+		traffic)
+			traffic
+			;;
+		version|ver)
+            version
+            ;;
+
+		*)
+			echo "Wrong or missing option"
+			usage
+			;;
+	esac
+}
+
+# Display help
+usage () {
+	echo "BSD Router Project show tool"
+	case "$SECOND_OPTION" in
+        route)
+			echo "Options for route:"
+			echo " - ipv4/4 : Display only IPv4 routes"
+			echo " - ipv6/6 : Display only IPv6 routes" 
+			;;
+		process|proc)
+			echo "Options for process:"
+			echo " - cpu : CPU usage for each process"
+			echo " - memory/mem : Memory usage of each process"
+			echo " - int : Interrupt usage of each process"
+			;;
+		*)
+# value $0 is the name of the called script
+		echo "Usage: $0 option"
+        echo "  - authors      : Display authors and contributors list"
+		echo "  - help/h [option]  : Display this help message. "
+        echo "       If [option] given, display more detail about"
+		echo "  - ifstat       : Display interface stats"
+		echo "  - license/lic  : Display BSDRP license"
+		echo "  - mbuf         : Display network memory management routine stats"
+		echo "  - memory/mem   : Display general memory usage"
+		echo "  - mroute/mcast : Display multicast group"
+		echo "  - mtraffic     : Display multicast stats"
+		echo "  - packages     : Display lists of installed packages"
+		echo "  - process/proc : Display process information"
+		echo "  - route        : Display routes"
+		echo "  - traffic      : Display extensive IP traffic statistics"
+		echo "  - tech-support : Display Lot's of information"
+		echo "  - version/ver  : Display BSDRP version"
+		echo "  - zone         : Display memory used by the kernel zone allocator"
+			;;	
+	esac	
+	exit 0
+}
+
+# Display AUTHORS
+authors () {
+	$PAGER /root/AUTHORS
+	exit 0
+}
+
+# Display LICENSE
+license () {
+    $PAGER /root/LICENSE
+    exit 0
+}
+
+# Display mbuf usag
+mbuf () {
+	netstat -m
+	exit 0
+}
+
+# Display interface stats
+ifstat () {
+	netstat -bdhi
+	exit 0
+}
+
+# Display memory used by the kernel zone allocator
+zone () {
+	vmstat -z
+	exit 0
+}
+
+
+# Display traffic
+traffic() {
+	netstat -s
+	exit 0
+}
+
+# Display packages
+packages () {
+	pkg_info
+	exit 0
+}
+# Display version
+version () {
+	VERSION=`cat /etc/version`
+	FREEBSD_VERSION=`uname -srp`
+    	echo "BSD Router Project version: ${VERSION}"
+    	echo "Based on: ${FREEBSD_VERSION}"
+	exit 0
+}
+
+# Display routes
+route () {
+	case "$SECOND_OPTION" in
+		ipv4|4)
+			netstat -rnW -f inet 
+			;;
+		ipv6|6)
+			netstat -rnW -f inet6	
+			;;
+		*)
+			netstat -rnW
+			;;	
+	esac
+	exit 0
+}
+
+# Display multicast routing
+mroute () {
+	netstat -gW
+	exit 0
+}
+
+# Display multicast traffic stats
+mtraffic () {
+	ifmcstat
+    netstat -gs
+    exit 0
+}
+
+# Display memory usage information
+# This function is a shell re-writting of the perl script:
+##  freebsd-memory -- List Total System Memory Usage
+##  Copyright (c) 2003-2004 Ralf S. Engelschall <rse@engelschall.com>
+## http://www.cyberciti.biz/files/scripts/freebsd-memory.pl.txt
+
+#   round the physical memory size to the next power of two which is
+#   reasonable for memory cards. We do this by first determining the
+#   guessed memory card size under the assumption that usual computer
+#   hardware has an average of a maximally eight memory cards installed
+#   and those are usually of equal size.
+
+mem_rounded () {
+    mem_size=$1
+    chip_size=1
+    chip_guess=`echo "$mem_size / 8 - 1" | bc`
+    while [ $chip_guess != 0 ]
+        do
+                chip_guess=`echo "$chip_guess / 2" | bc`
+                chip_size=`echo "$chip_size * 2" | bc`
+    done
+    mem_round=`echo "( $mem_size / $chip_size + 1 ) * $chip_size" | bc`
+    echo $mem_round
+        exit 0
+}
+
+memory () {
+        #   determine the individual known information
+        #   NOTICE: forget hw.usermem, it is just (hw.physmem - vm.stats.vm.v_wire_count).
+        #   NOTICE: forget vm.stats.misc.zero_page_count, it is just the subset of
+        #           vm.stats.vm.v_free_count which is already pre-zeroed.
+        mem_phys=`sysctl -n hw.physmem`
+        set +e
+        mem_hw=`mem_rounded $mem_phys`
+        set -e
+        sysctl_pagesize=`sysctl -n hw.pagesize`
+        mem_all=`echo "\`sysctl -n vm.stats.vm.v_page_count\` * $sysctl_pagesize" | bc`
+        mem_wire=`echo "\`sysctl -n vm.stats.vm.v_wire_count\` * $sysctl_pagesize" | bc`
+        mem_active=`echo "\`sysctl -n vm.stats.vm.v_active_count\` * $sysctl_pagesize" | bc`
+        mem_inactive=`echo "\`sysctl -n vm.stats.vm.v_inactive_count\` * $sysctl_pagesize" | bc`
+        mem_cache=`echo "\`sysctl -n vm.stats.vm.v_cache_count\` * $sysctl_pagesize" | bc`
+        mem_free=`echo "\`sysctl -n vm.stats.vm.v_free_count\` * $sysctl_pagesize" | bc`
+
+        #   determine the individual unknown information
+        mem_gap_vm=`echo "$mem_all - ( $mem_wire + $mem_active + $mem_inactive + $mem_cache + $mem_free )" | bc`
+        mem_gap_sys=`echo "$mem_phys - $mem_all" | bc`
+        mem_gap_hw=`echo "$mem_hw - $mem_phys" | bc`
+
+        #   determine logical summary information
+        mem_total=$mem_hw
+        mem_avail=`echo "$mem_inactive + $mem_cache + $mem_free" | bc`
+        mem_used=`echo "$mem_total - $mem_avail" | bc`
+
+        #   print system results
+        printf "SYSTEM MEMORY INFORMATION:\n"
+        printf "mem_wire:      %12d (%7dMB) [%3d%%] %s\n" $mem_wire `echo "$mem_wire / ( 1024 * 1024 )" | bc` `echo "$mem_wire * 100 / $mem_all" | bc` "Wired: disabled for paging out"
+        printf "mem_active:  + %12d (%7dMB) [%3d%%] %s\n" $mem_active `echo "$mem_active / ( 1024 * 1024 )" | bc` `echo "$mem_active * 100 / $mem_all" | bc` "Active: recently referenced"
+        printf "mem_inactive:+ %12d (%7dMB) [%3d%%] %s\n" $mem_inactive `echo "$mem_inactive / ( 1024 * 1024 )" | bc` `echo "$mem_inactive * 100 / $mem_all" | bc` "Inactive: recently not referenced"
+        printf "mem_cache:   + %12d (%7dMB) [%3d%%] %s\n" $mem_cache `echo "$mem_cache / ( 1024 * 1024 )" | bc` `echo "$mem_cache * 100 / $mem_all" | bc` "Cached: almost avail. for allocation"
+        printf "mem_free:    + %12d (%7dMB) [%3d%%] %s\n" $mem_free `echo "$mem_free / ( 1024 * 1024 )" | bc` `echo "$mem_free * 100 / $mem_all" | bc` "Free: fully available for allocation"
+        printf "mem_gap_vm:  + %12d (%7dMB) [%3d%%] %s\n" $mem_gap_vm `echo "$mem_gap_vm / ( 1024 * 1024 )" | bc` `echo "$mem_gap_vm * 100 / $mem_all" | bc` "Memory gap: UNKNOWN"
+        printf "______________ ____________ ___________ ______\n"
+        printf "mem_all:     = %12d (%7dMB) [100%%] %s\n" $mem_all `echo "$mem_all / ( 1024 * 1024 )" | bc` "Total real memory managed"
+        printf "mem_gap_sys: + %12d (%7dMB)        %s\n" $mem_gap_sys `echo "$mem_gap_sys / ( 1024 * 1024 )" | bc` "Memory gap: Kernel?!"
+        printf "______________ ____________ ___________\n"
+        printf "mem_phys:    = %12d (%7dMB)        %s\n" $mem_phys `echo "$mem_phys / ( 1024 * 1024 )" | bc` "Total real memory available"
+        printf "mem_gap_hw:  + %12d (%7dMB)        %s\n" $mem_gap_hw `echo "$mem_gap_hw / ( 1024 * 1024 )" | bc` "Memory gap: Segment Mappings?!"
+        printf "______________ ____________ ___________\n"
+        printf "mem_hw:      = %12d (%7dMB)        %s\n" $mem_hw `echo "$mem_hw / ( 1024 * 1024 )" | bc` "Total real memory installed"
+        #   print logical results
+        printf "\n"
+        printf "SYSTEM MEMORY SUMMARY:\n"
+        printf "mem_used:      %12d (%7dMB) [%3d%%] %s\n" $mem_used `echo "$mem_used / ( 1024 * 1024 )" | bc` `echo "$mem_used * 100 / $mem_total" | bc` "Logically used memory"
+        printf "mem_avail:   + %12d (%7dMB) [%3d%%] %s\n" $mem_avail `echo "$mem_avail / ( 1024 * 1024 )" | bc` `echo "$mem_avail * 100 / $mem_total" | bc` "Logically available memory"
+        printf "______________ ____________ __________ _______\n"
+        printf "mem_total:   = %12d (%7dMB) [100%%] %s\n" $mem_total `echo "$mem_total / ( 1024 * 1024 )" | bc` "Logically total memory"
+        exit 0
+}
+
+# Display process information
+process () {
+        case "$SECOND_OPTION" in
+                cpu)
+                        top -b
+                        ;;
+                memory|mem)
+                        vmstat -h -m
+                        ;;
+		int)
+			vmstat -h -i
+			;;
+                *)
+			top -b
+               		;;
+        esac
+        exit 0
+}
+
+
+# Display tech support
+tech-support () {
+	set +e
+	echo "============ BSD Router Project Tech-support output ============"
+	echo "==== show version ===="
+	show version
+	echo "==== uname -a ===="
+	uname -a
+	echo "==== ifconfig -a ===="
+	ifconfig -a
+	echo "==== pciconf -lvc ===="
+	pciconf -lvc
+	echo "==== vmstat -h -i (show process int) ===="
+	show process int
+	echo "==== top -b (show process cpu) ===="
+	show process cpu
+	echo "==== vmstat -h -m ===="
+	vmstat -h -m
+	echo "==== show memory ===="
+	show memory
+	echo "==== netstat -s (show traffic) ===="
+    show traffic
+	echo "==== netstat -m (show mbuf) ===="
+	show mbuf
+	echo "==== Zone allocator (vmstat -z) ===="
+	show zone
+	echo "==== Geom stats ===="
+	gstat -b
+	echo "==== pkg_info (show packages) ===="
+	show packages
+}
+
+###################
+## Main function ##
+###################
+
+getoption $*

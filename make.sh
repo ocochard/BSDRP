@@ -90,6 +90,7 @@ update_port () {
 
 #patch the source tree
 patch_src() {
+	mkdir -p ${PROJECT_DIR}/FreeBSD/
 	: > ${PROJECT_DIR}/FreeBSD/src-patches
 	# Nuke the newly created files to avoid build errors, as
 	# patch(1) will automatically append to the previously
@@ -102,7 +103,7 @@ patch_src() {
 	for patch in $(cd ${SRC_PATCH_DIR} && ls freebsd.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/src-patches; then
 			echo "Applying patch $patch..."
-			(cd ${PROJECT_DIR}/FreeBSD/src &&
+			(cd ${FREEBSD_SRC} &&
 			patch -C -p0 < ${SRC_PATCH_DIR}/$patch &&
 			patch -E -p0 -s < ${SRC_PATCH_DIR}/$patch)
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/src-patches

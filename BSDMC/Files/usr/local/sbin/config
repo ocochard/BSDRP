@@ -1,0 +1,552 @@
+#!/bin/sh
+#
+# Configuration tool for BSD Router Project 
+# http://bsdrp.net
+#
+# Copyright (c) 2009-2012, The BSDRP Development Team 
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+# Uncomment for enable the debug mode:
+#set -xv
+
+# Strict script
+set -e
+
+# Display help
+usage () {
+	echo "BSD Router Project configuration tool"
+	case "${SECOND_OPTION}" in
+	apply)
+		echo "Options for apply:"
+		echo " - secure timeout : Automatically rollback if the command confirm is not enter before timeout (in minute)"
+		echo " - confirm : Need to be enter for cancelling the auto rollback feature enabled with the secure command."
+		echo " - in timeout : Apply configuration after timeout (in minutes)"
+		echo " - at date/time : Apply configuration at date/time"
+		echo " - cancel : Cancel scheduled apply"
+		exit 0
+		;;
+	diff)
+		echo "Option for diff:"
+		echo " - fast : Return 1 if changes found, 0 otherwise"
+		exit 0
+		;;
+	put)
+		echo "Options for put:"
+		echo " - scp username@host:/path/filename.tar.xz"
+		echo "	 send the configuration to a remote host"
+		echo "  if no /path/filename given, the destination file will be named: hostname.tar.xz"
+		exit 0
+		;;
+	get)
+		echo "Options for get:"
+		echo " - scp username@host:/path/filename.tar.xz"
+		echo "	 retrieve the configuration from a remote host"
+		echo "  if no /path/filename given, it will try to download a file named: hostname.tar.xz"
+		exit 0
+		;;
+	esac
+
+# value $0 is the name of the called script
+	echo "Usage: $0 option"
+    echo "  - diff     : Show diff between current and saved config"
+	echo "  - save     : Save current config"
+	echo "  - apply    : Apply current config"
+	echo "  - rollback : Revert to previous config"
+	echo "  - put      : Put the saved config to a remote server"
+	echo "  - get      : Get config from remote server"
+	echo "  - factory  : Return to default configuration"
+	echo "  - help (h) [option]  : Display this help message. "
+	echo "		  	If [option] given, display more detail about the option"
+	exit 0
+}
+
+# Mount /cfg
+mount_cfg () {
+	trap "umount /cfg" 1 2 15 EXIT
+	if mount | ! grep -q "/cfg"; then
+		mount /cfg
+	fi
+}
+
+# Check if mounted
+# $1: volume to check
+# result: true or false
+is_mounted () {
+	if [ -z "$1" ]; then
+		echo "BUG: is_mounted() need argument"
+		exit 1
+	fi
+	if mount | grep -q -e "[[:space:]]$1[[:space:]]"; then
+		return 0
+	else
+		return 1
+    fi
+}
+
+# Umount /cfg
+umount_cfg () {
+	umount /cfg
+	trap 1 2 15 EXIT
+}
+
+# Mount data
+mount_data () {
+	trap "umount /data" 1 2 15 EXIT
+	# Old BSDRP (previous to 0.54) didn't have /data directory neither fstab adapted
+	# Fix this problem
+	if [ ! -d /data ]; then
+		if ! mount -o rw -u /; then
+			echo "ERROR: Can't remount root filesystem in read-write mode"
+			exit 1
+		fi
+		if ! mkdir /data; then
+			echo "ERROR: Can't create /data"
+			exit
+		fi
+		if ! mount -o ro -u /; then
+			echo "WARNING: Can't remount root filesystem in read-only mode"
+		fi
+	fi
+	if ! grep -q "/data" /etc/fstab; then
+		echo "/dev/ufs/BSDRPs4 /data ufs rw,noauto 2 2" >> /etc/fstab
+	fi
+	
+	if mount | ! grep -q "/data"; then
+		if ! mount /data; then
+			echo "ERROR: Can't mount /data"
+			exit 1
+		fi
+	fi
+}
+
+# umount data
+umount_data () {
+	if ! umount /data; then
+		echo "WARNING: Can't umount /data"
+	fi
+	trap 1 2 15 EXIT
+}
+# Archive cfg
+archive_cfg () {
+	if is_mounted /data; then
+		local DATA_MOUNTED=true
+	else
+		local DATA_MOUNTED=false
+		mount_data
+	fi
+	#TO DO: If data allready mounted, don't unmount it
+	echo "Archiving configuration files..."
+	if [ ! -d /data/archives ]; then
+		if ! mkdir /data/archives; then
+			echo "ERROR: Can't create /data/archives"
+			exit 1
+		fi
+	else
+		if [ -f /data/archives/rollback.tar.xz ]; then
+            if ! rm /data/archives/rollback.tar.xz; then
+                echo "WARNING: Can't delete /data/archives/rollback.tar.xz"
+            fi
+        fi
+	fi
+
+	if ! tar -cJvpf /data/archives/rollback.tar.xz -C /cfg/ . 2>/dev/null; then
+		echo "ERROR: Can't generate tar archive."
+		if ! $DATA_MOUNTED; then
+			umount_data
+		fi
+		umount_cfg
+		exit 1
+	fi
+	if ! $DATA_MOUNTED; then
+		umount_data
+	fi
+}
+# save configuration
+save_cfg () {
+	mount_cfg
+	archive_cfg
+	echo "Saving configuration..."
+	(
+	cd /etc
+	for i in "$@" `find * -type f`; do
+		if [ -f /cfg/$i ]; then
+			if ! cmp -s /etc/$i /cfg/$i; then
+				cp -pfv /etc/$i /cfg/$i 2>/dev/null
+			fi
+		else
+			if ! cmp -s /conf/base/etc/$i /etc/$i; then
+				#cpio didn't preserve owner/permission on non-existant directory
+				#Need to check if destination dir exists, and if not create it
+				#But this method copy all files in this directory too :-(
+				if [ ! -d /cfg/`dirname $i` ]; then
+                	(find `dirname $i`  -print | cpio -dumpv  /cfg/ 2>/dev/null)
+					# Because the previous cpio copied all files (even unmodified), we need to delete them (dirty hack)
+					rm -rf /cfg/`dirname $i`/*
+                fi
+				(find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
+			fi
+		fi
+	done
+	)	
+
+	# Deleting file on /cfg that are no more in /etc
+	(
+	cd /cfg
+	for i in "$@" `find * -type f`; do
+		if [ ! -f /etc/$i ]; then
+			rm -rf /cfg/$i
+		fi
+	done
+	)
+
+	# save ssh keys (conrtibution: to be reviewed)
+	if [ -d /cfg/ssh ]; then
+		cd /etc/ssh
+		for i in "$@" `find ssh_host_* -type f`; do
+        	if ! cmp -s /etc/ssh/$i /cfg/ssh/$i; then
+				cp -pfv /etc/ssh/$i /cfg/ssh/$i 2>/dev/null
+			fi
+       	done
+	else
+		if ! mkdir -p /cfg/ssh; then
+			echo "ERROR: Can't create /cfg/ssh"
+		fi
+		(
+		cd /etc/ssh
+		cp ssh_host_* /cfg/ssh 2>/dev/null
+		)
+	fi
+
+	umount_cfg
+	echo "Done."
+	exit 0
+}
+
+# Apply configuration
+apply_cfg () {
+	echo "TO DO: Apply configuration"
+	case "$SECOND_OPTION" in
+        secure)
+            echo "TO DO: Apply config and rollback in $THIRD_OPTION minutes"
+            ;;
+		confirm)
+			echo "TO DO: Cancel the auto-rollback introduce by the apply secure"
+			;;
+		in)
+			echo "TO DO: Apply config in $THIRD_OPTION minutes"
+			;;
+		at)
+			echo "TO DO: Apply config at $THIRD_OPTION date"
+			;;
+		cancel)
+			echo "TO DO: Cancel in and at apply"
+			;;
+		*)
+			echo "This function will force routing process to reload the configuration files"
+			;;	
+	esac
+	exit 0
+}
+
+# Display diff between current and saved configuration
+# Return 0 if no diff found
+# Return 1 if diff found
+diff () {
+	mount_cfg
+	# Don't know how to exchange variable with the subshell
+	# Then using a file in /tmp
+	if [ -f /tmp/DIFF_FOUND ]; then
+		if ! rm /tmp/DIFF_FOUND; then
+			echo "WARNING: Can't delete /tmp/DIFF_FOUND"
+		fi
+	fi
+	if [ ! "$SECOND_OPTION" = "fast" ]; then
+		echo "Looking for differences between running and saved configuration files..."
+	fi
+	(
+	cd /etc
+	for i in "$@" `find * -type f`; do
+		if [ -f /cfg/$i ]; then
+			if ! cmp -s /etc/$i /cfg/$i; then
+				echo "1" > /tmp/DIFF_FOUND
+				if [ ! "$SECOND_OPTION" = "fast" ]; then
+					find $i -print
+				else
+					break
+				fi
+			fi
+		else
+			if ! cmp -s /conf/base/etc/$i /etc/$i; then
+				echo "1" > /tmp/DIFF_FOUND
+				if [ ! "$SECOND_OPTION" = "fast" ]; then
+					find $i -print
+				else 
+					break
+				fi
+			fi
+		fi
+	done
+	)
+	umount_cfg
+	if [ -f /tmp/DIFF_FOUND ]; then
+		if ! rm /tmp/DIFF_FOUND; then
+			echo "WARNING: Can't delete /tmp/DIFF_FOUND"
+		fi
+		exit 1
+	else
+		if [ ! "$SECOND_OPTION" = "fast" ]; then
+			echo "None found."
+		fi
+		exit 0
+	fi
+}
+
+# Rollback to previous configuration
+rollback () {
+	echo "Rollback the archived configuration"
+	mount_data
+	# Check if archive exist
+	if [ -f /data/archives/rollback.tar.xz ]; then
+		restore_cfg /data/archives/rollback.tar.xz /etc
+	else
+		echo "No archive file found."
+		echo "You need to save your configuration once before to rollback it"
+		umount_data
+		exit 1
+	fi
+	umount_data
+	echo "Done."
+	echo "TO DO: need to force process to reload config"
+	exit 0
+}
+
+# Restore the ARCHIVE configuration to DEST
+# $1 = Source archive filename (.tar.xz)
+# $2 = Destination directory
+restore_cfg ( ) {
+	if [ $1 = '' ]; then
+		echo "ERROR: Bug meet when calling restore_cfg in config"
+		echo "No argument given"
+		exit 1
+	elif [ $2 = '' ]; then
+		echo "ERROR: Bug meet when calling restore_cfg in config"
+        echo "No second argument given"
+		exit 1
+	fi
+	if [ ! -f $1 ]; then
+		echo "ERROR: $1 doesn't exist or isn't a file"
+		exit 1
+	elif [ ! -d $2 ]; then
+		echo "ERROR: $2 doesn't exist or isn't a directory"
+		exit 1
+	fi
+    # Unzip the archive $1 to $2/
+    if ! tar -x -C $2/ --exclude 'fstab' -f $1; then
+    	echo "ERROR: untaring file failed."
+        exit 1
+    fi
+}
+	
+# Send configuration to an svn/cvs/scp server ?
+put () {
+	# option: protocol username@host <filename>
+	# example: scp admin@backup.host.fr:filename
+	case "$SECOND_OPTION" in
+        scp)
+			echo "Send saved configuration by SCP to ${THIRD_OPTION}"
+			if [ -f /tmp/config.$$.tar.xz ]; then
+				if ! rm /tmp/config.$$.tar.xz; then
+					echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
+				fi
+			fi
+			mount_cfg
+			if ! tar -cJvpf /tmp/config.$$.tar.xz -C /cfg/ . 2>/dev/null; then
+				echo "ERROR: Can't tar /cfg to /tmp/config.$$.tar.xz"
+				umount_cfg
+				exit 1
+			fi
+			umount_cfg
+			if put_check_filename ${THIRD_OPTION}; then
+				if ! scp /tmp/config.$$.tar.xz ${THIRD_OPTION}; then
+					echo "ERROR: Can't scp configuration to ${THIRD_OPTION}"
+				fi
+			else
+				if ! scp /tmp/config.$$.tar.xz ${THIRD_OPTION}:${FILENAME}; then
+                    echo "ERROR: Can't scp configuration to ${THIRD_OPTION}:${FILENAME}"
+                fi
+			fi
+			if [ -f /tmp/config.$$.tar.xz ]; then
+                if ! rm /tmp/config.$$.tar.xz; then
+					echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
+				fi
+            fi
+            ;;
+        cvs)
+            echo "TO DO: CVS commit to $THIRD_OPTION"
+            ;;
+        svn)
+            echo "TO DO: SVN commit to $THIRD_OPTION"
+            ;;
+        *)
+        echo "Bad arguments, see 'config help put' for usage"
+        ;;
+    esac
+
+	exit 0
+}
+
+# Check the user input for put options
+# if no filename given return false (1)
+put_check_filename () {
+	if [ $1 = "" ]; then
+		echo "Bad arguments, see 'config help put' for usage"
+		exit 0
+	fi
+	USERNAME=$(echo $1 | cut -d @ -f1)
+	REMOTEHOST=$(echo $1 | cut -d @ -f2 | cut -d : -f1)
+	FULLPATH=$(echo $1 | cut -d @ -f2 | cut -d : -f2)
+	if [ "${USERNAME}" = "" ]; then
+		echo "No Username given, see 'config help put' for usage"
+		exit 0
+	elif [ ${REMOTEHOST} = "" ]; then
+		echo "No Hostname given, see 'config help put' for usage"
+        exit 0
+	# If user enter login@host
+	elif [ "${FULLPATH}" = "${REMOTEHOST}" ]; then
+		FILENAME=$(hostname).tar.xz
+		return 1
+	# if user enter login@host:
+	elif [ "${FULLPATH}" = "" ]; then
+		echo "Check your syntax, see 'config help put' for usage"
+		exit 0
+	# if user enter login@host:something
+	else
+		return 0
+	fi
+}
+	
+# Get configuration from an svn/cvs/scp server
+get () {
+    # option: protocol username@host <filename>
+    # example: scp admin@backup.host.fr:/path/filename
+    case "$SECOND_OPTION" in
+        scp)
+			echo "Get configuration archive SCP from ${THIRD_OPTION}"
+			if [ -f /tmp/config.$$.tar.xz ]; then
+                if ! rm /tmp/config.$$.tar.xz; then
+					echo "WARNING: Can't delete /tmp/config.$$.tar.xz"
+				fi
+            fi
+            if ! scp ${THIRD_OPTION} /tmp/config.$$.tar.xz; then
+				echo "ERROR: Can't download ${THIRD_OPTION}"
+				exit 1
+			fi
+			restore_cfg /tmp/config.$$.tar.xz /etc
+			echo "Configuration restored"
+			echo "Don't forget to confirming your restoration by a 'config save'"
+            ;;
+        cvs)
+            echo "TO DO: CVS commit to $THIRD_OPTION"
+            ;;
+        svn)
+            echo "TO DO: SVN commit to $THIRD_OPTION"
+            ;;
+        *)
+        echo "Bad arguments, see 'config help get' for usage"
+        ;;
+    esac
+    exit 0
+}
+	
+
+# Clear all existing configuration and return to default setting
+factory () {
+        echo -n "Clear all saved configuration..."
+		mount_cfg
+        rm -rf /cfg/*
+        umount_cfg
+		echo "Done"
+		echo "For confirming this action: Reboot and answer 'no' to the question about saving configuration"
+		echo "For canceling this action: Simply save the running configuration with 'config save'"
+        exit 0
+}
+
+###################
+## Main function ##
+###################
+
+# Get options passed by user
+if [ $# -eq 0 ]; then
+	FIRST_OPTION=""
+	SECOND_OPTION=""
+	THIRD_OPTION=""
+	usage
+	exit 0	
+fi
+
+FIRST_OPTION="$1"
+
+if [ $# -ge 2 ]; then
+   SECOND_OPTION="$2"
+else
+   SECOND_OPTION=""
+fi
+if [ $# -ge 3 ]; then
+   THIRD_OPTION="$3"
+else
+  THIRD_OPTION=""
+fi
+
+set -u
+
+case "$FIRST_OPTION" in
+	save)
+		save_cfg
+		;;
+	apply)
+		apply_cfg 
+		;;
+	diff)
+		diff
+		;;
+	rollback)
+		rollback
+		;;
+	put)
+		put
+		;;
+	get)
+		get
+		;;
+	factory)
+		factory
+		;;
+	help|h)
+		usage
+		;;
+	*)
+		usage
+		;;
+esac
