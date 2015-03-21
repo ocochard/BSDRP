@@ -1,22 +1,60 @@
 # Release 1.55 (not released)
 
 ## New features
-* Enable infiniband (OFED) drivers and add mlx4
+* Enable infiniband (OFED) drivers with mlx(4)
 * Enable ICMP reply from incoming interface for non-local packets by default
 
 ## New packages
 * pmacct (http://www.pmacct.net/)
 
 ## Bug fixes
-* Upgraded to FreeBSD 10.1-RELEASE-p6
+* Upgraded to FreeBSD 10.1-RELEASE-p8
 * Re-add mrouted and netmap-ipfw
 * pf anchor fixes (PR/196314 and PR/183198)
 * Allow unsupported SFP on Intel NIC by default
 
 ## Updated packages
-* quagga to 0.99.24
 * ipsec-tools to 0.8.2
 * monit to 5.12.1
+* quagga NOT upgraded to 0.99.24 (there is an OSPF v3 regression)
+
+## Package list
+* bird-1.4.5_2
+* bird6-1.4.5_2
+* bsnmp-regex-0.6_1
+* bsnmp-ucd-0.4.1
+* dhcprelya-4.8_1
+* dlmalloc-2.8.6
+* dma-v0.9_1,1
+* easy-rsa-2.2.0.m
+* freevrrpd-1.2
+* indexinfo-0.2.3
+* iperf-2.0.5
+* ipmitool-1.8.14_1
+* ipsec-tools-0.8.2
+* isc-dhcp43-server-4.3.2
+* libevent2-2.0.22_1
+* libgcrypt-1.6.3
+* libgpg-error-1.17
+* lzo2-2.09
+* mcast-tools-20061214_1
+* monit-5.12.1
+* mpd5-5.7_1
+* mrouted-3.9.6_1
+* netmap-ipfw-0.1
+* openldap-client-2.4.40_1
+* openvpn-2.3.6_1
+* openvpn-auth-radius-2.1_3
+* pimd-2.2.0
+* pimdd-0.2.1.0_1
+* pkg-1.4.12
+* pmacct-0.14.3_3
+* quagga23-0.99.23.1_4
+* strongswan-5.2.2_1
+* sudo-1.8.12
+* tayga-0.9.2
+* tmux-1.9a_1
+* ucarp-1.5.2_2
 
 -----------------------------------------------------
 
