@@ -1,4 +1,4 @@
-# Release 1.55 (not released)
+# Release 1.55 (2015/03/21)
 
 ## New features
 * Enable infiniband (OFED) drivers with mlx(4)
