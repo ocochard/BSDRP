@@ -3,6 +3,7 @@
 ## Updated packages
 * monit to 5.12.2
 * sudo to 1.8.13
+* strongswan to 5.3.0
 
 -----------------------------------------------------
 

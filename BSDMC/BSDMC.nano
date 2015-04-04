@@ -304,6 +304,7 @@ add_port "ports-mgmt/pkg"
   add_port "lang/python27"
  add_port "lang/python2"
 add_port "lang/python"
+add_port "devel/py-setuptools27"
 
 # Perl
 add_port "lang/perl5.18"
@@ -320,8 +321,9 @@ add_port "lang/perl5.18"
    add_port "x11/libXdmcp"
     add_port "textproc/libxml2"
    add_port "x11/libxcb"
-  add_port "x11/libX11"
    add_port "x11/xextproto"
+   add_port "x11/inputproto"
+  add_port "x11/libX11"
   add_port "x11/libXext"
    add_port "x11/videoproto"
   add_port "x11/libXv"
@@ -336,6 +338,8 @@ add_port "lang/perl5.18"
    add_port "x11/libXdamage"
    add_port "devel/libdevq"
    add_port "x11/libxshmfence"
+   add_port "devel/gettext-runtime"
+   add_port "x11/glproto"
   add_port "graphics/libglapi"
 add_port "graphics/dri"
 add_port "graphics/libGL"
@@ -361,12 +365,12 @@ add_port "x11/libXinerama"
  add_port "x11/libXxf86misc"
  add_port "x11/libxkbui"
  add_port "x11/pixman"
+ add_port "x11/renderproto"
 add_port "x11-servers/xorg-server"
 
 # xorg-minimal
-add_port "devel/gettext-runtime"
-  add_port "x11/inputproto"
  add_port "x11/libXi"
+ add_port "x11/randrproto"
 add_port "x11-drivers/xf86-input-mouse"
 add_port "x11-drivers/xf86-input-keyboard"
 add_port "x11/xinit"
@@ -375,7 +379,6 @@ add_port "x11-drivers/xf86-video-vesa"
 add_port "x11/xorg-minimal"
 
 # xorg-drivers
-  add_port "x11/renderproto"
  add_port "x11/libXrender"
  add_port "x11-drivers/xf86-video-openchrome"
   add_port "x11/xcb-util"
@@ -387,22 +390,23 @@ add_port "x11/xorg-minimal"
 add_port "x11-drivers/xorg-drivers"
 
 # nvidia (VDPAU)
- add_port "x11/glproto"
 #add_port "x11/nvidia-driver" "WITHOUT=\"LINUX\""
 add_port "x11/nvidia-driver-340" "WITHOUT=\"LINUX\""
 
 # xrandr
-  add_port "x11/randrproto"
  add_port "x11/libXrandr"
 add_port "x11/xrandr"
 
 #slim, for autologon
  add_port "graphics/jpeg"
+ # curl needed for build only for png but for run after
+  add_port "security/ca_root_nss"
+  add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE\""
  add_port "graphics/png"
   add_port "sysutils/gnome_subr"
  add_port "devel/dbus"
- add_port "x11-fonts/libXft"
  add_port "x11-fonts/fontconfig"
+ add_port "x11-fonts/libXft"
 add_port "x11/slim" "WITHOUT=\"PAM CONSOLEKIT\""
 add_port "x11-themes/slim-themes"
 
@@ -432,7 +436,6 @@ add_port "comms/lirc" "WITH=\"MINIMAL\""
   add_port "x11/libXcursor"
    add_port "graphics/jbigkit"
    add_port "graphics/tiff"
-   add_port "graphics/jpeg"
    add_port "graphics/jasper"
   add_port "graphics/gdk-pixbuf2"
     add_port "graphics/graphite2"
@@ -464,7 +467,6 @@ add_port "comms/lirc" "WITH=\"MINIMAL\""
  add_port "graphics/freeglut"
  add_port "graphics/glew"
  add_port "graphics/mesa-demos"
- add_port "devel/py-setuptools27"
  add_port "databases/sqlite3"
  add_port "databases/py-sqlite3"
  add_port "databases/mysql56-client"
@@ -509,8 +511,6 @@ add_port "comms/lirc" "WITH=\"MINIMAL\""
  add_port "converters/enca"
  add_port "converters/fribidi"
  add_port "devel/boost-libs"
-  add_port "security/ca_root_nss"
- add_port "ftp/curl"
   add_port "dns/libidn"
   add_port "security/libtasn1"
   add_port "security/p11-kit"
@@ -815,6 +815,9 @@ usr/share/tmac/tmac.vgrind
 	# Configure autologon/autostart of X
 	echo "P|Pc|Pc console:\\" >> ${NANO_WORLDDIR}/etc/gettytab
     echo "    :ht:np:sp#115200:" >> ${NANO_WORLDDIR}/etc/gettytab
+
+	# Don't know why there is this folder at the end
+	[ -d ${NANO_WORLDDIR}/tmp/hsperfdata_root ] && rm -rf  ${NANO_WORLDDIR}/tmp/hsperfdata_root
 
 	# Generate package inventory
 	CR 'pkg info' > ${NANO_OBJ}/packages.info
