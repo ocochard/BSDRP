@@ -1,5 +1,8 @@
 # Release 1.56 (not released)
 
+## Bug fixes
+* Upgraded to FreeBSD 10.1-RELEASE-p9
+
 ## Updated packages
 * monit to 5.12.2
 * sudo to 1.8.13
