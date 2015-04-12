@@ -8,40 +8,48 @@ Listed in order of seniority along with date of first contribution.
 
 Reuse of existing softwares/patches:
 
-BSD Router Project (BSDRP) is based upon/includes various free software packages, listed below.
-The authors of BSDRP would like to thank the authors of these software packages for their efforts:
+BSD Router Project (BSDRP) is based upon/includes various free software, listed below.
+The authors of BSDRP would like to thank the authors of these software for their efforts:
 * FreeBSD: Copyright (c) 1995-2013 The FreeBSD Project. All rights reserved
 * FreeNAS 8: Lot's of idea regarding the nanobsd tunning, Copyright iXsystems
 * Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support
 * Idea of using glabel for disk type absraction: Scott Ullrich (pfSense)
-* FreeVRRPd : Copyright (c) 2001,2002 Sebastien Petit <spe@bsdfr.org>
 * "show memory" is a bourn shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
-* mcast-tools: Copyright (C) 1999 WIDE Project, Copyright (c) 1998-2001 The University of Southern California/Information Sciences Institute
-* uCARP: Copyright (c) 2004-2010 Frank Denis <j at ucarp.org>
 * PC Engines APU led drivers: Larry Baird
-* Strongswan
-* dhcprelya: Sergey Matveychuk
-* bird, License: GPLv2, Web site: http://bird.network.cz/
-* bsnmp-regex, License: BSD, Web site: http://thewalter.net/stef/software/bsnmp-regex/
-* bsnmp-ucd, License: BSD2CLAUSE, Web site: http://bsnmp-ucd.googlecode.com/
-* dhcprelya, License: BSD3CLAUSE, Web site: UNKNOWN
-* easy-rsa, License: GPLv2, Web site: https://community.openvpn.net/openvpn/wiki/GettingEasyRsa
-* indexinfo, License: BSD2CLAUSE, Web site: http://fossil.etoilebsd.net/indexinfo
-* iperf, License: BSD2CLAUSE, Web site: http://iperf.sourceforge.net/
-* ipmitool, License: BSD3CLAUSE, Web site: http://ipmitool.sourceforge.net/
-* isc-dhcp43-server, License: ISCL, Web site: https://www.isc.org/products/DHCP/
-* libevent2, License: BSD3CLAUSE, Web site: http://libevent.org/
-* libgcrypt, License: LGPL21, Web site: http://www.gnupg.org/
-* libgcrypt, License: GPLv2, Web site: http://www.gnupg.org/
-* lzo2, License: GPLv2, Web site: http://www.oberhumer.com/opensource/lzo/
+* bird, license GPLv2, website: http://bird.network.cz/
+* bsnmp-regex, license BSD3CLAUSE, website: http://thewalter.net/stef/software/bsnmp-regex/
+* bsnmp-ucd, license BSD2CLAUSE, website: http://bsnmp-ucd.googlecode.com/
+* dhcprelya, license BSD3CLAUSE, Sergey Matveychuk
+* dma, license BSD3CLAUSE, website: https://github.com/corecode/dma
+* easy-rsa, license GPLv2, website: https://community.openvpn.net/openvpn/wiki/GettingEasyRsa
+* exabgp, license BSD3CLAUSE, website: https://github.com/Exa-Networks/exabgp
+* freevrrpd, license BSD, website: https://github.com/gvnn3/FreeVRRPd/
+* indexinfo, license BSD2CLAUSE, website: https://github.com/bapt/indexinfo
+* iperf, license BSD2CLAUSE, website: http://iperf.sourceforge.net/
+* ipmitool, license BSD3CLAUSE, website: http://ipmitool.sourceforge.net/
+* isc-dhcp43-server, license ISCL, website: https://www.isc.org/products/DHCP/
+* libevent2, license BSD3CLAUSE, website: http://libevent.org/
+* libffi, license MIT, website: http://sources.redhat.com/libffi/
+* libgcrypt, license GPLv2, website: http://www.gnupg.org/
+* lzo2, license GPLv2, website: http://www.oberhumer.com/opensource/lzo/
+* monit, license AGPLv3, website: http://mmonit.com/monit/
+* mrouted, license MIT, website: http://freecode.com/projects/mrouted
+* openldap-client, license OPENLDAP, website: http://www.OpenLDAP.org/
+* openvpn, license GPLv2, website: http://openvpn.net/index.php/open-source.html
+* openvpn-auth-radius, license GPLv2, website: http://www.nongnu.org/radiusplugin/index.html
+* pimd, license BSD3CLAUSE, website: http://troglobit.com/pimd.html
+* pkg, license BSD2CLAUSE, website: http://wiki.freebsd.org/pkgng
+* pmacct, license GPLv2, website: http://www.pmacct.net/
+* py27-setuptools27, license PSFL, website: https://pypi.python.org/pypi/setuptools
+* python27, license PSFL, website: http://www.python.org/
+* quagga23, license GPLv2, website: http://www.quagga.net/
+* readline, license GPLv3, website: http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
+* strongswan, license GPLv2, website: http://www.strongswan.org
+* sudo, license sudo, website: http://www.sudo.ws/
+* tayga, license GPLv2, website: http://www.litech.org/tayga/
+* tmux, license BSD2CLAUSE, website: http://www.sourceforge.net/projects/tmux/
+
+* mcast-tools: Copyright (C) 1999 WIDE Project, Copyright (c) 1998-2001 The University of Southern California/Information Sciences Institute
+* uCARP, License BSD?, website: http://www.ucarp.org/
 * mpd5, License: BSD2CLAUSE, Web site: http://www.sourceforge.net/projects/mpd
-* openldap-client, License: OPENLDAP, Web site: http://www.OpenLDAP.org/
-* openvpn, License: GPLv2, Web site: http://openvpn.net/index.php/open-source.html
-* openvpn-auth-radius, License: GPLv2, Web site: http://www.nongnu.org/radiusplugin/index.html
-* pimd-devel, License: BSD3CLAUSE, Web site: http://troglobit.com/pimd.html
-* pkg, License: BSD2CLAUSE, Web site: http://wiki.freebsd.org/pkgng
-* quagga, License: GPLv2, Web site: http://www.quagga.net/
-* sudo, License: sudo, Web site: http://www.sudo.ws/
-* tayga, License: GPLv2, Web site: http://www.litech.org/tayga/
-* tmux, License: BSD2CLAUSE, Web site: http://www.sourceforge.net/projects/tmux/
 

@@ -484,6 +484,15 @@ add_port "security/openvpn-auth-radius"
 #add_port "benchmarks/netpipe" 
 add_port "benchmarks/iperf"
 
+# Python (being ansible manageable)
+add_port "devel/libffi"
+add_port "lang/python27"
+add_port "lang/python2"
+add_port "devel/py-setuptools27"
+
+# Now we can add python tool
+add_port "net/exabgp"
+
 # VM tools
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 #add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"

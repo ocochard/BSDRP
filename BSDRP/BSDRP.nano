@@ -378,7 +378,7 @@ add_port "net/bird"
 add_port "net/bird6"
 
 # high-performance (bridge only) netmap-ipfw
-add_port "net/netmap-ipfw"
+[ ${NANO_ARCH} = "amd64" ] && add_port "net/netmap-ipfw"
 
 # Add FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
@@ -454,7 +454,18 @@ add_port "security/openvpn-auth-radius"
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 #add_port "benchmarks/netpipe" 
 add_port "benchmarks/iperf"
- 
+
+# Python (being ansible manageable)
+add_port "print/indexinfo"
+add_port "devel/readline"
+add_port "devel/libffi"
+add_port "lang/python27"
+add_port "lang/python2"
+add_port "devel/py-setuptools27"
+
+# Now we can add python tool
+add_port "net/exabgp"
+
 # VM tools
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 #add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
