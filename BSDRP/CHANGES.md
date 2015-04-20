@@ -8,7 +8,9 @@
 * Upgraded to FreeBSD 10.1-RELEASE-p9
 
 ## Updated packages
+* quagga to 0.99.24
 * monit to 5.12.2
+* pimd to 2.2.1
 * sudo to 1.8.13
 * strongswan to 5.3.0
 
