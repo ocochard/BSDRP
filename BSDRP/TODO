@@ -29,12 +29,11 @@
 * Need to publish an OVF (Open Virtualization Format) tar file
 * A netgraph documentation "for dummies" like this: http://nexus.org.ua/weblog/message/406/
 
-## Central configuration management / Provisionning #
+## TRIM ##
 
-* Use cvs/subversion/others for maintain central management of configuration files
-* Be compatible with a provisionning tools that generate lot's of configuration (subversion copy?)
-* Need to check RANCID integration
-* Need to study NETCONF support
+Adding a rc script that automatically enable TRIM on /dev/ufs/BSDRP* if:
+sudo camcontrol identify ada0 | grep TRIM | cut -d ' ' -f 5
+give "yes"
 
 ## Performance #
 
