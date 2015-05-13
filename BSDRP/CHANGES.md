@@ -3,6 +3,7 @@
 ## New features
 * Python interpreter added: This brings a lot's of new possiblity like being manageable by ansible.
   Python by itself added 70MB to the 120MB (nanobsd + all packages), but there is still about 30MB of free space.
+* Kernel: I2C generic I/O device drivers added
 
 ## Bug fixes
 * Upgraded to FreeBSD 10.1-RELEASE-p9

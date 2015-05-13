@@ -468,8 +468,17 @@ add_port "net/exabgp"
 
 # VM tools
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
-#add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
-#add_port "emulators/virtualbox-ose-additions/" "-DWITHOUT_X11 -DWITHOUT_HAL"
+#   add_port "textproc/expat2"
+#   add_port "devel/gettext-runtime"
+#  add_port "devel/gettext-tools"
+#  add_port "devel/pcre"
+#  add_port "lang/perl"
+# add_port "devel/glib20"
+#add_port "emulators/open-vm-tools" "WITHOUT=\"X11 LIBNOTIFY FUSE DNET ICU\""
+# Requires 32-bit libraries
+#add_port "emulators/virtualbox-ose-additions" "WITHOUT=\"X11\""
+# Doesn't compile on 10.1
+#add_port "emulators/hyperv-is"
 
 #### End of port list section ####
 

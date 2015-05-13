@@ -1,0 +1,22 @@
+Index: net/pimd/Makefile
+===================================================================
+--- net/pimd/Makefile	(revision 386126)
++++ net/pimd/Makefile	(working copy)
+@@ -1,7 +1,7 @@
+ # $FreeBSD$
+ 
+ PORTNAME=	pimd
+-PORTVERSION=	2.2.0
++PORTVERSION=	2.2.1
+ CATEGORIES=	net
+ 
+ MAINTAINER=	olivier@cochard.me
+Index: net/pimd/distinfo
+===================================================================
+--- net/pimd/distinfo	(revision 386126)
++++ net/pimd/distinfo	(working copy)
+@@ -1,2 +1,2 @@
+-SHA256 (troglobit-pimd-2.2.0_GH0.tar.bz2) = a6d969e235323852afdd1c9aebc15a2ff1e4da75e8277a736b3be9b2b484e30e
+-SIZE (troglobit-pimd-2.2.0_GH0.tar.bz2) = 223012
++SHA256 (troglobit-pimd-2.2.1_GH0.tar.bz2) = 4acbb180ab057adf54917c902ac84e546f6f1c63461dee4147adb267dac9b4f3
++SIZE (troglobit-pimd-2.2.1_GH0.tar.bz2) = 223304
