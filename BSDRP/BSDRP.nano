@@ -456,7 +456,6 @@ add_port "security/openvpn-auth-radius"
 add_port "benchmarks/iperf"
 
 # Python (being ansible manageable)
-add_port "print/indexinfo"
 add_port "devel/readline"
 add_port "devel/libffi"
 add_port "lang/python27"

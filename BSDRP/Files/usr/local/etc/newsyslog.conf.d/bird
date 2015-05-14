@@ -1,0 +1,1 @@
+/var/log/bird.log       600  3     100  *     JB    /var/run/bird.pid

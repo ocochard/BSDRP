@@ -6,18 +6,21 @@
 * Kernel: I2C generic I/O device drivers added
 
 ## Bug fixes
-* Upgraded to FreeBSD 10.1-RELEASE-p9
+* Upgraded to FreeBSD 10.1-RELEASE-p10
+* Rotating bird and openvpn log file by default
 
 ## Updated packages
+* bird to 1.5.0
 * quagga to 0.99.24
 * monit to 5.12.2
 * pimd to 2.2.1
 * sudo to 1.8.13
 * strongswan to 5.3.0
+* tmux to 2.0
 
 ## Package list
-* bird-1.4.5_2
-* bird6-1.4.5_2
+* bird-1.5.0_1
+* bird6-1.5.0_1
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.1
 * dhcprelya-4.8_1
@@ -34,7 +37,7 @@
 * libevent2-2.0.22_1
 * libffi-3.2.1
 * libgcrypt-1.6.3
-* libgpg-error-1.17
+* libgpg-error-1.19
 * lzo2-2.09
 * mcast-tools-20061214_1
 * monit-5.12.2
@@ -42,21 +45,21 @@
 * mrouted-3.9.6_1
 * netmap-ipfw-0.1
 * openldap-client-2.4.40_1
-* openvpn-2.3.6_3
+* openvpn-2.3.6_4
 * openvpn-auth-radius-2.1_3
-* pimd-2.2.0
+* pimd-2.2.1
 * pimdd-0.2.1.0_1
-* pkg-1.4.12
+* pkg-1.5.2
 * pmacct-0.14.3_3
 * py27-setuptools27-5.5.1_1
 * python2-2_3
 * python27-2.7.9_1
-* quagga23-0.99.23.1_4
+* quagga-0.99.24.1_1
 * readline-6.3.8
-* strongswan-5.3.0
+* strongswan-5.3.0_1
 * sudo-1.8.13
 * tayga-0.9.2
-* tmux-1.9a_1
+* tmux-2.0
 * ucarp-1.5.2_2
 
 -----------------------------------------------------
