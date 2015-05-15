@@ -1,9 +1,10 @@
-# Release 1.56 (not released)
+# Release 1.56 (2015/05/15)
 
 ## New features
 * Python interpreter added: This brings a lot's of new possiblity like being manageable by ansible.
   Python by itself added 70MB to the 120MB (nanobsd + all packages), but there is still about 30MB of free space.
 * Kernel: I2C generic I/O device drivers added
+* New package: ExaBGP (https://github.com/Exa-Networks/exabgp)
 
 ## Bug fixes
 * Upgraded to FreeBSD 10.1-RELEASE-p10
