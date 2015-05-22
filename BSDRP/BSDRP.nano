@@ -373,7 +373,7 @@ add_port "security/libgcrypt"
 add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
-# Add Bird: Replace XORP that is too memory/CPU hungry:
+# Add Bird
 add_port "net/bird"
 add_port "net/bird6"
 
@@ -750,10 +750,12 @@ usr/share/tmac/tmac.vgrind
 
 # Enable only serial system only
 bsdrp_console_serial () {
-	# Force getty to be enabled on serial
+	# Force getty to be enabled on serial 1 and 2
     sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu1/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu1/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 	# Set serial speed (3wire is available since 11 only)
-	sed -i "" -e /tty[du]0/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du][0-1]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
     # Disable getty on syscons devices (prevent error messages if no vga device)
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
     # Tell loader to use only serial console early with relative high baud speed
@@ -763,7 +765,7 @@ bsdrp_console_serial () {
 # Enable use of keyboard/vga and serial
 bsdrp_console_dual () {
 	# Set serial speed (3wire is available since 11 only)
-	sed -i "" -e /tty[du]0/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du][0-1]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
     # Tell loader to use serial and vga console, set baud speed
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 }
@@ -771,7 +773,7 @@ bsdrp_console_dual () {
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
 	# Set serial speed ((3wire is available since 11 only)
-	sed -i "" -e /tty[du]0/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /tty[du][0-1]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)                                                               
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 
 }

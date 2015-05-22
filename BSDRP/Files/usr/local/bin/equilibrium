@@ -1,0 +1,147 @@
+#!/bin/sh
+# BSD Router Project
+# 
+# Iperf script for measuring equilibrium throughput of an IPSec Gateway
+# Fully based on this paper:
+#  Methodology for Benchmarking IPsec Gateways
+#  http://www.mecs-press.org/ijcnis/ijcnis-v4-n9/IJCNIS-V4-N9-1.pdf
+#  From Adam Tisovsky,Ivan Baronak
+#  Department of Telecommunications, Slovak University of Technology
+
+# Iperf is too buggy: server need to be restarted between each test
+# and some value format not respected
+# This method use netmap pkt-gen for measuring
+
+set -eu
+
+#### Variables 
+# Packet LOAD in Bytes
+PLOAD=500
+PSIZE=$((${PLOAD} + 28))
+FSIZE=$((${PLOAD} + 42))
+# tolerance in %
+TOLERANCE=0.1
+# output file for iperf and pkt-gen
+OFILE=/tmp/equilibrium.txt
+FWRATE=""
+TREND=""
+PEAK=false
+
+LINK_RATE=""
+DEST=""
+TX_NIC=""
+RX_NIC=""
+
+### Functions
+# A usefull function (from: http://code.google.com/p/sh-die/)
+die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+
+usage () {
+	echo "Usage: $0 LINK-BIT-RATE-IN-MBPS MAC-DEST TX-NIC RX-NIC"
+	echo "Example: $0 1000 00:1b:21:d3:8f:3e igb2 igb3"
+	exit 1
+}
+
+maximum () {
+    # Extract the maximum value from a raw output of pkt-gen in receiver mode
+    # $1 : Input file
+    local LINES=`wc -l $1`
+    LINES=`echo ${LINES} | cut -d ' ' -f1`
+    # Remove the first 15 lines (garbage or not good result) and the 10 last lines (bad result too)
+    head -n `expr ${LINES} - 10` $1 | tail -n `expr ${LINES} - 10 - 15` > /tmp/equilibrium.clean
+    # Filter the output (still filtering "0 pps" lines in case of) and kept only the numbers:
+    # example of good line:
+    # 290.703575 main_thread [1441] 729113 pps (730571 pkts in 1002000 usec)
+    grep -E 'main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' /tmp/equilibrium.clean | cut -d ' ' -f 4 > /tmp/equilibrium.ministat.data
+    #Now we calculate the median value of this run with ministat
+    echo `ministat -n /tmp/equilibrium.ministat.data | tail -n -1 | tr -s ' ' | cut -d ' ' -f 4` > /tmp/equilibrium.fwrate
+	#echo `ministat -n /tmp/equilibrium.ministat.data` > /tmp/debug.txt
+	# Now there is a PPS value, but we need a bandwitdh in Mb
+	PPS_FWRATE=`cat /tmp/equilibrium.fwrate`
+	echo "$(( ${PPS_FWRATE} * 8 * ${PSIZE} / 1000000 ))" > /tmp/equilibrium.fwrate
+    rm /tmp/equilibrium.clean /tmp/equilibrium.ministat.data || die "ERROR: can't delete clean.X.data"
+	return 0
+}
+
+load () {
+	# Start load process
+	# 
+	[ -f ${OFILE} ] && rm ${OFILE}
+	# Iperf test not used
+	#echo "iperf -c ${DEST} -u -b ${OLOAD}M -l ${PSIZE}B -f m -t 30 -T1 -x CDMS -y C" >> ${LOG}
+	#iperf -c ${DEST} -u -b ${OLOAD}M -l ${PSIZE}B -f m -t 30 -T1 -x CDMS -y C > ${OFILE}
+	#grep -q ',' ${OFILE} || die "Error for reaching iperf server, be sure to start an iperf -s -u on receiving side"
+	#FWRATE=`cut -d , -f 9 ${OFILE}`
+	# iperf with '-y C' didn't respect the '-f m' option
+	# iperf -c 8.8.8.2 -u -b 250M -l 500B -f m -t 30 -T1 -x CDMS
+	# [  3] Server Report:
+	# [ ID] Interval       Transfer     Bandwidth        Jitter   Lost/Total Datagrams
+	# [  3]  0.0-30.0 sec   894 MBytes   250 Mbits/sec   0.023 ms    0/1875001 (0%)
+	# iperf -c 8.8.8.2 -u -b 250M -l 500B -f m -t 30 -T1 -x CDMS -y c
+	# 20150521232707,8.8.8.2,5001,8.8.8.1,52720,3,0.0-30.0,937500500,249999808,0.023,0,1875001,0.000,0
+	
+	# We are using pkt-gen, and its base value is pps, need some conversion
+	# PPS-RATE = bandwitdh-in-bps / PSIZE-in-Byte / 8
+	PPS=$(( ${OLOAD} * 1000000 / ${PSIZE} / 8))
+	# Original bench should be running during 30 seconds
+	PPS_TO_SENT=$(( ${PPS} * 30 ))
+	# Start a receiver
+	pkt-gen -f rx -i ${RX_NIC} > ${OFILE} 2>&1 &
+	# Start a generator
+	pkt-gen -f tx -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
+	-d 3.3.1.1:2000-3.3.1.100 -D ${DEST} -s 1.2.1.1:2000-1.2.1.20 > /tmp/pkt-gen-tx.log 2>&1
+	# Now close the receiver
+	pkill pkt-gen || die "can't close the receiver???"
+	# Then extract a uniq value
+	maximum ${OFILE} || die "Can't extract the maximum value"
+	return 0
+}
+
+#### Main
+
+[ $# -lt 4 ] && usage
+# $1: Link bit rate
+# $2: Destination MAC address (or IP in iperf mode?)
+
+LINK_RATE=$1
+DEST=$2
+TX_NIC=$3
+RX_NIC=$4
+
+# Initial offered load value in Mbit, should be set to 50% of the link bit-rate
+OLOAD=$(( ${LINK_RATE} / 2 ))
+# step (in Mbit) should be 25% of the link bit-rate
+STEP=$(( ${LINK_RATE} / 4 ))
+
+echo "IPSec benchmark using equilibrium throughput method"
+echo "- IP Packet size = ${PSIZE} Bytes"
+echo "- TOLERANCE= ${TOLERANCE}"
+for i in `seq 1 16`;do
+	echo "Iteration $i"
+	echo "  - offering load = ${OLOAD} Mb/s"
+	echo "  - STEP= ${STEP}"
+	echo "  - TREND= ${TREND}"
+	load || die "Can't run bench test"
+	FWRATE=`cat /tmp/equilibrium.fwrate`
+	echo "  - Measured FWRATE = ${FWRATE} Mb/s"
+	[ ${FWRATE} -lt 1 ] && die "ERROR: FWRATE can't be lower than 1Mb/s"
+	if [ ${FWRATE} -eq ${OLOAD} ]; then
+		[ "${TREND}" = "decreasing" ] && PEAK=true
+		(${PEAK}) && STEP=$(( ${STEP} / 2 ))
+		OLOAD=$(( ${OLOAD} + ${STEP} ))
+		TREND="increasing"
+	else
+		[ "${TREND}" = "increasing" ] && PEAK=true
+		(${PEAK}) && STEP=$(( ${STEP} / 2 ))
+		OLOAD=$((${OLOAD} - ${STEP}))
+		TREND="decreasing"
+	fi
+	[ ${OLOAD} -eq 0 ] && die "ERROR: OLOAD can't be 0"
+	FLOAT=`echo ${OLOAD} \* ${TOLERANCE} | bc`
+	ROUND=`echo "($FLOAT+0.5)/1" | bc `
+	#echo "  - is STEP (${STEP}) less than (OLOAD (${OLOAD}) x TOL (${TOLERANCE})) = ${ROUND} ?"
+	if [ ${STEP} -lt ${ROUND} ]; then
+		break
+	fi
+done
+echo "Estimated Equilibrium throughput = ${FWRATE} Mb/s"

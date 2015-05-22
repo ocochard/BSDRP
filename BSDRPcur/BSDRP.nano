@@ -429,6 +429,9 @@ add_port "security/strongswan" "WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND 
 #pf top
 #add_port "sysutils/pftop"
 
+#IP accounting tool
+add_port "net-mgmt/pmacct"
+
 # Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
 # UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
 add_port "net/ucarp"
@@ -774,6 +777,8 @@ usr/share/tmac/tmac.vgrind
 bsdrp_console_serial () {
 	# Since r266895, console is set as onifconsole
 	sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu1/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu1/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 
     # Disable getty on syscons devices
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
