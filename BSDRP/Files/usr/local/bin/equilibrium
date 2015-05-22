@@ -1,8 +1,9 @@
 #!/bin/sh
-# BSD Router Project
-# 
+#
 # Iperf script for measuring equilibrium throughput of an IPSec Gateway
-# Fully based on this paper:
+# BSD Router Project
+# http://bsdrp.net
+# Method based on this paper:
 #  Methodology for Benchmarking IPsec Gateways
 #  http://www.mecs-press.org/ijcnis/ijcnis-v4-n9/IJCNIS-V4-N9-1.pdf
 #  From Adam Tisovsky,Ivan Baronak
@@ -10,7 +11,7 @@
 
 # Iperf is too buggy: server need to be restarted between each test
 # and some value format not respected
-# This method use netmap pkt-gen for measuring
+# This script use netmap's pkt-gen for measuring bandwitdh
 
 set -eu
 
@@ -42,8 +43,8 @@ usage () {
 	exit 1
 }
 
-maximum () {
-    # Extract the maximum value from a raw output of pkt-gen in receiver mode
+median () {
+    # Extract the median value from a raw output of pkt-gen in receiver mode
     # $1 : Input file
     local LINES=`wc -l $1`
     LINES=`echo ${LINES} | cut -d ' ' -f1`
@@ -54,11 +55,11 @@ maximum () {
     # 290.703575 main_thread [1441] 729113 pps (730571 pkts in 1002000 usec)
     grep -E 'main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' /tmp/equilibrium.clean | cut -d ' ' -f 4 > /tmp/equilibrium.ministat.data
     #Now we calculate the median value of this run with ministat
-    echo `ministat -n /tmp/equilibrium.ministat.data | tail -n -1 | tr -s ' ' | cut -d ' ' -f 4` > /tmp/equilibrium.fwrate
+    echo `ministat -n /tmp/equilibrium.ministat.data | tail -n -1 | tr -s ' ' | cut -d ' ' -f 5` > /tmp/equilibrium.fwrate
 	#echo `ministat -n /tmp/equilibrium.ministat.data` > /tmp/debug.txt
-	# Now there is a PPS value, but we need a bandwitdh in Mb
+	# Convert the PPS value into a Mb/s value
 	PPS_FWRATE=`cat /tmp/equilibrium.fwrate`
-	echo "$(( ${PPS_FWRATE} * 8 * ${PSIZE} / 1000000 ))" > /tmp/equilibrium.fwrate
+	echo "$(( ${PPS_FWRATE} * 8 * ${FSIZE} / 1000000 ))" > /tmp/equilibrium.fwrate
     rm /tmp/equilibrium.clean /tmp/equilibrium.ministat.data || die "ERROR: can't delete clean.X.data"
 	return 0
 }
@@ -83,7 +84,7 @@ load () {
 	# We are using pkt-gen, and its base value is pps, need some conversion
 	# PPS-RATE = bandwitdh-in-bps / PSIZE-in-Byte / 8
 	PPS=$(( ${OLOAD} * 1000000 / ${PSIZE} / 8))
-	# Original bench should be running during 30 seconds
+	# bench should running during 30 seconds minimum
 	PPS_TO_SENT=$(( ${PPS} * 30 ))
 	# Start a receiver
 	pkt-gen -f rx -i ${RX_NIC} > ${OFILE} 2>&1 &
@@ -93,7 +94,7 @@ load () {
 	# Now close the receiver
 	pkill pkt-gen || die "can't close the receiver???"
 	# Then extract a uniq value
-	maximum ${OFILE} || die "Can't extract the maximum value"
+	median ${OFILE} || die "Can't extract the median value"
 	return 0
 }
 
@@ -125,7 +126,8 @@ for i in `seq 1 16`;do
 	FWRATE=`cat /tmp/equilibrium.fwrate`
 	echo "  - Measured FWRATE = ${FWRATE} Mb/s"
 	[ ${FWRATE} -lt 1 ] && die "ERROR: FWRATE can't be lower than 1Mb/s"
-	if [ ${FWRATE} -eq ${OLOAD} ]; then
+	# receiving load can't be greater than offered load, but rouding can create this problem
+	if [ ${FWRATE} -ge ${OLOAD} ]; then
 		[ "${TREND}" = "decreasing" ] && PEAK=true
 		(${PEAK}) && STEP=$(( ${STEP} / 2 ))
 		OLOAD=$(( ${OLOAD} + ${STEP} ))
