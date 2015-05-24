@@ -1,6 +1,7 @@
 #!/bin/sh
 #
-# Iperf script for measuring equilibrium throughput of an IPSec Gateway
+# Tool for measuring "equilibrium throughput" of a device
+#
 # BSD Router Project
 # http://bsdrp.net
 # Method based on this paper:
@@ -9,41 +10,66 @@
 #  From Adam Tisovsky,Ivan Baronak
 #  Department of Telecommunications, Slovak University of Technology
 
-# Iperf is too buggy: server need to be restarted between each test
-# and some value format not respected
-# This script use netmap's pkt-gen for measuring bandwitdh
+# Original paper used iperf, but this script uses netmap's pkt-gen
+# and was improved for adding "paquet-per-second" mode usable for benching
+# router
 
 set -eu
 
-#### Variables 
-# Packet LOAD in Bytes
-PLOAD=500
-PSIZE=$((${PLOAD} + 28))
-FSIZE=$((${PLOAD} + 42))
+#### (default) Variables 
 # tolerance in %
 TOLERANCE=0.1
 # output file for iperf and pkt-gen
-OFILE=/tmp/equilibrium.txt
+OFILE=/tmp/equilibrium-rx.txt
+CFILE=/tmp/equilibrium-tx.txt
+FWFILE=/tmp/equilibrium.fwrate
+# Packet LOAD in Bytes
+PLOAD=""
+# Maximum link-rate value (Mb/s or fps)
+LINK_RATE=""
 FWRATE=""
 TREND=""
 PEAK=false
-
-LINK_RATE=""
+PSIZE=""
+FSIZE=""
 DEST=""
 TX_NIC=""
 RX_NIC=""
+PPS_MODE=false
+UNIT="Mb/s"
 
 ### Functions
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 usage () {
-	echo "Usage: $0 LINK-BIT-RATE-IN-MBPS MAC-DEST TX-NIC RX-NIC"
-	echo "Example: $0 1000 00:1b:21:d3:8f:3e igb2 igb3"
+	echo "Usage: $0 -d MAC-DEST -t TX-NIC -r RX-NIC [-l LINK-BIT-RATE -p -o TOLERANCE -s UDP-LOAD-SIZE]"
+	echo " -d MAC :      Destination MAC of the Device Under Test (DUT)"
+	echo " -h :          Display this usage message"
+	echo " -l RATE :     Maximum link bit-rate in Mbit/s."
+	echo "                  100 for a 100Mb/s link"
+	echo "                 1000 for a 1Gb/s link (default)"
+	echo "                10000 for a 10Gb/s link"
+	echo "               If option -p, this value is in packet-per-second"
+	echo "               Maximum link packet rate in Kpps (1 frame = 1 packet)"
+	echo "                  148 for a 100Mb/s link"
+	echo "                 1488 for a Gigabit link (default if -p)"
+	echo "                14880 for a 10Gb/s link"
+	echo " -p :          Switch into Packet-per-second mode"
+	echo "                Input and displayed values unit change from Mb/s to Kpps"
+	echo "                Use this option for benching router in place of IPSec gateway"
+	echo " -o TOLERANCE: Measure tolerance in %"
+	echo "               default value of 0.1 for 1%"
+	echo " -t TX-NIC :   NIC used for sending load"
+	echo " -r RX-NIC :  NIC used for receiving (and measuring) load"
+	echo " -s LOAD  :   Size of the UDP load"
+	echo "              default: 500 in Mb/s, 18 in pps mode"
+	echo "              Minimum load for Ethernet: 18"
+	echo "Example: $0 -d 00:1b:21:d3:8f:3e -t igb2 -r igb3"
 	exit 1
 }
 
-median () {
+extract () {
     # Extract the median value from a raw output of pkt-gen in receiver mode
     # $1 : Input file
     local LINES=`wc -l $1`
@@ -54,12 +80,16 @@ median () {
     # example of good line:
     # 290.703575 main_thread [1441] 729113 pps (730571 pkts in 1002000 usec)
     grep -E 'main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' /tmp/equilibrium.clean | cut -d ' ' -f 4 > /tmp/equilibrium.ministat.data
-    #Now we calculate the median value of this run with ministat
-    echo `ministat -n /tmp/equilibrium.ministat.data | tail -n -1 | tr -s ' ' | cut -d ' ' -f 5` > /tmp/equilibrium.fwrate
-	#echo `ministat -n /tmp/equilibrium.ministat.data` > /tmp/debug.txt
-	# Convert the PPS value into a Mb/s value
-	PPS_FWRATE=`cat /tmp/equilibrium.fwrate`
-	echo "$(( ${PPS_FWRATE} * 8 * ${FSIZE} / 1000000 ))" > /tmp/equilibrium.fwrate
+    #Now we calculate the maximum value of this run with ministat
+	echo `ministat -n /tmp/equilibrium.ministat.data | tail -n -1 | tr -s ' ' | cut -d ' ' -f 4` > ${FWFILE}
+	PPS_FWRATE=`cat ${FWFILE}`
+	if (${PPS_MODE}); then
+		# Need to convert the pps value into Kpps
+		echo "$(( ${PPS_FWRATE} / 1000 ))" > ${FWFILE}
+	else
+		# Need to convert the PPS value into a Mb/s value
+		echo "$(( ${PPS_FWRATE} * 8 * ${FSIZE} / 1000000 ))" > ${FWFILE}
+	fi
     rm /tmp/equilibrium.clean /tmp/equilibrium.ministat.data || die "ERROR: can't delete clean.X.data"
 	return 0
 }
@@ -68,65 +98,133 @@ load () {
 	# Start load process
 	# 
 	[ -f ${OFILE} ] && rm ${OFILE}
-	# Iperf test not used
-	#echo "iperf -c ${DEST} -u -b ${OLOAD}M -l ${PSIZE}B -f m -t 30 -T1 -x CDMS -y C" >> ${LOG}
-	#iperf -c ${DEST} -u -b ${OLOAD}M -l ${PSIZE}B -f m -t 30 -T1 -x CDMS -y C > ${OFILE}
-	#grep -q ',' ${OFILE} || die "Error for reaching iperf server, be sure to start an iperf -s -u on receiving side"
-	#FWRATE=`cut -d , -f 9 ${OFILE}`
-	# iperf with '-y C' didn't respect the '-f m' option
-	# iperf -c 8.8.8.2 -u -b 250M -l 500B -f m -t 30 -T1 -x CDMS
-	# [  3] Server Report:
-	# [ ID] Interval       Transfer     Bandwidth        Jitter   Lost/Total Datagrams
-	# [  3]  0.0-30.0 sec   894 MBytes   250 Mbits/sec   0.023 ms    0/1875001 (0%)
-	# iperf -c 8.8.8.2 -u -b 250M -l 500B -f m -t 30 -T1 -x CDMS -y c
-	# 20150521232707,8.8.8.2,5001,8.8.8.1,52720,3,0.0-30.0,937500500,249999808,0.023,0,1875001,0.000,0
-	
+	[ -f ${CFILE} ] && rm ${CFILE}
 	# We are using pkt-gen, and its base value is pps, need some conversion
-	# PPS-RATE = bandwitdh-in-bps / PSIZE-in-Byte / 8
-	PPS=$(( ${OLOAD} * 1000000 / ${PSIZE} / 8))
+	if (${PPS_MODE}); then
+		PPS=$(( ${OLOAD} * 1000 ))
+	else
+		# PPS-RATE = bandwitdh-in-bps / PSIZE-in-Byte / 8
+		PPS=$(( ${OLOAD} * 1000000 / ${FSIZE} / 8))
+	fi
 	# bench should running during 30 seconds minimum
 	PPS_TO_SENT=$(( ${PPS} * 30 ))
 	# Start a receiver
 	pkt-gen -f rx -i ${RX_NIC} > ${OFILE} 2>&1 &
 	# Start a generator
 	pkt-gen -f tx -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
-	-d 3.3.1.1:2000-3.3.1.100 -D ${DEST} -s 1.2.1.1:2000-1.2.1.20 > /tmp/pkt-gen-tx.log 2>&1
+	-d 3.3.1.1:2000-3.3.1.100 -D ${DEST} -s 1.2.1.1:2000-1.2.1.20 > ${CFILE} 2>&1
 	# Now close the receiver
 	pkill pkt-gen || die "can't close the receiver???"
+	# Check than generator correctly generate PPS value
+	extract ${CFILE} || die "Can't extract the maximum value from ${CFILE}"
+	CHECK=`cat ${FWFILE}`
+	[ ${CHECK} -lt ${OLOAD} ] && die "Generate only ${CHECK}${UNIT} in place of ${OLOAD}${UNIT}"
 	# Then extract a uniq value
-	median ${OFILE} || die "Can't extract the median value"
+	extract ${OFILE} || die "Can't extract the maximum value from ${OFILE}"
 	return 0
 }
 
 #### Main
 
-[ $# -lt 4 ] && usage
-# $1: Link bit rate
-# $2: Destination MAC address (or IP in iperf mode?)
+args=`getopt d:hl:po:r:s:t: $*`
 
-LINK_RATE=$1
-DEST=$2
-TX_NIC=$3
-RX_NIC=$4
+set -- $args
+for i
+do
+    case "$i" in
+        -d)
+            DEST=$2
+			shift
+            shift
+			;;
+		-h)
+			usage
+			;;
+        -l)
+            LINK_RATE=$2
+            shift
+            shift
+            ;;
+		-p)
+			PPS_MODE=true
+			shift
+			;;
+		-o)
+			TOLERANCE=$2
+			shift
+			shift
+			;;	
+        -t)
+			TX_NIC=$2
+			shift
+			shift
+			;;
+		-r)
+			RX_NIC=$2
+			shift
+			shift
+			;;
+		-s)
+			PLOAD=$2
+			shift
+			shift
+			;;
+		--)
+            shift
+            break
+	esac
+done
 
-# Initial offered load value in Mbit, should be set to 50% of the link bit-rate
+# Check for mandatory value
+if [ -z "${DEST}" ]; then
+	echo "Missing Destination MAC"
+	usage
+fi
+if [ -z "${TX_NIC}" ]; then
+	echo "Missing TX NIC"
+	usage
+fi
+if [ -z "${RX_NIC}" ]; then
+	echo "Missing RX NIC"
+	usage
+fi
+
+# Set the default value corresponding to differents mode
+if [ -z ${PLOAD} ]; then
+	(${PPS_MODE}) && PLOAD=18 || PLOAD=500
+fi
+
+if [ -z ${LINK_RATE} ]; then
+	(${PPS_MODE}) && LINK_RATE=1488	|| LINK_RATE=1000
+fi
+
+# Packet LOAD in Bytes
+PSIZE=$((${PLOAD} + 28))
+# Frame size (excluding CRC)
+FSIZE=$((${PLOAD} + 42))
+
+(${PPS_MODE}) && UNIT="Kpps"
+
+# Initial offered load value, should be set to 50% of the link bit-rate
 OLOAD=$(( ${LINK_RATE} / 2 ))
 # step (in Mbit) should be 25% of the link bit-rate
 STEP=$(( ${LINK_RATE} / 4 ))
 
-echo "IPSec benchmark using equilibrium throughput method"
-echo "- IP Packet size = ${PSIZE} Bytes"
+echo "Benchmark using equilibrium throughput method"
+(${PPS_MODE}) && echo "- Mode: Router benchmark" || echo "- Mode: IPSec gateway benchmark"
+echo "- UDP load=${PLOAD}B, IP packet size=${PSIZE}B, Ethernet frame size=${FSIZE}B"
 echo "- TOLERANCE= ${TOLERANCE}"
 for i in `seq 1 16`;do
 	echo "Iteration $i"
-	echo "  - offering load = ${OLOAD} Mb/s"
-	echo "  - STEP= ${STEP}"
-	echo "  - TREND= ${TREND}"
+	echo "  - offering load = ${OLOAD} ${UNIT}"
+	echo "  - STEP= ${STEP} ${UNIT}"
+	[ -n "${TREND}" ] && echo "  - TREND= ${TREND}"
 	load || die "Can't run bench test"
 	FWRATE=`cat /tmp/equilibrium.fwrate`
-	echo "  - Measured FWRATE = ${FWRATE} Mb/s"
-	[ ${FWRATE} -lt 1 ] && die "ERROR: FWRATE can't be lower than 1Mb/s"
-	# receiving load can't be greater than offered load, but rouding can create this problem
+	echo "  - Measured FWRATE = ${FWRATE} ${UNIT}"
+	[ ${FWRATE} -lt 1 ] && die "ERROR: FWRATE can't be lower than 1 ${UNIT}"
+	# receiving load can't be greater than offered load, but rouding value can create this problem
+	# This is why the next test is a -ge in place of -eq
 	if [ ${FWRATE} -ge ${OLOAD} ]; then
 		[ "${TREND}" = "decreasing" ] && PEAK=true
 		(${PEAK}) && STEP=$(( ${STEP} / 2 ))
@@ -136,14 +234,23 @@ for i in `seq 1 16`;do
 		[ "${TREND}" = "increasing" ] && PEAK=true
 		(${PEAK}) && STEP=$(( ${STEP} / 2 ))
 		OLOAD=$((${OLOAD} - ${STEP}))
+		# If the initial LOAD is too big and result of first FWRATE already lower than STEP,
+		#  the second iteration will set OLOAD to 0
+		#  Try to fix this behavior by setting OLOAD=FWRATE if FWRATE < STEP
+		if [ -z "${TREND}" ]; then
+			if [ ${FWRATE} -lt ${STEP} ]; then
+				echo "  - FWRATE too low, forcing OLOAD=FWRATE and STEP=FWRATE/2"
+				STEP=$(( ${FWRATE} / 2 ))
+				OLOAD=${FWRATE}
+			fi
+		fi
 		TREND="decreasing"
 	fi
-	[ ${OLOAD} -eq 0 ] && die "ERROR: OLOAD can't be 0"
+	[ ${OLOAD} -eq 0 ] && die "OLOAD reached 0 ${UNIT}, DUT drops too much of packets."
 	FLOAT=`echo ${OLOAD} \* ${TOLERANCE} | bc`
 	ROUND=`echo "($FLOAT+0.5)/1" | bc `
-	#echo "  - is STEP (${STEP}) less than (OLOAD (${OLOAD}) x TOL (${TOLERANCE})) = ${ROUND} ?"
 	if [ ${STEP} -lt ${ROUND} ]; then
 		break
 	fi
 done
-echo "Estimated Equilibrium throughput = ${FWRATE} Mb/s"
+echo "Estimated Equilibrium link throughput= ${FWRATE} ${UNIT}"

@@ -514,6 +514,9 @@ bsdrp_custom () {
 	# Update login.conf db
 	CR 'cap_mkdb /etc/login.conf'
 
+	# Disable system beep with csh
+	echo "set nobeep" >> /etc/csh.cshrc
+	
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys
 	mkdir -p ${NANO_WORLDDIR}/etc/dot.ssh.root
