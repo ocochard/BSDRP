@@ -10,7 +10,7 @@
 #  From Adam Tisovsky,Ivan Baronak
 #  Department of Telecommunications, Slovak University of Technology
 
-# Original paper used iperf, but this script uses netmap's pkt-gen
+# Original paper used iperf in UDP mode, but this script uses netmap's pkt-gen
 # and was improved for adding "paquet-per-second" mode usable for benching
 # router
 
@@ -50,7 +50,7 @@ usage () {
 	echo "                  100 for a 100Mb/s link"
 	echo "                 1000 for a 1Gb/s link (default)"
 	echo "                10000 for a 10Gb/s link"
-	echo "               If option -p, this value is in packet-per-second"
+	echo "               If option -p, this value is in Kilo packet-per-second"
 	echo "               Maximum link packet rate in Kpps (1 frame = 1 packet)"
 	echo "                  148 for a 100Mb/s link"
 	echo "                 1488 for a Gigabit link (default if -p)"
@@ -111,14 +111,16 @@ load () {
 	# Start a receiver
 	pkt-gen -f rx -i ${RX_NIC} > ${OFILE} 2>&1 &
 	# Start a generator
-	pkt-gen -f tx -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
-	-d 3.3.1.1:2000-3.3.1.100 -D ${DEST} -s 1.2.1.1:2000-1.2.1.20 > ${CFILE} 2>&1
+	CMD="pkt-gen -f tx -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
+	-d 3.3.1.1:2000-3.3.1.100 -D ${DEST} -s 1.2.1.1:2000-1.2.1.20"
+	echo $CMD > ${CFILE}
+	${CMD} >> ${CFILE} 2>&1
 	# Now close the receiver
 	pkill pkt-gen || die "can't close the receiver???"
 	# Check than generator correctly generate PPS value
 	extract ${CFILE} || die "Can't extract the maximum value from ${CFILE}"
 	CHECK=`cat ${FWFILE}`
-	[ ${CHECK} -lt ${OLOAD} ] && die "Generate only ${CHECK}${UNIT} in place of ${OLOAD}${UNIT}"
+	[ ${CHECK} -lt ${OLOAD} ] && echo "  - Warning: Generated only ${CHECK}${UNIT} in place of ${OLOAD}${UNIT}"
 	# Then extract a uniq value
 	extract ${OFILE} || die "Can't extract the maximum value from ${OFILE}"
 	return 0
@@ -210,19 +212,20 @@ OLOAD=$(( ${LINK_RATE} / 2 ))
 # step (in Mbit) should be 25% of the link bit-rate
 STEP=$(( ${LINK_RATE} / 4 ))
 
-echo "Benchmark using equilibrium throughput method"
+echo "Benchmark tool using equilibrium throughput method"
 (${PPS_MODE}) && echo "- Mode: Router benchmark" || echo "- Mode: IPSec gateway benchmark"
-echo "- UDP load=${PLOAD}B, IP packet size=${PSIZE}B, Ethernet frame size=${FSIZE}B"
-echo "- TOLERANCE= ${TOLERANCE}"
+echo "- UDP load = ${PLOAD}B, IP packet size=${PSIZE}B, Ethernet frame size=${FSIZE}B"
+echo "- Link rate = ${LINK_RATE} ${UNIT}"
+echo "- TOLERANCE = ${TOLERANCE}"
 for i in `seq 1 16`;do
 	echo "Iteration $i"
 	echo "  - offering load = ${OLOAD} ${UNIT}"
-	echo "  - STEP= ${STEP} ${UNIT}"
-	[ -n "${TREND}" ] && echo "  - TREND= ${TREND}"
+	echo "  - STEP = ${STEP} ${UNIT}"
+	[ -n "${TREND}" ] && echo "  - TREND = ${TREND}"
 	load || die "Can't run bench test"
 	FWRATE=`cat /tmp/equilibrium.fwrate`
 	echo "  - Measured FWRATE = ${FWRATE} ${UNIT}"
-	[ ${FWRATE} -lt 1 ] && die "ERROR: FWRATE can't be lower than 1 ${UNIT}"
+	[ ${FWRATE} -lt 1 ] && die "FWRATE lower than 1 ${UNIT}, can't continue"
 	# receiving load can't be greater than offered load, but rouding value can create this problem
 	# This is why the next test is a -ge in place of -eq
 	if [ ${FWRATE} -ge ${OLOAD} ]; then
@@ -239,14 +242,14 @@ for i in `seq 1 16`;do
 		#  Try to fix this behavior by setting OLOAD=FWRATE if FWRATE < STEP
 		if [ -z "${TREND}" ]; then
 			if [ ${FWRATE} -lt ${STEP} ]; then
-				echo "  - FWRATE too low, forcing OLOAD=FWRATE and STEP=FWRATE/2"
+				echo "  - Forwared rate too low, forcing OLOAD=FWRATE and STEP=FWRATE/2"
 				STEP=$(( ${FWRATE} / 2 ))
 				OLOAD=${FWRATE}
 			fi
 		fi
 		TREND="decreasing"
 	fi
-	[ ${OLOAD} -eq 0 ] && die "OLOAD reached 0 ${UNIT}, DUT drops too much of packets."
+	[ ${OLOAD} -eq 0 ] && die "Offered load reached 0 ${UNIT} (Too much packets dropped by the DUT?), can't continue"
 	FLOAT=`echo ${OLOAD} \* ${TOLERANCE} | bc`
 	ROUND=`echo "($FLOAT+0.5)/1" | bc `
 	if [ ${STEP} -lt ${ROUND} ]; then
