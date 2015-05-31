@@ -1,9 +1,9 @@
 #!/bin/sh
 #
-# Network drivers/stack tuning tool for BSD Router Project 
+# Network drivers/stack tuning tool for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2013, The BSDRP Development Team 
+# Copyright (c) 2014, The BSDRP Development Team 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -222,6 +222,16 @@ net_nic () {
 	# If em or igb were tunned, need to change this too
 	# http://lists.freebsd.org/pipermail/freebsd-net/2012-July/032712.html	
 	sysctl_atleast net.link.ifqmaxlen 10240	
+
+	# cxgbe (Chelsio) tuning
+	if ifconfig -l "ether" | egrep -q 'cxl[[:digit:]]'; then
+		# source: http://bsdrp.net/documentation/examples/forwarding_performance_lab_of_a_hp_proliant_dl360p_gen8_with_10-gigabit_with_10-gigabit_chelsio_t540-cr
+		# If ncpu=8 and drivers is using 8 queue (default), should reduce the NIC queue to 4
+		if [  `sysctl -n hw.ncpu` -eq 8 ]; then
+			[ `sysctl -n dev.cxl.0.nrxq` -eq 8 ] && echo 'echo hw.cxgbe.nrxq10g="4" >> /boot/loader.conf.local'
+			[ `sysctl -n dev.cxl.0.ntxq` -eq 8 ] && echo 'echo hw.cxgbe.ntxq10g="4" >> /boot/loader.conf.local'
+		fi
+	fi
 }
 
 net_netstat () {
@@ -238,12 +248,6 @@ net_forward () {
 		echo "Check if your hardware support one of these crypto accelerator modules:"
 		echo " aesni(4), glxsb(4), hifn(4), ipsec(4), padlock(4), safe(4) or ubsec(4)"
 	fi
-	# http://wiki.freebsd.org/NetworkPerformanceTuning
-	for VALUE in kern.random.sys.harvest.ethernet\
-	kern.random.sys.harvest.point_to_point\
-	kern.random.sys.harvest.interrupt; do
-        sysctl_equal ${VALUE} 0
-    done
 }
 
 net_inet () {

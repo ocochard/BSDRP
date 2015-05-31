@@ -182,10 +182,11 @@ expand_data_slice () {
 	gpart add -t freebsd ${boot_dev} \
 	|| die "Unable gpart add -t freebsd ${boot_dev}"
 
-	# Formatting the new partition (SUJ and TRIM)
+	# Formatting the new partition (SUJ)
+	# TO DO: Check if disks support TRIM and enable it
 	LABEL=`cut -f 2 -d "/" /etc/nanobsd.conf`
-	newfs -UjtL ${LABEL}s4 ${boot_dev}s4 \
-	|| die "Unable to newfs -UjtL ${LABEL}s4 ${boot_dev}s4"
+	newfs -UjL ${LABEL}s4 ${boot_dev}s4 \
+	|| die "Unable to newfs -UjL ${LABEL}s4 ${boot_dev}s4"
 
 	# Restoring the dump
 	[ -d /tmp/slice ] || mkdir -p /tmp/slice

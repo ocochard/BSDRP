@@ -18,7 +18,7 @@ set -eu
 
 #### (default) Variables 
 # tolerance in %
-TOLERANCE=0.1
+TOLERANCE=0.01
 # output file for iperf and pkt-gen
 OFILE=/tmp/equilibrium-rx.txt
 CFILE=/tmp/equilibrium-tx.txt
@@ -50,8 +50,8 @@ usage () {
 	echo "                  100 for a 100Mb/s link"
 	echo "                 1000 for a 1Gb/s link (default)"
 	echo "                10000 for a 10Gb/s link"
-	echo "               If option -p, this value is in Kilo packet-per-second"
-	echo "               Maximum link packet rate in Kpps (1 frame = 1 packet)"
+	echo "                If option -p, this value is in Kilo packet-per-second"
+	echo "                Maximum link packet rate in Kpps (1 frame = 1 packet)"
 	echo "                  148 for a 100Mb/s link"
 	echo "                 1488 for a Gigabit link (default if -p)"
 	echo "                14880 for a 10Gb/s link"
@@ -59,12 +59,12 @@ usage () {
 	echo "                Input and displayed values unit change from Mb/s to Kpps"
 	echo "                Use this option for benching router in place of IPSec gateway"
 	echo " -o TOLERANCE: Measure tolerance in %"
-	echo "               default value of 0.1 for 1%"
+	echo "                default value of 0.01 for 0.1%"
 	echo " -t TX-NIC :   NIC used for sending load"
-	echo " -r RX-NIC :  NIC used for receiving (and measuring) load"
-	echo " -s LOAD  :   Size of the UDP load"
-	echo "              default: 500 in Mb/s, 18 in pps mode"
-	echo "              Minimum load for Ethernet: 18"
+	echo " -r RX-NIC :   NIC used for receiving (and measuring) load"
+	echo " -s LOAD  :    Size of the UDP load"
+	echo "                default: 500 in Mb/s, 18 in pps mode"
+	echo "                Minimum load for Ethernet: 18"
 	echo "Example: $0 -d 00:1b:21:d3:8f:3e -t igb2 -r igb3"
 	exit 1
 }
@@ -81,6 +81,7 @@ extract () {
     # 290.703575 main_thread [1441] 729113 pps (730571 pkts in 1002000 usec)
     grep -E 'main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' /tmp/equilibrium.clean | cut -d ' ' -f 4 > /tmp/equilibrium.ministat.data
     #Now we calculate the maximum value of this run with ministat
+	[ -s /tmp/equilibrium.ministat.data ] || die "No packet received, check your configurations"
 	echo `ministat -n /tmp/equilibrium.ministat.data | tail -n -1 | tr -s ' ' | cut -d ' ' -f 4` > ${FWFILE}
 	PPS_FWRATE=`cat ${FWFILE}`
 	if (${PPS_MODE}); then
@@ -249,7 +250,7 @@ for i in `seq 1 16`;do
 		fi
 		TREND="decreasing"
 	fi
-	[ ${OLOAD} -eq 0 ] && die "Offered load reached 0 ${UNIT} (Too much packets dropped by the DUT?), can't continue"
+	[ ${OLOAD} -eq 0 ] && die "Offered load reached 0 ${UNIT} (Too much packets dropped/corrupted?), can't continue"
 	FLOAT=`echo ${OLOAD} \* ${TOLERANCE} | bc`
 	ROUND=`echo "($FLOAT+0.5)/1" | bc `
 	if [ ${STEP} -lt ${ROUND} ]; then
