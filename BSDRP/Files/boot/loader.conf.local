@@ -46,6 +46,16 @@ hw.igb.max_interrupt_rate="16000"
 # Allow unsupported SFP
 hw.ix.unsupported_sfp="1"
 
+### Chelsio NIC tuning ###
+# Increase size of descriptors per queue
+# Own bench show a very-small improvement with 2048 than 1024(default)
+# http://bsdrp.net/documentation/examples/forwarding_performance_lab_of_a_hp_proliant_dl360p_gen8_with_10-gigabit_with_10-gigabit_chelsio_t540-cr
+hw.cxgbe.qsize_txq="2048"
+hw.cxgbe.qsize_rxq="2048"
+# On a 8 cores machine, you should reduce the number of queue to 4
+#hw.cxgbe.ntxq10g="4"
+#hw.cxgbe.nrxq10g="4"
+
 ### link tunning ###
 # Increase interface send queue length
 # lagg user: This value should be at minimum the sum of txd buffer of each NIC in the lagg

@@ -112,7 +112,7 @@ load () {
 	# Start a receiver
 	pkt-gen -f rx -i ${RX_NIC} > ${OFILE} 2>&1 &
 	# Start a generator
-	CMD="pkt-gen -f tx -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
+	CMD="pkt-gen -U -f tx -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
 	-d 3.3.1.1:2000-3.3.1.100 -D ${DEST} -s 1.2.1.1:2000-1.2.1.20"
 	echo $CMD > ${CFILE}
 	${CMD} >> ${CFILE} 2>&1
