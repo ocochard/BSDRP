@@ -1,0 +1,82 @@
+# This is a shell archive.  Save it in a file, remove anything before
+# this line, and then unpack it by entering "sh file".  Note, it may
+# create directories; files and directories will be owned by you and
+# have default permissions.
+#
+# This archive contains:
+#
+#	net/ipfw-user
+#	net/ipfw-user/Makefile
+#	net/ipfw-user/distinfo
+#	net/ipfw-user/pkg-descr
+#	net/ipfw-user/files
+#	net/ipfw-user/files/patch-Makefile
+#
+echo c - net/ipfw-user
+mkdir -p net/ipfw-user > /dev/null 2>&1
+echo x - net/ipfw-user/Makefile
+sed 's/^X//' >net/ipfw-user/Makefile << 'ab194db7b7ef624322f1525d5be2adef'
+X# New ports collection makefile for:	ipfw-user
+X# Date created:		14 August 2012
+X# Whom:			Olivier Cochard-Labbé (olivier@cochard.me)
+X#
+X# $FreeBSD$
+X#
+X
+XPORTNAME=	ipfw-user
+XPORTVERSION=	0.1
+XCATEGORIES=	net
+XMASTER_SITES=	http://info.iet.unipi.it/~luigi/doc/
+XDISTNAME=	20120813-${PORTNAME}
+XEXTRACT_SUFX=	.tgz
+X
+XMAINTAINER=	luigi@FreeBSD.org
+XCOMMENT=	Netmap-enabled IPFW userspace version
+X
+XWRKSRC=	${WRKDIR}/ipfw-user
+XUSE_GMAKE=	yes
+X
+X#Warning: conflict name with /sbin/ipfw
+XPLIST_FILES=	bin/ipfw \
+X				bin/kipfw
+X
+Xdo-install:
+X	${INSTALL_PROGRAM} ${WRKSRC}/ipfw/ipfw \
+X		${PREFIX}/bin
+X	${INSTALL_PROGRAM} ${WRKSRC}/kipfw \
+X		${PREFIX}/bin
+X
+X.include <bsd.port.mk>
+ab194db7b7ef624322f1525d5be2adef
+echo x - net/ipfw-user/distinfo
+sed 's/^X//' >net/ipfw-user/distinfo << 'a0f8f7e8122bc4900e65979abf83f5f2'
+XSHA256 (20120813-ipfw-user.tgz) = c04ed80d68d08f9dd8e3cf30f089dd56979611e0287ef0b30f3b9c6776804eb2
+XSIZE (20120813-ipfw-user.tgz) = 246518
+a0f8f7e8122bc4900e65979abf83f5f2
+echo x - net/ipfw-user/pkg-descr
+sed 's/^X//' >net/ipfw-user/pkg-descr << 'dbf8c6fa1d7dc9585838738242e1f723'
+XA userspace version of ipfw and dummynet, using netmap for packet I/O.
+XOn an i7-3400, this version is able to process over 6 million packets 
+Xper second (Mpps) with simple rulesets, and over 2.2 Mpps through 
+Xdummynet pipes, 5..10 times faster than the in-kernel equivalent.
+X
+XWWW: http://info.iet.unipi.it/~luigi/dummynet/
+dbf8c6fa1d7dc9585838738242e1f723
+echo c - net/ipfw-user/files
+mkdir -p net/ipfw-user/files > /dev/null 2>&1
+echo x - net/ipfw-user/files/patch-Makefile
+sed 's/^X//' >net/ipfw-user/files/patch-Makefile << 'f6c91ef68b34afbb9c940fc002adf7ae'
+X--- Makefile.orig	2012-08-14 15:47:57.000000000 +0200
+X+++ Makefile	2012-08-14 15:48:10.000000000 +0200
+X@@ -9,7 +9,7 @@
+X 
+X ipfw: $(OBJDIR)
+X 	$(MSG) Building userspace ...
+X-	@(cd ipfw && $(MAKE) $(MAKECMDGOALS) )
+X+	@(cd ipfw && $(MAKE) )
+X 
+X $(OBJDIR):
+X 	-@mkdir $(OBJDIR)
+f6c91ef68b34afbb9c940fc002adf7ae
+exit
+

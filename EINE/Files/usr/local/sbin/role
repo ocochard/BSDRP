@@ -1,0 +1,1443 @@
+#!/bin/sh
+#######################################
+####  EINE Role configuration   #######
+#######################################
+
+#
+# Copyright (c) 2014-2015, Orange Business Services
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+ 
+# Exit if error or variable undefined
+set -eu
+
+NIC_TYPE="re igb vtnet em vmx"
+
+########### Function definition #############
+
+# A usefull function (from: http://code.google.com/p/sh-die/)
+die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+
+usage() {
+	echo "$0 manager|vm2|vm3|vm4|etc..."
+	echo "examples:"
+	echo "$0 manager  : Initialize full manager configuration"
+	echo "$0 vm2      : Initialize Internal EIN router configuration"
+	exit 0
+}
+
+usage_manager () {
+    echo "role manager IP/SUBNET DEFAULT-GATEWAY INTERNAL-DNS-LIST INTERNAL-DOMAIN-LIST private-ssh_ovpn_CA.tgz"
+    echo "Example:"
+    echo "role manager 10.0.12.1/24 10.0.12.2 \"10.0.12.2 10.0.23.2\" eine.bsdrp.net /tmp/PROD.keys.tgz"
+    exit 0
+}
+
+usage_gateway () {
+    echo "role gateway internal-NIC IP/SUBNET DEFAULT-GATEWAY"
+    echo "Example:"
+    echo "role gateway vtnet0 10.0.12.1/24 10.0.12.2"
+    exit 0
+}
+
+
+manager () {
+    # $1: IP/SUBNET
+    # $2: DEFAULT GATEWAY
+    # $3: INTERNAL DNS SERVERS IP LIST
+    # $4: INTERNAL DOMAIN NAMES LIST
+    # $5: SSH private key and OpenVPN CA and private certificates
+    [ $# -ne 5 ] && usage_manager
+    IP=$1
+    DFLT_GATEWAY=$2
+    DNS_LIST=$3
+    DOMAINS_LIST=$4
+    PRIVATE_KEY=$5
+    if [ ! -f ${PRIVATE_KEY} ]; then
+        die "Missing archive containing private SSH keys and ovpn certificates"
+    fi
+    # Retrieve the SSH port to be used
+    SSH_PORT=`grep '^Port[[:space:]]\+[[:digit:]]\+' /etc/ssh/sshd_config | cut -d ' ' -f 2`
+    if [ ${SSH_PORT} -lt 1 -o ${SSH_PORT} -gt 65535 ]; then
+        die "ERROR: Bad SSH port number: ${SSH_PORT}"
+    fi
+
+    # Retrieve the Unregistered OpenVPN port to be used
+    OVPN_UNREG_PORT=`grep -m 1 '^remote[[:space:]]\+.*[[:space:]]\+[[:digit:]]\+' /usr/local/etc/openvpn/openvpn.conf | cut -d ' ' -f 3`
+    if [ ${OVPN_UNREG_PORT} -lt 1024 -o ${OVPN_UNREG_PORT} -gt 65534 ]; then
+        die "ERROR: Bad OpenVPN port number: ${OVPN_UNREG_PORT}"
+    fi
+
+    OVPN_REG_PORT=`expr ${OVPN_UNREG_PORT} + 1`
+    
+    # Retrieve the gateway domain name
+    FULL_NAME=`grep -m 1 '^remote[[:space:]]\+.*[[:space:]]\+[[:digit:]]\+' /usr/local/etc/openvpn/openvpn.conf | cut -d ' ' -f 2`
+    DOMAIN_NAME=${FULL_NAME#*.}
+    
+	echo "======= Generating manager configuration ======="
+    echo "Value guessed:"
+    echo "SSH Port: ${SSH_PORT}"
+    echo "Domain name: ${DOMAIN_NAME}"
+    echo "OpenVPN unregistered port: ${OVPN_UNREG_PORT}"
+	echo "Updating /etc/rc.conf Global configuration"
+	sudo sysrc hostname="manager"
+	sudo sysrc ifconfig_net0="inet ${IP}"
+	sudo sysrc defaultrouter="${DFLT_GATEWAY}"
+	sudo sysrc quagga_enable=NO
+	sudo sysrc gateway_enable=NO
+	sudo sysrc ipv6_gateway_enable=NO
+	sudo sysrc openvpn_enable=NO
+    sudo sysrc -x ipv6_cpe_wanif
+	echo "Stoping/restarting services"
+	sudo pkill -9 openvpn || echo "Can't kill openvpn"
+	sudo service netif restart
+	sudo service routing restart || echo "Restarting routing allways fail"
+	sudo hostname manager
+
+	echo "Generating Ansible directory layout..."
+	sudo mkdir -p /usr/local/etc/ansible
+	sudo chmod g+w /usr/local/etc/ansible
+	for DIR in roles/gateway/files/usr/local/etc/openvpn/ccd group_vars \
+        roles/gateway/files/usr/local/etc/newsyslog.conf.d \
+        roles/gateway/files/etc roles/gateway/files/usr/local/etc/raddb \
+        host_vars roles/common/tasks roles/common/handlers roles/nanobsd/tasks \
+        roles/nanobsd/handlers roles/gateway/tasks roles/gateway/handlers \
+        roles/vpn_wifi_router/tasks roles/vpn_wifi_router/files/etc roles/vpn_wifi_router/handlers \
+        roles/vpn_wifi_router/files/usr/local/etc/newsyslog.conf.d \
+        roles/vpn_wifi_router/files/usr/local/etc/openvpn; do
+		mkdir -p /usr/local/etc/ansible/${DIR}
+	done
+
+	# Allow admin user to create/modify ansible file:
+	#sudo chmod -R g+w /usr/local/etc/ansible
+	echo "Populating Ansible inventory,tasks and handlers files..."
+
+	#Avoiding the usage of $HOME/.ansible directory (read-only)
+#	cat <<EOF | sudo tee /usr/local/etc/ansible/ansible.cfg
+#[defaults]
+#remote_tmp = /tmp
+#EOF
+
+    # Avoid message "ERROR: could not create retry file"
+    if [ ! -f /usr/local/etc/ansible/ansible.cfg ]; then
+        cat <<EOF > /usr/local/etc/ansible/ansible.cfg
+[defaults]
+retry_files_enabled = False
+inventory = /usr/local/etc/ansible/inventory.ini
+EOF
+    fi
+
+	echo "Generate initial inventory file"
+    if [ ! -f /usr/local/etc/ansible/inventory.ini ]; then
+    	cat <<EOF > /usr/local/etc/ansible/inventory.ini
+[freebsd:children]
+gateways
+EOF
+    fi
+
+
+	cat <<EOF > /usr/local/etc/ansible/group_vars/freebsd
+---
+ansible_ssh_user: $USER
+ansible_ssh_port: ${SSH_PORT}
+ansible_python_interpreter: /usr/local/bin/python2
+EOF
+
+# A temporary dirty hack
+cat <<EOF > /usr/local/etc/ansible/group_vars/gateways
+---
+radius_servers:
+  - name: radius1
+    ip: 10.10.10.10
+    port: 1645
+    password: averylongpassword
+  - name: radius2
+    ip: 10.10.10.20
+    port: 1645
+    password: averylongpassword
+EOF
+
+	cat <<EOF > /usr/local/etc/ansible/site.yml
+---
+- include: gateways.yml
+- include: vpn_wifi_routers.yml
+EOF
+
+	cat <<EOF > /usr/local/etc/ansible/gateways.yml
+---
+- hosts: gateways
+  gather_facts: no
+  sudo: yes
+  roles:
+    - common
+    - gateway
+    - nanobsd
+EOF
+
+	cat <<EOF > /usr/local/etc/ansible/vpn_wifi_routers.yml
+---
+- hosts: vpn_wifi_routers
+  gather_facts: no
+  sudo: yes
+  roles:
+    - vpn_wifi_router
+    - nanobsd
+EOF
+
+	cat <<EOF > /usr/local/etc/ansible/roles/nanobsd/tasks/main.yml
+---
+- name: Checking configuration saved status
+  command: config diff quiet
+  register: config_status
+  changed_when: "config_status.rc != 0"
+  ## BUG that trigger changed in all case
+  failed_when: "'ERROR' in config_status.stderr"
+  tags: saving
+  notify:
+     - config save
+EOF
+
+	cat <<EOF > /usr/local/etc/ansible/roles/nanobsd/handlers/main.yml
+---
+- name: config save
+  command: config save
+
+EOF
+
+	cat <<EOF > /usr/local/etc/ansible/roles/common/tasks/main.yml
+---
+- name: Configure hostname
+  lineinfile: dest=/etc/rc.conf regexp=^hostname= line='hostname="{{inventory_hostname}}"'
+  tags: hostname
+  notify:
+     - restart hostname
+
+- name: Configure IP on internal interface
+  lineinfile: dest=/etc/rc.conf regexp=^ifconfig_net1= line='ifconfig_net1="inet {{if_int_inet4_addr}}/{{if_int_inet4_prefix}}"'
+  tags: interface
+  notify:
+     - restart netif
+
+- name: Configure IP on interface net0
+  lineinfile: dest=/etc/rc.conf regexp=^ifconfig_net0= line='ifconfig_net0="inet {{if_ext_inet4_addr}}/{{if_ext_inet4_prefix}}"'
+  tags: interface
+  notify:
+     - restart netif
+
+- name: Create additionnal loopback interfaces
+  lineinfile: dest=/etc/rc.conf regexp=^cloned_interfaces= line='cloned_interfaces="lo1 lo2"'
+  tags: interface
+  notify:
+     - restart netif
+ 
+- name: Configure loopback interface
+  lineinfile: dest=/etc/rc.conf regexp=^ifconfig_lo1= line='ifconfig_lo1="inet {{if_lo_inet4_addr}}/{{if_lo_inet4_prefix}}"'
+  tags: interface
+  notify:
+     - restart netif
+
+- name: Configure loopback interface lo2
+  lineinfile: dest=/etc/rc.conf regexp=^ifconfig_lo2= line='ifconfig_lo2="inet 2.2.2.2/32"'
+  tags: interface
+  notify:
+     - restart netif
+
+EOF
+
+	cat <<EOF > /usr/local/etc/ansible/roles/common/handlers/main.yml
+---
+- name: restart hostname
+  command: hostname {{inventory_hostname}}
+
+- name: restart netif
+  service: name=netif state=restarted
+
+- name: restart routing
+  service: name=routing state=restarted
+  ignore_errors: yes
+
+EOF
+    if [ ! -f /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/crl.pem ]; then
+	    echo "Extracting certificate archive..."
+	    sudo tar xzvf ${PRIVATE_KEY} -C /usr/local/etc/
+	    echo "Installing certificates files to openvpn directory..."
+	    for file in crl.pem ta.key ca.crt dh1024.pem; do
+		    cp /usr/local/etc/keys/${file} /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn
+	    done
+	    echo "Installing CA files..."
+	    sudo sed -i "" -e '/EASY_RSA/s/`pwd`/\/usr\/local\/share\/easy-rsa\//' /usr/local/etc/easy-rsa.vars
+        if [ ! -f ${HOME}/.ssh/id_ed25519 ]; then
+            echo "Installing SSH private key"
+            sudo mv /usr/local/etc/id_ed25519 ${HOME}/.ssh/id_ed25519
+            sudo chown $USER ${HOME}/.ssh/id_ed25519
+            chmod 600 ${HOME}/.ssh/id_ed25519
+        else
+            sudo rm /usr/local/etc/id_ed25519
+        fi
+    fi
+    cat <<EOF > /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/raddb/clients.conf.j2
+#{{ ansible_managed }}
+client vpnwifirouter {
+        ipaddr = {{registered_inet4_net}}/{{registered_inet4_prefix}}
+        proto = udp
+        secret = "averylongpassword"
+        require_message_authenticator = yes
+        nas_type = other
+}
+EOF
+    cat <<EOF > /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/raddb/proxy.conf.j2
+#{{ ansible_managed }}
+{% for host in radius_servers %}
+home_server {{ host.name }} {
+    type = auth+acct
+    ipaddr = {{ host.ip }}
+    port = {{ host.port }}
+    secret = "{{ host.password }}"
+    require_message_authenticator = yes
+    response_window = 20
+    zombie_period = 40
+    revive_interval = 120
+    status_check = status-server
+    check_interval = 30
+    num_answers_to_alive = 3
+}
+{% endfor %}
+
+home_server_pool eap_radius_servers {
+    type = fail-over
+{% for host in radius_servers %}
+    home_server = {{ host.name }}
+{% endfor %}
+}
+
+realm NULL {
+        nostrip
+        auth_pool = eap_radius_servers
+        acct_pool = eap_radius_servers
+}
+EOF
+    cat <<EOF > /usr/local/etc/ansible/roles/gateway/files/etc/ipfw.rules.j2
+#!/bin/sh
+#{{ ansible_managed }}
+fwcmd="/sbin/ipfw"
+# Interfaces description:
+# net0 is [UNSECURE] Internet facing NIC
+# tun0 is [UNSECURE] unregistered OpenVPN tunnel interface
+# net1 is local/internal facing NIC
+# tun1 is the registered OpenVPN tunnel interface
+# lo1 is loopback interface used for managment
+# Get the SSH port (should be the same on the manager)
+SSH_PORT=\`grep '^Port [[:digit:]]' /etc/ssh/sshd_config  | cut -d ' ' -f 2\`
+[ \${SSH_PORT} -lt 1 -o \${SSH_PORT} -gt 65535 ] && SSH_PORT=22
+# Get the OpenVPN port list
+OVPN_GW_PORT=\`grep '^port [[:digit:]]' /usr/local/etc/openvpn/gateway.conf | cut -d ' ' -f 2\`
+OVPN_REG_PORT=\`grep '^port [[:digit:]]' /usr/local/etc/openvpn/registration.conf | cut -d ' ' -f 2\`
+# Flush out the list before we begin.
+\${fwcmd} -f flush
+# Didn't filter packet to/from loopback, tunnel and internal interfaces
+\${fwcmd} add pass ip from any to any via lo0
+\${fwcmd} add pass ip from any to any via lo1
+\${fwcmd} add pass ip from any to any via net1
+\${fwcmd} add pass ip from any to any via tun1
+# Create a NAT table for reaching unregistered VPN clients
+# This prevent to push any route to them
+\${fwcmd} nat 111 config if tun0 deny_in same_ports unreg_only reset
+# Check incoming packets against NAT table
+\${fwcmd} add nat 111 ip from any to any in via tun0
+# Allow ICMP to myself on Internet interface
+\${fwcmd} add pass icmp from me to any out via net0
+\${fwcmd} add pass icmp from any to me in via net0
+# Allow NTP to myself on Internet interface
+\${fwcmd} add pass udp from me 123 to any 123 out via net0
+\${fwcmd} add pass udp from any 123 to me 123 in via net0
+## Allow OpenVPN to myself on Internet interface
+\${fwcmd} add pass udp from me \${OVPN_GW_PORT},\${OVPN_REG_PORT} to any out via net0
+\${fwcmd} add pass udp from any to me \${OVPN_GW_PORT},\${OVPN_REG_PORT} in via net0
+# All ICMP and SSH to manager ONLY from the unregistered-ovpn interface
+# NAT internal traffic when reaching unregistered-VPN devices
+\${fwcmd} add nat 111 ip from any to any out via tun0
+EOF
+	cat <<EOF > /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/gateway.conf.j2
+#{{ ansible_managed }}
+server {{registered_inet4_net}} {{registered_inet4_mask}}
+topology subnet
+dev tun1
+proto udp
+port ${OVPN_REG_PORT}
+fast-io
+ca ca.crt
+cert {{hostname}}.crt
+key {{hostname}}.key
+dh dh1024.pem
+cipher AES-128-CBC
+tls-auth ta.key 0
+persist-key
+persist-tun
+user nobody
+group nobody
+keepalive 10 60
+crl-verify crl.pem
+status /var/log/openvpn-gateway.log 5
+status-version 2
+client-config-dir ccd
+ifconfig-pool-persist ipp.txt
+# All VPN gateways hosts VPN-routers service on 2.2.2.2
+push "route 2.2.2.2 255.255.255.255"
+# Limiting too big UDP packets (like RADIUS EAP-TLS packets)
+fragment 1400
+# reduce TCP MSS size
+mssfix
+EOF
+    # Generate the DNS/DOMAINS configuration for ovpn-gateway and local resolv
+    [ -f /etc/resolv.conf ] && sudo rm -f /etc/resolv.conf
+    FIRST=true
+    for DOMAIN in ${DOMAINS_LIST}; do
+        echo "push \"dhcp-option DOMAIN ${DOMAIN}\"" >> /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/gateway.conf.j2
+        if (${FIRST}); then
+           echo "domain ${DOMAIN}" | sudo tee -a /etc/resolv.conf
+            FIRST=false  
+        else
+           echo "search ${DOMAIN}" | sudo tee -a /etc/resolv.conf
+        fi
+    done
+    for DNS in ${DNS_LIST}; do
+        echo "push \"dhcp-option DNS ${DNS}\"" >> /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/gateway.conf.j2
+        echo "nameserver ${DNS}" | sudo tee -a /etc/resolv.conf
+    done
+    # Using the same manager resolv.conf to the gateway
+    cp /etc/resolv.conf /usr/local/etc/ansible/roles/gateway/files/etc/
+
+	cat <<EOF > /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/registration.conf.j2
+#{{ ansible_managed }}
+server {{unregistered_inet4_net}} {{unregistered_inet4_mask}}
+topology p2p
+dev tun0
+proto udp
+port ${OVPN_UNREG_PORT}
+fast-io
+ca ca.crt
+cert {{hostname}}.crt
+key {{hostname}}.key
+dh dh1024.pem
+cipher AES-128-CBC
+tls-auth ta.key 0
+persist-key
+persist-tun
+user nobody
+group nobody
+keepalive 10 60
+status /var/log/openvpn-registration.log 5
+status-version 2
+duplicate-cn
+# Very important feature for limiting too big UDP packet (RADIUS with EAP-TLS)
+fragment 1400
+# reduce TCP MSS size
+mssfix
+# Need to reload ipfw after creating tun0
+script-security 2
+up /usr/local/etc/openvpn/ovpn-registration.sh
+down /usr/local/etc/openvpn/ovpn-registration.sh
+EOF
+
+    cat  <<EOF > /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/ovpn-registration.sh
+#!/bin/sh
+#
+# OpenVPN Registration tunnel up/down script:
+# ipfw didn't have tun0 interface during startup, then it need to be
+# reloaded after openvpn create and setup the tun0 interface
+
+case \${script_type} in
+up)
+    /bin/sh /etc/ipfw.rules || /usr/bin/logger "ERROR for reloading ipfw"
+    ;;
+down)
+    ;;
+esac
+EOF
+    chmod +x /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/ovpn-registration.sh
+	cat <<EOF > /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/bird.conf.j2
+#{{ ansible_managed }}
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+#log stderr all;
+
+# Override router ID
+router id {{ if_lo_inet4_addr }};
+
+filter direct_in
+{
+    if net = {{unregistered_inet4_net}}/{{unregistered_inet4_prefix}} then accept;
+    else reject;
+}
+
+# Sync bird routing table with kernel
+protocol kernel {
+    export all;
+    learn;
+    scan time 10;
+}
+
+# Include device route (warning: Generate a device route (/32) for each connected interfaces)
+protocol device {
+    scan time 10;
+}
+
+# Include directly connected network (simulate passive interface)
+protocol direct {
+    interface "tun0";
+}
+
+# Enable OSPF, only on LAN and tun interface to registered client
+protocol ospf GATEWAY {
+    export filter direct_in;	# We advertise only tun0 routes to ospf
+    rfc1583compat yes;
+    area 0.0.0.0 {
+        interface "net1" {
+            cost 10;
+            type broadcast;
+        };
+        interface "tun1" {
+            cost 10;
+            type ptp;
+        };
+        interface "lo1" {
+            stub yes;
+	    };
+    };
+}
+
+protocol static {
+    route 0.0.0.0/0 via {{gateway_inet4}};
+}
+
+EOF
+
+    cat <<EOF > /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/newsyslog.conf.d/bird
+/var/log/bird.log       600  3     100  *     JB    /var/run/bird.pid
+EOF
+
+	cat <<EOF > /usr/local/etc/ansible/roles/gateway/tasks/main.yml
+---
+- include: kld.yml
+- include: resolv.yml
+- include: firewall.yml
+- include: openvpn.yml
+- include: bird.yml
+- include: freeradius.yml
+EOF
+    cat <<EOF > /usr/local/etc/ansible/roles/gateway/tasks/freeradius.yml
+---
+- name: Generate proxy.conf
+  template: src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/raddb/proxy.conf.j2
+    dest=/usr/local/etc/raddb/proxy.conf owner=root group=wheel mode=0600
+  tags: freeradius
+  notify:
+      - restart freeradius
+
+- name: Generate clients.conf
+  template: src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/raddb/clients.conf.j2
+    dest=/usr/local/etc/raddb/clients.conf owner=root group=wheel mode=0644
+  tags: freeradius
+  notify:
+      - restart freeradius
+
+- name: enable radius
+  action: service name=radiusd enabled=yes
+  tags: freeradius
+  notify:
+     - restart freeradius
+EOF
+    cat <<EOF > /usr/local/etc/ansible/roles/gateway/tasks/kld.yml
+---
+- name: Declare kernel modules to load
+  lineinfile: dest=/etc/rc.conf regexp=^kld_list= line='kld_list=="coretemp ipmi aesni"'
+  tags: kld
+  notify:
+     - start kld
+EOF
+
+    cat <<EOF > /usr/local/etc/ansible/roles/gateway/tasks/resolv.yml
+- name: copy resolv.conf file
+  action: copy src=/usr/local/etc/ansible/roles/gateway/files/etc/resolv.conf
+    dest=/etc/resolv.conf owner=root group=wheel mode=0644
+EOF
+
+    cat <<EOF > /usr/local/etc/ansible/roles/gateway/tasks/firewall.yml
+---
+- name: Generate ipfw.rules
+  template: src=/usr/local/etc/ansible/roles/gateway/files/etc/ipfw.rules.j2
+    dest=/etc/ipfw.rules owner=root group=wheel mode=0644
+  tags: firewall
+  notify:
+      - restart firewall
+
+- name: Declare ipfw configuration file
+  lineinfile: dest=/etc/rc.conf regexp=^firewall_script= line='firewall_script="/etc/ipfw.rules"'
+  tags: firewall
+  notify:
+     - restart firewall
+
+- name: enable firewall nat
+  lineinfile: dest=/etc/rc.conf regexp=^firewall_nat_enable= line='firewall_nat_enable="YES"'
+  tags: firewall
+  notify:
+     - restart firewall
+
+- name: enable firewall
+  action: service name=ipfw enabled=yes
+  tags: firewall
+  notify:
+     - restart firewall
+EOF
+
+	cat <<EOF > /usr/local/etc/ansible/roles/gateway/tasks/openvpn.yml
+---
+- name: Stop OpenVPN
+  lineinfile: dest=/etc/rc.conf regexp=^openvpn_enable line='openvpn_enable="NO"'
+  tags: openvpn
+  notify:
+     - stop openvpn
+ 
+- name: Generate multiple rc scripts for gateway and registration
+  file: src=/usr/local/etc/rc.d/openvpn dest=/usr/local/etc/rc.d/openvpn_{{ item }} state=link
+  with_items:
+     - gateway
+     - registration
+  notify:
+     - restart openvpn_gateway
+     - restart openvpn_registration
+
+- name: enable openvpn_gateway
+  action: service name=openvpn_gateway enabled=yes
+  tags: openvpn
+  notify:
+     - restart openvpn_gateway
+
+- name: enable openvpn_registration
+  action: service name=openvpn_registration enabled=yes
+  tags: openvpn
+  notify:
+     - restart openvpn_registration
+
+- name: copy certificate files
+  action: copy src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/{{ inventory_hostname }}.{{ item }}
+    dest=/usr/local/etc/openvpn owner=root group=wheel mode=0600
+  with_items:
+     - crt
+     - key
+  notify:
+     - restart openvpn_registration
+     - restart openvpn_gateway
+
+- name: copy crl file
+  action: copy src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/crl.pem
+    dest=/usr/local/etc/openvpn owner=root group=wheel mode=0664
+  tags:
+     - openvpn
+     - crl
+
+- name: copy script
+  action: copy src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/{{ item }}
+    dest=/usr/local/etc/openvpn owner=root group=wheel mode=0711
+  with_items:
+     - ovpn-registration.sh
+  notify:
+     - restart openvpn_registration
+
+- name: creates ccd directory
+  action: file path=/usr/local/etc/openvpn/ccd state=directory
+  tags:
+     - openvpn
+     - ccd
+
+- name: Copy all files from ccd/*
+  action: copy src={{ item}} dest=/usr/local/etc/openvpn/ccd
+  tags:
+    - openvpn
+    - ccd
+  with_fileglob:
+    - /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/ccd/*
+
+- name: Set configuration file
+  lineinfile: dest=/etc/rc.conf regexp=^openvpn_{{item}}_configfile= line='openvpn_{{item}}_configfile="/usr/local/etc/openvpn/{{item}}.conf"'
+  tags: openvpn
+  with_items:
+      - gateway
+      - registration
+  notify:
+     - restart openvpn_registration
+     - restart openvpn_gateway
+
+- name: Generate gateway.conf and registration files
+  template: src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/{{item }}.conf.j2
+    dest=/usr/local/etc/openvpn/{{item}}.conf owner=root group=wheel mode=0644
+  tags: openvpn
+  with_items:
+     - gateway
+     - registration
+  notify:
+      - restart openvpn_gateway
+      - restart openvpn_registration
+EOF
+
+	cat <<EOF > /usr/local/etc/ansible/roles/gateway/tasks/bird.yml
+---
+- name: enable bird
+  action: service name=bird enabled=yes
+  tags: bird
+  notify:
+     - restart bird
+
+- name: copy bird newsyslog files
+  action: copy src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/newsyslog.conf.d/bird
+    dest=/usr/local/etc/newsyslog.conf.d owner=root group=wheel
+  notify:
+     - restart newsyslog
+ 
+- name: Generate bird.conf file
+  template: src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/bird.conf.j2
+    dest=/usr/local/etc/bird.conf owner=root group=wheel mode=0600
+    validate='bird -pc %s'
+  tags: bird
+  notify:
+      - restart bird
+EOF
+
+	cat <<EOF > /usr/local/etc/ansible/roles/gateway/handlers/main.yml
+---
+- name: start kld
+  service: name=kld state=restarted
+
+- name: stop openvpn
+  service: name=openvpn state=stopped
+
+- name: restart openvpn_registration
+  service: name=openvpn_registration state=restarted
+
+- name: restart openvpn_gateway
+  service: name=openvpn_gateway state=restarted
+
+- name: restart bird
+  service: name=bird state=restarted
+
+- name: restart newsyslog
+  service: name=newsyslog state=restarted
+
+- name: restart firewall
+  service: name=ipfw state=restarted
+
+- name: restart freeradius
+  service: name=radiusd state=restarted
+EOF
+
+	echo "Populating ansible template for VPN-Wifi-routers..."
+
+ cat <<EOF > /usr/local/etc/ansible/roles/vpn_wifi_router/files/etc/rc.conf.j2
+#{{ ansible_managed }}
+# Hostname
+hostname="{{hostname}}"
+
+# Configure first interface as net0 "Internet" interface
+{% if if_internet_device is defined %}
+ifconfig_{{ if_internet_device }}_name="net0"
+{% else %}
+# re0 on APU
+# vtnet0 on VirtIO VM
+# em0 or vmx0 on VMware VM
+# igb on SuperMicro
+ifconfig_re0_name="net0"
+ifconfig_vtnet0_name="net0"
+ifconfig_em0_name="net0"
+ifconfig_vmx0_name="net0"
+ifconfig_igb0_name="net0"
+{% endif %}
+
+# Configure second interface as net1 "Internal" interface
+{% if if_lan_device is defined %}
+ifconfig_{{ if_lan_device }}_name="net1"
+{% else %}
+# APU had 3 NIC, re2 is not used in our case
+ifconfig_re1_name="net1"
+ifconfig_vtnet1_name="net1"
+ifconfig_em1_name="net1"
+ifconfig_vmx1_name="net1"
+ifconfig_igb1_name="net1"
+{% endif %}
+
+# Enable routing
+gateway_enable="YES"
+ipv6_gateway_enable="NO"
+ipv6_activate_all_interfaces="NO"
+rtadvd_enable="NO"
+rtadvd_interfaces="net1 wlan0"
+
+# Configure "Internet" interface as DHCP client
+ifconfig_net0="DHCP"
+
+# Permit to learn default IPv6 route on this interface even with IPv6 routing enabled
+ipv6_cpe_wanif="net0"
+
+# LAN and lo1 interface IP configuration
+cloned_interfaces="lo1"
+ifconfig_lo1="inet {{if_lo_inet4_addr}}/{{if_lo_inet4_prefix}}"
+ifconfig_net1="inet {{if_lan_inet4_addr}}/{{if_lan_inet4_prefix}}"
+
+# Wifi interface
+wlans_{{if_wifi_device}}="wlan0"
+create_args_wlan0="wlanmode hostap"
+ifconfig_wlan0="inet {{if_wifi_inet4_addr}}/{{if_wifi_inet4_prefix}} hostap channel 5"
+
+# Firewall
+firewall_enable="YES"
+firewall_nat_enable="YES"
+firewall_script="/etc/ipfw.rules"
+
+# Enable RFC1323 extensions
+tcp_extensions="YES"
+
+# Enable SSH by default
+sshd_enable="YES"
+
+# Load APU LED module drivers and amdtemp
+kld_list="apuled amdtemp wlan_xauth"
+
+# Loop script that is waiting for RESET
+resetcheck_enable="YES"
+
+# Enable OpenVPN
+openvpn_enable="YES"
+
+# Enable bird
+bird_enable="YES"
+
+# Enable DNSmasq
+dnsmasq_enable="YES"
+
+# Forcing date setup by NTP at boot is mandatory
+# Certificate date are checked
+ntpdate_enable="YES"
+
+EOF
+    
+    FIRST=true
+    for DOMAIN in ${DOMAINS_LIST}; do
+        if (${FIRST}); then
+            echo "domain=${DOMAIN}" >> /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/dnsmasq.conf.j2
+            FIRST=false
+        else
+            break
+        fi
+    done
+    cat <<EOF >> /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/dnsmasq.conf.j2
+# Don't read the hostnames in /etc/hosts
+no-hosts
+# Excluding "internet" facing interface
+except-interface=net0
+# Only bound to "internal" interfaces
+interface=net1
+interface=wlan0
+dhcp-range={{if_lan_inet4_dhcp_start}},{{if_lan_inet4_dhcp_end}}
+dhcp-range={{if_wifi_inet4_dhcp_start}},{{if_wifi_inet4_dhcp_end}}
+# Accept DNS queries only from hosts whose address is on a local subnet
+local-service
+# Only DHCP server on a network: allows new hosts to get a lease without a tedious timeout under all circumstances
+dhcp-authoritative
+# Disable negative caching
+no-negcache
+## DHCP option to send (0.0.0.0 = myself)
+# option ip-forwarding off
+dhcp-option=19,0
+# set netbios-over-TCP/IP nameserver(s) aka WINS server(s)
+#dhcp-option=44,0.0.0.0
+# Set netbios node type
+# These are the node types for netbios options:
+# 1 = B-node, 2 = P-node, 4 =M-node, 8 = H-node
+# option netbios-node-type 8; # default
+# B-node: Uses IP broadcast messages to register and resolve NetBIOS names to IP addresses
+# P-node: Uses point-to-point communication with a NetBIOS name server (in Windows 2000 based networks, this is the WINS server) to register and resolve computer names to IP addresses
+# M-node: Uses a mix of B-node and P-node communication to register and resolve NetBIOS names. M-node first uses broadcast resolution; then, if necessary, it uses a server query.
+# H-node: Uses a hybrid of B-node and P-node. An H-node computer always tries a server query first and uses broadcasts only if direct queries fail.
+dhcp-option=46,8
+# empty netbios scope.
+dhcp-option=47
+# Tell MS Windows to release a lease on shutdown
+dhcp-option=vendor:MSFT,2,1i
+# allow Windows clients to update Active Directory servers
+dhcp-client-update
+# Give DNS server to DHCP client: Internal DNS first, then myself at last
+# MS Window AD clients need register themself directly to the AD-DNS and
+# can't use the dnsmasq DNS cache.
+# If the ovpn tunnel go down, we allow to use itself (then DHCP learned ISP DNS)
+EOF
+    echo -n "dhcp-option=6" >> /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/dnsmasq.conf.j2
+    for DNS in ${DNS_LIST}; do
+        echo -n ",${DNS}" >> /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/dnsmasq.conf.j2
+    done
+    echo ",0.0.0.0" >> /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/dnsmasq.conf.j2
+    cat <<EOF >> /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/dnsmasq.conf.j2
+# But with multiple DNS configured on MS Windows, if no answer in 1 second
+#  it will query ALL configured DNS (including the third and public one).
+#  cf: https://technet.microsoft.com/en-us/library/dd197552%28WS.10%29.aspx
+#  This will leak internal information and create Windows DNS cache problem
+#  For avoiding this, we force dnsmasq to use only private DNS (resolvconf file generated by ovpn-if.sh script)
+#   and only if they failed, internet interface DNS (resolvconf file generated by dhcpd for net0 interface)
+# forces dnsmasq to try each query with each server strictly in the order they appear in resolv.conf
+strict-order
+# Whenever resolv.conf is re-read, clear the DNS cache
+clear-on-reload
+# Multiple resolv config files, it will use the most recent
+resolv-file=/var/run/resolvconf/interfaces/tun0
+resolv-file=/var/run/resolvconf/interfaces/net0
+# This servers conf file is generated by openvpn-if-up script
+# it add somes "server=/internal-domain/DNS-ip" lines
+# but it need a SIGUP for reloading this file
+servers-file=/var/run/ovpnif-dnsmasq.conf
+EOF
+    cat <<EOF > /usr/local/etc/ansible/roles/vpn_wifi_router/files/etc/ipfw.rules.j2
+#!/bin/sh
+#{{ ansible_managed }}
+### WARNING ###
+# When this rules is loaded during boot, tun0 interface didn't exist
+# Then ALL traffic on tun0 is denied: Firewall rules NEED to be reloaded with openvpn-if-up script
+fwcmd="/sbin/ipfw -q"
+RFC1918="10.0.0.0/8, 192.168.0.0/16, 172.16.0.0/12"
+LANS="{{if_lan_inet4_net}}/{{if_lan_inet4_prefix}},{{if_wifi_inet4_net}}/{{if_wifi_inet4_prefix}}"
+# Interfaces description:
+# net0 is [UNSECURE] Internet facing NIC
+# tun0 is registered OpenVPN tunnel interface
+# net1 is local/internal facing NIC
+# wlan0 is local/internal facing Wireless NIC
+# lo1 is loopback interface used for managment
+## Flush out the list before we begin.
+\${fwcmd} -f flush
+# Create a NAT table for Internet Interface
+\${fwcmd} nat 1 config if net0 log same_ports unreg_only reset
+# Create a second NAT table just for RADIUS request
+# hostapd can't bind specific interface and will use bad source IP
+\${fwcmd} nat 2 config if tun0 log same_ports unreg_only reset
+# Didn't filter on loopback and internal interfaces and tunnel
+\${fwcmd} add pass ip from any to any via lo0
+\${fwcmd} add pass ip from any to any via lo1
+\${fwcmd} add pass ip from any to any via net1
+\${fwcmd} add pass ip from any to any via wlan0
+# Check incoming packets against NAT tables
+\${fwcmd} add nat 1 ip from any to any in via net0
+\${fwcmd} add nat 2 ip from any to any in via tun0
+# Check incoming packets against statefull table
+\${fwcmd} add check-state
+# Allow DHCP on internet interface (useless because bpf(4) is used)
+\${fwcmd} add pass udp from 0.0.0.0 68 to 255.255.255.255 67 out via net0
+\${fwcmd} add pass udp from any 67 to me 68 in via net0
+\${fwcmd} add pass udp from any 67 to 255.255.255.255 68 in via net0
+# Allow ICMP from myself
+\${fwcmd} add pass icmp from me to any out via net0 keep-state
+# Allow DNS from myself
+\${fwcmd} add pass udp from me to any 53 out via net0 keep-state
+# Allow NTP from myself
+\${fwcmd} add pass udp from me to any 123 out via net0 keep-state
+## Allow OpenVPN from myself
+\${fwcmd} add pass udp from me to any ${OVPN_REG_PORT} out via net0 keep-state
+# NAT internal networks when they exit to Internet
+\${fwcmd} add nat 1 ip from \${LANS} to any out via net0
+# NAT RADIUS packets ONLY (hostapd can't bind specific interface)
+\${fwcmd} add nat 2 udp from me to 2.2.2.2 1812,1813 out via tun0
+# allow all on the tunnel interface
+\${fwcmd} add pass ip from any to any via tun0
+EOF
+	
+ cat <<EOF > /usr/local/etc/ansible/roles/vpn_wifi_router/files/etc/hostapd-wlan0.conf
+#{{ ansible_managed }}
+### Global parameters ###
+#Wireless interface previously put in hostap mode
+interface=wlan0
+# Interface for separate control program (like hostapd_cli)
+ctrl_interface=/var/run/hostapd
+# Access control for the control interface
+ctrl_interface_group=wheel
+#logger_syslog=-1
+#logger_syslog_level=2
+##### IEEE 802.11 related configuration #######################################
+# SSID to be used in IEEE 802.11 management frames
+ssid=WIFI@EINE
+##### IEEE 802.1X-2004 related configuration ##################################
+# ieee8021x must be set for WPA2-EAP
+ieee8021x=1
+### RADIUS client ###
+# IP address 2.2.2.2 is a loopback on ALL gateways
+# and a route toward 2.2.2.2/32 is installed by ovpn-if up script
+auth_server_addr=2.2.2.2
+auth_server_shared_secret=averylongpassword
+acct_server_addr=2.2.2.2
+acct_server_shared_secret=averylongpassword
+##### WPA/IEEE 802.11i configuration ##########################################
+#This field is a bit field that can be used to enable WPA (IEEE 802.11i/D3.0)
+# and/or WPA2 (full IEEE 802.11i/RSN):
+# bit0 = WPA
+# bit1 = IEEE 802.11i/RSN (WPA2)
+wpa=2
+# Set of accepted key management algorithms (WPA-PSK, WPA-EAP, or both). The
+# entries are separated with a space.
+# (dot11RSNAConfigAuthenticationSuitesTable)
+wpa_key_mgmt=WPA-EAP
+# Set of accepted cipher suites (encryption algorithms) for pairwise keys
+# (unicast packets). This is a space separated list of algorithms:
+# CCMP = AES in Counter mode with CBC-MAC [RFC 3610, IEEE 802.11i/D7.0]
+# TKIP = Temporal Key Integrity Protocol [IEEE 802.11i/D7.0]
+# Group cipher suite (encryption algorithm for broadcast and multicast frames)
+# is automatically selected based on this configuration. If only CCMP is
+# allowed as the pairwise cipher, group cipher will also be CCMP. Otherwise,
+# TKIP will be used as the group cipher.
+# (dot11RSNAConfigPairwiseCiphersTable)
+# Pairwise cipher for WPA (v1) (default: TKIP)
+wpa_pairwise=CCMP
+EOF
+
+ cat <<EOF > /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/openvpn/openvpn.conf.j2
+#{{ ansible_managed }}
+client
+dev tun0
+proto udp
+nobind
+{% for host in groups['gateways'] %}
+remote {{ hostvars[host]['hostname'] }}.${DOMAIN_NAME} ${OVPN_REG_PORT}
+{% endfor %}
+ca ca.crt
+cert {{hostname}}.crt
+key {{hostname}}.key
+cipher AES-128-CBC
+remote-cert-tls server
+tls-auth ta.key 1
+persist-key
+persist-tun
+user nobody
+group nobody
+fast-io
+explicit-exit-notify
+log-append /var/log/openvpn.log
+script-security 2
+up /usr/local/etc/openvpn/ovpn-if.sh
+plugin /usr/local/lib/openvpn/plugins/openvpn-plugin-down-root.so "/usr/local/etc/openvpn/ovpn-if.sh"
+fragment 1400
+mssfix
+EOF
+
+    cat <<EOF > /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/newsyslog.conf.d/openvpn
+/var/log/openvpn.log       600  3     100  *     JB    /var/run/openvpn.pid
+EOF
+
+ cat <<EOF > /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/bird.conf.j2
+#{{ ansible_managed }}
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+#log stderr all;
+
+# Override router ID
+router id {{ if_lo_inet4_addr }};
+
+filter kernel_in
+{
+    # Prevent to put the default-route (already learn by DHCP) into the kernel table
+    if net =  0.0.0.0/0 then reject;
+    else accept;
+}
+
+# Sync bird routing table with kernel
+protocol kernel {
+    export filter kernel_in;
+    learn;
+    scan time 10;
+}
+
+# Include device route (warning, a device route is a /32)
+protocol device {
+    scan time 10;
+}
+
+# Enable OSPF, only on tun interface
+protocol ospf CLIENT {
+    rfc1583compat yes;
+    area 0.0.0.0 {
+        interface "tun0" {
+            cost 10;
+            type ptp;
+        };
+        interface "lo1" {
+            stub yes;
+        };
+        interface "net1" {
+            stub yes;
+        };
+         interface "wlan0" {
+            stub yes;
+        };
+    };
+}
+EOF
+
+    cat <<EOF > /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/newsyslog.conf.d/bird
+/var/log/bird.log       600  3     100  *     JB    /var/run/bird.pid
+EOF
+
+    cat <<EOF > /usr/local/etc/ansible/roles/vpn_wifi_router/tasks/main.yml
+---
+- name: Generate rc, openvpn, bird, ipfw, dnsmasq configuration files
+  template: src=/usr/local/etc/ansible/roles/vpn_wifi_router/files/{{ item }}.j2
+    dest=/{{ item }} owner=root group=wheel mode=0644
+  with_items:
+     - etc/rc.conf
+     - etc/ipfw.rules
+     - usr/local/etc/openvpn/openvpn.conf
+     - usr/local/etc/bird.conf
+     - usr/local/etc/dnsmasq.conf
+
+- name: copy certificate files
+  action: copy src=/usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/openvpn/{{ inventory_hostname }}.{{ item }}
+    dest=/usr/local/etc/openvpn owner=root group=wheel mode=0600
+  with_items:
+     - crt
+     - key
+
+- name: copy newsyslog files
+  action: copy src=/usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/newsyslog.conf.d/{{ item }}
+    dest=/usr/local/etc/newsyslog.conf.d owner=root group=wheel mode=0600
+  with_items:
+     - openvpn
+     - bird
+
+- name: copy hostapd and ovpn-if files
+  action: copy src=/usr/local/etc/ansible/roles/vpn_wifi_router/files/{{ item }}
+    dest=/{{ item }} owner=root group=wheel mode=0644
+  with_items:
+     - etc/hostapd-wlan0.conf
+     - usr/local/etc/openvpn/ovpn-if.sh
+
+- name: Set ovpn-if script executable
+  action: file path=/usr/local/etc/openvpn/ovpn-if.sh mode=0755
+EOF
+    # This file is critical for correctly set-up openvpn tunnel, need to update it easly
+    cp /usr/local/etc/openvpn/ovpn-if.sh /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/openvpn/
+
+	echo "Done!"
+	echo "Now you need to:"
+	echo "1. Start the ssh-agent against the private key:"
+	echo "ssh-agent tcsh"
+	echo "ssh-add ~/.ssh/id_ed25519"
+	echo "2. Bootstrap all VMs' configuration"
+    echo "3. Add gateways:"
+    echo "gateway create emea1 -i 10.0.23.3/24 -e 2.2.35.3/24 -l 10.254.254.3 -u 10.1.3.0/24 -r 10.0.3.0/24 -d 2.2.35.5"
+    echo "gateway create amer1 -i 10.0.24.4/24 -e 2.2.45.4/24 -l 10.254.254.4 -u 10.1.4.0/24 -r 10.0.4.0/24 -d 2.2.45.5"
+	echo "4. Displaying unregistered VPN-Wifi-router connected on ALL gateways:"
+	echo "vpn-wifi-router list -u"
+	echo "5. Register unregistered client"
+    echo "vpn-wifi-router create singapore -i vtnet6 -x vtnet4 -e 10.6.1.254/24 -w 10.6.2.254/24 -l 3.3.3.6 -u 10.1.3.4"
+    echo "vpn-wifi-router create sydney -i vtnet7 -x vtnet4 -e 10.7.1.254/24 -w 10.7.2.254/24 -l 3.3.3.7 -u 10.1.3.5"
+}
+
+vm2() {
+	echo "EIN router"
+	sudo sysrc hostname="router"
+    sudo sysrc -xi ifconfig_vtnet0_name || true
+    sudo ifconfig net0 name vtnet0
+    sudo sysrc -xi ifconfig_vtnet1_name || true
+    sudo ifconfig net1 name vtnet1
+	sudo sysrc ifconfig_vtnet0="inet 10.0.12.2/24"
+	sudo sysrc ifconfig_vtnet1="inet 10.0.23.2/24"
+	sudo sysrc ifconfig_vtnet2="inet 10.0.24.2/24"
+	sudo sysrc dnsmasq_enable=yes
+	sudo sysrc openvpn_enable=NO
+	sudo sysrc bird_enable=YES
+    sudo sysrc firewall_enable=NO
+    # Retrieve the domain name
+    FULL_NAME=`grep -m 1 '^remote[[:space:]]\+.*[[:space:]]\+[[:digit:]]\+' /usr/local/etc/openvpn/openvpn.conf | cut -d ' ' -f 2`
+    DOMAIN_NAME=${FULL_NAME#*.}
+ 
+	cat <<EOF | sudo tee /usr/local/etc/dnsmasq.conf
+address=/manager/manager.${DOMAIN_NAME}/10.0.12.1
+interface=vtnet1
+interface=vtnet2
+interface=vtnet0
+EOF
+
+	cat <<EOF | sudo tee /usr/local/etc/bird.conf
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+#log stderr all;
+
+# Sync bird routing table with kernel
+protocol kernel {
+    export all;
+}
+
+# Include device route (warning, a device route is a /32)
+protocol device {
+    scan time 10;
+}
+
+# Enable Bidirectional Forwarding Detection (BFD)
+#protocol bfd {}
+
+protocol ospf ROUTER {
+    export none;
+    rfc1583compat yes;
+    area 0.0.0.0 {
+        interface "vtnet0","vtnet1", "vtnet2" {
+            cost 10;
+            type broadcast;
+        };
+   };
+}
+EOF
+
+	sudo hostname router
+	sudo pkill -9 openvpn
+    sudo service ipfw onestop
+	sudo service netif restart
+	sudo service routing restart || echo "Routing restart allways failed"
+	sudo service dnsmasq start
+	sudo service bird start
+	sudo config save
+	echo "Done!"
+}
+
+gateway () {
+    # $1: Internal IP/subnet
+    # $2: Internal router (temporary default router)
+    [ $# -ne 2 ] && usage_gateway
+    IP=$1
+    DFLT_GW=$2
+	echo "Configuring Gateway ${IP} for bootstraping"
+    sudo sysrc ifconfig_net1="inet ${IP}"
+    sudo sysrc -x kld_list
+    sudo sysrc -x rtadvd_enable
+    sudo sysrc -x rtadvd_interfaces
+    sudo sysrc -x ipv6_cpe_wanif
+    sudo sysrc -x firewall_type
+    sudo sysrc -x firewall_myservices
+    sudo sysrc -x firewall_allowservices
+    sudo sysrc -x openvpn_enable
+    sudo sysrc firewall_script="/etc/ipfw.rules"
+    cat <<EOF | sudo tee /etc/ipfw.rules
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+# Flush out the list before we begin.
+\${fwcmd} -f flush
+\${fwcmd} add pass all from any to any via lo0
+\${fwcmd} add pass all from any to any via net1
+EOF
+	sudo service netif restart
+    sudo service ipfw restart
+    #We NEED to start bird (configured), because ansible will cut it's link
+	#sudo service routing restart || echo "Routing restart allways failed"
+	sudo pkill -9 openvpn || echo "Can't kill openvpn"
+	cat <<EOF | sudo tee /usr/local/etc/bird.conf
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+#log stderr all;
+
+# Sync bird routing table with kernel
+protocol kernel {
+    export all;
+}
+
+# Include device route (warning, a device route is a /32)
+protocol device {
+    scan time 10;
+}
+
+protocol ospf ROUTER {
+    export none;
+    rfc1583compat yes;
+    area 0.0.0.0 {
+        interface "net1" {
+            cost 10;
+            type broadcast;
+        };
+   };
+}
+
+protocol static {
+    route 0.0.0.0/0 via ${DFLT_GW};
+}
+EOF
+    sudo sysrc bird_enable=yes
+    sudo service bird start
+	echo "Done!"
+}
+
+vm5 () {
+	echo "Configuring Internet Router"
+	sudo sysrc hostname="internet"
+    sudo sysrc -x ifconfig_vtnet0_name
+    sudo sysrc -x ifconfig_vtnet1_name
+    sudo ifconfig net0 name vtnet0
+    sudo ifconfig net1 name vtnet1
+	sudo sysrc ifconfig_vtnet2="inet 2.2.35.5/24"
+	sudo sysrc ifconfig_vtnet3="inet 2.2.45.5/24"
+	sudo sysrc ifconfig_vtnet4="inet 202.56.56.5/24"
+	sudo sysrc ifconfig_vtnet5="inet 203.57.57.5/24"
+	sudo sysrc openvpn_enable=NO
+	sudo sysrc dnsmasq_enable=YES
+    sudo sysrc firewall_enable=NO
+    sudo sysrc ntpd_enable=YES
+	sudo hostname internet
+	sudo service netif restart
+    sudo service ipfw onestop
+	sudo pkill -9 openvpn && echo "kill openvpn" || echo "failed to kill openvpn"
+    # Retrieve the gateway domain name
+    FULL_NAME=`grep -m 1 '^remote[[:space:]]\+.*[[:space:]]\+[[:digit:]]\+' /usr/local/etc/openvpn/openvpn.conf | cut -d ' ' -f 2`
+    DOMAIN_NAME=${FULL_NAME#*.}
+    cat <<EOF | sudo tee /etc/ntp.conf
+restrict 202.0.0.0 mask 255.0.0.0
+server 127.127.1.0
+EOF
+    sudo service ntpd restart
+    cat <<EOF | sudo tee /usr/local/etc/dnsmasq.conf
+address=/emea1.${DOMAIN_NAME}/2.2.35.3
+address=/amer1.${DOMAIN_NAME}/2.2.45.4
+address=/vm5-vm6.eine.bsdrp.net/202.56.56.5
+address=/vm5-vm7.eine.bsdrp.net/202.57.57.5
+address=/0.freebsd.pool.ntp.org/2.2.35.2
+domain=eine.bsdrp.net
+interface=vtnet4
+interface=vtnet5
+dhcp-range=202.56.56.6,202.56.56.7,24h
+dhcp-range=203.57.57.7,203.57.57.8,24h
+EOF
+	sudo service dnsmasq start
+	echo "Done"
+}
+
+lab_vpn_router() {
+	# $1: NIC used as "Internet" NIC
+    # $2: NIC used as "Internal" NIC
+	echo "Configuring LAB VPN-Router"
+    # cleaning previous configuration
+    for i in ${NIC_TYPE};do
+        for j in 0 1; do
+            sudo sysrc -x ifconfig_${i}${j}_name || true
+        done
+    done
+    sudo ifconfig net0 name vtnet0
+    sudo ifconfig net1 name vtnet1
+    sudo ifconfig $1 name net0
+    sudo ifconfig $2 name net1
+    sudo sysrc ifconfig_$1_name="net0"
+    sudo sysrc ifconfig_$2_name="net1"
+    preserve_reset_config
+    sudo service netif restart
+	echo "Done"
+}
+
+desktop() {
+	# $1: Nic used as LAN NIC
+    # $2: VM name
+	echo "Configuring laptop"
+	sudo sysrc hostname="$2"
+    sudo sysrc -x ifconfig_vtnet0_name
+    sudo sysrc -x ifconfig_vtnet1_name
+    sudo sysrc -x ifconfig_net0
+	sudo sysrc ifconfig_$1="DHCP"
+	sudo sysrc openvpn_enable=NO
+	sudo sysrc gateway_enable=NO
+	sudo sysrc ipv6_gateway_enable=NO
+    sudo sysrc firewall_enable=NO
+    sudo sysrc ntpd_enable=NO
+	sudo pkill -9 openvpn || echo "can't kill openpvn"
+	sudo hostname $2
+	sudo service netif restart
+	sudo service routing restart || echo "Routing restart allways failed"
+    sudo service ipfw onestop
+    sudo service ntpd onestop
+    sudo sysctl net.inet.udp.blackhole=0
+    sudo sysctl net.inet.tcp.blackhole=0
+	sudo config save
+	echo "Done"
+}
+
+preserve_reset_config () {
+	# Allow 'config factory' to run without renaming
+	sudo mount -uw /
+	cp /etc/rc.conf /conf/base/etc/
+	sudo mount -ur /
+}
+
+### Main
+
+[ $# -lt 1 ] && usage
+[ `id -u` -eq 0 ] && die "Don't start this script as root"
+
+case "$1" in
+	manager)
+        shift
+		manager "$@"
+        ;;
+    VM1|vm1)
+        manager vtnet0 10.0.12.1/24 10.0.12.2 /root/DEMO.private.keys.tgz
+		;;
+    gateway)
+        # remove the first argument
+        shift
+        gateway "$@"
+        ;;
+	VM2|vm2)
+		vm2
+		;;
+	VM3|vm3)
+        sudo ifconfig net0 name vtnet0
+        sudo ifconfig vtnet3 name net0
+        sudo sysrc -x ifconfig_vtnet0_name
+        sudo sysrc ifconfig_vtnet3_name="net0"
+        #preserve_reset_config
+		gateway 10.0.23.3/24 10.0.23.2
+		;;
+	VM4|vm4)
+        sudo ifconfig net0 name vtnet0
+        sudo ifconfig vtnet3 name net0
+        sudo sysrc -x ifconfig_vtnet0_name
+        sudo sysrc ifconfig_vtnet3_name="net0"
+        #preserve_reset_config
+		gateway 10.0.24.4/24 10.0.24.2
+		;;
+	VM5|vm5)
+		vm5
+		;;
+	VM6|vm6)
+		lab_vpn_router vtnet4 vtnet6
+		;;
+    vm7|VM7)
+        lab_vpn_router vtnet4 vtnet7
+        ;;
+	VM8|vm8)
+		desktop vtnet5 vm8
+		;;
+	VM9|vm9)
+		desktop vtnet6 vm9
+		;;
+	*)
+		die "Bad call of lab_init with: $1"
+esac

@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# PROVIDE: resetcheck
+# REQUIRE: DAEMON
+# KEYWORD: nojail
+#
+# Add the following to /etc/rc.conf[.local] to enable this service
+#
+# resetcheck_enable="YES"
+#
+
+. /etc/rc.subr
+
+resetcheck_enable=${resetcheck_enable-"NO"}
+
+name="resetcheck"
+rcvar=${name}_enable
+
+load_rc_config ${name}
+
+pidfile="/var/run/${name}.pid"
+
+start_cmd="resetcheck_start"
+command="/usr/local/sbin/resetcheck"
+
+resetcheck_start(){  
+    echo "starting monitoring RESET button status."
+   /usr/sbin/daemon -p ${pidfile} ${command}
+}
+
+run_rc_command "$1"
