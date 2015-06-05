@@ -21,14 +21,14 @@ For building your own EINE firmware, you NEED:
 Then you had to follow these steps:
 
 1. Download source
-    ```
+```
 svnlite co https://github.com/ocochard/BSDRP/trunk BSDRP
 cd BSDRP
-    ```
+```
 2. Create EINE/local.data directory
-    ```
+```
 mkdir EINE/local.data
-    ```
+```
 3. Edit EINE/local.data/data.conf for customize your:
     - admin username
     - Root password
@@ -37,13 +37,13 @@ mkdir EINE/local.data
 5. Generate easy-rsa configuration file and put it in EINE/local.data/easy-rsa.vars
 6. Genarate a CA certificate and put then into EINE/local.data/keys
 7. Download GeoIP2 database
-    ```
+```
 cd EINE/local.data
 fetch http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz
 gunzip GeoLite2-City.mmdb.gz
-    ```
+```
 8. Generate EINE x86 disk image using BSD Router Project build script
-    ```
+```
 cd ../..
 ./make.sh -p EINE
-    ```
+```
