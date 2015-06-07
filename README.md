@@ -20,7 +20,7 @@ The make.sh script is the build tool for generating BSDRP image:
 More details on the website:
 http://bsdrp.net/documentation/technical_docs
 
-## Child projets
+## Child projects
  * BSDRPcur: Same as BSDRP but based of FreeBSD-current code
  * TESTING: Generate a small nanobsd image (without packages), used for following network performance evolution in time
  * BSDMC: BSD Media Center, allow to test code factorisation/re-usability on a totally different project
