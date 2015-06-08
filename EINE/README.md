@@ -25,11 +25,8 @@ Then you had to follow these steps:
 svnlite co https://github.com/ocochard/BSDRP/trunk BSDRP
 cd BSDRP
 ```
-2. Create EINE/local.data directory
-```
-mkdir EINE/local.data
-```
-3. Edit EINE/local.data/data.conf for customize your:
+2. [Generate your own SSH keys and certificate](docs/How-to.generate.keys.md)
+3. Create an EINE/local.data/data.conf file for declaring:
     - ADMIN_USERNAME: admin username
     - CONSOLE_PASSWORD: Root password
     - DOMAIN_NAME: domain name
@@ -37,8 +34,7 @@ mkdir EINE/local.data
     - OVPN_UNREG_PORT: UDP port to be used for unregistered gateway
     - SSH_PORT: Port used by sshd
     - check examples in [EINE/DEMO.data/data.conf](DEMO.data/data.conf)
-4. [Generate your own SSH keys and certificate](docs/How-to.generate.keys.md)
-5. Generate EINE x86 disk image using BSD Router Project build script
+4. Generate EINE x86 disk image using BSD Router Project build script
 ```
 ./make.sh -p EINE
 ```

@@ -79,5 +79,5 @@ Once generated SSH keys and Certificates, we need to put them into an archive.
 This archive will be copied to the EINE manager for initializing it.
 
 ```
-tar cvfz ${BSDRP_DIR}/EINE/PROD.certs.tgz -C ${BSDRP_DIR}/EINE/local.data easy-rsa.vars easy-rsa.vars.tcsh keys id_ed25519.pub id_ed25519
+tar cvfz ${BSDRP_DIR}/EINE/PROD.certs.tgz -C ${BSDRP_DIR}/EINE/local.data easy-rsa.vars easy-rsa.vars.tcsh keys id_ed25519
 ```

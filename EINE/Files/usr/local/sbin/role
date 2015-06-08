@@ -50,14 +50,17 @@ usage() {
 usage_manager () {
     echo "role manager IP/SUBNET DEFAULT-GATEWAY INTERNAL-DNS-LIST INTERNAL-DOMAIN-LIST private-ssh_ovpn_CA.tgz"
     echo "Example:"
-    echo "role manager 10.0.12.1/24 10.0.12.2 \"10.0.12.2 10.0.23.2\" eine.bsdrp.net /tmp/PROD.keys.tgz"
+    echo "role manager 10.0.12.1/24 10.0.12.2 \"10.0.12.2 10.0.23.2\" eine.bsdrp.net /root/DEMO.keys.tgz"
     exit 0
 }
 
 usage_gateway () {
-    echo "role gateway internal-NIC IP/SUBNET DEFAULT-GATEWAY"
+    echo "Check that interfaces was correctly renamed:"
+    echo " - net0: Internet facing interface"
+    echo " - net1: Internal interface"
+    echo "role gateway IP/SUBNET DEFAULT-GATEWAY"
     echo "Example:"
-    echo "role gateway vtnet0 10.0.12.1/24 10.0.12.2"
+    echo "role gateway 10.0.12.1/24 10.0.12.2"
     exit 0
 }
 
