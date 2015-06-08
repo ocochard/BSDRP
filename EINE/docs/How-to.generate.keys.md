@@ -50,7 +50,6 @@ Here is an example used for the DEMO keys:
 ```
 cp /usr/local/share/easy-rsa/vars ${BSDRP_DIR}/EINE/local.data/easy-rsa.vars
 sed -i "" -e '/KEY_SIZE=/s/1024/2048/' ${BSDRP_DIR}/EINE/local.data/easy-rsa.vars
-#sed -i "" -e '/KEY_DIR=/s/$EASY_RSA/\/usr\/local\/etc/' EINE/local.data/easy-rsa.vars
 sed -i "" -e '/KEY_COUNTRY=/s/US/FR/' ${BSDRP_DIR}/EINE/local.data/etc/easy-rsa.vars
 sed -i "" -e '/KEY_PROVINCE=/s/CA/Bretagne/' ${BSDRP_DIR}/EINE/local.data/easy-rsa.vars
 sed -i "" -e '/KEY_CITY=/s/SanFrancisco/Rennes/' ${BSDRP_DIR}/EINE/local.data/easy-rsa.vars

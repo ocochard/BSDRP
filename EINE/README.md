@@ -36,7 +36,7 @@ mkdir EINE/local.data
     - GATEWAYS: List of of gateways hostname
     - OVPN_UNREG_PORT: UDP port to be used for unregistered gateway
     - SSH_PORT: Port used by sshd
-    - check examples in EINE/DEMO.data/data.conf
+    - check examples in [EINE/DEMO.data/data.conf](DEMO.data/data.conf)
 4. [Generate your own SSH keys and certificate](docs/How-to.generate.keys.md)
 5. Generate EINE x86 disk image using BSD Router Project build script
 ```
