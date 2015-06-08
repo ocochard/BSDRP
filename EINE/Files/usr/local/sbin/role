@@ -963,8 +963,10 @@ LANS="{{if_lan_inet4_net}}/{{if_lan_inet4_prefix}},{{if_wifi_inet4_net}}/{{if_wi
 \${fwcmd} add nat 1 ip from \${LANS} to any out via net0
 # NAT RADIUS packets ONLY (hostapd can't bind specific interface)
 \${fwcmd} add nat 2 udp from me to 2.2.2.2 1812,1813 out via tun0
-# allow all on the tunnel interface
-\${fwcmd} add pass ip from any to any via tun0
+# allow internal networks exiting to the tunnel interface
+\${fwcmd} add pass ip from \${LANS} to any via tun0
+# allow myself exiting to the tunnel interface too
+\${fwcmd} add pass ip from me to any via tun0
 EOF
 	
  cat <<EOF > /usr/local/etc/ansible/roles/vpn_wifi_router/files/etc/hostapd-wlan0.conf

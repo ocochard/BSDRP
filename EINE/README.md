@@ -30,20 +30,15 @@ cd BSDRP
 mkdir EINE/local.data
 ```
 3. Edit EINE/local.data/data.conf for customize your:
-    - admin username
-    - Root password
-    - check example in EINE/DEMO.data/data.conf
-4. Create private and public SSH key pairs in EINE/local.data (id_ed25519 and id_ed25519.pub)
-5. Generate easy-rsa configuration file and put it in EINE/local.data/easy-rsa.vars
-6. Genarate a CA certificate and put then into EINE/local.data/keys
-7. Download GeoIP2 database
+    - ADMIN_USERNAME: admin username
+    - CONSOLE_PASSWORD: Root password
+    - DOMAIN_NAME: domain name
+    - GATEWAYS: List of of gateways hostname
+    - OVPN_UNREG_PORT: UDP port to be used for unregistered gateway
+    - SSH_PORT: Port used by sshd
+    - check examples in EINE/DEMO.data/data.conf
+4. [Generate your own SSH keys and certificate](docs/How-to.generate.keys.md)
+5. Generate EINE x86 disk image using BSD Router Project build script
 ```
-cd EINE/local.data
-fetch http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz
-gunzip GeoLite2-City.mmdb.gz
-```
-8. Generate EINE x86 disk image using BSD Router Project build script
-```
-cd ../..
 ./make.sh -p EINE
 ```
