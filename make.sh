@@ -111,7 +111,7 @@ patch_src() {
 	done
 
 	# Overwrite the nanobsd script with our own improved nanobsd
-	cp tools/default.sh ${NANOBSD_DIR}/default.sh
+	cp tools/defaults.sh ${NANOBSD_DIR}/defaults.sh
 	cp tools/nanobsd.sh ${NANOBSD_DIR}/nanobsd.sh
 	chmod +x ${NANOBSD_DIR}/nanobsd.sh
 }
