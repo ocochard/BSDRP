@@ -370,6 +370,7 @@ add_port "devel/libdlmalloc"
 add_port "print/indexinfo"
 add_port "security/libgpg-error"
 add_port "security/libgcrypt"
+add_port "devel/readline"
 add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
@@ -385,7 +386,6 @@ add_port "net/freevrrpd"
 
 # IKEv1
 add_port "net/openldap24-client"
-add_port "devel/readline"
 add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # IKEv2
