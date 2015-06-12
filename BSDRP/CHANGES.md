@@ -4,6 +4,9 @@
 * Enable getty on serial port 1 and 2 by default
 * Added script for doing IPSec benchmark using Equilibrium throughput method
 
+## Updated packages
+* openvpn to 2.3.7
+* strongswan to 5.3.2
 -----------------------------------------------------
 # Release 1.56 (2015/05/15)
 

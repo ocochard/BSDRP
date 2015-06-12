@@ -26,7 +26,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# $FreeBSD: head/tools/tools/nanobsd/nanobsd.sh 264861 2014-04-24 02:02:46Z imp $
+# $FreeBSD: head/tools/tools/nanobsd/defaults.sh 275832 2014-12-16 17:59:05Z will $
 #
 
 set -e
@@ -215,12 +215,13 @@ clean_build ( ) (
 		chflags -R noschg ${MAKEOBJDIRPREFIX}/
 		nano_rm -r ${MAKEOBJDIRPREFIX}/
 	fi
-	mkdir -p ${MAKEOBJDIRPREFIX}
-	printenv > ${MAKEOBJDIRPREFIX}/_.env
 )
 
 make_conf_build ( ) (
 	pprint 2 "Construct build make.conf ($NANO_MAKE_CONF_BUILD)"
+
+	mkdir -p ${MAKEOBJDIRPREFIX}
+	printenv > ${MAKEOBJDIRPREFIX}/_.env
 
 	echo "${CONF_WORLD}" > ${NANO_MAKE_CONF_BUILD}
 	echo "${CONF_BUILD}" >> ${NANO_MAKE_CONF_BUILD}
@@ -347,6 +348,18 @@ install_kernel ( ) (
 		${kernconfdir_arg} KERNCONF=${kernconf} \
 		${modules_override_arg}"
 	) > ${NANO_OBJ}/_.ik 2>&1
+)
+
+native_xtools ( ) (
+	print 2 "Installing the optimized native build tools for cross env"
+	pprint 3 "log: ${NANO_OBJ}/_.native_xtools"
+
+	cd ${NANO_SRC}
+	env TARGET_ARCH=${NANO_ARCH} \
+	${NANO_MAKE} SRCCONF=${SRCCONF} \
+		__MAKE_CONF=${NANO_MAKE_CONF_INSTALL} native-xtools \
+		DESTDIR=${NANO_WORLDDIR} \
+		> ${NANO_OBJ}/_.native_xtools 2>&1
 )
 
 run_customize() (
@@ -494,14 +507,15 @@ generate_mtree ( ) (
 	md=$1
 	mnt=$2
 	mount ${md} ${mnt}
-    echo "Generating mtree..."
-    echo "./etc" > ${NANO_OBJ}/mtree-exclude
-    echo "./var" >> ${NANO_OBJ}/mtree-exclude
-    echo "./tmp" >> ${NANO_OBJ}/mtree-exclude
-    echo "./dev" >> ${NANO_OBJ}/mtree-exclude
-    ( cd ${mnt} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,sha256digest -X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
+	echo "Generating mtree..."
+	echo "./etc" > ${NANO_OBJ}/mtree-exclude
+	echo "./var" >> ${NANO_OBJ}/mtree-exclude
+	echo "./tmp" >> ${NANO_OBJ}/mtree-exclude
+	echo "./dev" >> ${NANO_OBJ}/mtree-exclude
+	( cd ${mnt} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,sha256digest \
+		-X ${NANO_OBJ}/mtree-exclude ) > ${NANO_OBJ}/_.mtree
 
-    ( cd ${mnt} && du -k ) > ${NANO_OBJ}/_.du
+	( cd ${mnt} && du -k ) > ${NANO_OBJ}/_.du
 	nano_umount ${mnt}
 )
 
@@ -524,7 +538,7 @@ create_i386_diskimage ( ) (
 		MD=`mdconfig -a -t vnode -f ${IMG} -x ${NANO_SECTS} \
 			-y ${NANO_HEADS}`
 	fi
-
+		
 	echo $NANO_MEDIASIZE $NANO_IMAGES \
 		$NANO_SECTS $NANO_HEADS \
 		$NANO_CODESIZE $NANO_CONFSIZE $NANO_DATASIZE $MD |
@@ -665,195 +679,10 @@ create_i386_diskimage ( ) (
 
 # i386 and amd64 are identical for disk images
 create_amd64_diskimage ( ) (
-	create_i386_diskimage
+    create_i386_diskimage
 )
 
-# This function need to be adapted to the new nanobsd !!
-create_arm_diskimage()
-{
-    pprint 2 "build diskimage"
-    pprint 3 "log: ${MAKEOBJDIRPREFIX}/_.di"
-
-    (
-    echo "NANO_MEDIASIZE:   $NANO_MEDIASIZE"
-    echo "NANO_IMAGES:  $NANO_IMAGES"
-    echo "NANO_SECTS:   $NANO_SECTS"
-    echo "NANO_HEADS:   $NANO_HEADS"
-    echo "NANO_CODESIZE:    $NANO_CODESIZE"
-    echo "NANO_CONFSIZE:    $NANO_CONFSIZE"
-    echo "NANO_DATASIZE:    $NANO_DATASIZE"
-
-    echo $NANO_MEDIASIZE $NANO_IMAGES \
-        $NANO_SECTS $NANO_HEADS \
-        $NANO_CODESIZE $NANO_CONFSIZE $NANO_DATASIZE |
-    awk '
-    {
-        printf "# %s\n", $0
-
-        # size of cylinder in sectors
-        cs = $3 * $4
-
-        # number of full cylinders on media
-        cyl = int ($1 / cs)
-
-        # output fdisk geometry spec, truncate cyls to 1023
-        if (cyl <= 1023)
-            print "g c" cyl " h" $4 " s" $3
-        else
-            print "g c" 1023 " h" $4 " s" $3
-if ($7 > 0) {
-            # size of data partition in full cylinders
-            dsl = int (($7 + cs - 1) / cs)
-        } else {
-            dsl = 0;
-        }
-
-        # size of config partition in full cylinders
-        csl = int (($6 + cs - 1) / cs)
-
-        if ($5 == 0) {
-            # size of image partition(s) in full cylinders
-            isl = int ((cyl - dsl - csl) / $2)
-        } else {
-            isl = int (($5 + cs - 1) / cs)
-        }
-
-        # First image partition start at second track
-        print "p 1 165 " $3, isl * cs - $3
-        c = isl * cs;
-
-        # Second image partition (if any) also starts offset one 
-        # track to keep them identical.
-        if ($2 > 1) {
-            print "p 2 165 " $3 + c, isl * cs - $3
-            c += isl * cs;
-        }
-
-        # Config partition starts at cylinder boundary.
-        print "p 3 165 " c, csl * cs
-        c += csl * cs
-		
-		# Data partition (if any) starts at cylinder boundary.
-        if ($7 > 0) {
-            print "p 4 165 " c, dsl * cs
-        } else if ($7 < 0 && $1 > c) {
-            print "p 4 165 " c, $1 - c
-        } else if ($1 < c) {
-            print "Disk space overcommitted by", \
-                c - $1, "sectors" > "/dev/stderr"
-            exit 2
-        }
-
-        # Force slice 1 to be marked active. This is necessary
-        # for booting the image from a USB device to work.
-        print "a 1"
-    }
-    ' > ${NANO_OBJ}/_.fdisk
-
-    IMG=${NANO_DISKIMGDIR}/${NANO_IMGNAME}
-    BS=${NANO_SECTS}b
-
-    if [ "${NANO_MD_BACKING}" = "swap" ] ; then
-        MD=`mdconfig -a -t swap -s ${NANO_MEDIASIZE} -x ${NANO_SECTS} \
-            -y ${NANO_HEADS}`
-    else
-        echo ""; echo "Creating md backing file ${IMG} ..."
-        _c=`expr ${NANO_MEDIASIZE} / ${NANO_SECTS}`
-        pprint 2 "dd if=/dev/zero of=${IMG} bs=${BS} count=${_c}"
-        dd if=/dev/zero of=${IMG} bs=${BS} count=${_c}
-        pprint 2 "mdconfig -a -t vnode -f ${IMG} -x ${NANO_SECTS} -y ${NANO_HEADS}"
-        MD=`mdconfig -a -t vnode -f ${IMG} -x ${NANO_SECTS} \
-            -y ${NANO_HEADS}`
-    fi
-	
-	trap "mdconfig -d -u $MD" 1 2 15 EXIT
-
-    echo ""; echo "Write partition table ..."
-    FDISK=${NANO_OBJ}/_.fdisk
-    pprint 2 "fdisk -i -f ${FDISK} ${MD}"
-    fdisk -i -f ${FDISK} ${MD}
-    pprint 2 "fdisk ${MD}"
-    fdisk ${MD}
-
-    # Create first image
-    IMG1=${NANO_DISKIMGDIR}/_.disk.image1
-    echo ""; echo "Create first image ${IMG1} ..."
-    SIZE=`awk '/^p 1/ { print $5 "b" }' ${FDISK}`
-    pprint 2 "${NANO_MAKEFS} -s ${SIZE} ${IMG1} ${NANO_WORLDDIR}"
-	# TO DO: glabel patch !!!!
-    ${NANO_MAKEFS} -s ${SIZE} ${IMG1} ${NANO_WORLDDIR}
-    pprint 2 "dd if=${IMG1} of=/dev/${MD}s1 bs=${BS}"
-    dd if=${IMG1} of=/dev/${MD}s1 bs=${BS}
-	tunefs -L ${NANO_GLABEL_SYS}s1a /dev/${MD}s1
-
-	generate_mtree /dev/${MD}s1a ${MNT}
-
-    if [ $NANO_IMAGES -gt 1 -a $NANO_INIT_IMG2 -gt 0 ] ; then
-        IMG2=${NANO_DISKIMGDIR}/_.disk.image2
-        echo ""; echo "Create second image ${IMG2}..."
-        for f in ${NANO_WORLDDIR}/etc/fstab ${NANO_WORLDDIR}/conf/base/etc/fstab
-        do
-            sed -i "" "s/${NANO_DRIVE}s1/${NANO_DRIVE}s2/g" $f
-        done
-
-        SIZE=`awk '/^p 2/ { print $5 "b" }' ${FDISK}`
-        pprint 2 "${NANO_MAKEFS} -s ${SIZE} ${IMG2} ${NANO_WORLDDIR}"
-        ${NANO_MAKEFS} -s ${SIZE} ${IMG2} ${NANO_WORLDDIR}
-        pprint 2 "dd if=${IMG2} of=/dev/${MD}s2 bs=${BS}"
-        dd if=${IMG2} of=/dev/${MD}s2 bs=${BS}
-		tunefs -L ${NANO_GLABEL_SYS}s2a /dev/${MD}s1
-    fi
-
-	# Create Config slice
-    CFG=${NANO_DISKIMGDIR}/_.disk.cfg
-    echo ""; echo "Creating config partition ${CFG}..."
-    SIZE=`awk '/^p 3/ { print $5 "b" }' ${FDISK}`
-    # XXX: fill from where ?
-    pprint 2 "${NANO_MAKEFS} -s ${SIZE} ${CFG} ${NANO_CFGDIR}"
-	# NEED TO SET THE LABEL !!!!!
-    ${NANO_MAKEFS} -s ${SIZE} ${CFG} ${NANO_CFGDIR}
-    pprint 2 "dd if=${CFG} of=/dev/${MD}s3 bs=${BS}"
-    dd if=${CFG} of=/dev/${MD}s3 bs=${BS}
-	tunefs -L ${NANO_GLABEL_SYS}s3 /dev/${MD}s3
-    pprint 2 "rm ${CFG}"
-    rm ${CFG}; CFG=         # NB: disable printing below
-
-    # Create Data slice, if any.
-    if [ $NANO_DATASIZE -gt 0 ] ; then
-        DATA=${NANO_DISKIMGDIR}/_.disk.data
-        echo ""; echo "Creating data partition ${DATA}..."
-        SIZE=`awk '/^p 4/ { print $5 "b" }' ${FDISK}`
-        # XXX: fill from where ?
-        pprint 2 "${NANO_MAKEFS} -s ${SIZE} ${DATA} /var/empty"
-		# NEED TO SET THE LABEL !!!
-        ${NANO_MAKEFS} -s ${SIZE} ${DATA} /var/empty
-        pprint 2 "dd if=${DATA} of=/dev/${MD}s4 bs=${BS}"
-        dd if=${DATA} of=/dev/${MD}s4 bs=${BS}
-		tunefs -L ${NANO_GLABEL_DATA} /dev/${MD}s4
-        pprint 2 "rm ${DATA}"
-        rm ${DATA}; DATA=   # NB: disable printing below
-    fi
-
-    if [ "${NANO_MD_BACKING}" = "swap" ] ; then
-        echo "Writing out _.disk.full..."
-        dd if=/dev/${MD} of=${IMG} bs=${BS}
-    fi
-
-	echo ""
-    echo "Completed images in:"
-    echo ""
-    echo "Full disk:         ${IMG}"
-    echo "Primary partition: ${IMG1}"
-    test "${IMG2}" && echo "2ndary partition:  ${IMG2}"
-    test "${CFG}" &&  echo "/cfg partition:    ${CFG}"
-    test "${DATA}" && echo "/data partition:   ${DATA}"
-    echo ""
-    echo "Use dd if=<file> of=/dev/<somewhere> bs=${BS} to transfer an"
-    echo "image to bootable media /dev/<somewhere>."
-    ) > ${MAKEOBJDIRPREFIX}/_.di 2>&1
-}
-
-# Need to adapt NANO_LABEL variable with the old use ! 
+# Need to adapt NANO_LABEL variable with the old use !
 create_sparc64_diskimage ( ) (
     pprint 2 "build diskimage"
     pprint 3 "log: ${NANO_OBJ}/_.di"
@@ -880,7 +709,7 @@ create_sparc64_diskimage ( ) (
    # Create initial bootable label:
    echo "Creating initial empty but bootable sunlabel..."
    sunlabel -w -B ${MD} auto
-   
+
    # Extracting label prototype in cylinder unit
    sunlabel -c ${MD} > ${NANO_OBJ}/_.sunlabel
 
@@ -896,7 +725,7 @@ create_sparc64_diskimage ( ) (
    NANO_CONFSIZE_CYL=`expr $NANO_CONFSIZE / $SEC_PER_CYL`
    NANO_DATASIZE_CYL=`expr $NANO_DATASIZE / $SEC_PER_CYL`
    NANO_CODESIZE_CYL=`expr \( $MESURED_MEDIASIZE_CYL - $NANO_CONFSIZE_CYL - $NANO_DATASIZE_CYL \) / 2`
-   fi  
+   fi
    echo "a: ${NANO_CODESIZE_CYL} 0" >> ${NANO_OBJ}/_.sunlabel
    echo "d: ${NANO_CODESIZE_CYL} *" >> ${NANO_OBJ}/_.sunlabel
    echo "e: ${NANO_CONFSIZE_CYL} *" >> ${NANO_OBJ}/_.sunlabel
@@ -905,10 +734,10 @@ create_sparc64_diskimage ( ) (
    # Apply the label prototype file to the md disk
    sunlabel -c -R ${MD} ${NANO_OBJ}/_.sunlabel
 
-	# Create first image
+    # Create first image
     populate_slice /dev/${MD}a ${NANO_WORLDDIR} ${MNT} "s1a"
 
-	generate_mtree /dev/${MD}a ${MNT}
+    generate_mtree /dev/${MD}a ${MNT}
 
     if [ $NANO_IMAGES -gt 1 -a $NANO_INIT_IMG2 -gt 0 ] ; then
         # Duplicate to second image (if present)
@@ -920,7 +749,7 @@ create_sparc64_diskimage ( ) (
             sed -i "" "s/${NANO_DRIVE}a/${NANO_DRIVE}d/g" $f
         done
         umount ${MNT}
-		# Override the label from the first partition so we
+        # Override the label from the first partition so we
         # don't confuse glabel with duplicates.
         if [ ! -z ${NANO_LABEL} ]; then
             tunefs -L ${NANO_LABEL}"s2a" /dev/${MD}d
@@ -928,15 +757,14 @@ create_sparc64_diskimage ( ) (
 
     fi
 
-	# Create Config slice
+    # Create Config slice
     populate_cfg_slice /dev/${MD}e "${NANO_CFGDIR}" ${MNT} "s3"
 
     # Create Data slice, if any.
     if [ $NANO_DATASIZE -ne 0 ] ; then
         populate_data_slice /dev/${MD}f "${NANO_DATADIR}" ${MNT} "s4"
     fi
-
-	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
+    if [ "${NANO_MD_BACKING}" = "swap" ] ; then
         if [ ${NANO_IMAGE_MBRONLY} ]; then
             echo "Writing out _.disk.mbr..."
             dd if=/dev/${MD} of=${NANO_DISKIMGDIR}/_.disk.mbr bs=512 count=1
@@ -946,7 +774,7 @@ create_sparc64_diskimage ( ) (
         fi
     fi
 
-	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
+    if [ "${NANO_MD_BACKING}" = "swap" ] ; then
         if [ ${NANO_IMAGE_MBRONLY} ]; then
             echo "Writing out _.disk.mbr..."
             dd if=/dev/${MD} of=${NANO_DISKIMGDIR}/_.disk.mbr bs=512 count=1
@@ -963,8 +791,7 @@ create_sparc64_diskimage ( ) (
     mdconfig -d -u $MD
 
     trap - 1 2 15
-	trap nano_cleanup EXIT
-
+    trap nano_cleanup EXIT
     ) > ${NANO_OBJ}/_.di 2>&1
 )
 
@@ -1218,14 +1045,14 @@ pprint() (
 usage () {
 	(
 	echo "Usage: $0 [-bfiKknqvw] [-c config_file]"
-	echo "	-K	suppress installkernel"
 	echo "	-b	suppress builds (both kernel and world)"
 	echo "	-c	specify config file"
 	echo "	-f	suppress code slice extraction"
 	echo "	-i	suppress disk image build"
+	echo "	-K	suppress installkernel"
 	echo "	-k	suppress buildkernel"
 	echo "	-n	add -DNO_CLEAN to buildworld, buildkernel, etc"
-	echo "	-q	make output quieter"
+	echo "	-q	make output more quiet"
 	echo "	-v	make output more verbose"
 	echo "	-w	suppress buildworld"
 	) 1>&2
@@ -1233,201 +1060,59 @@ usage () {
 }
 
 #######################################################################
-# Parse arguments
-
-do_clean=true
-do_kernel=true
-do_installkernel=true
-do_world=true
-do_image=true
-do_copyout_partition=true
-
-set +e
-args=`getopt Kbc:fhiknqvw $*`
-if [ $? -ne 0 ] ; then
-	usage
-	exit 2
-fi
-set -e
-
-set -- $args
-for i
-do
-	case "$i" 
-	in
-	-K)
-		do_installkernel=false
-		shift
-		;;
-	-b)
-		do_world=false
-		do_kernel=false
-		shift
-		;;
-	-c)
-		# Make config file path available to the config file
-		# itself so that it can access additional files relative
-		# to its own location.
-		NANO_CONFIG=$2
-		. "$2"
-		shift
-		shift
-		;;
-	-f)
-		do_copyout_partition=false
-		shift
-		;;
-	-h)
-		usage
-		;;
-	-i)
-		do_image=false
-		shift
-		;;
-	-k)
-		do_kernel=false
-		shift
-		;;
-	-n)
-		do_clean=false
-		shift
-		;;
-	-q)
-		PPLEVEL=$(($PPLEVEL - 1))
-		shift
-		;;
-	-v)
-		PPLEVEL=$(($PPLEVEL + 1))
-		shift
-		;;
-	-w)
-		do_world=false
-		shift
-		;;
-	--)
-		shift
-		break
-	esac
-done
-
-if [ $# -gt 0 ] ; then
-	echo "$0: Extraneous arguments supplied"
-	usage
-fi
-
-trap nano_cleanup EXIT
-
-#######################################################################
 # Setup and Export Internal variables
 #
-test -n "${NANO_OBJ}" || NANO_OBJ=/usr/obj/nanobsd.${NANO_NAME}
-test -n "${MAKEOBJDIRPREFIX}" || MAKEOBJDIRPREFIX=${NANO_OBJ}
-test -n "${NANO_DISKIMGDIR}" || NANO_DISKIMGDIR=${NANO_OBJ}
 
-NANO_WORLDDIR=${NANO_OBJ}/_.w
-NANO_MAKE_CONF_BUILD=${MAKEOBJDIRPREFIX}/make.conf.build
-NANO_MAKE_CONF_INSTALL=${NANO_OBJ}/make.conf.install
+export_var() {
+	var=$1
+	# Lookup value of the variable.
+	eval val=\$$var
+	pprint 3 "Setting variable: $var=\"$val\""
+	export $1
+}
 
-if [ -d ${NANO_TOOLS} ] ; then
-	true
-elif [ -d ${NANO_SRC}/${NANO_TOOLS} ] ; then
-	NANO_TOOLS=${NANO_SRC}/${NANO_TOOLS}
-else
-	echo "NANO_TOOLS directory does not exist" 1>&2
-	exit 1
-fi
+# Call this function to set defaults _after_ parsing options.
+set_defaults_and_export() {
+	test -n "${NANO_OBJ}" || NANO_OBJ=/usr/obj/nanobsd.${NANO_NAME}
+	test -n "${MAKEOBJDIRPREFIX}" || MAKEOBJDIRPREFIX=${NANO_OBJ}
+	test -n "${NANO_DISKIMGDIR}" || NANO_DISKIMGDIR=${NANO_OBJ}
+	NANO_WORLDDIR=${NANO_OBJ}/_.w
+	NANO_MAKE_CONF_BUILD=${MAKEOBJDIRPREFIX}/make.conf.build
+	NANO_MAKE_CONF_INSTALL=${NANO_OBJ}/make.conf.install
 
-if $do_clean ; then
-	true
-else
-	NANO_MAKE="${NANO_MAKE} -DNO_CLEAN"
-	NANO_PMAKE="${NANO_PMAKE} -DNO_CLEAN"
-fi
+	# Override user's NANO_DRIVE if they specified a NANO_LABEL
+	[ ! -z "${NANO_LABEL}" ] && NANO_DRIVE="ufs/${NANO_LABEL}"
 
-# Override user's NANO_DRIVE if they specified a NANO_LABEL
-if [ ! -z "${NANO_LABEL}" ]; then
-	NANO_DRIVE=ufs/${NANO_LABEL}
-fi
+	# Set a default NANO_TOOLS to NANO_SRC/NANO_TOOLS if it exists.
+	[ ! -d "${NANO_TOOLS}" ] && [ -d "${NANO_SRC}/${NANO_TOOLS}" ] && \
+		NANO_TOOLS="${NANO_SRC}/${NANO_TOOLS}"
 
-export MAKEOBJDIRPREFIX
-
-export NANO_ARCH
-export NANO_CFGDIR
-export NANO_CODESIZE
-export NANO_CONFSIZE
-export NANO_CUSTOMIZE
-export NANO_DATASIZE
-export NANO_DATADIR
-export NANO_DRIVE
-export NANO_HEADS
-export NANO_IMAGES
-export NANO_IMGNAME
-export NANO_MAKE
-export NANO_MAKE_CONF_BUILD
-export NANO_MAKE_CONF_INSTALL
-export NANO_MEDIASIZE
-export NANO_NAME
-export NANO_NEWFS
-export NANO_OBJ
-export NANO_PMAKE
-export NANO_SECTS
-export NANO_SRC
-export NANO_TOOLS
-export NANO_WORLDDIR
-export NANO_BOOT0CFG
-export NANO_BOOTLOADER
-export NANO_LABEL
-
-#######################################################################
-# And then it is as simple as that...
-
-# File descriptor 3 is used for logging output, see pprint
-exec 3>&1
-
-NANO_STARTTIME=`date +%s`
-pprint 1 "NanoBSD image ${NANO_NAME} build starting"
-
-if $do_world ; then
-	if $do_clean ; then
-		clean_build
-	else
-		pprint 2 "Using existing build tree (as instructed)"
-	fi
-	make_conf_build
-	build_world
-else
-	pprint 2 "Skipping buildworld (as instructed)"
-fi
-
-if $do_kernel ; then
-	if ! $do_world ; then
-		make_conf_build
-	fi
-	build_kernel
-else
-	pprint 2 "Skipping buildkernel (as instructed)"
-fi
-
-clean_world
-make_conf_install
-install_world
-install_etc
-setup_nanobsd_etc
-if $do_installkernel ; then
-	install_kernel
-else
-	pprint 2 "Skipping installkernel (as instructed)"
-fi
-
-run_customize
-setup_nanobsd
-prune_usr
-run_late_customize
-if $do_image ; then
-	create_${NANO_ARCH}_diskimage
-else
-	pprint 2 "Skipping image build (as instructed)"
-fi
-last_orders
-
-pprint 1 "NanoBSD image ${NANO_NAME} completed"
+	NANO_STARTTIME=`date +%s`
+	pprint 3 "Exporting NanoBSD variables"
+	export_var MAKEOBJDIRPREFIX
+	export_var NANO_ARCH
+	export_var NANO_CODESIZE
+	export_var NANO_CONFSIZE
+	export_var NANO_CUSTOMIZE
+	export_var NANO_DATASIZE
+	export_var NANO_DRIVE
+	export_var NANO_HEADS
+	export_var NANO_IMAGES
+	export_var NANO_IMGNAME
+	export_var NANO_MAKE
+	export_var NANO_MAKE_CONF_BUILD
+	export_var NANO_MAKE_CONF_INSTALL
+	export_var NANO_MEDIASIZE
+	export_var NANO_NAME
+	export_var NANO_NEWFS
+	export_var NANO_OBJ
+	export_var NANO_PMAKE
+	export_var NANO_SECTS
+	export_var NANO_SRC
+	export_var NANO_TOOLS
+	export_var NANO_WORLDDIR
+	export_var NANO_BOOT0CFG
+	export_var NANO_BOOTLOADER
+	export_var NANO_LABEL
+	export_var NANO_MODULES
+}

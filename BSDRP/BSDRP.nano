@@ -385,6 +385,7 @@ add_port "net/freevrrpd"
 
 # IKEv1
 add_port "net/openldap24-client"
+add_port "devel/readline"
 add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # IKEv2
@@ -456,7 +457,6 @@ add_port "security/openvpn-auth-radius"
 add_port "benchmarks/iperf"
 
 # Python (being ansible manageable)
-add_port "devel/readline"
 add_port "devel/libffi"
 add_port "lang/python27"
 add_port "lang/python2"
