@@ -4,6 +4,9 @@
 * Enable getty on serial port 1 and 2 by default
 * Added script for doing IPSec benchmark using Equilibrium throughput method
 
+## Bug fixes
+# Upgrade to FreeBSD 10.1-RELEASE-p12
+
 ## Updated packages
 * openvpn to 2.3.7
 * strongswan to 5.3.2
