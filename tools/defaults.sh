@@ -256,13 +256,19 @@ build_kernel ( ) (
 	# unset these just in case to avoid compiler complaints
 	# when cross-building
 	unset TARGET_CPUTYPE
-	# Note: We intentionally build all modules, not only the ones in
-	# NANO_MODULES so the built world can be reused by multiple images.
-	eval "TARGET_ARCH=${NANO_ARCH} ${NANO_PMAKE} buildkernel \
-		SRCCONF='${SRCCONF}' \
-		__MAKE_CONF='${NANO_MAKE_CONF_BUILD}' \
-		${kernconfdir_arg} KERNCONF=${kernconf}"
-	) > ${MAKEOBJDIRPREFIX}/_.bk 2>&1
+
+    # build all modules if NANO_MODULES=default,
+    # else install only listed modules (none if NANO_MODULES is empty).
+    if [ "${NANO_MODULES}" != "default" ]; then
+        modules_override_arg="MODULES_OVERRIDE='${NANO_MODULES}'"
+    fi
+
+    eval "TARGET_ARCH=${NANO_ARCH} ${NANO_MAKE} buildkernel \
+        SRCCONF='${SRCCONF}' \
+        __MAKE_CONF='${NANO_MAKE_CONF_BUILD}' \
+        ${kernconfdir_arg} KERNCONF=${kernconf} \
+        ${modules_override_arg}"
+    ) > ${MAKEOBJDIRPREFIX}/_.bk 2>&1
 )
 
 clean_world ( ) (
@@ -630,6 +636,10 @@ create_i386_diskimage ( ) (
 
 	generate_mtree /dev/${MD}s1a ${MNT}
 
+	# If there is only one system slice, then cfg slice will be 2,
+	#  and data slice be 3
+	CFG_SLICE=2
+	DATA_SLICE=3
 	if [ $NANO_IMAGES -gt 1 -a $NANO_INIT_IMG2 -gt 0 ] ; then
 		# Duplicate to second image (if present)
 		echo "Duplicating to second image..."
@@ -645,14 +655,17 @@ create_i386_diskimage ( ) (
 		if [ ! -z ${NANO_LABEL} ]; then
 			tunefs -L ${NANO_LABEL}"s2a" /dev/${MD}s2a
 		fi
+		# Because there is 2 system slices, cfg slice is 3 and data is 4
+		CFG_SLICE=3
+		DATA_SLICE=4
 	fi
 	
 	# Create Config slice
-	populate_cfg_slice /dev/${MD}s3 "${NANO_CFGDIR}" ${MNT} "s3"
+	populate_cfg_slice /dev/${MD}s${CFG_SLICE} "${NANO_CFGDIR}" ${MNT} "s3"
 
 	# Create Data slice, if any.
 	if [ $NANO_DATASIZE -ne 0 ] ; then
-		populate_data_slice /dev/${MD}s4 "${NANO_DATADIR}" ${MNT} "s4"
+		populate_data_slice /dev/${MD}s${DATA_SLICE} "${NANO_DATADIR}" ${MNT} "s4"
 	fi
 
 	if [ "${NANO_MD_BACKING}" = "swap" ] ; then

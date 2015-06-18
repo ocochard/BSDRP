@@ -5,7 +5,7 @@
 * Added script for doing IPSec benchmark using Equilibrium throughput method
 
 ## Bug fixes
-# Upgrade to FreeBSD 10.1-RELEASE-p12
+# Upgrade to FreeBSD 10.1-RELEASE-p13
 
 ## Updated packages
 * openvpn to 2.3.7
