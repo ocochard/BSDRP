@@ -5,7 +5,7 @@ EINE is a solution for large-scale plug&play x86 network appliance deployment ov
 
 License: BSD 2-clause
 
-Author: [Orange Business Services] (http://www.orange-business.com) 
+Author: [Orange] (http://www.orange.com)
 
 EINE, a sub-project of BSD Router Project,  permit to generate an x86 raw image disk (appliance firmware) to be use for deploying this solution:
 
