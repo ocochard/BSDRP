@@ -5,7 +5,8 @@
 * Added script for doing IPSec benchmark using Equilibrium throughput method
 
 ## Bug fixes
-# Upgrade to FreeBSD 10.1-RELEASE-p13
+* Upgrade to FreeBSD 10.1-RELEASE-p13
+* Fix Emulex oce(4) promiscious/carp behavior (thanks Sergey Akhmatov from FreeBSD ML-net)
 
 ## Updated packages
 * openvpn to 2.3.7

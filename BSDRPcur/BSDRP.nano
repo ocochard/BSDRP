@@ -777,8 +777,8 @@ usr/share/tmac/tmac.vgrind
 bsdrp_console_serial () {
 	# Since r266895, console is set as onifconsole
 	sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu1/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu1/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 
     # Disable getty on syscons devices
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
@@ -807,6 +807,10 @@ bsdrp_console_dual () {
 
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
+	# Enable onifconsole to ttyu1 to ttyu3
+	sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+
 	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 
 }

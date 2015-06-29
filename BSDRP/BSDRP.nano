@@ -468,12 +468,14 @@ add_port "net/exabgp"
 # VM tools
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 #   add_port "textproc/expat2"
+#    add_port "converters/libiconv"
 #   add_port "devel/gettext-runtime"
 #  add_port "devel/gettext-tools"
 #  add_port "devel/pcre"
-#  add_port "lang/perl"
+#  add_port "lang/perl5.22"
 # add_port "devel/glib20"
 #add_port "emulators/open-vm-tools" "WITHOUT=\"X11 LIBNOTIFY FUSE DNET ICU\""
+
 # Requires 32-bit libraries
 #add_port "emulators/virtualbox-ose-additions" "WITHOUT=\"X11\""
 # Doesn't compile on 10.1
@@ -755,10 +757,10 @@ usr/share/tmac/tmac.vgrind
 bsdrp_console_serial () {
 	# Force getty to be enabled on serial 1 and 2
     sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu1/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu1/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[1-2]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[1-2]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 	# Set serial speed (3wire is available since 11 only)
-	sed -i "" -e /tty[du][0-1]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[0-2]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
     # Disable getty on syscons devices (prevent error messages if no vga device)
     sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
     # Tell loader to use only serial console early with relative high baud speed
@@ -768,15 +770,19 @@ bsdrp_console_serial () {
 # Enable use of keyboard/vga and serial
 bsdrp_console_dual () {
 	# Set serial speed (3wire is available since 11 only)
-	sed -i "" -e /tty[du][0-1]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[1-2]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[1-2]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[0-2]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
     # Tell loader to use serial and vga console, set baud speed
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 }
 
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
-	# Set serial speed ((3wire is available since 11 only)
-	sed -i "" -e /tty[du][0-1]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	# Set serial speed (3wire is available since 11 only)
+	sed -i "" -e /ttyu[1-2]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[1-2]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[0-2]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)                                                               
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 
 }
