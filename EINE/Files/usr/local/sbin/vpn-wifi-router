@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 "This script register new VPN-Wifi-router"
 #
-# Copyright (c) 2014-2015, Orange Business Services
+# Copyright (c) 2014-2015, Orange
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -358,7 +358,7 @@ def listing(args):
                 geo_result = geo.city(pubip)
                 if geo_result.city.name is not None:
                     geo_str = str(geo_result.country.name) + \
-                      '(' + str(geo_result.city.name) + ')'
+                      '(' + geo_result.city.name.encode('utf-8') + ')'
                 else:
                     geo_str = str(geo_result.country.name)
                 to_be_added = [splited[1], pubip, geo_str, splited[3],
