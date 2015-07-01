@@ -45,6 +45,7 @@ OpenVPN certificate
 ===================
 
 We will use easy-RSA for creating the CA and the "unregistered" common certificate.
+You should use a very long valid period (not only 1 year) for this certificate.
 Here is an example used for the DEMO keys:
 
 ```

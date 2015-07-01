@@ -935,41 +935,49 @@ LANS="{{if_lan_inet4_net}}/{{if_lan_inet4_prefix}},{{if_wifi_inet4_net}}/{{if_wi
 # lo1 is loopback interface used for managment
 ## Flush out the list before we begin.
 \${fwcmd} -f flush
+#### NAT table creation block ####
 # Create a NAT table for Internet Interface
-\${fwcmd} nat 1 config if net0 log same_ports unreg_only reset
+\${fwcmd} nat 1 config if net0 log same_ports unreg_only reset deny_in
 # Create a second NAT table just for RADIUS request
 # hostapd can't bind specific interface and will use bad source IP
 \${fwcmd} nat 2 config if tun0 log same_ports unreg_only reset
-# Didn't filter on loopback and internal interfaces and tunnel
+#### Incomming rules block for all interfaces ####
+# Re-assemble input fragmented packets received on Internet interface
+\${fwcmd} add reass ip from any to any in recv net0
+# Didn't filter on loopback and internal interfaces
 \${fwcmd} add pass ip from any to any via lo0
 \${fwcmd} add pass ip from any to any via lo1
 \${fwcmd} add pass ip from any to any via net1
 \${fwcmd} add pass ip from any to any via wlan0
 # Check incoming packets against NAT tables
-\${fwcmd} add nat 1 ip from any to any in via net0
-\${fwcmd} add nat 2 ip from any to any in via tun0
+\${fwcmd} add nat 1 ip from any to any in recv net0
+\${fwcmd} add nat 2 ip from any to any in recv tun0
 # Check incoming packets against statefull table
 \${fwcmd} add check-state
-# Allow DHCP on internet interface (useless because bpf(4) is used)
-\${fwcmd} add pass udp from 0.0.0.0 68 to 255.255.255.255 67 out via net0
-\${fwcmd} add pass udp from any 67 to me 68 in via net0
-\${fwcmd} add pass udp from any 67 to 255.255.255.255 68 in via net0
-# Allow ICMP from myself
-\${fwcmd} add pass icmp from me to any out via net0 keep-state
-# Allow DNS from myself
-\${fwcmd} add pass udp from me to any 53 out via net0 keep-state
-# Allow NTP from myself
-\${fwcmd} add pass udp from me to any 123 out via net0 keep-state
-## Allow OpenVPN from myself
-\${fwcmd} add pass udp from me to any ${OVPN_REG_PORT} out via net0 keep-state
-# NAT internal networks when they exit to Internet
-\${fwcmd} add nat 1 ip from \${LANS} to any out via net0
+#### Outcomming block for Internet ####
+# Need to send localy generated traffic to NAT table for being
+# able to do the difference for incomming traffic
+# Allow ICMP from myself to exit
+\${fwcmd} add skipto 2000 icmp from me to any out xmit net0 keep-state
+# Allow DNS, NTP and OpenVPN to exit
+\${fwcmd} add skipto 2000 udp from me to any 53,123,${OVPN_REG_PORT} out xmit net0 keep-state
+# allow internal networks to exit
+\${fwcmd} add skipto 2000 ip from \${LANS} to any out xmit net0 keep-state
+#### Outcomming block for the rest ####
 # NAT RADIUS packets ONLY (hostapd can't bind specific interface)
-\${fwcmd} add nat 2 udp from me to 2.2.2.2 1812,1813 out via tun0
-# allow internal networks exiting to the tunnel interface
-\${fwcmd} add pass ip from \${LANS} to any via tun0
-# allow myself exiting to the tunnel interface too
-\${fwcmd} add pass ip from me to any via tun0
+\${fwcmd} add nat 2 udp from me to 2.2.2.2 1812,1813 out xmit tun0
+# allow internal networks exiting tunnel interface
+\${fwcmd} add pass ip from \${LANS} to any xmit tun0
+# allow myself via the tunnel interface
+\${fwcmd} add pass ip from me to any xmit tun0
+# Deny all the rest
+\${fwcmd} add deny ip from any to any
+#### NAT Internet block ####
+# NAT locally generated traffic
+\${fwcmd} 2000 add nat 1 icmp from me to any out xmit net0
+\${fwcmd} add nat 1 udp from me to any 53,123,1195 out xmit net0
+# NAT internal networks when they exit to Internet
+\${fwcmd} add nat 1 ip from \${LANS} to any out xmit net0
 EOF
 	
  cat <<EOF > /usr/local/etc/ansible/roles/vpn_wifi_router/files/etc/hostapd-wlan0.conf
@@ -1132,15 +1140,17 @@ EOF
      - openvpn
      - bird
 
-- name: copy hostapd and ovpn-if files
+- name: copy files in 0644 mode (hostapd)
   action: copy src=/usr/local/etc/ansible/roles/vpn_wifi_router/files/{{ item }}
     dest=/{{ item }} owner=root group=wheel mode=0644
   with_items:
      - etc/hostapd-wlan0.conf
-     - usr/local/etc/openvpn/ovpn-if.sh
 
-- name: Set ovpn-if script executable
-  action: file path=/usr/local/etc/openvpn/ovpn-if.sh mode=0755
+- name: copy files in 0755 mode (ovpn-if.sh)
+  action: copy src=/usr/local/etc/ansible/roles/vpn_wifi_router/files/{{ item }}
+    dest=/{{ item }} owner=root group=wheel mode=0755
+  with_items:
+     - usr/local/etc/openvpn/ovpn-if.sh
 EOF
     # This file is critical for correctly set-up openvpn tunnel, need to update it easly
     cp /usr/local/etc/openvpn/ovpn-if.sh /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/openvpn/
