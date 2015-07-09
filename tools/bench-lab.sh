@@ -185,7 +185,7 @@ upgrade_image () {
 
 usage () {
 	if [ $# -lt 1 ]; then
-		echo "$0 [-h] [-f bench-lab-config] [-c configuration-sets-dir] [-i nanobsd-images-dir] [-n iteration] [-d benchs-dir]"
+		echo "$0 [-h] [-f bench-lab-config] [-c configuration-sets-dir] [-i nanobsd-images-dir] [-n iteration] [-d results-dir]"
 		echo "
 		bench-lab-configureation file: File that define all lab bench parameters
 		nanobsd-images-dir: Directory where are all update nanobsd images

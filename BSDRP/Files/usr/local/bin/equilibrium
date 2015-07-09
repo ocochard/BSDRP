@@ -18,7 +18,7 @@ set -eu
 
 #### (default) Variables 
 # tolerance in %
-TOLERANCE=0.01
+TOLERANCE=0.001
 # output file for iperf and pkt-gen
 OFILE=/tmp/equilibrium-rx.txt
 CFILE=/tmp/equilibrium-tx.txt
@@ -59,7 +59,7 @@ usage () {
 	echo "                Input and displayed values unit change from Mb/s to Kpps"
 	echo "                Use this option for benching router in place of IPSec gateway"
 	echo " -o TOLERANCE: Measure tolerance in %"
-	echo "                default value of 0.01 for 0.1%"
+	echo "                default value of 0.001 for 0.01%"
 	echo " -t TX-NIC :   NIC used for sending load"
 	echo " -r RX-NIC :   NIC used for receiving (and measuring) load"
 	echo " -s LOAD  :    Size of the UDP load"
@@ -74,8 +74,9 @@ extract () {
     # $1 : Input file
     local LINES=`wc -l $1`
     LINES=`echo ${LINES} | cut -d ' ' -f1`
-    # Remove the first 15 lines (garbage or not good result) and the 10 last lines (bad result too)
-    head -n `expr ${LINES} - 10` $1 | tail -n `expr ${LINES} - 10 - 15` > /tmp/equilibrium.clean
+    # Remove the first 12 lines (garbage or not good result) and the 5 last lines (bad result too)
+    # head -n `expr ${LINES} - 10` $1 | tail -n `expr ${LINES} - 10 - 15` > /tmp/equilibrium.clean
+	head -n `expr ${LINES} - 5` $1 | tail -n `expr ${LINES} - 5 - 12` > /tmp/equilibrium.clean
     # Filter the output (still filtering "0 pps" lines in case of) and kept only the numbers:
     # example of good line:
     # 290.703575 main_thread [1441] 729113 pps (730571 pkts in 1002000 usec)
@@ -225,7 +226,11 @@ for i in `seq 1 16`;do
 	[ -n "${TREND}" ] && echo "  - TREND = ${TREND}"
 	load || die "Can't run bench test"
 	FWRATE=`cat /tmp/equilibrium.fwrate`
-	echo "  - Measured FWRATE = ${FWRATE} ${UNIT}"
+	echo "  - Measured forwarding rate = ${FWRATE} ${UNIT}"
+	if [ ${FWRATE} -gt ${OLOAD} ]; then
+		echo "  - forwarding rate greater than offering load! (forcing FWRATE=OLOAD)"
+		FWRATE=${OLOAD}
+	fi
 	[ ${FWRATE} -lt 1 ] && die "FWRATE lower than 1 ${UNIT}, can't continue"
 	# receiving load can't be greater than offered load, but rouding value can create this problem
 	# This is why the next test is a -ge in place of -eq

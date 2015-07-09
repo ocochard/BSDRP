@@ -158,9 +158,9 @@ options     MROUTING        # Multicast routing
 # or 'device cryptodev'.
 device      crypto
 device      cryptodev
-options     IPSEC
-options     IPSEC_NAT_T     #NAT-T support, UDP encap of ESP
-options     TCP_SIGNATURE       #include support for RFC 2385
+#options     IPSEC
+#options     IPSEC_NAT_T     #NAT-T support, UDP encap of ESP
+#options     TCP_SIGNATURE       #include support for RFC 2385
 
 # Add device Polling
 options     DEVICE_POLLING
@@ -170,5 +170,3 @@ options     ROUTETABLES=16
 
 # Encapsulating Interface
 device enc
-
-

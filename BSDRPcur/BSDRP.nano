@@ -487,6 +487,9 @@ add_port "security/openvpn-auth-radius"
 #add_port "benchmarks/netpipe" 
 add_port "benchmarks/iperf"
 
+#add_port "comms/conserver-com"
+#add_port "comms/ser2net"
+
 # Python (being ansible manageable)
 add_port "devel/libffi"
 add_port "lang/python27"
