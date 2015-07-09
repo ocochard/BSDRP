@@ -258,7 +258,7 @@ for i in `seq 1 16`;do
 	[ ${OLOAD} -eq 0 ] && die "Offered load reached 0 ${UNIT} (Too much packets dropped/corrupted?), can't continue"
 	FLOAT=`echo ${OLOAD} \* ${TOLERANCE} | bc`
 	ROUND=`echo "($FLOAT+0.5)/1" | bc `
-	if [ ${STEP} -lt ${ROUND} ]; then
+	if [ ${STEP} -le ${ROUND} ]; then
 		break
 	fi
 done
