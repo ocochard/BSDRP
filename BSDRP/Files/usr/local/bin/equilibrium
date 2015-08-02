@@ -18,7 +18,7 @@ set -eu
 
 #### (default) Variables 
 # tolerance in %
-TOLERANCE=0.001
+TOLERANCE=0.01
 # output file for iperf and pkt-gen
 OFILE=/tmp/equilibrium-rx.txt
 CFILE=/tmp/equilibrium-tx.txt
@@ -28,6 +28,7 @@ PLOAD=""
 # Maximum link-rate value (Mb/s or fps)
 LINK_RATE=""
 FWRATE=""
+MAX_FWRATE=0
 TREND=""
 PEAK=false
 PSIZE=""
@@ -59,7 +60,7 @@ usage () {
 	echo "                Input and displayed values unit change from Mb/s to Kpps"
 	echo "                Use this option for benching router in place of IPSec gateway"
 	echo " -o TOLERANCE: Measure tolerance in %"
-	echo "                default value of 0.001 for 0.01%"
+	echo "                default value of 0.01 for 0.1%"
 	echo " -t TX-NIC :   NIC used for sending load"
 	echo " -r RX-NIC :   NIC used for receiving (and measuring) load"
 	echo " -s LOAD  :    Size of the UDP load"
@@ -232,6 +233,7 @@ for i in `seq 1 16`;do
 		FWRATE=${OLOAD}
 	fi
 	[ ${FWRATE} -lt 1 ] && die "FWRATE lower than 1 ${UNIT}, can't continue"
+	[ ${FWRATE} -gt ${MAX_FWRATE} ] && MAX_FWRATE=${FWRATE}
 	# receiving load can't be greater than offered load, but rouding value can create this problem
 	# This is why the next test is a -ge in place of -eq
 	if [ ${FWRATE} -ge ${OLOAD} ]; then
@@ -262,4 +264,4 @@ for i in `seq 1 16`;do
 		break
 	fi
 done
-echo "Estimated Equilibrium link throughput= ${FWRATE} ${UNIT}"
+echo "Estimated Equilibrium link throughput= ${FWRATE} ${UNIT} (maximum value seen: ${MAX_FWRATE} ${UNIT})"
