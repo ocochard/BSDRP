@@ -49,12 +49,13 @@ update_src () {
 	if [ ! -d ${FREEBSD_SRC}/.svn ]; then
 		echo "No existing FreeBSD source tree found: Checking out source..."
 		mkdir -p ${FREEBSD_SRC} || die "Can't create ${FREEBSD_SRC}"
-		${SVN_CMD} co svn://${SVN_SRC_PATH} ${FREEBSD_SRC} -r ${SRC_REV} \
+		${SVN_CMD} co https://${SVN_SRC_PATH} ${FREEBSD_SRC} -r ${SRC_REV} \
 		|| die "Can't check out sources"
 	else
 		#Checking repo change
 		if ! ${SVN_CMD} info ${FREEBSD_SRC} | grep -q "${SVN_SRC_PATH}"; then
 			die "svn repo changed: delete your source tree with rm -rf ${FREEBSD_SRC}"
+			die "or relocate it: cd {FREEBSD_SRC}; svn relocate svn://svn.freebsd.org https://svn.freebsd.org"
 		fi
 		echo "Cleaning local FreeBSD patches..."
 		#cleaning local patced source
@@ -69,7 +70,7 @@ update_port () {
 	if [ ! -d ${PORTS_SRC}/.svn ]; then
 		echo "No existing source port tree found: Checking out ports source..."
 		mkdir -p ${PORTS_SRC} || die "Can't create ${PORTS_SRC}"
-		${SVN_CMD} co svn://${SVN_PORTS_PATH} ${PORTS_SRC} -r ${PORTS_REV} \
+		${SVN_CMD} co https://${SVN_PORTS_PATH} ${PORTS_SRC} -r ${PORTS_REV} \
 		|| die "Can't check out ports sources"
 	else
 		#Checking repo change
