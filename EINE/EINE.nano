@@ -414,6 +414,10 @@ add_port "security/libgpg-error"
 add_port "security/libgcrypt"
 add_port "security/openvpn-auth-radius"
 
+# Add serial server
+#add_port "comms/conserver-com"
+add_port "comms/ser2net"
+
 # Ansible (used on the manager only)
 add_port "devel/py-yaml"
 add_port "security/py-pycrypto"
