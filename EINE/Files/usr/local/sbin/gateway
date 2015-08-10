@@ -1,0 +1,316 @@
+#!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
+"This script manage VPN gateway"
+#
+# Copyright (c) 2014-2015, Orange
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+import argparse       # parse user options
+import sys            # Permit to call sys.exit
+import os             # Permit to call os.geteuid
+
+import yaml           # Permit to load ansible YAML file (just for the SSH port)
+import netaddr        # Permit to convert IP address very easly
+import eine           # EINE functions modules
+
+# Variable definitions
+
+PREFIX = "/usr/local"
+ANSIBLE_DIR = PREFIX + "/etc/ansible"
+EASYRSA_VARS = PREFIX + "/etc/easy-rsa.vars"
+CLIENT_TPL_DIR = ANSIBLE_DIR + "/roles/vpn_wifi_router"
+GW_TPL_DIR = ANSIBLE_DIR + "/roles/gateway"
+ANSIBLE_HOSTVARS_DIR = ANSIBLE_DIR + "/host_vars"
+ANSIBLE_INV = ANSIBLE_DIR + "/inventory.ini"
+KNOWN_HOSTS = "/etc/dot.ssh." + os.environ['USER'] + "/known_hosts"
+
+# Function definitions #
+
+
+def create(args):
+    "This create a new gateway"
+
+    print "Creating gateway {}.".format(args.hostname)
+
+    # Split subnet (10.0.0.0/24) into a list of 2 elements
+    # lan_inet4 = args.lan.split("/", 1)
+    registered_inet4 = netaddr.IPNetwork(args.registered)
+    unregistered_inet4 = netaddr.IPNetwork(args.unregistered)
+    int_inet4 = netaddr.IPNetwork(args.internal)
+    ext_inet4 = netaddr.IPNetwork(args.external)
+
+    print "Checking user input...",
+    # Check if it's a valid IP address
+    for address in ['registered', 'unregistered', 'internal', 'external',
+                    'loopback', 'dfltroute']:
+        if getattr(args, address) is None:
+            sys.exit('Missing value for {} option'.format(address))
+        if not netaddr.IPNetwork(getattr(args, address)):
+            sys.exit('Bad IP address: {} on option {}'
+                     .format(getattr(args, address), address))
+    print "Done"
+
+    # Check for duplicate
+    inv = eine.inventory_list('gateways', ANSIBLE_INV, ANSIBLE_HOSTVARS_DIR)
+    if inv and not eine.check_duplicate(inv, args, True):
+        sys.exit('ERROR: Duplicate entry found')
+
+    # Because we automatically add ssh key, we need an online client
+    print 'Testing if online...',
+    if eine.is_online(format(int_inet4.ip))[0]:
+        print 'OK'
+    else:
+        sys.exit('Can\'t ping {}'.format(args.internal))
+
+    # Update hosts file
+    print 'Checking if not already existing in /etc/hosts...',
+    if eine.is_in_hosts(args.hostname):
+        sys.exit('Hostname {} is already in /etc/hosts'
+                 .format(args.hostname))
+    else:
+        print 'No'
+
+    print 'Updating /etc/hosts with volatile IP...',
+    if eine.hosts_add(format(int_inet4.ip), args.hostname):
+        print 'Done'
+    else:
+        sys.exit('ERROR')
+
+    # Add the hostname to the Ansible inventory
+    print "Adding VPN-Gateway to Ansible inventory...",
+    if eine.inventory_add(args.hostname, 'gateways', ANSIBLE_INV):
+        print "Done"
+    else:
+        sys.exit('ERROR')
+
+    # Generate site certificate
+    print "Generating site certificate...",
+    if eine.cert_add(args.hostname, EASYRSA_VARS, GW_TPL_DIR, True):
+        print "Done"
+    else:
+        sys.exit('Can\'t generate certificate')
+
+    # Generate the host variable file
+    print "Generating Ansible host variable file...",
+    with open(ANSIBLE_HOSTVARS_DIR + '/' + args.hostname, 'w') as var:
+        var.write("---\n")
+        var.write("hostname: " + args.hostname + "\n")
+#        var.write("if_int_device: " + args.ifint + "\n")
+        var.write("if_int_inet4_addr: {}\n".format(int_inet4.ip))
+        var.write("if_int_inet4_prefix: {}\n".format(int_inet4.prefixlen))
+#        var.write("if_ext_device: " + args.ifext + "\n")
+        var.write("if_ext_inet4_addr: {}\n".format(ext_inet4.ip))
+        var.write("if_ext_inet4_prefix: {}\n".format(ext_inet4.prefixlen))
+#        var.write("if_lo_device: lo1\n")
+        var.write("if_lo_inet4_addr: " + args.loopback + "\n")
+        var.write("if_lo_inet4_prefix: 32\n")
+        var.write("gateway_inet4: " + args.dfltroute + "\n")
+        var.write("registered_inet4_net: {}\n"
+                  .format(registered_inet4.network))
+        var.write("registered_inet4_mask: {}\n"
+                  .format(registered_inet4.netmask))
+        var.write("registered_inet4_prefix: {}\n"
+                  .format(registered_inet4.prefixlen))
+        var.write("unregistered_inet4_net: {}\n"
+                  .format(unregistered_inet4.network))
+        var.write("unregistered_inet4_mask: {}\n"
+                  .format(unregistered_inet4.netmask))
+        var.write("unregistered_inet4_prefix: {}\n"
+                  .format(unregistered_inet4.prefixlen))
+    print "Done"
+
+    # Before using ansible we need to add the host SSH key
+    print "Downloading gateway SSH keys...",
+    if eine.sshkey_add(args.hostname, KNOWN_HOSTS):
+        print 'Done'
+    else:
+        sys.exit('Failed')
+
+    # Now we can push the gateway template
+    print "Uploading configuration...",
+    status, out = eine.ansible_playbook(ANSIBLE_INV, ANSIBLE_DIR
+                                        + '/gateways.yml', args.hostname)
+    if status:
+        print 'Done'
+    else:
+        sys.exit("Error! Ansible didn't reach to push template\n".format(out))
+
+    # Then hosts can use the loopback address for reaching the client
+    print "Deleting internal IP entry from /etc/hosts...",
+    if eine.hosts_del(args.hostname):
+        print "Done"
+    else:
+        sys.exit('Failed')
+    print "Adding loopback IP entry into /etc/hosts...",
+    if eine.hosts_add(args.loopback, args.hostname):
+        print "Done"
+    else:
+        sys.exit('Failed')
+    print "Gateway correctly added (TO DO: force client update?)"
+    print "Don't forget to save configuration"
+    return True
+
+
+def delete(args):
+    "This delete a gateway"
+    print "Deleting gateway {}.".format(args.hostname)
+
+    print "Checking old entry in /etc/hosts...",
+    if eine.is_in_hosts(args.hostname):
+        print "Yes"
+        print "  Checking if it's online...",
+        if eine.is_online(args.hostname)[0]:
+            print "yes"
+            print "    factory-reset the gateway...",
+            if eine.ansible('sudo config factory', ANSIBLE_INV, 'gateways',
+                            args.hostname)[0]:
+                print 'Done'
+                print "    Asking gateway to reboot in 5 seconds...",
+            else:
+                print 'Failed'
+            if eine.ansible('sudo shutdown -r +5s', ANSIBLE_INV, 'gateways',
+                            args.hostname)[0]:
+                print 'Done'
+            else:
+                print 'Failed'
+        else:
+            print "no"
+        print "  Deleting old entry...",
+        if eine.hosts_del(args.hostname):
+            print "Done"
+        else:
+            print "Failed"
+    else:
+        print "Missing"
+
+    # Remove hostname from Ansible inventory
+    print "Deleting entry in Ansible inventory...",
+    if eine.inventory_del(args.hostname, 'gateways', ANSIBLE_INV):
+        print 'Done'
+    else:
+        sys.exit('ERROR')
+
+    # Revoke and delete site certificate
+    print "Revoking and deleting certificate...",
+    if eine.cert_del(args.hostname, EASYRSA_VARS, CLIENT_TPL_DIR,
+                     GW_TPL_DIR):
+        print "Done"
+    else:
+        print "Skiping"
+
+    # Remove Ansible host variable file
+    print "Checking if existing host variable file...",
+    if os.path.isfile(ANSIBLE_HOSTVARS_DIR + '/' + args.hostname):
+        print "Found"
+        print "  Cleaning Ansible host variable file...",
+        try:
+            os.remove(ANSIBLE_HOSTVARS_DIR + '/' + args.hostname)
+            print "Done"
+        except OSError:
+            print "Failed"
+    else:
+        print "Missing"
+
+    # Remove SSH host key
+    print "Checking client SSH key in know_hosts file...",
+    if eine.is_in_sshkey(args.hostname, KNOWN_HOSTS):
+        print "Found"
+        print "  Delete client SSH key...",
+        if eine.sshkey_del(args.hostname, KNOWN_HOSTS):
+            print "OK"
+        else:
+            print "NOK"
+    else:
+        print "Missing"
+    print "Gateway deleted, don't forget to save configuration"
+    return True
+
+
+def renew(args):
+    "This renew gateway's certificate"
+    print 'Renew certificate of site: {}'.format(args.hostname)
+
+
+def listing(args):
+    "This list gateways"
+    inv = eine.inventory_list('gateways', ANSIBLE_INV, ANSIBLE_HOSTVARS_DIR)
+    if inv:
+        inv.insert(0, ['Hostname', 'loopack', 'internal IP',
+                       'Registred VPN subnet', 'Unregistered VPN subnet'])
+        eine.pprint_table(sys.stdout, inv)
+        return True
+    else:
+        return False
+
+# Main function
+
+# pylint: disable=C0103
+if __name__ == '__main__':
+    # Create the top-level command-line option parser
+    parser = argparse.ArgumentParser(description='Manage VPN gateways',
+                                     epilog="Example: create amer \
+                                             -i 10.0.24.4/24 -l vtnet1\
+                                             -e 10.0.45.4/24 -x vtnet3 \
+                                             -d 10.0.45.5 -o 10.254.254.4 \
+                                             -u 10.1.4.0/24 \
+                                             -r 10.0.4.0/24 -m 10.0.12.1")
+    subparsers = parser.add_subparsers()
+    parser_create = subparsers.add_parser('create')
+    parser_create.add_argument("hostname", help='hostname')
+    parser_create.add_argument('-d', '--dfltroute', nargs='?', required=True,
+                               help='Default route')
+    parser_create.add_argument('-e', '--external', nargs='?', required=True,
+                               help='External IPv4 IP/cidr')
+    parser_create.add_argument('-i', '--internal', nargs='?', required=True,
+                               help='Internal IPv4 IP/cidr')
+#    parser_create.add_argument('-l', '--ifint', nargs='?', default='igb1',
+#                               help='Internal interface name')
+    parser_create.add_argument('-l', '--loopback', nargs='?', required=True,
+                               help='IPv4 loopback address')
+    parser_create.add_argument('-u', '--unregistered', nargs='?', required=True,
+                               help='Unregistered VPN subnet (IP/cird)')
+    parser_create.add_argument('-r', '--registered', nargs='?', required=True,
+                               help='Registered VPN subnet (IP/cidr)')
+#    parser_create.add_argument('-x', '--ifext', nargs='?', default='igb0',
+#                               help='External interface name')
+    parser_create.set_defaults(func=create)
+    # 'delete' options
+    parser_delete = subparsers.add_parser('delete')
+    parser_delete.add_argument("hostname", help='hostname')
+    parser_delete.set_defaults(func=delete)
+    # renew' options
+    parser_renew = subparsers.add_parser('renew')
+    parser_renew.add_argument("hostname", help='hostname')
+    parser_renew.set_defaults(func=renew)
+    # 'list' options
+    parser_list = subparsers.add_parser('list')
+    parser_list.set_defaults(func=listing)
+    # Parsing argument
+    arguments = parser.parse_args()
+    # Calling functions (almost same name as the first argument)
+    if eine.is_root():
+        sys.exit('Do not start this script with root privilege')
+    arguments.func(arguments)
+# pylint: enable=C0103

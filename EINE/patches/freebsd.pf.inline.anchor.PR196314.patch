@@ -1,0 +1,55 @@
+diff --git sbin/pfctl/pfctl.c sbin/pfctl/pfctl.c
+index 64b4a05..8a7fc0b 100644
+--- sbin/pfctl/pfctl.c
++++ sbin/pfctl/pfctl.c
+@@ -102,7 +102,7 @@ int	 pfctl_show_anchors(int, int, char *);
+ int	 pfctl_ruleset_trans(struct pfctl *, char *, struct pf_anchor *);
+ int	 pfctl_load_ruleset(struct pfctl *, char *,
+ 		struct pf_ruleset *, int, int);
+-int	 pfctl_load_rule(struct pfctl *, char *, struct pf_rule *, int);
++int	 pfctl_load_rule(struct pfctl *, const char *, struct pf_rule *, int);
+ const char	*pfctl_lookup_option(char *, const char **);
+ 
+ struct pf_anchor_global	 pf_anchors;
+@@ -1322,12 +1322,11 @@ pfctl_load_ruleset(struct pfctl *pf, char *path, struct pf_ruleset *rs,
+ }
+ 
+ int
+-pfctl_load_rule(struct pfctl *pf, char *path, struct pf_rule *r, int depth)
++pfctl_load_rule(struct pfctl *pf, const char *path, struct pf_rule *r, int depth)
+ {
+ 	u_int8_t		rs_num = pf_get_ruleset_number(r->action);
+ 	char			*name;
+ 	struct pfioc_rule	pr;
+-	int			len = strlen(path);
+ 
+ 	bzero(&pr, sizeof(pr));
+ 	/* set up anchor before adding to path for anchor_call */
+@@ -1337,15 +1336,9 @@ pfctl_load_rule(struct pfctl *pf, char *path, struct pf_rule *r, int depth)
+ 		errx(1, "pfctl_load_rule: strlcpy");
+ 
+ 	if (r->anchor) {
+-		if (r->anchor->match) {
+-			if (path[0])
+-				snprintf(&path[len], MAXPATHLEN - len,
+-				    "/%s", r->anchor->name);
+-			else
+-				snprintf(&path[len], MAXPATHLEN - len,
+-				    "%s", r->anchor->name);
+-			name = path;
+-		} else
++		if (r->anchor->match)
++			name = r->anchor->name;
++		else
+ 			name = r->anchor->path;
+ 	} else
+ 		name = "";
+@@ -1368,7 +1361,6 @@ pfctl_load_rule(struct pfctl *pf, char *path, struct pf_rule *r, int depth)
+ 		    pf->opts & PF_OPT_VERBOSE2,
+ 		    pf->opts & PF_OPT_NUMERIC);
+ 	}
+-	path[len] = '\0';
+ 	pfctl_clear_pool(&r->rpool);
+ 	return (0);
+ }
+-- 

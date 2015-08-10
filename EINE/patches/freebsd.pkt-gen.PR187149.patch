@@ -1,0 +1,37 @@
+Index: tools/tools/netmap/pkt-gen.c
+===================================================================
+--- tools/tools/netmap/pkt-gen.c	(revision 276525)
++++ tools/tools/netmap/pkt-gen.c	(working copy)
+@@ -563,6 +563,7 @@
+ {
+ 	uint32_t a;
+ 	uint16_t p;
++	struct ether_header *eh = &pkt->eh;
+ 	struct ip *ip = &pkt->ip;
+ 	struct udphdr *udp = &pkt->udp;
+ 
+@@ -597,6 +598,24 @@
+ 	ip->ip_dst.s_addr = htonl(g->dst_ip.start);
+     } while (0);
+     // update checksum
++	/* Missing code here ? the comment "update checksum" should be followed
++	 * by updating IP & UDP checksum. I will try to fix by simply copy/past
++	 * checksum code from initialize_packet function */
++
++	ip->ip_sum = 0;
++	ip->ip_sum = wrapsum(checksum(ip, sizeof(*ip), 0));
++	/* UDP checksum */
++	uint16_t paylen = g->pkt_size - sizeof(*eh) - sizeof(struct ip);
++	udp->uh_sum = 0;
++	udp->uh_sum = wrapsum(checksum(udp, sizeof(*udp),
++		checksum(pkt->body,
++			paylen - sizeof(*udp),
++			checksum(&ip->ip_src, 2 * sizeof(ip->ip_src),
++				IPPROTO_UDP + (u_int32_t)ntohs(udp->uh_ulen)
++			)
++		)
++	));
++
+ }
+ 
+ /*

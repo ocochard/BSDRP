@@ -1,0 +1,16 @@
+#!/bin/sh
+# Check if reset button is triggered on APU
+set -eu
+while true; do
+    if [ -e /dev/modesw ]; then
+        if [ `head -c 1 /dev/modesw` -eq 1 ]; then
+            for i in 1 2 3; do
+                [ -e /dev/led/led$i ] && echo f9 > /dev/led/led$i
+            done
+            logger "FACTORY RESET BUTTON TRIGGERED!!!!"
+            /usr/local/sbin/config factory > /tmp/debug-reset.log && logger "factory reset done" || logger "factory reset failed"
+            /sbin/shutdown -r now
+        fi
+    fi
+    sleep 2
+done

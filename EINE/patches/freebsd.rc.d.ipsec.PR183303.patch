@@ -1,0 +1,14 @@
+Index: etc/rc.d/ipsec
+===================================================================
+--- etc/rc.d/ipsec	(revision 255918)
++++ etc/rc.d/ipsec	(working copy)
+@@ -23,6 +23,9 @@
+ 
+ ipsec_prestart()
+ {
++	if [ `sysctl -n net.inet.ip.fastforwarding` = 1 ]; then
++		warn "ipsec is not compatible with fastforwarding"
++	fi
+ 	if [ ! -f "$ipsec_file" ]; then
+ 		warn "$ipsec_file not readable; ipsec start aborted."
+ 		stop_boot

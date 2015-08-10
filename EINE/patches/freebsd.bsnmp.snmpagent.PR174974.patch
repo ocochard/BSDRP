@@ -1,0 +1,29 @@
+Index: contrib/bsnmp/lib/snmpagent.c
+===================================================================
+--- contrib/bsnmp/lib/snmpagent.c	(revision 245044)
++++ contrib/bsnmp/lib/snmpagent.c	(working copy)
+@@ -171,7 +171,11 @@
+ 	memset(resp, 0, sizeof(*resp));
+ 	strcpy(resp->community, pdu->community);
+ 	resp->version = pdu->version;
+-	resp->type = SNMP_PDU_RESPONSE;
++	if (pdu->flags & SNMP_MSG_AUTODISCOVER) {
++		resp->type = SNMP_PDU_REPORT; /* RFC 3414.4 */
++	} else {
++		resp->type = SNMP_PDU_RESPONSE;
++	}
+ 	resp->request_id = pdu->request_id;
+ 	resp->version = pdu->version;
+ 
+Index: contrib/bsnmp/snmpd/main.c
+===================================================================
+--- contrib/bsnmp/snmpd/main.c	(revision 245044)
++++ contrib/bsnmp/snmpd/main.c	(working copy)
+@@ -627,6 +627,7 @@
+ 		} else
+ 			community = comm->value;
+ 	} else if (pdu->nbindings == 0) {
++		pdu->flags |= SNMP_MSG_AUTODISCOVER;
+ 		/* RFC 3414 - snmpEngineID Discovery */
+ 		if (strlen(pdu->user.sec_name) == 0) {
+ 			asn_append_oid(&(pdu->bindings[pdu->nbindings++].var),

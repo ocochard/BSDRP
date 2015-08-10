@@ -1,0 +1,13 @@
+Index: sys/dev/usb/wlan/if_urtw.c
+===================================================================
+--- sys/dev/usb/wlan/if_urtw.c	(revision 277315)
++++ sys/dev/usb/wlan/if_urtw.c	(working copy)
+@@ -888,6 +888,8 @@
+ 	ic->ic_caps =
+ 	    IEEE80211_C_STA |		/* station mode */
+ 	    IEEE80211_C_MONITOR |	/* monitor mode supported */
++        IEEE80211_C_IBSS |      /* ad-hoc mode supported */
++        IEEE80211_C_HOSTAP |    /* access point mode supported */
+ 	    IEEE80211_C_TXPMGT |	/* tx power management */
+ 	    IEEE80211_C_SHPREAMBLE |	/* short preamble supported */
+ 	    IEEE80211_C_SHSLOT |	/* short slot time supported */
