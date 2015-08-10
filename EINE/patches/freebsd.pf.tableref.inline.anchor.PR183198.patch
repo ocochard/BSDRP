@@ -1,0 +1,15 @@
+diff --git sys/netpfil/pf/pf_table.c sys/netpfil/pf/pf_table.c
+index 595a365..4f1c21c 100644
+--- sys/netpfil/pf/pf_table.c
++++ sys/netpfil/pf/pf_table.c
+@@ -1746,7 +1746,8 @@ pfr_setflags_ktable(struct pfr_ktable *kt, int newf)
+ 	PF_RULES_WASSERT();
+ 
+ 	if (!(newf & PFR_TFLAG_REFERENCED) &&
+-	    !(newf & PFR_TFLAG_PERSIST))
++	    !(newf & PFR_TFLAG_PERSIST) &&
++	    !(newf & PFR_TFLAG_REFDANCHOR))
+ 		newf &= ~PFR_TFLAG_ACTIVE;
+ 	if (!(newf & PFR_TFLAG_ACTIVE))
+ 		newf &= ~PFR_TFLAG_USRMASK;
+-- 

@@ -1,0 +1,2 @@
+/var/log/radius.log             freeradius:freeradius   600     3       100     *     J     /var/run/radiusd/radiusd.pid
+/var/log/radius/radacct/*/*     freeradius:freeradius   600     10      100     *     JG

@@ -1,0 +1,35 @@
+--- tools/tools/netrate/netreceive/netreceive.c.orig	2013-05-23 12:00:42.735844141 +0200
++++ tools/tools/netrate/netreceive/netreceive.c	2013-05-23 15:11:05.507074899 +0200
+@@ -138,10 +138,10 @@
+ 		perror("no room for pointers!");
+ 		exit(1);
+ 	}
+-	tp = (struct td_desc **)m;
++	tp = (struct td_desc **)(void *) m;
+ 	m += lb;	/* skip the pointers */
+ 	for (si = i = 0; i < nt; i++, m += td_len) {
+-		tp[i] = (struct td_desc *)m;
++		tp[i] = (struct td_desc *)(void *) m;
+ 		tp[i]->fd = s[si];
+ 		tp[i]->buflen = 65536;
+ 		tp[i]->buf = calloc(1, tp[i]->buflen);
+@@ -163,7 +163,7 @@
+ 	/* now the parent collects and prints results */
+ 	c0 = c1 = bc0 = bc1 = 0;
+ 	clock_gettime(CLOCK_REALTIME, &then);
+-	fprintf(stderr, "start at %ld.%09ld\n", then.tv_sec, then.tv_nsec);
++	fprintf(stderr, "start at %jd.%09ld\n", (__intmax_t)then.tv_sec, then.tv_nsec);
+ 	while (1) {
+ 		int i, nt = nsock * nthreads;
+ 		int64_t dn;
+@@ -185,8 +185,8 @@
+ 		pps = (pps * 1000000000) / (delta.tv_sec*1000000000 + delta.tv_nsec + 1);
+ 		bps = ((bc0 - bc1) * 8000000000) / (delta.tv_sec*1000000000 + delta.tv_nsec + 1);
+ 		fprintf(stderr, " %9ld pps %8.3f Mbps", (long)pps, .000001*bps);
+-		fprintf(stderr, " - %d pkts in %ld.%09ld ns\n",
+-			(int)dn, delta.tv_sec, delta.tv_nsec);
++		fprintf(stderr, " - %d pkts in %jd.%09ld ns\n",
++			(int)dn, (__intmax_t)delta.tv_sec, delta.tv_nsec);
+ 		c1 = c0;
+ 		bc1 = bc0;
+ 	}
