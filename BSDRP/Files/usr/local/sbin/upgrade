@@ -102,7 +102,7 @@ write_new_image() {
 		die "ERROR: Can't initialize destination partition ${boot_dev}${DST_SLICE}"
 
 	# Copy in new system
-	dd of=${boot_dev}${DST_SLICE} bs=1m conv=sync || \
+	dd of=${boot_dev}${DST_SLICE} obs=64k || \
 		die "ERROR: Can't install the upgrade on ${boot_dev}${DST_SLICE}"
 
 	# Check that it worked
