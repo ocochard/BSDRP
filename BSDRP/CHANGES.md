@@ -1,15 +1,15 @@
-# Release 1.57 (unreleased)
+# Release 1.57 (16/08/2015)
 
 ## New features
+* Upgraded to FreeBSD 10.2-RELEASE
 * Enable getty on serial port 1 and 2 by default
 * Added script for doing IPSec benchmark using Equilibrium throughput method
 
 ## Bug fixes
-* Upgrade to FreeBSD 10.1-RELEASE-p14
 * Fix Emulex oce(4) promiscious/carp behavior (thanks Sergey Akhmatov from FreeBSD ML-net)
 
 ## Updated packages
-* openvpn to 2.3.7
+* openvpn to 2.3.8
 * strongswan to 5.3.2
 
 ## Package list
@@ -35,15 +35,15 @@
 * lzo2-2.09
 * mcast-tools-20061214_1
 * monit-5.14
-* mpd5-5.7_2
+* mpd5-5.7_3
 * mrouted-3.9.6_1
 * netmap-ipfw-0.1
 * openldap-client-2.4.41
-* openvpn-2.3.7
+* openvpn-2.3.8
 * openvpn-auth-radius-2.1_3
 * pimd-2.2.1
 * pimdd-0.2.1.0_1
-* pkg-1.5.5
+* pkg-1.5.6
 * pmacct-0.14.3_3
 * py27-setuptools27-17.0
 * python2-2_3
