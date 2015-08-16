@@ -1,3 +1,50 @@
+# Release 1.58 (not released)
+
+## Package list
+* bird-1.5.0_1
+* bird6-1.5.0_1
+* bsnmp-regex-0.6_1
+* bsnmp-ucd-0.4.1
+* dhcprelya-4.9
+* dlmalloc-2.8.6
+* dma-v0.9_1,1
+* easy-rsa-2.2.2
+* exabgp-3.4.8
+* freevrrpd-1.1_1
+* indexinfo-0.2.3
+* iperf-2.0.5
+* ipmitool-1.8.14_1
+* ipsec-tools-0.8.2_1
+* isc-dhcp43-server-4.3.2_1
+* libevent2-2.0.22_1
+* libffi-3.2.1
+* libgcrypt-1.6.3
+* libgpg-error-1.19_1
+* lzo2-2.09
+* mcast-tools-20061214_1
+* monit-5.14
+* mpd5-5.7_3
+* mrouted-3.9.6_1
+* netmap-ipfw-0.1
+* openldap-client-2.4.41
+* openvpn-2.3.8
+* openvpn-auth-radius-2.1_3
+* pimd-2.2.1
+* pimdd-0.2.1.0_1
+* pkg-1.5.6
+* pmacct-0.14.3_3
+* py27-setuptools27-17.0
+* python2-2_3
+* python27-2.7.10
+* quagga-0.99.24.1_2
+* readline-6.3.8
+* strongswan-5.3.2
+* sudo-1.8.14p3
+* tayga-0.9.2
+* tmux-2.0
+* ucarp-1.5.2_2
+
+-----------------------------------------------------
 # Release 1.57 (16/08/2015)
 
 ## New features
