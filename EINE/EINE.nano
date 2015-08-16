@@ -414,9 +414,16 @@ add_port "security/libgpg-error"
 add_port "security/libgcrypt"
 add_port "security/openvpn-auth-radius"
 
-# Add serial server
+# Add simple Serial Terminal-server
 #add_port "comms/conserver-com"
 add_port "comms/ser2net"
+
+# Add an IDPS
+add_port "devel/pcre"
+add_port "net/libnet"
+add_port "textproc/libyaml"
+add_port "devel/libhtp"
+add_port "security/suricata" "WITHOUT=\"PRELUDE JSON\""
 
 # Ansible (used on the manager only)
 add_port "devel/py-yaml"
@@ -473,7 +480,7 @@ cleanup_ports () {
 		# Restart a BSDRP image build with the "-b" option
 		# diff packages.info.first packages.info
 		set +e
-        CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* cmake* curl* m4* gcc-* gmake* libtool* lua* gawk* perl* gettext* bison* help2man* mpfr-* mpc-* p5-gettext* pcre* libsigsegv* pkgconf*'
+        CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* cmake* curl* m4* gcc-* gmake* libtool* lua* gawk* perl* gettext* bison* help2man* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
 		# usr/local/lib/perl5 : Dirty hack
 		#   pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
 		#   pkg didn't delete all MAN1 page related to perl too
@@ -526,6 +533,7 @@ eine_custom () {
 	CR "echo ${CONSOLE_PASSWORD} | pw mod user root -h 0"
 
 	# Create local admin account
+    [ -d ${NANO_WORLDDIR}/usr/home ] || mkdir ${NANO_WORLDDIR}/usr/home
 	CR "echo \"${ADMIN_USERNAME}:1001:0::0:0:Administrator:/usr/home/${ADMIN_USERNAME}:/bin/tcsh:${CONSOLE_PASSWORD}\" | adduser -f -"
 	cp ${NANO_WORLDDIR}/root/.cshrc ${NANO_WORLDDIR}/usr/home/${ADMIN_USERNAME}/
 	cp ${NANO_WORLDDIR}/root/.complete  ${NANO_WORLDDIR}/usr/home/${ADMIN_USERNAME}/
