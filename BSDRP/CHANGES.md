@@ -1,5 +1,9 @@
 # Release 1.58 (not released)
 
+## Updated packages
+* exabgp to 3.4.12
+* pimd to 2.3.0
+
 ## Package list
 * bird-1.5.0_1
 * bird6-1.5.0_1

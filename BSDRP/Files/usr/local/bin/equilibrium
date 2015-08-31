@@ -38,6 +38,7 @@ TX_NIC=""
 RX_NIC=""
 PPS_MODE=false
 UNIT="Mb/s"
+SOFT_UDP_CHK=false
 
 ### Functions
 # A usefull function (from: http://code.google.com/p/sh-die/)
@@ -66,7 +67,10 @@ usage () {
 	echo " -s LOAD  :    Size of the UDP load"
 	echo "                default: 500 in Mb/s, 18 in pps mode"
 	echo "                Minimum load for Ethernet: 18"
+	echo " -u :          Enable software UDP checksum on pkt-gen"
 	echo "Example: $0 -d 00:1b:21:d3:8f:3e -t igb2 -r igb3"
+    echo "IP subnet used as source: 198.18.10.0/24"
+    echo "IP subnet used as destination: 198.19.10.0/24"
 	exit 1
 }
 
@@ -114,8 +118,16 @@ load () {
 	# Start a receiver
 	pkt-gen -f rx -i ${RX_NIC} > ${OFILE} 2>&1 &
 	# Start a generator
-	CMD="pkt-gen -U -f tx -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
-	-d 3.3.1.1:2000-3.3.1.100 -D ${DEST} -s 1.2.1.1:2000-1.2.1.20"
+	if (${SOFT_UDP_CHK}); then
+		CHK="-U"
+	else
+		CHK=""
+		ifconfig ${TX_NIC} down
+		ifconfig ${TX_NIC} txcsum
+		ifconfig ${TX_NIC} up
+	fi
+	CMD="pkt-gen ${CHK} -f tx -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
+	-d 198.19.10.1:2000-198.19.10.100 -D ${DEST} -s 198.18.10.1:2000-198.18.10.20"
 	echo $CMD > ${CFILE}
 	${CMD} >> ${CFILE} 2>&1
 	# Now close the receiver
@@ -172,6 +184,10 @@ do
 		-s)
 			PLOAD=$2
 			shift
+			shift
+			;;
+		-u)
+			SOFT_UDP_CHK=true
 			shift
 			;;
 		--)
