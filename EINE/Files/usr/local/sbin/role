@@ -148,6 +148,8 @@ manager () {
 [defaults]
 retry_files_enabled = False
 inventory = /usr/local/etc/ansible/inventory.ini
+pipelining = True
+forks = 50
 EOF
     fi
 
