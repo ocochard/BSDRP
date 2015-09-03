@@ -143,7 +143,7 @@ load () {
 
 #### Main
 
-args=`getopt d:hl:po:r:s:t: $*`
+args=`getopt d:hl:po:r:s:t:u $*`
 
 set -- $args
 for i
@@ -236,6 +236,8 @@ echo "Benchmark tool using equilibrium throughput method"
 echo "- UDP load = ${PLOAD}B, IP packet size=${PSIZE}B, Ethernet frame size=${FSIZE}B"
 echo "- Link rate = ${LINK_RATE} ${UNIT}"
 echo "- TOLERANCE = ${TOLERANCE}"
+echo -n "- Software netmap UDP checksum = "
+(${SOFT_UDP_CHK}) && echo "on" || echo "off"
 for i in `seq 1 16`;do
 	echo "Iteration $i"
 	echo "  - offering load = ${OLOAD} ${UNIT}"
