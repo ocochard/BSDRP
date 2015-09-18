@@ -144,11 +144,11 @@ NANO_CONFSIZE=40960
 NANO_DATASIZE=40960
 
 # Size of the /etc ramdisk in 512 bytes sectors
-# 10240=5Mb
+# 10240=5MB
 NANO_RAM_ETCSIZE=40960
 
 # Size of the /tmp+/var ramdisk in 512 bytes sectors
-# 20480=10Mb (usefull for log files)
+# 40960=20Mb (usefull for log files)
 NANO_RAM_TMPVARSIZE=40960
 
 # Boot0cfg configuration mode

@@ -1,5 +1,11 @@
 # Release 1.58 (not released)
 
+## New features
+* Disable Chelsio NIC features useless in a simple router (cxgbe.toecaps_allowed=0)
+
+## New packages
+* iperf3 (iperf is still because iperf3 didn't support multicast)
+
 ## Updated packages
 * exabgp to 3.4.12
 * pimd to 2.3.0
@@ -13,7 +19,7 @@
 * dlmalloc-2.8.6
 * dma-v0.9_1,1
 * easy-rsa-2.2.2
-* exabgp-3.4.8
+* exabgp-3.4.12
 * freevrrpd-1.1_1
 * indexinfo-0.2.3
 * iperf-2.0.5

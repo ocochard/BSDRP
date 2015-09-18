@@ -437,7 +437,9 @@ add_port "net-mgmt/pmacct"
 add_port "net/ucarp"
 
 # Add IPv6 multicast routing daemons and tools
-add_port "net/mcast-tools"
+add_port "net/pim6-tools"
+add_port "net/pim6dd"
+add_port "net/pim6sd"
 
 # Add IPv4 DVMRP (multicast) routing daemon
 add_port "net/mrouted"
@@ -485,7 +487,7 @@ add_port "security/openvpn-auth-radius"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 #add_port "benchmarks/netpipe" 
-add_port "benchmarks/iperf"
+add_port "benchmarks/iperf3"
 
 #add_port "comms/conserver-com"
 #add_port "comms/ser2net"

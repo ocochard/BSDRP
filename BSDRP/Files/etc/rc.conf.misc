@@ -28,7 +28,8 @@ syslogd_flags="-s"
 # - You are using BSDRP in VM.
 polling_enable="NO"
 
-#LRO and TSO feature should not be enabled on a router
+# Disable LRO and TSO on all NIC
+# This feature should not be enabled on a router
 disablelrotso_enable="YES"
 
 # Enable RFC1323 extensions
@@ -37,3 +38,7 @@ tcp_extensions="YES"
 # Fix GRE interface not in RUNNING state bug
 # http://www.freebsd.org/cgi/query-pr.cgi?pr=kern/164475
 fixgre_enable="YES"
+
+# Disable INTERRUPT and ETHERNET from for entropy sources
+# This value is VERY important for 8 cores or more and allways improve performance
+harvest_mask="351"
