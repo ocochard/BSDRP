@@ -146,7 +146,7 @@ expand_data_slice () {
 		die "Not supported: sparc64 for this function"
 	else
 		boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s1a \
-			 | awk '{ print $3; }' | cut -d s -f 1`
+			 | awk '{ s=$3; sub(/s[12]a$/, "", s); print s; }'`
 	fi
 	label=`cut -d '/' -f 2 /etc/nanobsd.conf`
 

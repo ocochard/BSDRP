@@ -69,9 +69,8 @@ mbr_get_info() {
 	BSD_SLICE="a"
 
 	# ufs/BSDRPs1a     N/A  aacd0s1a
-	boot_dev=/dev/`glabel status | grep ${SRC_LABEL} | awk '{ print $3; }'\
-       	| cut -d s -f 1`
-
+	boot_dev=/dev/`glabel status | grep ${SRC_LABEL} | \
+		awk '{ s=$3; sub(/s[12]a$/, "", s); print s; }'`
 }
 
 # Get label information for Sun VTOC
