@@ -53,7 +53,7 @@ disablelrotso_start()
 	for DETECTED in ${DETECTED_DEVICES}
 	do
 		echo -n "Disabling TSO, LRO and VLAN_HWTSO on: ${DETECTED}..."
-		ifconfig ${DETECTED} -tso4 -tso6 -lro -vlan_hwtso && echo "done" || echo "failed"
+		ifconfig ${DETECTED} -tso4 -tso6 -lro -vlanhwtso && echo "done" || echo "failed"
 	done
 exit 0
 }
@@ -64,7 +64,7 @@ disablelrotso_stop()
 	for DETECTED in ${DETECTED_DEVICES}
 	do
 		echo -n "Re-enabling TSO, LRO and VLAN_HWTSO on : ${DETECTED}..."
-		ifconfig ${DETECTED} tso4 tso6 lro vlan_hwtso && echo "done" || echo "failed"
+		ifconfig ${DETECTED} tso4 tso6 lro vlanhwtso && echo "done" || echo "failed"
 	done
 exit 0
 }
