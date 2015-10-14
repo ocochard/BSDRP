@@ -45,23 +45,38 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # Update or install src if not installed
 update_src () {
 	echo "Updating/Installing FreeBSD source"
-	
-	if [ ! -d ${FREEBSD_SRC}/.svn ]; then
+
+	if [ ! -d ${FREEBSD_SRC}/.${SRC_METHOD} ]; then	
 		echo "No existing FreeBSD source tree found: Checking out source..."
 		mkdir -p ${FREEBSD_SRC} || die "Can't create ${FREEBSD_SRC}"
-		${SVN_CMD} co https://${SVN_SRC_PATH} ${FREEBSD_SRC} -r ${SRC_REV} \
-		|| die "Can't check out sources"
+		if [ ${SRC_METHOD} = "svn" ]; then
+			${SVN_CMD} co https://${SRC_REPO} ${FREEBSD_SRC} -r ${SRC_REV} \
+			|| die "Can't check out sources from svn repo"
+		elif [ ${SRC_METHOD} = "git" ]; then
+			git clone ${SRC_REPO} ${FREEBSD_SRC} || die "Can't clone sources from git repo"
+			#git checkout REV?
+		fi
 	else
-		#Checking repo change
-		if ! ${SVN_CMD} info ${FREEBSD_SRC} | grep -q "${SVN_SRC_PATH}"; then
-			die "svn repo changed: delete your source tree with rm -rf ${FREEBSD_SRC}"
-			die "or relocate it: cd {FREEBSD_SRC}; svn relocate svn://svn.freebsd.org https://svn.freebsd.org"
+		if [ ${SRC_METHOD} = "svn" ]; then
+			#Checking repo change
+			if ! ${SVN_CMD} info ${FREEBSD_SRC} | grep -q "${SRC_REPO}"; then
+				die "svn repo changed: delete your source tree with rm -rf ${FREEBSD_SRC}"
+				die "or relocate it: cd {FREEBSD_SRC}; svn relocate svn://svn.freebsd.org https://svn.freebsd.org"
+			fi
 		fi
 		echo "Cleaning local FreeBSD patches..."
 		#cleaning local patced source
-		${SVN_CMD} revert -R ${FREEBSD_SRC}
+		if [ ${SRC_METHOD} = "svn" ]; then
+			${SVN_CMD} revert -R ${FREEBSD_SRC}
+		elif [ ${SRC_METHOD} = "git" ]; then
+			(cd ${FREEBSD_SRC}; git checkout . )
+		fi
 		echo "Updating FreeBSD sources..."
-		${SVN_CMD} update ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't update FreeBSD src"
+		if [ ${SRC_METHOD} = "svn" ]; then
+			${SVN_CMD} update ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't update FreeBSD src"
+		elif [ ${SRC_METHOD} = "git" ]; then
+			(cd ${FREEBSD_SRC}; git pull )
+		fi
 	fi
 }
 
@@ -96,11 +111,12 @@ patch_src() {
 	# Nuke the newly created files to avoid build errors, as
 	# patch(1) will automatically append to the previously
 	# non-existent file.
-	( cd ${FREEBSD_SRC} &&
-	${SVN_CMD} status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' \
-	| xargs -r rm -r)
-	: > ${PROJECT_DIR}/FreeBSD/.src_pulled
-
+	if [ ${SRC_METHOD} = "svn" ]; then
+		( cd ${FREEBSD_SRC} &&
+		${SVN_CMD} status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' \
+		| xargs -r rm -r)
+		: > ${PROJECT_DIR}/FreeBSD/.src_pulled
+	fi
 	for patch in $(cd ${SRC_PATCH_DIR} && ls freebsd.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/src-patches; then
 			echo "Applying patch $patch..."

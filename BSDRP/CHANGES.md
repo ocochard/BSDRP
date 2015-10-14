@@ -2,11 +2,16 @@
 
 ## New features
 * Disable Chelsio NIC features useless in a simple router (cxgbe.toecaps_allowed=0)
+* Disable vlan_hwtso feature of the NIC too
 
 ## New packages
 * iperf3 (iperf is still because iperf3 didn't support multicast)
 
+## Bug fixed
+* Fixed bad UFS labeling introduced on 1.57
+
 ## Updated packages
+* isc-dhcp43-server to 4.3.3
 * exabgp to 3.4.12
 * pimd to 2.3.0
 

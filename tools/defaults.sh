@@ -658,6 +658,11 @@ create_i386_diskimage ( ) (
 		# Because there is 2 system slices, cfg slice is 3 and data is 4
 		CFG_SLICE=3
 		DATA_SLICE=4
+	elif [ $NANO_IMAGES -gt 1 ] ; then
+		# Still 2 system slice with the second 0 filled
+		# Because there is 2 system slices, cfg slice is 3 and data is 4
+		CFG_SLICE=3
+		DATA_SLICE=4
 	fi
 	
 	# Create Config slice

@@ -366,11 +366,11 @@ add_port "x11/libXinerama"
  add_port "x11/libxkbui"
  add_port "x11/pixman"
  add_port "x11/renderproto"
+ add_port "x11/randrproto"
 add_port "x11-servers/xorg-server"
 
 # xorg-minimal
  add_port "x11/libXi"
- add_port "x11/randrproto"
 add_port "x11-drivers/xf86-input-mouse"
 add_port "x11-drivers/xf86-input-keyboard"
 add_port "x11/xinit"

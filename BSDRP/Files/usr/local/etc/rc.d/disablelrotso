@@ -49,11 +49,11 @@ DETECTED_DEVICES=`ifconfig -l "ether"`
 
 disablelrotso_start()
 {
-	# Disable LRO and TSO on all detected interface:
+	# Disable LRO and TSO on all detected interfaces:
 	for DETECTED in ${DETECTED_DEVICES}
 	do
-		echo -n "Try to disable tso and lro for: ${DETECTED}..."
-		ifconfig ${DETECTED} -tso4 -tso6 -lro && echo "done" || echo "failed"
+		echo -n "Disabling TSO, LRO and VLAN_HWTSO on: ${DETECTED}..."
+		ifconfig ${DETECTED} -tso4 -tso6 -lro -vlan_hwtso && echo "done" || echo "failed"
 	done
 exit 0
 }
@@ -63,8 +63,8 @@ disablelrotso_stop()
 	# Re-enable LRO and TSO on all interface that support it:
 	for DETECTED in ${DETECTED_DEVICES}
 	do
-		echo -n "Try to re-enable tso and lro : ${DETECTED}..."
-		ifconfig ${DETECTED} tso4 tso6 lro && echo "done" || echo "failed"
+		echo -n "Re-enabling TSO, LRO and VLAN_HWTSO on : ${DETECTED}..."
+		ifconfig ${DETECTED} tso4 tso6 lro vlan_hwtso && echo "done" || echo "failed"
 	done
 exit 0
 }
