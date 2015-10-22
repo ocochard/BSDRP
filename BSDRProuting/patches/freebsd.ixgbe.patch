@@ -1,0 +1,16 @@
+Index: sys/dev/ixgbe/ix_txrx.c
+===================================================================
+--- sys/dev/ixgbe/ix_txrx.c	(revision 287531)
++++ sys/dev/ixgbe/ix_txrx.c	(working copy)
+@@ -1691,9 +1691,9 @@
+                         if (tcp_lro_rx(&rxr->lro, m, 0) == 0)
+                                 return;
+         }
+-	IXGBE_RX_UNLOCK(rxr);
++	//IXGBE_RX_UNLOCK(rxr);
+         (*ifp->if_input)(ifp, m);
+-	IXGBE_RX_LOCK(rxr);
++	//IXGBE_RX_LOCK(rxr);
+ }
+ 
+ static __inline void

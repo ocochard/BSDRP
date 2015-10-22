@@ -414,9 +414,6 @@ add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_NSSA OSPF_OPAQUE_LSA TCPSOCKET
 add_port "net/bird"
 add_port "net/bird6"
 
-# high-performance ipfw netmap
-add_port "net/netmap-ipfw"
-
 # Add FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
 
@@ -426,9 +423,6 @@ add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # IKEv2
 add_port "security/strongswan" "WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
-
-#pf top
-#add_port "sysutils/pftop"
 
 #IP accounting tool
 add_port "net-mgmt/pmacct"
@@ -479,6 +473,13 @@ add_port "security/sudo"
 
 # Add mpd5, a multi-link PPP protocol server (netgraph dependent)
 add_port "net/mpd5"
+
+# high-performance (bridge only) netmap-ipfw and netmap-fwd
+if [ ${NANO_ARCH} = "amd64" ]; then
+    #add_port "net/netmap-ipfw"
+    add_port "textproc/libucl"
+    add_port "net/netmap-fwd"
+fi
 
 # Add openvpn
 add_port "security/easy-rsa"
@@ -782,12 +783,13 @@ usr/share/tmac/tmac.vgrind
 # Enable only serial system only
 bsdrp_console_serial () {
 	# Since r266895, console is set as onifconsole
-	sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	# Since r289634, 4 firsts serials console are set as onifconsole
+	#sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
+	#sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
+	#sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 
     # Disable getty on syscons devices
-    sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
+    #sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
 
     # Tell loader to use serial console early.
     echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
@@ -814,8 +816,9 @@ bsdrp_console_dual () {
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
 	# Enable onifconsole to ttyu1 to ttyu3
-	sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	# Since r289634, 4 firsts serials console are set as onifconsole
+	#sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
+	#sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 
 	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 

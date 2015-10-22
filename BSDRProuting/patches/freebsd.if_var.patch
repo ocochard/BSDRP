@@ -1,0 +1,18 @@
+Index: sys/net/if_var.h
+===================================================================
+--- sys/net/if_var.h	(revision 287531)
++++ sys/net/if_var.h	(working copy)
+@@ -74,10 +74,13 @@
+ #include <sys/buf_ring.h>
+ #include <net/vnet.h>
+ #endif /* _KERNEL */
++#include <sys/param.h>		/* cpuset uses param.h */
+ #include <sys/counter.h>
++#include <sys/cpuset.h>		/* rmlock.h uses cpuset_t */
+ #include <sys/lock.h>		/* XXX */
+ #include <sys/mutex.h>		/* struct ifqueue */
+ #include <sys/rwlock.h>		/* XXX */
++#include <sys/rmlock.h>
+ #include <sys/sx.h>		/* XXX */
+ #include <sys/_task.h>		/* if_link_task */
+ 

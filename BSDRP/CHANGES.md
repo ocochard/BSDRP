@@ -1,11 +1,17 @@
 # Release 1.58 (not released)
 
+* To do: upgrading fresh 1.57 need a fix of their UFS label before starting upgrade
+         and the postupgrade script can't be used because is called too late
+
 ## New features
+* Upgrade to 10.2-RELEASE-p5
 * Disable Chelsio NIC features useless in a simple router (cxgbe.toecaps_allowed=0)
 * Disable vlan_hwtso feature of the NIC too
+* Added a "system install <target-disk>"
 
 ## New packages
 * iperf3 (iperf is still because iperf3 didn't support multicast)
+* flashrom: Allow to upgrade BIOS on supported device
 
 ## Bug fixed
 * Fixed bad UFS labeling introduced on 1.57
@@ -13,7 +19,9 @@
 ## Updated packages
 * isc-dhcp43-server to 4.3.3
 * exabgp to 3.4.12
+* mrouted to 3.9.7
 * pimd to 2.3.0
+* strongswan to 5.3.3
 
 ## Package list
 * bird-1.5.0_1
@@ -24,39 +32,42 @@
 * dlmalloc-2.8.6
 * dma-v0.9_1,1
 * easy-rsa-2.2.2
-* exabgp-3.4.12
+* exabgp-3.4.12_1
 * freevrrpd-1.1_1
 * indexinfo-0.2.3
 * iperf-2.0.5
+* iperf3-3.0.11
 * ipmitool-1.8.14_1
 * ipsec-tools-0.8.2_1
-* isc-dhcp43-server-4.3.2_1
+* isc-dhcp43-server-4.3.3
 * libevent2-2.0.22_1
 * libffi-3.2.1
 * libgcrypt-1.6.3
-* libgpg-error-1.19_1
+* libgpg-error-1.20
 * lzo2-2.09
-* mcast-tools-20061214_1
 * monit-5.14
 * mpd5-5.7_3
-* mrouted-3.9.6_1
+* mrouted-3.9.7_1
 * netmap-ipfw-0.1
-* openldap-client-2.4.41
+* openldap-client-2.4.42_2
 * openvpn-2.3.8
 * openvpn-auth-radius-2.1_3
-* pimd-2.2.1
-* pimdd-0.2.1.0_1
-* pkg-1.5.6
+* pim6-tools-20061214
+* pim6dd-0.2.1.0.a.15
+* pim6sd-2.1.0.a.23
+* pimd-2.3.0
+* pimdd-0.2.1.0_2
+* pkg-1.6.1
 * pmacct-0.14.3_3
 * py27-setuptools27-17.0
 * python2-2_3
 * python27-2.7.10
 * quagga-0.99.24.1_2
 * readline-6.3.8
-* strongswan-5.3.2
+* strongswan-5.3.3
 * sudo-1.8.14p3
 * tayga-0.9.2
-* tmux-2.0
+* tmux-2.0_2
 * ucarp-1.5.2_2
 
 -----------------------------------------------------

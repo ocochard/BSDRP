@@ -6,14 +6,59 @@
 # This archive contains:
 #
 #	net/netmap-ipfw
+#	net/netmap-ipfw/pkg-descr
+#	net/netmap-ipfw/Makefile
 #	net/netmap-ipfw/files
 #	net/netmap-ipfw/files/patch-Makefile
 #	net/netmap-ipfw/distinfo
-#	net/netmap-ipfw/Makefile
-#	net/netmap-ipfw/pkg-descr
 #
 echo c - net/netmap-ipfw
 mkdir -p net/netmap-ipfw > /dev/null 2>&1
+echo x - net/netmap-ipfw/pkg-descr
+sed 's/^X//' >net/netmap-ipfw/pkg-descr << '9a97a7bd38a4baeda5ae24ea8cf43823'
+XA userspace version of ipfw and dummynet, using netmap for packet I/O.
+XOn an i7-3400, this version is able to process over 6 million packets 
+Xper second (Mpps) with simple rulesets, and over 2.2 Mpps through 
+Xdummynet pipes, 5..10 times faster than the in-kernel equivalent.
+X
+XWWW: http://info.iet.unipi.it/~luigi/dummynet/
+9a97a7bd38a4baeda5ae24ea8cf43823
+echo x - net/netmap-ipfw/Makefile
+sed 's/^X//' >net/netmap-ipfw/Makefile << '8530d577be73e06c4cb1ee69ee6225ad'
+X# New ports collection makefile for:	ipfw-user
+X# Date created:		14 August 2012
+X# Whom:			Olivier Cochard-Labbé (olivier@cochard.me)
+X#
+X# $FreeBSD$
+X#
+X
+XPORTNAME=	netmap-ipfw
+XPORTVERSION=	0.1
+XCATEGORIES=	net
+X
+XMAINTAINER=	oliver@cochard.me
+XCOMMENT=	Netmap-enabled IPFW userspace version
+X
+X#WRKSRC=	${WRKDIR}/${PORTNAME}-${COMMIT}
+XUSES=	gmake
+X
+XUSE_GITHUB=	yes
+XGH_ACCOUNT= luigirizzo
+XGH_PROJECT= ${PORTNAME}
+XGH_TAGNAME= 81bf5d4
+X
+X#Warning: conflict name with /sbin/ipfw
+XPLIST_FILES=	bin/ipfw \
+X		bin/kipfw
+X
+Xdo-install:
+X	${INSTALL_PROGRAM} ${WRKSRC}/ipfw/ipfw \
+X		${STAGEDIR}${PREFIX}/bin
+X	${INSTALL_PROGRAM} ${WRKSRC}/kipfw \
+X		${STAGEDIR}${PREFIX}/bin
+X
+X.include <bsd.port.mk>
+8530d577be73e06c4cb1ee69ee6225ad
 echo c - net/netmap-ipfw/files
 mkdir -p net/netmap-ipfw/files > /dev/null 2>&1
 echo x - net/netmap-ipfw/files/patch-Makefile
@@ -32,53 +77,8 @@ X 	-@mkdir $(OBJDIR)
 2b846191be5f519ce4bd00e8042c84f4
 echo x - net/netmap-ipfw/distinfo
 sed 's/^X//' >net/netmap-ipfw/distinfo << 'cad32b3eaef6fc5a96401d8a0ae5a6cb'
-XSHA256 (netmap-ipfw-e0164f0b67c8.tar.gz) = 9c2c694407a416cc357834488c8c97c0b5f1f940c16de38608a3519de52ae011
-XSIZE (netmap-ipfw-e0164f0b67c8.tar.gz) = 245789
+XSHA256 (luigirizzo-netmap-ipfw-0.1-81bf5d4_GH0.tar.gz) = 3c5e8355c8e638b6b211e573d96fe69b59bb5003e50f11fd65540ec4bcbc8065
+XSIZE (luigirizzo-netmap-ipfw-0.1-81bf5d4_GH0.tar.gz) = 362608
 cad32b3eaef6fc5a96401d8a0ae5a6cb
-echo x - net/netmap-ipfw/Makefile
-sed 's/^X//' >net/netmap-ipfw/Makefile << '8530d577be73e06c4cb1ee69ee6225ad'
-X# New ports collection makefile for:	ipfw-user
-X# Date created:		14 August 2012
-X# Whom:			Olivier Cochard-Labbé (olivier@cochard.me)
-X#
-X# $FreeBSD$
-X#
-X
-XPORTNAME=	netmap-ipfw
-XPORTVERSION=	0.1
-XCATEGORIES=	net
-X#Using Offical Master site generate a different archive each time
-X#MASTER_SITES=	http://${PORTNAME}.googlecode.com/archive/
-XMASTER_SITES=	http://dev.bsdrp.net/mirrors/BSDRP/
-XCOMMIT=		e0164f0b67c8
-XDISTNAME=	${PORTNAME}-${COMMIT}
-X
-XMAINTAINER=	oliver@cochard.me
-XCOMMENT=	Netmap-enabled IPFW userspace version
-X
-XWRKSRC=	${WRKDIR}/${PORTNAME}-${COMMIT}
-XUSES=	gmake
-X
-X#Warning: conflict name with /sbin/ipfw
-XPLIST_FILES=	bin/ipfw \
-X		bin/kipfw
-X
-Xdo-install:
-X	${INSTALL_PROGRAM} ${WRKSRC}/ipfw/ipfw \
-X		${STAGEDIR}${PREFIX}/bin
-X	${INSTALL_PROGRAM} ${WRKSRC}/kipfw \
-X		${STAGEDIR}${PREFIX}/bin
-X
-X.include <bsd.port.mk>
-8530d577be73e06c4cb1ee69ee6225ad
-echo x - net/netmap-ipfw/pkg-descr
-sed 's/^X//' >net/netmap-ipfw/pkg-descr << '9a97a7bd38a4baeda5ae24ea8cf43823'
-XA userspace version of ipfw and dummynet, using netmap for packet I/O.
-XOn an i7-3400, this version is able to process over 6 million packets 
-Xper second (Mpps) with simple rulesets, and over 2.2 Mpps through 
-Xdummynet pipes, 5..10 times faster than the in-kernel equivalent.
-X
-XWWW: http://info.iet.unipi.it/~luigi/dummynet/
-9a97a7bd38a4baeda5ae24ea8cf43823
 exit
 

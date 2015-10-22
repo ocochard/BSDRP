@@ -1,0 +1,57 @@
+# This is a shell archive.  Save it in a file, remove anything before
+# this line, and then unpack it by entering "sh file".  Note, it may
+# create directories; files and directories will be owned by you and
+# have default permissions.
+#
+# This archive contains:
+#
+#	net/netmap-fwd
+#	net/netmap-fwd/Makefile
+#	net/netmap-fwd/distinfo
+#	net/netmap-fwd/pkg-descr
+#
+echo c - net/netmap-fwd
+mkdir -p net/netmap-fwd > /dev/null 2>&1
+echo x - net/netmap-fwd/Makefile
+sed 's/^X//' >net/netmap-fwd/Makefile << '2ee126d24e56f37f3f4a100f28afe4b4'
+X# $FreeBSD: head/net/pimd/Makefile 385640 2015-05-07 17:26:05Z mat $
+X
+XPORTNAME=	netmap-fwd
+XPORTVERSION=	0.1
+XCATEGORIES=	net
+X
+XMAINTAINER=	olivier@cochard.me
+XCOMMENT=	IPv4 router over netmap for FreeBSD
+X
+XLICENSE=	BSD2CLAUSE
+X
+XLIB_DEPENDS=	libevent.so:${PORTSDIR}/devel/libevent2 \
+X				libucl.so:${PORTSDIR}/textproc/libucl
+X
+XUSE_GITHUB=	yes
+XGH_ACCOUNT=	NetgateUSA
+XGH_PROJECT=	${PORTNAME}
+XGH_TAGNAME=	c2f8d23
+X
+XPLIST_FILES=	sbin/${PORTNAME} \
+X				etc/${PORTNAME}.conf
+X
+Xdo-install:
+X	${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${PREFIX}/sbin
+X	${INSTALL_DATA} ${WRKSRC}/${PORTNAME}.conf ${STAGEDIR}${PREFIX}/etc
+X
+X.include <bsd.port.mk>
+2ee126d24e56f37f3f4a100f28afe4b4
+echo x - net/netmap-fwd/distinfo
+sed 's/^X//' >net/netmap-fwd/distinfo << '82061fb11c5bfb28e5385fce1907f03b'
+XSHA256 (NetgateUSA-netmap-fwd-0.1-c2f8d23_GH0.tar.gz) = 7c1443b7544a7b5ef70efb4b48d28b26a766dd9389bd652628f2f663ddd921c8
+XSIZE (NetgateUSA-netmap-fwd-0.1-c2f8d23_GH0.tar.gz) = 1366699
+82061fb11c5bfb28e5385fce1907f03b
+echo x - net/netmap-fwd/pkg-descr
+sed 's/^X//' >net/netmap-fwd/pkg-descr << 'ab5b7cf3f6fc92739f384c42c931e0eb'
+XAn IPv4 router over netmap for FreeBSD
+X
+XWWW: https://github.com/NetgateUSA/netmap-fwd
+ab5b7cf3f6fc92739f384c42c931e0eb
+exit
+

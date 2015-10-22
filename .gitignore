@@ -1,6 +1,7 @@
 # ignore downloaded FreeBSD source and porttree
 BSDRP/FreeBSD
 BSDRPcur/FreeBSD
+BSDRProuting/FreeBSD
 TESTING/FreeBSD
 TESTING/Files
 BSDMC/FreeBSD

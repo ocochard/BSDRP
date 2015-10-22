@@ -3,7 +3,7 @@
 # System tool for BSD Router Project 
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2013, The BSDRP Development Team 
+# Copyright (c) 2009-2015, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -58,6 +58,7 @@ usage () {
 	echo "Usage: $0 option"
 	echo "  - expand-data-slice   : Permit to grow the /data partition size"
 	echo "  - dual-console        : Configure the system for dual vga/serial console"
+	echo "  - install [destination] : Install system to disk given in option"
 	echo "  - integrity filename  : Check system integrity using the given reference file"
 	echo "  - halt/stop           : Poweroff the system"
 	echo "  - help/h [option]     : Display this help message. "
@@ -131,6 +132,18 @@ ask_save () {
 	elif [ "$USER_CONFIRM" = "a" ]; then
 		exit 0
 	fi
+}
+
+#Install system to another disk
+install () {
+	boot_dev=`glabel status | grep BSDRPs1 | awk '{ print $3; }'\  | cut -d s -f 1`
+	sectors=`gpart show ${boot_dev} | grep '\- free \-' | tr -s ' ' | cut -d ' ' -f 2 | tail -n 1`
+	disks=`sysctl -n kern.disks`
+	[ $# -eq 0 ] && die "Missing destination disk (${disks})"
+	[ ${boot_dev} == $1 ] && die "Source disk (${boot_dev}) is same as destination disk ($1)"
+	bytes=$(( 1 + ${sectors} / 2048 ))
+	echo "Copying ${bytes}MB from ${boot_dev} to $1..."
+	dd if=/dev/${boot_dev} of=/dev/$1 bs=1M count=${bytes}
 }
 
 #When installed on bigger usb key or hard-drive
@@ -361,6 +374,9 @@ case "$FIRST_OPTION" in
     help|h)
         usage
         ;;
+	install)
+		install ${SECOND_OPTION}
+		;;
     integrity)
         integrity
         ;;

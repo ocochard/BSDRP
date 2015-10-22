@@ -1,0 +1,277 @@
+Index: sys/net/if_arcsubr.c
+===================================================================
+--- sys/net/if_arcsubr.c	(revision 287531)
++++ sys/net/if_arcsubr.c	(working copy)
+@@ -549,15 +549,11 @@
+ #ifdef INET
+ 	case ARCTYPE_IP:
+ 		m_adj(m, ARC_HDRNEWLEN);
+-		if ((m = ip_fastforward(m)) == NULL)
+-			return;
+ 		isr = NETISR_IP;
+ 		break;
+ 
+ 	case ARCTYPE_IP_OLD:
+ 		m_adj(m, ARC_HDRLEN);
+-		if ((m = ip_fastforward(m)) == NULL)
+-			return;
+ 		isr = NETISR_IP;
+ 		break;
+ 
+Index: sys/net/if_ethersubr.c
+===================================================================
+--- sys/net/if_ethersubr.c	(revision 287531)
++++ sys/net/if_ethersubr.c	(working copy)
+@@ -849,8 +849,6 @@
+ 	switch (ether_type) {
+ #ifdef INET
+ 	case ETHERTYPE_IP:
+-		if ((m = ip_fastforward(m)) == NULL)
+-			return;
+ 		isr = NETISR_IP;
+ 		break;
+ 
+Index: sys/net/if_fddisubr.c
+===================================================================
+--- sys/net/if_fddisubr.c	(revision 287531)
++++ sys/net/if_fddisubr.c	(working copy)
+@@ -427,8 +427,6 @@
+ 		switch (type) {
+ #ifdef INET
+ 		case ETHERTYPE_IP:
+-			if ((m = ip_fastforward(m)) == NULL)
+-				return;
+ 			isr = NETISR_IP;
+ 			break;
+ 
+Index: sys/net/if_fwsubr.c
+===================================================================
+--- sys/net/if_fwsubr.c	(revision 287531)
++++ sys/net/if_fwsubr.c	(working copy)
+@@ -601,8 +601,6 @@
+ 	switch (type) {
+ #ifdef INET
+ 	case ETHERTYPE_IP:
+-		if ((m = ip_fastforward(m)) == NULL)
+-			return;
+ 		isr = NETISR_IP;
+ 		break;
+ 
+Index: sys/net/if_iso88025subr.c
+===================================================================
+--- sys/net/if_iso88025subr.c	(revision 287531)
++++ sys/net/if_iso88025subr.c	(working copy)
+@@ -519,8 +519,6 @@
+ #ifdef INET
+ 		case ETHERTYPE_IP:
+ 			th->iso88025_shost[0] &= ~(TR_RII); 
+-			if ((m = ip_fastforward(m)) == NULL)
+-				return;
+ 			isr = NETISR_IP;
+ 			break;
+ 
+Index: sys/netinet/in_var.h
+===================================================================
+--- sys/netinet/in_var.h	(revision 287531)
++++ sys/netinet/in_var.h	(working copy)
+@@ -379,7 +379,7 @@
+ void	ip_input(struct mbuf *);
+ void	ip_direct_input(struct mbuf *);
+ void	in_ifadown(struct ifaddr *ifa, int);
+-struct	mbuf	*ip_fastforward(struct mbuf *);
++struct	mbuf	*ip_tryforward(struct mbuf *);
+ void	*in_domifattach(struct ifnet *);
+ void	in_domifdetach(struct ifnet *, void *);
+ 
+Index: sys/netinet/ip_fastfwd.c
+===================================================================
+--- sys/netinet/ip_fastfwd.c	(revision 287531)
++++ sys/netinet/ip_fastfwd.c	(working copy)
+@@ -109,12 +109,6 @@
+ 
+ #include <machine/in_cksum.h>
+ 
+-static VNET_DEFINE(int, ipfastforward_active);
+-#define	V_ipfastforward_active		VNET(ipfastforward_active)
+-
+-SYSCTL_INT(_net_inet_ip, OID_AUTO, fastforwarding, CTLFLAG_VNET | CTLFLAG_RW,
+-    &VNET_NAME(ipfastforward_active), 0, "Enable fast IP forwarding");
+-
+ /*
+  * Try to forward a packet based on the destination address.
+  * This is a fast path optimized for the plain forwarding case.
+@@ -123,7 +117,7 @@
+  * to ip_input for full processing.
+  */
+ struct mbuf *
+-ip_fastforward(struct mbuf *m)
++ip_tryforward(struct mbuf *m)
+ {
+ 	struct ip *ip;
+ 	struct mbuf *m0 = NULL;
+@@ -130,17 +124,15 @@
+ 	struct nhop_prepend nhd, *pnhd;
+ 	struct ifnet *ifp;
+ 	struct in_addr odest, dest;
+-	uint16_t sum, ip_len, ip_off;
++	uint16_t ip_len, ip_off;
+ 	uint32_t fibnum;
+ 	int error = 0;
+-	int hlen, mtu;
++	int mtu;
+ 	struct m_tag *fwd_tag = NULL;
+ 
+ 	/*
+ 	 * Are we active and forwarding packets?
+ 	 */
+-	if (!V_ipfastforward_active || !V_ipforwarding)
+-		return m;
+ 
+ 	M_ASSERTVALID(m);
+ 	M_ASSERTPKTHDR(m);
+@@ -148,104 +140,6 @@
+ 	fibnum = M_GETFIB(m);
+ 	pnhd = NULL;
+ 
+-	/*
+-	 * Step 1: check for packet drop conditions (and sanity checks)
+-	 */
+-
+-	/*
+-	 * Is entire packet big enough?
+-	 */
+-	if (m->m_pkthdr.len < sizeof(struct ip)) {
+-		IPSTAT_INC(ips_tooshort);
+-		goto drop;
+-	}
+-
+-	/*
+-	 * Is first mbuf large enough for ip header and is header present?
+-	 */
+-	if (m->m_len < sizeof (struct ip) &&
+-	   (m = m_pullup(m, sizeof (struct ip))) == NULL) {
+-		IPSTAT_INC(ips_toosmall);
+-		return NULL;	/* mbuf already free'd */
+-	}
+-
+-	ip = mtod(m, struct ip *);
+-
+-	/*
+-	 * Is it IPv4?
+-	 */
+-	if (ip->ip_v != IPVERSION) {
+-		IPSTAT_INC(ips_badvers);
+-		goto drop;
+-	}
+-
+-	/*
+-	 * Is IP header length correct and is it in first mbuf?
+-	 */
+-	hlen = ip->ip_hl << 2;
+-	if (hlen < sizeof(struct ip)) {	/* minimum header length */
+-		IPSTAT_INC(ips_badhlen);
+-		goto drop;
+-	}
+-	if (hlen > m->m_len) {
+-		if ((m = m_pullup(m, hlen)) == NULL) {
+-			IPSTAT_INC(ips_badhlen);
+-			return NULL;	/* mbuf already free'd */
+-		}
+-		ip = mtod(m, struct ip *);
+-	}
+-
+-	/*
+-	 * Checksum correct?
+-	 */
+-	if (m->m_pkthdr.csum_flags & CSUM_IP_CHECKED)
+-		sum = !(m->m_pkthdr.csum_flags & CSUM_IP_VALID);
+-	else {
+-		if (hlen == sizeof(struct ip))
+-			sum = in_cksum_hdr(ip);
+-		else
+-			sum = in_cksum(m, hlen);
+-	}
+-	if (sum) {
+-		IPSTAT_INC(ips_badsum);
+-		goto drop;
+-	}
+-
+-	/*
+-	 * Remember that we have checked the IP header and found it valid.
+-	 */
+-	m->m_pkthdr.csum_flags |= (CSUM_IP_CHECKED | CSUM_IP_VALID);
+-
+-	ip_len = ntohs(ip->ip_len);
+-
+-	/*
+-	 * Is IP length longer than packet we have got?
+-	 */
+-	if (m->m_pkthdr.len < ip_len) {
+-		IPSTAT_INC(ips_tooshort);
+-		goto drop;
+-	}
+-
+-	/*
+-	 * Is packet longer than IP header tells us? If yes, truncate packet.
+-	 */
+-	if (m->m_pkthdr.len > ip_len) {
+-		if (m->m_len == m->m_pkthdr.len) {
+-			m->m_len = ip_len;
+-			m->m_pkthdr.len = ip_len;
+-		} else
+-			m_adj(m, ip_len - m->m_pkthdr.len);
+-	}
+-
+-	/*
+-	 * Is packet from or to 127/8?
+-	 */
+-	if ((ntohl(ip->ip_dst.s_addr) >> IN_CLASSA_NSHIFT) == IN_LOOPBACKNET ||
+-	    (ntohl(ip->ip_src.s_addr) >> IN_CLASSA_NSHIFT) == IN_LOOPBACKNET) {
+-		IPSTAT_INC(ips_badaddr);
+-		goto drop;
+-	}
+-
+ #ifdef ALTQ
+ 	/*
+ 	 * Is packet dropped by traffic conditioner?
+@@ -261,6 +155,8 @@
+ 	/*
+ 	 * Only IP packets without options
+ 	 */
++	ip = mtod(m, struct ip *);
++
+ 	if (ip->ip_hl != (sizeof(struct ip) >> 2)) {
+ 		if (V_ip_doopts == 1)
+ 			return m;
+Index: sys/netinet/ip_input.c
+===================================================================
+--- sys/netinet/ip_input.c	(revision 287531)
++++ sys/netinet/ip_input.c	(working copy)
+@@ -80,6 +80,8 @@
+ #include <netinet/ip_carp.h>
+ #ifdef IPSEC
+ #include <netinet/ip_ipsec.h>
++#include <netipsec/ipsec.h>
++#include <netipsec/key.h>
+ #endif /* IPSEC */
+ #include <netinet/in_rss.h>
+ 
+@@ -501,7 +503,18 @@
+ 			m_adj(m, ip_len - m->m_pkthdr.len);
+ 	}
+ 
++	/* Try to forward the packet, but if we fail continue */
+ #ifdef IPSEC
++	/* For now we do not handle IPSEC in tryforward. */
++	if (!key_havesp(IPSEC_DIR_INBOUND) && !key_havesp(IPSEC_DIR_OUTBOUND))
++		if (ip_tryforward(m) == NULL)
++			return;
++#else
++	if (ip_tryforward(m) == NULL)
++		return;
++#endif /* IPSEC */
++
++#ifdef IPSEC
+ 	/*
+ 	 * Bypass packet filtering for packets previously handled by IPsec.
+ 	 */

@@ -1,0 +1,73 @@
+Index: tools/tools/netmap/pkt-gen.c
+===================================================================
+--- tools/tools/netmap/pkt-gen.c	(revision 283536)
++++ tools/tools/netmap/pkt-gen.c	(working copy)
+@@ -174,6 +174,7 @@
+ 	int nthreads;
+ 	int cpus;
+ 	int options;	/* testing */
++	int softchecksum;	/* Software UDP checksum calculation */
+ #define OPT_PREFETCH	1
+ #define OPT_ACCESS	2
+ #define OPT_COPY	4
+@@ -565,6 +566,7 @@
+ {
+ 	uint32_t a;
+ 	uint16_t p;
++	struct ether_header *eh = &pkt->eh;
+ 	struct ip *ip = &pkt->ip;
+ 	struct udphdr *udp = &pkt->udp;
+ 
+@@ -611,6 +613,25 @@
+ 	ip->ip_dst.s_addr = htonl(g->dst_ip.start);
+     } while (0);
+     // update checksum
++	/* Some NIC disable hardware CRC checksum in netmap mode
++	 * and don't allow to re-enable it */
++
++	if (g->softchecksum) {
++		ip->ip_sum = 0;
++		ip->ip_sum = wrapsum(checksum(ip, sizeof(*ip), 0));
++		/* UDP checksum */
++		uint16_t paylen = g->pkt_size - sizeof(*eh) - sizeof(struct ip);
++		udp->uh_sum = 0;
++		udp->uh_sum = wrapsum(checksum(udp, sizeof(*udp),
++			checksum(pkt->body,
++				paylen - sizeof(*udp),
++				checksum(&ip->ip_src, 2 * sizeof(ip->ip_src),
++					IPPROTO_UDP + (u_int32_t)ntohs(udp->uh_ulen)
++				)
++			)
++		));
++	}
++
+ }
+ 
+ /*
+@@ -1409,6 +1430,7 @@
+ 		"\t-X			dump payload\n"
+ 		"\t-H len		add empty virtio-net-header with size 'len'\n"
+ 	        "\t-P file		load packet from pcap file\n"
++		"\t-U			enable software UDP CRC chekcsum\n"
+ 		"\t-z			use random IPv4 src address/port\n"
+ 		"\t-Z			use random IPv4 dst address/port\n"
+ 		"",
+@@ -1683,7 +1705,7 @@
+ 	g.virt_header = 0;
+ 
+ 	while ( (ch = getopt(arc, argv,
+-			"a:f:F:n:i:Il:d:s:D:S:b:c:o:p:T:w:WvR:XC:H:e:m:P:zZ")) != -1) {
++			"a:f:F:n:i:Il:d:s:D:S:b:c:o:p:T:Uw:WvR:XC:H:e:m:P:zZ")) != -1) {
+ 		struct sf *fn;
+ 
+ 		switch(ch) {
+@@ -1785,6 +1807,9 @@
+ 		case 'b':	/* burst */
+ 			g.burst = atoi(optarg);
+ 			break;
++		case 'U':	/* software UDP checksum */
++			g.softchecksum = 1;
++			break;
+ 		case 'c':
+ 			g.cpus = atoi(optarg);
+ 			break;
