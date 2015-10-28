@@ -10,7 +10,7 @@
 * Added a "system install <target-disk>"
 
 ## New packages
-* iperf3 (iperf is still because iperf3 didn't support multicast)
+* iperf3
 * flashrom: Allow to upgrade BIOS on supported device
 
 ## Bug fixed
@@ -19,6 +19,7 @@
 ## Updated packages
 * isc-dhcp43-server to 4.3.3
 * exabgp to 3.4.12
+* monit to 5.15
 * mrouted to 3.9.7
 * pimd to 2.3.0
 * strongswan to 5.3.3
@@ -28,13 +29,16 @@
 * bird6-1.5.0_1
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.1
+* ca_root_nss-3.20
 * dhcprelya-4.9
 * dlmalloc-2.8.6
 * dma-v0.9_1,1
+* dmidecode-2.12
 * easy-rsa-2.2.2
 * exabgp-3.4.12_1
+* flashrom-0.9.7_3
 * freevrrpd-1.1_1
-* indexinfo-0.2.3
+* indexinfo-0.2.4
 * iperf-2.0.5
 * iperf3-3.0.11
 * ipmitool-1.8.14_1
@@ -42,29 +46,31 @@
 * isc-dhcp43-server-4.3.3
 * libevent2-2.0.22_1
 * libffi-3.2.1
-* libgcrypt-1.6.3
+* libftdi-0.20_4
+* libgcrypt-1.6.4
 * libgpg-error-1.20
+* libpci-3.4.0
 * lzo2-2.09
-* monit-5.14
+* monit-5.15
 * mpd5-5.7_3
 * mrouted-3.9.7_1
-* netmap-ipfw-0.1
 * openldap-client-2.4.42_2
 * openvpn-2.3.8
 * openvpn-auth-radius-2.1_3
+* pciids-20151011
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
 * pimd-2.3.0
 * pimdd-0.2.1.0_2
-* pkg-1.6.1
+* pkg-1.6.1_1
 * pmacct-0.14.3_3
 * py27-setuptools27-17.0
 * python2-2_3
-* python27-2.7.10
+* python27-2.7.10_1
 * quagga-0.99.24.1_2
 * readline-6.3.8
-* strongswan-5.3.3
+* strongswan-5.3.3_1
 * sudo-1.8.14p3
 * tayga-0.9.2
 * tmux-2.0_2
