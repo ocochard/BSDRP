@@ -313,6 +313,7 @@ restore_cfg ( ) {
 put () {
 	# option: protocol username@host:/path/[filename]
 	# example: scp admin@backup.host.fr:filename
+	HOST=`hostname -s`
 	CONFIG_FILE="${HOST}.tar.xz"
 	case "$SECOND_OPTION" in
     	scp)
@@ -376,6 +377,7 @@ put_check_filename () {
 get () {
 	# option: protocol username@host <filename>
 	# example: scp admin@backup.host.fr:/path/filename
+	HOST=`hostname -s`
 	CONFIG_FILE="${HOST}.tar.xz"
 	case "$SECOND_OPTION" in
 	scp)
