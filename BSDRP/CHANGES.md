@@ -15,6 +15,7 @@
 
 ## Bug fixed
 * Fixed bad UFS labeling introduced on 1.57
+* Fixed 'config put/get' script
 
 ## Updated packages
 * isc-dhcp43-server to 4.3.3
