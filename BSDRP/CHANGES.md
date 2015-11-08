@@ -10,7 +10,7 @@
 * Added a "system install <target-disk>"
 
 ## New packages
-* iperf3
+* iperf 3.1
 * flashrom: Allow to upgrade BIOS on supported device
 
 ## Bug fixed
@@ -41,15 +41,15 @@
 * freevrrpd-1.1_1
 * indexinfo-0.2.4
 * iperf-2.0.5
-* iperf3-3.0.11
+* iperf3-3.1
 * ipmitool-1.8.14_1
 * ipsec-tools-0.8.2_1
 * isc-dhcp43-server-4.3.3
 * libevent2-2.0.22_1
 * libffi-3.2.1
 * libftdi-0.20_4
-* libgcrypt-1.6.4
-* libgpg-error-1.20
+* libgcrypt-1.6.4_1
+* libgpg-error-1.20_1
 * libpci-3.4.0
 * lzo2-2.09
 * monit-5.15
@@ -64,7 +64,7 @@
 * pim6sd-2.1.0.a.23
 * pimd-2.3.0
 * pimdd-0.2.1.0_2
-* pkg-1.6.1_1
+* pkg-1.6.1_2
 * pmacct-0.14.3_3
 * py27-setuptools27-17.0
 * python2-2_3
@@ -72,7 +72,7 @@
 * quagga-0.99.24.1_2
 * readline-6.3.8
 * strongswan-5.3.3_1
-* sudo-1.8.14p3
+* sudo-1.8.15
 * tayga-0.9.2
 * tmux-2.0_2
 * ucarp-1.5.2_2

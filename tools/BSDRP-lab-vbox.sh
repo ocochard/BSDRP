@@ -3,7 +3,7 @@
 # VirtualBox lab script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2014, The BSDRP Development Team
+# Copyright (c) 2009-2015, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -509,9 +509,9 @@ do
         case "$i" 
         in
 		-a)
-				if [ "$2" == "i386" ]; then
+				if [ "$2" = "i386" ]; then
 					VM_ARCH="FreeBSD"
-				elif [ "$2" == "amd64" ]; then
+				elif [ "$2" = "amd64" ]; then
 					VM_ARCH="FreeBSD_64"
 				else
 					echo "INPUT ERROR: Bad ARCH name"
@@ -554,9 +554,9 @@ do
 				shift
 				;;
 		-o)
-				if [ "$2" == "vga" ]; then
+				if [ "$2" = "vga" ]; then
 					SERIAL=false
-				elif [ "$2" == "serial" ]; then
+				elif [ "$2" = "serial" ]; then
 					SERIAL=true
 				else
 					echo "INPUT ERROR: Bad OUTPUT name"

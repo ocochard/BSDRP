@@ -197,7 +197,7 @@ add_netrate () {
         CR 'make clean -C /usr/src/tools/tools/${TOOL}'
        	CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
             MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-            UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+            UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
             UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
             make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
         # each Makefile have a different variable names
@@ -229,7 +229,7 @@ add_quagga-bgp-netgen () {
     mkdir -p ${NANO_WORLDDIR}/usr/workdir
     CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
 		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
         make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
     mv ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/local/bin
@@ -249,7 +249,7 @@ add_apuled () {
     mkdir -p ${NANO_WORLDDIR}/usr/workdir
     CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
 		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
         make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/'
     mv ${NANO_WORLDDIR}/tmp/apuled/apuled.ko ${NANO_WORLDDIR}/boot/modules/
@@ -347,7 +347,7 @@ EOF
 			if grep -q NO_STAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
    					CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   install package BATCH=yes -DWITH_PKGNG \
@@ -355,14 +355,14 @@ EOF
 			else
        			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   install BATCH=yes -DWITH_PKGNG \
 		  WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
           		CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   package BATCH=yes -DWITH_PKGNG \
@@ -552,6 +552,7 @@ cleanup_ports () {
 	#   pkg didn't delete all MAN1 page related to perl too
 	[ -d ${NANO_WORLDDIR}/usr/local/lib/perl5 ] && rm -rf ${NANO_WORLDDIR}/usr/local/lib/perl5
 	[ -f ${NANO_WORLDDIR}/usr/local/man/man1/perl.1 ] && rm ${NANO_WORLDDIR}/usr/local/man/man1/perl*
+	[ -f ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT ] && rm ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT
 	set -e
 }
 
