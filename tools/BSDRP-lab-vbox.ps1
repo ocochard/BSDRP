@@ -1,8 +1,8 @@
 #
-# VirtualBox PowerShell lab script for BSD Router Project
+# VirtualBox 5 PowerShell lab script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2011-2014, The BSDRP Development Team
+# Copyright (c) 2011-2015, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,8 @@ $erroractionpreference = "Stop"
 # PowerShell can't import type library from a COM Object
 # http://msdn.microsoft.com/en-us/library/hh228154.aspx
 # Need to copy/write all enums type used in this script
+# These value came from file: "Program Files\Oracle\VirtualBox\sdk\install\vboxapi\VirtualBox_constants.py"
+# and are in __dValuesFlat section
 function set_API_enums() {
     # As "Global" variable, there are not release in the debugger
     # avoid to generate an error
@@ -66,6 +68,7 @@ function set_API_enums() {
             DeviceType_Network = 4;
             DeviceType_USB = 5;
             DeviceType_SharedFolder = 6;
+            DeviceType_Graphics3D = 7;
 
             AccessMode_ReadOnly = 1;
             AccessMode_ReadWrite = 2;
@@ -109,13 +112,15 @@ function set_API_enums() {
 			MachineState_FaultTolerantSyncing = 16;
 			MachineState_DeletingSnapshotOnline = 17;
 			MachineState_DeletingSnapshotPaused = 18;
-			MachineState_RestoringSnapshot = 19;
-			MachineState_DeletingSnapshot = 20;
-			MachineState_SettingUp = 21;
-			MachineState_FirstOnline = 22;
-			MachineState_LastOnline = 23;
-			MachineState_FirstTransient = 24;
-			MachineState_LastTransient = 25;
+			MachineState_OnlineSnapshotting = 19;
+			MachineState_RestoringSnapshot = 20;
+			MachineState_DeletingSnapshot = 21;
+			MachineState_SettingUp = 22;
+			MachineState_Snapshotting = 23;
+			MachineState_FirstOnline = 5;
+			MachineState_LastOnline = 19;
+            MachineState_FirstTransient = 8;
+            MachineState_LastTransient = 23;
             
             NetworkAdapterType_Null = 0;
             NetworkAdapterType_Am79C970A = 1;
@@ -288,7 +293,7 @@ Function create_template () {
     }
     
     # Need to lock the VM (put it in "mutable" state) before modifying it
-    #  === More I'm using VirtualBox, more I love qemu ! ====
+    #  === More I'm using VirtualBox, more I like bhyve ! ====
     
     try { $MACHINE.lockMachine($SESSION,$LockType_Write) }
     catch {
@@ -308,6 +313,7 @@ Function create_template () {
     }
     
     # Save new settings
+    # Should be useless because next takesnapshot already save settings
     try { $SESSION.machine.saveSettings() }
     catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't save $VM_TPL_NAME"
@@ -316,7 +322,8 @@ Function create_template () {
     }
     
     # Create a snapshot (will be mandatory for creating linked type clone)
-    try { $PROGRESS=$SESSION.console.takeSnapshot("SNAPSHOT","Initial snapshot used for clone") }
+    $snapshotid = ""
+    try { $PROGRESS=$SESSION.machine.takeSnapshot("SNAPSHOT","Initial snapshot used for clone",$false,[ref] $snapshotid) }
     catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't create a snapshot for $VM_TPL_NAME"
         Write-Host "Detail: " $($error)

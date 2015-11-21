@@ -412,7 +412,6 @@ add_port "x11-themes/slim-themes"
 
 #lirc for remotecontrol
  add_port "comms/libirman"
- add_port "devel/libffi"
 #  add_port "devel/boost-libs"
  add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
 add_port "comms/lirc" "WITH=\"MINIMAL\""

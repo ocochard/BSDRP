@@ -136,7 +136,8 @@ ask_save () {
 
 #Install system to another disk
 install () {
-	boot_dev=`glabel status | grep BSDRPs1 | awk '{ print $3; }'\  | cut -d s -f 1`
+	label=`cut -d '/' -f 2 /etc/nanobsd.conf`
+	boot_dev=`glabel status | grep ${label}s1 | awk '{ print $3; }'\  | cut -d s -f 1 | tail -n 1`
 	sectors=`gpart show ${boot_dev} | grep '\- free \-' | tr -s ' ' | cut -d ' ' -f 2 | tail -n 1`
 	disks=`sysctl -n kern.disks`
 	[ $# -eq 0 ] && die "Missing destination disk (${disks})"

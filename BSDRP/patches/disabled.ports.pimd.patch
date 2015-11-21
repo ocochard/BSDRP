@@ -1,20 +1,20 @@
 Index: net/pimd/Makefile
 ===================================================================
---- net/pimd/Makefile	(revision 397076)
+--- net/pimd/Makefile	(revision 401756)
 +++ net/pimd/Makefile	(working copy)
-@@ -1,29 +1,32 @@
+@@ -1,7 +1,7 @@
  # $FreeBSD$
  
  PORTNAME=	pimd
 -PORTVERSION=	2.2.0
-+PORTVERSION=	2.3.0
++PORTVERSION=	2.3.1
  CATEGORIES=	net
  
  MAINTAINER=	olivier@cochard.me
+@@ -8,22 +8,25 @@
  COMMENT=	Lightweight stand-alone PIM-SM v2 multicast routing daemon
  
--LICENSE=	BSD3CLAUSE
-+LICENSE=	BSD3CLAUSE	
+ LICENSE=	BSD3CLAUSE
 +LICENSE_FILE=	${WRKSRC}/LICENSE
  
 +USES=		tar:bzip2
@@ -51,23 +51,23 @@ Index: net/pimd/Makefile
  .include <bsd.port.mk>
 Index: net/pimd/distinfo
 ===================================================================
---- net/pimd/distinfo	(revision 397076)
+--- net/pimd/distinfo	(revision 401756)
 +++ net/pimd/distinfo	(working copy)
 @@ -1,2 +1,4 @@
 -SHA256 (troglobit-pimd-2.2.0_GH0.tar.bz2) = a6d969e235323852afdd1c9aebc15a2ff1e4da75e8277a736b3be9b2b484e30e
 -SIZE (troglobit-pimd-2.2.0_GH0.tar.bz2) = 223012
-+SHA256 (troglobit-pimd-2.3.0_GH0.tar.gz) = 832ef85671e6c4f55b9e0e4b4ff0b405d9e0f1e13eb0bceb4d4c187f99ecb224
-+SIZE (troglobit-pimd-2.3.0_GH0.tar.gz) = 241271
++SHA256 (troglobit-pimd-2.3.1_GH0.tar.gz) = 24163fad4e6af3a4b1631de365bd4a7ffb0b3c7084bd999d0a35126a4d62f008
++SIZE (troglobit-pimd-2.3.1_GH0.tar.gz) = 236563
 +SHA256 (troglobit-libite-v1.0.0_GH0.tar.gz) = 11bcc47f08e69a5c659eb1d5fce2a4b0034f2fe3e19d2240d621bd80553cd8dc
 +SIZE (troglobit-libite-v1.0.0_GH0.tar.gz) = 23080
 Index: net/pimd/files/patch-Makefile
 ===================================================================
---- net/pimd/files/patch-Makefile	(revision 0)
+--- net/pimd/files/patch-Makefile	(nonexistent)
 +++ net/pimd/files/patch-Makefile	(working copy)
 @@ -0,0 +1,57 @@
-+--- Makefile.orig	2015-07-31 18:44:17.000000000 +0900
-++++ Makefile	2015-08-28 14:24:27.932783000 +0900
-+@@ -35,25 +35,23 @@
++--- Makefile.orig	2015-11-15 18:22:35 UTC
+++++ Makefile
++@@ -35,25 +35,23 @@ mandir        = $(prefix)/share/man/man8
 + ## Common
 + CPPFLAGS     += -D_PATH_SYSCONF=\"$(sysconfdir)\"
 + CFLAGS       += $(INCLUDES) $(DEFS) $(USERCOMPILE)
@@ -97,7 +97,7 @@ Index: net/pimd/files/patch-Makefile
 + 
 + vers.c:
 + 	@echo $(VERSION) | sed -e 's/.*/char todaysversion[]="&";/' > vers.c
-+@@ -61,15 +59,17 @@
++@@ -61,15 +59,17 @@ vers.c:
 + install: $(EXEC)
 + 	@install -d $(DESTDIR)$(prefix)/sbin
 + 	@install -d $(DESTDIR)$(sysconfdir)
@@ -139,7 +139,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/pimd/files/patch-libite-lite.h
 ===================================================================
---- net/pimd/files/patch-libite-lite.h	(revision 0)
+--- net/pimd/files/patch-libite-lite.h	(nonexistent)
 +++ net/pimd/files/patch-libite-lite.h	(working copy)
 @@ -0,0 +1,32 @@
 +--- libite/lite.h.orig	2015-08-28 14:04:00.533527000 +0900
@@ -191,7 +191,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/pimd/files/pimd.h
 ===================================================================
---- net/pimd/files/pimd.h	(revision 0)
+--- net/pimd/files/pimd.h	(nonexistent)
 +++ net/pimd/files/pimd.h	(working copy)
 @@ -0,0 +1,11 @@
 +--- pimd.h.orig	2015-09-16 21:42:57.306363000 +0200
@@ -218,7 +218,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/pimd/files/pimd.in
 ===================================================================
---- net/pimd/files/pimd.in	(revision 397076)
+--- net/pimd/files/pimd.in	(revision 401756)
 +++ net/pimd/files/pimd.in	(working copy)
 @@ -12,15 +12,13 @@
  
@@ -242,7 +242,7 @@ Index: net/pimd/files/pimd.in
  
 Index: net/pimd/pkg-plist
 ===================================================================
---- net/pimd/pkg-plist	(revision 397076)
+--- net/pimd/pkg-plist	(revision 401756)
 +++ net/pimd/pkg-plist	(working copy)
 @@ -1,4 +1,3 @@
  @sample etc/pimd.conf.sample
