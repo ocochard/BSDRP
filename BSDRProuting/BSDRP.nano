@@ -448,7 +448,7 @@ add_port "net/mrouted"
 add_port "net/pimdd"
 
 # Add pimd: IPv4 PIM Sparse Mode daemon
-add_port "net/pimd"
+#add_port "net/pimd"
 
 # Add tayga: userland NAT64 implementation
 add_port "net/tayga"

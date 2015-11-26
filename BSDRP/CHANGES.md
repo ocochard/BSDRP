@@ -6,8 +6,8 @@
 ## New features
 * Upgrade to 10.2-RELEASE-p5
 * Disable Chelsio NIC features useless in a simple router (cxgbe.toecaps_allowed=0)
-* Disable vlan_hwtso feature of the NIC too
-* Added a "system install <target-disk>"
+* Disable vlan_hwtso feature by default
+* Added an installation helper option: "system install <target-disk>"
 
 ## New packages
 * iperf 3.1
@@ -49,7 +49,7 @@
 * libevent2-2.0.22_1
 * libffi-3.2.1
 * libftdi-0.20_4
-* libgcrypt-1.6.4_1
+* libgcrypt-1.6.4_2
 * libgpg-error-1.20_1
 * libpci-3.4.0
 * lzo2-2.09
@@ -65,7 +65,7 @@
 * pim6sd-2.1.0.a.23
 * pimd-2.2.0
 * pimdd-0.2.1.0_2
-* pkg-1.6.1_2
+* pkg-1.6.2
 * pmacct-0.14.3_3
 * py27-setuptools27-17.0
 * python2-2_3
