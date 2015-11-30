@@ -4,7 +4,7 @@
          and the postupgrade script can't be used because is called too late
 
 ## New features
-* Upgrade to 10.2-RELEASE-p5
+* Upgrade to 10.2-RELEASE-p7
 * Disable Chelsio NIC features useless in a simple router (cxgbe.toecaps_allowed=0)
 * Disable vlan_hwtso feature by default
 * Added an installation helper option: "system install <target-disk>"
