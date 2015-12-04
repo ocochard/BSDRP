@@ -100,6 +100,7 @@ WITHOUT_ZFS=
 WITH_GCC=
 WITH_IDEA=
 WITH_OFED=
+WITH_DEBUG_FILES=
 '
 
 # Customize commands.
@@ -739,14 +740,16 @@ usr/share/tmac/tmac.vgrind
     find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
 
 	# Moving kerned & world debug symbols into debug.tar.xz file
-	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
-		if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
-			mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+	if [ -d ${NANO_WORLDDIR}/usr/lib/debug ]; then
+		if [ -f  ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
+			if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
+				mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+			fi
+			mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
 		fi
-		mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
 		tar cfvZ ${NANO_OBJ}/debug.tar.xz -C ${NANO_WORLDDIR}/usr/lib debug
+		rm -rf ${NANO_WORLDDIR}/usr/lib/debug
 	fi
-	[ -d ${NANO_WORLDDIR}/usr/lib/debug ] && rm -rf ${NANO_WORLDDIR}/usr/lib/debug
 	# strip binaries for ports (tips from FreeNAS 8)
 	pprint 4 "Stripping binaries and libraries"
 	for dir in $(find ${NANO_WORLDDIR}/ -name '*bin' -or -name 'lib' -maxdepth 3); do

@@ -35,37 +35,6 @@ Adding a rc script that automatically enable TRIM on /dev/ufs/BSDRP* if:
 sudo camcontrol identify ada0 | grep TRIM | cut -d ' ' -f 5
 give "yes"
 
-## Performance #
-
-* In place of tunning, need to add a script that check the hardware, and regarding the hardware (NIC drivers, ncpu, RAM, etc...) will display some advice
-* Need to check CPU affinity for routing process and forwarding process (cpuset)
-  like this script:
-==============
-#!/bin/sh
-
-# PROVIDE: cpuset-igb
-# REQUIRE: FILESYSTEMS
-# BEFORE:  netif
-# KEYWORD: nojail
-
-case "$1" in
-*start)
-  echo "Binding igb(4) IRQs to CPUs"
-  cpus=`sysctl -n kern.smp.cpus`
-  vmstat -ai | sed -E '/^irq.*que/!d; s/^irq([0-9]+): igb([0-9]+):que ([0-9]+).*/\1 \2 \3/' |\
-  while read irq igb que
-  do
-    cpuset -l $(( ($igb+$que) % $cpus )) -x $irq
-  done
-  ;;
-esac
-===============
-
-## API #
-
-* Need to check if an API (for usage as a VM in cloud for example) is a good idea
-* Netconf: Need to check this BSD licensed:http://www.yumaworks.com/products/yuma/
-
 ## labs #
 
 * PAM: tacacs+, radius, ldap, etc
@@ -74,3 +43,7 @@ esac
 ## nanobsd patches to study for inclusion # 
 
 http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html
+
+## Design
+
+PROJECT name and NAME in PROJECT/make.conf are redundant

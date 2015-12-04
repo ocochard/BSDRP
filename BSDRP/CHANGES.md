@@ -8,6 +8,7 @@
 * Disable Chelsio NIC features useless in a simple router (cxgbe.toecaps_allowed=0)
 * Disable vlan_hwtso feature by default
 * Added an installation helper option: "system install <target-disk>"
+* Added userland symbols/debug in the debug archive too
 
 ## New packages
 * iperf 3.1

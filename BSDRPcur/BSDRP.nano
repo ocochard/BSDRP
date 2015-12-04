@@ -120,6 +120,7 @@ WITH_GCC=
 WITH_IDEA=
 WITH_OFED=
 WITH_FAST_DEPEND=
+WITH_DEBUG_FILES=
 '
 
 # Customize commands.
@@ -764,11 +765,7 @@ usr/share/tmac/tmac.vgrind
     find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
 
 	# Moving kerned & world debug symbols into debug.tar.xz file
-	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
-		if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
-			mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
-		fi
-		mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+	if [ -d ${NANO_WORLDDIR}/usr/lib/debug ]; then
 		tar cfvZ ${NANO_OBJ}/debug.tar.xz -C ${NANO_WORLDDIR}/usr/lib debug
 	fi
 	[ -d ${NANO_WORLDDIR}/usr/lib/debug ] && rm -rf ${NANO_WORLDDIR}/usr/lib/debug
