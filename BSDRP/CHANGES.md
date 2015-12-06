@@ -1,10 +1,11 @@
 # Release 1.58 (not released)
 
+## Important tip for upgrading "fresh 1.57 install"
 * To do: upgrading fresh 1.57 need a fix of their UFS label before starting upgrade
          and the postupgrade script can't be used because is called too late
 
 ## New features
-* Upgrade to 10.2-RELEASE-p7
+* Upgrade to 10.2-RELEASE-p8
 * Disable Chelsio NIC features useless in a simple router (cxgbe.toecaps_allowed=0)
 * Disable vlan_hwtso feature by default
 * Added an installation helper option: "system install <target-disk>"

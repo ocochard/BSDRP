@@ -27,31 +27,10 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 [ ! -d ${IMAGES_DIR} ] && die "Can't found destination dir for storing images"
 
 # List of SVN revision to build image for
-# 265145 to 274745
+# 274745 to xxx
 SVN_REV_LIST='
-285151
-285051
-285046
-284728
-285000
-284500
-284000
-283542
-283000
-282500
-282000
-281500
-281000
-280500
-280000
-279500
-279000
-278500
-278000
-277500
-277000
-276500
-276000
+291852
+291853
 '
 
 # Name of the BSDRP project

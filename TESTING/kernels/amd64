@@ -130,6 +130,15 @@ nodevice         snd_ich         # Intel, NVidia and other ICH AC'97 Audio
 nodevice         snd_uaudio      # USB Audio
 nodevice         snd_via8233     # VIA VT8233x Audio
 
+# BSDRP added NICs
+device		cxgb	# Chelsio T3 10 Gigabit Ethernet adapter driver
+device		cxgbe	# Chelsio T4 10Gb and 1Gb Ethernet adapter driver
+device		my		# Myson Technology Ethernet PCI driver
+device		mxge	# Myricom Myri10GE 10 Gigabit Ethernet adapter driver
+device		nxge	# Neterion Xframe 10GbE Server/Storage adapter driver
+device		qlxge	# QLogic 8100 Series 10 Gigabit Ethernet
+device		oce		# Device driver for Emulex OneConnect 10Gb network adapters
+
 # altq(9). Enable the base part of the hooks with the ALTQ option.
 # Individual disciplines must be built into the base system and can not be
 # loaded as modules at this point. ALTQ requires a stable TSC so if yours is
