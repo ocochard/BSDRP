@@ -1,8 +1,12 @@
 # Release 1.58 (not released)
 
 ## Important tip for upgrading "fresh 1.57 install"
-* To do: upgrading fresh 1.57 need a fix of their UFS label before starting upgrade
-         and the postupgrade script can't be used because is called too late
+* Fresh BSDRP 1.57 installation contains an UFS label bug. And this bug need
+  to be fixed before starting the upgrade process.
+  A script is available for fixing this problem, here is how to use it:
+  fetch http://dev.bsdrp.net/fixlabel.sh
+  sh ./fixlabel.sh
+  and follow instruction
 
 ## New features
 * Upgrade to 10.2-RELEASE-p8
@@ -10,9 +14,8 @@
 * Disable vlan_hwtso feature by default
 * Added an installation helper option: "system install <target-disk>"
 * Added userland symbols/debug in the debug archive too
-
-## New default configuration parameter
-* Serial port default speed is now set to 115200 bauds
+* Serial port default speed is now set to 115200 bauds (new installation), an
+  upgrade will not change the previous console speed
 
 ## New packages
 * iperf 3.1
