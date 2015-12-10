@@ -1,0 +1,225 @@
+Index: net/pimd/Makefile
+===================================================================
+--- net/pimd/Makefile	(revision 402816)
++++ net/pimd/Makefile	(working copy)
+@@ -1,29 +1,32 @@
+ # $FreeBSD$
+ 
+ PORTNAME=	pimd
+-PORTVERSION=	2.2.0
++PORTVERSION=	2.3.1
+ CATEGORIES=	net
+ 
+ MAINTAINER=	olivier@cochard.me
+ COMMENT=	Lightweight stand-alone PIM-SM v2 multicast routing daemon
+ 
+-LICENSE=	BSD3CLAUSE
++LICENSE=	BSD3CLAUSE	
++LICENSE_FILE=	${WRKSRC}/LICENSE
+ 
++USES=		tar:bzip2
++USE_RC_SUBR=	${PORTNAME}
+ USE_GITHUB=	yes
+ GH_ACCOUNT=	troglobit
+-
+-USES=		tar:bzip2
++GH_PROJECT=	${PORTNAME} libite:libite
++GH_TAGNAME=	${PORTVERSION} v1.0.0:libite
+ HAS_CONFIGURE=	yes
++MAKE_ARGS+=	prefix="${PREFIX}" sysconfdir="${PREFIX}/etc"
++PORTDOCS=	AUTHORS CODE-OF-CONDUCT.md CONTRIBUTING.md CREDITS \
++		ChangeLog.org FAQ.md INSTALL.md \
++		README-config.md README-debug.md README.config.jp \
++		README.md TODO.org
++OPTIONS_DEFINE=	DOCS
++DOCS_INSTALL_TARGET=	install install-docs
+ 
+-post-patch:
+-	${REINPLACE_CMD} -e 's|/etc/|${PREFIX}/etc/|g' ${WRKSRC}/pathnames.h
++post-extract:
++	cd ${WRKSRC} && ${RMDIR} libite && \
++	    ${LN} -s -f ${WRKDIR}/libite-1.0.0 libite
+ 
+-do-install:
+-	${INSTALL_PROGRAM} ${WRKSRC}/pimd ${STAGEDIR}${PREFIX}/sbin/
+-	${INSTALL_DATA} ${WRKSRC}/pimd.conf \
+-		${STAGEDIR}${PREFIX}/etc/pimd.conf.sample
+-	${INSTALL_SCRIPT} ${FILESDIR}/pimd.in \
+-		${STAGEDIR}${PREFIX}/etc/rc.d/pimd
+-	${INSTALL_MAN} ${WRKSRC}/pimd.8 ${STAGEDIR}${PREFIX}/man/man8/
+-
+ .include <bsd.port.mk>
+Index: net/pimd/distinfo
+===================================================================
+--- net/pimd/distinfo	(revision 402816)
++++ net/pimd/distinfo	(working copy)
+@@ -1,2 +1,4 @@
+-SHA256 (troglobit-pimd-2.2.0_GH0.tar.bz2) = a6d969e235323852afdd1c9aebc15a2ff1e4da75e8277a736b3be9b2b484e30e
+-SIZE (troglobit-pimd-2.2.0_GH0.tar.bz2) = 223012
++SHA256 (troglobit-pimd-2.3.1_GH0.tar.gz) = 24163fad4e6af3a4b1631de365bd4a7ffb0b3c7084bd999d0a35126a4d62f008
++SIZE (troglobit-pimd-2.3.1_GH0.tar.gz) = 236563
++SHA256 (troglobit-libite-v1.0.0_GH0.tar.gz) = 11bcc47f08e69a5c659eb1d5fce2a4b0034f2fe3e19d2240d621bd80553cd8dc
++SIZE (troglobit-libite-v1.0.0_GH0.tar.gz) = 23080
+Index: net/pimd/files/patch-Makefile
+===================================================================
+--- net/pimd/files/patch-Makefile	(nonexistent)
++++ net/pimd/files/patch-Makefile	(working copy)
+@@ -0,0 +1,57 @@
++--- Makefile.orig	2015-07-31 18:44:17.000000000 +0900
+++++ Makefile	2015-08-28 14:24:27.932783000 +0900
++@@ -35,25 +35,23 @@
++ ## Common
++ CPPFLAGS     += -D_PATH_SYSCONF=\"$(sysconfdir)\"
++ CFLAGS       += $(INCLUDES) $(DEFS) $(USERCOMPILE)
++-CFLAGS       += -W -Wall -Werror -fno-strict-aliasing
+++#CFLAGS       += -W -Wall -Werror -fno-strict-aliasing
++ LDLIBS        = $(EXTRA_LIBS)
++ OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) $(EXTRA_OBJS)
++ SRCS          = $(OBJS:.o=.c)
++ MANS          = $(EXEC).8
++ DISTFILES     = README.md README-config.md README.config.jp README-debug.md ChangeLog.org \
++-		CONTRIBUTING.md CODE-OF-CONDUCT.md INSTALL.md LICENSE LICENSE.mrouted     \
+++		CONTRIBUTING.md CODE-OF-CONDUCT.md INSTALL.md \
++ 		TODO.org CREDITS FAQ.md AUTHORS
++ 
++ 
++ all: $(EXEC)
++ 
++ .c.o:
++-	@printf "  CC      $@\n"
++-	@$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+++	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
++ 
++ $(EXEC): $(OBJS)
++-	@printf "  LINK    $@\n"
++-	@$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-Map,$@.map -o $@ $(OBJS) $(LDLIBS)
+++	$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-Map,$@.map -o $@ $(OBJS) $(LDLIBS)
++ 
++ vers.c:
++ 	@echo $(VERSION) | sed -e 's/.*/char todaysversion[]="&";/' > vers.c
++@@ -61,15 +59,17 @@
++ install: $(EXEC)
++ 	@install -d $(DESTDIR)$(prefix)/sbin
++ 	@install -d $(DESTDIR)$(sysconfdir)
++-	@install -d $(DESTDIR)$(datadir)
++ 	@install -d $(DESTDIR)$(mandir)
++-	@install -m 0755 $(EXEC) $(DESTDIR)$(prefix)/sbin/$(EXEC)
++-	@install -b -m 0644 $(CONFIG) $(DESTDIR)$(sysconfdir)/$(CONFIG)
++-	@for file in $(DISTFILES); do \
++-		install -m 0644 $$file $(DESTDIR)$(datadir)/$$file; \
++-	done
+++	@${BSD_INSTALL_PROGRAM} $(EXEC) $(DESTDIR)$(prefix)/sbin/$(EXEC)
+++	@${BSD_INSTALL_DATA} $(CONFIG) $(DESTDIR)$(sysconfdir)/$(CONFIG).sample
++ 	@for file in $(MANS); do \
++-		install -m 0644 $$file $(DESTDIR)$(mandir)/$$file; \
+++		${BSD_INSTALL_MAN} $$file $(DESTDIR)$(mandir)/$$file; \
+++	done
+++
+++install-docs:
+++	@install -d $(DESTDIR)$(datadir)
+++	@for file in $(DISTFILES); do \
+++		${BSD_INSTALL_DATA} $$file $(DESTDIR)$(datadir)/$$file; \
++ 	done
++ 
++ uninstall:
+
+Property changes on: net/pimd/files/patch-Makefile
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: net/pimd/files/patch-libite-lite.h
+===================================================================
+--- net/pimd/files/patch-libite-lite.h	(nonexistent)
++++ net/pimd/files/patch-libite-lite.h	(working copy)
+@@ -0,0 +1,32 @@
++--- libite/lite.h.orig	2015-08-28 14:04:00.533527000 +0900
+++++ libite/lite.h	2015-08-28 14:04:32.198798000 +0900
++@@ -25,7 +25,7 @@
++ #ifndef FINIT_LITE_H_
++ #define FINIT_LITE_H_
++ 
++-#include <error.h>
+++#include <err.h>
++ #include <stdio.h>
++ #include <stdint.h>    /* uint8_t, uint16_t, uint32_t, INT32_MAX, etc. */
++ #include <string.h>
++@@ -70,16 +70,16 @@
++ #endif
++ 
++ #ifndef touch
++-# define touch(x) do { if (mknod((x), S_IFREG|0644, 0) && errno != EEXIST) error(0, errno, "Failed creating %s", x); } while (0)
+++# define touch(x) do { if (mknod((x), S_IFREG|0644, 0) && errno != EEXIST) err(0, errno, "Failed creating %s", x); } while (0)
++ #endif
++ #ifndef makedir
++-# define makedir(x, p) do { if (mkdir(x, p) && errno != EEXIST) error(0, errno, "Failed creating directory %s", x); } while (0)
+++# define makedir(x, p) do { if (mkdir(x, p) && errno != EEXIST) err(0, errno, "Failed creating directory %s", x); } while (0)
++ #endif
++ #ifndef makefifo
++-# define makefifo(x, p) do { if (mkfifo(x, p) && errno != EEXIST) error(0, errno, "Failed creating FIFO %s", x); } while (0)
+++# define makefifo(x, p) do { if (mkfifo(x, p) && errno != EEXIST) err(0, errno, "Failed creating FIFO %s", x); } while (0)
++ #endif
++ #ifndef erase
++-# define erase(x) do { if (remove(x) && errno != ENOENT) error(0, errno, "Failed removing %s", x); } while (0)
+++# define erase(x) do { if (remove(x) && errno != ENOENT) err(0, errno, "Failed removing %s", x); } while (0)
++ #endif
++ #ifndef chardev
++ # define chardev(x,m,maj,min) mknod((x), S_IFCHR|(m), makedev((maj),(min)))
+
+Property changes on: net/pimd/files/patch-libite-lite.h
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: net/pimd/files/pimd.in
+===================================================================
+--- net/pimd/files/pimd.in	(revision 402816)
++++ net/pimd/files/pimd.in	(working copy)
+@@ -12,15 +12,13 @@
+ 
+ . /etc/rc.subr
+ 
+-pimd_enable=${pimd_enable-"NO"}
+-
+ name="pimd"
+-rcvar=${name}_enable
+-
+-command="/usr/local/sbin/${name}"
+-
++rcvar="${name}_enable"
++command="%%PREFIX%%/sbin/${name}"
++required_files="%%PREFIX%%/etc/${name}.conf"
+ extra_commands=reload
+ 
+ load_rc_config $name
++: ${pimd_enable="NO"}
+ run_rc_command "$1"
+ 
+Index: net/pimd/pkg-plist
+===================================================================
+--- net/pimd/pkg-plist	(revision 402816)
++++ net/pimd/pkg-plist	(working copy)
+@@ -1,4 +1,3 @@
+ @sample etc/pimd.conf.sample
+-etc/rc.d/pimd
+ sbin/pimd
+-man/man8/pimd.8.gz
++share/man/man8/pimd.8

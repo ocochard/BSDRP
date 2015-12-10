@@ -31,6 +31,10 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 SVN_REV_LIST='
 291852
 291853
+291989
+291993
+292013
+292015
 '
 
 # Name of the BSDRP project

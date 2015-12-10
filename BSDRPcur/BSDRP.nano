@@ -9,7 +9,7 @@
 ################## Common section #################
 
 # Console port speed
-COM_SPEED=38400
+COM_SPEED=115200
 # Where cust_pkg() finds packages to install
 NANO_PACKAGE_DIR=${NANO_TOOLS}/Pkg
 NANO_PACKAGE_LIST="*"
@@ -20,8 +20,11 @@ NANO_ARCH=${TARGET_ARCH}
 
 # Options to put in make.conf during buildworld only
 # BOOT_COMCONSOLE_SPEED is useless because we using /boot.config with -Sspeed option
+# But for baud higher than 9600 is not supported by boot0:
+#  then we let the speed already configured by the BIOS by setting it to 0
 CONF_BUILD='
 MALLOC_PRODUCTION=
+BOOT_BOOT0_COMCONSOLE_SPEED=0
 '
 
 # Options to put in make.conf during installworld only
