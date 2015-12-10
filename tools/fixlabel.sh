@@ -58,9 +58,9 @@ fixlabel() {
 
 echo "This tool will check if your system include the slice label bug"
 echo "  (fresh instalation of BSDRP 1.57 only)"
-echo "- If a partition swaping is needed, it will reboot automatically your system at the end"
-echo "  You need to restart this tool after the reboot for continuing"
-echo "- All files stored in /data partition will be destroyed!"
+echo "- If a partition swaping is needed, it will reboot automatically your system at the end."
+echo "    and you had to restart this tool after the reboot for continuing"
+echo "- Files in /data partition will be moved to the /cfg partition"
 echo -n "Do you want to continue or abort ? (y/a): "
 USER_CONFIRM=""
 while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "a" ]; do

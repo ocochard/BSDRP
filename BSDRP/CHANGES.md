@@ -1,4 +1,4 @@
-# Release 1.58 (not released)
+# Release 1.58 (10/12/2015)
 
 ## Important tip for upgrading "fresh 1.57 install"
 * Fresh BSDRP 1.57 installation contains an UFS label bug. And this bug need
@@ -6,14 +6,14 @@
   A script is available for fixing this problem, here is how to use it:
   fetch http://dev.bsdrp.net/fixlabel.sh
   sh ./fixlabel.sh
-  and follow instruction
+  and follow instructions
 
 ## New features
 * Upgrade to 10.2-RELEASE-p8
 * Disable Chelsio NIC features useless in a simple router (cxgbe.toecaps_allowed=0)
 * Disable vlan_hwtso feature by default
 * Added an installation helper option: "system install <target-disk>"
-* Added userland symbols/debug in the debug archive too
+* Added userland symbols/debug in the debug archive
 * Serial port default speed is now set to 115200 bauds (new installation), an
   upgrade will not change the previous console speed
 
@@ -24,7 +24,7 @@
 ## Bug fixed
 * Fixed bad UFS labeling introduced on 1.57
 * Fixed 'config put/get' script
-* Boot0 will stop to reset the serial speed at 9600 bauds
+* Boot0 will stop to reset serial speed at 9600 bauds
 
 ## Updated packages
 * ipmitool to 1.8.15
