@@ -141,10 +141,16 @@ install () {
 	sectors=`gpart show ${boot_dev} | grep '\- free \-' | tr -s ' ' | cut -d ' ' -f 2 | tail -n 1`
 	disks=`sysctl -n kern.disks`
 	[ $# -eq 0 ] && die "Missing destination disk (${disks})"
-	[ ${boot_dev} == $1 ] && die "Source disk (${boot_dev}) is same as destination disk ($1)"
+	[ ${boot_dev} == $1 ] && die "Source disk (${boot_dev}) is same as destination disk ($1), use another disk on this list: ${disks}"
 	bytes=$(( 1 + ${sectors} / 2048 ))
+	# Avoid the error message “the primary GPT table is corrupt or invalid.”
+	# by cleaning the 2 GPT tables on the destination hard drive
+	echo "Cleaning GPT tables on destination hard drive $1..."
+	dd if=/dev/zero of=/dev/$1 bs=1m count=1 > /dev/null 2>&1 || die "Can't erase MBR/GPT table"
+	dd if=/dev/zero of=/dev/$1 bs=1m oseek=`diskinfo $1 \
+		| awk '{print int($3 / (1024*1024)) - 4;}'` > /dev/null 2>&1 || true
 	echo "Copying ${bytes}MB from ${boot_dev} to $1..."
-	dd if=/dev/${boot_dev} of=/dev/$1 bs=1M count=${bytes}
+	dd if=/dev/${boot_dev} of=/dev/$1 bs=1M count=${bytes} || die "Meet error during install"
 }
 
 #When installed on bigger usb key or hard-drive
