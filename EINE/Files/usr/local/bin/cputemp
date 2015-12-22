@@ -1,0 +1,10 @@
+#!/bin/sh
+# Script used to monitor CPU temperature
+# Used by monit
+# Argument: Maximum temperature
+set -eu
+# Intel: dev.cpu.0.temperature
+# AMD: dev.amdtemp.0.core0.sensor0
+TEMP=`sysctl -n dev.amdtemp.0.core0.sensor0`
+TEMP=${TEMP%.*C}
+[ ${TEMP} -ge $1 ] && return ${TEMP} || return 0
