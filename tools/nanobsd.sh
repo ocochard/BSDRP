@@ -24,7 +24,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# $FreeBSD: head/tools/tools/nanobsd/nanobsd.sh 277518 2015-01-22 00:52:34Z will $
+# $FreeBSD: head/tools/tools/nanobsd/nanobsd.sh 291917 2015-12-07 04:02:52Z imp $
 #
 
 set -e
@@ -178,8 +178,9 @@ run_customize
 setup_nanobsd
 prune_usr
 run_late_customize
+fixup_before_diskimage
 if $do_image ; then
-	create_${NANO_ARCH}_diskimage
+	create_diskimage
 else
 	pprint 2 "Skipping image build (as instructed)"
 fi

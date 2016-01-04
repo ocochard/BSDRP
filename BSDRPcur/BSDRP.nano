@@ -494,6 +494,7 @@ add_port "security/openvpn-auth-radius"
 
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 #add_port "benchmarks/netpipe" 
+add_port "benchmarks/iperf" "WITH=\"IPV6\""
 add_port "benchmarks/iperf3"
 
 #add_port "comms/conserver-com"
