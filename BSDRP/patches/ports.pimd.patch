@@ -1,6 +1,6 @@
 Index: net/pimd/Makefile
 ===================================================================
---- net/pimd/Makefile	(revision 404915)
+--- net/pimd/Makefile	(revision 405408)
 +++ net/pimd/Makefile	(working copy)
 @@ -1,29 +1,32 @@
  # $FreeBSD$
@@ -26,7 +26,7 @@ Index: net/pimd/Makefile
 +GH_PROJECT=	${PORTNAME} libite:libite
 +GH_TAGNAME=	7a9c410 v1.2.0:libite
  HAS_CONFIGURE=	yes
-+MAKE_ARGS+=	prefix="${PREFIX}" sysconfdir="${PREFIX}/etc"
++MAKE_ARGS+=	prefix="${PREFIX}" sysconfdir="${PREFIX}/etc/"
 +PORTDOCS=	AUTHORS CODE-OF-CONDUCT.md CONTRIBUTING.md CREDITS \
 +		ChangeLog.org FAQ.md INSTALL.md \
 +		README-config.md README-debug.md README.config.jp \
@@ -51,7 +51,7 @@ Index: net/pimd/Makefile
  .include <bsd.port.mk>
 Index: net/pimd/distinfo
 ===================================================================
---- net/pimd/distinfo	(revision 404915)
+--- net/pimd/distinfo	(revision 405408)
 +++ net/pimd/distinfo	(working copy)
 @@ -1,2 +1,4 @@
 -SHA256 (troglobit-pimd-2.2.0_GH0.tar.bz2) = a6d969e235323852afdd1c9aebc15a2ff1e4da75e8277a736b3be9b2b484e30e
@@ -139,7 +139,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/pimd/files/pimd.in
 ===================================================================
---- net/pimd/files/pimd.in	(revision 404915)
+--- net/pimd/files/pimd.in	(revision 405408)
 +++ net/pimd/files/pimd.in	(working copy)
 @@ -12,15 +12,13 @@
  
@@ -163,7 +163,7 @@ Index: net/pimd/files/pimd.in
  
 Index: net/pimd/pkg-plist
 ===================================================================
---- net/pimd/pkg-plist	(revision 404915)
+--- net/pimd/pkg-plist	(revision 405408)
 +++ net/pimd/pkg-plist	(working copy)
 @@ -1,4 +1,3 @@
  @sample etc/pimd.conf.sample
