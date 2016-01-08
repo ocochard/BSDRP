@@ -543,7 +543,7 @@ Function modify_nic () {
 	
     $ADAPTER.MACAddress=$MAC
 	#Need to permit promiscious mode (for carp or vrrp that use multiple MAC for the same NIC as example)
-	$ADAPTER.promiscModePolicy=$NetworkAdapterPromiscModePolicy_AllowNetwork
+	$ADAPTER.promiscModePolicy=$NetworkAdapterPromiscModePolicy_AllowAll
     
     if ($HOST_ONLY) { 
         $ADAPTER.attachmentType=$NetworkAttachmentType_HostOnly
@@ -955,4 +955,4 @@ build_lab $NUMBER_VM $LAN $SHARED_WITH_HOST_LAN $FULL_MESH
 
 start_lab $NUMBER_VM
 
-clean_exit
+clean_exit^M

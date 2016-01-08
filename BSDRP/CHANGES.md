@@ -1,15 +1,21 @@
 # Release 1.59 (Not released)
 
+## Updated packagesu
+* dmidecode to 3.0
+* mpd5 to 5.8
+* openvpn to 2.3.10
+* python27 to 2.7.11
+
 ## package list
 * bird-1.5.0_1
 * bird6-1.5.0_1
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.1
-* ca_root_nss-3.20.1
+* ca_root_nss-3.21
 * dhcprelya-4.9
 * dlmalloc-2.8.6
 * dma-v0.9_1,1
-* dmidecode-2.12_1
+* dmidecode-3.0
 * easy-rsa-2.2.2
 * exabgp-3.4.12_1
 * flashrom-0.9.7_3
@@ -23,33 +29,33 @@
 * libevent2-2.0.22_1
 * libffi-3.2.1
 * libftdi-0.20_4
-* libgcrypt-1.6.4_2
+* libgcrypt-1.6.4_3
 * libgpg-error-1.20_1
 * libpci-3.4.0
 * lzo2-2.09
 * monit-5.15
-* mpd5-5.7_3
+* mpd5-5.8
 * mrouted-3.9.7_1
 * openldap-client-2.4.43
-* openvpn-2.3.8
+* openvpn-2.3.10
 * openvpn-auth-radius-2.1_3
-* pciids-20151205
+* pciids-20151224
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
-* pimd-2.3.1
+* pimd-2.3.2
 * pimdd-0.2.1.0_2
 * pkg-1.6.2
 * pmacct-0.14.3_3
-* py27-setuptools27-18.7
+* py27-setuptools27-19.2
 * python2-2_3
-* python27-2.7.10_1
+* python27-2.7.11
 * quagga-0.99.24.1_2
 * readline-6.3.8
 * strongswan-5.3.5_1
 * sudo-1.8.15
 * tayga-0.9.2
-* tmux-2.1
+* tmux-2.1_1
 * ucarp-1.5.2_2
 
 -----------------------------------------------------
