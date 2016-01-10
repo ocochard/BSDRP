@@ -2,6 +2,7 @@
 
 ## Updated packagesu
 * dmidecode to 3.0
+* exabgp to 3.4.13
 * mpd5 to 5.8
 * openvpn to 2.3.10
 * python27 to 2.7.11
@@ -17,7 +18,7 @@
 * dma-v0.9_1,1
 * dmidecode-3.0
 * easy-rsa-2.2.2
-* exabgp-3.4.12_1
+* exabgp-3.4.13
 * flashrom-0.9.7_3
 * freevrrpd-1.1_1
 * indexinfo-0.2.4
@@ -49,7 +50,7 @@
 * pmacct-0.14.3_3
 * py27-setuptools27-19.2
 * python2-2_3
-* python27-2.7.11
+* python27-2.7.11_1
 * quagga-0.99.24.1_2
 * readline-6.3.8
 * strongswan-5.3.5_1
