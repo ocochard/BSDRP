@@ -1,0 +1,38 @@
+#!/bin/sh
+#
+# Start IDS update signature
+#
+
+# If there is a global system configuration file, suck it in.
+#
+if [ -r /etc/defaults/periodic.conf ]
+then
+    . /etc/defaults/periodic.conf
+    source_periodic_confs
+fi
+
+idsupdate=/usr/local/sbin/IDS-update
+
+rc=0
+
+case "${daily_update_ids_enable}" in
+    [Yy][Ee][Ss])
+        if [ ! -x $idsupdate ]; then
+          echo "\$daily_update_ids_enable is set but ${idsupdate}" \
+               "isn't executable"
+          exit 2
+        fi
+
+        echo ""
+        echo "Updating IDS rules:"
+
+        $idsupdate && rc=1 || rc=3
+
+        ;;
+    *)
+        rc=0
+        ;;
+esac
+
+exit $rc
+

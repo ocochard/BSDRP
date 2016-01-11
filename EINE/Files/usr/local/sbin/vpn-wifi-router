@@ -53,21 +53,23 @@ KNOWN_HOSTS = "/etc/dot.ssh." + os.environ['USER'] + "/known_hosts"
 def create(args):
     "This create a new VPN-Wifi-router"
 
-    print "Creating VPN-Wifi-router {}.".format(args.hostname)
-
+    print "Creating VPN-Wifi-router {}.".format(args.hostname.lower())
+    sys.exit ("debug")
     # Split subnet (10.0.0.0/24) into a list of 2 elements
     # lan_inet4 = args.lan.split("/", 1)
     lan_inet4 = netaddr.IPNetwork(args.lan)
-    wifi_inet4 = netaddr.IPNetwork(args.wireless)
 
     print "Checking user input...",
     # Check if it's a valid IP address
-    for address in ['lan', 'wireless', 'unregistered', 'loopback']:
+    for address in ['lan', 'unregistered', 'loopback']:
         if getattr(args, address) is None:
             sys.exit('Missing value for {} option'.format(address))
         if not netaddr.IPNetwork(getattr(args, address)):
             sys.exit('Bad IP address: {} on option {}'
                      .format(getattr(args, address), address))
+    # LAN subnet can't be > 30
+    if lan_inet4.prefixlen > 30:
+        sys.exit('too long or missing prefix length for LAN')
     print "Done"
 
     # Check for duplicate
@@ -84,37 +86,37 @@ def create(args):
 
     # Update hosts file
     print 'Checking if not already existing in /etc/hosts...',
-    if eine.is_in_hosts(args.hostname):
+    if eine.is_in_hosts(args.hostname.lower()):
         sys.exit('Hostname {} is already in /etc/hosts'
-                 .format(args.hostname))
+                 .format(args.hostname.lower()))
     else:
         print 'No'
 
     print 'Updating /etc/hosts with volatile IP...',
-    if eine.hosts_add(args.unregistered, args.hostname):
+    if eine.hosts_add(args.unregistered, args.hostname.lower()):
         print 'Done'
     else:
         sys.exit('ERROR')
 
     # Add the hostname to the Ansible inventory
     print "Adding VPN-wifi-router to Ansible inventory...",
-    if eine.inventory_add(args.hostname, 'vpn_wifi_routers', ANSIBLE_INV):
+    if eine.inventory_add(args.hostname.lower(), 'vpn_wifi_routers', ANSIBLE_INV):
         print "Done"
     else:
         sys.exit('ERROR')
 
     # Generate site certificate
     print "Generating site certificate...",
-    if eine.cert_add(args.hostname, EASYRSA_VARS, CLIENT_TPL_DIR):
+    if eine.cert_add(args.hostname.lower(), EASYRSA_VARS, CLIENT_TPL_DIR):
         print "Done"
     else:
         sys.exit('Can\'t generate certificate')
 
     # Generate the host variable file
     print "Generating Ansible host variable file...",
-    with open(ANSIBLE_HOSTVARS_DIR + '/' + args.hostname, 'w') as var:
+    with open(ANSIBLE_HOSTVARS_DIR + '/' + args.hostname.lower(), 'w') as var:
         var.write("---\n")
-        var.write("hostname: " + args.hostname + "\n")
+        var.write("hostname: " + args.hostname.lower() + "\n")
         if args.ifext:
             var.write("if_internet_device: " + args.ifext + "\n")
         if args.ifint:
@@ -125,11 +127,6 @@ def create(args):
         var.write("if_lan_inet4_dhcp_start: {}\n".format(lan_inet4[1]))
         var.write("if_lan_inet4_dhcp_end: {}\n".format(lan_inet4[len(lan_inet4)-3]))
         var.write("if_wifi_device: ath0\n")
-        var.write("if_wifi_inet4_addr: {}\n".format(wifi_inet4[len(wifi_inet4)-2]))
-        var.write("if_wifi_inet4_net: {}\n".format(wifi_inet4.network))
-        var.write("if_wifi_inet4_prefix: {}\n".format(wifi_inet4.prefixlen))
-        var.write("if_wifi_inet4_dhcp_start: {}\n".format(wifi_inet4[1]))
-        var.write("if_wifi_inet4_dhcp_end: {}\n".format(wifi_inet4[len(wifi_inet4)-3]))
         var.write("if_lo_inet4_addr: " + args.loopback + "\n")
         var.write("if_lo_inet4_prefix: 32\n")
     print "Done"
@@ -137,17 +134,15 @@ def create(args):
     # Generate the ccd file
     print "Generating OpenVPN CCD file...",
     with open(GW_TPL_DIR + '/files/usr/local/etc/openvpn/ccd/'
-              + args.hostname, 'w') as ccd:
+              + args.hostname.lower(), 'w') as ccd:
         ccd.write('iroute ' + args.loopback + ' 255.255.255.255\n')
         ccd.write('iroute {} {}\n'.format(lan_inet4.network,
                                           lan_inet4.netmask))
-        ccd.write('iroute {} {}\n'.format(wifi_inet4.network,
-                                          wifi_inet4.netmask))
     print "Done"
 
     # Before using ansible we need to add the client SSH key
     print "Downloading VPN-Wifi-router' SSH keys...",
-    if eine.sshkey_add(args.hostname, KNOWN_HOSTS):
+    if eine.sshkey_add(args.hostname.lower(), KNOWN_HOSTS):
         print 'Done'
     else:
         sys.exit('Failed')
@@ -166,7 +161,7 @@ def create(args):
     # Now we can push the registered client template
     print "Uploading registered configuration to VPN-Wifi-router...",
     status, out = eine.ansible_playbook(ANSIBLE_INV, ANSIBLE_DIR
-                                        + '/vpn_wifi_routers.yml', args.hostname)
+                                        + '/vpn_wifi_routers.yml', args.hostname.lower())
     if status:
         print 'Done'
     else:
@@ -176,7 +171,7 @@ def create(args):
     # Once done, the client need to be rebooted
     print "Asking VPN-Wifi-router to reboot in 5 seconds...",
     status, out = eine.ansible('sudo shutdown -r +5s', ANSIBLE_INV,
-                               'vpn_wifi_routers', args.hostname)
+                               'vpn_wifi_routers', args.hostname.lower())
     if status:
         print 'Done'
     else:
@@ -185,12 +180,12 @@ def create(args):
 
     # Then hosts can use the loopback address for reaching the client
     print "Deleting unregistered VPN-Wifi-router s IP entry from /etc/hosts...",
-    if eine.hosts_del(args.hostname):
+    if eine.hosts_del(args.hostname.lower()):
         print "Done"
     else:
         sys.exit('Failed')
     print "Adding registered IP router entry into /etc/hosts...",
-    if eine.hosts_add(args.loopback, args.hostname):
+    if eine.hosts_add(args.loopback, args.hostname.lower()):
         print "Done"
     else:
         sys.exit('Failed')
@@ -200,30 +195,30 @@ def create(args):
 
 def delete(args):
     "This delete a VPN-Wifi-router"
-    print "Deleting VPN-Wifi-router {}.".format(args.hostname)
+    print "Deleting VPN-Wifi-router {}.".format(args.hostname.lower())
 
     print "Checking old entry in /etc/hosts...",
-    if eine.is_in_hosts(args.hostname):
+    if eine.is_in_hosts(args.hostname.lower()):
         print "Yes"
         print "  Checking if it's online...",
-        if eine.is_online(args.hostname)[0]:
+        if eine.is_online(args.hostname.lower())[0]:
             print "yes"
             print "    factory-reset the VPN-Wifi-router...",
             if eine.ansible('sudo config factory', ANSIBLE_INV, 'vpn_wifi_routers',
-                            args.hostname)[0]:
+                            args.hostname.lower())[0]:
                 print 'Done'
                 print "    Asking VPN-Wifi-router to reboot in 5 seconds...",
             else:
                 print 'Failed'
             if eine.ansible('sudo shutdown -r +5s', ANSIBLE_INV, 'vpn_wifi_routers',
-                            args.hostname)[0]:
+                            args.hostname.lower())[0]:
                 print 'Done'
             else:
                 print 'Failed'
         else:
             print "no"
         print "  Deleting old entry...",
-        if eine.hosts_del(args.hostname):
+        if eine.hosts_del(args.hostname.lower()):
             print "Done"
         else:
             print "Failed"
@@ -232,17 +227,17 @@ def delete(args):
 
     # Remove hostname from Ansible inventory
     print "Deleting entry in Ansible inventory...",
-    if eine.inventory_del(args.hostname, 'vpn_wifi_routers', ANSIBLE_INV):
+    if eine.inventory_del(args.hostname.lower(), 'vpn_wifi_routers', ANSIBLE_INV):
         print 'Done'
     else:
         sys.exit('ERROR')
 
     # Revoke and delete site certificate
     print "Revoking and deleting certificate...",
-    if eine.cert_del(args.hostname, EASYRSA_VARS, CLIENT_TPL_DIR,
+    if eine.cert_del(args.hostname.lower(), EASYRSA_VARS, CLIENT_TPL_DIR,
                      GW_TPL_DIR):
         print "Done"
-        print "  Uploading new CRL to all gateway...",
+        print "  Uploading new CRL to all gateways...",
         # Revoking site certificate had updated the CRL
         # Need to push the new version to all gateways
         status = eine.ansible_playbook(ANSIBLE_INV, ANSIBLE_DIR
@@ -257,11 +252,11 @@ def delete(args):
 
     # Remove Ansible host variable file
     print "Checking if existing host variable file...",
-    if os.path.isfile(ANSIBLE_HOSTVARS_DIR + '/' + args.hostname):
+    if os.path.isfile(ANSIBLE_HOSTVARS_DIR + '/' + args.hostname.lower()):
         print "Found"
         print "  Cleaning Ansible host variable file...",
         try:
-            os.remove(ANSIBLE_HOSTVARS_DIR + '/' + args.hostname)
+            os.remove(ANSIBLE_HOSTVARS_DIR + '/' + args.hostname.lower())
             print "Done"
         except OSError:
             print "Failed"
@@ -271,7 +266,7 @@ def delete(args):
     # Remove Gateways' CCD file
     print "Checking if existing CCD file...",
     ccdfile = GW_TPL_DIR + '/files/usr/local/etc/openvpn/ccd/' + \
-              args.hostname
+              args.hostname.lower()
     if os.path.isfile(ccdfile):
         print "Found"
         print "  Removing CCD file...",
@@ -280,7 +275,7 @@ def delete(args):
             print "Done"
             print "    Cleaning CCD file on all gateways...",
             if eine.ansible('rm /usr/local/etc/openvpn/ccd/'
-                            + args.hostname, ANSIBLE_INV, 'gateways')[0]:
+                            + args.hostname.lower(), ANSIBLE_INV, 'gateways')[0]:
                 print "OK"
             else:
                 print "NOK"
@@ -291,10 +286,10 @@ def delete(args):
 
     # Remove SSH host key
     print "Checking VPN-Wifi-router SSH key in know_hosts file...",
-    if eine.is_in_sshkey(args.hostname, KNOWN_HOSTS):
+    if eine.is_in_sshkey(args.hostname.lower(), KNOWN_HOSTS):
         print "Found"
         print "  Delete VPN-Wifi-router SSH key...",
-        if eine.sshkey_del(args.hostname, KNOWN_HOSTS):
+        if eine.sshkey_del(args.hostname.lower(), KNOWN_HOSTS):
             print "OK"
         else:
             print "NOK"
@@ -303,10 +298,82 @@ def delete(args):
     print "Client deleted, don't forget to save manager configuration"
     return True
 
+def reinstall(args):
+    "This reinstall a router configuration (delete by a factory reset)"
+    print "Checking existing hostname entry in /etc/hosts...",
+    if eine.is_in_hosts(args.hostname.lower()):
+        print "Yes"
+    else:
+        sys.exit('hostname given not found in /etc/hosts')
+
+    # Need to update hosts with tempo IP, but saving OLD IP
+    print "Backing hosts file..."
+    if eine.backup_hosts():
+        print "Done"
+    else:
+        print "Failed"
+    print "Deleting old hosts entry..."
+    if eine.hosts_del(args.hostname.lower()):
+        print "Done"
+    else:
+        print "Failed"
+    print "Adding new entry..."
+    if eine.hosts_add(args.unregistered, args.hostname.lower()):
+        print 'Done'
+    else:
+        sys.exit('ERROR')
+ 
+    # Remove old SSH host key
+    print "Checking SSH key in know_hosts file...",
+    if eine.is_in_sshkey(args.hostname.lower(), KNOWN_HOSTS):
+        print "Found"
+        print "  Delete VPN-Wifi-router SSH key...",
+        if eine.sshkey_del(args.hostname.lower(), KNOWN_HOSTS):
+            print "OK"
+        else:
+            print "NOK"
+    else:
+        print "Missing"
+
+    # Add the new SS key
+    print "Downloading VPN-Wifi-router' SSH keys...",
+    if eine.sshkey_add(args.hostname.lower(), KNOWN_HOSTS):
+        print 'Done'
+    else:
+        sys.exit('Failed')
+ 
+    # Now we can repush the client configuration file
+    print "Uploading configuration to VPN-Wifi-router...",
+    status, out = eine.ansible_playbook(ANSIBLE_INV, ANSIBLE_DIR
+                                        + '/vpn_wifi_routers.yml', args.hostname.lower())
+    if status:
+        print 'Done'
+    else:
+        sys.exit("Error! Ansible didn't reach to push template to VPN-Wifi-router\n"
+                 .format(out))
+
+    # Once done, the client need to be rebooted
+    print "Asking VPN-Wifi-router to reboot in 5 seconds...",
+    status, out = eine.ansible('sudo shutdown -r +5s', ANSIBLE_INV,
+                               'vpn_wifi_routers', args.hostname.lower())
+    if status:
+        print 'Done'
+    else:
+        sys.exit("ERROR: Ansible didn't reach to send reboot command\n"
+                 .format(out))
+
+    # Need to restore hosts with previous (loopback) IP
+    print 'Restoring previos hosts file...'
+    if eine.restore_hosts():
+        print "Done"
+    else:
+        print "Failed"
+    print "Client correctly reinstalled, don't forget to save manager configuration (SSH key updated)"
+    return True
 
 def renew(args):
     "This renew router's certificate"
-    print 'Renew certificate of site: {}'.format(args.hostname)
+    print 'Renew certificate of site: {}'.format(args.hostname.lower())
 
 
 def listing(args):
@@ -317,8 +384,7 @@ def listing(args):
         inv = eine.inventory_list('vpn_wifi_routers', ANSIBLE_INV,
                                   ANSIBLE_HOSTVARS_DIR)
         if inv:
-            inv.insert(0, ['Hostname', 'loopack', 'LAN subnet',
-                           'Wireless subnet'])
+            inv.insert(0, ['Hostname', 'loopack', 'LAN subnet'])
             eine.pprint_table(sys.stdout, inv)
             return True
         else:
@@ -387,8 +453,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Manage VPN-Wifi-routers',
                                      epilog="Example: vpn-wifi-router create boyo \
                                              -e 10.0.0.0/24 \
-                                             -w 10.0.1.0/24 \
-                                             -o 1.1.1.1 -u 8.8.8.8 \
+                                             -l 1.1.1.1 -u 8.8.8.8 \
                                              [-i internal-nic-name] \
                                              [-x external-nic-name]")
     subparsers = parser.add_subparsers()
@@ -407,14 +472,19 @@ if __name__ == '__main__':
     parser_create.add_argument('-u', '--unregistered', nargs='?',
                                required=True,
                                help='IPv4 unregistered address (temporary)')
-    parser_create.add_argument('-w', '--wireless', nargs='?', required=True,
-                               help='IPv4 Wireless subnet/cidr-mask')
     parser_create.set_defaults(func=create)
     # 'delete' options
     parser_delete = subparsers.add_parser('delete')
     parser_delete.add_argument("hostname", help='hostname')
     parser_delete.set_defaults(func=delete)
-    # renew' options
+    # 'reinstall' option
+    parser_reinstall = subparsers.add_parser('reinstall')
+    parser_reinstall.add_argument("hostname", help='hostname')
+    parser_reinstall.add_argument('-u', '--unregistered', nargs='?',
+                              required=True,
+                              help='IPv4 unregistered address (temporary)')
+    parser_reinstall.set_defaults(func=reinstall)
+    # 'renew' options
     parser_renew = subparsers.add_parser('renew')
     parser_renew.add_argument("hostname", help='hostname')
     parser_renew.set_defaults(func=renew)

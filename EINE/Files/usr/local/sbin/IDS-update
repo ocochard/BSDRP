@@ -1,0 +1,89 @@
+#!/bin/sh
+set -eu
+
+CONFIG_FILE="/usr/local/etc/IDS-update.conf"
+SNORT_DIR_RULES="/usr/local/etc/snort/rules/"
+BACKUP_FILE="/tmp/backuped_rules.xz"
+LOCK_FILE="/tmp/IDS-update.lock"
+
+# A usefull function (from: http://code.google.com/p/sh-die/)
+die() {
+    [ -f ${LOCK_FILE} ] && rm ${LOCK_FILE}
+    echo -n "EXIT: " >&2
+    echo "$@" >&2
+    logger "IDS-UPDATE EXIT: $@"
+    exit 1
+}
+
+[ -f ${CONFIG_FILE} ] || logger "IDS-update: No config file found, using default"
+
+backup_rules () {
+    echo "backuping existing rules"
+    [ -f ${BACKUP_FILE} ] && rm ${BACKUP_FILE}
+    tar -cJf ${BACKUP_FILE} -C ${SNORT_DIR_RULES} . || die "Can't backup existing rules"
+}
+
+checking_rules () {
+    echo -n "Checking new downloaded rules..."
+    if snort -T -c /usr/local/etc/snort/snort.conf; then
+        if service snort onestatus; then
+            echo "OK, reloading snort"
+            service snort onereload || die "Can't reload snort"
+        else
+            echo "snort is not running"
+        fi
+    else
+        echo "NOK, restoring previous rules"
+        logger "Bad configuration rules"
+        restoring_rules
+    fi
+}
+
+restoring_rules () {
+    tar -C ${SNORT_DIR_RULES} -xf ${BACKUP_FILE} || die "Can't restore previous rules"
+}
+
+cleanup_rules () {
+    [ -f /tmp/backuped_rules.xz ] && rm ${BACKUP_FILE}
+}
+
+# Load variable from configuration file
+# SNORT_REG_URL: Snort registration URL (including oik code)
+# SNORT_REG_RULES: List of rules/files to extract
+# ET_URL: ET URL
+# ET_RULES: List of ET rules to extract
+
+. /usr/local/etc/IDS-update.conf
+
+# If called when already running, exit
+[ -f ${LOCK_FILE} ] && die "IDS update alreay running"
+
+touch ${LOCK_FILE} || die "Can't create lock file"
+
+backup_rules
+
+SNORT_COM_URL='https://www.snort.org/downloads/community/community-rules.tar.gz'
+
+if [ -z "${SNORT_REG_URL}" ]; then
+    logger -s "Downloading and extracting Snort community rules"
+    fetch ${SNORT_COM_URL} -o - | tar -C ${SNORT_DIR_RULES} -f - --extract --null --strip=1 --no-same-owner community-rules/community.rules && \
+    logger -s "Download and extracted snort community rules with success"
+else
+    logger -s "Downloading and extracting Snort registered rules..."
+    fetch ${SNORT_REG_URL} -o - | tar -C ${SNORT_DIR_RULES} -f - --extract --null --strip=1 --no-same-owner ${SNORT_REG_RULES} && \
+    logger -s "Downloaded and extracted snort registered rules with success" || \
+    logger -s "Can't download/extract snort registered rules"
+fi
+
+if [ -n "${ET_URL}" ]; then
+    logger -s "Downloading and extracting Emergingthreads rules"
+    fetch ${ET_URL} -o - | tar -C ${SNORT_DIR_RULES} -f - --extract --null --strip=1 --no-same-owner ${ET_RULES} && \
+    logger -s "Download and extracted ET with success" || \
+    logger -s "Can't download/extract ET"
+fi
+
+checking_rules
+
+cleanup_rules
+
+rm ${LOCK_FILE} || die "Can't delete lock file"

@@ -1,34 +1,25 @@
 Index: usr.sbin/pkg/pkg.c
 ===================================================================
---- usr.sbin/pkg/pkg.c	(revision 287147)
+--- usr.sbin/pkg/pkg.c	(revision 287900)
 +++ usr.sbin/pkg/pkg.c	(working copy)
-@@ -767,13 +767,7 @@
- 		goto fetchfail;
- 
- 	if (signature_type != NULL &&
--	    strcasecmp(signature_type, "NONE") != 0) {
--		if (strcasecmp(signature_type, "FINGERPRINTS") != 0) {
+@@ -901,9 +901,9 @@
+ 			if (verify_pubsignature(fd_pkg, fd_sig) == false)
+ 				goto cleanup;
+ 		} else {
 -			warnx("Signature type %s is not supported for "
--			    "bootstrapping.", signature_type);
++			warnx("Signature type %s is officially not supported for "
+ 			    "bootstrapping.", signature_type);
 -			goto cleanup;
--		}
--
-+		strcasecmp(signature_type, "FINGERPRINTS") == 0) {
- 		snprintf(tmpsig, MAXPATHLEN, "%s/pkg.txz.sig.XXXXXX",
- 		    getenv("TMPDIR") ? getenv("TMPDIR") : _PATH_TMP);
- 		snprintf(url, MAXPATHLEN, "%s/Latest/pkg.txz.sig",
-@@ -861,13 +855,7 @@
- 		goto cleanup;
++			/* goto cleanup; */
+ 		}
  	}
- 	if (signature_type != NULL &&
--	    strcasecmp(signature_type, "NONE") != 0) {
--		if (strcasecmp(signature_type, "FINGERPRINTS") != 0) {
--			warnx("Signature type %s is not supported for "
--			    "bootstrapping.", signature_type);
--			goto cleanup;
--		}
--
-+		strcasecmp(signature_type, "FINGERPRINTS") == 0) {
- 		snprintf(path, sizeof(path), "%s.sig", pkgpath);
  
- 		if ((fd_sig = open(path, O_RDONLY)) == -1) {
+@@ -1010,7 +1010,7 @@
+ 		} else {
+ 			warnx("Signature type %s is not supported for "
+ 			    "bootstrapping.", signature_type);
+-			goto cleanup;
++			/* goto cleanup; */
+ 		}
+ 	}
+ 

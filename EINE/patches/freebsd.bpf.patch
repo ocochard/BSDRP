@@ -1,0 +1,13 @@
+Index: contrib/tcpdump/tcpdump.c
+===================================================================
+--- contrib/tcpdump/tcpdump.c	(wersja 286625)
++++ contrib/tcpdump/tcpdump.c	(kopia robocza)
+@@ -1923,7 +1923,7 @@
+ 		error("%s", pcap_geterr(pd));
+ #ifdef HAVE_CAPSICUM
+ 	if (RFileName == NULL && VFileName == NULL) {
+-		static const unsigned long cmds[] = { BIOCGSTATS };
++		static const unsigned long cmds[] = { BIOCGSTATS, BIOCROTZBUF };
+ 
+ 		/*
+ 		 * The various libpcap devices use a combination of

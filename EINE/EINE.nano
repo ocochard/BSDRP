@@ -22,6 +22,7 @@ NANO_ARCH=${TARGET_ARCH}
 # BOOT_COMCONSOLE_SPEED is useless because we using /boot.config with -Sspeed option
 CONF_BUILD='
 MALLOC_PRODUCTION=
+BOOT_BOOT0_COMCONSOLE_SPEED=0
 '
 
 # Options to put in make.conf during installworld only
@@ -112,6 +113,8 @@ WITHOUT_USB_GADGET_EXAMPLES=
 WITHOUT_ZFS=
 WITH_GCC=
 WITH_IDEA=
+WITH_FAST_DEPEND=
+WITH_DEBUG_FILES=
 '
 
 # Customize commands.
@@ -140,19 +143,19 @@ NANO_CODESIZE=0
 
 # Size of configuration file system in 512 bytes sectors
 # Cannot be zero.
-# about 15MB = 20480
-NANO_CONFSIZE=20480
+# about 15MB = 30720
+NANO_CONFSIZE=30720
 
 # Size of data file system in 512 bytes sectors
 # If zero: no partition configured.
 # If negative: max size possible
 # This filesystem is used for archive configuration and
 # for user customized scripts or tool
-NANO_DATASIZE=20480
+NANO_DATASIZE=30720
 
 # Size of the /etc ramdisk in 512 bytes sectors
 # 10240=5MB
-NANO_RAM_ETCSIZE=20480
+NANO_RAM_ETCSIZE=30720
 
 # Size of the /tmp+/var ramdisk in 512 bytes sectors
 # 40960=20MB (usefull for log files)
@@ -419,11 +422,24 @@ add_port "security/openvpn-auth-radius"
 add_port "comms/ser2net"
 
 # Add an IDPS
+# Suricata crash after 5 seconds
+#add_port "net/libnet"
+#add_port "textproc/libyaml"
+#add_port "devel/libhtp"
+#add_port "security/suricata" "WITHOUT=\"PRELUDE JSON\""
+
 add_port "devel/pcre"
+add_port "net/libdnet"
+add_port "net/libpcap"
+add_port "net/daq"
 add_port "net/libnet"
-add_port "textproc/libyaml"
-add_port "devel/libhtp"
-add_port "security/suricata" "WITHOUT=\"PRELUDE JSON\""
+add_port "security/snort" "WITHOUT=\"PULLEDPORK BARNYARD\""
+
+# Add monit
+add_port "sysutils/monit"
+
+# Add root CA certificate
+add_port "security/ca_root_nss"
 
 # Ansible (used on the manager only)
 add_port "devel/py-yaml"
@@ -486,6 +502,7 @@ cleanup_ports () {
 		#   pkg didn't delete all MAN1 page related to perl too
 		[ -d ${NANO_WORLDDIR}/usr/local/lib/perl5 ] && rm -rf ${NANO_WORLDDIR}/usr/local/lib/perl5
 		[ -f ${NANO_WORLDDIR}/usr/local/man/man1/perl.1 ] && rm ${NANO_WORLDDIR}/usr/local/man/man1/perl*
+        [ -f ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT ] && rm ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT
 		set -e
 }
 
@@ -804,14 +821,10 @@ usr/share/tmac/tmac.vgrind
     find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
 
 	# Moving kerned & world debug symbols into debug.tar.xz file
-	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
-		if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
-			mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
-		fi
-		mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+	if [ -d ${NANO_WORLDDIR}/usr/lib/debug ]; then
 		tar cfvZ ${NANO_OBJ}/debug.tar.xz -C ${NANO_WORLDDIR}/usr/lib debug
+        rm -rf ${NANO_WORLDDIR}/usr/lib/debug
 	fi
-	[ -d ${NANO_WORLDDIR}/usr/lib/debug ] && rm -rf ${NANO_WORLDDIR}/usr/lib/debug
 	# strip binaries for ports (tips from FreeNAS 8)
 	pprint 4 "Stripping binaries and libraries"
 	for dir in $(find ${NANO_WORLDDIR}/ -name '*bin' -or -name 'lib' -maxdepth 3); do

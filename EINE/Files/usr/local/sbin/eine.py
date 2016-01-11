@@ -57,8 +57,6 @@ def check_duplicate(inv, args, gateway=False):
     else:
         if str(netaddr.IPNetwork(args.lan)) in inv:
             return False
-        if str(netaddr.IPNetwork(args.wireless)) in inv:
-            return False
     return True
 
 def pprint_table(out, table):
@@ -214,6 +212,21 @@ def is_in_hosts(hostname):
             return True
     return False
 
+def backup_hosts():
+    "This backup hosts file"
+    try:
+         shutil.copy2('/etc/hosts','/tmp/hosts')
+    except:
+        return False
+    return True
+
+def restore_hosts():
+    "This restore hosts file"
+    try:
+        shutil.copy2('/tmp/hosts','/etc/hosts')
+    except:
+        return False
+    return True
 
 def is_in_sshkey(hostname, known_hosts):
     "This check if hostname is present in "
@@ -262,6 +275,7 @@ def hosts_add(ipaddress, hostname):
 
 def hosts_del(hostname):
     "This delete lines containing hostname"
+    # Very stupid way of doing this, should use a smarter method
     with open('/etc/hosts', 'r') as hostsfile:
         hosts = hostsfile.readlines()
     with open('/etc/hosts', 'w') as hostsfile:
@@ -304,9 +318,7 @@ def inventory_list(group, inv_file, hostvars_dir):
                     if group is 'vpn_wifi_routers':
                         full_inv.append([host, variables['if_lo_inet4_addr'],
                                          variables['if_lan_inet4_addr']+'/'
-                                         +variables['if_lan_inet4_prefix'],
-                                         variables['if_wifi_inet4_addr']+'/'
-                                         +variables['if_wifi_inet4_prefix']])
+                                         +variables['if_lan_inet4_prefix']])
                     elif group is 'gateways':
                         full_inv.append([host, variables['if_lo_inet4_addr'],
                                          variables['if_int_inet4_addr'],
