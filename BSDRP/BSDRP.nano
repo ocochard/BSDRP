@@ -31,7 +31,9 @@ BOOT_BOOT0_COMCONSOLE_SPEED=0
 # Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
 # Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
 # We would compile symbol files, but not install them by default
-CONF_INSTALL=''
+CONF_INSTALL='
+WITHOUT_INCLUDES=
+'
 
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options or man src.conf for details
