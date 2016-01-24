@@ -307,14 +307,15 @@ add_port "lang/python"
 add_port "devel/py-setuptools27"
 
 # Perl
-add_port "lang/perl5.18"
+add_port "lang/perl5.20"
 
 # Add xorg-minimal (and all its package-depends-list)
   add_port "devel/libpthread-stubs"
    add_port "misc/pciids"
   add_port "devel/libpciaccess"
  add_port "graphics/libdrm"
- add_port "devel/llvm35"
+  add_port "devel/libedit"
+ add_port "devel/llvm36"
    add_port "x11/kbproto"
     add_port "x11/xproto"
    add_port "x11/libXau"
@@ -367,6 +368,11 @@ add_port "x11/libXinerama"
  add_port "x11/pixman"
  add_port "x11/renderproto"
  add_port "x11/randrproto"
+ add_port "x11/compositeproto"
+   add_port "graphics/libglesv2"
+    add_port "graphics/gbm"
+   add_port "graphics/libEGL"
+ add_port "graphics/libepoxy"
 add_port "x11-servers/xorg-server"
 
 # xorg-minimal
@@ -398,6 +404,7 @@ add_port "x11/nvidia-driver-340" "WITHOUT=\"LINUX\""
 add_port "x11/xrandr"
 
 #slim, for autologon
+ add_port "archivers/lzo2"
  add_port "graphics/jpeg"
  # curl needed for build only for png but for run after
   add_port "security/ca_root_nss"
@@ -427,7 +434,6 @@ add_port "comms/lirc" "WITH=\"MINIMAL\""
  add_port "graphics/cairo"
   add_port "misc/hicolor-icon-theme"
   add_port "misc/shared-mime-info"
-   add_port "x11/compositeproto"
   add_port "x11/libXcomposite"
    add_port "devel/gettext-runtime"
    add_port "devel/gobject-introspection"
@@ -519,10 +525,10 @@ add_port "comms/lirc" "WITH=\"MINIMAL\""
  add_port "security/gnutls"
   add_port "audio/libcddb"
  add_port "sysutils/libcdio"
- add_port "archivers/lzo2"
  add_port "multimedia/libass"
  add_port "devel/libltdl"
-add_port "multimedia/kodi" "WITH=\"NONFREE\" WITHOUT=\"AVAHI AIRPLAY AIRTUNES\""
+ add_port "net/libnfs"
+add_port "multimedia/kodi" "WITH=\"NONFREE\" WITHOUT=\"AVAHI AIRPLAY AIRTUNES PULSEAUDIO\""
 
 #### End of port list section ####
 

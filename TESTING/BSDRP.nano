@@ -9,7 +9,7 @@
 ################## Common section #################
 
 # Console port speed
-COM_SPEED=38400
+COM_SPEED=115200
 # Where cust_pkg() finds packages to install
 NANO_PACKAGE_DIR=${NANO_TOOLS}/Pkg
 NANO_PACKAGE_LIST="*"
@@ -202,7 +202,7 @@ add_netrate () {
         CR 'make clean -C /usr/src/tools/tools/${TOOL}'
        	CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
             MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-            UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+            UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
             UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
             make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
         # each Makefile have a different variable names
@@ -277,11 +277,11 @@ bsdrp_custom () {
 	sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
 
 	# Compress the kernel (save 10Mb)
-	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
-		if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
-			echo "Error during zipping the kernel"
-		fi
-	fi
+	#if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
+	#	if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
+	#		echo "Error during zipping the kernel"
+	#	fi
+	#fi
 	# Remove some of the folders (without share/snmp)
 	# usr/include : 15MB
 	FOLDERS_TO_REMOVE='

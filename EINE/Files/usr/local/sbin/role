@@ -50,7 +50,7 @@ usage() {
 usage_manager () {
     echo "role manager IP/SUBNET DEFAULT-GATEWAY INTERNAL-DNS-LIST INTERNAL-DOMAIN-LIST private-ssh_ovpn_CA.tgz"
     echo "Example:"
-    echo "role manager 10.0.12.1/24 10.0.12.2 \"10.0.12.2 10.0.23.2\" eine.bsdrp.net /root/DEMO.keys.tgz"
+    echo "role manager 10.0.12.1/24 10.0.12.2 \"10.0.12.2 10.0.23.2\" eine.bsdrp.net /root/DEMO.private.keys.tgz"
     exit 0
 }
 
@@ -1391,9 +1391,9 @@ include \$PREPROC_RULE_PATH/decoder.rules
 include threshold.conf
 EOF
 
-    cat <<EOF /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/IDS-update.conf
+cat <<EOF > /usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/IDS-update.conf
 # Configuration file for IDS update
-SNORT_REG_URL='https://www.snort.org/rules/snortrules-snapshot-2975.tar.gz?oinkcode=c518cdd4a14803143d1e1b189dc0f7ab9ee09efe'
+SNORT_REG_URL='https://www.snort.org/downloads/community/community-rules.tar.gz'
 SNORT_REG_RULES='
 rules/backdoor.rules
 rules/botnet-cnc.rules
