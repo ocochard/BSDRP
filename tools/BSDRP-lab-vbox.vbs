@@ -398,7 +398,7 @@ Function create_vm (ByVal VM_NAME)
 		
     End if
 	
-	CMD=VB_EXE & " modifyvm " & VM_NAME & " --audio none --memory 256 --vram 5 --boot1 disk --floppy disabled --biosbootmenu disabled"
+	CMD=VB_EXE & " modifyvm " & VM_NAME & " --audio none --memory 256 --vram 9 --boot1 disk --floppy disabled --biosbootmenu disabled"
 	call run(CMD,true)
 
     if VM_CONSOLE="serial" then
