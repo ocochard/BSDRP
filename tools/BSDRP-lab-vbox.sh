@@ -144,10 +144,13 @@ create_template () {
 		die "[ERROR] Can't compres the VDI!"
 
 	# Enable pagefusion (avoid duplicate RAM use between all routers)
+	# pagefusion works only on 64bit host & guest with VT-X/AMD-V
 	if [ "$VM_ARCH" = "FreeBSD_64" ]; then
-		VBoxManage modifyvm ${VM_TPL_NAME} --pagefusion on \
-			>> ${LOG_FILE} 2>&1 || \
-			echo "[WARNING] Can't enable pagefusion"
+		if [ "$MACHINE_TYPE" = "amd64" -o "$MACHINE_TYPE" = "x86_64" ]; then
+			VBoxManage modifyvm ${VM_TPL_NAME} --pagefusion on \
+				>> ${LOG_FILE} 2>&1 || \
+				echo "[WARNING] Can't enable pagefusion"
+		fi
 	fi
 
 	#Save CONSOLE type to extradata
@@ -478,6 +481,7 @@ echo "BSD Router Project (http://bsdrp.net) - VirtualBox lab script"
 echo "BSD Router Project (http://bsdrp.net) - Virtualbox lab script, log file" > ${LOG_FILE}
 
 OS_DETECTED=`uname -s`
+MACHINE_TYPE=`uname -m`
 
 check_system_common
 
@@ -504,8 +508,7 @@ MAX_NIC=`VBoxManage list systemproperties | grep "Maximum ICH9 Network Adapter c
 MAX_VM=$(( $MAX_NIC + 1 ))
 
 set -- $args
-for i
-do
+for i do
 	case "$i" in
 		-a)
 			if [ "$2" = "i386" ]; then
