@@ -359,7 +359,11 @@ start_lab () {
 			if [ "${VBOX_OUTPUT}" = "vnc" ]; then
 				nohup VBoxHeadless --vnc --${VBOX_OUTPUT}port 59${VNC_PORT} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
 			else
-				nohup VBoxHeadless --${VBOX_OUTPUT} on --${VBOX_OUTPUT}port 59${VNC_PORT} --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
+				# --vrdeport seems to have disappeared from VBoxHeadless (at least on 4.3.36)
+				# use VBoxManage modifyvm instead and start with config
+				VBoxManage modifyvm BSDRP_lab_R$i --${VBOX_OUTPUT}port 59${VNC_PORT} || \
+					die "[ERROR] Can't set ${VBOX_OUTPUT}port to 59${VNC_PORT} for VM $i"
+				nohup VBoxHeadless --${VBOX_OUTPUT} config --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
 			fi
 		else
 			nohup VBoxHeadless --startvm BSDRP_lab_R$i >> ${LOG_FILE} 2>&1 &
