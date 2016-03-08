@@ -111,7 +111,7 @@ create_template () {
 
 	# Enabling ICH9 chipset (support 36 NIC)
     VBoxManage modifyvm ${VM_TPL_NAME} --chipset ich9 --audio none \
-		--memory $RAM --vram 8 --boot1 disk --floppy disabled \
+		--memory $RAM --vram 9 --boot1 disk --floppy disabled \
 		>> ${LOG_FILE} 2>&1 || die "[ERROR] Can't customize ${VM_TPL_NAME}"
 
     VBoxManage modifyvm ${VM_TPL_NAME} --biosbootmenu disabled \
