@@ -31,7 +31,9 @@ BOOT_BOOT0_COMCONSOLE_SPEED=0
 # Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
 # Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
 # We would compile symbol files, but not install them by default
-CONF_INSTALL=''
+CONF_INSTALL='
+WITHOUT_INCLUDES=
+'
 
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options or man src.conf for details
@@ -411,7 +413,7 @@ add_port "print/indexinfo"
 add_port "security/libgpg-error"
 add_port "security/libgcrypt"
 add_port "devel/readline"
-add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_NSSA OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
+add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Add Bird
@@ -513,6 +515,19 @@ add_port "net/exabgp"
 #add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
 #add_port "emulators/virtualbox-ose-additions/" "-DWITHOUT_X11 -DWITHOUT_HAL"
 
+# Allow fetching from SSL site
+add_port "security/ca_root_nss"
+
+# Permit BIOS upgrade
+#add_port "sysutils/dmidecode"
+ # Curl is just a build-deps of cmake (needed by libftdi)
+ # But curl need base kerberos, then we remove this deps
+ # And we de-install curl on the custom script
+ #add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE
+#add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
+#add_port "misc/pciids"
+#add_port "devel/libpci"
+add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 #### End of port list section ####
 
 # Add netrate tools

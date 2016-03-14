@@ -1,7 +1,7 @@
 cpu		HAMMER
 ident		BSDRP-AMD64
 
-makeoptions	DEBUG=-g	# Build kernel with gdb(1) debug symbols
+makeoptions	DEBUG=-g		# Build kernel with gdb(1) debug symbols
 makeoptions	WITH_CTF=1		# Run ctfconvert(1) for DTrace support
 
 options 	SCHED_ULE		# ULE scheduler
@@ -157,19 +157,19 @@ device		atkbd		# AT keyboard
 
 device		kbdmux		# keyboard multiplexer
 
-device		vga		# VGA video card driver
-options 	VESA		# Add support for VESA BIOS Extensions (VBE)
+#device		vga		# VGA video card driver
+#options 	VESA		# Add support for VESA BIOS Extensions (VBE)
 
 #device		splash		# Splash screen and screen saver support
 
 # syscons is the default console driver, resembling an SCO console
-device		sc
-options 	SC_PIXEL_MODE	# add support for the raster text mode
+#device		sc
+#options 	SC_PIXEL_MODE	# add support for the raster text mode
 
 # vt is the new video console driver
-#device		vt
-#device		vt_vga
-#device		vt_efifb
+device		vt
+device		vt_vga
+device		vt_efifb
 
 #device		agp		# support several AGP chipsets
 
