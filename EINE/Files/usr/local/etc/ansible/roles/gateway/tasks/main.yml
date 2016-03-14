@@ -1,0 +1,7 @@
+---
+- include: kld.yml
+- include: resolv.yml
+- include: firewall.yml
+- include: openvpn.yml
+- include: bird.yml
+- include: freeradius.yml

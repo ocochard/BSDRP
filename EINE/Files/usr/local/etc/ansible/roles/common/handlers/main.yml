@@ -1,0 +1,11 @@
+---
+- name: restart hostname
+  command: hostname {{inventory_hostname}}
+
+- name: restart netif
+  service: name=netif state=restarted
+
+- name: restart routing
+  service: name=routing state=restarted
+  ignore_errors: yes
+

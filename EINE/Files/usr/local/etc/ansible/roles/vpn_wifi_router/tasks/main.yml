@@ -1,0 +1,38 @@
+---
+- name: Generate rc, openvpn, bird, ipfw, dnsmasq, snort configuration files
+  template: src=/usr/local/etc/ansible/roles/vpn_wifi_router/files/{{ item }}.j2
+    dest=/{{ item }} owner=root group=wheel mode=0644
+  with_items:
+     - etc/rc.conf
+     - etc/ipfw.rules
+     - usr/local/etc/openvpn/openvpn.conf
+     - usr/local/etc/bird.conf
+     - usr/local/etc/dnsmasq.conf
+     - usr/local/etc/IDS-update.conf
+     - usr/local/etc/snort/snort.conf 
+
+- name: copy certificate files
+  action: copy src=/usr/local/etc/ansible/roles/vpn_wifi_router/files/usr/local/etc/openvpn/{{ inventory_hostname }}.{{ item }}
+    dest=/usr/local/etc/openvpn owner=root group=wheel mode=0600
+  with_items:
+     - crt
+     - key
+
+- name: copy files in 0644 mode (sysctl, periodic, hostapd)
+  action: copy src=/usr/local/etc/ansible/roles/vpn_wifi_router/files/{{ item }}
+    dest=/{{ item }} owner=root group=wheel mode=0644
+  with_items:
+     - etc/sysctl.conf
+     - etc/periodic.conf
+     - etc/hostapd-wlan0.conf
+
+- name: copy files in 0755 mode (ovpn-if.sh)
+  action: copy src=/usr/local/etc/ansible/roles/vpn_wifi_router/files/{{ item }}
+    dest=/{{ item }} owner=root group=wheel mode=0755
+  with_items:
+     - usr/local/etc/openvpn/ovpn-if.sh
+
+- name: Forcing IDS database download
+  command: IDS-update
+  changed_when: False
+

@@ -7,6 +7,7 @@
 #
 # foreign_option_1=dhcp-option DNS 10.10.10.1
 # foreign_option_2=dhcp-option DNS 10.10.10.2
+# We don't use the default script $PREFIX/libexec/openvpn-client.up|down
 
 RESOLV_CONF="/tmp/ovpnif-resolv.conf"
 DNSMASQ_CONF="/var/run/ovpnif-dnsmasq.conf"

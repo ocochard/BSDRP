@@ -1,0 +1,241 @@
+# This is a shell archive.  Save it in a file, remove anything before
+# this line, and then unpack it by entering "sh file".  Note, it may
+# create directories; files and directories will be owned by you and
+# have default permissions.
+#
+# This archive contains:
+#
+#	net/mlvpn
+#	net/mlvpn/Makefile
+#	net/mlvpn/distinfo
+#	net/mlvpn/pkg-plist
+#	net/mlvpn/files
+#	net/mlvpn/files/mlvpn.in
+#	net/mlvpn/files/patch-src_tuntap__bsd.c
+#	net/mlvpn/pkg-descr
+#
+echo c - net/mlvpn
+mkdir -p net/mlvpn > /dev/null 2>&1
+echo x - net/mlvpn/Makefile
+sed 's/^X//' >net/mlvpn/Makefile << '990e8e82b10a6a0fbf8dafc14279f78a'
+X# $FreeBSD$
+X
+XPORTNAME=	mlvpn
+XPORTVERSION=	2.3.1
+XCATEGORIES=	net
+X
+XMAINTAINER=	olivier@FreeBSD.org
+XCOMMENT=	Multi-link VPN
+X
+XLICENSE=	BSD2CLAUSE
+XLICENSE_FILE=	${WRKSRC}/LICENCE
+X
+XLIB_DEPENDS=	libev.so:${PORTSDIR}/devel/libev \
+X				libsodium.so:${PORTSDIR}/security/libsodium
+X
+XUSE_GITHUB=	yes
+XGH_ACCOUNT=	zehome
+X
+XWRKSRC=	${WRKDIR}/MLVPN-${PORTVERSION}
+XUSES=	autoreconf libtool pkgconfig
+XGNU_CONFIGURE=	yes
+XCPPFLAGS+=	-I${LOCALBASE}/include
+XLDFLAGS+=	-L${LOCALBASE}/lib
+X
+XUSERS=		mlvpn
+XGROUPS=		mlvpn
+XUSE_RC_SUBR=	mlvpn
+X
+XOPTIONS_DEFINE=	DOCS CONTROL
+XCONTROL_DESC=	Enable UNIX socket/HTTP json remote control API
+X
+XOPTIONS_DEFAULT=	DOCS CONTROL
+X
+X.include <bsd.port.options.mk>
+X
+X.if ! ${PORT_OPTIONS:MCONTROL}
+XCONFIGURE_ARGS+=--disable-control
+X.endif
+X
+Xdo-install:
+X	${INSTALL_PROGRAM} ${WRKSRC}/src/${PORTNAME} ${STAGEDIR}${PREFIX}/sbin/
+X	${INSTALL_MAN} ${WRKSRC}/man/${PORTNAME}.1 ${STAGEDIR}${PREFIX}/man/man1
+X	${INSTALL_MAN} ${WRKSRC}/man/${PORTNAME}.conf.5	${STAGEDIR}${PREFIX}/man/man5
+X	${INSTALL_MAN} ${WRKSRC}/doc/examples/${PORTNAME}.conf.in ${STAGEDIR}${PREFIX}/etc/${PORTNAME}.conf.sample
+X
+Xdo-install-DOCS-on:
+X	${MKDIR} ${STAGEDIR}${DOCSDIR}
+X	${INSTALL_MAN} ${WRKSRC}/doc/examples/mlvpn_updown.sh.in ${STAGEDIR}${DOCSDIR}/mlvpn_updown.sh
+X
+X.include <bsd.port.mk>
+990e8e82b10a6a0fbf8dafc14279f78a
+echo x - net/mlvpn/distinfo
+sed 's/^X//' >net/mlvpn/distinfo << 'd6a304b87799dd1c9fceb2ece414a30c'
+XSHA256 (zehome-mlvpn-2.3.1_GH0.tar.gz) = 4bbe8ae10ccad4ba764d29db0293b3ab523ded5d0a0b5adbe6a8d4d839e4138e
+XSIZE (zehome-mlvpn-2.3.1_GH0.tar.gz) = 83817
+d6a304b87799dd1c9fceb2ece414a30c
+echo x - net/mlvpn/pkg-plist
+sed 's/^X//' >net/mlvpn/pkg-plist << '02b20181f9af8dbd603c276b26ff2ebb'
+Xsbin/mlvpn
+Xman/man1/mlvpn.1.gz
+Xman/man5/mlvpn.conf.5.gz
+X@sample etc/mlvpn.conf.sample
+X%%PORTDOCS%%%%DOCSDIR%%/mlvpn_updown.sh
+02b20181f9af8dbd603c276b26ff2ebb
+echo c - net/mlvpn/files
+mkdir -p net/mlvpn/files > /dev/null 2>&1
+echo x - net/mlvpn/files/mlvpn.in
+sed 's/^X//' >net/mlvpn/files/mlvpn.in << '69a89f942046bac1559b51af2f0f4dff'
+X#!/bin/sh
+X#
+X# mlvpn - load tun/tap driver and start mlvpn daemon
+X#
+X# (C) Copyright 2005 - 2008, 2010 by Matthias Andree
+X# (C) Copyright 2015 Laurent COUSTET (mlvpn modifications)
+X
+X# based on suggestions by Matthias Grimm and Dirk Gouders
+X# with multi-instance contribution from Denis Shaposhnikov, Gleb Kozyrev
+X# and Vasil Dimov
+X# softrestart feature suggested by Nick Hibma
+X#
+X# $FreeBSD$
+X# 
+X# This program is free software; you can redistribute it and/or modify it under
+X# the terms of the GNU General Public License as published by the Free Software
+X# Foundation; either version 2 of the License, or (at your option) any later
+X# version.
+X#
+X# This program is distributed in the hope that it will be useful, but WITHOUT
+X# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+X# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+X# details.
+X#
+X# You should have received a copy of the GNU General Public License along with
+X# this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
+X# Street, Fifth Floor, Boston, MA 02110-1301, USA.
+X
+X# PROVIDE: mlvpn
+X# REQUIRE: DAEMON
+X# KEYWORD: shutdown
+X
+X# -----------------------------------------------------------------------------
+X#
+X# This script supports running multiple instances of mlvpn
+X# To run additional instances link this script to something like
+X# % ln -s mlvpn mlvpn_foo
+X# and define additional mlvpn_foo_* variables in one of
+X# /etc/rc.conf, /etc/rc.conf.local or /etc/rc.conf.d/mlvpn_foo
+X#
+X# Below NAME should be substituted with the name of this script. By default
+X# it is mlvpn, so read as mlvpn_enable. If you linked the script to
+X# mlvpn_foo, then read as mlvpn_foo_enable etc.
+X#
+X# The following variables are supported (defaults are shown).
+X# You can place them in any of
+X# /etc/rc.conf, /etc/rc.conf.local or /etc/rc.conf.d/NAME
+X#
+X# NAME_enable="NO"	# set to YES to enable mlvpn
+X# NAME_if=		# driver(s) to load, set to "tun", "tap" or "tun tap"
+X#			# it is OK to specify the if_ prefix.
+X#
+X# # optional:
+X# NAME_flags=				# additional command line arguments
+X# NAME_configfile="%%PREFIX%%/etc/mlvpn/NAME.conf"	# --config file
+X# NAME_dir="%%PREFIX%%/etc/mlvpn"	# --cd directory
+X#
+X# You also need to set NAME_configfile and NAME_dir, if the configuration
+X# file and directory where keys and certificates reside differ from the above
+X# settings.
+X#
+X# Note that we deliberately refrain from unloading drivers.
+X#
+X# For further documentation, please see http://www.mlvpn.fr/
+X#
+X
+X. /etc/rc.subr
+X
+Xcase "$0" in
+X/etc/rc*)
+X	# during boot (shutdown) $0 is /etc/rc (/etc/rc.shutdown),
+X	# so get the name of the script from $_file
+X	name="$_file"
+X	;;
+X*)
+X	name="$0"
+X	;;
+Xesac
+X
+Xname="${name##*/}"
+Xrcvar=${name}_enable
+X
+Xstop_postcmd()
+X{
+X	rm -f "$pidfile" || warn "Could not remove $pidfile."
+X}
+X
+Xsoftrestart()
+X{
+X    sig_reload=USR1 run_rc_command reload
+X    exit $?
+X}
+X
+X# reload: support SIGHUP to reparse configuration file
+X# softrestart: support SIGUSR1 to reconnect without superuser privileges
+Xextra_commands="reload softrestart"
+Xsoftrestart_cmd="softrestart"
+X
+X# pidfile
+Xpidfile="/var/run/${name}.pid"
+X
+X# command and arguments
+Xcommand="%%PREFIX%%/sbin/mlvpn"
+X
+X# run this last
+Xstop_postcmd="stop_postcmd"
+X
+Xload_rc_config ${name}
+X
+Xeval ": \${${name}_enable:=\"NO\"}"
+Xeval ": \${${name}_configfile:=\"%%PREFIX%%/etc/mlvpn/${name}.conf\"}"
+Xeval ": \${${name}_dir:=\"%%PREFIX%%/etc/mlvpn\"}"
+X
+Xconfigfile="$(eval echo \${${name}_configfile})"
+Xdir="$(eval echo \${${name}_dir})"
+Xinterfaces="$(eval echo \${${name}_if})"
+X
+Xrequired_modules=
+Xfor i in $interfaces ; do
+X    required_modules="$required_modules${required_modules:+" "}if_${i#if_}"
+Xdone
+X
+Xrequired_files=${configfile}
+X
+Xcommand_args="--cd ${dir} --daemon ${name} --config ${configfile} --writepid ${pidfile}"
+X
+Xrun_rc_command "$1"
+69a89f942046bac1559b51af2f0f4dff
+echo x - net/mlvpn/files/patch-src_tuntap__bsd.c
+sed 's/^X//' >net/mlvpn/files/patch-src_tuntap__bsd.c << '8251041bfe64cc11cd4f74a95e1dfcac'
+X--- src/tuntap_bsd.c.orig	2016-03-10 14:57:37 UTC
+X+++ src/tuntap_bsd.c
+X@@ -21,7 +21,7 @@ mlvpn_tuntap_read(struct tuntap_s *tunta
+X     mlvpn_tunnel_t *rtun = NULL;
+X     mlvpn_pkt_t *pkt;
+X     ssize_t ret;
+X-    u_char data[DEFAULT_MTU]
+X+    u_char data[DEFAULT_MTU];
+X     struct iovec iov[2];
+X     uint32_t type;
+X 
+8251041bfe64cc11cd4f74a95e1dfcac
+echo x - net/mlvpn/pkg-descr
+sed 's/^X//' >net/mlvpn/pkg-descr << 'e63de503e27d8fbbb8b3ce47cfe84acb'
+XMLVPN allow to bond your internet links to increase bandwidth, secure your 
+Xinternet connection by actively monitoring your links and removing the faulty 
+Xones, without loosing your TCP connections and secure your internet connection 
+Xto the aggregation server using cryptography.
+X
+XWWW: https://zehome.github.io/MLVPN/
+e63de503e27d8fbbb8b3ce47cfe84acb
+exit
+

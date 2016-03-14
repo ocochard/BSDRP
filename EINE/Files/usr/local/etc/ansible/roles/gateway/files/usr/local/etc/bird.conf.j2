@@ -1,0 +1,55 @@
+#{{ ansible_managed }}
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+#log stderr all;
+
+# Override router ID
+router id {{ if_lo_inet4_addr }};
+
+filter direct_in
+{
+    if net = {{unregistered_inet4_net}}/{{unregistered_inet4_prefix}} then accept;
+    else reject;
+}
+
+# Sync bird routing table with kernel
+protocol kernel {
+    export all;
+    learn;
+    scan time 10;
+}
+
+# Include device route (warning: Generate a device route (/32) for each connected interfaces)
+protocol device {
+    scan time 10;
+}
+
+# Include directly connected network (simulate passive interface)
+protocol direct {
+    interface "tun0";
+}
+
+# Enable OSPF, only on LAN and tun interface to registered client
+protocol ospf GATEWAY {
+    export filter direct_in;	# We advertise only tun0 routes to ospf
+    rfc1583compat yes;
+    area 0.0.0.0 {
+        interface "net1" {
+            cost 10;
+            type broadcast;
+        };
+        interface "tun1" {
+            cost 10;
+            type ptp;
+        };
+        interface "lo1" {
+            stub yes;
+	    };
+    };
+}
+
+protocol static {
+    route 0.0.0.0/0 via {{gateway_inet4}};
+}
+

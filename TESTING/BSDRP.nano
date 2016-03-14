@@ -40,6 +40,7 @@ WITHOUT_KERNEL_SYMBOLS=
 # WITHOUT_KVM= and WITHOUT_KVM_SUPPORT= prevent buildworld to complet (don't know why)
 
 CONF_WORLD='
+WITHOUT_MODULES=cxgb mlxen mlx4 mlx5
 WITHOUT_ACCT=
 WITHOUT_AMD=
 WITHOUT_APM=

@@ -39,7 +39,6 @@ import eine           # EINE functions modules
 
 PREFIX = "/usr/local"
 ANSIBLE_DIR = PREFIX + "/etc/ansible"
-EASYRSA_VARS = PREFIX + "/etc/easy-rsa.vars"
 CLIENT_TPL_DIR = ANSIBLE_DIR + "/roles/vpn_wifi_router"
 GW_TPL_DIR = ANSIBLE_DIR + "/roles/gateway"
 ANSIBLE_HOSTVARS_DIR = ANSIBLE_DIR + "/host_vars"
@@ -107,7 +106,7 @@ def create(args):
 
     # Generate site certificate
     print "Generating site certificate...",
-    if eine.cert_add(args.hostname, EASYRSA_VARS, GW_TPL_DIR, True):
+    if eine.cert_create(args.hostname, GW_TPL_DIR, True):
         print "Done"
     else:
         sys.exit('Can\'t generate certificate')
@@ -214,7 +213,7 @@ def delete(args):
 
     # Revoke and delete site certificate
     print "Revoking and deleting certificate...",
-    if eine.cert_del(args.hostname, EASYRSA_VARS, CLIENT_TPL_DIR,
+    if eine.cert_delete(args.hostname, CLIENT_TPL_DIR,
                      GW_TPL_DIR):
         print "Done"
     else:

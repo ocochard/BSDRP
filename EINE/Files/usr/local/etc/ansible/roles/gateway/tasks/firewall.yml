@@ -1,0 +1,25 @@
+---
+- name: Generate ipfw.rules
+  template: src=/usr/local/etc/ansible/roles/gateway/files/etc/ipfw.rules.j2
+    dest=/etc/ipfw.rules owner=root group=wheel mode=0644
+  tags: firewall
+  notify:
+      - restart firewall
+
+- name: Declare ipfw configuration file
+  lineinfile: dest=/etc/rc.conf regexp=^firewall_script= line='firewall_script="/etc/ipfw.rules"'
+  tags: firewall
+  notify:
+     - restart firewall
+
+- name: enable firewall nat
+  lineinfile: dest=/etc/rc.conf regexp=^firewall_nat_enable= line='firewall_nat_enable="YES"'
+  tags: firewall
+  notify:
+     - restart firewall
+
+- name: enable firewall
+  action: service name=ipfw enabled=yes
+  tags: firewall
+  notify:
+     - restart firewall

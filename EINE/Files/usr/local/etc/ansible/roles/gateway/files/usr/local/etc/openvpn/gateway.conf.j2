@@ -1,0 +1,33 @@
+#{{ ansible_managed }}
+server {{registered_inet4_net}} {{registered_inet4_mask}}
+topology subnet
+dev tun1
+proto udp
+port 1195
+fast-io
+ca ca.crt
+cert {{hostname}}.crt
+key {{hostname}}.key
+dh dh1024.pem
+cipher AES-128-CBC
+tls-auth ta.key 0
+persist-key
+persist-tun
+user nobody
+group nobody
+keepalive 10 60
+crl-verify crl.pem
+status /var/log/openvpn-gateway.log 5
+status-version 2
+client-config-dir ccd
+ifconfig-pool-persist ipp.txt
+# All VPN gateways hosts VPN-routers service on 2.2.2.2
+push "route 2.2.2.2 255.255.255.255"
+# Limiting too big UDP packets (like RADIUS EAP-TLS packets)
+fragment 1400
+# reduce TCP MSS size
+mssfix
+# Next lines (push dhcp-option) will be added by the 'role manager' script
+#push "dhcp-option DOMAIN eine.bsdrp.net"
+#push "dhcp-option DNS 10.0.12.2"
+#push "dhcp-option DNS 10.0.23.2"

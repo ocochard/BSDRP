@@ -1,0 +1,87 @@
+#{{ ansible_managed }}
+# Hostname
+hostname="{{hostname}}"
+
+# Configure first interface as net0 "Internet" interface
+{% if if_internet_device is defined %}
+ifconfig_{{ if_internet_device }}_name="net0"
+{% else %}
+# re0 on APU
+# vtnet0 on VirtIO VM
+# em0 or vmx0 on VMware VM
+# igb on SuperMicro
+ifconfig_re0_name="net0"
+ifconfig_vtnet0_name="net0"
+ifconfig_em0_name="net0"
+ifconfig_vmx0_name="net0"
+ifconfig_igb0_name="net0"
+{% endif %}
+
+# Configure second interface as net1 "Internal" interface
+{% if if_lan_device is defined %}
+ifconfig_{{ if_lan_device }}_name="net1"
+{% else %}
+# APU had 3 NIC, re2 is not used in our case
+ifconfig_re1_name="net1"
+ifconfig_vtnet1_name="net1"
+ifconfig_em1_name="net1"
+ifconfig_vmx1_name="net1"
+ifconfig_igb1_name="net1"
+{% endif %}
+
+# Enable routing
+gateway_enable="YES"
+ipv6_gateway_enable="NO"
+ipv6_activate_all_interfaces="NO"
+rtadvd_enable="NO"
+rtadvd_interfaces="net1 wlan0"
+
+# Configure "Internet" interface as DHCP client
+ifconfig_net0="DHCP"
+
+# Permit to learn default IPv6 route on this interface even with IPv6 routing enabled
+ipv6_cpe_wanif="net0"
+
+# LAN and lo1 interface IP configuration
+cloned_interfaces="lo1"
+ifconfig_lo1="inet {{if_lo_inet4_addr}}/{{if_lo_inet4_prefix}}"
+ifconfig_net1="inet {{if_lan_inet4_addr}}/{{if_lan_inet4_prefix}}"
+
+# Wifi interface
+wlans_{{if_wifi_device}}="wlan0"
+create_args_wlan0="wlanmode hostap"
+ifconfig_wlan0="inet {{if_wifi_inet4_addr}}/{{if_wifi_inet4_prefix}} hostap channel 5"
+
+# Firewall
+firewall_enable="YES"
+firewall_nat_enable="YES"
+firewall_script="/etc/ipfw.rules"
+
+# Enable RFC1323 extensions
+tcp_extensions="YES"
+
+# Enable SSH by default
+sshd_enable="YES"
+
+# Load APU LED module drivers and amdtemp
+kld_list="apuled amdtemp wlan_xauth ipdivert"
+
+# Loop script that is waiting for RESET
+resetcheck_enable="YES"
+
+# Enable OpenVPN
+openvpn_enable="YES"
+
+# Enable bird
+bird_enable="YES"
+
+# Enable DNSmasq
+dnsmasq_enable="YES"
+
+# Forcing date setup by NTP at boot is mandatory
+# Certificate date are checked
+ntpdate_enable="YES"
+
+# Enable IDPS
+snort_enable="YES"
+

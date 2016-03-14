@@ -1,0 +1,14 @@
+---
+- name: enable bird
+  action: service name=bird enabled=yes
+  tags: bird
+  notify:
+     - restart bird
+
+- name: Generate bird.conf file
+  template: src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/bird.conf.j2
+    dest=/usr/local/etc/bird.conf owner=root group=wheel mode=0600
+    validate='bird -pc %s'
+  tags: bird
+  notify:
+      - restart bird

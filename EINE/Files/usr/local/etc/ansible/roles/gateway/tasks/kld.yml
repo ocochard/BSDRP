@@ -1,0 +1,6 @@
+---
+- name: Declare kernel modules to load
+  lineinfile: dest=/etc/rc.conf regexp=^kld_list= line='kld_list=="coretemp ipmi aesni"'
+  tags: kld
+  notify:
+     - start kld

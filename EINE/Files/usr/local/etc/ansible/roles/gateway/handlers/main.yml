@@ -1,0 +1,21 @@
+---
+- name: start kld
+  service: name=kld state=restarted
+
+- name: stop openvpn
+  service: name=openvpn state=stopped
+
+- name: restart openvpn_registration
+  service: name=openvpn_registration state=restarted
+
+- name: restart openvpn_gateway
+  service: name=openvpn_gateway state=restarted
+
+- name: restart bird
+  service: name=bird state=restarted
+
+- name: restart firewall
+  service: name=ipfw state=restarted
+
+- name: restart freeradius
+  service: name=radiusd state=restarted

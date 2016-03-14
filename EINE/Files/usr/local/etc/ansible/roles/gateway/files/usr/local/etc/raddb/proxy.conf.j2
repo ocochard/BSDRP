@@ -1,0 +1,29 @@
+#{{ ansible_managed }}
+{% for host in radius_servers %}
+home_server {{ host.name }} {
+    type = auth+acct
+    ipaddr = {{ host.ip }}
+    port = {{ host.port }}
+    secret = "{{ host.password }}"
+    require_message_authenticator = yes
+    response_window = 20
+    zombie_period = 40
+    revive_interval = 120
+    status_check = status-server
+    check_interval = 30
+    num_answers_to_alive = 3
+}
+{% endfor %}
+
+home_server_pool eap_radius_servers {
+    type = fail-over
+{% for host in radius_servers %}
+    home_server = {{ host.name }}
+{% endfor %}
+}
+
+realm NULL {
+        nostrip
+        auth_pool = eap_radius_servers
+        acct_pool = eap_radius_servers
+}

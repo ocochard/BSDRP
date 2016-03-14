@@ -1,0 +1,10 @@
+---
+- name: Checking configuration saved status
+  command: config diff quiet
+  register: config_status
+  changed_when: "config_status.rc != 0"
+  ## BUG that trigger changed in all case
+  failed_when: "'ERROR' in config_status.stderr"
+  tags: saving
+  notify:
+     - config save

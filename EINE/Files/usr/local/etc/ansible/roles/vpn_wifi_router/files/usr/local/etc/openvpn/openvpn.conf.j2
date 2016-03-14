@@ -1,0 +1,26 @@
+#{{ ansible_managed }}
+client
+dev tun0
+proto udp
+nobind
+{% for host in groups['gateways'] %}
+remote {{ hostvars[host]['hostname'] }}.eine.orange-business.com 1195
+{% endfor %}
+ca ca.crt
+cert {{hostname}}.crt
+key {{hostname}}.key
+cipher AES-128-CBC
+remote-cert-tls server
+tls-auth ta.key 1
+persist-key
+persist-tun
+user nobody
+group nobody
+fast-io
+explicit-exit-notify
+log-append /var/log/openvpn.log
+script-security 2
+up /usr/local/etc/openvpn/ovpn-if.sh
+plugin /usr/local/lib/openvpn/plugins/openvpn-plugin-down-root.so "/usr/local/etc/openvpn/ovpn-if.sh"
+fragment 1400
+mssfix

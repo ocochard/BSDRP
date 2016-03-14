@@ -1,0 +1,29 @@
+#{{ ansible_managed }}
+server {{unregistered_inet4_net}} {{unregistered_inet4_mask}}
+topology p2p
+dev tun0
+proto udp
+port 1194
+fast-io
+ca ca.crt
+cert {{hostname}}.crt
+key {{hostname}}.key
+dh dh1024.pem
+cipher AES-128-CBC
+tls-auth ta.key 0
+persist-key
+persist-tun
+user nobody
+group nobody
+keepalive 10 60
+status /var/log/openvpn-registration.log 5
+status-version 2
+duplicate-cn
+# Very important feature for limiting too big UDP packet (RADIUS with EAP-TLS)
+fragment 1400
+# reduce TCP MSS size
+mssfix
+# Need to reload ipfw after creating tun0
+script-security 2
+up /usr/local/etc/openvpn/ovpn-registration.sh
+down /usr/local/etc/openvpn/ovpn-registration.sh

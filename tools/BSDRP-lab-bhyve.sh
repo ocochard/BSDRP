@@ -3,7 +3,7 @@
 # Bhyve lab script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2013-2015, The BSDRP Development Team
+# Copyright (c) 2013-2016, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@ FILE=""
 LAN=0
 MESHED=true
 RAM="256M"
-PATCH_SERIAL=false
+VALE=false
 
 usage() {
 	# $1: Cause of displaying usage
@@ -56,6 +56,7 @@ usage() {
 	echo " -n X         Number of VM full meshed (default ${NUMBER_VM})"
 	echo " -p           Patch FreeBSD disk-image for serial output (useless with BSDRP images or FreBSD >= 10.1)"
 	echo " -s           Stop all VM"
+	echo " -V           Use vale (netmap) switch in place of bridge+tap"
 	echo " -w dirname   Working directory (default ${WRK_DIR})"
 	echo " This script needs to be executed with superuser privileges"
 	echo ""
@@ -75,10 +76,12 @@ check_bhyve_support () {
 	load_module vmm
 	# Same for serial console nmdm
 	load_module nmdm
-	# Same for if_tap
-	load_module if_tap
-	# Enable net.link.tap.up_on_open
-	sysctl net.link.tap.up_on_open=1 > /dev/null 2>&1 || echo "Warning: Can't enable net.link.tap.up_on_open"
+	if ( ! ${VALE} ); then
+		# Same for if_tap
+		load_module if_tap
+		# Enable net.link.tap.up_on_open
+		sysctl net.link.tap.up_on_open=1 > /dev/null 2>&1 || echo "Warning: Can't enable net.link.tap.up_on_open"
+	fi
 }
 
 load_module () {
@@ -262,7 +265,7 @@ create_interface() {
 [ $# -lt 1 -a ! -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ `id -u` -ne 0 ] && usage "ERROR: not executed as root"
 
-args=`getopt ac:dhi:l:m:n:spw: $*`
+args=`getopt ac:dhi:l:m:n:sVw: $*`
 
 set -- $args
 for i; do
@@ -307,16 +310,15 @@ for i; do
 		shift
 		shift
 		;;
-	-p)
-		PATCH_SERIAL=true
-		shift
-		shift
-		;;
 	-s)
 		stop_all_vm
 		return 0
 		shift
 		;;
+	-V)
+		VALE=true
+		shift
+		;;	
 	-w)
 		WRK_DIR=$2
 		[ -d ${WRK_DIR} ] || usage "ERROR: Working directory not found"
@@ -333,7 +335,6 @@ done #for
 # Check user input
 [ ! -f ${VM_TEMPLATE} -a -z "${FILE}" ] && usage "ERROR: No previous template \
 	neither image filename given"
-#[ -z "${FILE}" -a ( ${PATCH_SERIAL} ) ] && usage "Image filename mandatory for patching it"
 # If default number of VM and LAN, then create at least one LAN
 [ ${NUMBER_VM} -eq 1 -a ${LAN} -eq 0 ] && LAN=1
 
@@ -344,7 +345,6 @@ check_bhyve_support
 # if input image given, need to prepare it
 if [ -n "${FILE}" ]; then
 	uncompress_image
-	( ${PATCH_SERIAL} ) && adapt_image_console
 fi
 
 # Clean-up previous interfaces if existing
@@ -354,6 +354,8 @@ echo "BSD Router Project (http://bsdrp.net) - bhyve full-meshed lab script"
 echo "Setting-up a virtual lab with $NUMBER_VM VM(s):"
 echo "- Working directory: ${WRK_DIR}"
 echo "- Each VM have ${CORE} core(s) and ${RAM} RAM"
+echo -n "- Switch mode: "
+( ${VALE} ) && echo "vale (netmap)" || echo "bridge + tap"
 echo "- $LAN LAN(s) between all VM"
 ( ${MESHED} ) && echo "- Full mesh Ethernet links between each VM"
 
@@ -400,15 +402,34 @@ while [ $i -le $NUMBER_VM ]; do
 				[ $j -le 9 ] && MAC_J="0$j" || MAC_J="$j"
 				# We allways use "low number - high number" for identify cables
 				if [ $i -le $j ]; then
-					BRIDGE_IF=$( create_interface MESH_${i}-${j} bridge )
-					TAP_IF=$( create_interface MESH_${i}-${j}_${i} tap ${BRIDGE_IF} )
+					if (${VALE} ); then
+						SW_CMD="vale${i}${j}:${VM_NAME}_$i"
+					else
+						BRIDGE_IF=$( create_interface MESH_${i}-${j} bridge )
+						TAP_IF=$( create_interface MESH_${i}-${j}_${i} tap ${BRIDGE_IF} )
+						SW_CMD=${TAP_IF}
+					fi
+					#eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
+#${TAP_IF},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
+					#eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
+#vale${VALE}:${VM_NAME}_$i,mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
 					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
-${TAP_IF},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
+${SW_CMD},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
+				
 				else
-					BRIDGE_IF=$( create_interface MESH_${j}-${i} bridge )
-					TAP_IF=$( create_interface MESH_${j}-${i}_${i} tap ${BRIDGE_IF} )
+					if (${VALE} ); then
+						SW_CMD="vale${j}${i}:${VM_NAME}_$i"
+					else	
+						BRIDGE_IF=$( create_interface MESH_${j}-${i} bridge )
+						TAP_IF=$( create_interface MESH_${j}-${i}_${i} tap ${BRIDGE_IF} )
+						SW_CMD=${TAP_IF}
+					fi
+					#eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
+#${TAP_IF},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
+					#eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
+#vale${VALE}:${VM_NAME}_$i,mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
-${TAP_IF},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
+${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 				fi
 				NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
 			fi
@@ -433,10 +454,15 @@ ${TAP_IF},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 		PCI_SLOT=$(( ${NIC_NUMBER} - 8 * ${PCI_BUS} ))
 		# All PCI_BUS before 2 are already used
 		PCI_BUS=$(( ${PCI_BUS} + 2 ))
-		BRIDGE_IF=$( create_interface LAN_${j} bridge )
-		TAP_IF=$( create_interface LAN_${j}_${i} tap ${BRIDGE_IF} ) 
+		if (${VALE} ); then
+			SW_CMD="vale${j}:${VM_NAME}_$i"
+		else
+			BRIDGE_IF=$( create_interface LAN_${j} bridge )
+			TAP_IF=$( create_interface LAN_${j}_${i} tap ${BRIDGE_IF} )
+			SW_CMD=${TAP_IF}
+		fi
 		eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
-${TAP_IF},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
+${SW_CMD},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
         NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
         j=$(( $j + 1 ))
 	done # while [ $j -le $LAN ]

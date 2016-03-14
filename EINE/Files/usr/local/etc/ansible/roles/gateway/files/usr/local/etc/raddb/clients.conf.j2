@@ -1,0 +1,8 @@
+#{{ ansible_managed }}
+client vpnwifirouter {
+        ipaddr = {{registered_inet4_net}}/{{registered_inet4_prefix}}
+        proto = udp
+        secret = "averylongpassword"
+        require_message_authenticator = yes
+        nas_type = other
+}

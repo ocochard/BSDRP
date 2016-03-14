@@ -1,0 +1,37 @@
+---
+- name: Configure hostname
+  lineinfile: dest=/etc/rc.conf regexp=^hostname= line='hostname="{{inventory_hostname}}"'
+  tags: hostname
+  notify:
+     - restart hostname
+
+- name: Configure IP on internal interface
+  lineinfile: dest=/etc/rc.conf regexp=^ifconfig_net1= line='ifconfig_net1="inet {{if_int_inet4_addr}}/{{if_int_inet4_prefix}}"'
+  tags: interface
+  notify:
+     - restart netif
+
+- name: Configure IP on interface net0
+  lineinfile: dest=/etc/rc.conf regexp=^ifconfig_net0= line='ifconfig_net0="inet {{if_ext_inet4_addr}}/{{if_ext_inet4_prefix}}"'
+  tags: interface
+  notify:
+     - restart netif
+
+- name: Create additionnal loopback interfaces
+  lineinfile: dest=/etc/rc.conf regexp=^cloned_interfaces= line='cloned_interfaces="lo1 lo2"'
+  tags: interface
+  notify:
+     - restart netif
+ 
+- name: Configure loopback interface
+  lineinfile: dest=/etc/rc.conf regexp=^ifconfig_lo1= line='ifconfig_lo1="inet {{if_lo_inet4_addr}}/{{if_lo_inet4_prefix}}"'
+  tags: interface
+  notify:
+     - restart netif
+
+- name: Configure loopback interface lo2
+  lineinfile: dest=/etc/rc.conf regexp=^ifconfig_lo2= line='ifconfig_lo2="inet 2.2.2.2/32"'
+  tags: interface
+  notify:
+     - restart netif
+

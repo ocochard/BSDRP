@@ -1,0 +1,20 @@
+---
+- name: Generate proxy.conf
+  template: src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/raddb/proxy.conf.j2
+    dest=/usr/local/etc/raddb/proxy.conf owner=root group=wheel mode=0600
+  tags: freeradius
+  notify:
+      - restart freeradius
+
+- name: Generate clients.conf
+  template: src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/raddb/clients.conf.j2
+    dest=/usr/local/etc/raddb/clients.conf owner=root group=wheel mode=0644
+  tags: freeradius
+  notify:
+      - restart freeradius
+
+- name: enable radius
+  action: service name=radiusd enabled=yes
+  tags: freeradius
+  notify:
+     - restart freeradius

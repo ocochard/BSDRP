@@ -1,0 +1,3 @@
+---
+- include: gateways.yml
+- include: vpn_wifi_routers.yml

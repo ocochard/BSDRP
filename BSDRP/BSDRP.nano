@@ -453,6 +453,8 @@ add_port "net/mpd5"
 #	add_port "net/netmap-fwd"
 #fi
 
+add_port "net/mlvpn"
+
 # Add openvpn
 add_port "security/easy-rsa"
 add_port "archivers/lzo2"

@@ -1,0 +1,87 @@
+---
+- name: Stop OpenVPN
+  lineinfile: dest=/etc/rc.conf regexp=^openvpn_enable line='openvpn_enable="NO"'
+  tags: openvpn
+  notify:
+     - stop openvpn
+ 
+- name: Generate multiple rc scripts for gateway and registration
+  file: src=/usr/local/etc/rc.d/openvpn dest=/usr/local/etc/rc.d/openvpn_{{ item }} state=link
+  with_items:
+     - gateway
+     - registration
+  notify:
+     - restart openvpn_gateway
+     - restart openvpn_registration
+
+- name: enable openvpn_gateway
+  action: service name=openvpn_gateway enabled=yes
+  tags: openvpn
+  notify:
+     - restart openvpn_gateway
+
+- name: enable openvpn_registration
+  action: service name=openvpn_registration enabled=yes
+  tags: openvpn
+  notify:
+     - restart openvpn_registration
+
+- name: copy certificate files
+  action: copy src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/{{ inventory_hostname }}.{{ item }}
+    dest=/usr/local/etc/openvpn owner=root group=wheel mode=0600
+  with_items:
+     - crt
+     - key
+  notify:
+     - restart openvpn_registration
+     - restart openvpn_gateway
+
+- name: copy crl file
+  action: copy src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/crl.pem
+    dest=/usr/local/etc/openvpn owner=root group=wheel mode=0664
+  tags:
+     - openvpn
+     - crl
+
+- name: copy script
+  action: copy src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/{{ item }}
+    dest=/usr/local/etc/openvpn owner=root group=wheel mode=0711
+  with_items:
+     - ovpn-registration.sh
+  notify:
+     - restart openvpn_registration
+
+- name: creates ccd directory
+  action: file path=/usr/local/etc/openvpn/ccd state=directory
+  tags:
+     - openvpn
+     - ccd
+
+- name: Copy all files from ccd/*
+  action: copy src={{ item}} dest=/usr/local/etc/openvpn/ccd
+  tags:
+    - openvpn
+    - ccd
+  with_fileglob:
+    - /usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/ccd/*
+
+- name: Set configuration file
+  lineinfile: dest=/etc/rc.conf regexp=^openvpn_{{item}}_configfile= line='openvpn_{{item}}_configfile="/usr/local/etc/openvpn/{{item}}.conf"'
+  tags: openvpn
+  with_items:
+      - gateway
+      - registration
+  notify:
+     - restart openvpn_registration
+     - restart openvpn_gateway
+
+- name: Generate gateway.conf and registration files
+  template: src=/usr/local/etc/ansible/roles/gateway/files/usr/local/etc/openvpn/{{item }}.conf.j2
+    dest=/usr/local/etc/openvpn/{{item}}.conf owner=root group=wheel mode=0644
+  tags: openvpn
+  with_items:
+     - gateway
+     - registration
+  notify:
+      - restart openvpn_gateway
+      - restart openvpn_registration

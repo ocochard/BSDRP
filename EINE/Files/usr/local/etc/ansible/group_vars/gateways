@@ -1,0 +1,10 @@
+---
+radius_servers:
+  - name: radius1
+    ip: 10.10.10.10
+    port: 1645
+    password: averylongpassword
+  - name: radius2
+    ip: 10.10.10.20
+    port: 1645
+    password: averylongpassword

@@ -377,8 +377,8 @@ add_port "lang/python2"
 add_port "devel/py-setuptools27"
 
 # Add modules to the native FreeBSD bsnmpd daemon:
-add_port "net-mgmt/bsnmp-regex"
-add_port "net-mgmt/bsnmp-ucd"
+#add_port "net-mgmt/bsnmp-regex"
+#add_port "net-mgmt/bsnmp-ucd"
 
 # routing protocol
 add_port "net/bird"
@@ -451,10 +451,10 @@ add_port "devel/py-pytz"
 add_port "devel/py-babel"
 add_port "devel/py-Jinja2"
 add_port "security/py-keyczar"
+add_port "net/py-netaddr"
 add_port "sysutils/ansible"
 
 # Some python modules used by our helper scripts
-add_port "net/py-netaddr"
   add_port "net/libmaxminddb"
   add_port "devel/py-ipaddr"
  add_port "net/py-maxminddb"
@@ -572,6 +572,11 @@ eine_custom () {
 
     # Declare the port to be used for SSHd:
     echo "Port ${SSH_PORT}" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
+
+	# configure ansible configuration file
+    echo " ansible_ssh_port: ${SSH_PORT}" >> ${NANO_WORLDDIR}/usr/local/etc/ansible/group_vars/freebsd
+	echo " ansible_ssh_user: ${ADMIN_USERNAME}" >> ${NANO_WORLDDIR}/usr/local/etc/ansible/group_vars/freebsd
+
     # Allow this port into the firewall:
     echo "firewall_myservices=\"${SSH_PORT}/tcp\"" >> ${NANO_WORLDDIR}/etc/rc.conf
     # Restrict SSHD to only accept conection from admin user:
@@ -618,7 +623,7 @@ eine_custom () {
         echo "Don't use these DEMO keys on Internet-connected machines"
         tar cvfz ${NANO_WORLDDIR}/root/DEMO.private.keys.tgz -C ${DATA_DIR} easy-rsa.vars id_ed25519 keys
     fi
-
+	
 	# turn on noatime for /cfg
 	sed -i "" -e "/cfg/s/rw/rw,noatime/" ${NANO_WORLDDIR}/etc/fstab
 	# Add /data partition to fstab (config script use it for archiving old configurations)

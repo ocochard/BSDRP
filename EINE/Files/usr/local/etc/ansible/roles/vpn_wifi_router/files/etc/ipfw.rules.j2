@@ -1,0 +1,80 @@
+#!/bin/sh
+#{{ ansible_managed }}
+### WARNING ###
+# When this rules is loaded during boot, tun0 interface didn't exist
+# Then ALL traffic on tun0 is denied: Firewall rules NEED to be reloaded with openvpn-if-up script
+# Theses rules NEEDS: net.inet.ip.fw.one_pass=0
+# With the default net.inet.ip.fw.one_pass=1, the incoming nat rule is the last rule for matched packet
+fwcmd="/sbin/ipfw -q"
+fwadd="${fwcmd} add"
+LANS="{{if_lan_inet4_net}}/{{if_lan_inet4_prefix}},{{if_wifi_inet4_net}}/{{if_wifi_inet4_prefix}}"
+# Interfaces description:
+# net0 is [UNSECURE] Internet facing NIC
+# tun0 is registered OpenVPN tunnel interface
+# net1 is local/internal facing NIC
+# wlan0 is local/internal facing Wireless NIC
+# lo1 is loopback interface used for managment
+
+## Flush out the list before we begin.
+${fwcmd} -f flush
+
+#### Section: NAT table creation ####
+# Create a NAT table for outgoing Internet traffic using Internet NIC source IP
+# Option "deny-in" is to be used only with net.inet.ip.fw.one_pass=1 mode
+${fwcmd} nat 1 config if net0 log same_ports unreg_only reset
+# Create a second NAT table just for forcing RADIUS request to use tunnel as source IP
+# hostapd can't bind specific interface and will use bad source IP
+${fwcmd} nat 2 config if tun0 log same_ports unreg_only reset
+
+#### Section: Trusted Interfaces ####
+# Didn't filter on loopback and internal interfaces
+${fwadd} pass ip from any to any via lo0
+${fwadd} pass ip from any to any via lo1
+${fwadd} pass ip from any to any via net1
+${fwadd} pass ip from any to any via wlan0
+
+#### Section: Incomming rules ####
+# Re-assemble input fragmented packets received on Internet interface
+${fwadd} reass ip from any to any in recv net0
+# NAT back incoming packets
+${fwadd} nat 1 ip from any to any in recv net0
+${fwadd} nat 2 ip from any to any in recv tun0
+# Now that incoming traffic from tunnel is NATed back, we trust all traffic from it
+${fwadd} allow ip from any to any in recv tun0
+# Check incoming packets against statefull table
+# This imply to take action registered during state creation (allow/deny/skipto)
+${fwadd} check-state
+
+#### Section: Outgoing rules to Internet ####
+# Allow internal LANs to exit to Internet by creating a statefull entry with action "skipto" NAT section
+# The statefull table will include private addresses (because called BEFORE NAT rule)
+${fwadd} skipto 2000 ip from ${LANS} to any out xmit net0 keep-state
+# Allow firewall to exit to Internet with statefull protection
+#  ICMP
+${fwadd} pass icmp from me to any out xmit net0 keep-state
+#  DNS, BOOTPS, NTP and OpenVPN
+${fwadd} pass udp from me to any 53,67,123,1195 out xmit net0 keep-state
+#  HTTP and HTTPS (Firmware or IDS signatures download)
+${fwadd} pass tcp from me to any 80,443 out xmit net0 setup keep-state
+
+#### Section: Outgoing rules to Tunnel ####
+# NAT source IP for packets going to RADIUS ONLY
+# hostapd can't bind a specific interface, but we need to force it using tunnel address as source
+${fwadd} nat 2 udp from me to 2.2.2.2 1812,1813 out xmit tun0
+# Allow LANs and firewall to exit to Tunnel
+${fwadd} pass ip from ${LANS} to any xmit tun0
+${fwadd} pass ip from me to any xmit tun0
+
+#### Last rule: Deny all the rest
+${fwadd} deny ip from any to any
+
+#### External skipto section: IDS and NAT Internet traffic
+# Packets directed here are:
+#   1. outgoing from LANs to Internet (they are still not NATed)
+#   2. incomming from Internet and matching a session (they are already unNATed)
+# Then for all these packets, we send them to the IDS
+${fwadd} 2000 divert 8000 ip from any to any via net0
+# We NAT only outgoing packets
+${fwadd} nat 1 ip from any to any out xmit net0
+# Now we alllow boths direction packets
+${fwadd} allow ip from any to any via net0

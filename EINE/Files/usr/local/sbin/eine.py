@@ -1,8 +1,9 @@
 #!/usr/bin/env python2.7
+# vim: sta:et:sw=4:ts=4:sts=4
 # -*- coding: utf-8 -*-
 "EINE module for all functions"
 #
-# Copyright (c) 2014-2015, Orange
+# Copyright (c) 2014-2016, Orange
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -122,36 +123,40 @@ def is_online(address):
     "This test online status by a simple ping"
     return shell(['ping', '-c 2', address])
 
+def pki_create(customer, pki_dir):
+    "This create a pki for customer (including management)"
+    return True
 
-def cert_add(hostname, easyvars, ansible_tpl, gateway=False):
-    "This generate certificate using pkitool"
-    # pkitool need environnement variable defined in easy-rsa.vars
-    # We need to load and parse this file to a list for being by popen
-    environement = source(easyvars)
-    environement['KEY_CN'] = hostname
-    environement['KEY_NAME'] = hostname
-    if gateway:
-        cmd = ["./pkitool", "--server", hostname]
+def cert_create(hostname, model, customer, template_dir, pki_dir, server_cert=False):
+    "This create certificate using easy-rsa 3"
+    environement['EASYRSA'] = pki_dir + '/' + customer
+    if server_cert:
+        cmd = ["easyrsa", "build-server-full", hostname, "nopass"]
     else:
-        cmd = ["./pkitool", hostname]
-    pkitool = subprocess.Popen(cmd, cwd=environement['EASY_RSA'],
+        cmd = ["easyrsa", "build-client-full", hostname, "nopass"]
+    easyrsa = subprocess.Popen(cmd,
                                env=environement, stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
-    out = pkitool.communicate()[0]
+    out = easyrsa.communicate()[0]
+    if easyrsa.returncode != 0:
+        print out
+        return False
+    else:
+        return True
     # Because we can't use the pktitool returncode (allways failed)
     # we need to check if crt size greater than 0
-    if os.path.getsize(environement['KEY_DIR'] + '/' + hostname
+    if os.path.getsize(environement['EASYRSA'] + '/pki/issued/' + hostname
                        + '.crt') == 0:
         print out
         return False
-    for key in glob.glob(environement['KEY_DIR'] + '/' + hostname + '.*'):
-        shutil.copy2(key, ansible_tpl + '/files/usr/local/etc/openvpn/')
+    for key in glob.glob(environement['EASYRSA'] + '/' + pki_dir + '/issued/' + hostname + '.*'):
+        shutil.copy2(key, template_dir + '/files/usr/local/etc/openvpn/')
     return True
 
 
-def cert_del(hostname, easyvars, client_tpl, gw_tpl, gateway=False):
+def cert_delete(hostname, easyvars, client_tpl, gw_tpl, server=False):
     "This delete host's certificate"
-
+    environement['EASYRSA'] = "/usr/local/etc/easy-rsa"
     environement = source(easyvars)
     environement['KEY_CN'] = hostname
     environement['KEY_NAME'] = hostname
@@ -186,7 +191,7 @@ def cert_del(hostname, easyvars, client_tpl, gw_tpl, gateway=False):
     for cert in glob.glob(environement['KEY_DIR'] + '/' + hostname + '.*'):
         os.remove(cert)
 
-    if not gateway:
+    if not server:
         # delete certificate files in client template
         for cert in glob.glob(client_tpl + '/files/usr/local/etc/openvpn/'
                               + hostname + '.*'):
@@ -215,7 +220,7 @@ def is_in_hosts(hostname):
 def backup_hosts():
     "This backup hosts file"
     try:
-         shutil.copy2('/etc/hosts','/tmp/hosts')
+        shutil.copy2('/etc/hosts', '/tmp/hosts')
     except:
         return False
     return True
@@ -223,7 +228,7 @@ def backup_hosts():
 def restore_hosts():
     "This restore hosts file"
     try:
-        shutil.copy2('/tmp/hosts','/etc/hosts')
+        shutil.copy2('/tmp/hosts', '/etc/hosts')
     except:
         return False
     return True
@@ -243,9 +248,9 @@ def sshkey_add(hostname, known_hosts):
     # But for that we need to know the SSH port to used first
     with open('/usr/local/etc/ansible/group_vars/freebsd', 'r') as var:
         group_vars = yaml.load(var)
-    
-    ssh = subprocess.Popen('ssh-keyscan -t ed25519 -p ' + str(group_vars['ansible_ssh_port']) + ' ' + hostname
-                           + ' >> ' + known_hosts, shell=True,
+    ssh = subprocess.Popen('ssh-keyscan -t ed25519 -p '
+                           + str(group_vars['ansible_ssh_port']) + ' '
+                           + hostname + ' >> ' + known_hosts, shell=True,
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     #out = ssh.communicate()[0]
     ssh.wait()
@@ -258,9 +263,9 @@ def sshkey_del(hostname, known_hosts):
     "This delete host SSH key from known_hosts"
     # Can't use ssh-keygen -R: It's buggy
     found = False
-    for line in fileinput.input(known_hosts,inplace =1):
+    for line in fileinput.input(known_hosts, inplace=1):
         line = line.strip()
-        if not hostname in line:
+        if hostname not in line:
             print line
         else:
             found = True
@@ -292,7 +297,11 @@ def source(script):
     pipe = subprocess.Popen(". %s 2>&1 >/dev/null; env" % script,
                             stdout=subprocess.PIPE, shell=True)
     data = pipe.communicate()[0]
-    env = dict((line.split("=", 1) for line in data.splitlines()))
+    try:
+        env = dict((line.split("=", 1) for line in data.splitlines()))
+    except ValueError:
+        print "Can't source this output:"
+        print data
     return env
 
 
@@ -331,12 +340,13 @@ def inventory_list(group, inv_file, hostvars_dir):
         return False
 
 
-def inventory_add(hostname, group, inv_file):
-    " This add host to the ansible inventory file"
+def inventory_add(hostname, customer, model, inv_file):
+    " This add host to ansible inventory file"
     # Loading Parser
     inventory = ConfigParser.SafeConfigParser(allow_no_value=True)
     inventory.read(inv_file)
-    # Adding section and client
+    # Adding group section and add device
+    group = customer + '_' + model
     if not inventory.has_section(group):
         inventory.add_section(group)
     if inventory.has_option(group, hostname):
@@ -346,13 +356,15 @@ def inventory_add(hostname, group, inv_file):
         inventory.set(group, hostname)
     if not inventory.has_option('freebsd:children', group):
         inventory.set('freebsd:children', group)
+    if not inventory.has_option(model+':children', group):
+        inventory.set(model+':children', group)
     with open(inv_file, 'w') as inv:
         inventory.write(inv)
     return True
 
 
 def inventory_del(hostname, group, inv_file):
-    " This remove host from the ansible inventory file"
+    " This remove host from ansible inventory file"
     # Loading Parser
     inventory = ConfigParser.SafeConfigParser(allow_no_value=True)
     inventory.read(inv_file)

@@ -1,4 +1,9 @@
 # We need to use the GENERIC-NODEBUG kernel for this TESTING sub-project
 #  because changes in GENERIC can be not compatible between revision
-include         GENERIC-NODEBUG
+include         GENERIC
 ident           BSDRP-AMD64
+nooptions       INVARIANTS
+nooptions       INVARIANT_SUPPORT
+nooptions       WITNESS
+nooptions       WITNESS_SKIPSPIN
+nooptions       DEADLKRES

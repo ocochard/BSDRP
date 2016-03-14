@@ -1,0 +1,47 @@
+#{{ ansible_managed }}
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+#log stderr all;
+
+# Override router ID
+router id {{ if_lo_inet4_addr }};
+
+filter kernel_in
+{
+    # Prevent to put the default-route (already learn by DHCP) into the kernel table
+    if net =  0.0.0.0/0 then reject;
+    else accept;
+}
+
+# Sync bird routing table with kernel
+protocol kernel {
+    export filter kernel_in;
+    learn;
+    scan time 10;
+}
+
+# Include device route (warning, a device route is a /32)
+protocol device {
+    scan time 10;
+}
+
+# Enable OSPF, only on tun interface
+protocol ospf CLIENT {
+    rfc1583compat yes;
+    area 0.0.0.0 {
+        interface "tun0" {
+            cost 10;
+            type ptp;
+        };
+        interface "lo1" {
+            stub yes;
+        };
+        interface "net1" {
+            stub yes;
+        };
+         interface "wlan0" {
+            stub yes;
+        };
+    };
+}

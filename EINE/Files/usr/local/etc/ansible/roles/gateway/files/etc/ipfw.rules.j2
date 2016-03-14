@@ -1,0 +1,39 @@
+#!/bin/sh
+#{{ ansible_managed }}
+fwcmd="/sbin/ipfw"
+# Interfaces description:
+# net0 is [UNSECURE] Internet facing NIC
+# tun0 is [SECURE] registered OpenVPN tunnel interface
+# net1 is [SECURE] local/internal facing NIC
+# wlan0 is [SECURE] local/internal facing Wireless NIC
+# lo1 is [SECURE] loopback interface used for managment
+# Get the SSH port (should be the same on the manager)
+SSH_PORT=`grep '^Port [[:digit:]]' /etc/ssh/sshd_config  | cut -d ' ' -f 2`
+[ ${SSH_PORT} -lt 1 -o ${SSH_PORT} -gt 65535 ] && SSH_PORT=22
+# Get the OpenVPN port list
+#OVPN_GW_PORT=`grep '^port [[:digit:]]' /usr/local/etc/openvpn/gateway.conf | cut -d ' ' -f 2`
+OVPN_PORT=`grep '^port [[:digit:]]' /usr/local/etc/openvpn/registration.conf | cut -d ' ' -f 2`
+# Flush out the list before we begin.
+${fwcmd} -f flush
+# Didn't filter packet to/from loopback, tunnel and internal interfaces
+${fwcmd} add pass ip from any to any via lo0
+${fwcmd} add pass ip from any to any via lo1
+${fwcmd} add pass ip from any to any via net1
+${fwcmd} add pass ip from any to any via tun1
+# Create a NAT table for reaching unregistered VPN clients
+# This prevent to push any route to them
+${fwcmd} nat 111 config if tun0 deny_in same_ports unreg_only reset
+# Check incoming packets against NAT table
+${fwcmd} add nat 111 ip from any to any in via tun0
+# Allow ICMP to myself on Internet interface
+${fwcmd} add pass icmp from me to any out via net0
+${fwcmd} add pass icmp from any to me in via net0
+# Allow NTP to myself on Internet interface
+${fwcmd} add pass udp from me 123 to any 123 out via net0
+${fwcmd} add pass udp from any 123 to me 123 in via net0
+## Allow OpenVPN to myself on Internet interface
+${fwcmd} add pass udp from me ${OVPN_PORT} to any out via net0
+${fwcmd} add pass udp from any to me ${OVPN_PORT} in via net0
+# All ICMP and SSH to manager ONLY from the unregistered-ovpn interface
+# NAT internal traffic when reaching unregistered-VPN devices
+${fwcmd} add nat 111 ip from any to any out via tun0
