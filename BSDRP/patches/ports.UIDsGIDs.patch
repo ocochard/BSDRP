@@ -6,7 +6,19 @@ Index: UIDs
  polipo:*:173:173::0:0:polipo web cache:/nonexistent:/usr/sbin/nologin
  flowtools:*:174:174::0:0:Flow-tools collector pseudo-user:/nonexistent:/usr/sbin/nologin
  twms:*:175:175::0:0:tWMS pseudo-user:/nonexistent:/usr/sbin/nologin
-+mlvpn:*:176:176::0:0:mlVPN pseudo-user:/nonexistent:/usr/sbin/nologin
++mlvpn:*:176:176::0:0:mlVPN pseudo-user:/var/run/mlvpn:/usr/sbin/nologin
  gdnsd:*:179:179::0:0:gDNSd pseudo-user:/nonexistent:/usr/sbin/nologin
  nagios:*:181:181::0:0:Nagios pseudo-user:/var/spool/nagios:/usr/sbin/nologin
  noc:*:182:182::0:0:NOC pseudo-user:/usr/local/noc:/bin/sh
+Index: GIDs
+===================================================================
+--- GIDs	(revision 410956)
++++ GIDs	(working copy)
+@@ -103,6 +103,7 @@
+ polipo:*:173:
+ flowtools:*:174:
+ twms:*:175:
++mlvpn:*:176:
+ gdnsd:*:179:
+ rt:*:180:
+ nagios:*:181:
