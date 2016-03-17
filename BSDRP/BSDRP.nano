@@ -470,6 +470,8 @@ add_port "net/mpd5"
 #	add_port "net/netmap-fwd"
 #fi
 
+ add_port "devel/libev"
+ add_port "security/libsodium"
 add_port "net/mlvpn"
 
 # Add openvpn
@@ -507,8 +509,8 @@ add_port "security/ca_root_nss"
  # And we de-install curl on the custom script
  add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE\""
 #add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
-#add_port "misc/pciids"
-#add_port "devel/libpci"
+  add_port "misc/pciids"
+ add_port "devel/libpci"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 
 #### End of port list section ####

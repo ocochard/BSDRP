@@ -63,7 +63,7 @@
 * python27-2.7.11_1
 * quagga-0.99.24.1_2
 * readline-6.3.8
-* strongswan-5.3.5_3
+* strongswan-5.3.5_4
 * sudo-1.8.15
 * tayga-0.9.2
 * tmux-2.1_1

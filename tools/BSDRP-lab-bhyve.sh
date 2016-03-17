@@ -188,7 +188,7 @@ destroy_vm() {
 	# $1: VM name
 	# Check if this VM exist by small query
 	if [ -e /dev/vmm/$1 ]; then
-		bhyvectl --vm=$1 --destroy || die "Can't destroy VM $1"
+		bhyvectl --vm=$1 --destroy || echo "Can't destroy VM $1"
 	fi
 	return 0
 }
