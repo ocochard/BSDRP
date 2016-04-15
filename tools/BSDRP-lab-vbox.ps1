@@ -955,4 +955,4 @@ build_lab $NUMBER_VM $LAN $SHARED_WITH_HOST_LAN $FULL_MESH
 
 start_lab $NUMBER_VM
 
-clean_exit^M
+clean_exit
