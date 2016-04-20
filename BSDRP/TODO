@@ -18,10 +18,6 @@
 
 * Need to test PAM (Radius, TACAS+) modules
 
-## Multicast #
-
-* Need to found IPv4 PIM-dm/sm daemon and test them
-
 ## misc #
 
 * Is utf-8 support for console usefull ?
@@ -39,6 +35,7 @@ give "yes"
 
 * PAM: tacacs+, radius, ldap, etc
 * Lab script: Generate a lab diagram in DOT language, see example in tools/bsdrp.lab.gv
+* Lab script: Add a libvirt script
 
 ## nanobsd patches to study for inclusion # 
 
