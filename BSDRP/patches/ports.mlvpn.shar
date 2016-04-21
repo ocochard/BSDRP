@@ -33,17 +33,16 @@ X
 XLICENSE=	BSD2CLAUSE
 XLICENSE_FILE=	${WRKSRC}/LICENCE
 X
-XLIB_DEPENDS=	libev.so:${PORTSDIR}/devel/libev \
-X				libsodium.so:${PORTSDIR}/security/libsodium
+XLIB_DEPENDS=	libev.so:devel/libev \
+X		libsodium.so:security/libsodium
 X
 XUSE_GITHUB=	yes
+XGH_PROJECT=	MLVPN
 XGH_ACCOUNT=	zehome
 X
 XWRKSRC=	${WRKDIR}/MLVPN-${PORTVERSION}
-XUSES=	autoreconf libtool pkgconfig
+XUSES=	autoreconf libtool pkgconfig localbase
 XGNU_CONFIGURE=	yes
-XCPPFLAGS+=	-I${LOCALBASE}/include
-XLDFLAGS+=	-L${LOCALBASE}/lib
 X
 XUSERS=		mlvpn
 XGROUPS=		mlvpn
@@ -53,12 +52,7 @@ XOPTIONS_DEFINE=	CONTROL
 XCONTROL_DESC=	Enable UNIX socket/HTTP json remote control API
 X
 XOPTIONS_DEFAULT=	CONTROL
-X
-X.include <bsd.port.options.mk>
-X
-X.if ! ${PORT_OPTIONS:MCONTROL}
-XCONFIGURE_ARGS+=--disable-control
-X.endif
+XCONTROL_CONFIGURE_OFF=	--disable-control
 X
 Xdo-install:
 X	${INSTALL_PROGRAM} ${WRKSRC}/src/${PORTNAME} ${STAGEDIR}${PREFIX}/sbin/
@@ -67,33 +61,29 @@ X	${INSTALL_MAN} ${WRKSRC}/man/${PORTNAME}.conf.5	${STAGEDIR}${PREFIX}/man/man5
 X	@${MKDIR} ${STAGEDIR}${ETCDIR}
 X	${INSTALL_MAN} ${WRKSRC}/doc/examples/${PORTNAME}.conf.in ${STAGEDIR}${ETCDIR}/${PORTNAME}.conf.sample
 X	${INSTALL_SCRIPT} ${WRKSRC}/doc/examples/mlvpn_updown.sh.in ${STAGEDIR}${ETCDIR}/mlvpn_updown.sh
-X	@${CHMOD} 0600 ${STAGEDIR}${ETCDIR}/${PORTNAME}.conf.sample
-X	@${CHMOD} 0700 ${STAGEDIR}${ETCDIR}/mlvpn_updown.sh
 X
 X.include <bsd.port.mk>
 990e8e82b10a6a0fbf8dafc14279f78a
 echo x - net/mlvpn/distinfo
 sed 's/^X//' >net/mlvpn/distinfo << 'd6a304b87799dd1c9fceb2ece414a30c'
-XSHA256 (zehome-mlvpn-2.3.1_GH0.tar.gz) = 4bbe8ae10ccad4ba764d29db0293b3ab523ded5d0a0b5adbe6a8d4d839e4138e
-XSIZE (zehome-mlvpn-2.3.1_GH0.tar.gz) = 83817
+XSHA256 (zehome-MLVPN-2.3.1_GH0.tar.gz) = 4bbe8ae10ccad4ba764d29db0293b3ab523ded5d0a0b5adbe6a8d4d839e4138e
+XSIZE (zehome-MLVPN-2.3.1_GH0.tar.gz) = 83817
 d6a304b87799dd1c9fceb2ece414a30c
 echo x - net/mlvpn/pkg-plist
 sed 's/^X//' >net/mlvpn/pkg-plist << '02b20181f9af8dbd603c276b26ff2ebb'
 Xsbin/mlvpn
 Xman/man1/mlvpn.1.gz
 Xman/man5/mlvpn.conf.5.gz
-X@sample  %%ETCDIR%%/mlvpn.conf.sample
-X%%ETCDIR%%/mlvpn_updown.sh
+X@sample(,,600)  %%ETCDIR%%/mlvpn.conf.sample
+X@(,,700) %%ETCDIR%%/mlvpn_updown.sh
 02b20181f9af8dbd603c276b26ff2ebb
 echo c - net/mlvpn/files
 mkdir -p net/mlvpn/files > /dev/null 2>&1
 echo x - net/mlvpn/files/patch-src_mlvpn.c
 sed 's/^X//' >net/mlvpn/files/patch-src_mlvpn.c << 'aa93da747ec8bdeeedbb8730d3f2eb40'
-Xdiff --git src/mlvpn.c src/mlvpn.c
-Xindex 1dd27ea..8aaf67a 100644
-X--- src/mlvpn.c
+X--- src/mlvpn.c.orig	2015-12-28 11:20:16 UTC
 X+++ src/mlvpn.c
-X@@ -612,7 +612,7 @@ mlvpn_rtun_write(EV_P_ ev_io *w, int revents)
+X@@ -597,7 +597,7 @@ mlvpn_rtun_write(EV_P_ ev_io *w, int rev
 X 
 X mlvpn_tunnel_t *
 X mlvpn_rtun_new(const char *name,
@@ -102,7 +92,7 @@ X+               const char *bindaddr, const char *bindport, uint32_t bindfib,
 X                const char *destaddr, const char *destport,
 X                int server_mode, uint32_t timeout,
 X                int fallback_only, uint32_t bandwidth,
-X@@ -668,6 +668,7 @@ mlvpn_rtun_new(const char *name,
+X@@ -653,6 +653,7 @@ mlvpn_rtun_new(const char *name,
 X         strlcpy(new->bindaddr, bindaddr, sizeof(new->bindaddr));
 X     if (bindport)
 X         strlcpy(new->bindport, bindport, sizeof(new->bindport));
@@ -110,7 +100,7 @@ X+	new->bindfib = bindfib;
 X     if (destaddr)
 X         strlcpy(new->destaddr, destaddr, sizeof(new->destaddr));
 X     if (destport)
-X@@ -795,6 +796,7 @@ static int
+X@@ -780,6 +781,7 @@ static int
 X mlvpn_rtun_start(mlvpn_tunnel_t *t)
 X {
 X     int ret, fd = -1;
@@ -118,7 +108,7 @@ X+	int fib = 0;
 X     char *addr, *port;
 X     struct addrinfo hints, *res;
 X 
-X@@ -803,9 +805,11 @@ mlvpn_rtun_start(mlvpn_tunnel_t *t)
+X@@ -788,9 +790,11 @@ mlvpn_rtun_start(mlvpn_tunnel_t *t)
 X     {
 X         addr = t->bindaddr;
 X         port = t->bindport;
@@ -130,7 +120,7 @@ X+		fib = t->bindfib;
 X     }
 X 
 X     /* Initialize hints */
-X@@ -832,6 +836,14 @@ mlvpn_rtun_start(mlvpn_tunnel_t *t)
+X@@ -817,6 +821,14 @@ mlvpn_rtun_start(mlvpn_tunnel_t *t)
 X             log_warn(NULL, "%s socket creation error",
 X                 t->name);
 X         } else {
@@ -308,7 +298,7 @@ Xrun_rc_command "$1"
 69a89f942046bac1559b51af2f0f4dff
 echo x - net/mlvpn/files/patch-src_tuntap__bsd.c
 sed 's/^X//' >net/mlvpn/files/patch-src_tuntap__bsd.c << '8251041bfe64cc11cd4f74a95e1dfcac'
-X--- src/tuntap_bsd.c.orig	2016-03-10 14:57:37 UTC
+X--- src/tuntap_bsd.c.orig	2015-12-28 11:20:16 UTC
 X+++ src/tuntap_bsd.c
 X@@ -21,7 +21,7 @@ mlvpn_tuntap_read(struct tuntap_s *tunta
 X     mlvpn_tunnel_t *rtun = NULL;
@@ -322,11 +312,9 @@ X
 8251041bfe64cc11cd4f74a95e1dfcac
 echo x - net/mlvpn/files/patch-src_config.c
 sed 's/^X//' >net/mlvpn/files/patch-src_config.c << '400435283bb1976b5af44575d380d160'
-Xdiff --git src/config.c src/config.c
-Xindex 4125b3c..77b0881 100644
-X--- src/config.c
+X--- src/config.c.orig	2015-12-28 11:20:16 UTC
 X+++ src/config.c
-X@@ -269,6 +269,7 @@ mlvpn_config(int config_file_fd, int first_time)
+X@@ -269,6 +269,7 @@ mlvpn_config(int config_file_fd, int fir
 X             } else if (strncmp(lastSection, "filters", 7) != 0) {
 X                 char *bindaddr;
 X                 char *bindport;
@@ -334,7 +322,7 @@ X+				uint32_t bindfib = 0;
 X                 char *dstaddr;
 X                 char *dstport;
 X                 uint32_t bwlimit = 0;
-X@@ -284,6 +285,9 @@ mlvpn_config(int config_file_fd, int first_time)
+X@@ -284,6 +285,9 @@ mlvpn_config(int config_file_fd, int fir
 X                     _conf_set_str_from_conf(
 X                         config, lastSection, "bindport", &bindport, NULL,
 X                         "bind port is mandatory in server mode.\n", 1);
@@ -344,7 +332,7 @@ X+						NULL, 0);
 X                     _conf_set_str_from_conf(
 X                         config, lastSection, "remotehost", &dstaddr, NULL,
 X                         NULL, 0);
-X@@ -297,6 +301,9 @@ mlvpn_config(int config_file_fd, int first_time)
+X@@ -297,6 +301,9 @@ mlvpn_config(int config_file_fd, int fir
 X                     _conf_set_str_from_conf(
 X                         config, lastSection, "bindport", &bindport, NULL,
 X                         NULL, 0);
@@ -354,7 +342,7 @@ X+						NULL, 0);
 X                     _conf_set_str_from_conf(
 X                         config, lastSection, "remotehost", &dstaddr, NULL,
 X                         "No remote address specified.\n", 1);
-X@@ -336,6 +343,7 @@ mlvpn_config(int config_file_fd, int first_time)
+X@@ -336,6 +343,7 @@ mlvpn_config(int config_file_fd, int fir
 X                               tmptun->name);
 X                         if ((! mystr_eq(tmptun->bindaddr, bindaddr)) ||
 X                                 (! mystr_eq(tmptun->bindport, bindport)) ||
@@ -362,7 +350,7 @@ X+								(tmptun->bindfib != bindfib) ||
 X                                 (! mystr_eq(tmptun->destaddr, dstaddr)) ||
 X                                 (! mystr_eq(tmptun->destport, dstport))) {
 X                             mlvpn_rtun_status_down(tmptun);
-X@@ -347,6 +355,9 @@ mlvpn_config(int config_file_fd, int first_time)
+X@@ -347,6 +355,9 @@ mlvpn_config(int config_file_fd, int fir
 X                         if (bindport) {
 X                             strlcpy(tmptun->bindport, bindport, sizeof(tmptun->bindport));
 X                         }
@@ -372,7 +360,7 @@ X+						}
 X                         if (dstaddr) {
 X                             strlcpy(tmptun->destaddr, dstaddr, sizeof(tmptun->destaddr));
 X                         }
-X@@ -380,7 +391,7 @@ mlvpn_config(int config_file_fd, int first_time)
+X@@ -380,7 +391,7 @@ mlvpn_config(int config_file_fd, int fir
 X                 {
 X                     log_info("config", "%s tunnel added", lastSection);
 X                     mlvpn_rtun_new(
@@ -384,9 +372,7 @@ X                 }
 400435283bb1976b5af44575d380d160
 echo x - net/mlvpn/files/patch-src_mlvpn.h
 sed 's/^X//' >net/mlvpn/files/patch-src_mlvpn.h << '323ace73f68e0b37890ea0410eaed2f6'
-Xdiff --git src/mlvpn.h src/mlvpn.h
-Xindex fd4b911..daa9a4c 100644
-X--- src/mlvpn.h
+X--- src/mlvpn.h.orig	2015-12-28 11:20:16 UTC
 X+++ src/mlvpn.h
 X@@ -138,6 +138,7 @@ typedef struct mlvpn_tunnel_s
 X     char *name;           /* tunnel name */
@@ -396,7 +382,7 @@ X+	uint32_t bindfib;     /* FIB number to use */
 X     char destaddr[MLVPN_MAXHNAMSTR]; /* remote server ip (can be hostname) */
 X     char destport[MLVPN_MAXPORTSTR]; /* remote server port */
 X     int fd;               /* socket file descriptor */
-X@@ -193,7 +194,7 @@ int mlvpn_rtun_wrr_reset(struct rtunhead *head, int use_fallbacks);
+X@@ -193,7 +194,7 @@ int mlvpn_rtun_wrr_reset(struct rtunhead
 X mlvpn_tunnel_t *mlvpn_rtun_wrr_choose();
 X mlvpn_tunnel_t *mlvpn_rtun_choose();
 X mlvpn_tunnel_t *mlvpn_rtun_new(const char *name,
