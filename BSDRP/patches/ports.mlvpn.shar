@@ -40,7 +40,6 @@ XUSE_GITHUB=	yes
 XGH_PROJECT=	MLVPN
 XGH_ACCOUNT=	zehome
 X
-XWRKSRC=	${WRKDIR}/MLVPN-${PORTVERSION}
 XUSES=	autoreconf libtool pkgconfig localbase
 XGNU_CONFIGURE=	yes
 X
