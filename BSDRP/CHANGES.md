@@ -5,10 +5,15 @@
 
 ## Bug fix
 * Disable fastforwarding too soon: Re-enable it
+* Re-add netmap-ipfw
+
+## Updated packages
+* bird to 1.6.0
+* exabgp to 3.4.16
 
 ## package list
-* bird-1.5.0_1
-* bird6-1.5.0_1
+* bird-1.6.0
+* bird6-1.6.0
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
 * ca_root_nss-3.22.2
@@ -37,6 +42,7 @@
 * monit-5.17.1
 * mpd5-5.8
 * mrouted-3.9.7_1
+* netmap-ipfw-0.1
 * openldap-client-2.4.44
 * openvpn-2.3.10_2
 * openvpn-auth-radius-2.1_3
