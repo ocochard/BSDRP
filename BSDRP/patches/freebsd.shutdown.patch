@@ -1,0 +1,86 @@
+Index: sbin/shutdown/shutdown.8
+===================================================================
+--- sbin/shutdown/shutdown.8
++++ sbin/shutdown/shutdown.8
+@@ -28,7 +28,7 @@
+ .\"     @(#)shutdown.8	8.2 (Berkeley) 4/27/95
+ .\" $FreeBSD$
+ .\"
+-.Dd March 19, 2013
++.Dd December 15, 2014
+ .Dt SHUTDOWN 8
+ .Os
+ .Sh NAME
+@@ -118,6 +118,15 @@
+ The first form brings the system down in
+ .Ar number
+ minutes and the second at the absolute time specified.
++.Ar +number
++may be specified in units other than minutes by appending the corresponding
++suffix:
++.Dq Li s ,
++.Dq Li sec ,
++.Dq Li m ,
++.Dq Li min .
++.Dq Li h ,
++.Dq Li hour .
+ .It Ar warning-message
+ Any other arguments comprise the warning message that is broadcast
+ to users currently logged into the system.
+Index: sbin/shutdown/shutdown.c
+===================================================================
+--- sbin/shutdown/shutdown.c
++++ sbin/shutdown/shutdown.c
+@@ -48,6 +48,7 @@
+ 
+ #include <ctype.h>
+ #include <err.h>
++#include <errno.h>
+ #include <fcntl.h>
+ #include <paths.h>
+ #include <pwd.h>
+@@ -322,7 +323,8 @@
+ 		(void)fprintf(pf, "System going down in %d minute%s\n\n",
+ 		    timeleft / 60, (timeleft > 60) ? "s" : "");
+ 	else if (timeleft)
+-		(void)fprintf(pf, "System going down in 30 seconds\n\n");
++		(void)fprintf(pf, "System going down in %s30 seconds\n\n",
++		    (offset > 0 && offset < 30 ? "less than " : ""));
+ 	else
+ 		(void)fprintf(pf, "System going down IMMEDIATELY\n\n");
+ 
+@@ -415,6 +417,7 @@
+ 	char *p;
+ 	time_t now;
+ 	int this_year;
++	char *timeunit;
+ 
+ 	(void)time(&now);
+ 
+@@ -427,8 +430,25 @@
+ 	if (*timearg == '+') {				/* +minutes */
+ 		if (!isdigit(*++timearg))
+ 			badtime();
+-		if ((offset = atoi(timearg) * 60) < 0)
++		errno = 0;
++		offset = strtol(timearg, &timeunit, 10);
++		if (offset < 0 || offset == LONG_MAX || errno != 0)
+ 			badtime();
++		if (timeunit[0] == '\0' || strcasecmp(timeunit, "m") == 0 ||
++		    strcasecmp(timeunit, "min") == 0 ||
++		    strcasecmp(timeunit, "mins") == 0) {
++			offset *= 60;
++		} else if (strcasecmp(timeunit, "h") == 0 ||
++		    strcasecmp(timeunit, "hour") == 0 ||
++		    strcasecmp(timeunit, "hours") == 0) {
++			offset *= 60 * 60;
++		} else if (strcasecmp(timeunit, "s") == 0 ||
++		    strcasecmp(timeunit, "sec") == 0 ||
++		    strcasecmp(timeunit, "secs") == 0) {
++			offset *= 1;
++		} else {
++			badtime();
++		}
+ 		shuttime = now + offset;
+ 		return;
+ 	}

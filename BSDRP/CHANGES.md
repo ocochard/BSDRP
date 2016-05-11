@@ -2,6 +2,7 @@
 
 ## New features
 * Upgraded to FreeBSD 10.3-RELEASE-p2
+* Backport shutdown +second option from -head
 
 ## Bug fix
 * Disable fastforwarding too soon: Re-enable it
