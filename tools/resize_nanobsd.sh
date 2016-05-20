@@ -2,7 +2,7 @@
 # Resizing nanobsd partition for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2014, The BSDRP Development Team
+# Copyright (c) 2016, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -44,30 +44,32 @@ resize() {
 	echo -n "Checking partition size..."
 	partition_size=`gpart show -p ${boot_dev} | grep ${boot_dev}s1 | tr -s ' ' | cut -d ' ' -f 3`
 	[ -z "${partition_size}" ] && die "Can't read the primary partition size"
-	if [ ${partition_size} -ge 465822 ]; then
+	if [ ${partition_size} -ge 963837 ]; then
 		echo "compliant"
 		return 0
 	else
 		echo "Too small"
+		return 1
 	fi
 	echo -n "Resizing partition..."
     gpart delete -i 4 ${boot_dev}
     gpart delete -i 3 ${boot_dev}
     gpart delete -i 2 ${boot_dev}
-    gpart resize -i 1 -s 465884 ${boot_dev}
+    gpart resize -i 1 -s 963837 ${boot_dev}
     gpart commit ${boot_dev}s1
-    gpart add -t freebsd -i 2 -s 465884 ${boot_dev}
+    gpart add -t freebsd -i 2 -s 963837 ${boot_dev}
     gpart add -t freebsd -i 3 -s 32193 ${boot_dev}
     gpart add -t freebsd -i 4 ${boot_dev}
     newfs -b 4096 -f 512 -i 8192 -U -L BSDRPs3 /dev/${boot_dev}s3
     newfs -b 4096 -f 512 -i 8192 -U -L BSDRPs4 /dev/${boot_dev}s4
     config save
 	echo "Done"
+	return 0
 }
 
 # Main function
 
-echo "This tool will check if your system is compliant to an upgrade to BSDRP 1.52"
+echo "This tool will check if your system is compliant to an upgrade to BSDRP 1.60"
 echo "- If a partition swaping is needed, it will reboot automatically your system at the end"
 echo "  You need to restart this tool after the reboot for continuing"
 echo "- All files stored in /data partition will be destroyed!"
@@ -85,14 +87,14 @@ boot_dev=`glabel status | grep BSDRPs1 | awk '{ print $3; }'\  | cut -d s -f 1`
 disk_size=`gpart show ${boot_dev} | grep MBR | tr -s ' ' | cut -d ' ' -f 3`
 [ -z "${disk_size}" ] && die "Can't read the disk size"
 
-# 1 000 000 sector at 512B
-[ ${disk_size} -lt 1000000 ] && die "Your disk is too small for allowing an upgrade to BSDRP 1.51 (512MB minimum)"
+# 2 000 000 sector at 512B
+[ ${disk_size} -lt 1999999 ] && die "Your disk is too small for allowing an upgrade to BSDRP 1.60 (1GB minimum)"
 
 echo "compliant"
-echo "Checking BSDRP minimum version..."
-grep -q 1.51 /etc/version || die "You need to upgrade your BSDRP to version 1.51 first"
-echo "compliant"
+#echo "Checking BSDRP minimum version..."
+#grep -q 1.51 /etc/version || die "You need to upgrade your BSDRP to version 1.51 first"
+#echo "compliant"
 mount /dev/ufs/BSDRPs1a > /dev/null 2>&1 && resize || swap
 
-echo "Your system is ready for being upgraded to BSDRP 1.52"
+echo "Your system is ready for being upgraded to BSDRP 1.60"
 return 0

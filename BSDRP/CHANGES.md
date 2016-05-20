@@ -1,16 +1,31 @@
-# Release 1.591 (not released)
+# Release 1.60 (not released)
+
+## UPGRADE PROCEDURE
+
+This realeas at minimum a 1GB disk and no more a 512MB disk (preparing upgrade to FreeBSD 11).
+
+If you've installed BSDRP on a 512MB disk: You can't upgrade it.
+
+But you installed it on a 1GB disk (or larger), here is how to resize the partitionning system:
+
+    cd /tmp
+    fetch https://raw.githubusercontent.com/ocochard/BSDRP/master/BSDRP/tools/resize_nanobsd.sh
+    sh ./resize_nanobsd.sh
 
 ## New features
 * Upgraded to FreeBSD 10.3-RELEASE-p2
 * Backport shutdown +second option from -head
 
 ## Bug fix
-* Disable fastforwarding too soon: Re-enable it
+* Disable fastforwarding too soon (tryforward is not in 10.3): Re-enable it
 * Re-add netmap-ipfw
+* Add a pf with fragmentation timeout fix
+  source: https://lists.freebsd.org/pipermail/freebsd-pf/2016-May/008044.html
 
 ## Updated packages
 * bird to 1.6.0
 * exabgp to 3.4.16
+* openvpn to 3.11
 
 ## package list
 * bird-1.6.0
@@ -45,7 +60,7 @@
 * mrouted-3.9.7_1
 * netmap-ipfw-0.1
 * openldap-client-2.4.44
-* openvpn-2.3.10_2
+* openvpn-2.3.11
 * openvpn-auth-radius-2.1_3
 * pciids-20160430
 * pim6-tools-20061214

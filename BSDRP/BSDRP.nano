@@ -32,7 +32,6 @@ BOOT_BOOT0_COMCONSOLE_SPEED=0
 # Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
 # We would compile symbol files, but not install them by default
 CONF_INSTALL='
-WITHOUT_INCLUDES=
 '
 
 # Options to put in make.conf during both build- & installworld.
@@ -594,7 +593,7 @@ EOF
 		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
 
 	# Compress the kernel (save 10Mb)
-	# Disabling: dtrace didn't support compressed kernel
+	# Disabled: dtrace didn't support compressed kernel
 	#if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
 	#	if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
 	#		echo "Error during zipping the kernel"
@@ -612,6 +611,8 @@ usr/local/share/examples
 usr/include
 usr/share/examples
 usr/share/info
+usr/share/man/man3
+usr/share/man/man9
 usr/share/me
 usr/share/pc-sysinstall
 usr/share/openssl
