@@ -64,6 +64,7 @@ options 	KDB_TRACE		# Print a stack trace for a panic.
 
 # Make an SMP-capable kernel by default
 options 	SMP			# Symmetric MultiProcessor Kernel
+options		DEVICE_NUMA		# I/O Device Affinity
 
 # CPU frequency control
 device		cpufreq
@@ -72,6 +73,7 @@ device		cpufreq
 device		acpi
 #options		ACPI_DMAR
 device		pci
+options		PCI_HP			# PCI-Express native HotPlug
 options     PCI_IOV         # PCI SR-IOV support
 
 # Floppy drives
@@ -146,8 +148,8 @@ device		ses			# Enclosure Services (SES and SAF-TE)
 #device		twe			# 3ware ATA RAID
 
 # NVM Express (NVMe) support
-#device      nvme            # base NVMe driver
-#device      nvd         # expose NVMe namespaces as disks, depends on nvme
+device      nvme            # base NVMe driver
+device      nvd         # expose NVMe namespaces as disks, depends on nvme
 
 # atkbdc0 controls both the keyboard and the PS/2 mouse
 device		atkbdc			# AT keyboard controller
@@ -319,9 +321,7 @@ device		virtio_blk		# VirtIO Block device
 device		virtio_scsi		# VirtIO SCSI device
 device		virtio_balloon		# VirtIO Memory Balloon device
 
-# HyperV drivers and enchancement support
-# NOTE: HYPERV depends on hyperv.  They must be added or removed together.
-options     HYPERV          # Hyper-V kernel infrastructure
+# HyperV drivers and enhancement support
 device		hyperv			# HyperV drivers 
 
 # Xen HVM Guest Optimizations

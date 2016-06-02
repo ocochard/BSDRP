@@ -1,0 +1,95 @@
+#{{ ansible_managed }}
+# check services at 30 seconds intervals
+set daemon  30
+# Send log to syslog
+set logfile syslog
+# Specify working file
+set pidfile /var/run/monit.pid
+set idfile /var/run/.monit.id
+set statefile /var/run/.monit.state
+set ssl {
+  verify     : enable,
+  selfsigned : allow
+}
+
+# Define mail server
+set mailserver smtp.gmail.com port 465
+  username cochard@gmail.com password xqtksmvphqirbyvk
+  using SSL
+  using HOSTNAME testrestorec
+# Define mail and filter
+set alert cochard@gmail.com but not on {instance, nonexist}
+mail-format {
+    From: cochard@gmail.com
+    Subject: [$HOST] $EVENT $SERVICE
+    Message: $DESCRIPTION
+             $DATE
+}
+# Set HTTP daemon
+set httpd
+ port 80
+ allow eine:monitor
+# Start monitoring processes
+# When monit start, sshd is still not started, need to add a tempo
+check process sshd with pidfile /var/run/sshd.pid
+ start program = "/etc/rc.d/sshd onestart"
+ stop program = "/etc/rc.d/sshd onestop"
+ if failed port 666 protocol ssh then restart
+check process bird with pidfile /var/run/bird.pid
+ start program = "/usr/local/etc/rc.d/bird onestart"
+ stop program = "/usr/local/etc/rc.d/bird onestop"
+ depends on openvpn
+# "protocol dns" will generate a DNS query, notice that when tunnel is up mode the DNS query
+#  will target internel DNS servers behind the tunnel because 'resolvconf -x' used
+check process dnsmasq with pidfile /var/run/dnsmasq.pid
+ start program = "/usr/local/etc/rc.d/dnsmasq onestart"
+ stop program = "/usr/local/etc/rc.d/dnsmasq onestop"
+ if failed host 127.0.0.1 port 53 type udp then alert
+ if failed host 127.0.0.1 port 67 type udp then alert
+check process openvpn with pidfile /var/run/openvpn.pid
+ start program = "/usr/local/etc/rc.d/openvpn onestart"
+ stop program = "/usr/local/etc/rc.d/openvpn onestop"
+ depends on ntpd
+check process hostapd with pidfile /var/run/hostapd-wlan0.pid
+ start program = "/etc/rc.d/hostapd onestart wlan0"
+ stop program = "/etc/rc.d/hostapd onestop wlan0"
+ depends on wifi
+check file signature with path /usr/local/etc/snort/rules/emerging-malware.rules
+ if does not exist then exec "/usr/local/sbin/IDS-update"
+# snort is slow to start too, need to add a tempo here too
+check process snort with pidfile /var/run/snort_.pid
+ start program = "/usr/local/etc/rc.d/snort onestart" with timeout 60 seconds
+ stop program = "/usr/local/etc/rc.d/snort onestop"
+ depends on signature
+# testing protocol ntp3 wait for being synchronized, this can take a long time if use "protocol ntp3"
+check process ntpd with pidfile /var/run/ntpd.pid
+ start program = "/etc/rc.d/ntpd onestart"
+ stop program = "/etc/rc.d/ntpd onestop"
+ if failed host 127.0.0.1 port 123 type udp then alert
+# Test for openvpn low-priority problem on the log file
+# openvpn MUST be configured with "--log" and NOT "--log-append"
+check file openvpnlog with path /var/log/openvpn.log
+ if match "Permission denied" then restart
+ start program = "/usr/local/etc/rc.d/openvpn onestart"
+ stop program = "/usr/local/etc/rc.d/openvpn onestop"
+# Test for data trafic AND radius relay feature of the VPN gateway
+check host vpngateway with address 2.2.2.2
+ if failed ping count 2 size 64 with timeout 10 seconds for 2 cycles then alert
+ if failed port 1812 type udp then alert
+ if failed port 1813 type udp then alert
+ depends on bird
+check filesystem var with path /var
+ if space usage > 90% then alert
+check system {{hostname}}
+ if loadavg (1min) > 4 then alert
+ if loadavg (5min) > 2 then alert
+ if memory usage > 90% then alert
+check program cputemp with path "/usr/local/etc/cputemp 74"
+ if status != 0 for 2 cycles then alert
+check network tunnel with interface tun0
+ if failed link for 2 cycles then alert
+# if total download < 50 B in last 2 minutes then alert
+ depends on openvpn
+check network wifi with interface wlan0
+ noalert cochard@gmail.com
+ #if failed link for 2 cycles then alert
