@@ -1,18 +1,7 @@
 # Release 1.60 (not released)
 
-## UPGRADE PROCEDURE
-
-This realeas at minimum a 1GB disk and no more a 512MB disk (preparing upgrade to FreeBSD 11).
-
-If you've installed BSDRP on a 512MB disk: You can't upgrade it.
-
-But you installed it on a 1GB disk (or larger), here is how to resize the partitionning system:
-
-    cd /tmp
-    fetch https://raw.githubusercontent.com/ocochard/BSDRP/master/BSDRP/tools/resize_nanobsd.sh
-    sh ./resize_nanobsd.sh
-
 ## New features
+* New fresh installation needs 1GB disk size, upgrade still possible on 512MB disks
 * Upgraded to FreeBSD 10.3-RELEASE-p2
 * Backport shutdown +second option from -head
 
@@ -26,6 +15,8 @@ But you installed it on a 1GB disk (or larger), here is how to resize the partit
 ## Updated packages
 * bird to 1.6.0
 * exabgp to 3.4.16
+* iperf to 3.1.3
+* isc-dhcp43-server to 4.3.4
 * openvpn to 3.11
 
 ## package list
@@ -33,7 +24,7 @@ But you installed it on a 1GB disk (or larger), here is how to resize the partit
 * bird6-1.6.0
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
-* ca_root_nss-3.22.2
+* ca_root_nss-3.25
 * dhcprelya-4.9
 * dlmalloc-2.8.6
 * dma-0.11,1
@@ -43,15 +34,15 @@ But you installed it on a 1GB disk (or larger), here is how to resize the partit
 * freevrrpd-1.1_1
 * indexinfo-0.2.4
 * iperf-2.0.5
-* iperf3-3.1.2
+* iperf3-3.1.3
 * ipmitool-1.8.17_1
 * ipsec-tools-0.8.2_1
-* isc-dhcp43-server-4.3.3P1_1
+* isc-dhcp43-server-4.3.4
 * libev-4.22,1
 * libevent2-2.0.22_1
 * libffi-3.2.1
-* libgcrypt-1.7.0
-* libgpg-error-1.22
+* libgcrypt-1.7.1
+* libgpg-error-1.23
 * libpci-3.5.1
 * libsodium-1.0.8
 * lzo2-2.09
@@ -61,23 +52,23 @@ But you installed it on a 1GB disk (or larger), here is how to resize the partit
 * mrouted-3.9.7_1
 * netmap-ipfw-0.1
 * openldap-client-2.4.44
-* openvpn-2.3.11
+* openvpn-2.3.11_1
 * openvpn-auth-radius-2.1_3
-* pciids-20160522
+* pciids-20160621
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
 * pimd-2.3.2
 * pimdd-0.2.1.0_2
-* pkg-1.8.3
+* pkg-1.8.6
 * pmacct-0.14.3_3
-* py27-setuptools27-20.0
+* py27-setuptools27-23.1.0
 * python2-2_3
-* python27-2.7.11_2
+* python27-2.7.12
 * quagga-1.0.20160315
 * readline-6.3.8
 * strongswan-5.4.0
-* sudo-1.8.16
+* sudo-1.8.17p1
 * tayga-0.9.2
 * tmux-2.1_1
 * ucarp-1.5.2_2

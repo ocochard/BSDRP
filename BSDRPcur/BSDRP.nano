@@ -584,7 +584,8 @@ bsdrp_custom () {
 	ln -s ../etc/cron ${NANO_WORLDDIR}/var/cron	
 	
 	# Add /etc/rc.conf.misc into the /etc/default/rc.conf
-	sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
+	#echo 'rc_conf_files+=/etc/rc.conf.misc' >> ${NANO_WORLDDIR}/etc/rc.conf
+	#sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
 
     # configure bsnmp
     cat <<EOF >>${NANO_WORLDDIR}/etc/snmpd.config
@@ -624,7 +625,6 @@ usr/local/info
 usr/local/share/doc
 usr/local/share/examples
 usr/include
-usr/share/bsdconfig
 usr/share/examples
 usr/share/info
 usr/share/man/man3
