@@ -4,6 +4,7 @@
 * New fresh installation needs 1GB disk size, upgrade still possible on 512MB disks
 * Upgraded to FreeBSD 10.3-RELEASE-p2
 * Backport shutdown +second option from -head
+* Drivers added: sfgxe (Solarflare 10Gb Ethernet adapter driver) and if_disc (software discard network interface)
 
 ## Bug fix
 * Disable fastforwarding too soon (tryforward is not in 10.3): Re-enable it
@@ -18,13 +19,14 @@
 * iperf to 3.1.3
 * isc-dhcp43-server to 4.3.4
 * openvpn to 3.11
+* strongswan to 5.5
 
 ## package list
 * bird-1.6.0
 * bird6-1.6.0
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
-* ca_root_nss-3.25
+* ca_root_nss-3.26
 * dhcprelya-4.9
 * dlmalloc-2.8.6
 * dma-0.11,1
@@ -41,12 +43,12 @@
 * libev-4.22,1
 * libevent2-2.0.22_1
 * libffi-3.2.1
-* libgcrypt-1.7.1
-* libgpg-error-1.23
+* libgcrypt-1.7.2
+* libgpg-error-1.24
 * libpci-3.5.1
-* libsodium-1.0.8
+* libsodium-1.0.10
 * lzo2-2.09
-* mlvpn-2.3.1
+* mlvpn-2.3.1_1
 * monit-5.18
 * mpd5-5.8
 * mrouted-3.9.7_1
@@ -60,17 +62,17 @@
 * pim6sd-2.1.0.a.23
 * pimd-2.3.2
 * pimdd-0.2.1.0_2
-* pkg-1.8.6
+* pkg-1.8.7_1
 * pmacct-0.14.3_3
 * py27-setuptools27-23.1.0
 * python2-2_3
 * python27-2.7.12
 * quagga-1.0.20160315
 * readline-6.3.8
-* strongswan-5.4.0
+* strongswan-5.5.0
 * sudo-1.8.17p1
 * tayga-0.9.2
-* tmux-2.1_1
+* tmux-2.2_1
 * ucarp-1.5.2_2
 
 -----------------------------------------------------

@@ -349,6 +349,7 @@ device      mxge    # Myricom Myri10GE 10 Gigabit Ethernet adapter driver
 device      nxge    # Neterion Xframe 10GbE Server/Storage adapter driver
 device		qlxge	# QLogic 8100 Series 10 Gigabit Ethernet
 device      oce     # Device driver for Emulex OneConnect 10Gb network adapters
+device		sfgxe	# Solarflare 10Gb Ethernet adapter driver
 
 # altq(9). Enable the base part of the hooks with the ALTQ option.
 # Individual disciplines must be built into the base system and can not be
