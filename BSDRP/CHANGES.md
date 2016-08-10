@@ -4,7 +4,7 @@
 * New fresh installation needs 1GB disk size, upgrade still possible on 512MB disks
 * Upgraded to FreeBSD 10.3-RELEASE-p2
 * Backport shutdown +second option from -head
-* Drivers added: sfgxe (Solarflare 10Gb Ethernet adapter driver) and if_disc (software discard network interface)
+* Drivers added: sfxge (Solarflare 10Gb Ethernet adapter driver) and if_disc (software discard network interface)
 
 ## Bug fix
 * Disable fastforwarding too soon (tryforward is not in 10.3): Re-enable it
