@@ -3,7 +3,7 @@
 # System tool for BSD Router Project 
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2015, The BSDRP Development Team
+# Copyright (c) 2009-2016, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,12 @@ set -e
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
+# get label
+get_label () {
+	local label=`cut -d '/' -f 2 /etc/nanobsd.conf`
+	[ -n ${label} ] && echo ${label} || die "Can't retrieve nanobsd label"
+}
+
 # Display help
 usage () {
 	echo "BSD Router Project: system tool"
@@ -56,15 +62,16 @@ usage () {
 	esac
 	# value $0 is the name of the called script
 	echo "Usage: $0 option"
-	echo "  - expand-data-slice   : Permit to grow the /data partition size"
-	echo "  - dual-console        : Configure the system for dual vga/serial console"
+	echo "  - expand-data-slice     : Permit to grow the /data partition size"
+	echo "  - dual-console          : Configure the system for dual vga/serial console"
 	echo "  - install [destination] : Install system to disk given in option"
-	echo "  - integrity filename  : Check system integrity using the given reference file"
-	echo "  - halt/stop           : Poweroff the system"
-	echo "  - help/h [option]     : Display this help message. "
+	echo "  - integrity filename    : Check system integrity using the given reference file"
+	echo "  - halt/stop             : Poweroff the system"
+	echo "  - help/h [option]       : Display this help message. "
 	echo "    if [option] given, display more detail about the option"
-    echo "  - reboot/reload       : Restart the system"
-	echo "  - rollback            : Revert to previous version"
+    echo "  - reboot/reload         : Restart the system"
+	echo "  - resize-system-slice [size] : Resize system slices (rare usage)"
+	echo "  - rollback              : Revert to previous version"
 	exit 0
 }
 
@@ -136,7 +143,7 @@ ask_save () {
 
 #Install system to another disk
 install () {
-	label=`cut -d '/' -f 2 /etc/nanobsd.conf`
+	label=`get_label`
 	boot_dev=`glabel status | grep ${label}s1 | awk '{ print $3; }'\  | cut -d s -f 1 | tail -n 1`
 	sectors=`gpart show ${boot_dev} | grep '\- free \-' | tr -s ' ' | cut -d ' ' -f 2 | tail -n 1`
 	disks=`sysctl -n kern.disks`
@@ -168,7 +175,7 @@ expand_data_slice () {
 		boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s1a \
 			 | awk '{ s=$3; sub(/s[12]a$/, "", s); print s; }'`
 	fi
-	label=`cut -d '/' -f 2 /etc/nanobsd.conf`
+	label=`get_label`
 
 	if mount | grep -q "/data"; then
 		die "/data is mounted, you need to unmount it"
@@ -204,9 +211,9 @@ expand_data_slice () {
 
 	# Formatting the new partition (SUJ)
 	# TO DO: Check if disks support TRIM and enable it
-	LABEL=`cut -f 2 -d "/" /etc/nanobsd.conf`
-	newfs -UjL ${LABEL}s4 ${boot_dev}s4 \
-	|| die "Unable to newfs -UjL ${LABEL}s4 ${boot_dev}s4"
+	label=`get_label`
+	newfs -UjL ${label}s4 ${boot_dev}s4 \
+	|| die "Unable to newfs -UjL ${label}s4 ${boot_dev}s4"
 
 	# Restoring the dump
 	[ -d /tmp/slice ] || mkdir -p /tmp/slice
@@ -232,7 +239,7 @@ expand_data_slice () {
 # 3. Change the active slice and bootloader default choice	
 rollback () {
 	# Get the NANO_GLABEL_SYS variable
-	NANO_GLABEL_SYS=`cut -d '/' -f 2 /etc/nanobsd.conf`
+	NANO_GLABEL_SYS=`get_label`
 	# Get the NANO_GLABEL_SYS_FULL variable
 	# (kept the last number: 1 or 2)
 	NANO_GLABEL_SYS_FULL=`mount | grep " / " | cut -d'/' -f4 \
@@ -305,10 +312,9 @@ rollback () {
                 ;;
 	esac
 
-# Log
-echo "BSDRP system rollback complete"
-logger BSDRP system rollback complete
-
+	# Log
+	echo "BSDRP system rollback complete"
+	logger BSDRP system rollback complete
 }
 
 # Check if cfg was modified
@@ -321,6 +327,64 @@ check_cfg () {
 	config diff quiet
 	[ $? -eq 1 ] && ask_save
 	set -e
+}
+
+swap_system() {
+	echo -n "Active partition need to be partition 1, swaping it (Don't stop this fake-upgrade operation!)..."
+    cat /dev/${boot_dev}s2 | upgrade
+	echo "Done, rebooting..."
+    reboot
+}
+
+resize_system() {
+	# Need to check if already resized
+	echo -n "Resizing partition..."
+    gpart delete -i 4 ${boot_dev}
+    gpart delete -i 3 ${boot_dev}
+    gpart delete -i 2 ${boot_dev}
+    gpart resize -i 1 -a 4k -s ${SECOND_OPTION} ${boot_dev}
+    gpart commit ${boot_dev}s1
+    gpart add -t freebsd -i 2 -a 4k -s ${SECOND_OPTION} ${boot_dev}
+    gpart add -t freebsd -i 3 -a 4k -s 16M ${boot_dev}
+    gpart add -t freebsd -i 4 -a 4k ${boot_dev}
+    newfs -b 4096 -f 512 -i 8192 -U -L ${label}s3 /dev/${boot_dev}s3
+    newfs -b 4096 -f 512 -i 8192 -U -L ${label}s4 /dev/${boot_dev}s4
+    config save
+	echo "Done"
+}
+
+# Resize system slice
+resize_system_slice () {
+	[ -z ${SECOND_OPTION} ] && die "Missing size (in block)"
+	echo "This tool will expand the 2 systems slices to the given size."
+	echo "It's only usefull for specific upgrade"
+	echo "- If a partition swaping is needed, system will reboot automatically at the end of first step"
+	echo "  You need to restart this tool after the reboot for continuing"
+	echo "- All files stored in /data partition will be destroyed!"
+	echo -n "Do you want to continue or abort ? (y/a): "
+	USER_CONFIRM=""
+	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "a" ]; do
+		read USER_CONFIRM <&1
+	done
+	[ "$USER_CONFIRM" = "a" ] && die "User aborded"
+
+	# Need to check total disk space
+	echo -n "Checking disk size..."
+	label=`get_label`
+	boot_dev=`glabel status | grep ${label}s1 | awk '{ print $3; }'\  | cut -d s -f 1`
+	[ -z "${boot_dev}" ] && die "Can't detect the physical disk where BSDRP is installed"
+	disk_size=`gpart show ${boot_dev} | grep ${boot_dev} | tr -s ' ' | cut -d ' ' -f 3`
+	[ -z "${disk_size}" ] && die "Can't read the disk size"
+
+	# 1 000 000 sector at 512B
+	# Check that current disk sector size is enough for twice new system size AND cfg+data slices
+	minimum_size=$((${SECOND_OPTION} * 2 + 64260))
+	[ ${disk_size} -lt ${minimum_size} ] && die "Disk too small for system slice expansion (minimum block size of ${minimum_size} but it has ${disk_size}"
+	. /etc/nanobsd.conf
+	mount /dev/${NANO_DRIVE}s1a > /dev/null 2>&1 && resize_system || swap_system
+
+	echo "Your system slice were correctly resized"
+	return 0
 }
 
 # Reboot
@@ -389,6 +453,9 @@ case "$FIRST_OPTION" in
         ;;
 	reboot|reload)
 		sys_reboot
+		;;
+	resize-system-slice)
+		resize_system_slice ${SECOND_OPTION}
 		;;
 	rollback)
 		rollback
