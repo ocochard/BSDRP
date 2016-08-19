@@ -5,6 +5,7 @@
 * Upgraded to FreeBSD 10.3-RELEASE-p2
 * Backport shutdown +second option from -head
 * Drivers added: sfxge (Solarflare 10Gb Ethernet adapter driver) and if_disc (software discard network interface)
+* KTRACE enabled in kernel
 
 ## Bug fix
 * Disable fastforwarding too soon (tryforward is not in 10.3): Re-enable it
@@ -18,12 +19,13 @@
 * exabgp to 3.4.16
 * iperf to 3.1.3
 * isc-dhcp43-server to 4.3.4
+* monit to 5.19
 * openvpn to 3.11
 * strongswan to 5.5
 
 ## package list
-* bird-1.6.0
-* bird6-1.6.0
+* bird-1.6.0_1
+* bird6-1.6.0_1
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
 * ca_root_nss-3.26
@@ -43,13 +45,13 @@
 * libev-4.22,1
 * libevent2-2.0.22_1
 * libffi-3.2.1
-* libgcrypt-1.7.2
+* libgcrypt-1.7.3
 * libgpg-error-1.24
 * libpci-3.5.1
 * libsodium-1.0.10
 * lzo2-2.09
 * mlvpn-2.3.1_1
-* monit-5.18
+* monit-5.19.0
 * mpd5-5.8
 * mrouted-3.9.7_1
 * netmap-ipfw-0.1
