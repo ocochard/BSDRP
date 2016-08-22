@@ -5,7 +5,7 @@
 * Upgraded to FreeBSD 10.3-RELEASE-p2
 * Backport shutdown +second option from -head
 * Drivers added: sfxge (Solarflare 10Gb Ethernet adapter driver) and if_disc (software discard network interface)
-* KTRACE enabled in kernel
+* KTRACE enabled in kernel and reinstall kgdb
 
 ## Bug fix
 * Disable fastforwarding too soon (tryforward is not in 10.3): Re-enable it
@@ -13,7 +13,7 @@
 * Add a pf with fragmentation timeout fix
   source: https://lists.freebsd.org/pipermail/freebsd-pf/2016-May/008044.html
 * Disable net.bpf.zerocopy_enable: It created problem with tcpdump on 10.3
-* Fix dhcprelya CPU usage when used on a VM
+* Fix dhcprelya CPU usage
 
 ## Updated packages
 * bird to 1.6.0

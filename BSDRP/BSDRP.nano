@@ -66,7 +66,6 @@ WITHOUT_FLOPPY=
 WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
 WITHOUT_GCOV=
-WITHOUT_GDB=
 WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
@@ -559,7 +558,7 @@ bsdrp_custom () {
 	sed -i "" -e "/cfg/s/rw/rw,noatime/" ${NANO_WORLDDIR}/etc/fstab
 	# Add /data partition to fstab (config script use it for archiving old configurations)
 	echo "/dev/ufs/${NANO_LABEL}s4 /data ufs rw,noauto,failok 2 2" >> ${NANO_WORLDDIR}/etc/fstab
-	# There is a problem around june 2014 with nanobsd: It didn't generate anymore the /data directory
+	# There is a problem around june 2014 with nanobsd: It didn't generate anymore the /data directory
 	[ -d ${NANO_WORLDDIR}/data ] || mkdir -p ${NANO_WORLDDIR}/data
 
 	# relocate /var/cron to /etc/cron
@@ -567,7 +566,7 @@ bsdrp_custom () {
 	mkdir -p ${NANO_WORLDDIR}/etc/cron
 	rm -rf ${NANO_WORLDDIR}/var/cron
 	ln -s ../etc/cron ${NANO_WORLDDIR}/var/cron	
-	
+
 	# Add /etc/rc.conf.misc into the /etc/default/rc.conf
 	sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
 
@@ -687,7 +686,6 @@ usr/bin/c++filt
 usr/bin/gcov
 usr/bin/gdb
 usr/bin/gdbtui
-usr/bin/kgdb
 usr/bin/ar
 usr/bin/ranlib
 usr/bin/c89
@@ -775,7 +773,26 @@ usr/share/tmac/tmac.vgrind
 		fi
 		tar cfvZ ${NANO_OBJ}/debug.tar.xz -C ${NANO_WORLDDIR}/usr/lib debug
 		rm -rf ${NANO_WORLDDIR}/usr/lib/debug
+		# relocate /usr/lib/debug to /data/debug (debug archive files needs more than 1Gb for being extracted)
+		ln -s /data/debug ${NANO_WORLDDIR}/usr/lib/debug
 	fi
+
+	# Generate a geom compressed image disk (Disabled)
+	#if [ -f ${NANO_OBJ}/debug.tar.xz ]; then
+	#	dd if=/dev/zero of=/tmp/debug.img seek=4050000 count=0
+	#	MDYOYO=`mdconfig -a -t vnode -f /tmp/debug.img`
+	#	newfs -o space -m 1 /dev/${MDYOYO}
+	#	[ -d /tmp/mdyoyo ] || mkdir /tmp/mdyoyo
+	#	mount /dev/${MDYOYO} /tmp/mdyoyo
+	#	tar -C /tmp/mdyoyo -xvf ${NANO_OBJ}/debug.tar.xz
+	#	mkdir /tmp/mdyoyo/src
+	#	tar -C ${NANO_SRC} --exclude=.svn -cf - . | tar -xf - -C /tmp/mdyoyo/src
+	#	umount /tmp/mdyoyo
+	#	mdconfig -d -u ${MDYOYO}
+	#	#mkuzip -L -d /tmp/debug.img
+	#	mkuzip /tmp/debug.img
+	#	rm /tmp/debug.img
+	#fi
 	# strip binaries for ports (tips from FreeNAS 8)
 	pprint 4 "Stripping binaries and libraries"
 	for dir in $(find ${NANO_WORLDDIR}/ -name '*bin' -or -name 'lib' -maxdepth 3); do

@@ -182,7 +182,7 @@ expand_data_slice () {
 	fi
 
 	#free space
-	FREE_SPACE=`gpart show ${boot_dev} | grep "\- free \-" | grep -v k \
+	FREE_SPACE=`gpart show ${boot_dev} | grep "\- free \-" | grep -v "K)" \
 			   | cut -d '-' -f 3 | tr -s ' '`
 	[ -z "${FREE_SPACE}" ] && die "There is no space left on disk"
 	echo "There is ${FREE_SPACE} available on your disk that can be use for /data"
