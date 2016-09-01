@@ -6,6 +6,8 @@
 * Backport shutdown +second option from -head
 * Drivers added: sfxge (Solarflare 10Gb Ethernet adapter driver) and if_disc (software discard network interface)
 * KTRACE enabled in kernel and reinstall kgdb
+* Quagga is no more enabled by default
+* UTF-8 enabled by default
 
 ## Bug fix
 * Disable fastforwarding too soon (tryforward is not in 10.3): Re-enable it

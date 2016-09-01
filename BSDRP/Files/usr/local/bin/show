@@ -57,6 +57,9 @@ getoption () {
 		authors|author)
 			authors
 			;;
+		disk)
+			disk
+			;;
         help|h)
             usage
             ;;
@@ -126,6 +129,7 @@ usage () {
 # value $0 is the name of the called script
 		echo "Usage: $0 option"
         echo "  - authors      : Display authors and contributors list"
+		echo "  - disk         : Display disk name and active slice"
 		echo "  - help/h [option]  : Display this help message. "
         echo "       If [option] given, display more detail about"
 		echo "  - ifstat       : Display interface stats"
@@ -150,6 +154,16 @@ usage () {
 authors () {
 	$PAGER /root/AUTHORS
 	exit 0
+}
+
+# Display disk name and active slice
+disk () {
+	. /etc/nanobsd.conf
+	echo "Label to disk mapping:"
+	glabel status | head -1 ; glabel status | grep ufs/BSDRP
+	disk=`glabel status | grep "${NANO_DRIVE}s[12]a" | awk '{ s=$3; sub(/s[12]a$/, "", s); print s; }'`
+	echo "Partitions on disk ${disk}:"
+	gpart show $disk
 }
 
 # Display LICENSE

@@ -41,6 +41,7 @@ sysrc ifconfig_em0_alias1="inet6 2001:db8:12::fe prefixlen 128 vhid 1 pass testp
 sysrc ifconfig_em1="inet 10.0.23.2/24"
 sysrc ifconfig_em1_ipv6="inet6 2001:db8:23::2 prefixlen 64"
 sysrc ifconfig_em4="inet 192.168.56.12/24"
+sysrc quagga_enable=YES
 sysrc quagga_daemons="zebra bgpd"
 sysrc dhcprelya_enable=YES
 sysrc dhcprelya_servers="10.0.3.3"
@@ -171,7 +172,7 @@ kldload carp
 service netif restart
 service ipsec start
 service rtadvd start
-service quagga restart
+service quagga start
 service dhcprelya start
 service mpd5 start
 service ngnetflow start
@@ -333,7 +334,7 @@ config save
 hostname R3
 service netif restart
 service ipsec start
-service quagga restart
+service quagga start
 service isc-dhcpd start
 service pf start
 echo "VM3 configured"

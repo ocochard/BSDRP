@@ -82,7 +82,6 @@ WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
 WITHOUT_LIB32=
 WITHOUT_LLDB=
-WITHOUT_LOCALES=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
 WITHOUT_NCP=
@@ -205,8 +204,10 @@ add_netrate () {
         for MAKE_CMD in PROG PROGS ALL; do
             for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
                 if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
+					[ -d ${NANO_WORLDDIR}/usr/local/lib ] || mkdir -p ${NANO_WORLDDIR}/usr/local/lib
                     mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
                 else
+					[ -d ${NANO_WORLDDIR}/usr/local/bin ] || mkdir -p ${NANO_WORLDDIR}/usr/local/bin
                     mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
                 fi
                 if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
@@ -461,9 +462,9 @@ add_port "net/mpd5"
 
 # high-performance (bridge only) netmap-ipfw and netmap-fwd
 if [ ${NANO_ARCH} = "amd64" ]; then
-	add_port "net/netmap-ipfw"
-#	add_port "textproc/libucl"
-#	add_port "net/netmap-fwd"
+	#add_port "net/netmap-ipfw"
+	#add_port "textproc/libucl"
+	#add_port "net/netmap-fwd"
 fi
 
 # Link aggregator
@@ -504,7 +505,7 @@ add_port "security/ca_root_nss"
  # Curl is just a build-deps of cmake (needed by libftdi)
  # But curl need base kerberos, then we remove this deps
  # And we de-install curl on the custom script
- add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE\""
+ #add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE\""
 #add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
   add_port "misc/pciids"
  add_port "devel/libpci"
@@ -801,7 +802,9 @@ usr/share/tmac/tmac.vgrind
 		done
 	done	
 	# Generate package inventory
-	CR 'pkg info' > ${NANO_OBJ}/packages.info
+	if [ -x ${NANO_WORLDDIR}/usr/local/sbin/pkg ]; then
+		CR 'pkg info' > ${NANO_OBJ}/packages.info
+	fi
 }
 
 
