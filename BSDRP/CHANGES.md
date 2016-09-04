@@ -16,6 +16,7 @@
   source: https://lists.freebsd.org/pipermail/freebsd-pf/2016-May/008044.html
 * Disable net.bpf.zerocopy_enable: It created problem with tcpdump on 10.3
 * Fix dhcprelya CPU usage
+* Fix pf-scrub on bridge (FreeBSD's PR 185633)
 
 ## Updated packages
 * bird to 1.6.0
