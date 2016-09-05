@@ -8,6 +8,7 @@
 * KTRACE enabled in kernel and reinstall kgdb
 * Quagga is no more enabled by default
 * UTF-8 enabled by default
+* New package: ntraceroute (Path MTU discovery, AS lookup)
 
 ## Bug fix
 * Disable fastforwarding too soon (tryforward is not in 10.3): Re-enable it
@@ -24,7 +25,7 @@
 * iperf to 3.1.3
 * isc-dhcp43-server to 4.3.4
 * monit to 5.19
-* openvpn to 3.11
+* openvpn to 3.12
 * strongswan to 5.5
 
 ## package list
@@ -33,9 +34,9 @@
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
 * ca_root_nss-3.26
-* dhcprelya-4.9
+* dhcprelya-4.9_1
 * dlmalloc-2.8.6
-* dma-0.11,1
+* dma-0.11_1,1
 * easy-rsa-3.0.1_1
 * exabgp-3.4.16
 * flashrom-0.9.9
@@ -58,9 +59,9 @@
 * monit-5.19.0
 * mpd5-5.8
 * mrouted-3.9.7_1
-* netmap-ipfw-0.1
+* ntraceroute-6.4.2_2
 * openldap-client-2.4.44
-* openvpn-2.3.11_1
+* openvpn-2.3.12_1
 * openvpn-auth-radius-2.1_3
 * pciids-20160621
 * pim6-tools-20061214
