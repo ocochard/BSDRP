@@ -9,6 +9,7 @@
 * Quagga is no more enabled by default
 * UTF-8 enabled by default
 * New package: ntraceroute (Path MTU discovery, AS lookup)
+* amdtemp drivers backported from 11.0: Allow to monitor PC Engines APU2
 
 ## Bug fix
 * Disable fastforwarding too soon (tryforward is not in 10.3): Re-enable it
