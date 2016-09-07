@@ -6,7 +6,7 @@ Index: etc/rc.d/ipsec
  
  ipsec_prestart()
  {
-+	if [ `sysctl -n net.inet.ip.fastforwarding` = 1 ]; then
++	if [ `sysctl -in net.inet.ip.fastforwarding` = 1 ]; then
 +		warn "ipsec is not compatible with fastforwarding"
 +	fi
  	if [ ! -f "$ipsec_file" ]; then

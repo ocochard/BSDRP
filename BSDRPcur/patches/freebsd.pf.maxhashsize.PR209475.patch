@@ -1,0 +1,37 @@
+--- sys/netpfil/pf/pf.c.old	2016-05-29 20:31:10.980290000 +1200
++++ sys/netpfil/pf/pf.c	2016-05-29 20:32:24.194178000 +1200
+@@ -59,6 +59,7 @@
+ #include <sys/sysctl.h>
+ #include <sys/taskqueue.h>
+ #include <sys/ucred.h>
++#include <sys/proc.h>
+ 
+ #include <net/if.h>
+ #include <net/if_var.h>
+@@ -776,11 +777,23 @@
+ 	struct pf_keyhash	*kh;
+ 	struct pf_idhash	*ih;
+ 	struct pf_srchash	*sh;
++        u_long hw_physmem;
+ 	u_int i;
+-
+-	if (pf_hashsize == 0 || !powerof2(pf_hashsize))
++        size_t size;
++        
++	/* Get the available hardware memory */
++        size=sizeof(hw_physmem);
++        if (kernel_sysctlbyname(&thread0, "hw.physmem", &hw_physmem,	\
++	&size, 0, 0, 0, 0) != 0)
++	/* make the check against hw.physmem irrelevant */
++		hw_physmem = ULONG_MAX; 
++
++	if (pf_hashsize == 0 || !powerof2(pf_hashsize) || 		\
++	(pf_hashsize * sizeof(struct pf_keyhash)) > hw_physmem || 	\
++	(pf_hashsize * sizeof(struct pf_idhash)) > hw_physmem)
+ 		pf_hashsize = PF_HASHSIZ;
+-	if (pf_srchashsize == 0 || !powerof2(pf_srchashsize))
++	if (pf_srchashsize == 0 || !powerof2(pf_srchashsize) || 	\
++	(pf_srchashsize * sizeof(struct pf_srchash)) > hw_physmem )
+ 		pf_srchashsize = PF_HASHSIZ / 4;
+ 
+ 	V_pf_hashseed = arc4random();

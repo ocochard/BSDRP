@@ -5,7 +5,7 @@
 * Upgraded to FreeBSD 10.3-RELEASE-p2
 * Backport shutdown +second option from -head
 * Drivers added: sfxge (Solarflare 10Gb Ethernet adapter driver) and if_disc (software discard network interface)
-* KTRACE enabled in kernel and reinstall kgdb
+* KTRACE enabled in kernel and kgdb tool included
 * Quagga is no more enabled by default
 * UTF-8 enabled by default
 * New package: ntraceroute (Path MTU discovery, AS lookup)
