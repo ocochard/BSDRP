@@ -1,4 +1,4 @@
-# Release 1.60 (not released)
+# Release 1.60 (08/09/2016)
 
 ## New features
 * New fresh installation needs 1GB disk size, upgrade still possible on 512MB disks
