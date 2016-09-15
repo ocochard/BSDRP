@@ -1,3 +1,23 @@
+#
+# GENERIC -- Generic kernel configuration file for FreeBSD/amd64
+#
+# For more information on this file, please read the config(5) manual page,
+# and/or the handbook section on Kernel Configuration Files:
+#
+#    http://www.FreeBSD.org/doc/en_US.ISO8859-1/books/handbook/kernelconfig-config.html
+#
+# The handbook is also available locally in /usr/share/doc/handbook
+# if you've installed the doc distribution, otherwise always see the
+# FreeBSD World Wide Web server (http://www.FreeBSD.org/) for the
+# latest information.
+#
+# An exhaustive list of options and more detailed explanations of the
+# device lines is also present in the ../../conf/NOTES and NOTES files.
+# If you are in doubt as to the purpose or necessity of a line, check first
+# in NOTES.
+#
+# $FreeBSD: head/sys/amd64/conf/GENERIC 299142 2016-05-05 22:26:23Z jhb $
+
 cpu		HAMMER
 ident		BSDRP-AMD64
 
@@ -62,7 +82,14 @@ options 	INCLUDE_CONFIG_FILE	# Include this file in kernel
 options 	KDB			# Kernel debugger related code
 options 	KDB_TRACE		# Print a stack trace for a panic
 # For full debugger support use (turn off in stable branch):
-#options     DDB         # Support DDB.
+#options 	DDB			# Support DDB.
+#options 	GDB			# Support remote GDB.
+#options 	DEADLKRES		# Enable the deadlock resolver
+#options 	INVARIANTS		# Enable calls of extra sanity checking
+#options 	INVARIANT_SUPPORT	# Extra sanity checks of internal structures, required by INVARIANTS
+#options 	WITNESS			# Enable checks to detect deadlocks and cycles
+#options 	WITNESS_SKIPSPIN	# Don't run witness on spinlocks for speed
+#options 	MALLOC_DEBUG_MAXZONES=8	# Separate malloc(9) zones
 
 # Make an SMP-capable kernel by default
 options 	SMP			# Symmetric MultiProcessor Kernel
@@ -75,6 +102,7 @@ device		cpufreq
 device		acpi
 options 	ACPI_DMAR
 device		pci
+options 	PCI_HP			# PCI-Express native HotPlug
 options		PCI_IOV			# PCI SR-IOV support
 
 # Floppy drives
@@ -322,13 +350,13 @@ device		virtio_blk		# VirtIO Block device
 device		virtio_scsi		# VirtIO SCSI device
 device		virtio_balloon		# VirtIO Memory Balloon device
 
-# HyperV drivers and enchancement support
-device		hyperv			# HyperV drivers
+# HyperV drivers and enhancement support
+device		hyperv			# HyperV drivers 
 
 # Xen HVM Guest Optimizations
 # NOTE: XENHVM depends on xenpci.  They must be added or removed together.
-options		XENHVM          # Xen HVM kernel infrastructure
-device      xenpci          # Xen HVM Hypervisor services driver
+options 	XENHVM			# Xen HVM kernel infrastructure
+device		xenpci			# Xen HVM Hypervisor services driver
 
 # VMware support
 device		vmx			# VMware VMXNET3 Ethernet

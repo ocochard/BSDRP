@@ -113,6 +113,7 @@ WITHOUT_TIMED=
 WITHOUT_UNBOUND=
 WITHOUT_USB_GADGET_EXAMPLES=
 WITHOUT_WIRELESS=
+WITHOUT_WPA_SUPPLICANT_EAPOL=
 WITHOUT_ZFS=
 WITH_GCC=
 WITH_IDEA=
@@ -240,6 +241,29 @@ add_quagga-bgp-netgen () {
     umount ${NANO_WORLDDIR}/usr/src
     umount ${NANO_WORLDDIR}/dev
 }
+
+# Add PC Engines APU LED drivers module
+add_apuled () {
+    mkdir -p ${NANO_WORLDDIR}/dev
+    mount -t devfs devfs ${NANO_WORLDDIR}/dev
+	mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
+	mkdir -p ${NANO_WORLDDIR}/tmp/apuled
+    mount -t nullfs ${NANO_TOOLS}/tools/apuled ${NANO_WORLDDIR}/tmp/apuled
+    mkdir -p ${NANO_WORLDDIR}/usr/workdir
+    CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+		MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+		UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
+		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+        make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/'
+    mv ${NANO_WORLDDIR}/tmp/apuled/apuled.ko ${NANO_WORLDDIR}/boot/modules/
+	CR 'make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/ clean'
+    rm -rf ${NANO_WORLDDIR}/usr/workdir
+    umount ${NANO_WORLDDIR}/usr/src
+	umount ${NANO_WORLDDIR}/tmp/apuled
+    umount ${NANO_WORLDDIR}/dev
+	rm -r ${NANO_WORLDDIR}/tmp/apuled
+}
+
 
 # Need to check if this function works with cross-compiling architecture!!!!
 # Recursive complex fonction: Generate one function for each ports
@@ -441,9 +465,6 @@ add_port "net/isc-dhcp43-server"
 #add_port "net/isc-dhcp43-relay"
 add_port "net/dhcprelya"
 
-# Add sstmp, a simple MTA to get mail off the system
-add_port "mail/dma"
-
 # Add monit, a managing and monitoring processes tool
 add_port "sysutils/monit"
 
@@ -463,8 +484,8 @@ add_port "net/mpd5"
 # high-performance (bridge only) netmap-ipfw and netmap-fwd
 if [ ${NANO_ARCH} = "amd64" ]; then
 	#add_port "net/netmap-ipfw"
-	#add_port "textproc/libucl"
-	#add_port "net/netmap-fwd"
+	add_port "textproc/libucl"
+	add_port "net/netmap-fwd"
 fi
 
 # Link aggregator
@@ -619,6 +640,7 @@ usr/share/man/man9
 usr/share/me
 usr/share/pc-sysinstall
 usr/share/openssl
+usr/share/syscons
 usr/libdata/lint
 usr/libdata/ldscripts
 '
@@ -640,10 +662,16 @@ boot/boot1.efifat
 boot/loader.efi
 sbin/hastd
 sbin/hastctl
+usr/sbin/bsdconfig
+usr/share/man/man8/bsdconfig.8.gz
 usr/sbin/bhyve
 usr/sbin/bhyvectl
 usr/sbin/bhyveload
 usr/sbin/ctladm
+usr/sbin/ctld
+usr/share/man/man8/ctld.8.gz
+usr/sbin/hv_kvp_daemon
+usr/share/man/man8/hv_kvp_daemon.8.gz
 usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample
 usr/share/misc/magic.mgc
@@ -813,15 +841,16 @@ usr/share/tmac/tmac.vgrind
 
 # Enable only serial system only
 bsdrp_console_serial () {
-	# Force getty to be enabled on serial 1 and 2
-    sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[1-2]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[1-2]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	# Set serial speed (3wire is available since 11 only)
-	sed -i "" -e /ttyu[0-2]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-    # Disable getty on syscons devices (prevent error messages if no vga device)
-    sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
-    # Tell loader to use only serial console early with relative high baud speed
+	# Since r266895, console is set as onifconsole
+	# Since r289634, 4 firsts serials console are set as onifconsole
+	#sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
+	#sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
+	#sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+
+    # Disable getty on syscons devices
+    #sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
+
+    # Tell loader to use serial console early.
     echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
 }
 
@@ -837,11 +866,12 @@ bsdrp_console_dual () {
 
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
-	# Set serial speed (3wire is available since 11 only)
-	sed -i "" -e /ttyu[1-2]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[1-2]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[0-2]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)                                                               
+	# Enable onifconsole to ttyu1 to ttyu3
+	# Since r289634, 4 firsts serials console are set as onifconsole
+	#sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
+	#sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+
+	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 
 }
 

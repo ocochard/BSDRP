@@ -1,3 +1,23 @@
+#
+# GENERIC -- Generic kernel configuration file for FreeBSD/i386
+#
+# For more information on this file, please read the config(5) manual page,
+# and/or the handbook section on Kernel Configuration Files:
+#
+#    http://www.FreeBSD.org/doc/en_US.ISO8859-1/books/handbook/kernelconfig-config.html
+#
+# The handbook is also available locally in /usr/share/doc/handbook
+# if you've installed the doc distribution, otherwise always see the
+# FreeBSD World Wide Web server (http://www.FreeBSD.org/) for the
+# latest information.
+#
+# An exhaustive list of options and more detailed explanations of the
+# device lines is also present in the ../../conf/NOTES and NOTES files.
+# If you are in doubt as to the purpose or necessity of a line, check first
+# in NOTES.
+#
+# $FreeBSD: head/sys/i386/conf/GENERIC 299142 2016-05-05 22:26:23Z jhb $
+
 cpu		I486_CPU
 cpu		I586_CPU
 cpu		I686_CPU
@@ -72,6 +92,7 @@ device		cpufreq
 # Bus support.
 device		acpi
 device		pci
+options 	PCI_HP			# PCI-Express native HotPlug
 options		PCI_IOV			# PCI SR-IOV support
 
 # Floppy drives
@@ -257,6 +278,35 @@ device		fe			# Fujitsu MB8696x based cards
 device		ie			# EtherExpress 8/16, 3C507, StarLAN 10 etc.
 device		sn			# SMC's 9000 series of Ethernet chips
 device		xe			# Xircom pccard Ethernet
+
+# Wireless NIC cards
+#device		wlan			# 802.11 support
+#options 	IEEE80211_DEBUG		# enable debug msgs
+#options 	IEEE80211_AMPDU_AGE	# age frames in AMPDU reorder q's
+#options 	IEEE80211_SUPPORT_MESH	# enable 802.11s draft support
+#device		wlan_wep		# 802.11 WEP support
+#device		wlan_ccmp		# 802.11 CCMP support
+#device		wlan_tkip		# 802.11 TKIP support
+#device		wlan_amrr		# AMRR transmit rate control algorithm
+#device		an			# Aironet 4500/4800 802.11 wireless NICs.
+#device		ath			# Atheros NICs
+#device		ath_pci			# Atheros pci/cardbus glue
+#device		ath_hal			# pci/cardbus chip support
+#options 	AH_SUPPORT_AR5416	# enable AR5416 tx/rx descriptors
+#options 	AH_AR5416_INTERRUPT_MITIGATION # AR5416 interrupt mitigation
+#options 	ATH_ENABLE_11N		# Enable 802.11n support for AR5416 and later
+#device		ath_rate_sample		# SampleRate tx rate control for ath
+#device		bwi			# Broadcom BCM430x/BCM431x wireless NICs.
+#device		bwn			# Broadcom BCM43xx wireless NICs.
+#device		ipw			# Intel 2100 wireless NICs.
+#device		iwi			# Intel 2200BG/2225BG/2915ABG wireless NICs.
+#device		iwn			# Intel 4965/1000/5000/6000 wireless NICs.
+#device		malo			# Marvell Libertas wireless NICs.
+#device		mwl			# Marvell 88W8363 802.11n wireless NICs.
+#device		ral			# Ralink Technology RT2500 wireless NICs.
+#device		wi			# WaveLAN/Intersil/Symbol 802.11 wireless NICs.
+#device		wl			# Older non 802.11 Wavelan wireless NIC.
+#device		wpi			# Intel 3945ABG wireless NICs.
 
 # Pseudo devices.
 device		loop			# Network loopback
