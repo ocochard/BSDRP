@@ -1,6 +1,6 @@
 Index: sys/net/if_bridge.c
 ===================================================================
---- sys/net/if_bridge.c	(revision 305148)
+--- sys/net/if_bridge.c	(revision 306012)
 +++ sys/net/if_bridge.c	(working copy)
 @@ -333,7 +333,7 @@
  #ifdef INET6
@@ -33,7 +33,7 @@ Index: sys/net/if_bridge.c
  					    &llc1);
  				return (error);
  			}
-@@ -3476,56 +3479,75 @@
+@@ -3476,56 +3479,79 @@
  /*
   * bridge_fragment:
   *
@@ -77,8 +77,8 @@ Index: sys/net/if_bridge.c
 -			M_PREPEND(m0, ETHER_HDR_LEN, M_NOWAIT);
 -			if (m0 == NULL) {
 +	/*
-+	 * walk the chain and re-add the Ethernet header for
-+	 * each mbuf packets
++	 * Walk the chain and re-add the Ethernet header for
++	 * each mbuf packet.
 +	 */
 +	
 +	for (mcur = m; mcur; mcur = mcur->m_nextpkt) {
@@ -90,7 +90,8 @@ Index: sys/net/if_bridge.c
 +			if (mcur == NULL) {
  				error = ENOBUFS;
 -				continue;
-+				if (mprev != NULL) mprev->m_nextpkt = nextpkt;
++				if (mprev != NULL)
++					mprev->m_nextpkt = nextpkt;
 +				goto dropit;
  			}
 -			bcopy(eh, mtod(m0, caddr_t), ETHER_HDR_LEN);
@@ -102,20 +103,23 @@ Index: sys/net/if_bridge.c
 +		M_PREPEND(mcur, ETHER_HDR_LEN, M_NOWAIT);
 +		if (mcur == NULL) {
 +			error = ENOBUFS;
-+			if (mprev != NULL) mprev->m_nextpkt = nextpkt;
++			if (mprev != NULL)
++				mprev->m_nextpkt = nextpkt;
 +			goto dropit;
 +		}
 +		bcopy(eh, mtod(mcur, caddr_t), ETHER_HDR_LEN);
 +		/*
-+		 * previous two M_PREPEND could have insered one or two mbuf
-+		 * in front of our mbuf packet chain. Then we had to update
-+		 * the previous packet m_nextpkt.
++		 * The previous two M_PREPEND could have inserted one or two
++		 * mbufs in front so we have to update the previous packet's
++		 * m_nextpkt.
 +		 */
 +		
 +		mcur->m_nextpkt = nextpkt;
-+		if (mprev != NULL) { /* It's not the first packet in the chain*/
++		if (mprev != NULL)
 +			mprev->m_nextpkt = mcur;
-+		} else { /* the first mbuf in the original chain needs to be updated */
++		else {
++			/* The first mbuf in the original chain needs to be
++			 * updated. */
 +			*mp = mcur;	
 +		}
 +		mprev = mcur;

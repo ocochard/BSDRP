@@ -16,7 +16,7 @@
 * exabgp-3.4.16
 * flashrom-0.9.9
 * freevrrpd-1.1_1
-* indexinfo-0.2.4
+* indexinfo-0.2.5
 * iperf-2.0.5
 * iperf3-3.1.3
 * ipmitool-1.8.17_1
@@ -54,7 +54,7 @@
 * quagga-1.0.20160315
 * readline-6.3.8
 * strongswan-5.5.0
-* sudo-1.8.17p1
+* sudo-1.8.18
 * tayga-0.9.2
 * tmux-2.2_1
 * ucarp-1.5.2_2
