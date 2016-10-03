@@ -9,7 +9,7 @@
 * bird6-1.6.0_1
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
-* ca_root_nss-3.26
+* ca_root_nss-3.27
 * dhcprelya-4.9_1
 * dlmalloc-2.8.6
 * easy-rsa-3.0.1_1
@@ -28,7 +28,7 @@
 * libgcrypt-1.7.3
 * libgpg-error-1.24
 * libpci-3.5.1
-* libsodium-1.0.10
+* libsodium-1.0.11
 * libucl-0.8.0
 * lzo2-2.09
 * mlvpn-2.3.1_1
@@ -56,7 +56,7 @@
 * strongswan-5.5.0
 * sudo-1.8.18
 * tayga-0.9.2
-* tmux-2.2_1
+* tmux-2.3
 * ucarp-1.5.2_2
 
 -----------------------------------------------------
