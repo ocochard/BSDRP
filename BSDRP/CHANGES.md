@@ -1,5 +1,11 @@
 # Release 1.70 (unreleased)
 
+## Special upgrade notes (installation older than BSDRP 1.60)
+BSDRP since 1.60 needs at minimum a 1GB disk and no more a 512MB disk.
+If you've installed BSDRP on a 512MB disk: You can't upgrade it.
+But you installed it on a 1GB disk (or larger), here is how to resize the partitionning system:
+system resize-system-slice 964000
+
 ## New features
 * Upgraded to FreeBSD 11.0
 * netmap-fwd
@@ -9,7 +15,7 @@
 * bird6-1.6.0_1
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
-* ca_root_nss-3.27
+* ca_root_nss-3.27.1
 * dhcprelya-4.9_1
 * dlmalloc-2.8.6
 * easy-rsa-3.0.1_1
