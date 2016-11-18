@@ -481,8 +481,8 @@ add_port "net/mpd5"
 # high-performance (bridge only) netmap-ipfw and netmap-fwd
 if [ ${NANO_ARCH} = "amd64" ]; then
     #add_port "net/netmap-ipfw"
-    add_port "textproc/libucl"
-    add_port "net/netmap-fwd"
+    #add_port "textproc/libucl"
+    #add_port "net/netmap-fwd"
 fi
 
 # Link aggregator
@@ -499,7 +499,10 @@ add_port "security/openvpn-auth-radius"
 # Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 #add_port "benchmarks/netpipe" 
 add_port "benchmarks/iperf" "WITH=\"IPV6\""
-#add_port "benchmarks/iperf3"
+add_port "benchmarks/iperf3"
+
+# Add an LLDP daemon
+add_port "net-mgmt/lldpd" "WITHOUT=\"BASH JSON PROPRIETARY SNMP XML\""
 
 #add_port "comms/conserver-com"
 #add_port "comms/ser2net"

@@ -9,7 +9,10 @@ home_server {{ host.name }} {
     response_window = 20
     zombie_period = 40
     revive_interval = 120
-    status_check = status-server
+    #Microsoft crap still didn't support RFC5997 in 2016
+    #status_check = status-server
+    status_check = request
+    username = "test_user_please_reject_me"
     check_interval = 30
     num_answers_to_alive = 3
 }

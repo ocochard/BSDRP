@@ -504,6 +504,9 @@ add_port "security/openvpn-auth-radius"
 add_port "benchmarks/iperf" "WITH=\"IPV6\""
 add_port "benchmarks/iperf3"
 
+# Add an LLDP daemon
+add_port "net-mgmt/lldpd" "WITHOUT=\"BASH JSON PROPRIETARY SNMP XML\""
+
 # Python (being ansible manageable)
 add_port "devel/libffi"
 add_port "lang/python27"

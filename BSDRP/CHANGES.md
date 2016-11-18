@@ -1,5 +1,9 @@
 # Release 1.70 (unreleased)
 
+## To fix before release
+lldp: lldp user unknown
+quagga: "terminal length 0" problem and unwanted debug message
+
 ## Special upgrade notes (installation older than BSDRP 1.60)
 BSDRP since 1.60 needs at minimum a 1GB disk and no more a 512MB disk.
 If you've installed BSDRP on a 512MB disk: You can't upgrade it.
@@ -10,6 +14,14 @@ system resize-system-slice 964000
 * Upgraded to FreeBSD 11.0
 * netmap-fwd
 
+## Updated packages
+* exabgp to 3.4.17
+* iperf3 to 3.1.4
+* isc-dhcp43-server to 4.3.5
+* monit to 5.20.0
+* openvpn to 3.13
+* quagga to 1.1
+
 ## package list
 * bird-1.6.0_1
 * bird6-1.6.0_1
@@ -19,15 +31,15 @@ system resize-system-slice 964000
 * dhcprelya-4.9_1
 * dlmalloc-2.8.6
 * easy-rsa-3.0.1_1
-* exabgp-3.4.16
+* exabgp-3.4.17
 * flashrom-0.9.9
 * freevrrpd-1.1_1
-* indexinfo-0.2.5
+* indexinfo-0.2.6
 * iperf-2.0.5
-* iperf3-3.1.3
+* iperf3-3.1.4
 * ipmitool-1.8.17_1
 * ipsec-tools-0.8.2_1
-* isc-dhcp43-server-4.3.4
+* isc-dhcp43-server-4.3.5
 * libev-4.22,1
 * libevent2-2.0.22_1
 * libffi-3.2.1
@@ -36,31 +48,32 @@ system resize-system-slice 964000
 * libpci-3.5.1
 * libsodium-1.0.11
 * libucl-0.8.0
+* lldpd-0.9.4
 * lzo2-2.09
 * mlvpn-2.3.1_1
-* monit-5.19.0
+* monit-5.20.0
 * mpd5-5.8
 * mrouted-3.9.7_1
 * netmap-fwd-0.2
 * ntraceroute-6.4.2_2
 * openldap-client-2.4.44
-* openvpn-2.3.12_1
+* openvpn-2.3.13_1
 * openvpn-auth-radius-2.1_3
-* pciids-20160621
+* pciids-20161029
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
 * pimd-2.3.2
 * pimdd-0.2.1.0_2
-* pkg-1.8.7_3
+* pkg-1.9.3
 * pmacct-0.14.3_3
-* py27-setuptools27-23.1.0
+* py27-setuptools27-28.1.0
 * python2-2_3
 * python27-2.7.12
-* quagga-1.0.20160315
+* quagga-1.1.0_1
 * readline-6.3.8
 * strongswan-5.5.0
-* sudo-1.8.18
+* sudo-1.8.18p1
 * tayga-0.9.2
 * tmux-2.3
 * ucarp-1.5.2_2

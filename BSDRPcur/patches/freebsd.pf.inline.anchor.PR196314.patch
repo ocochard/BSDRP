@@ -1,17 +1,17 @@
-diff --git sbin/pfctl/pfctl.c sbin/pfctl/pfctl.c
-index 64b4a05..8a7fc0b 100644
---- sbin/pfctl/pfctl.c
-+++ sbin/pfctl/pfctl.c
-@@ -102,7 +102,7 @@ int	 pfctl_show_anchors(int, int, char *);
+Index: sbin/pfctl/pfctl.c
+===================================================================
+--- sbin/pfctl/pfctl.c	(revision 307401)
++++ sbin/pfctl/pfctl.c	(working copy)
+@@ -99,7 +99,7 @@
  int	 pfctl_ruleset_trans(struct pfctl *, char *, struct pf_anchor *);
  int	 pfctl_load_ruleset(struct pfctl *, char *,
  		struct pf_ruleset *, int, int);
 -int	 pfctl_load_rule(struct pfctl *, char *, struct pf_rule *, int);
 +int	 pfctl_load_rule(struct pfctl *, const char *, struct pf_rule *, int);
- const char	*pfctl_lookup_option(char *, const char **);
+ const char	*pfctl_lookup_option(char *, const char * const *);
  
- struct pf_anchor_global	 pf_anchors;
-@@ -1322,12 +1322,11 @@ pfctl_load_ruleset(struct pfctl *pf, char *path, struct pf_ruleset *rs,
+ static struct pf_anchor_global	 pf_anchors;
+@@ -1317,12 +1317,11 @@
  }
  
  int
@@ -25,7 +25,7 @@ index 64b4a05..8a7fc0b 100644
  
  	bzero(&pr, sizeof(pr));
  	/* set up anchor before adding to path for anchor_call */
-@@ -1337,15 +1336,9 @@ pfctl_load_rule(struct pfctl *pf, char *path, struct pf_rule *r, int depth)
+@@ -1332,15 +1331,9 @@
  		errx(1, "pfctl_load_rule: strlcpy");
  
  	if (r->anchor) {
@@ -44,7 +44,7 @@ index 64b4a05..8a7fc0b 100644
  			name = r->anchor->path;
  	} else
  		name = "";
-@@ -1368,7 +1361,6 @@ pfctl_load_rule(struct pfctl *pf, char *path, struct pf_rule *r, int depth)
+@@ -1363,7 +1356,6 @@
  		    pf->opts & PF_OPT_VERBOSE2,
  		    pf->opts & PF_OPT_NUMERIC);
  	}
@@ -52,4 +52,3 @@ index 64b4a05..8a7fc0b 100644
  	pfctl_clear_pool(&r->rpool);
  	return (0);
  }
--- 
