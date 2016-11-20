@@ -126,11 +126,6 @@ patch_src() {
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/src-patches
 		fi
 	done
-
-	# Overwrite the nanobsd script with our own improved nanobsd
-	cp tools/defaults.sh ${NANOBSD_DIR}/defaults.sh
-	cp tools/nanobsd.sh ${NANOBSD_DIR}/nanobsd.sh
-	chmod +x ${NANOBSD_DIR}/nanobsd.sh
 }
 
 #patch the port tree
@@ -346,6 +341,11 @@ NANO_DIRS_INSTALL="${PROJECT_DIR}/Files"
 
 . ${SCRIPT_DIR}/${PROJECT}/make.conf
 
+# Overwrite the nanobsd script with our own improved nanobsd
+# Mandatory for supporting multiple folders to be installed
+cp tools/defaults.sh ${NANOBSD_DIR}/defaults.sh
+cp tools/nanobsd.sh ${NANOBSD_DIR}/nanobsd.sh
+chmod +x ${NANOBSD_DIR}/nanobsd.sh
 
 # Check if no previously mounted dirs
 check_clean ${PROJECT}.${TARGET_ARCH}

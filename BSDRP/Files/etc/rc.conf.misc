@@ -32,9 +32,6 @@ polling_enable="NO"
 # This feature should not be enabled on a router
 disablelrotso_enable="YES"
 
-# Enable RFC1323 extensions
-tcp_extensions="YES"
-
 # Disable INTERRUPT and ETHERNET from for entropy sources
 # This value is VERY important for 8 cores or more and allways improve performance
 harvest_mask="351"
