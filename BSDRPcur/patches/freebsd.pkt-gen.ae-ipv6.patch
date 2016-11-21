@@ -1,6 +1,6 @@
 Index: tools/tools/netmap/pkt-gen.c
 ===================================================================
---- tools/tools/netmap/pkt-gen.c	(revision 308827)
+--- tools/tools/netmap/pkt-gen.c	(revision 308878)
 +++ tools/tools/netmap/pkt-gen.c	(working copy)
 @@ -54,6 +54,7 @@
  #include <net/ethernet.h>
@@ -19,7 +19,15 @@ Index: tools/tools/netmap/pkt-gen.c
  #ifdef _WIN32
  #define cpuset_t        DWORD_PTR   //uint64_t
  static inline void CPU_ZERO(cpuset_t *p)
-@@ -195,14 +198,34 @@
+@@ -179,6 +182,7 @@
+ 	"http://info.iet.unipi.it/~luigi/netmap/ ";
+ 
+ int verbose = 0;
++int normalize = 1;
+ 
+ #define SKIP_PAYLOAD 1 /* do not check payload. XXX unused */
+ 
+@@ -195,14 +199,34 @@
  struct pkt {
  	struct virt_header vh;
  	struct ether_header eh;
@@ -58,7 +66,7 @@ Index: tools/tools/netmap/pkt-gen.c
  	uint16_t port0, port1;
  };
  
-@@ -227,6 +250,7 @@
+@@ -227,6 +251,7 @@
   */
  
  struct glob_arg {
@@ -66,7 +74,7 @@ Index: tools/tools/netmap/pkt-gen.c
  	struct ip_range src_ip;
  	struct ip_range dst_ip;
  	struct mac_range dst_mac;
-@@ -306,68 +330,146 @@
+@@ -306,68 +331,146 @@
  	void *frame;
  };
  
@@ -254,7 +262,7 @@ Index: tools/tools/netmap/pkt-gen.c
  }
  
  static void
-@@ -563,7 +665,7 @@
+@@ -563,7 +666,7 @@
  }
  
  /* Compute the checksum of the given ip header. */
@@ -263,7 +271,7 @@ Index: tools/tools/netmap/pkt-gen.c
  checksum(const void *data, uint16_t len, uint32_t sum)
  {
          const uint8_t *addr = data;
-@@ -588,8 +690,8 @@
+@@ -588,8 +691,8 @@
  	return sum;
  }
  
@@ -274,7 +282,7 @@ Index: tools/tools/netmap/pkt-gen.c
  {
  	sum = ~sum & 0xFFFF;
  	return (htons(sum));
-@@ -637,64 +739,182 @@
+@@ -637,64 +740,182 @@
  #define uh_sum check
  #endif /* linux */
  
@@ -498,7 +506,7 @@ Index: tools/tools/netmap/pkt-gen.c
  /*
   * initialize one packet and prepare for the next one.
   * The copy could be done better instead of repeating it each time.
-@@ -704,9 +924,11 @@
+@@ -704,9 +925,11 @@
  {
  	struct pkt *pkt = &targ->pkt;
  	struct ether_header *eh;
@@ -511,7 +519,7 @@ Index: tools/tools/netmap/pkt-gen.c
  	const char *payload = targ->g->options & OPT_INDIRECT ?
  		indirect_payload : default_payload;
  	int i, l0 = strlen(payload);
-@@ -716,7 +938,9 @@
+@@ -716,7 +939,9 @@
  	pcap_t *file;
  	struct pcap_pkthdr *header;
  	const unsigned char *packet;
@@ -522,7 +530,7 @@ Index: tools/tools/netmap/pkt-gen.c
  	/* Read a packet from a PCAP file if asked. */
  	if (targ->g->packet_file != NULL) {
  		if ((file = pcap_open_offline(targ->g->packet_file,
-@@ -739,45 +963,69 @@
+@@ -739,45 +964,69 @@
  	for (i = 0; i < paylen; i += l0) {
  		if (l0 > paylen - i)
  			l0 = paylen - i; // last round
@@ -623,7 +631,7 @@ Index: tools/tools/netmap/pkt-gen.c
  	bzero(&pkt->vh, sizeof(pkt->vh));
  	// dump_payload((void *)pkt, targ->g->pkt_size, NULL, 0);
  }
-@@ -1575,10 +1823,10 @@
+@@ -1575,10 +1824,10 @@
  			char *p = NETMAP_BUF(ring, slot->buf_idx);
  
  			slot->flags = 0;
@@ -638,7 +646,7 @@ Index: tools/tools/netmap/pkt-gen.c
  			nm_pkt_copy(frame, p, size);
  			if (fcnt == frags) {
  				update_addresses(pkt, targ->g);
-@@ -1680,7 +1928,7 @@
+@@ -1680,7 +1929,7 @@
  	unsigned int frags = 0;
  	int first_packet = 1;
  	int first_slot = 1;
@@ -647,7 +655,7 @@ Index: tools/tools/netmap/pkt-gen.c
  
  	cur.pkts = cur.bytes = cur.events = cur.min_space = 0;
  	cur.t.tv_usec = cur.t.tv_sec = 0; //  unused, just silence the compiler
-@@ -1777,13 +2025,20 @@
+@@ -1777,13 +2026,20 @@
  			p -= sizeof(pkt->vh) - targ->g->virt_header;
  			len += sizeof(pkt->vh) - targ->g->virt_header;
  			pkt = (struct pkt *)p;
@@ -671,7 +679,23 @@ Index: tools/tools/netmap/pkt-gen.c
  				if (first_slot) {
  					/* Grab the first one, whatever it
  					   is. */
-@@ -1890,11 +2145,13 @@
+@@ -1858,8 +2114,13 @@
+ 	raw_bw = (8.0 * (cur->pkts * 24 + cur->bytes)) / delta;
+ 	abs = cur->pkts / (double)(cur->events);
+ 
+-	printf("Speed: %spps Bandwidth: %sbps (raw %sbps). Average batch: %.2f pkts\n",
+-		norm(b1, pps), norm(b2, bw), norm(b3, raw_bw), abs);
++	if (normalize)
++		printf("Speed: %spps Bandwidth: %sbps (raw %sbps). Average batch: %.2f pkts\n",
++			norm(b1, pps), norm(b2, bw), norm(b3, raw_bw), abs);
++	else
++		printf("Speed: %llupps Bandwidth: %llubps (raw %llubps). Average batch: %.2f pkts\n",
++			(unsigned long long)pps, (unsigned long long)bw,
++			(unsigned long long)raw_bw, abs);
+ }
+ 
+ static void
+@@ -1890,11 +2151,14 @@
  		"\t-H len		add empty virtio-net-header with size 'len'\n"
  		"\t-E pipes		allocate extra space for a number of pipes\n"
  		"\t-r			do not touch the buffers (send rubbish)\n"
@@ -681,12 +705,51 @@ Index: tools/tools/netmap/pkt-gen.c
  		"\t-Z			use random IPv4 dst address/port\n"
  		"\t-F num_frags		send multi-slot packets\n"
  		"\t-A			activate pps stats on receiver\n"
++		"\t-N			disable units normalization\n"
 +		"\t-4			use inet4 address family\n"
 +		"\t-6           use inet6 address family\n"
  		"",
  		cmd);
  
-@@ -2209,6 +2466,7 @@
+@@ -2043,17 +2307,28 @@
+ 			}
+ 			ppsdev /= nsamples;
+ 			ppsdev = sqrt(ppsdev);
+-
+-			snprintf(b4, sizeof(b4), "[avg/std %s/%s pps]",
+-				 norm(b1, ppsavg), norm(b2, ppsdev));
++			if (normalize)
++				snprintf(b4, sizeof(b4), "[avg/std %s/%s pps]",
++					norm(b1, ppsavg), norm(b2, ppsdev));
++			else
++				snprintf(b4, sizeof(b4), "[avg/std %lf/%lf pps]",
++					ppsavg, ppsdev);
+ 		}
+ 
+-		D("%spps %s(%spkts %sbps in %llu usec) %.2f avg_batch %d min_space",
+-			norm(b1, pps), b4,
+-			norm(b2, (double)x.pkts),
+-			norm(b3, (double)x.bytes*8),
+-			(unsigned long long)usec,
+-			abs, (int)cur.min_space);
++		if (normalize)
++			D("%spps %s(%spkts %sbps in %llu usec) %.2f avg_batch %d min_space",
++				norm(b1, pps), b4,
++				norm(b2, (double)x.pkts),
++				norm(b3, (double)x.bytes*8),
++				(unsigned long long)usec,
++				abs, (int)cur.min_space);
++		else
++			D("%llupps %s(%llupkts %llubps in %llu usec) %.2f avg_batch %d min_space",
++				(unsigned long long)pps, b4,
++				(unsigned long long)x.pkts,
++				(unsigned long long)x.bytes*8,
++				(unsigned long long)usec,
++				abs, (int)cur.min_space);
+ 		prev = cur;
+ 
+ 		if (done == g->nthreads)
+@@ -2209,6 +2484,7 @@
  	g.report_interval = 1000;	/* report interval */
  	g.affinity = -1;
  	/* ip addresses can also be a range x.x.x.x-x.x.x.y */
@@ -694,18 +757,18 @@ Index: tools/tools/netmap/pkt-gen.c
  	g.src_ip.name = "10.0.0.1";
  	g.dst_ip.name = "10.1.0.1";
  	g.dst_mac.name = "ff:ff:ff:ff:ff:ff";
-@@ -2223,8 +2481,8 @@
+@@ -2223,8 +2499,8 @@
  	g.nmr_config = "";
  	g.virt_header = 0;
  
 -	while ( (ch = getopt(arc, argv,
 -			"a:f:F:n:i:Il:d:s:D:S:b:c:o:p:T:w:WvR:XC:H:e:E:m:rP:zZA")) != -1) {
-+	while ((ch = getopt(arc, argv, "46a:f:F:n:i:Il:d:s:D:S:b:c:o:p:"
++	while ((ch = getopt(arc, argv, "46a:f:F:Nn:i:Il:d:s:D:S:b:c:o:p:"
 +		"T:w:WvR:XC:H:e:E:m:rP:zZA")) != -1) {
  		struct td_desc *fn;
  
  		switch(ch) {
-@@ -2233,6 +2491,14 @@
+@@ -2233,10 +2509,22 @@
  			usage();
  			break;
  
@@ -720,7 +783,15 @@ Index: tools/tools/netmap/pkt-gen.c
  		case 'n':
  			g.npackets = strtoull(optarg, NULL, 10);
  			break;
-@@ -2328,6 +2594,7 @@
+ 
++		case 'N':
++			normalize = 0;
++			break;
++
+ 		case 'F':
+ 			i = atoi(optarg);
+ 			if (i < 1 || i > 63) {
+@@ -2328,6 +2616,7 @@
  		case 'b':	/* burst */
  			g.burst = atoi(optarg);
  			break;
@@ -728,7 +799,7 @@ Index: tools/tools/netmap/pkt-gen.c
  		case 'c':
  			g.cpus = atoi(optarg);
  			break;
-@@ -2413,16 +2680,11 @@
+@@ -2413,16 +2702,11 @@
  		g.src_mac.name = mybuf;
  	}
  	/* extract address ranges */
