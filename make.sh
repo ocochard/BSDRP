@@ -344,6 +344,7 @@ NANO_DIRS_INSTALL="${PROJECT_DIR}/Files"
 # Overwrite the nanobsd script with our own improved nanobsd
 # Mandatory for supporting multiple folders to be installed
 cp tools/defaults.sh ${NANOBSD_DIR}/defaults.sh
+cp tools/legacy.sh ${NANOBSD_DIR}/
 cp tools/nanobsd.sh ${NANOBSD_DIR}/nanobsd.sh
 chmod +x ${NANOBSD_DIR}/nanobsd.sh
 

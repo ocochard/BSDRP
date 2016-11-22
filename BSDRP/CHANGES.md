@@ -13,6 +13,7 @@ system resize-system-slice 964000
 ## New features
 * Upgraded to FreeBSD 11.0
 * netmap-fwd
+* netmap pkt-gen supports IPv6, thanks to Andrey V. Elsukov (ae@freebsd.org)
 
 ## Updated packages
 * exabgp to 3.4.17
@@ -44,9 +45,9 @@ system resize-system-slice 964000
 * libevent2-2.0.22_1
 * libffi-3.2.1
 * libgcrypt-1.7.3
-* libgpg-error-1.24
-* libpci-3.5.1
-* libsodium-1.0.11
+* libgpg-error-1.25
+* libpci-3.5.2
+* libsodium-1.0.11_1
 * libucl-0.8.0
 * lldpd-0.9.4
 * lzo2-2.09
@@ -59,7 +60,7 @@ system resize-system-slice 964000
 * openldap-client-2.4.44
 * openvpn-2.3.13_1
 * openvpn-auth-radius-2.1_3
-* pciids-20161029
+* pciids-20161119
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
@@ -70,7 +71,7 @@ system resize-system-slice 964000
 * py27-setuptools27-28.1.0
 * python2-2_3
 * python27-2.7.12
-* quagga-1.1.0_1
+* quagga-1.1.0_2
 * readline-6.3.8
 * strongswan-5.5.0
 * sudo-1.8.18p1
