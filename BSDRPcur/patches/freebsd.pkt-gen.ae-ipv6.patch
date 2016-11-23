@@ -2,15 +2,6 @@ Index: tools/tools/netmap/ctrs.h
 ===================================================================
 --- tools/tools/netmap/ctrs.h	(revision 308878)
 +++ tools/tools/netmap/ctrs.h	(working copy)
-@@ -1,8 +1,6 @@
- #ifndef CTRS_H_
- #define CTRS_H_
- 
--/* $FreeBSD$ */
--
- #include <sys/time.h>
- 
- /* counters to accumulate statistics */
 @@ -16,21 +14,27 @@
   * Caller has to make sure that the buffer is large enough.
   */

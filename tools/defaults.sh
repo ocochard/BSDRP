@@ -745,6 +745,7 @@ cust_allow_ssh_root ( ) (
 # Install the stuff under ./Files
 
 cust_install_files ( ) (
+	echo "BSDRP customized instll_files that support multiples dirs"
 	for dir in ${NANO_DIRS_INSTALL}; do
 		cd ${dir}
 		find . -print | grep -Ev '/(CVS|\.svn|\.hg|\.git)' | cpio -Ldumpv ${NANO_WORLDDIR}

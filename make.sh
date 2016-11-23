@@ -341,13 +341,6 @@ NANO_DIRS_INSTALL="${PROJECT_DIR}/Files"
 
 . ${SCRIPT_DIR}/${PROJECT}/make.conf
 
-# Overwrite the nanobsd script with our own improved nanobsd
-# Mandatory for supporting multiple folders to be installed
-cp tools/defaults.sh ${NANOBSD_DIR}/defaults.sh
-cp tools/legacy.sh ${NANOBSD_DIR}/
-cp tools/nanobsd.sh ${NANOBSD_DIR}/nanobsd.sh
-chmod +x ${NANOBSD_DIR}/nanobsd.sh
-
 # Check if no previously mounted dirs
 check_clean ${PROJECT}.${TARGET_ARCH}
 
@@ -624,6 +617,13 @@ case ${NANO_KERNEL} in
 		cp ${KERNELS_DIR}/i386 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
         ;;	
 esac
+
+# Overwrite the nanobsd script with our own improved nanobsd
+# Mandatory for supporting multiple folders to be installed
+cp tools/defaults.sh ${NANOBSD_DIR}/
+cp tools/legacy.sh ${NANOBSD_DIR}/
+cp tools/nanobsd.sh ${NANOBSD_DIR}/
+chmod +x ${NANOBSD_DIR}/nanobsd.sh
 
 # Start nanobsd using the BSDRP configuration file
 echo "Launching NanoBSD build process..."
