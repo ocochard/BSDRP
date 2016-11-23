@@ -677,7 +677,7 @@ if ! $FAST; then
         FILENAME="${NAME}-${VERSION}-upgrade-${NANO_KERNEL}.img"
 	fi
 	echo "Compressing ${NAME} upgrade image..."
-	xz -vf ${NANO_OBJ}/${FILENAME}
+	xz -T0 -vf ${NANO_OBJ}/${FILENAME}
 	echo "Generating checksum for ${NAME} upgrade image..."
 	sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
 	echo "${NAME} upgrade image file here:"
@@ -725,7 +725,7 @@ EOF
 		FILENAME="${NAME}-${VERSION}-${NANO_KERNEL}"
 	else	
 		echo "Compressing ${NAME} full image..." 
-		xz -vf ${NANO_OBJ}/${FILENAME}
+		xz -T0 -vf ${NANO_OBJ}/${FILENAME}
 		echo "Generating checksum for ${NAME} full image..."
 		sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
 		echo "Zipped ${NAME} full image file here:"
@@ -735,7 +735,7 @@ EOF
 	fi
 	echo "Zipping and renaming mtree..."
 	[ -f ${NANO_OBJ}/${FILENAME}.mtree.xz ] && rm ${NANO_OBJ}/${FILENAME}.mtree.xz
-	xz -vf ${NANO_OBJ}/${FILENAME}.mtree
+	xz -T0 -vf ${NANO_OBJ}/${FILENAME}.mtree
 	echo "HIDS reference file here:"
     echo "${NANO_OBJ}/${FILENAME}.mtree.xz"
 else
