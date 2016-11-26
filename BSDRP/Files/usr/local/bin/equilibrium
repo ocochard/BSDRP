@@ -20,9 +20,10 @@ set -eu
 # tolerance in %
 TOLERANCE=0.01
 # output file for iperf and pkt-gen
-OFILE=/tmp/equilibrium-rx.txt
-CFILE=/tmp/equilibrium-tx.txt
-FWFILE=/tmp/equilibrium.fwrate
+WRKDIR="/tmp"
+OFILE=${WRKDIR}/equilibrium-rx.txt
+CFILE=${WRKDIR}/equilibrium-tx.txt
+FWFILE=${WRKDIR}/equilibrium.fwrate
 # Packet LOAD in Bytes
 PLOAD=""
 # Maximum link-rate value (Mb/s or fps)
@@ -33,44 +34,47 @@ TREND=""
 PEAK=false
 PSIZE=""
 FSIZE=""
-DEST=""
+DMAC=""
+SMAC=""
 TX_NIC=""
 RX_NIC=""
 PPS_MODE=false
 UNIT="Mb/s"
-SOFT_UDP_CHK=false
+INET=4
+SRC_NET="198.18.10.1:2000-198.18.10.20"
+DST_NET="198.19.10.1:2000-198.19.10.100"
 
 ### Functions
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 usage () {
-	echo "Usage: $0 -d MAC-DEST -t TX-NIC -r RX-NIC [-l LINK-BIT-RATE -p -o TOLERANCE -s UDP-LOAD-SIZE]"
-	echo " -d MAC :      Destination MAC of the Device Under Test (DUT)"
-	echo " -h :          Display this usage message"
-	echo " -l RATE :     Maximum link bit-rate in Mbit/s."
-	echo "                  100 for a 100Mb/s link"
-	echo "                 1000 for a 1Gb/s link (default)"
-	echo "                10000 for a 10Gb/s link"
-	echo "                If option -p, this value is in Kilo packet-per-second"
-	echo "                Maximum link packet rate in Kpps (1 frame = 1 packet)"
-	echo "                  148 for a 100Mb/s link"
-	echo "                 1488 for a Gigabit link (default if -p)"
-	echo "                14880 for a 10Gb/s link"
-	echo " -p :          Switch into Packet-per-second mode"
-	echo "                Input and displayed values unit change from Mb/s to Kpps"
-	echo "                Use this option for benching router in place of IPSec gateway"
-	echo " -o TOLERANCE: Measure tolerance in %"
-	echo "                default value of 0.01 for 0.1%"
-	echo " -t TX-NIC :   NIC used for sending load"
-	echo " -r RX-NIC :   NIC used for receiving (and measuring) load"
-	echo " -s LOAD  :    Size of the UDP load"
-	echo "                default: 500 in Mb/s, 18 in pps mode"
-	echo "                Minimum load for Ethernet: 18"
-	echo " -u :          Enable software UDP checksum on pkt-gen"
+	echo "Usage: $0 -d DST_MAC -t TX_NIC -r RX_NIC [-l LINK_RATE ] [-p]"
+	echo "          [-o TOLERANCE] [-s UDP-LOAD-SIZE]"
+	echo "       -d Destination MAC of the Device Under Test (DUT)"
+	echo "       -h Display this usage message"
+	echo "       -l Maximum link bit-rate in Mbit/s."
+	echo "             100 for a 100Mb/s link"
+	echo "            1000 for a 1Gb/s link (default)"
+	echo "           10000 for a 10Gb/s link"
+	echo "           If option -p, this value is in Kilo packet-per-second"
+	echo "           Maximum link packet rate in Kpps (1 frame = 1 packet)"
+	echo "             148 for a 100Mb/s link"
+	echo "            1488 for a Gigabit link (default if -p)"
+	echo "           14880 for a 10Gb/s link"
+	echo "       -p Switch into Packet-per-second mode"
+	echo "           Input and displayed values unit change from Mb/s to Kpps"
+	echo "           Use this option for benching router in place of IPSec gateway"
+	echo "       -o define measure tolerance in % (default = 0.01 for 0.1%)"
+	echo "       -t NIC used for sending load"
+	echo "       -r NIC used for receiving (and measuring) load"
+	echo "       -s Size of the UDP load"
+	echo "           default: 500 in Mb/s, 18 in pps mode"
+	echo "           Minimum load for Ethernet: 18"
 	echo "Example: $0 -d 00:1b:21:d3:8f:3e -t igb2 -r igb3"
-    echo "IP subnet used as source: 198.18.10.0/24"
-    echo "IP subnet used as destination: 198.19.10.0/24"
+    echo "IP source range: ${SRC_NET}"
+    echo "IP destination subnet: ${DST_NET}"
+	echo ""
 	exit 1
 }
 
@@ -116,18 +120,10 @@ load () {
 	# bench should running during 30 seconds minimum
 	PPS_TO_SENT=$(( ${PPS} * 30 ))
 	# Start a receiver
-	pkt-gen -f rx -i ${RX_NIC} > ${OFILE} 2>&1 &
+	pkt-gen -f rx -N -i ${RX_NIC} > ${OFILE} 2>&1 &
 	# Start a generator
-	if (${SOFT_UDP_CHK}); then
-		CHK="-U"
-	else
-		CHK=""
-		ifconfig ${TX_NIC} down
-		ifconfig ${TX_NIC} txcsum
-		ifconfig ${TX_NIC} up
-	fi
-	CMD="pkt-gen ${CHK} -f tx -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
-	-d 198.19.10.1:2000-198.19.10.100 -D ${DEST} -s 198.18.10.1:2000-198.18.10.20"
+	CMD="pkt-gen -f tx -N -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
+	-d 198.19.10.1:2000-198.19.10.100 -D ${DMAC} -S ${SMAC} -s 198.18.10.1:2000-198.18.10.20"
 	echo $CMD > ${CFILE}
 	${CMD} >> ${CFILE} 2>&1
 	# Now close the receiver
@@ -143,14 +139,14 @@ load () {
 
 #### Main
 
-args=`getopt d:hl:po:r:s:t:u $*`
+args=`getopt 46d:hl:po:r:s:t: $*`
 
 set -- $args
 for i
 do
     case "$i" in
         -d)
-            DEST=$2
+            DMAC=$2
 			shift
             shift
 			;;
@@ -186,8 +182,14 @@ do
 			shift
 			shift
 			;;
-		-u)
-			SOFT_UDP_CHK=true
+		-4)
+			INET=4
+			shift
+			;;
+		-6)
+			INET=6
+			DST_NET="[2001:2:0:8001::1]:2000-[2001:2:0:8001::64]"
+			SRC_NET="[2001:2:0:1::1]:2000-[2001:2:0:1::14]"
 			shift
 			;;
 		--)
@@ -197,7 +199,7 @@ do
 done
 
 # Check for mandatory value
-if [ -z "${DEST}" ]; then
+if [ -z "${DMAC}" ]; then
 	echo "Missing Destination MAC"
 	usage
 fi
@@ -212,7 +214,13 @@ fi
 
 # Set the default value corresponding to differents mode
 if [ -z ${PLOAD} ]; then
-	(${PPS_MODE}) && PLOAD=18 || PLOAD=500
+	if (${PPS_MODE}); then
+		# Minimum Frame size of an UDP IPv4 packet is 64 bytes
+		# but min frame size of an UDP IPv6 packet is 68 bytes
+		[ ${INET} -eq 6 ] && PLOAD=0 || PLOAD=18
+	else
+		PLOAD=500
+	fi
 fi
 
 if [ -z ${LINK_RATE} ]; then
@@ -220,11 +228,20 @@ if [ -z ${LINK_RATE} ]; then
 fi
 
 # Packet LOAD in Bytes
-PSIZE=$((${PLOAD} + 28))
+# UDP load + 20 bytes IPv4 header + 8 bytes UDP header
+# UDP load + 40 bytes IPv6 header + 8 bytes UDP header
+[ ${INET} -eq 6 ] && PSIZE=$((${PLOAD} + 48)) || PSIZE=$((${PLOAD} + 28))
 # Frame size (excluding CRC)
-FSIZE=$((${PLOAD} + 42))
+# = PSIZE + 14 bytes Ethernet header
+FSIZE=$((${PSIZE} + 14))
 
 (${PPS_MODE}) && UNIT="Kpps"
+
+SMAC=`ifconfig ${TX_NIC} ether | grep ether | cut -d ' ' -f 2`
+if [ -z "${SMAC}" ]; then
+    die "Didn't get MAC of ${TX_NIC}"
+fi
+
 
 # Initial offered load value, should be set to 50% of the link bit-rate
 OLOAD=$(( ${LINK_RATE} / 2 ))
@@ -232,12 +249,10 @@ OLOAD=$(( ${LINK_RATE} / 2 ))
 STEP=$(( ${LINK_RATE} / 4 ))
 
 echo "Benchmark tool using equilibrium throughput method"
-(${PPS_MODE}) && echo "- Mode: Router benchmark" || echo "- Mode: IPSec gateway benchmark"
-echo "- UDP load = ${PLOAD}B, IP packet size=${PSIZE}B, Ethernet frame size=${FSIZE}B"
+(${PPS_MODE}) && echo "- Benchmark mode: Throughput (pps) for Router" || echo "- Bandwithd (bps) for IPSec gateway"
+echo "- UDP load = ${PLOAD}B, IPv${INET} packet size=${PSIZE}B, Ethernet frame size=${FSIZE}B"
 echo "- Link rate = ${LINK_RATE} ${UNIT}"
 echo "- TOLERANCE = ${TOLERANCE}"
-echo -n "- Software netmap UDP checksum = "
-(${SOFT_UDP_CHK}) && echo "on" || echo "off"
 for i in `seq 1 16`;do
 	echo "Iteration $i"
 	echo "  - offering load = ${OLOAD} ${UNIT}"
@@ -282,4 +297,4 @@ for i in `seq 1 16`;do
 		break
 	fi
 done
-echo "Estimated Equilibrium link throughput= ${FWRATE} ${UNIT} (maximum value seen: ${MAX_FWRATE} ${UNIT})"
+echo "Estimated Equilibrium Ethernet throughput= ${FWRATE} ${UNIT} (maximum value seen: ${MAX_FWRATE} ${UNIT})"

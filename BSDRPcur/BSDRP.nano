@@ -728,7 +728,6 @@ usr/bin/gdb
 usr/bin/gdbserver
 usr/bin/gdbtui
 usr/bin/indent
-usr/bin/kgdb
 usr/bin/ld
 usr/bin/ld.bfd
 usr/bin/lex
@@ -785,9 +784,17 @@ usr/sbin/config
 
 	# Moving kerned & world debug symbols into debug.tar.xz file
 	if [ -d ${NANO_WORLDDIR}/usr/lib/debug ]; then
+		if [ -f  ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
+			if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
+				mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+			fi
+			mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+		fi
 		tar cfvZ ${NANO_OBJ}/debug.tar.xz -C ${NANO_WORLDDIR}/usr/lib debug
+		rm -rf ${NANO_WORLDDIR}/usr/lib/debug
+		# relocate /usr/lib/debug to /data/debug (debug archive files needs more than 1Gb for being extracted)
+		ln -s /data/debug ${NANO_WORLDDIR}/usr/lib/debug
 	fi
-	[ -d ${NANO_WORLDDIR}/usr/lib/debug ] && rm -rf ${NANO_WORLDDIR}/usr/lib/debug
 	# strip binaries for ports (tips from FreeNAS 8)
 	pprint 4 "Stripping binaries and libraries"
 	for dir in $(find ${NANO_WORLDDIR}/ -name '*bin' -or -name 'lib' -maxdepth 3); do
