@@ -78,6 +78,12 @@ usage () {
 	exit 1
 }
 
+get_median () {
+	# Get median value of file specified in $1
+	# and display result
+	echo $(sort -n $1 | awk '{arr[NR]=$1} END { if (NR%2==1) print arr[(NR+1)/2]; else print (arr[NR/2]+arr[NR/2+1])/2}')
+}
+
 get_max () {
 	# Get the maximum value of the file specified in $1
 	max=0
@@ -95,9 +101,9 @@ extract () {
     grep -E 'main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' $1 | cut -d ' ' -f 4 > ${WRKDATA}
     #Now we calculate the maximum value of this run with ministat
 	[ -s ${WRKDATA} ] || die "No packet received, check your configurations"
-	FWRATE_PPS=$(get_max ${WRKDATA})
+	FWRATE_PPS=$(get_median ${WRKDATA})
 	grep -E 'main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' $1 | cut -d ' ' -f 8 > ${WRKDATA}
-	FWRATE_BPS=$(get_max ${WRKDATA})
+	FWRATE_BPS=$(get_median ${WRKDATA})
 	if (${PPS_MODE}); then
 		# Need to convert the pps value into Kpps
 		echo $(( FWRATE_PPS / 1000 ))
@@ -197,8 +203,8 @@ do
 			;;
 		-6)
 			INET=6
-			DST_NET="[2001:2:0:8001::1]:2000-[2001:2:0:8001::64]"
-			SRC_NET="[2001:2:0:1::1]:2000-[2001:2:0:1::14]"
+			DST_NET="[2001:2:0:8010::1]:2000-[2001:2:0:8010::64]"
+			SRC_NET="[2001:2:0:10::1]:2000-[2001:2:0:10::14]"
 			shift
 			;;
 		--)
