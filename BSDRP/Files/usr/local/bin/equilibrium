@@ -40,7 +40,7 @@ TX_NIC=""
 RX_NIC=""
 PPS_MODE=false
 UNIT="Mb/s"
-INET=4
+AF=4
 SRC_NET="198.18.10.1:2000-198.18.10.20"
 DST_NET="198.19.10.1:2000-198.19.10.100"
 
@@ -129,10 +129,10 @@ load () {
 	# bench should running during 30 seconds minimum
 	PPS_TO_SENT=$(( PPS * 30 ))
 	# Start a receiver
-	pkt-gen -f rx -N -i ${RX_NIC} > ${RX_FILE} 2>&1 &
+	pkt-gen -f rx -N -${AF} -i ${RX_NIC} > ${RX_FILE} 2>&1 &
 	# Start a generator
-	CMD="pkt-gen -f tx -N -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
--d 198.19.10.1:2000-198.19.10.100 -D ${DMAC} -S ${SMAC} -s 198.18.10.1:2000-198.18.10.20"
+	CMD="pkt-gen -f tx -N -${AF} -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
+-d ${DST_NET} -D ${DMAC} -S ${SMAC} -s ${SRC_NET}"
 	echo $CMD > ${TX_FILE}
 	${CMD} >> ${TX_FILE} 2>&1
 	# Now close the receiver
@@ -198,11 +198,11 @@ do
 			shift
 			;;
 		-4)
-			INET=4
+			AF=4
 			shift
 			;;
 		-6)
-			INET=6
+			AF=6
 			DST_NET="[2001:2:0:8010::1]:2000-[2001:2:0:8010::64]"
 			SRC_NET="[2001:2:0:10::1]:2000-[2001:2:0:10::14]"
 			shift
@@ -232,7 +232,7 @@ if [ -z ${PLOAD} ]; then
 	if (${PPS_MODE}); then
 		# Minimum Frame size of an UDP IPv4 packet is 64 bytes
 		# but min frame size of an UDP IPv6 packet is 68 bytes
-		[ ${INET} -eq 6 ] && PLOAD=0 || PLOAD=18
+		[ ${AF} -eq 6 ] && PLOAD=0 || PLOAD=18
 	else
 		PLOAD=500
 	fi
@@ -245,7 +245,7 @@ fi
 # Packet LOAD in Bytes
 # UDP load + 20 bytes IPv4 header + 8 bytes UDP header
 # UDP load + 40 bytes IPv6 header + 8 bytes UDP header
-[ ${INET} -eq 6 ] && PSIZE=$(( PLOAD + 48)) || PSIZE=$(( PLOAD + 28))
+[ ${AF} -eq 6 ] && PSIZE=$(( PLOAD + 48)) || PSIZE=$(( PLOAD + 28))
 
 # Frame size (excluding CRC) = Packet SIZE + 14 bytes Ethernet header
 FSIZE=$(( PSIZE + 14))
@@ -265,7 +265,7 @@ STEP=$(( LINK_RATE / 4 ))
 
 echo "Benchmark tool using equilibrium throughput method"
 (${PPS_MODE}) && echo "- Benchmark mode: Throughput (pps) for Router" || echo "- Benchmark mode: Bandwitdh (bps) for VPN gateway"
-echo "- UDP load = ${PLOAD}B, IPv${INET} packet size=${PSIZE}B, Ethernet frame size=${FSIZE}B"
+echo "- UDP load = ${PLOAD}B, IPv${AF} packet size=${PSIZE}B, Ethernet frame size=${FSIZE}B"
 echo "- Link rate = ${LINK_RATE} ${UNIT}"
 echo "- TOLERANCE = ${TOLERANCE}"
 for i in $(seq 1 16);do
