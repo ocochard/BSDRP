@@ -17,11 +17,13 @@ system resize-system-slice 964000
 
 ## Updated packages
 * exabgp to 3.4.17
+* iperf to 2.0.9
 * iperf3 to 3.1.4
 * isc-dhcp43-server to 4.3.5
 * monit to 5.20.0
 * openvpn to 3.13
 * quagga to 1.1
+* strongswan to 5.5.1
 
 ## package list
 * bird-1.6.0_1
@@ -36,7 +38,7 @@ system resize-system-slice 964000
 * flashrom-0.9.9
 * freevrrpd-1.1_1
 * indexinfo-0.2.6
-* iperf-2.0.5
+* iperf-2.0.9
 * iperf3-3.1.4
 * ipmitool-1.8.17_1
 * ipsec-tools-0.8.2_1
@@ -60,7 +62,7 @@ system resize-system-slice 964000
 * openldap-client-2.4.44
 * openvpn-2.3.13_1
 * openvpn-auth-radius-2.1_3
-* pciids-20161119
+* pciids-20161121
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
@@ -73,7 +75,7 @@ system resize-system-slice 964000
 * python27-2.7.12
 * quagga-1.1.0_2
 * readline-6.3.8
-* strongswan-5.5.0
+* strongswan-5.5.1
 * sudo-1.8.18p1
 * tayga-0.9.2
 * tmux-2.3
