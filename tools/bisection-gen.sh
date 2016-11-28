@@ -33,13 +33,10 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # From Sunday 22 March, to each last commit of sundy of each week
 # and if build failed, take the last monday commit and if it failed again
 # take the last tusday commit
-# Failed:
-# 299244
-# 299288
 # 
 SVN_REV_LIST='
-303642
-303643
+309142
+309143
 '
 
 # Name of the BSDRP project

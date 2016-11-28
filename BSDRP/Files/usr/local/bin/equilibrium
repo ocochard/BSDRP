@@ -21,9 +21,9 @@ set -eu
 TOLERANCE=0.01
 # output file for iperf and pkt-gen
 WRKDIR="/tmp"
-OFILE=${WRKDIR}/equilibrium-rx.txt
-CFILE=${WRKDIR}/equilibrium-tx.txt
-FWFILE=${WRKDIR}/equilibrium.fwrate
+RX_FILE=${WRKDIR}/equilibrium-rx.txt
+TX_FILE=${WRKDIR}/equilibrium-tx.txt
+WRKDATA="${WRKDIR}/equilibrium.ministat.data"
 # Packet LOAD in Bytes
 PLOAD=""
 # Maximum link-rate value (Mb/s or fps)
@@ -78,68 +78,77 @@ usage () {
 	exit 1
 }
 
+get_max () {
+	# Get the maximum value of the file specified in $1
+	max=0
+	while read number; do
+		[ ${number} -gt ${max} ] && max=${number} || true
+	done < "$1"
+	echo ${max}
+}
+
 extract () {
-    # Extract the median value from a raw output of pkt-gen in receiver mode
+    # Extract the maximum value from a raw output of pkt-gen in receiver mode
     # $1 : Input file
-    local LINES=`wc -l $1`
-    LINES=`echo ${LINES} | cut -d ' ' -f1`
-    # Remove the first 12 lines (garbage or not good result) and the 5 last lines (bad result too)
-    # head -n `expr ${LINES} - 10` $1 | tail -n `expr ${LINES} - 10 - 15` > /tmp/equilibrium.clean
-	head -n `expr ${LINES} - 5` $1 | tail -n `expr ${LINES} - 5 - 12` > /tmp/equilibrium.clean
-    # Filter the output (still filtering "0 pps" lines in case of) and kept only the numbers:
     # example of good line:
-    # 290.703575 main_thread [1441] 729113 pps (730571 pkts in 1002000 usec)
-    grep -E 'main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' /tmp/equilibrium.clean | cut -d ' ' -f 4 > /tmp/equilibrium.ministat.data
+	# 151.111689 main_thread [2315] 86802 pps (86976 pkts 1003355136 bps in 1002000 usec) 221.31 avg_batch 99999 min_space
+    grep -E 'main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' $1 | cut -d ' ' -f 4 > ${WRKDATA}
     #Now we calculate the maximum value of this run with ministat
-	[ -s /tmp/equilibrium.ministat.data ] || die "No packet received, check your configurations"
-	echo `ministat -n /tmp/equilibrium.ministat.data | tail -n -1 | tr -s ' ' | cut -d ' ' -f 4` > ${FWFILE}
-	PPS_FWRATE=`cat ${FWFILE}`
+	[ -s ${WRKDATA} ] || die "No packet received, check your configurations"
+	FWRATE_PPS=$(get_max ${WRKDATA})
+	grep -E 'main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' $1 | cut -d ' ' -f 8 > ${WRKDATA}
+	FWRATE_BPS=$(get_max ${WRKDATA})
 	if (${PPS_MODE}); then
 		# Need to convert the pps value into Kpps
-		echo "$(( ${PPS_FWRATE} / 1000 ))" > ${FWFILE}
+		echo $(( FWRATE_PPS / 1000 ))
 	else
-		# Need to convert the PPS value into a Mb/s value
-		echo "$(( ${PPS_FWRATE} * 8 * ${FSIZE} / 1000000 ))" > ${FWFILE}
+		# Need to convert the bps value into a Mb/s value
+		echo $(( FWRATE_BPS / 1000000 ))
 	fi
-    rm /tmp/equilibrium.clean /tmp/equilibrium.ministat.data || die "ERROR: can't delete clean.X.data"
-	return 0
+    rm ${WRKDATA} || die "ERROR: can't delete ${WRKDATA}"
 }
 
 load () {
 	# Start load process
 	# 
-	[ -f ${OFILE} ] && rm ${OFILE}
-	[ -f ${CFILE} ] && rm ${CFILE}
-	# We are using pkt-gen, and its base value is pps, need some conversion
+	[ -f ${RX_FILE} ] && rm ${RX_FILE}
+	[ -f ${TX_FILE} ] && rm ${TX_FILE}
+	# We are using pkt-gen, and its rate value is pps, need some conversion
 	if (${PPS_MODE}); then
-		PPS=$(( ${OLOAD} * 1000 ))
+		PPS=$(( OLOAD * 1000 ))
 	else
-		# PPS-RATE = bandwitdh-in-bps / PSIZE-in-Byte / 8
-		PPS=$(( ${OLOAD} * 1000000 / ${FSIZE} / 8))
+		# PPS-RATE = bandwitdh-in-bps / Frame size in bit
+		PPS=$(( OLOAD * 1000000 / FSIZE / 8))
 	fi
 	# bench should running during 30 seconds minimum
-	PPS_TO_SENT=$(( ${PPS} * 30 ))
+	PPS_TO_SENT=$(( PPS * 30 ))
 	# Start a receiver
-	pkt-gen -f rx -N -i ${RX_NIC} > ${OFILE} 2>&1 &
+	pkt-gen -f rx -N -i ${RX_NIC} > ${RX_FILE} 2>&1 &
 	# Start a generator
 	CMD="pkt-gen -f tx -N -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
-	-d 198.19.10.1:2000-198.19.10.100 -D ${DMAC} -S ${SMAC} -s 198.18.10.1:2000-198.18.10.20"
-	echo $CMD > ${CFILE}
-	${CMD} >> ${CFILE} 2>&1
+-d 198.19.10.1:2000-198.19.10.100 -D ${DMAC} -S ${SMAC} -s 198.18.10.1:2000-198.18.10.20"
+	echo $CMD > ${TX_FILE}
+	${CMD} >> ${TX_FILE} 2>&1
 	# Now close the receiver
 	pkill pkt-gen || die "can't close the receiver???"
 	# Check than generator correctly generate PPS value
-	extract ${CFILE} || die "Can't extract the maximum value from ${CFILE}"
-	CHECK=`cat ${FWFILE}`
-	[ ${CHECK} -lt ${OLOAD} ] && echo "  - Warning: Generated only ${CHECK}${UNIT} in place of ${OLOAD}${UNIT}"
+	CHECK=$(extract ${TX_FILE})
 	# Then extract a uniq value
-	extract ${OFILE} || die "Can't extract the maximum value from ${OFILE}"
-	return 0
+	FWRATE=$(extract ${RX_FILE})
+	if [ ${CHECK} -lt ${OLOAD} ]; then
+		echo "  - Warning: Generated only ${CHECK}${UNIT} in place of ${OLOAD}${UNIT}"
+		if [ ${FWRATE} -eq ${CHECK} ]; then
+			# Dut is managing the maximum throughput of the packet generator"
+			echo "  - Measured forwarding rate = ${FWRATE} ${UNIT} wich is the maximum supported by generator"
+			die "can t continue"
+		fi
+	fi
+	echo ${FWRATE}
 }
 
 #### Main
 
-args=`getopt 46d:hl:po:r:s:t: $*`
+args=$(getopt 46d:hl:po:r:s:t: $*)
 
 set -- $args
 for i
@@ -230,36 +239,35 @@ fi
 # Packet LOAD in Bytes
 # UDP load + 20 bytes IPv4 header + 8 bytes UDP header
 # UDP load + 40 bytes IPv6 header + 8 bytes UDP header
-[ ${INET} -eq 6 ] && PSIZE=$((${PLOAD} + 48)) || PSIZE=$((${PLOAD} + 28))
-# Frame size (excluding CRC)
-# = PSIZE + 14 bytes Ethernet header
-FSIZE=$((${PSIZE} + 14))
+[ ${INET} -eq 6 ] && PSIZE=$(( PLOAD + 48)) || PSIZE=$(( PLOAD + 28))
+
+# Frame size (excluding CRC) = Packet SIZE + 14 bytes Ethernet header
+FSIZE=$(( PSIZE + 14))
 
 (${PPS_MODE}) && UNIT="Kpps"
 
-SMAC=`ifconfig ${TX_NIC} ether | grep ether | cut -d ' ' -f 2`
+SMAC=$(ifconfig ${TX_NIC} ether | grep ether | cut -d ' ' -f 2)
 if [ -z "${SMAC}" ]; then
     die "Didn't get MAC of ${TX_NIC}"
 fi
 
 
 # Initial offered load value, should be set to 50% of the link bit-rate
-OLOAD=$(( ${LINK_RATE} / 2 ))
+OLOAD=$(( LINK_RATE / 2 ))
 # step (in Mbit) should be 25% of the link bit-rate
-STEP=$(( ${LINK_RATE} / 4 ))
+STEP=$(( LINK_RATE / 4 ))
 
 echo "Benchmark tool using equilibrium throughput method"
-(${PPS_MODE}) && echo "- Benchmark mode: Throughput (pps) for Router" || echo "- Bandwithd (bps) for IPSec gateway"
+(${PPS_MODE}) && echo "- Benchmark mode: Throughput (pps) for Router" || echo "- Benchmark mode: Bandwitdh (bps) for VPN gateway"
 echo "- UDP load = ${PLOAD}B, IPv${INET} packet size=${PSIZE}B, Ethernet frame size=${FSIZE}B"
 echo "- Link rate = ${LINK_RATE} ${UNIT}"
 echo "- TOLERANCE = ${TOLERANCE}"
-for i in `seq 1 16`;do
+for i in $(seq 1 16);do
 	echo "Iteration $i"
 	echo "  - offering load = ${OLOAD} ${UNIT}"
 	echo "  - STEP = ${STEP} ${UNIT}"
 	[ -n "${TREND}" ] && echo "  - TREND = ${TREND}"
-	load || die "Can't run bench test"
-	FWRATE=`cat /tmp/equilibrium.fwrate`
+	FWRATE=$(load)
 	echo "  - Measured forwarding rate = ${FWRATE} ${UNIT}"
 	if [ ${FWRATE} -gt ${OLOAD} ]; then
 		echo "  - forwarding rate greater than offering load! (forcing FWRATE=OLOAD)"
@@ -271,28 +279,28 @@ for i in `seq 1 16`;do
 	# This is why the next test is a -ge in place of -eq
 	if [ ${FWRATE} -ge ${OLOAD} ]; then
 		[ "${TREND}" = "decreasing" ] && PEAK=true
-		(${PEAK}) && STEP=$(( ${STEP} / 2 ))
-		OLOAD=$(( ${OLOAD} + ${STEP} ))
+		(${PEAK}) && STEP=$(( STEP / 2 ))
+		OLOAD=$(( OLOAD + STEP ))
 		TREND="increasing"
 	else
 		[ "${TREND}" = "increasing" ] && PEAK=true
-		(${PEAK}) && STEP=$(( ${STEP} / 2 ))
-		OLOAD=$((${OLOAD} - ${STEP}))
+		(${PEAK}) && STEP=$(( STEP / 2 ))
+		OLOAD=$(( OLOAD - STEP ))
 		# If the initial LOAD is too big and result of first FWRATE already lower than STEP,
 		#  the second iteration will set OLOAD to 0
 		#  Try to fix this behavior by setting OLOAD=FWRATE if FWRATE < STEP
 		if [ -z "${TREND}" ]; then
 			if [ ${FWRATE} -lt ${STEP} ]; then
 				echo "  - Forwared rate too low, forcing OLOAD=FWRATE and STEP=FWRATE/2"
-				STEP=$(( ${FWRATE} / 2 ))
+				STEP=$(( FWRATE / 2 ))
 				OLOAD=${FWRATE}
 			fi
 		fi
 		TREND="decreasing"
 	fi
 	[ ${OLOAD} -eq 0 ] && die "Offered load reached 0 ${UNIT} (Too much packets dropped/corrupted?), can't continue"
-	FLOAT=`echo ${OLOAD} \* ${TOLERANCE} | bc`
-	ROUND=`echo "($FLOAT+0.5)/1" | bc `
+	FLOAT=$(echo ${OLOAD} \* ${TOLERANCE} | bc)
+	ROUND=$(echo "($FLOAT+0.5)/1" | bc)
 	if [ ${STEP} -le ${ROUND} ]; then
 		break
 	fi
