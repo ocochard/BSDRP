@@ -141,15 +141,16 @@ load () {
 	CHECK=$(extract ${TX_FILE})
 	# Then extract a uniq value
 	FWRATE=$(extract ${RX_FILE})
-	if [ ${CHECK} -lt ${OLOAD} ]; then
+	# Allow some tolerance to the check too (and add /1 for generating integer)
+	OLOAD_TOL=$(echo "$OLOAD*(1-$TOLERANCE)/1" | bc)
+	if [ ${CHECK} -lt ${OLOAD_TOL} ]; then
 		echo "  - Warning: Generated only ${CHECK}${UNIT} in place of ${OLOAD}${UNIT}"
 		if [ ${FWRATE} -eq ${CHECK} ]; then
 			# Dut is managing the maximum throughput of the packet generator"
 			echo "  - Measured forwarding rate = ${FWRATE} ${UNIT} wich is the maximum supported by generator"
-			die "can t continue"
+			exit 0
 		fi
 	fi
-	echo ${FWRATE}
 }
 
 #### Main
@@ -267,13 +268,13 @@ echo "Benchmark tool using equilibrium throughput method"
 (${PPS_MODE}) && echo "- Benchmark mode: Throughput (pps) for Router" || echo "- Benchmark mode: Bandwitdh (bps) for VPN gateway"
 echo "- UDP load = ${PLOAD}B, IPv${AF} packet size=${PSIZE}B, Ethernet frame size=${FSIZE}B"
 echo "- Link rate = ${LINK_RATE} ${UNIT}"
-echo "- TOLERANCE = ${TOLERANCE}"
+echo "- Tolerance = ${TOLERANCE}"
 for i in $(seq 1 16);do
 	echo "Iteration $i"
-	echo "  - offering load = ${OLOAD} ${UNIT}"
-	echo "  - STEP = ${STEP} ${UNIT}"
-	[ -n "${TREND}" ] && echo "  - TREND = ${TREND}"
-	FWRATE=$(load)
+	echo "  - Offering load = ${OLOAD} ${UNIT}"
+	echo "  - Step = ${STEP} ${UNIT}"
+	[ -n "${TREND}" ] && echo "  - Trend = ${TREND}"
+	load
 	echo "  - Measured forwarding rate = ${FWRATE} ${UNIT}"
 	if [ ${FWRATE} -gt ${OLOAD} ]; then
 		echo "  - forwarding rate greater than offering load! (forcing FWRATE=OLOAD)"
