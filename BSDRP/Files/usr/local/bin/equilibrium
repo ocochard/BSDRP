@@ -305,7 +305,13 @@ for i in $(seq 1 16);do
 		fi
 		TREND="decreasing"
 	fi
-	[ ${OLOAD} -eq 0 ] && die "Offered load reached 0 ${UNIT} (Too much packets dropped/corrupted?), can't continue"
+	if [ ${OLOAD} -le 1 ]; then
+		# We start by a too big value, and step reach 0 too soon
+		[ ${STEP} -lt 2 ] && die "Offered load reached 0 ${UNIT} (Too much packets dropped/corrupted?), can't continue"
+		echo "  - Too big initial value, need to reduce STEP"
+		STEP=$(( STEP / 2 ))
+		OLOAD=$((OLOAD + STEP ))	
+	fi
 	FLOAT=$(echo ${OLOAD} \* ${TOLERANCE} | bc)
 	ROUND=$(echo "($FLOAT+0.5)/1" | bc)
 	if [ ${STEP} -le ${ROUND} ]; then

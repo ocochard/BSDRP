@@ -1,8 +1,8 @@
 Index: tools/tools/netmap/ctrs.h
 ===================================================================
---- tools/tools/netmap/ctrs.h	(revision 308878)
+--- tools/tools/netmap/ctrs.h	(revision 309273)
 +++ tools/tools/netmap/ctrs.h	(working copy)
-@@ -16,21 +14,27 @@
+@@ -16,21 +16,27 @@
   * Caller has to make sure that the buffer is large enough.
   */
  static const char *
@@ -38,7 +38,7 @@ Index: tools/tools/netmap/ctrs.h
  static __inline int
 Index: tools/tools/netmap/pkt-gen.c
 ===================================================================
---- tools/tools/netmap/pkt-gen.c	(revision 308878)
+--- tools/tools/netmap/pkt-gen.c	(revision 309273)
 +++ tools/tools/netmap/pkt-gen.c	(working copy)
 @@ -54,6 +54,7 @@
  #include <net/ethernet.h>
@@ -112,7 +112,15 @@ Index: tools/tools/netmap/pkt-gen.c
  	struct ip_range src_ip;
  	struct ip_range dst_ip;
  	struct mac_range dst_mac;
-@@ -306,68 +331,146 @@
+@@ -239,6 +264,7 @@
+ 	int nthreads;
+ 	int cpus;	/* cpus used for running */
+ 	int system_cpus;	/* cpus on the system */
++	int softchecksum;	/* Software UDP checksum calculation */
+ 
+ 	int options;	/* testing */
+ #define OPT_PREFETCH	1
+@@ -306,68 +332,146 @@
  	void *frame;
  };
  
@@ -300,7 +308,7 @@ Index: tools/tools/netmap/pkt-gen.c
  }
  
  static void
-@@ -563,7 +666,7 @@
+@@ -563,7 +667,7 @@
  }
  
  /* Compute the checksum of the given ip header. */
@@ -309,7 +317,7 @@ Index: tools/tools/netmap/pkt-gen.c
  checksum(const void *data, uint16_t len, uint32_t sum)
  {
          const uint8_t *addr = data;
-@@ -588,8 +691,8 @@
+@@ -588,8 +692,8 @@
  	return sum;
  }
  
@@ -320,7 +328,7 @@ Index: tools/tools/netmap/pkt-gen.c
  {
  	sum = ~sum & 0xFFFF;
  	return (htons(sum));
-@@ -637,64 +740,182 @@
+@@ -637,64 +741,193 @@
  #define uh_sum check
  #endif /* linux */
  
@@ -383,15 +391,21 @@ Index: tools/tools/netmap/pkt-gen.c
 -		if (a < g->src_ip.end) { /* just inc, no wrap */
 -			ip->ip_src.s_addr = htonl(a + 1);
 +		/* update checksums if needed */
-+		if (oaddr != naddr) {
-+			ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
-+			ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
-+			ip_sum = cksum_add(ip_sum, naddr >> 16);
-+			ip_sum = cksum_add(ip_sum, naddr & 0xffff);
-+		}
-+		if (oport != nport) {
-+			udp_sum = cksum_add(udp_sum, ~oport);
-+			udp_sum = cksum_add(udp_sum, nport);
++		/* Some NIC drivers, like Intel,  disable hardware CRC checksum in */
++		/* netmap mode and don't allow to re-enable it. */
++		/* Chelsio drivers didn't have this limitation, but this calculation */
++		/* have a big performance. */
++		if (g->softchecksum) {
++			if (oaddr != naddr) {
++				ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
++				ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
++				ip_sum = cksum_add(ip_sum, naddr >> 16);
++				ip_sum = cksum_add(ip_sum, naddr & 0xffff);
++			}
++			if (oport != nport) {
++				udp_sum = cksum_add(udp_sum, ~oport);
++				udp_sum = cksum_add(udp_sum, nport);
++			}
 +		}
 +		naddr = oaddr = ntohl(ip->ip_dst.s_addr);
 +		nport = oport = ntohs(udp->uh_dport);
@@ -419,22 +433,24 @@ Index: tools/tools/netmap/pkt-gen.c
 +		ip->ip_dst.s_addr = htonl(naddr);
 +	} while (0);
 +	/* update checksums */
-+	if (oaddr != naddr) {
-+		ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
-+		ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
-+		ip_sum = cksum_add(ip_sum, naddr >> 16);
-+		ip_sum = cksum_add(ip_sum, naddr & 0xffff);
++	if (g->softchecksum) {
++		if (oaddr != naddr) {
++			ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
++			ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
++			ip_sum = cksum_add(ip_sum, naddr >> 16);
++			ip_sum = cksum_add(ip_sum, naddr & 0xffff);
++		}
++		if (oport != nport) {
++			udp_sum = cksum_add(udp_sum, ~oport);
++			udp_sum = cksum_add(udp_sum, nport);
++		}
++		if (udp_sum != 0)
++			udp->uh_sum = cksum_add(udp->uh_sum, ~htons(udp_sum));
++		if (ip_sum != 0) {
++			ip->ip_sum = cksum_add(ip->ip_sum, ~htons(ip_sum));
++			udp->uh_sum = cksum_add(udp->uh_sum, ~htons(ip_sum));
++		}
  	}
-+	if (oport != nport) {
-+		udp_sum = cksum_add(udp_sum, ~oport);
-+		udp_sum = cksum_add(udp_sum, nport);
-+	}
-+	if (udp_sum != 0)
-+		udp->uh_sum = cksum_add(udp->uh_sum, ~htons(udp_sum));
-+	if (ip_sum != 0) {
-+		ip->ip_sum = cksum_add(ip->ip_sum, ~htons(ip_sum));
-+		udp->uh_sum = cksum_add(udp->uh_sum, ~htons(ip_sum));
-+	}
 +}
  
 -	if (g->options & OPT_RANDOM_DST) {
@@ -489,12 +505,13 @@ Index: tools/tools/netmap/pkt-gen.c
 -		if (a < g->dst_ip.end) { /* just inc, no wrap */
 -			ip->ip_dst.s_addr = htonl(a + 1);
 +		/* update checksums if needed */
-+		if (oaddr != naddr)
-+			udp_sum = cksum_add(~oaddr, naddr);
-+		if (oport != nport)
-+			udp_sum = cksum_add(udp_sum,
-+				cksum_add(~oport, nport));
-+
++		if (g->softchecksum) {
++			if (oaddr != naddr)
++				udp_sum = cksum_add(~oaddr, naddr);
++			if (oport != nport)
++				udp_sum = cksum_add(udp_sum,
++					cksum_add(~oport, nport));
++		}
 +		group = g->dst_ip.ipv6.egroup;
 +		naddr = oaddr = ntohs(ip6->ip6_dst.s6_addr16[group]);
 +		nport = oport = ntohs(udp->uh_dport);
@@ -503,10 +520,6 @@ Index: tools/tools/netmap/pkt-gen.c
 +			nport = udp->uh_dport = random();
  			break;
  		}
--	}
--	ip->ip_dst.s_addr = htonl(g->dst_ip.start);
--    } while (0);
--    // update checksum
 +		if (oport < g->dst_ip.port1) {
 +			nport = oport + 1;
 +			udp->uh_dport = htons(nport);
@@ -523,14 +536,19 @@ Index: tools/tools/netmap/pkt-gen.c
 +		ip6->ip6_dst.s6_addr16[group] = htons(naddr);
 +	} while (0);
 +	/* update checksums */
-+	if (oaddr != naddr)
-+		udp_sum = cksum_add(udp_sum,
-+			cksum_add(~oaddr, naddr));
-+	if (oport != nport)
-+		udp_sum = cksum_add(udp_sum,
-+			cksum_add(~oport, nport));
-+	if (udp_sum != 0)
-+		udp->uh_sum = cksum_add(udp->uh_sum, ~htons(udp_sum));
++	if (g->softchecksum) {
++		if (oaddr != naddr)
++			udp_sum = cksum_add(udp_sum,
++				cksum_add(~oaddr, naddr));
++		if (oport != nport)
++			udp_sum = cksum_add(udp_sum,
++				cksum_add(~oport, nport));
++		if (udp_sum != 0)
++			udp->uh_sum = cksum_add(udp->uh_sum, ~htons(udp_sum));
+ 	}
+-	ip->ip_dst.s_addr = htonl(g->dst_ip.start);
+-    } while (0);
+-    // update checksum
  }
  
 +static void
@@ -544,7 +562,7 @@ Index: tools/tools/netmap/pkt-gen.c
  /*
   * initialize one packet and prepare for the next one.
   * The copy could be done better instead of repeating it each time.
-@@ -704,9 +925,11 @@
+@@ -704,9 +937,11 @@
  {
  	struct pkt *pkt = &targ->pkt;
  	struct ether_header *eh;
@@ -557,7 +575,7 @@ Index: tools/tools/netmap/pkt-gen.c
  	const char *payload = targ->g->options & OPT_INDIRECT ?
  		indirect_payload : default_payload;
  	int i, l0 = strlen(payload);
-@@ -716,7 +939,9 @@
+@@ -716,7 +951,9 @@
  	pcap_t *file;
  	struct pcap_pkthdr *header;
  	const unsigned char *packet;
@@ -568,7 +586,7 @@ Index: tools/tools/netmap/pkt-gen.c
  	/* Read a packet from a PCAP file if asked. */
  	if (targ->g->packet_file != NULL) {
  		if ((file = pcap_open_offline(targ->g->packet_file,
-@@ -739,45 +964,69 @@
+@@ -739,45 +976,69 @@
  	for (i = 0; i < paylen; i += l0) {
  		if (l0 > paylen - i)
  			l0 = paylen - i; // last round
@@ -669,7 +687,7 @@ Index: tools/tools/netmap/pkt-gen.c
  	bzero(&pkt->vh, sizeof(pkt->vh));
  	// dump_payload((void *)pkt, targ->g->pkt_size, NULL, 0);
  }
-@@ -1575,10 +1824,10 @@
+@@ -1575,10 +1836,10 @@
  			char *p = NETMAP_BUF(ring, slot->buf_idx);
  
  			slot->flags = 0;
@@ -684,7 +702,7 @@ Index: tools/tools/netmap/pkt-gen.c
  			nm_pkt_copy(frame, p, size);
  			if (fcnt == frags) {
  				update_addresses(pkt, targ->g);
-@@ -1680,7 +1929,7 @@
+@@ -1680,7 +1941,7 @@
  	unsigned int frags = 0;
  	int first_packet = 1;
  	int first_slot = 1;
@@ -693,7 +711,7 @@ Index: tools/tools/netmap/pkt-gen.c
  
  	cur.pkts = cur.bytes = cur.events = cur.min_space = 0;
  	cur.t.tv_usec = cur.t.tv_sec = 0; //  unused, just silence the compiler
-@@ -1777,13 +2026,20 @@
+@@ -1777,13 +2038,20 @@
  			p -= sizeof(pkt->vh) - targ->g->virt_header;
  			len += sizeof(pkt->vh) - targ->g->virt_header;
  			pkt = (struct pkt *)p;
@@ -717,7 +735,7 @@ Index: tools/tools/netmap/pkt-gen.c
  				if (first_slot) {
  					/* Grab the first one, whatever it
  					   is. */
-@@ -1859,7 +2115,8 @@
+@@ -1859,7 +2127,8 @@
  	abs = cur->pkts / (double)(cur->events);
  
  	printf("Speed: %spps Bandwidth: %sbps (raw %sbps). Average batch: %.2f pkts\n",
@@ -727,7 +745,7 @@ Index: tools/tools/netmap/pkt-gen.c
  }
  
  static void
-@@ -1890,11 +2147,14 @@
+@@ -1890,11 +2159,16 @@
  		"\t-H len		add empty virtio-net-header with size 'len'\n"
  		"\t-E pipes		allocate extra space for a number of pipes\n"
  		"\t-r			do not touch the buffers (send rubbish)\n"
@@ -738,12 +756,14 @@ Index: tools/tools/netmap/pkt-gen.c
  		"\t-F num_frags		send multi-slot packets\n"
  		"\t-A			activate pps stats on receiver\n"
 +		"\t-N			disable units normalization\n"
++		"\t-U			enable software UDP CRC chekcsum\n"
++		"\t				  mandatory on Intel, useless on Chelsio\n"
 +		"\t-4			use inet4 address family\n"
 +		"\t-6           use inet6 address family\n"
  		"",
  		cmd);
  
-@@ -2043,17 +2303,16 @@
+@@ -2043,17 +2317,16 @@
  			}
  			ppsdev /= nsamples;
  			ppsdev = sqrt(ppsdev);
@@ -768,7 +788,7 @@ Index: tools/tools/netmap/pkt-gen.c
  		prev = cur;
  
  		if (done == g->nthreads)
-@@ -2209,6 +2468,7 @@
+@@ -2209,6 +2482,7 @@
  	g.report_interval = 1000;	/* report interval */
  	g.affinity = -1;
  	/* ip addresses can also be a range x.x.x.x-x.x.x.y */
@@ -776,18 +796,18 @@ Index: tools/tools/netmap/pkt-gen.c
  	g.src_ip.name = "10.0.0.1";
  	g.dst_ip.name = "10.1.0.1";
  	g.dst_mac.name = "ff:ff:ff:ff:ff:ff";
-@@ -2223,8 +2483,8 @@
+@@ -2223,8 +2497,8 @@
  	g.nmr_config = "";
  	g.virt_header = 0;
  
 -	while ( (ch = getopt(arc, argv,
 -			"a:f:F:n:i:Il:d:s:D:S:b:c:o:p:T:w:WvR:XC:H:e:E:m:rP:zZA")) != -1) {
 +	while ((ch = getopt(arc, argv, "46a:f:F:Nn:i:Il:d:s:D:S:b:c:o:p:"
-+		"T:w:WvR:XC:H:e:E:m:rP:zZA")) != -1) {
++		"T:Uw:WvR:XC:H:e:E:m:rP:zZA")) != -1) {
  		struct td_desc *fn;
  
  		switch(ch) {
-@@ -2233,10 +2493,22 @@
+@@ -2233,10 +2507,26 @@
  			usage();
  			break;
  
@@ -807,10 +827,14 @@ Index: tools/tools/netmap/pkt-gen.c
 +			normalize = 0;
 +			break;
 +
++		case 'U':
++			g.softchecksum = 1;
++			break;
++
  		case 'F':
  			i = atoi(optarg);
  			if (i < 1 || i > 63) {
-@@ -2328,6 +2600,7 @@
+@@ -2328,6 +2618,7 @@
  		case 'b':	/* burst */
  			g.burst = atoi(optarg);
  			break;
@@ -818,7 +842,7 @@ Index: tools/tools/netmap/pkt-gen.c
  		case 'c':
  			g.cpus = atoi(optarg);
  			break;
-@@ -2413,16 +2686,11 @@
+@@ -2413,16 +2704,11 @@
  		g.src_mac.name = mybuf;
  	}
  	/* extract address ranges */
