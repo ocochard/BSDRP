@@ -80,8 +80,8 @@ usage () {
 
 get_median () {
 	# Get median value of file specified in $1
-	# and display result
-	echo $(sort -n $1 | awk '{arr[NR]=$1} END { if (NR%2==1) print arr[(NR+1)/2]; else print (arr[NR/2]+arr[NR/2+1])/2}')
+	# and display result by forcing integer mode (avoid displaying 5.44098e+06)
+	echo $(sort -n $1 | awk '{arr[NR]=$1} END { if (NR%2==1) printf "%i", arr[(NR+1)/2]; else printf "%i", (arr[NR/2]+arr[NR/2+1])/2}')
 }
 
 get_max () {
@@ -96,7 +96,10 @@ get_max () {
 extract () {
     # Extract the maximum value from a raw output of pkt-gen in receiver mode
     # $1 : Input file
-    # example of good line:
+    # example of output line:
+	# with old pkt-gen:
+	# 083.526260 main_thread [1797] 4999981 pps (5002196 pkts in 1000443 usec)
+	# with new pkt-gen:
 	# 151.111689 main_thread [2315] 86802 pps (86976 pkts 1003355136 bps in 1002000 usec) 221.31 avg_batch 99999 min_space
     grep -E 'main_thread[[:space:]]\[[[:digit:]]+\][[:space:]][1-9].*pps' $1 | cut -d ' ' -f 4 > ${WRKDATA}
     #Now we calculate the maximum value of this run with ministat
@@ -114,7 +117,7 @@ extract () {
     rm ${WRKDATA} || die "ERROR: can't delete ${WRKDATA}"
 }
 
-load () {
+get_forwarding_rate () {
 	# Start load process
 	# 
 	[ -f ${RX_FILE} ] && rm ${RX_FILE}
@@ -129,10 +132,11 @@ load () {
 	# bench should running during 30 seconds minimum
 	PPS_TO_SENT=$(( PPS * 30 ))
 	# Start a receiver
-	pkt-gen -f rx -N -${AF} -i ${RX_NIC} > ${RX_FILE} 2>&1 &
+	# Generate a report all 2seconds
+	pkt-gen -f rx -N -${AF} -i ${RX_NIC} -T 2000 > ${RX_FILE} 2>&1 &
 	# Start a generator
 	CMD="pkt-gen -f tx -N -${AF} -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PPS_TO_SENT} \
--d ${DST_NET} -D ${DMAC} -S ${SMAC} -s ${SRC_NET}"
+-d ${DST_NET} -D ${DMAC} -S ${SMAC} -s ${SRC_NET} -T 2000"
 	echo $CMD > ${TX_FILE}
 	${CMD} >> ${TX_FILE} 2>&1
 	# Now close the receiver
@@ -274,7 +278,7 @@ for i in $(seq 1 16);do
 	echo "  - Offering load = ${OLOAD} ${UNIT}"
 	echo "  - Step = ${STEP} ${UNIT}"
 	[ -n "${TREND}" ] && echo "  - Trend = ${TREND}"
-	load
+	get_forwarding_rate
 	echo "  - Measured forwarding rate = ${FWRATE} ${UNIT}"
 	if [ ${FWRATE} -gt ${OLOAD} ]; then
 		echo "  - forwarding rate greater than offering load! (forcing FWRATE=OLOAD)"
@@ -284,7 +288,10 @@ for i in $(seq 1 16);do
 	[ ${FWRATE} -gt ${MAX_FWRATE} ] && MAX_FWRATE=${FWRATE}
 	# receiving load can't be greater than offered load, but rouding value can create this problem
 	# This is why the next test is a -ge in place of -eq
-	if [ ${FWRATE} -ge ${OLOAD} ]; then
+	# and the output of pkt-gen often create a problem: It gives 49999Kpps in place of 50000Kpps
+	# Then in place of comparing FWRATE with OLOAD, with use tolerance here too (not in the initial equilibrium paper)
+	OLOAD_TOL=$(echo "$OLOAD*(1-$TOLERANCE)/1" | bc)
+	if [ ${FWRATE} -ge ${OLOAD_TOL} ]; then
 		[ "${TREND}" = "decreasing" ] && PEAK=true
 		(${PEAK}) && STEP=$(( STEP / 2 ))
 		OLOAD=$(( OLOAD + STEP ))
@@ -312,9 +319,8 @@ for i in $(seq 1 16);do
 		STEP=$(( STEP / 2 ))
 		OLOAD=$((OLOAD + STEP ))	
 	fi
-	FLOAT=$(echo ${OLOAD} \* ${TOLERANCE} | bc)
-	ROUND=$(echo "($FLOAT+0.5)/1" | bc)
-	if [ ${STEP} -le ${ROUND} ]; then
+	FLOAT=$(echo "(${OLOAD} * ${TOLERANCE})/1" | bc)
+	if [ ${STEP} -le ${FLOAT} ]; then
 		break
 	fi
 done
