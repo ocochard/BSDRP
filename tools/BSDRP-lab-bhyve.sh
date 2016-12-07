@@ -40,6 +40,7 @@ FILE=""
 LAN=0
 MESHED=true
 RAM="256M"
+DISK_CTRL="virtio-blk"
 VALE=false
 
 usage() {
@@ -49,6 +50,7 @@ usage() {
 	echo " -a           Disable full-meshing"
 	echo " -c           Number of core per VM (default ${CORE})"
 	echo " -d           Delete All VMs, including the template"
+	echo " -D           Disk controller (default ${DISK_CTRL}, can be ahci-hd)"
 	echo " -h           Display this help"
 	echo " -i filename  FreeBSD file image"
 	echo " -l X         Number of LAN common to all VM (default ${LAN})"
@@ -222,7 +224,7 @@ run_vm() {
 		#   Note: It's not possible to have "hole" in PCI assignement
 		VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
 		eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\$1A\"
-		eval VM_DISK_$1=\"-s 1:0,virtio-blk,\${WRK_DIR}/\${VM_NAME}_$1\"
+		eval VM_DISK_$1=\"-s 1:0,\${DISK_CTRL},\${WRK_DIR}/\${VM_NAME}_$1\"
 		#eval echo DEBUG \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_NAME}_$1
 		eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} ${VM_NAME}_$1
 		# Check bhyve exit code, and if error: exit the infinite loop
@@ -265,7 +267,7 @@ create_interface() {
 [ $# -lt 1 -a ! -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ `id -u` -ne 0 ] && usage "ERROR: not executed as root"
 
-args=`getopt ac:dhi:l:m:n:sVw: $*`
+args=`getopt ac:dhD:i:l:m:n:sVw: $*`
 
 set -- $args
 for i; do
@@ -284,6 +286,11 @@ for i; do
 		erase_all_vm
 		destroy_all_if
 		return 0
+		shift
+		;;
+	-D)
+		DISK_CTRL=$2
+		shift
 		shift
 		;;
 	-h)
