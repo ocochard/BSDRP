@@ -1,8 +1,8 @@
 # Release 1.70 (unreleased)
 
 ## To fix before release
-lldp: lldp user unknown
-quagga: "terminal length 0" problem and unwanted debug message
+* lldp: lldp user unknown
+* quagga: "terminal length 0" problem and unwanted debug message
 
 ## Special upgrade notes (installation older than BSDRP 1.60)
 BSDRP since 1.60 needs at minimum a 1GB disk and no more a 512MB disk.
@@ -21,7 +21,7 @@ system resize-system-slice 964000
 * iperf3 to 3.1.4
 * isc-dhcp43-server to 4.3.5
 * monit to 5.20.0
-* openvpn to 3.13
+* openvpn to 3.14
 * quagga to 1.1
 * strongswan to 5.5.1
 
@@ -60,17 +60,17 @@ system resize-system-slice 964000
 * netmap-fwd-0.2
 * ntraceroute-6.4.2_2
 * openldap-client-2.4.44
-* openvpn-2.3.13_1
+* openvpn-2.3.14
 * openvpn-auth-radius-2.1_3
-* pciids-20161121
+* pciids-20161215
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
 * pimd-2.3.2
 * pimdd-0.2.1.0_2
-* pkg-1.9.3
+* pkg-1.9.4
 * pmacct-0.14.3_3
-* py27-setuptools27-28.1.0
+* py27-setuptools27-28.8.0
 * python2-2_3
 * python27-2.7.12
 * quagga-1.1.0_2
