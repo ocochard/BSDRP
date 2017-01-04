@@ -21,7 +21,7 @@ system resize-system-slice 964000
 * iperf3 to 3.1.4
 * isc-dhcp43-server to 4.3.5
 * monit to 5.20.0
-* openvpn to 3.14
+* openvpn to 2.4.0
 * quagga to 1.1
 * strongswan to 5.5.1
 
@@ -30,7 +30,7 @@ system resize-system-slice 964000
 * bird6-1.6.0_1
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
-* ca_root_nss-3.27.1
+* ca_root_nss-3.28
 * dhcprelya-4.9_1
 * dlmalloc-2.8.6
 * easy-rsa-3.0.1_1
@@ -46,37 +46,36 @@ system resize-system-slice 964000
 * libev-4.22,1
 * libevent2-2.0.22_1
 * libffi-3.2.1
-* libgcrypt-1.7.3
-* libgpg-error-1.25
+* libgcrypt-1.7.5
+* libgpg-error-1.26
+* liblz4-131
 * libpci-3.5.2
 * libsodium-1.0.11_1
-* libucl-0.8.0
 * lldpd-0.9.4
 * lzo2-2.09
 * mlvpn-2.3.1_1
 * monit-5.20.0
 * mpd5-5.8
 * mrouted-3.9.7_1
-* netmap-fwd-0.2
-* ntraceroute-6.4.2_2
+* ntraceroute-6.4.2_3
 * openldap-client-2.4.44
-* openvpn-2.3.14
+* openvpn-2.4.0
 * openvpn-auth-radius-2.1_3
-* pciids-20161215
+* pciids-20161225
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
 * pimd-2.3.2
 * pimdd-0.2.1.0_2
-* pkg-1.9.4
+* pkg-1.9.4_1
 * pmacct-0.14.3_3
-* py27-setuptools27-28.8.0
+* py27-setuptools27-32.1.0
 * python2-2_3
-* python27-2.7.12
+* python27-2.7.13_1
 * quagga-1.1.0_2
 * readline-6.3.8
 * strongswan-5.5.1
-* sudo-1.8.18p1
+* sudo-1.8.19p1
 * tayga-0.9.2
 * tmux-2.3
 * ucarp-1.5.2_2

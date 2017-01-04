@@ -497,6 +497,7 @@ add_port "net/mlvpn"
 # Add openvpn
 add_port "security/easy-rsa"
 add_port "archivers/lzo2"
+add_port "archivers/liblz4"
 add_port "security/openvpn"
 add_port "security/openvpn-auth-radius"
 
