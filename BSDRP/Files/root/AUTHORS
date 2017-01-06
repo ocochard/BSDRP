@@ -39,7 +39,6 @@ The authors of BSDRP would like to thank the authors of these software for their
 * libgpg-error, License: LGPL21
 * libpci, License: GPLv2, WWW: http://mj.ucw.cz/sw/pciutils/
 * libsodium, License: ISCL, WWW: https://github.com/jedisct1/libsodium
-* lldpd, License: ISCL, WWW: http://vincentbernat.github.io/lldpd/
 * lzo2, License: GPLv2, WWW: http://www.oberhumer.com/opensource/lzo/
 * mlvpn, License: BSD2CLAUSE, WWW: https://zehome.github.io/MLVPN/
 * monit, License: AGPLv3, WWW: http://mmonit.com/monit/
