@@ -1,20 +1,18 @@
-# Release 1.70 (unreleased)
-
-## To fix before release
-* quagga: "terminal length 0" problem
+# Release 1.70 (07/01/2017)
 
 ## Special upgrade notes (installation older than BSDRP 1.60)
 BSDRP since 1.60 needs at minimum a 1GB disk and no more a 512MB disk.
 If you've installed BSDRP on a 512MB disk: You can't upgrade it.
-But you installed it on a 1GB disk (or larger), here is how to resize the partitionning system:
+But if you installed it on a 1GB disk (or larger), here is how to resize system slice:
 system resize-system-slice 964000
 
 ## New features
 * Upgraded to FreeBSD 11.0
-* netmap-fwd
+* Added: netmap-fwd (https://github.com/Netgate/netmap-fwd)
 * netmap pkt-gen supports IPv6, thanks to Andrey V. Elsukov (ae@freebsd.org)
 
 ## Updated packages
+* bird to 1.6.3 (Large BGP communities)
 * exabgp to 3.4.17
 * iperf to 2.0.9
 * iperf3 to 3.1.4
@@ -26,8 +24,8 @@ system resize-system-slice 964000
 * strongswan to 5.5.1
 
 ## package list
-* bird-1.6.0_1
-* bird6-1.6.0_1
+* bird-1.6.3
+* bird6-1.6.3
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
 * ca_root_nss-3.28
