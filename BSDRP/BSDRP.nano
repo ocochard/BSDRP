@@ -536,6 +536,9 @@ add_port "security/ca_root_nss"
   add_port "misc/pciids"
  add_port "devel/libpci"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
+#add_port "sysutils/intel-nvmupdate"
+#add_port "sysutils/intel-qcu"
+
 
 # NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode
 add_port "net/ntraceroute"

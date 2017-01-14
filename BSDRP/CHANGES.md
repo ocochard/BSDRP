@@ -1,4 +1,7 @@
-# Release 1.70 (07/01/2017)
+# Release 1.70 (not released)
+
+## TO DO before release
+Upgrade to 12-head ?
 
 ## Special upgrade notes (installation older than BSDRP 1.60)
 BSDRP since 1.60 needs at minimum a 1GB disk and no more a 512MB disk.
@@ -15,7 +18,7 @@ system resize-system-slice 964000
 * bird to 1.6.3 (Large BGP communities)
 * exabgp to 3.4.17
 * iperf to 2.0.9
-* iperf3 to 3.1.4
+* iperf3 to 3.1.5
 * isc-dhcp43-server to 4.3.5
 * monit to 5.20.0
 * mrouted to 3.9.8
@@ -28,7 +31,7 @@ system resize-system-slice 964000
 * bird6-1.6.3
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
-* ca_root_nss-3.28
+* ca_root_nss-3.28.1
 * dhcprelya-4.9_1
 * dlmalloc-2.8.6
 * easy-rsa-3.0.1_1
@@ -37,7 +40,7 @@ system resize-system-slice 964000
 * freevrrpd-1.1_1
 * indexinfo-0.2.6
 * iperf-2.0.9
-* iperf3-3.1.4
+* iperf3-3.1.5
 * ipmitool-1.8.17_1
 * ipsec-tools-0.8.2_1
 * isc-dhcp43-server-4.3.5
@@ -60,7 +63,7 @@ system resize-system-slice 964000
 * openldap-client-2.4.44
 * openvpn-2.4.0
 * openvpn-auth-radius-2.1_3
-* pciids-20170101
+* pciids-20170108
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23

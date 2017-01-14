@@ -1,6 +1,6 @@
 Index: net/bird/Makefile
 ===================================================================
---- net/bird/Makefile	(revision 430465)
+--- net/bird/Makefile	(revision 431343)
 +++ net/bird/Makefile	(working copy)
 @@ -2,8 +2,7 @@
  # $FreeBSD$
@@ -14,85 +14,18 @@ Index: net/bird/Makefile
  		http://bird.mpls.in/distfiles/bird/
 Index: net/bird/distinfo
 ===================================================================
---- net/bird/distinfo	(revision 430465)
+--- net/bird/distinfo	(revision 431343)
 +++ net/bird/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1469633743
 -SHA256 (bird-1.6.0.tar.gz) = db3dfe37deac73b38b7d6966e577985f7b8e23f246760cb095ad13b0d8010e13
 -SIZE (bird-1.6.0.tar.gz) = 1273899
-+TIMESTAMP = 1483748888
++TIMESTAMP = 1484385738
 +SHA256 (bird-1.6.3.tar.gz) = 39c51cf57c3ba8b5978b2a657ffa2f647ec7f3ae643e91cf42ee5cb070cf7e7c
 +SIZE (bird-1.6.3.tar.gz) = 1337198
-Index: net/bird/files/bird.in
-===================================================================
---- net/bird/files/bird.in	(revision 430465)
-+++ net/bird/files/bird.in	(working copy)
-@@ -29,6 +29,6 @@
- : ${bird_enable="NO"}
- : ${bird_config="%%PREFIX%%/etc/bird.conf"}
- 
--command_args="-c $bird_config"
-+command_args="-P /var/run/${name}.pid -c $bird_config"
- 
- run_rc_command "$1"
-Index: net/bird/files/bird6.in
-===================================================================
---- net/bird/files/bird6.in	(revision 430465)
-+++ net/bird/files/bird6.in	(working copy)
-@@ -29,6 +29,6 @@
- : ${bird6_enable="NO"}
- : ${bird6_config="%%PREFIX%%/etc/bird6.conf"}
- 
--command_args="-c $bird6_config"
-+command_args="-P /var/run/${name}.pid -c $bird6_config"
- 
- run_rc_command "$1"
-Index: net/bird/files/patch-bsd-sysdep.h
-===================================================================
---- net/bird/files/patch-bsd-sysdep.h	(revision 430465)
-+++ net/bird/files/patch-bsd-sysdep.h	(nonexistent)
-@@ -1,23 +0,0 @@
----- sysdep/bsd/sysio.h	2014-07-10 01:40:13.000000000 +0400
--+++ sysdep/bsd/sysio.h	2014-09-27 12:12:09.000000000 +0400
--@@ -9,6 +9,9 @@
-- #include <net/if_dl.h>
-- #include <netinet/in_systm.h> // Workaround for some BSDs
-- #include <netinet/ip.h>
--+#ifdef __FreeBSD__
--+#include <sys/param.h> // FreeBSD_version definition
--+#endif
-- 
-- 
-- #ifdef __NetBSD__
--@@ -175,8 +178,8 @@
--   ip->ip_src = ipa_to_in4(s->saddr);
--   ip->ip_dst = ipa_to_in4(s->daddr);
-- 
---#ifdef __OpenBSD__
---  /* OpenBSD expects ip_len in network order, other BSDs expect host order */
--+#if defined __OpenBSD__ || (defined __FreeBSD__ && (__FreeBSD_version >= 1100030))
--+  /* OpenBSD and FreeBSD (since 11) expects ip_len in network order, other BSDs expect host order */
--   ip->ip_len = htons(ip->ip_len);
-- #endif
-- }
-
-Property changes on: net/bird/files/patch-bsd-sysdep.h
-___________________________________________________________________
-Deleted: fbsd:nokeywords
-## -1 +0,0 ##
--yes
-\ No newline at end of property
-Deleted: svn:eol-style
-## -1 +0,0 ##
--native
-\ No newline at end of property
-Deleted: svn:mime-type
-## -1 +0,0 ##
--text/plain
-\ No newline at end of property
 Index: net/bird/files/patch-proto-bgp-attrs.c
 ===================================================================
---- net/bird/files/patch-proto-bgp-attrs.c	(revision 430465)
+--- net/bird/files/patch-proto-bgp-attrs.c	(revision 431343)
 +++ net/bird/files/patch-proto-bgp-attrs.c	(nonexistent)
 @@ -1,62 +0,0 @@
 -diff --git proto/bgp/attrs.c proto/bgp/attrs.c
@@ -174,7 +107,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/bird/files/patch-sysdep-unix-io.c
 ===================================================================
---- net/bird/files/patch-sysdep-unix-io.c	(revision 430465)
+--- net/bird/files/patch-sysdep-unix-io.c	(revision 431343)
 +++ net/bird/files/patch-sysdep-unix-io.c	(nonexistent)
 @@ -1,80 +0,0 @@
 -diff --git sysdep/unix/io.c sysdep/unix/io.c
