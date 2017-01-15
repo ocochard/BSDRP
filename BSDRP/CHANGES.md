@@ -11,7 +11,8 @@ system resize-system-slice 964000
 
 ## New features
 * Upgraded to FreeBSD 11.0
-* Added: netmap-fwd (https://github.com/Netgate/netmap-fwd)
+* Re-Added: netmap-fwd (https://github.com/Netgate/netmap-fwd)
+* Add FIBsync patch to netmap-fwd from Zollner Robert <wolfit_ro@yahoo.com>
 * netmap pkt-gen supports IPv6, thanks to Andrey V. Elsukov (ae@freebsd.org)
 
 ## Updated packages

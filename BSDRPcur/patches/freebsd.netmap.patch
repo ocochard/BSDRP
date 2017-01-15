@@ -1,0 +1,41 @@
+Index: sys/dev/netmap/netmap_freebsd.c
+===================================================================
+--- sys/dev/netmap/netmap_freebsd.c	(revision 311282)
++++ sys/dev/netmap/netmap_freebsd.c	(working copy)
+@@ -1021,12 +1021,12 @@
+ 	 * but simply that it has changed since the last
+ 	 * time the kthread saw it.
+ 	 */
+-	mtx_lock(&nmk->worker_lock);
++	mtx_lock_spin(&nmk->worker_lock);
+ 	nmk->scheduled++;
+ 	if (nmk->worker_ctx.cfg.wchan) {
+ 		wakeup((void *)(uintptr_t)nmk->worker_ctx.cfg.wchan);
+ 	}
+-	mtx_unlock(&nmk->worker_lock);
++	mtx_unlock_spin(&nmk->worker_lock);
+ }
+ 
+ void inline
+@@ -1080,10 +1080,10 @@
+ 			ctx->worker_fn(ctx->worker_private); /* worker body */
+ 		} else {
+ 			/* checks if there is a pending notification */
+-			mtx_lock(&nmk->worker_lock);
++			mtx_lock_spin(&nmk->worker_lock);
+ 			if (likely(nmk->scheduled != old_scheduled)) {
+ 				old_scheduled = nmk->scheduled;
+-				mtx_unlock(&nmk->worker_lock);
++				mtx_unlock_spin(&nmk->worker_lock);
+ 
+ 				ctx->worker_fn(ctx->worker_private); /* worker body */
+ 
+@@ -1094,7 +1094,7 @@
+ 					&nmk->worker_lock, 0, "nmk_ev", hz);
+ 				nmk->scheduled++;
+ 			}
+-			mtx_unlock(&nmk->worker_lock);
++			mtx_unlock_spin(&nmk->worker_lock);
+ 		}
+ 	}
+ 
