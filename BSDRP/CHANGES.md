@@ -10,7 +10,7 @@ But if you installed it on a 1GB disk (or larger), here is how to resize system 
 system resize-system-slice 964000
 
 ## New features
-* Upgraded to FreeBSD 11.0
+* Upgraded to FreeBSD 11.0-STABLE r312663 (skip 11.0 for massive performance improvement)
 * Re-Added: netmap-fwd (https://github.com/Netgate/netmap-fwd)
 * Add FIBsync patch to netmap-fwd from Zollner Robert <wolfit_ro@yahoo.com>
 * netmap pkt-gen supports IPv6, thanks to Andrey V. Elsukov (ae@freebsd.org)
@@ -20,6 +20,7 @@ system resize-system-slice 964000
 * exabgp to 3.4.17
 * iperf to 2.0.9
 * iperf3 to 3.1.5
+* ipmitool to 1.8.18
 * isc-dhcp43-server to 4.3.5
 * monit to 5.20.0
 * mrouted to 3.9.8
@@ -42,7 +43,7 @@ system resize-system-slice 964000
 * indexinfo-0.2.6
 * iperf-2.0.9
 * iperf3-3.1.5
-* ipmitool-1.8.17_1
+* ipmitool-1.8.18
 * ipsec-tools-0.8.2_1
 * isc-dhcp43-server-4.3.5
 * libev-4.22,1
@@ -78,7 +79,7 @@ system resize-system-slice 964000
 * quagga-1.1.0_2
 * readline-6.3.8
 * strongswan-5.5.1
-* sudo-1.8.19p1
+* sudo-1.8.19p2
 * tayga-0.9.2
 * tmux-2.3
 * ucarp-1.5.2_2

@@ -75,6 +75,7 @@ device		cpufreq
 device		acpi
 options 	ACPI_DMAR
 device		pci
+options 	PCI_HP			# PCI-Express native HotPlug
 options		PCI_IOV			# PCI SR-IOV support
 
 # Floppy drives
@@ -290,7 +291,7 @@ device		firmware		# firmware assist module
 device		bpf			# Berkeley packet filter
 
 # USB support
-options 	USB_DEBUG		# enable debug msgs
+#options 	USB_DEBUG		# enable debug msgs
 device		uhci			# UHCI PCI->USB interface
 device		ohci			# OHCI PCI->USB interface
 device		ehci			# EHCI PCI->USB interface (USB 2.0)
@@ -322,13 +323,13 @@ device		virtio_blk		# VirtIO Block device
 device		virtio_scsi		# VirtIO SCSI device
 device		virtio_balloon		# VirtIO Memory Balloon device
 
-# HyperV drivers and enchancement support
-device		hyperv			# HyperV drivers
+# HyperV drivers and enhancement support
+device		hyperv			# HyperV drivers 
 
 # Xen HVM Guest Optimizations
 # NOTE: XENHVM depends on xenpci.  They must be added or removed together.
-options		XENHVM          # Xen HVM kernel infrastructure
-device      xenpci          # Xen HVM Hypervisor services driver
+options 	XENHVM			# Xen HVM kernel infrastructure
+device		xenpci			# Xen HVM Hypervisor services driver
 
 # VMware support
 device		vmx			# VMware VMXNET3 Ethernet

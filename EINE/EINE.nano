@@ -79,7 +79,7 @@ WITHOUT_JAIL=
 WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
 WITHOUT_LIB32=
-WITHOUT_LOCALES=
+WITHOUT_LLDB=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
 WITHOUT_NCP=
@@ -115,6 +115,7 @@ WITH_GCC=
 WITH_IDEA=
 WITH_FAST_DEPEND=
 WITH_DEBUG_FILES=
+WITH_REPRODUCIBLE_BUILD=
 '
 
 # Customize commands.
@@ -194,15 +195,17 @@ add_netrate () {
         CR 'make clean -C /usr/src/tools/tools/${TOOL}'
        	CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
             MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-            UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+            UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
             UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
             make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
         # each Makefile have a different variable names
         for MAKE_CMD in PROG PROGS ALL; do
             for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
                 if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
+					[ -d ${NANO_WORLDDIR}/usr/local/lib ] || mkdir -p ${NANO_WORLDDIR}/usr/local/lib
                     mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
                 else
+					[ -d ${NANO_WORLDDIR}/usr/local/bin ] || mkdir -p ${NANO_WORLDDIR}/usr/local/bin
                     mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
                 fi
                 if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
@@ -221,22 +224,22 @@ add_netrate () {
 add_apuled () {
     mkdir -p ${NANO_WORLDDIR}/dev
     mount -t devfs devfs ${NANO_WORLDDIR}/dev
-    mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
-    mkdir -p ${NANO_WORLDDIR}/tmp/apuled
+	mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
+	mkdir -p ${NANO_WORLDDIR}/tmp/apuled
     mount -t nullfs ${NANO_TOOLS}/tools/apuled ${NANO_WORLDDIR}/tmp/apuled
     mkdir -p ${NANO_WORLDDIR}/usr/workdir
     CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-        MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-        UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
-        UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+		MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+		UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
+		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
         make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/'
     mv ${NANO_WORLDDIR}/tmp/apuled/apuled.ko ${NANO_WORLDDIR}/boot/modules/
-    CR 'make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/ clean'
+	CR 'make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/ clean'
     rm -rf ${NANO_WORLDDIR}/usr/workdir
     umount ${NANO_WORLDDIR}/usr/src
-    umount ${NANO_WORLDDIR}/tmp/apuled
+	umount ${NANO_WORLDDIR}/tmp/apuled
     umount ${NANO_WORLDDIR}/dev
-    rm -r ${NANO_WORLDDIR}/tmp/apuled
+	rm -r ${NANO_WORLDDIR}/tmp/apuled
 }
 
 # Need to check if this function works with cross-compiling architecture!!!!
@@ -324,7 +327,7 @@ EOF
 			if grep -q NO_STAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
    					CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   install package BATCH=yes -DWITH_PKGNG \
@@ -332,14 +335,14 @@ EOF
 			else
        			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   install BATCH=yes -DWITH_PKGNG \
 		  WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
           		CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   package BATCH=yes -DWITH_PKGNG \
@@ -412,6 +415,7 @@ add_port "net/freeradius3" "WITHOUT=\"PERL\""
 # Add openvpn
 add_port "security/easy-rsa"
 add_port "archivers/lzo2"
+add_port "archivers/liblz4"
 add_port "security/openvpn"
 add_port "security/libgpg-error"
 add_port "security/libgcrypt"
@@ -467,16 +471,18 @@ add_port "www/py-bottle"
 add_port "www/py-bottle-cork"
 
 # Permit BIOS upgrade
- add_port "sysutils/dmidecode"
+#add_port "sysutils/dmidecode"
  # Curl is just a build-deps of cmake (needed by libftdi)
  # But curl need base kerberos, then we remove this deps
  # And we de-install curl on the custom script
-  #add_port "security/ca_root_nss"
- add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE\""
-add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
-add_port "misc/pciids"
-add_port "devel/libpci"
-add_port "sysutils/flashrom"
+ #add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE
+#add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
+  add_port "misc/pciids"
+ add_port "devel/libpci"
+add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
+#add_port "sysutils/intel-nvmupdate"
+#add_port "sysutils/intel-qcu"
+
 
 # Crazy test of running linux VM
 #add_port "sysutils/grub2-bhyve"
@@ -675,6 +681,8 @@ usr/local/share/examples
 usr/include
 usr/share/examples
 usr/share/info
+usr/share/man/man3
+usr/share/man/man9
 usr/share/me
 usr/share/pc-sysinstall
 usr/share/openssl
@@ -701,6 +709,10 @@ boot/loader.efi
 sbin/hastd
 sbin/hastctl
 usr/sbin/ctladm
+usr/sbin/ctld
+usr/share/man/man8/ctld.8.gz
+usr/sbin/hv_kvp_daemon
+usr/share/man/man8/hv_kvp_daemon.8.gz
 usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample
 usr/share/misc/magic.mgc
@@ -724,84 +736,63 @@ usr/share/misc/termcap.db
 	# Because it's a very time consuming script, output are online:
 	# http://phk.freebsd.dk/misc/build_options_stable_8_210741/
 
-TOOLCHAIN_TO_REMOVE='
-usr/bin/addr2line
-usr/bin/gnu-ar
-usr/bin/as
-usr/bin/ld
-usr/bin/nm
-usr/bin/objcopy
-usr/bin/gnu-ranlib
-usr/bin/readelf
-usr/bin/size
-usr/bin/strings
-usr/bin/strip
-usr/bin/cc
-usr/bin/gcc
-usr/bin/gcpp
-usr/bin/cpp
-usr/bin/c++
-usr/bin/g++
+WITHOUT_TOOLCHAIN='
 usr/bin/CC
-usr/bin/c++filt
-usr/bin/gcov
-usr/bin/gdb
-usr/bin/gdbtui
-usr/bin/kgdb
+usr/bin/addr2line
 usr/bin/ar
-usr/bin/ranlib
+usr/bin/as
+usr/bin/byacc
+usr/bin/c++
+usr/bin/c++filt
 usr/bin/c89
 usr/bin/c99
-usr/bin/sum
-usr/bin/compile_et
-usr/bin/ctags
-usr/bin/file2c
-usr/bin/gprof
-usr/bin/od
-usr/bin/indent
-usr/bin/m4
-usr/bin/lex
-usr/bin/lex++
-usr/bin/flex
-usr/bin/flex++
-usr/bin/mt
-usr/bin/mkstr
-usr/bin/rpcgen
-usr/bin/unifdef
-usr/bin/unifdefall
-usr/bin/nvi
-usr/bin/vgrind
-usr/bin/lint
-usr/bin/xstr
-usr/bin/lzdec
-usr/bin/yacc
-usr/bin/yyfix
-usr/bin/byacc
-usr/bin/lzdec
+usr/bin/cc
 usr/bin/clang
 usr/bin/clang++
 usr/bin/clang-cpp
 usr/bin/clang-tblgen
-usr/bin/tblgen
+usr/bin/cpp
 usr/bin/crunchgen
 usr/bin/crunchide
-usr/libexec/cc1
-usr/libexec/cc1plus
-usr/libexec/cc1obj
-usr/libexec/vfontedpr
-usr/libexec/lint1
-usr/libexec/lint2
+usr/bin/ctags
+usr/bin/file2c
+usr/bin/flex
+usr/bin/flex++
+usr/bin/gdb
+usr/bin/gdbserver
+usr/bin/gdbtui
+usr/bin/indent
+usr/bin/ld
+usr/bin/ld.bfd
+usr/bin/lex
+usr/bin/lex++
+usr/bin/lint
+usr/bin/lldb
+usr/bin/llvm-tblgen
+usr/bin/mkstr
+usr/bin/nm
+usr/bin/objcopy
+usr/bin/objdump
+usr/bin/ranlib
+usr/bin/readelf
+usr/bin/rpcgen
+usr/bin/size
+usr/bin/strings
+usr/bin/strip
+usr/bin/unifdef
+usr/bin/unifdefall
+usr/bin/xstr
+usr/bin/yacc
+usr/lib/libfl.a
+usr/lib/libfl_p.a
+usr/lib/libl.a
+usr/lib/libl_p.a
+usr/lib/libln.a
+usr/lib/libln_p.a
 usr/sbin/btxld
 usr/sbin/config
-usr/sbin/i2c
-usr/sbin/rmt
-usr/share/misc/gprof.flat
-usr/share/misc/gprof.callg
-usr/share/misc/vgrindefs
-usr/share/misc/vgrindefs.db
-usr/share/tmac/tmac.vgrind
 '
-    for c in $TOOLCHAIN_TO_REMOVE
+    for c in $WITHOUT_TOOLCHAIN
     do
         if [ -f ${NANO_WORLDDIR}/$c ]; then
             echo "Removing ${NANO_WORLDDIR}/$c"
@@ -827,8 +818,16 @@ usr/share/tmac/tmac.vgrind
 
 	# Moving kerned & world debug symbols into debug.tar.xz file
 	if [ -d ${NANO_WORLDDIR}/usr/lib/debug ]; then
+		if [ -f  ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
+			if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
+				mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+			fi
+			mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+		fi
 		tar cfvZ ${NANO_OBJ}/debug.tar.xz -C ${NANO_WORLDDIR}/usr/lib debug
-        rm -rf ${NANO_WORLDDIR}/usr/lib/debug
+		rm -rf ${NANO_WORLDDIR}/usr/lib/debug
+		# relocate /usr/lib/debug to /data/debug (debug archive files needs more than 1Gb for being extracted)
+		ln -s /data/debug ${NANO_WORLDDIR}/usr/lib/debug
 	fi
 	# strip binaries for ports (tips from FreeNAS 8)
 	pprint 4 "Stripping binaries and libraries"
@@ -838,7 +837,9 @@ usr/share/tmac/tmac.vgrind
 		done
 	done	
 	# Generate package inventory
-	CR 'pkg info' > ${NANO_OBJ}/packages.info
+	if [ -x ${NANO_WORLDDIR}/usr/local/sbin/pkg ]; then
+		CR 'pkg info' > ${NANO_OBJ}/packages.info
+	fi
 }
 
 # Enable only serial system only
@@ -859,12 +860,6 @@ bsdrp_console_serial () {
 }
 
 # Enable use of keyboard/vga and serial
-#
-###### Warning ####
-# BUG TO FIX: Don't boot if no serial port available!
-# Seems fixed:
-# http://lists.freebsd.org/pipermail/freebsd-hackers/2012-September/040523.html
-#
 bsdrp_console_dual () {
     #sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
 	#sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys

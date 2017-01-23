@@ -1,197 +1,100 @@
-Index: net/bird/Makefile
+Index: net/bird/files/bird.in
 ===================================================================
---- net/bird/Makefile	(revision 431343)
-+++ net/bird/Makefile	(working copy)
-@@ -2,8 +2,7 @@
- # $FreeBSD$
+--- net/bird/files/bird.in	(revision 432209)
++++ net/bird/files/bird.in	(working copy)
+@@ -29,6 +29,6 @@
+ : ${bird_enable="NO"}
+ : ${bird_config="%%PREFIX%%/etc/bird.conf"}
  
- PORTNAME?=	bird
--PORTVERSION=	1.6.0
--PORTREVISION=	1
-+PORTVERSION=	1.6.3
- CATEGORIES=	net
- MASTER_SITES=	ftp://bird.network.cz/pub/bird/ \
- 		http://bird.mpls.in/distfiles/bird/
-Index: net/bird/distinfo
+-command_args="-c $bird_config"
++command_args="-P /var/run/${name}.pid -c $bird_config"
+ 
+ run_rc_command "$1"
+Index: net/bird/files/bird6.in
 ===================================================================
---- net/bird/distinfo	(revision 431343)
-+++ net/bird/distinfo	(working copy)
-@@ -1,3 +1,3 @@
--TIMESTAMP = 1469633743
--SHA256 (bird-1.6.0.tar.gz) = db3dfe37deac73b38b7d6966e577985f7b8e23f246760cb095ad13b0d8010e13
--SIZE (bird-1.6.0.tar.gz) = 1273899
-+TIMESTAMP = 1484385738
-+SHA256 (bird-1.6.3.tar.gz) = 39c51cf57c3ba8b5978b2a657ffa2f647ec7f3ae643e91cf42ee5cb070cf7e7c
-+SIZE (bird-1.6.3.tar.gz) = 1337198
-Index: net/bird/files/patch-proto-bgp-attrs.c
+--- net/bird/files/bird6.in	(revision 432209)
++++ net/bird/files/bird6.in	(working copy)
+@@ -29,6 +29,6 @@
+ : ${bird6_enable="NO"}
+ : ${bird6_config="%%PREFIX%%/etc/bird6.conf"}
+ 
+-command_args="-c $bird6_config"
++command_args="-P /var/run/${name}.pid -c $bird6_config"
+ 
+ run_rc_command "$1"
+Index: net/bird/files/patch-sysdep-bsd-sysio.h
 ===================================================================
---- net/bird/files/patch-proto-bgp-attrs.c	(revision 431343)
-+++ net/bird/files/patch-proto-bgp-attrs.c	(nonexistent)
-@@ -1,62 +0,0 @@
--diff --git proto/bgp/attrs.c proto/bgp/attrs.c
--index d85afa8..b8371f3 100644
----- proto/bgp/attrs.c
--+++ proto/bgp/attrs.c
--@@ -118,7 +118,7 @@ validate_path(struct bgp_proto *p, int as_path, int bs, byte *idata, uint *ileng
-- {
--   int res = 0;
--   u8 *a, *dst;
---  int len, plen, copy;
--+  int len, plen;
-- 
--   dst = a = idata;
--   len = *ilength;
--@@ -132,15 +132,20 @@ validate_path(struct bgp_proto *p, int as_path, int bs, byte *idata, uint *ileng
--       if (len < plen)
-- 	return -1;
-- 
--+      if (a[1] == 0)
--+        {
--+	  log(L_WARN "%s: %s_PATH attribute contains empty segment, skipping it",
--+	      p->p.name, as_path ? "AS" : "AS4");
--+	  goto skip;
--+	}
--+
--       switch (a[0])
-- 	{
-- 	case AS_PATH_SET:
---	  copy = 1;
-- 	  res++;
-- 	  break;
-- 
-- 	case AS_PATH_SEQUENCE:
---	  copy = 1;
-- 	  res += a[1];
-- 	  break;
-- 
--@@ -154,20 +159,17 @@ validate_path(struct bgp_proto *p, int as_path, int bs, byte *idata, uint *ileng
-- 
-- 	  log(L_WARN "%s: %s_PATH attribute contains AS_CONFED_* segment, skipping segment",
-- 	      p->p.name, as_path ? "AS" : "AS4");
---	  copy = 0;
---	  break;
--+	  goto skip;
-- 
-- 	default:
-- 	  return -1;
-- 	}
-- 
---      if (copy)
---	{
---	  if (dst != a)
---	    memmove(dst, a, plen);
---	  dst += plen;
---	}
--+      if (dst != a)
--+	memmove(dst, a, plen);
--+      dst += plen;
-- 
--+    skip:
--       len -= plen;
--       a += plen;
--     }
+--- net/bird/files/patch-sysdep-bsd-sysio.h	(nonexistent)
++++ net/bird/files/patch-sysdep-bsd-sysio.h	(working copy)
+@@ -0,0 +1,23 @@
++diff --git sysdep/bsd/sysio.h sysdep/bsd/sysio.h
++index 2610a47..9b10e6e 100644
++--- sysdep/bsd/sysio.h
+++++ sysdep/bsd/sysio.h
++@@ -9,6 +9,7 @@
++ #include <net/if_dl.h>
++ #include <netinet/in_systm.h> // Workaround for some BSDs
++ #include <netinet/ip.h>
+++#include <sys/param.h>
++ 
++ 
++ #ifdef __NetBSD__
++@@ -179,8 +180,8 @@ sk_prepare_ip_header(sock *s, void *hdr, int dlen)
++   ip->ip_src = ipa_to_in4(s->saddr);
++   ip->ip_dst = ipa_to_in4(s->daddr);
++ 
++-#ifdef __OpenBSD__
++-  /* OpenBSD expects ip_len in network order, other BSDs expect host order */
+++#if (defined __OpenBSD__) || (defined __DragonFly__) || (defined __FreeBSD__ && (__FreeBSD_version >= 1100030))
+++  /* Different BSDs have different expectations of ip_len endianity */
++   ip->ip_len = htons(ip->ip_len);
++ #endif
++ }
 
-Property changes on: net/bird/files/patch-proto-bgp-attrs.c
+Property changes on: net/bird/files/patch-sysdep-bsd-sysio.h
 ___________________________________________________________________
-Deleted: fbsd:nokeywords
-## -1 +0,0 ##
--yes
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
 \ No newline at end of property
-Deleted: svn:eol-style
-## -1 +0,0 ##
--native
+Added: svn:eol-style
+## -0,0 +1 ##
++native
 \ No newline at end of property
-Deleted: svn:mime-type
-## -1 +0,0 ##
--text/plain
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
 \ No newline at end of property
-Index: net/bird/files/patch-sysdep-unix-io.c
+Index: net/bird/files/sysdep-bsd-sysio.h
 ===================================================================
---- net/bird/files/patch-sysdep-unix-io.c	(revision 431343)
-+++ net/bird/files/patch-sysdep-unix-io.c	(nonexistent)
-@@ -1,80 +0,0 @@
--diff --git sysdep/unix/io.c sysdep/unix/io.c
--index 486319f..8198743 100644
----- sysdep/unix/io.c
--+++ sysdep/unix/io.c
--@@ -1211,7 +1211,7 @@ sk_setup(sock *s)
--   if (s->iface)
--   {
-- #ifdef SO_BINDTODEVICE
---    struct ifreq ifr;
--+    struct ifreq ifr = {};
--     strcpy(ifr.ifr_name, s->iface->name);
--     if (setsockopt(s->fd, SOL_SOCKET, SO_BINDTODEVICE, &ifr, sizeof(ifr)) < 0)
--       ERR("SO_BINDTODEVICE");
--@@ -1854,6 +1854,20 @@ sk_write(sock *s)
+--- net/bird/files/sysdep-bsd-sysio.h	(revision 432209)
++++ net/bird/files/sysdep-bsd-sysio.h	(nonexistent)
+@@ -1,23 +0,0 @@
+-diff --git sysdep/bsd/sysio.h sysdep/bsd/sysio.h
+-index 2610a47..9b10e6e 100644
+---- sysdep/bsd/sysio.h
+-+++ sysdep/bsd/sysio.h
+-@@ -9,6 +9,7 @@
+- #include <net/if_dl.h>
+- #include <netinet/in_systm.h> // Workaround for some BSDs
+- #include <netinet/ip.h>
+-+#include <sys/param.h>
+- 
+- 
+- #ifdef __NetBSD__
+-@@ -179,8 +180,8 @@ sk_prepare_ip_header(sock *s, void *hdr, int dlen)
+-   ip->ip_src = ipa_to_in4(s->saddr);
+-   ip->ip_dst = ipa_to_in4(s->daddr);
+- 
+--#ifdef __OpenBSD__
+--  /* OpenBSD expects ip_len in network order, other BSDs expect host order */
+-+#if (defined __OpenBSD__) || (defined __DragonFly__) || (defined __FreeBSD__ && (__FreeBSD_version >= 1100030))
+-+  /* Different BSDs have different expectations of ip_len endianity */
+-   ip->ip_len = htons(ip->ip_len);
+- #endif
 - }
-- 
-- void
--+sk_err(sock *s, int revents)
--+{
--+  int se = 0, sse = sizeof(se);
--+  if (revents & POLLERR)
--+    if (getsockopt(s->fd, SOL_SOCKET, SO_ERROR, &se, &sse) < 0)
--+    {
--+      log(L_ERR "IO: Socket error: SO_ERROR: %m");
--+      se = 0;
--+    }
--+
--+  s->err_hook(s, se);
--+}
--+
--+void
-- sk_dump_all(void)
-- {
--   node *n;
--@@ -2163,7 +2177,7 @@ io_loop(void)
-- 	      int steps;
-- 
-- 	      steps = MAX_STEPS;
---	      if (s->fast_rx && (pfd[s->index].revents & (POLLIN | POLLHUP | POLLERR)) && s->rx_hook)
--+	      if (s->fast_rx && (pfd[s->index].revents & POLLIN) && s->rx_hook)
-- 		do
-- 		  {
-- 		    steps--;
--@@ -2185,6 +2199,7 @@ io_loop(void)
-- 		      goto next;
-- 		  }
-- 		while (e && steps);
--+
-- 	      current_sock = sk_next(s);
-- 	    next: ;
-- 	    }
--@@ -2208,18 +2223,26 @@ io_loop(void)
-- 		  goto next2;
-- 		}
-- 
---	      if (!s->fast_rx && (pfd[s->index].revents & (POLLIN | POLLHUP | POLLERR)) && s->rx_hook)
--+	      if (!s->fast_rx && (pfd[s->index].revents & POLLIN) && s->rx_hook)
-- 		{
-- 		  count++;
-- 		  io_log_event(s->rx_hook, s->data);
-- 		  sk_read(s, pfd[s->index].revents);
-- 		  if (s != current_sock)
---		      goto next2;
--+		    goto next2;
--+		}
--+
--+	      if (pfd[s->index].revents & (POLLHUP | POLLERR))
--+		{
--+		  sk_err(s, pfd[s->index].revents);
--+		    goto next2;
-- 		}
--+
-- 	      current_sock = sk_next(s);
-- 	    next2: ;
-- 	    }
-- 
--+
-- 	  stored_sock = current_sock;
-- 	}
--     }
 
-Property changes on: net/bird/files/patch-sysdep-unix-io.c
+Property changes on: net/bird/files/sysdep-bsd-sysio.h
 ___________________________________________________________________
 Deleted: fbsd:nokeywords
 ## -1 +0,0 ##

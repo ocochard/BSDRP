@@ -7,8 +7,7 @@
 ################## Common section #################
 
 # Console port speed
-COM_SPEED=38400
-
+COM_SPEED=115200
 # Where cust_pkg() finds packages to install
 NANO_PACKAGE_DIR=${NANO_TOOLS}/Pkg
 NANO_PACKAGE_LIST="*"
@@ -19,8 +18,11 @@ NANO_ARCH=${TARGET_ARCH}
 
 # Options to put in make.conf during buildworld only
 # BOOT_COMCONSOLE_SPEED is useless because we using /boot.config with -Sspeed option
+# But for baud higher than 9600 is not supported by boot0:
+#  then we let the speed already configured by the BIOS by setting it to 0
 CONF_BUILD='
 MALLOC_PRODUCTION=
+BOOT_BOOT0_COMCONSOLE_SPEED=0
 '
 
 # Options to put in make.conf during installworld only
@@ -44,14 +46,20 @@ WITHOUT_ATF=
 WITHOUT_ATM=
 WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
+WITHOUT_AUTOFS=
+WITHOUT_BHYVE=
 WITHOUT_BLUETOOTH=
+WITHOUT_BOOTPARAMD=
+WITHOUT_BOOTPD=
 WITHOUT_BSDINSTALL=
 WITHOUT_BSNMP=
 WITHOUT_CALENDAR=
 WITHOUT_CTM=
 WITHOUT_CVS=
 WITHOUT_DICT=
+WITHOUT_EE=
 WITHOUT_EXAMPLES=
+WITHOUT_FINGER=
 WITHOUT_FLOPPY=
 WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
@@ -60,12 +68,14 @@ WITHOUT_GDB=
 WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
+WITHOUT_HAST=
 WITHOUT_HTML=
 WITHOUT_INFO=
 WITHOUT_IPFILTER=
 WITHOUT_IPFW=
 WITHOUT_IPX=
 WITHOUT_IPX_SUPPORT=
+WITHOUT_ISCSI=
 WITHOUT_JAIL=
 WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
@@ -91,6 +101,7 @@ WITHOUT_PPP=
 WITHOUT_PORTSNAP=
 WITHOUT_PROFILE=
 WITHOUT_QUOTAS=
+WITHOUT_RBOOTD=
 WITHOUT_RCMDS=
 WITHOUT_RCS=
 WITHOUT_RESCUE=
@@ -100,8 +111,11 @@ WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
 WITHOUT_SYSCONS=
 WITHOUT_SYSINSTALL=
+WITHOUT_TALK=
 WITHOUT_TESTS=
 WITHOUT_TESTS_SUPPORT=
+WITHOUT_TFTP=
+WITHOUT_TIMED=
 WITHOUT_UNBOUND=
 WITHOUT_USB_GADGET_EXAMPLES=
 WITHOUT_ZFS=
@@ -250,7 +264,7 @@ EOF
 			if grep -q NO_STAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
    					CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   install package BATCH=yes -DWITH_PKGNG \
@@ -258,14 +272,14 @@ EOF
 			else
        			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   install BATCH=yes -DWITH_PKGNG \
 		  WITHOUT=\"NLS DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
           		CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=${FBSD_DST_RELEASE} \
+		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
                   package BATCH=yes -DWITH_PKGNG \
@@ -313,6 +327,7 @@ add_port "lang/perl5.20"
   add_port "devel/libpthread-stubs"
    add_port "misc/pciids"
   add_port "devel/libpciaccess"
+   add_port "devel/libdevq"
  add_port "graphics/libdrm"
   add_port "devel/libedit"
  add_port "devel/llvm36"
@@ -337,10 +352,10 @@ add_port "lang/perl5.20"
     add_port "x11/libXfixes"
     add_port "x11/damageproto"
    add_port "x11/libXdamage"
-   add_port "devel/libdevq"
    add_port "x11/libxshmfence"
    add_port "devel/gettext-runtime"
    add_port "x11/glproto"
+   add_port "devel/libclc"
   add_port "graphics/libglapi"
 add_port "graphics/dri"
 add_port "graphics/libGL"
@@ -640,8 +655,12 @@ usr/share/groff_font
 usr/share/tmac
 usr/share/me
 usr/share/info
-usr/share/man
+usr/share/man/man3
+usr/share/man/man9
+usr/share/me
+usr/share/pc-sysinstall
 usr/share/openssl
+usr/share/syscons
 usr/libdata/lint
 usr/libdata/ldscripts
 '
@@ -672,10 +691,16 @@ boot/boot1.efifat
 boot/loader.efi
 sbin/hastd
 sbin/hastctl
+usr/sbin/bsdconfig
+usr/share/man/man8/bsdconfig.8.gz
 usr/sbin/bhyve
 usr/sbin/bhyvectl
 usr/sbin/bhyveload
 usr/sbin/ctladm
+usr/sbin/ctld
+usr/share/man/man8/ctld.8.gz
+usr/sbin/hv_kvp_daemon
+usr/share/man/man8/hv_kvp_daemon.8.gz
 usr/bin/ctlstat
 usr/share/misc/magic.mgc
 usr/share/misc/termcap.db
@@ -721,7 +746,6 @@ usr/bin/c++filt
 usr/bin/gcov
 usr/bin/gdb
 usr/bin/gdbtui
-usr/bin/kgdb
 usr/bin/ar
 usr/bin/ranlib
 usr/bin/c89
@@ -801,14 +825,18 @@ usr/share/tmac/tmac.vgrind
     find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
 
 	# Moving kerned & world debug symbols into debug.tar.xz file
-	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
-		if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
-			mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+	if [ -d ${NANO_WORLDDIR}/usr/lib/debug ]; then
+		if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
+			if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
+				mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+			fi
+			mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
 		fi
-		mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
 		tar cfvZ ${NANO_OBJ}/debug.tar.xz -C ${NANO_WORLDDIR}/usr/lib debug
+		rm -rf ${NANO_WORLDDIR}/usr/lib/debug
+		# relocate /usr/lib/debug to /data/debug (debug archive files needs more than 1Gb for being extracted)
+		ln -s /data/debug ${NANO_WORLDDIR}/usr/lib/debug
 	fi
-	[ -d ${NANO_WORLDDIR}/usr/lib/debug ] && rm -rf ${NANO_WORLDDIR}/usr/lib/debug
 	# strip binaries for ports (tips from FreeNAS 8)
 	pprint 4 "Stripping binaries and libraries"
 	for dir in $(find ${NANO_WORLDDIR}/ -name '*bin' -or -name 'lib' -maxdepth 3); do
@@ -832,7 +860,7 @@ usr/share/tmac/tmac.vgrind
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
 	# Set serial speed ((3wire is available since 11 only)
-	sed -i "" -e /tty[du]0/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	#sed -i "" -e /tty[du]0/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)
 	echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 }

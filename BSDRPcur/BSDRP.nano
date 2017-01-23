@@ -391,8 +391,13 @@ EOF
 
 #### Ports list section #####
 
-#bapt@ broke the "make package-recurisve" and he doesn't want to fix it using the fallacious argument of "it's dirty"
-#=> Need to manually list all the package to install
+# bapt@ broke the "make package-recurisve" and he doesn't want to fix it using
+#  the fallacious argument of "it's dirty"
+# => Need to manually list all the package to install
+# Meanwhile, you can use "make package-depends-list | cut -d ' ' -f3" on a port
+# for getting all its unordered running dependency.
+# And you can use a grep "depends on .* - not found" /usr/obj/project/_.cust.add_port_port-name
+# for getting the ordered list
 
 add_port "ports-mgmt/pkg"
 
@@ -536,6 +541,9 @@ add_port "security/ca_root_nss"
   add_port "misc/pciids"
  add_port "devel/libpci"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
+#add_port "sysutils/intel-nvmupdate"
+#add_port "sysutils/intel-qcu"
+
 
 # NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode
 add_port "net/ntraceroute"
@@ -831,12 +839,6 @@ bsdrp_console_serial () {
 }
 
 # Enable use of keyboard/vga and serial
-#
-###### Warning ####
-# BUG TO FIX: Don't boot if no serial port available!
-# Seems fixed:
-# http://lists.freebsd.org/pipermail/freebsd-hackers/2012-September/040523.html
-#
 bsdrp_console_dual () {
     # Tell loader to use serial and vga console.
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
