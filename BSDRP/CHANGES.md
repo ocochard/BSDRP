@@ -1,7 +1,4 @@
-# Release 1.70 (not released)
-
-## TO DO before release
-Upgrade to 12-head ?
+# Release 1.70 (2017-01-23)
 
 ## Special upgrade notes (installation older than BSDRP 1.60)
 BSDRP since 1.60 needs at minimum a 1GB disk and no more a 512MB disk.
