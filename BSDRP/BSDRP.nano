@@ -202,23 +202,7 @@ add_netrate () {
             UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
             UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
             make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
-        # each Makefile have a different variable names
-        for MAKE_CMD in PROG PROGS ALL; do
-            for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
-                if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
-					[ -d ${NANO_WORLDDIR}/usr/local/lib ] || mkdir -p ${NANO_WORLDDIR}/usr/local/lib
-                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
-                else
-					[ -d ${NANO_WORLDDIR}/usr/local/bin ] || mkdir -p ${NANO_WORLDDIR}/usr/local/bin
-                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
-                fi
-                if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
-                    if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
-                        echo "WARNING: Can't delete $TOOL/$file.o"
-                    fi
-                fi
-            done # for all files
-        done # for MAKE_CMD
+		CR 'make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL} install clean'
     done # for TOOL
     rm -rf ${NANO_WORLDDIR}/usr/workdir
     umount ${NANO_WORLDDIR}/usr/src
@@ -236,8 +220,7 @@ add_quagga-bgp-netgen () {
 		UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
 		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
         make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
-    mv ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/local/bin
-    rm ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen.o
+	CR 'make WRKDIRPREFIX=/usr/workdir -C /usr/src/ install clean'
     rm -rf ${NANO_WORLDDIR}/usr/workdir
     umount ${NANO_WORLDDIR}/usr/src
     umount ${NANO_WORLDDIR}/dev
@@ -256,8 +239,7 @@ add_apuled () {
 		UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
 		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
         make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/'
-    mv ${NANO_WORLDDIR}/tmp/apuled/apuled.ko ${NANO_WORLDDIR}/boot/modules/
-	CR 'make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/ clean'
+	CR 'make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/ install clean'
     rm -rf ${NANO_WORLDDIR}/usr/workdir
     umount ${NANO_WORLDDIR}/usr/src
 	umount ${NANO_WORLDDIR}/tmp/apuled
@@ -550,6 +532,9 @@ customize_cmd add_netrate
 
 # Add quagga-bgp-netgen tools
 customize_cmd add_quagga-bgp-netgen
+
+# Add PC Engine APU led drivers
+customize_cmd add_apuled
 
 cleanup_ports () {
 		# When port are build, they install build dependency that are not usefull for running the port

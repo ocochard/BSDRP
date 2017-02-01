@@ -35,8 +35,8 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # take the last tusday commit
 # 
 SVN_REV_LIST='
-311849
-311848
+312905
+312904
 '
 
 # Name of the BSDRP project
