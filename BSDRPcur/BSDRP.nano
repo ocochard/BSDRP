@@ -518,6 +518,7 @@ add_port "net-mgmt/lldpd" "WITHOUT=\"BASH JSON PROPRIETARY SNMP XML\""
 add_port "devel/libffi"
 add_port "lang/python27"
 add_port "lang/python2"
+add_port "lang/python"
 add_port "devel/py-setuptools27"
 
 # Now we can add python tool

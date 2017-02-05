@@ -10,12 +10,13 @@ Reuse of existing softwares/patches:
 
 BSD Router Project (BSDRP) is based upon/includes various free software, listed below.
 The authors of BSDRP would like to thank the authors of these software for their efforts:
-* FreeBSD: Copyright (c) 1995-2013 The FreeBSD Project. All rights reserved
+* FreeBSD: Copyright (c) 1995-2017 The FreeBSD Project. All rights reserved
 * FreeNAS 8: Lot's of idea regarding the nanobsd tunning, Copyright iXsystems
 * Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support
 * Idea of using glabel for disk type absraction: Scott Ullrich (pfSense)
 * "show memory" is a bourn shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
 * PC Engines APU led drivers: Larry Baird
+* chelsio-queue-usage: Alexander V. Chernikov (melifaro@FreeBSD.org)
 * bird, License: GPLv2, WWW: http://bird.network.cz/
 * bird6, License: GPLv2, WWW: http://bird.network.cz/
 * bsnmp-regex, License: BSD3CLAUSE, WWW: http://thewalter.net/stef/software/bsnmp-regex/

@@ -1,8 +1,12 @@
 # Release 1.71 (not released)
 
+## New features
+* chelsio-queue-usage: Display current usage of each queue for Chelsio NIC
+
 ## Updated packages
-* quagga
-* exabgp
+* iperf3 to 3.1.6
+* quagga to 1.1.1
+* exabgp to 3.4.18
 
 ## package list
 * bird-1.6.3_1
@@ -18,16 +22,16 @@
 * freevrrpd-1.1_1
 * indexinfo-0.2.6
 * iperf-2.0.9
-* iperf3-3.1.5
+* iperf3-3.1.6
 * ipmitool-1.8.18
 * ipsec-tools-0.8.2_1
 * isc-dhcp43-server-4.3.5
 * libev-4.22,1
-* libevent2-2.0.22_1
+* libevent2-2.1.8
 * libffi-3.2.1
 * libgcrypt-1.7.6
 * libgpg-error-1.26
-* liblz4-131
+* liblz4-1.7.5,1
 * libpci-3.5.2
 * libsodium-1.0.11_1
 * libucl-0.8.0
@@ -41,7 +45,7 @@
 * openldap-client-2.4.44
 * openvpn-2.4.0
 * openvpn-auth-radius-2.1_3
-* pciids-20170127
+* pciids-20170128
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
@@ -50,6 +54,7 @@
 * pkg-1.9.4_1
 * pmacct-0.14.3_3
 * py27-setuptools27-32.1.0
+* python-2.7_3,2
 * python2-2_3
 * python27-2.7.13_1
 * quagga-1.1.1
@@ -57,8 +62,10 @@
 * strongswan-5.5.1
 * sudo-1.8.19p2
 * tayga-0.9.2
-* tmux-2.3
+* tmux-2.3_1
 * ucarp-1.5.2_2
+
+-----------------------------------------------------
 
 # Release 1.70 (2017-01-23)
 

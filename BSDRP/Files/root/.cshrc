@@ -72,10 +72,13 @@ if ($?prompt) then
 	# Display user login
 	set watch=(0 any any)
 
-	#Load command complete file
+	# Configure screen and tmux windows title with hostname
+	printf "\033k`hostname -s`\033\\"
+
+	# Load command complete file
 	source ~/.complete
 
-	#Don't generate core file
+	# Don't generate core file
 	limit coredumpsize 0
 
 endif
