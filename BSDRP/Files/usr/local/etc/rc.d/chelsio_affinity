@@ -1,9 +1,7 @@
 #!/bin/sh
 # Bind Chelsio interrupt threads to different cores (melifaro@FreeBSD.org)
-# Only usefull with 8 core or less, and you want to exclude some core
-# Used with default value (no core excluded) didn't improve performance
 
-# PROVIDE:      chelsio-cpu-bind
+# PROVIDE:      chelsio_affinity
 # REQUIRE:      FILESYSTEMS netif
 # KEYWORD:      nojail
 
@@ -11,40 +9,42 @@
 # Add the following lines to /etc/rc.conf.local or /etc/rc.conf
 # to enable this service:
 #
-# chelsiobind_enable (bool):   Set to YES by default.
+# chelsio_affinity_enable (bool):   Set to YES by default.
 #               Set it to YES to bind interrupt threads to different cores
-# chelsiobind_avoidncpu (int):  0 by default.
+# chelsio_affinity_avoidncpu (int):  0 by default.
 #		Set to number of CPU to exclude from binding
 
 . /etc/rc.subr
 
-name="chelsiobind"
+name="chelsio_affinity"
 rcvar=${name}_enable
 
-start_cmd="chelsiobind_start"
+start_cmd="chelsio_affinity_start"
 
-chelsiobind_start()
+chelsio_affinity_start()
 {
 	# Need a Chelsio NIC
         NQ=`/sbin/sysctl -ni dev.cxl.0.nrxq`
         if [ -z "${NQ}" ]; then
-                exit 0;
+			echo "No Chelsio NIC port detected"
+            exit 0;
         fi
 
 	# Work with 2 CPU minimum
         NCPU=`/sbin/sysctl -n hw.ncpu`
         if [ ${NCPU} -le 2 ]; then
-                exit 0
+		echo "Not enought CPU detected"
+            exit 0
         fi
 
 	# Exclude some CPU from binding
-        NCPU=$((NCPU - $chelsiobind_avoidncpu))
+        NCPU=$((NCPU - ${chelsio_affinity_avoidncpu}))
         CPU=0
 	cxl=$(sysctl dev.cxl. | grep -c nrxq)
 	for i in $(seq 1 ${cxl}); do
         	for IRQ in `/usr/bin/vmstat -ai |\
             		/usr/bin/sed -nE "/t5nex0:${i}a/s/irq([[:digit:]]+):.*/\1/p"`; do
-			/bin/echo "Bind t5nex0:${i}a IRQ ${IRQ} to CPU ${CPU}"
+			echo "Bind t5nex0:${i}a IRQ ${IRQ} to CPU ${CPU}"
                 	/usr/bin/cpuset -l ${CPU} -x ${IRQ}
                 	CPU=$(((CPU + 1) % NCPU))
         	done
@@ -54,8 +54,8 @@ chelsiobind_start()
 
 load_rc_config $name
 
-: ${chelsiobind_enable="NO"}
-: ${chelsiobind_avoidncpu=0}
+: ${chelsio_affinity_enable="NO"}
+: ${chelsio_affinity_avoidncpu=0}
 
 run_rc_command "$1"
 

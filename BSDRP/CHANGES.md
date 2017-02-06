@@ -2,6 +2,7 @@
 
 ## New features
 * chelsio-queue-usage: Display current usage of each queue for Chelsio NIC
+* Added chelsio_affinity and ix_affinity rc script
 
 ## Updated packages
 * iperf3 to 3.1.6
