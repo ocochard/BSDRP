@@ -8,7 +8,8 @@ import subprocess
 import time
 
 if len(sys.argv) < 2:
-    print("Usage: {} cxl|ix|igb|bxe0".format(sys.argv[0]))
+    print("Usage: {} interface".format(sys.argv[0]))
+    print("       with interface as cxl,ix,igb or bxe")
     sys.exit(1)
 
 def read_nic(name):
