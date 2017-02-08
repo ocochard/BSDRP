@@ -1,7 +1,7 @@
 # Release 1.71 (not released)
 
 ## New features
-* chelsio-queue-usage: Display current usage of each queue for Chelsio NIC
+* nic-queue-usage: Display current usage of each queue for Chelsio/Intel NIC
 * Added chelsio_affinity and ix_affinity rc script
 
 ## Updated packages

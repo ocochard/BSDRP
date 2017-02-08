@@ -8,36 +8,56 @@ import subprocess
 import time
 
 if len(sys.argv) < 2:
-    print("Usage: python {} cxl0".format(sys.argv[0]))
+    print("Usage: {} cxl|ix|igb0".format(sys.argv[0]))
     sys.exit(1)
 
-def read_chelsio(name):
-    m = re.match('^(cxl)(\d+)$', name)
+def read_nic(name):
+    m = re.match('^(ix|cxl|igb)(\d+)$', name)
     if not m:
         raise Exception('Invalid nic name: {}'.format(name))
+    driver=m.group(1)
     rxq = {}
     txq = {}
     agg = {}
     for line in subprocess.check_output("/sbin/sysctl dev.{}.{}".format(m.group(1), m.group(2)).split(), universal_newlines=True).split("\n"):
-        # dev.cxl.0.txq.1.r_enqueues:
         # dev.cxl.0.rxq.1.rxcsum
         # dev.cxl.0.txq.1.r_enqueues: 359615473
         # dev.cxl.0.stats.rx_frames
+		# dev.ix.0.queue0.rx_packets: 45256216
+		# dev.ix.0.queue0.tx_packets: 5
+		# dev.ix.0.total_pkts_rcvd
+		# dev.ix.0.total_pkts_txd
+        # dev.igb.1.mac_stats.total_pkts_recvd
+        # dev.igb.1.mac_stats.total_pkts_txd
 
         items = line.split(":")
-#        print("L: {}".format(line))
-        m = re.match('.*\.txq\.(\d+)\.r_enqueues:\s+(\d+)', line)
+        #print("L: {}".format(line))
+        if driver in ("ix", "igb"):
+            m = re.match('.*\.queue(\d+)\.tx_packets:\s+(\d+)', line)
+        elif driver == "cxl":
+			m = re.match('.*\.txq\.(\d+)\.r_enqueues:\s+(\d+)', line)
         if m:
             txq[m.group(1)] = int(m.group(2))
             #print("TXQ {} value {}".format(m.group(1), m.group(2)))
-        m = re.match('.*\.rxq\.(\d+)\.rxcsum:\s+(\d+)', line)
+        if driver in ("ix", "igb"):
+            m = re.match('.*\.queue(\d+)\.rx_packets:\s+(\d+)', line)
+        elif driver == "cxl":
+            m = re.match('.*\.rxq\.(\d+)\.rxcsum:\s+(\d+)', line)
         if m:
             rxq[m.group(1)] = int(m.group(2))
             #print("RXQ {} value {}".format(m.group(1), m.group(2)))
-        m = re.match('.*\.stats.rx_frames:\s+(\d+)', line)
+        if driver == "ix":
+            m = re.match('.*\.total_pkts_rcvd:\s+(\d+)', line)
+        if driver == "igb":
+            m = re.match('.*\.total_pkts_recvd:\s+(\d+)', line)
+        elif driver == "cxl":
+            m = re.match('.*\.stats.rx_frames:\s+(\d+)', line)
         if m:
             agg['rx_sum'] = int(m.group(1))
-        m = re.match('.*\.stats.tx_frames:\s+(\d+)', line)
+        if driver in ("ix", "igb"):
+            m = re.match('.*\.total_pkts_txd:\s+(\d+)', line)
+        elif driver == "cxl":
+            m = re.match('.*\.stats.tx_frames:\s+(\d+)', line)
         if m:
             agg['tx_sum'] = int(m.group(1))
     return [rxq, txq, agg]
@@ -79,7 +99,7 @@ def print_diff(diff):
 def run_nic(name):
     ret = []
     while True:
-        ret_new = read_chelsio(name)
+        ret_new = read_nic(name)
         if not ret:
             ret = ret_new
             time.sleep(1)
