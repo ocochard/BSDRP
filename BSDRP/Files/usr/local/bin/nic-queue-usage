@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#Melifaro's script for displaying Chelsio queue usage/rate
+#Melifaro's script for displaying NIC queue usage/rate
 
 from __future__ import division
 import re
@@ -8,11 +8,11 @@ import subprocess
 import time
 
 if len(sys.argv) < 2:
-    print("Usage: {} cxl|ix|igb0".format(sys.argv[0]))
+    print("Usage: {} cxl|ix|igb|bxe0".format(sys.argv[0]))
     sys.exit(1)
 
 def read_nic(name):
-    m = re.match('^(ix|cxl|igb)(\d+)$', name)
+    m = re.match('^(ix|cxl|igb|bxe)(\d+)$', name)
     if not m:
         raise Exception('Invalid nic name: {}'.format(name))
     driver=m.group(1)
@@ -23,37 +23,52 @@ def read_nic(name):
         # dev.cxl.0.rxq.1.rxcsum
         # dev.cxl.0.txq.1.r_enqueues: 359615473
         # dev.cxl.0.stats.rx_frames
-		# dev.ix.0.queue0.rx_packets: 45256216
-		# dev.ix.0.queue0.tx_packets: 5
-		# dev.ix.0.total_pkts_rcvd
-		# dev.ix.0.total_pkts_txd
+        # dev.ix.0.queue0.rx_packets: 45256216
+        # dev.ix.0.queue0.tx_packets: 5
+        # dev.ix.0.total_pkts_rcvd
+        # dev.ix.0.total_pkts_txd
         # dev.igb.1.mac_stats.total_pkts_recvd
         # dev.igb.1.mac_stats.total_pkts_txd
+        # dev.bxe.3.queue.0.rx_pkts
+        # dev.bxe.3.queue.0.tx_pkts
+        # dev.bxe.3.rx_bcast_packets: 1447
+        # dev.bxe.3.rx_mcast_packets: 0
+        # dev.bxe.3.rx_ucast_packets: 1524243
 
         items = line.split(":")
         #print("L: {}".format(line))
-        if driver in ("ix", "igb"):
-            m = re.match('.*\.queue(\d+)\.tx_packets:\s+(\d+)', line)
+        if driver == "bxe":
+            m = re.match('.*\.queue.(\d+)\.tx_pkts:\s+(\d+)', line)
         elif driver == "cxl":
-			m = re.match('.*\.txq\.(\d+)\.r_enqueues:\s+(\d+)', line)
+            m = re.match('.*\.txq\.(\d+)\.r_enqueues:\s+(\d+)', line)
+        elif driver in ("ix", "igb"):
+            m = re.match('.*\.queue(\d+)\.tx_packets:\s+(\d+)', line)
         if m:
             txq[m.group(1)] = int(m.group(2))
             #print("TXQ {} value {}".format(m.group(1), m.group(2)))
-        if driver in ("ix", "igb"):
-            m = re.match('.*\.queue(\d+)\.rx_packets:\s+(\d+)', line)
+        if driver == "bxe":
+            m = re.match('.*\.queue.(\d+)\.rx_pkts:\s+(\d+)', line)
         elif driver == "cxl":
             m = re.match('.*\.rxq\.(\d+)\.rxcsum:\s+(\d+)', line)
+        elif driver in ("ix", "igb"):
+            m = re.match('.*\.queue(\d+)\.rx_packets:\s+(\d+)', line)
         if m:
             rxq[m.group(1)] = int(m.group(2))
             #print("RXQ {} value {}".format(m.group(1), m.group(2)))
-        if driver == "ix":
-            m = re.match('.*\.total_pkts_rcvd:\s+(\d+)', line)
-        if driver == "igb":
-            m = re.match('.*\.total_pkts_recvd:\s+(\d+)', line)
+        if driver == "bxe":
+           #To do: aggregate bcast/mcast and ucast
+           m = re.match('.*\.rx_ucast_packets:\s+(\d+)', line)
         elif driver == "cxl":
             m = re.match('.*\.stats.rx_frames:\s+(\d+)', line)
+        elif driver == "igb":
+            m = re.match('.*\.total_pkts_recvd:\s+(\d+)', line)
+        elif driver == "ix":
+            m = re.match('.*\.total_pkts_rcvd:\s+(\d+)', line)
         if m:
             agg['rx_sum'] = int(m.group(1))
+        if driver == "bxe":
+            #To do: aggregate bcast/mcast and ucast
+            m = re.match('.*\.tx_ucast_packets:\s+(\d+)', line)
         if driver in ("ix", "igb"):
             m = re.match('.*\.total_pkts_txd:\s+(\d+)', line)
         elif driver == "cxl":
@@ -111,5 +126,3 @@ def run_nic(name):
         time.sleep(1)
 
 run_nic(sys.argv[1])
-
-
