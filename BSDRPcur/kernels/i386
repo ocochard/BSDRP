@@ -426,5 +426,11 @@ options		ROUTETABLES=16
 # Encapsulating Interface
 device enc
 
+#options           PCBGROUP                # Protocol control-block groups
+#options           RSS                             # Receive-side scaling support
+
+# RADIX_MPATH provides support for equal-cost multi-path routing.
+#
+options		RADIX_MPATH
 
 # The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)

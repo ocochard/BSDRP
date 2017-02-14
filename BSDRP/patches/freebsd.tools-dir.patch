@@ -1,51 +1,72 @@
 Index: tools/tools/ifinfo/Makefile
 ===================================================================
---- tools/tools/ifinfo/Makefile	(revision 312988)
+--- tools/tools/ifinfo/Makefile	(revision 313696)
 +++ tools/tools/ifinfo/Makefile	(working copy)
 @@ -3,5 +3,6 @@
  PROG=	ifinfo
  SRCS=	ifinfo.c rfc1650.c
  MAN=
-+BINDIR?=	/usr/local/bin
++BINDIR=	/usr/local/bin
  
  .include <bsd.prog.mk>
 Index: tools/tools/mctest/Makefile
 ===================================================================
---- tools/tools/mctest/Makefile	(revision 312988)
+--- tools/tools/mctest/Makefile	(revision 313696)
 +++ tools/tools/mctest/Makefile	(working copy)
 @@ -2,5 +2,6 @@
  
  PROG_CXX=   mctest 
  LIBADD= pthread
-+BINDIR?=	/usr/local/bin
++BINDIR=	/usr/local/bin
  
  .include <bsd.prog.mk>
+Index: tools/tools/netmap/Makefile
+===================================================================
+--- tools/tools/netmap/Makefile	(revision 313696)
++++ tools/tools/netmap/Makefile	(working copy)
+@@ -4,6 +4,7 @@
+ # For multiple programs using a single source file each,
+ # we can just define 'progs' and create custom targets.
+ PROGS	=	pkt-gen bridge vale-ctl
++BINDIR	=	/usr/local/sbin
+ 
+ CLEANFILES = $(PROGS) *.o
+ MAN=
+@@ -30,3 +31,8 @@
+ 
+ vale-ctl: vale-ctl.o
+ 	$(CC) $(CFLAGS) -o vale-ctl vale-ctl.o
++
++install: ${PROGS}
++	for i in ${PROGS}; do \
++		install $$i ${DESTDIR}${BINDIR}; \
++	done
 Index: tools/tools/netrate/netblast/Makefile
 ===================================================================
---- tools/tools/netrate/netblast/Makefile	(revision 312988)
+--- tools/tools/netrate/netblast/Makefile	(revision 313696)
 +++ tools/tools/netrate/netblast/Makefile	(working copy)
 @@ -4,5 +4,6 @@
  
  PROG=	netblast
  MAN=
-+BINDIR?=	/usr/local/bin
++BINDIR=	/usr/local/bin
  
  .include <bsd.prog.mk>
 Index: tools/tools/netrate/netreceive/Makefile
 ===================================================================
---- tools/tools/netrate/netreceive/Makefile	(revision 312988)
+--- tools/tools/netrate/netreceive/Makefile	(revision 313696)
 +++ tools/tools/netrate/netreceive/Makefile	(working copy)
 @@ -5,6 +5,7 @@
  PROG=	netreceive
  MAN=
  LDFLAGS += -lpthread
-+BINDIR?=	/usr/local/bin
++BINDIR=	/usr/local/bin
  
  WARNS?=	3
  
 Index: tools/tools/netrate/netsend/Makefile
 ===================================================================
---- tools/tools/netrate/netsend/Makefile	(revision 312988)
+--- tools/tools/netrate/netsend/Makefile	(revision 313696)
 +++ tools/tools/netrate/netsend/Makefile	(working copy)
 @@ -5,5 +5,6 @@
  CFLAGS+=	-Wall

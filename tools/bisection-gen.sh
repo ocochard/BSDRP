@@ -35,8 +35,11 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # take the last tusday commit
 # 
 SVN_REV_LIST='
-312905
+311848
+311849
 312904
+312905
+313448
 '
 
 # Name of the BSDRP project
@@ -59,10 +62,10 @@ for SVN_REV in ${SVN_REV_LIST}; do
 	[ ! -d $PROJECT/Files/etc ] && mkdir -p $PROJECT/Files/etc
 	echo ${SVN_REV} > $PROJECT/Files/etc/version
 	set +e
-	./make.sh -p TESTING -u -y -f -a ${ARCH} -c ${CONSOLE} > ${IMAGES_DIR}/bisec.log 2>&1
+	./make.sh -p TESTING -u -y -a ${ARCH} -c ${CONSOLE} > ${IMAGES_DIR}/bisec.log 2>&1
 	set -e
-	if [ ! -f /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ]; then
-			echo "Where are /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img ???"
+	if [ ! -f /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ]; then
+			echo "Where are /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ?"
 			echo "Check error message in ${IMAGES_DIR}/bisec.log.${SVN_REV}"
 			for i in _.bw _.bk _.iw _.ik; do
 				[ -f /usr/obj/${PROJECT}.${ARCH}/$i ] && mv /usr/obj/${PROJECT}.${ARCH}/$i ${IMAGES_DIR}/bisec.log.$i.${SVN_REV}

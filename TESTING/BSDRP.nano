@@ -30,7 +30,6 @@ BOOT_BOOT0_COMCONSOLE_SPEED=0
 # Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
 # We would compile symbol files, but not install them by default
 CONF_INSTALL='
-WITHOUT_KERNEL_SYMBOLS=
 '
 
 # Options to put in make.conf during both build- & installworld.
@@ -40,7 +39,6 @@ WITHOUT_KERNEL_SYMBOLS=
 # WITHOUT_KVM= and WITHOUT_KVM_SUPPORT= prevent buildworld to complet (don't know why)
 
 CONF_WORLD='
-WITHOUT_MODULES=cxgb mlxen mlx4 mlx5
 WITHOUT_ACCT=
 WITHOUT_AMD=
 WITHOUT_APM=
@@ -59,7 +57,6 @@ WITHOUT_CALENDAR=
 WITHOUT_CCD=
 WITHOUT_CTM=
 WITHOUT_CVS=
-WITHOUT_DEBUG_FILES=
 WITHOUT_DICT=
 WITHOUT_EE=
 WITHOUT_EXAMPLES=
@@ -124,6 +121,7 @@ WITH_GCC=
 WITH_IDEA=
 WITH_OFED=
 WITH_FAST_DEPEND=
+WITH_DEBUG_FILES=
 '
 
 # Customize commands.
@@ -210,8 +208,10 @@ add_netrate () {
         for MAKE_CMD in PROG PROGS ALL; do
             for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
                 if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
+					[ -d ${NANO_WORLDDIR}/usr/local/lib ] || mkdir -p ${NANO_WORLDDIR}/usr/local/lib
                     mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
                 else
+					[ -d ${NANO_WORLDDIR}/usr/local/bin ] || mkdir -p ${NANO_WORLDDIR}/usr/local/bin
                     mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
                 fi
                 if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
@@ -448,6 +448,19 @@ usr/share/tmac/tmac.vgrind
 	# Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
     find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
 
+	# Moving kerned & world debug symbols into debug.tar.xz file
+	if [ -d ${NANO_WORLDDIR}/usr/lib/debug ]; then
+		if [ -f  ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
+			if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
+				mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+			fi
+			mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+		fi
+		tar cfvZ ${NANO_OBJ}/debug.tar.xz -C ${NANO_WORLDDIR}/usr/lib debug
+		rm -rf ${NANO_WORLDDIR}/usr/lib/debug
+		# relocate /usr/lib/debug to /data/debug (debug archive files needs more than 1Gb for being extracted)
+		ln -s /data/debug ${NANO_WORLDDIR}/usr/lib/debug
+	fi
 	# strip binaries for ports (tips from FreeNAS 8)
 	pprint 4 "Stripping binaries and libraries"
 	for dir in $(find ${NANO_WORLDDIR}/ -name '*bin' -or -name 'lib' -maxdepth 3); do

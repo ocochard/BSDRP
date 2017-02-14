@@ -29,7 +29,8 @@ BOOT_BOOT0_COMCONSOLE_SPEED=0
 # Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
 # Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
 # We would compile symbol files, but not install them by default
-CONF_INSTALL=''
+CONF_INSTALL='
+'
 
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options or man src.conf for details
@@ -64,7 +65,6 @@ WITHOUT_FLOPPY=
 WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
 WITHOUT_GCOV=
-WITHOUT_GDB=
 WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
@@ -113,12 +113,13 @@ WITHOUT_TIMED=
 WITHOUT_UNBOUND=
 WITHOUT_USB_GADGET_EXAMPLES=
 WITHOUT_WIRELESS=
-WITHOUT_WIRELESS_SUPPORT=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
 WITHOUT_ZFS=
 WITH_GCC=
 WITH_IDEA=
 WITH_OFED=
+WITH_DEBUG_FILES=
+WITH_REPRODUCIBLE_BUILD=
 '
 
 # Customize commands.
@@ -189,11 +190,11 @@ add_netrate () {
     for TOOL in ${TOOLS_LIST}; do
         # netmap is not available on sparc64, and disabled on i386
         if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
-        	continue
+		continue
         fi
-		if [ ${NANO_ARCH} = "i386" -a ${TOOL} = "netmap" ]; then
-			continue
-		fi
+        if [ ${NANO_ARCH} = "i386" -a ${TOOL} = "netmap" ]; then
+		continue
+        fi
         export TOOL
         CR 'make clean -C /usr/src/tools/tools/${TOOL}'
        	CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
@@ -201,21 +202,7 @@ add_netrate () {
             UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
             UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
             make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
-        # each Makefile have a different variable names
-        for MAKE_CMD in PROG PROGS ALL; do
-            for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
-                if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
-                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
-                else
-                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
-                fi
-                if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
-                    if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
-                        echo "WARNING: Can't delete $TOOL/$file.o"
-                    fi
-                fi
-            done # for all files
-        done # for MAKE_CMD
+		CR 'make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL} install clean'
     done # for TOOL
     rm -rf ${NANO_WORLDDIR}/usr/workdir
     umount ${NANO_WORLDDIR}/usr/src
@@ -233,8 +220,7 @@ add_quagga-bgp-netgen () {
 		UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
 		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
         make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
-    mv ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/local/bin
-    rm ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen.o
+	CR 'make WRKDIRPREFIX=/usr/workdir -C /usr/src/ install clean'
     rm -rf ${NANO_WORLDDIR}/usr/workdir
     umount ${NANO_WORLDDIR}/usr/src
     umount ${NANO_WORLDDIR}/dev
@@ -253,8 +239,7 @@ add_apuled () {
 		UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
 		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
         make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/'
-    mv ${NANO_WORLDDIR}/tmp/apuled/apuled.ko ${NANO_WORLDDIR}/boot/modules/
-	CR 'make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/ clean'
+	CR 'make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/ install clean'
     rm -rf ${NANO_WORLDDIR}/usr/workdir
     umount ${NANO_WORLDDIR}/usr/src
 	umount ${NANO_WORLDDIR}/tmp/apuled
@@ -449,7 +434,7 @@ add_port "net/mrouted"
 add_port "net/pimdd"
 
 # Add pimd: IPv4 PIM Sparse Mode daemon
-#add_port "net/pimd"
+add_port "net/pimd"
 
 # Add tayga: userland NAT64 implementation
 add_port "net/tayga"
@@ -469,7 +454,7 @@ add_port "sysutils/monit"
 
 # Add tmux (screen equivalent, but better because BSD)
 add_port "devel/libevent2"
-add_port "sysutils/tmux" "WITH=\"LIBEVENT2\""
+add_port "sysutils/tmux"
 
 # Add ipmi tools
 add_port "sysutils/ipmitool"
@@ -487,9 +472,15 @@ if [ ${NANO_ARCH} = "amd64" ]; then
     add_port "net/netmap-fwd"
 fi
 
+# Link aggregator
+ add_port "devel/libev"
+ add_port "security/libsodium"
+add_port "net/mlvpn"
+
 # Add openvpn
 add_port "security/easy-rsa"
 add_port "archivers/lzo2"
+add_port "archivers/liblz4"
 add_port "security/openvpn"
 add_port "security/openvpn-auth-radius"
 
@@ -505,6 +496,7 @@ add_port "benchmarks/iperf3"
 add_port "devel/libffi"
 add_port "lang/python27"
 add_port "lang/python2"
+add_port "lang/python"
 add_port "devel/py-setuptools27"
 
 # Now we can add python tool
@@ -519,15 +511,15 @@ add_port "net/exabgp"
 add_port "security/ca_root_nss"
 
 # Permit BIOS upgrade
-add_port "sysutils/dmidecode"
- # Curl is just a build-deps of cmake (needed by libftdi)
- # But curl need base kerberos, then we remove this deps
- # And we de-install curl on the custom script
- add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE\""
-add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
-add_port "misc/pciids"
-add_port "devel/libpci"
-add_port "sysutils/flashrom"
+  add_port "misc/pciids"
+ add_port "devel/libpci"
+add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
+#add_port "sysutils/intel-nvmupdate"
+#add_port "sysutils/intel-qcu"
+
+
+# NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode
+add_port "net/ntraceroute"
 
 #### End of port list section ####
 
@@ -547,7 +539,7 @@ cleanup_ports () {
 	# Restart a BSDRP image build with the "-b" option
 	# diff packages.info.first packages.info
 	set +e
-        CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* cmake* curl* m4* gcc-* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
+        CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* m4* gcc-* gmake* libtool* gawk* perl* gettext* bison* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
 	# usr/local/lib/perl5 : Dirty hack
 	#   pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
 	#   pkg didn't delete all MAN1 page related to perl too
@@ -568,6 +560,9 @@ bsdrp_custom () {
 	# Update login.conf db
 	CR 'cap_mkdb /etc/login.conf'
 
+	# Disable system beep with csh
+	echo "set nobeep" >> /etc/csh.cshrc
+	
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys
 	mkdir -p ${NANO_WORLDDIR}/etc/dot.ssh.root
@@ -611,7 +606,7 @@ EOF
 		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
 
 	# Compress the kernel (save 10Mb)
-	# Disabling: dtrace didn't support compressed kernel
+	# Disabled: dtrace didn't support compressed kernel
 	#if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then
 	#	if ! gzip -v9 ${NANO_WORLDDIR}/boot/kernel/kernel; then
 	#		echo "Error during zipping the kernel"
@@ -629,6 +624,8 @@ usr/local/share/examples
 usr/include
 usr/share/examples
 usr/share/info
+usr/share/man/man3 
+usr/share/man/man9
 usr/share/me
 usr/share/pc-sysinstall
 usr/share/openssl
@@ -783,12 +780,17 @@ usr/share/tmac/tmac.vgrind
     find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
 
 	# Moving kerned & world debug symbols into debug.tar.xz file
-	if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
-		if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
-			mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+	if [ -d ${NANO_WORLDDIR}/usr/lib/debug ]; then
+		if [ -f  ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
+			if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
+				mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
+			fi
+			mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
 		fi
-		mv ${NANO_WORLDDIR}/boot/kernel/*.symbols ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
 		tar cfvZ ${NANO_OBJ}/debug.tar.xz -C ${NANO_WORLDDIR}/usr/lib debug
+		rm -rf ${NANO_WORLDDIR}/usr/lib/debug
+		# relocate /usr/lib/debug to /data/debug (debug archive files needs more than 1Gb for being extracted)
+		ln -s /data/debug ${NANO_WORLDDIR}/usr/lib/debug
 	fi
 	[ -d ${NANO_WORLDDIR}/usr/lib/debug ] && rm -rf ${NANO_WORLDDIR}/usr/lib/debug
 	# strip binaries for ports (tips from FreeNAS 8)
@@ -799,7 +801,9 @@ usr/share/tmac/tmac.vgrind
 		done
 	done	
 	# Generate package inventory
-	CR 'pkg info' > ${NANO_OBJ}/packages.info
+	if [ -x ${NANO_WORLDDIR}/usr/local/sbin/pkg ]; then
+		CR 'pkg info' > ${NANO_OBJ}/packages.info
+	fi
 }
 
 # Enable only serial system only
@@ -814,18 +818,24 @@ bsdrp_console_serial () {
 
     # Tell loader to use serial console early.
     echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
+}
 
-	# Don't need to customize /boot/loader.conf file because /boot.config is allready configured
-	#echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
-	#echo "comconsole_speed=\"${COM_SPEED}\"" >> ${NANO_WORLDDIR}/boot/loader.conf
-	#echo 'console="comconsole"' >> ${NANO_WORLDDIR}/boot/loader.conf
+# Enable use of keyboard/vga and serial
+bsdrp_console_dual () {
+	# Set serial speed (3wire is available since 11 only)
+	sed -i "" -e /ttyu[1-2]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[1-2]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[0-2]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+    # Tell loader to use serial and vga console, set baud speed
+    echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 }
 
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
 	# Enable onifconsole to ttyu1 to ttyu3
-	sed -i "" -e /ttyu[03]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[03]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
+	# Since r289634, 4 firsts serials console are set as onifconsole
+	#sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
+	#sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 
 	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 

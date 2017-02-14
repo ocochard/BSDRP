@@ -1,6 +1,8 @@
 # Release 1.71 (not released)
 
 ## New features
+* FreeBSD 11-stable upgraded to r313696
+* ECMP (Equal-cost multi-path routing) support enabled
 * nic-queue-usage: Display current usage of each queue for Chelsio/Intel NIC
 * Added chelsio_affinity and ix_affinity rc script
 
@@ -46,7 +48,7 @@
 * openldap-client-2.4.44
 * openvpn-2.4.0
 * openvpn-auth-radius-2.1_3
-* pciids-20170128
+* pciids-20170208
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
