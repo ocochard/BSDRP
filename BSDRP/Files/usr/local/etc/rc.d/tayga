@@ -1,0 +1,49 @@
+#!/bin/sh
+
+#
+# PROVIDE: tayga
+# REQUIRE: NETWORKING
+# KEYWORD: shutdown
+#
+# Define these tayga_* variables in one of these files:
+#       /etc/rc.conf
+#       /etc/rc.conf.local
+#       /etc/rc.conf.d/tayga
+#
+# DO NOT CHANGE THESE DEFAULT VALUES HERE
+
+. /etc/rc.subr
+
+tayga_enable=${tayga_enable-"NO"}
+
+name="tayga"
+rcvar=${name}_enable
+
+load_rc_config $name
+
+
+command="/usr/local/sbin/${name}"
+pidfile="/var/run/${name}.pid"
+
+start_precmd="${name}_prestart"
+stop_postcmd="${name}_cleanup"
+
+required_files="/usr/local/etc/${name}.conf"
+
+tayga_cleanup()
+{
+	[ -f ${pidfile} ] && /bin/rm -f ${pidfile}
+	# Tayga didn't delete old tun interface when shutdown
+	if ifconfig -d nat64 >/dev/null 2>&1; then
+		ifconfig nat64 destroy
+	fi
+}
+
+tayga_prestart()
+{
+	tayga_cleanup
+	/bin/mkdir -p /var/db/${name}
+}
+
+command_args="--pidfile ${pidfile}"
+run_rc_command "$1"
