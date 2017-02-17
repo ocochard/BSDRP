@@ -6,6 +6,9 @@
 * nic-queue-usage: Display current usage of each queue for Chelsio/Intel NIC
 * Added chelsio_affinity and ix_affinity rc script
 
+## Bug fixes
+* Tayga RC script added
+
 ## Updated packages
 * iperf3 to 3.1.6
 * quagga to 1.1.1

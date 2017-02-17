@@ -27,15 +27,26 @@ pidfile="/var/run/${name}.pid"
 
 start_precmd="${name}_prestart"
 stop_postcmd="${name}_cleanup"
+start_postcmd="${name}_postcmd"
 
-required_files="/usr/local/etc/${name}.conf"
+eval ": \${${name}_configfile:=\"/usr/local/etc/${name}.conf\"}"
+configfile="$(eval echo \${${name}_configfile})"
+required_files=${configfile}
+
+if [ -f ${configfile} ]; then
+	tun_device=$(sed -rn "/^[ \t]*tun-device/s/^[ \t]*tun-device[ \t]+//p" ${configfile})
+	ipv4_addr=$(sed -rn "/^[ \t]*ipv4-addr/s/^[ \t]*ipv4-addr[ \t]+//p" ${configfile})
+	ipv6_addr=$(sed -rn "/^[ \t]*ipv6-addr/s/^[ \t]*ipv6-addr[ \t]+//p" ${configfile})
+	prefix=$(sed -rn "/^[ \t]*prefix/s/^[ \t]*prefix[ \t]+//p" ${configfile})
+	dynamic_pool=$(sed -rn "/^[ \t]*dynamic-pool/s/^[ \t]*dynamic-pool[ \t]+//p" ${configfile})
+fi
 
 tayga_cleanup()
 {
 	[ -f ${pidfile} ] && /bin/rm -f ${pidfile}
 	# Tayga didn't delete old tun interface when shutdown
-	if ifconfig -d nat64 >/dev/null 2>&1; then
-		ifconfig nat64 destroy
+	if ifconfig ${tun_device} >/dev/null 2>&1; then
+		ifconfig ${tun_device} destroy
 	fi
 }
 
@@ -43,6 +54,21 @@ tayga_prestart()
 {
 	tayga_cleanup
 	/bin/mkdir -p /var/db/${name}
+}
+
+tayga_postcmd()
+{
+	sleep 1
+	if ifconfig ${tun_device} >/dev/null 2>&1; then
+		ifconfig ${tun_device} up
+		# Warning: tayga ask to not configure same IP on router than tayga
+		[ -n "${ipv4_addr}" ] && ifconfig ${tun_device} inet ${ipv4_addr} netmask 255.255.255.255 ${ipv4_addr}
+		[ -n "${inet6addr}" ] && ifconfig ${tun_device} inet6 ${ipv6_addr}
+		[ -n "${dynamic_pool}" ] && route add ${dynamic_pool} -interface ${tun_device}
+		[ -n "${prefix}" ] && route add -inet6 ${prefix} -interface ${tun_device}
+	else
+		echo "ERROR: No ${tun_device} interface detected"
+	fi
 }
 
 command_args="--pidfile ${pidfile}"
