@@ -30,7 +30,7 @@ XCOMMENT=	IPv4 router over netmap for FreeBSD
 X
 XLICENSE=	BSD2CLAUSE
 X
-XLIB_DEPENDS=	libevent.so:devel/libevent2 \
+XLIB_DEPENDS=	libevent.so:devel/libevent \
 X				libucl.so:textproc/libucl
 X
 XUSE_GITHUB=	yes

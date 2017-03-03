@@ -10,6 +10,7 @@
 * Tayga RC script added
 
 ## Updated packages
+* dhcprelya to 5.0
 * iperf3 to 3.1.6
 * quagga to 1.1.1
 * exabgp to 3.4.18
@@ -19,12 +20,12 @@
 * bird6-1.6.3_1
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
-* ca_root_nss-3.28.1
-* dhcprelya-4.9_1
+* ca_root_nss-3.29.1
+* dhcprelya-5.0
 * dlmalloc-2.8.6
 * easy-rsa-3.0.1_1
 * exabgp-3.4.18
-* flashrom-0.9.9
+* flashrom-0.9.9_1
 * freevrrpd-1.1_1
 * indexinfo-0.2.6
 * iperf-2.0.9
@@ -33,12 +34,12 @@
 * ipsec-tools-0.8.2_1
 * isc-dhcp43-server-4.3.5
 * libev-4.22,1
-* libevent2-2.1.8
+* libevent-2.1.8
 * libffi-3.2.1
 * libgcrypt-1.7.6
 * libgpg-error-1.26
 * liblz4-1.7.5,1
-* libpci-3.5.2
+* libpci-3.5.4
 * libsodium-1.0.11_1
 * libucl-0.8.0
 * lzo2-2.09
@@ -51,13 +52,13 @@
 * openldap-client-2.4.44
 * openvpn-2.4.0
 * openvpn-auth-radius-2.1_3
-* pciids-20170208
+* pciids-20170215
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
 * pimd-2.3.2
 * pimdd-0.2.1.0_2
-* pkg-1.9.4_1
+* pkg-1.10.0_2
 * pmacct-0.14.3_3
 * py27-setuptools27-32.1.0
 * python-2.7_3,2
@@ -68,7 +69,7 @@
 * strongswan-5.5.1
 * sudo-1.8.19p2
 * tayga-0.9.2
-* tmux-2.3_1
+* tmux-2.3_2
 * ucarp-1.5.2_2
 
 -----------------------------------------------------

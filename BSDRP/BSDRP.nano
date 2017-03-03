@@ -452,7 +452,7 @@ add_port "net/dhcprelya"
 add_port "sysutils/monit"
 
 # Add tmux (screen equivalent, but better because BSD)
-add_port "devel/libevent2"
+add_port "devel/libevent"
 add_port "sysutils/tmux"
 
 # Add ipmi tools
