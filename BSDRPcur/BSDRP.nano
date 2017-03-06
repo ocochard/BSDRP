@@ -183,7 +183,7 @@ PPLEVEL=3
 
 # Add netblast/netrecieve and netmap tools
 add_netrate () {
-    TOOLS_LIST="cxgbetool cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
+    TOOLS_LIST="cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
     mkdir -p ${NANO_WORLDDIR}/dev
     mount -t devfs devfs ${NANO_WORLDDIR}/dev
     mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
