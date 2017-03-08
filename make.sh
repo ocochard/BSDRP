@@ -3,7 +3,7 @@
 # Make script for BSD Router Project 
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2015, The BSDRP Development Team
+# Copyright (c) 2009-2017, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,16 @@ set -eu
 
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+
+# BSDRP use META mode for accellerating rebuild process
+# And this mode needs filemon
+load_module () {
+    # $1 : Module name
+    if ! kldstat -m $1 > /dev/null 2>&1; then
+        echo "$1 module not loaded. Loading it..."
+        kldload $1|| die "can't load $1"
+    fi
+}
 
 # Update or install src if not installed
 update_src () {
@@ -185,11 +195,11 @@ usage () {
 		echo "      i386, i386_xenpv, i386_xenhvm, amd64 or amd64_xenhvm"
 		echo "      if not specified, use local system arch (`uname -p`)"
 		echo "      cambria (arm) and sparc64 targets are in work-in-progress state"	
-		echo " -b   suppress buildworld and buildkernel"
+		echo " -b   suppress build[world|kernel]"
 		echo " -c   specify console type: vga (default) or serial"
 		echo " -f   fast mode, skip: images compression and checksums"
 		echo " -h   display this help message"
-		echo " -k   suppress buildkernel"
+		echo " -k   suppress [build|install]kernel"
 		echo " -p   project name to build"
 		echo " -s   size in MB of the target disk (default: 256)"
 		echo " -u   update all src (freebsd and ports)"
@@ -226,7 +236,7 @@ TARGET_ARCH=${LOCAL_ARCH}
 # Kernel to use: i386 arch can have a standard kernel, or for XEN_PV, etc...
 NANO_KERNEL=${TARGET_ARCH}
 # For skiping some build part (world, kernel)
-SKIP_REBUILD=""
+SKIP_REBUILD="-n"
 # Console type -vga, -console or none ""
 INPUT_CONSOLE="-vga"
 # Boolean for fast mode (skip mtree and xziping final image)
@@ -248,7 +258,7 @@ do
 			shift
 			;;
 		-b)
-			SKIP_REBUILD="-b -n"
+			SKIP_REBUILD="${SKIP_REBUILD} -b"
 			shift
 			;;
 		-c)
@@ -273,7 +283,7 @@ do
 			usage
 			;;
 		-k)
-			SKIP_REBUILD="-k -n"
+			SKIP_REBUILD="${SKIP_REBUILD} -kK"
 			shift
 			;;
 		-p)
@@ -300,7 +310,7 @@ do
 			shift
 			;;
 		-w)
-			SKIP_REBUILD="-w -n"
+			SKIP_REBUILD="${SKIP_REBUILD} -w"
 			shift
 			;;
 		--)
@@ -343,6 +353,9 @@ NANO_DIRS_INSTALL="${PROJECT_DIR}/Files"
 
 # Check if no previously mounted dirs
 check_clean ${PROJECT}.${TARGET_ARCH}
+
+# Loading filemon if not already
+load_module filemon
 
 if [ -n "${MASTER_PROJECT}" ]; then
 	# It's a child project: Load MASTER_PROJECT/make.conf
@@ -446,7 +459,8 @@ else
 fi
 if [ -n "${SKIP_REBUILD}" ]; then
 	[ -d ${NANO_OBJ} ] || \
-		die "ERROR: No previous object directory found, you can't skip some rebuild"
+		SKIP_REBUILD=""
+		echo "WARNING: No previous object directory found, you can't skip some rebuild"
 fi
 
 # Check if no previously tempo obj folder still mounted
@@ -562,6 +576,7 @@ case ${INPUT_CONSOLE} in
 esac
 
 # Delete the destination dir
+# BUG: since skip_rebuild is by default "-n", this code can't never be triggered
 if [ -z "${SKIP_REBUILD}" ]; then
 	if [ -d ${NANO_OBJ} ]; then
 		echo "Existing working directory detected (${NANO_OBJ}),"

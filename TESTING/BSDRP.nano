@@ -21,6 +21,7 @@ NANO_ARCH=${TARGET_ARCH}
 # Options to put in make.conf during buildworld only
 # BOOT_COMCONSOLE_SPEED is useless because we using /boot.config with -Sspeed option
 CONF_BUILD='
+WITH_META_MODE=
 MALLOC_PRODUCTION=
 BOOT_BOOT0_COMCONSOLE_SPEED=0
 '

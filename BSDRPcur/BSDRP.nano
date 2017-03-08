@@ -23,6 +23,7 @@ NANO_ARCH=${TARGET_ARCH}
 # But for baud higher than 9600 is not supported by boot0:
 #  then we let the speed already configured by the BIOS by setting it to 0
 CONF_BUILD='
+WITH_META_MODE=
 MALLOC_PRODUCTION=
 BOOT_BOOT0_COMCONSOLE_SPEED=0
 '
