@@ -497,7 +497,7 @@ add_port "devel/libffi"
 add_port "lang/python27"
 add_port "lang/python2"
 add_port "lang/python"
-add_port "devel/py-setuptools27"
+add_port "devel/py27-setuptools"
 
 # Now we can add python tool
 add_port "net/exabgp"

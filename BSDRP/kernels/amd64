@@ -377,7 +377,6 @@ options     MROUTING        # Multicast routing
 # This requires the use of 'device crypto', 'options IPSEC'
 # or 'device cryptodev'.
 device      cryptodev
-options     IPSEC_NAT_T     #NAT-T support, UDP encap of ESP
 options     TCP_SIGNATURE       #include support for RFC 2385
 
 # Add device Polling

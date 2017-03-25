@@ -181,6 +181,7 @@ mbuf () {
 # Display interface stats
 ifstat () {
 	netstat -bdhi
+	netstat -i -w1 -q 10
 	exit 0
 }
 
@@ -199,7 +200,7 @@ traffic() {
 
 # Display packages
 packages () {
-	pkg info
+	[ -f /var/db/pkg/local.sqlite ] && pkg info
 	exit 0
 }
 # Display version
@@ -402,13 +403,15 @@ tech-support () {
 	gstat -b
 	echo "==== netstat -s (show traffic) ===="
     netstat -s
+	echo "==== Display the stacks of kernel threads ===="
+	procstat -ak
 	echo "== General system inventory =="
 	echo "==== show version ===="
 	show version
 	echo "==== uname -a ===="
 	uname -a
-	echo "==== ifconfig -m ===="
-	ifconfig -m
+	echo "==== ifconfig -vm ===="
+	ifconfig -vm
 	echo "=== loaded module ==="
 	kldstat -v
 	echo "==== pciconf -lvbc ===="
