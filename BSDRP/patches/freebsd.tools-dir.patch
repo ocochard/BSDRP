@@ -1,6 +1,6 @@
 Index: tools/tools/ifinfo/Makefile
 ===================================================================
---- tools/tools/ifinfo/Makefile	(revision 313696)
+--- tools/tools/ifinfo/Makefile	(revision 316518)
 +++ tools/tools/ifinfo/Makefile	(working copy)
 @@ -3,5 +3,6 @@
  PROG=	ifinfo
@@ -11,7 +11,7 @@ Index: tools/tools/ifinfo/Makefile
  .include <bsd.prog.mk>
 Index: tools/tools/mctest/Makefile
 ===================================================================
---- tools/tools/mctest/Makefile	(revision 313696)
+--- tools/tools/mctest/Makefile	(revision 316518)
 +++ tools/tools/mctest/Makefile	(working copy)
 @@ -2,5 +2,6 @@
  
@@ -22,9 +22,9 @@ Index: tools/tools/mctest/Makefile
  .include <bsd.prog.mk>
 Index: tools/tools/netmap/Makefile
 ===================================================================
---- tools/tools/netmap/Makefile	(revision 313696)
+--- tools/tools/netmap/Makefile	(revision 316518)
 +++ tools/tools/netmap/Makefile	(working copy)
-@@ -4,6 +4,7 @@
+@@ -4,10 +4,11 @@
  # For multiple programs using a single source file each,
  # we can just define 'progs' and create custom targets.
  PROGS	=	pkt-gen bridge vale-ctl
@@ -32,6 +32,11 @@ Index: tools/tools/netmap/Makefile
  
  CLEANFILES = $(PROGS) *.o
  MAN=
+-CFLAGS += -Werror -Wall # -nostdinc -I/usr/include -I../../../sys
++CFLAGS += -Werror -Wall -Wno-address-of-packed-member # -nostdinc -I/usr/include -I../../../sys
+ CFLAGS += -Wextra
+ 
+ LDFLAGS += -lpthread
 @@ -30,3 +31,8 @@
  
  vale-ctl: vale-ctl.o
@@ -43,7 +48,7 @@ Index: tools/tools/netmap/Makefile
 +	done
 Index: tools/tools/netrate/netblast/Makefile
 ===================================================================
---- tools/tools/netrate/netblast/Makefile	(revision 313696)
+--- tools/tools/netrate/netblast/Makefile	(revision 316518)
 +++ tools/tools/netrate/netblast/Makefile	(working copy)
 @@ -4,5 +4,6 @@
  
@@ -54,7 +59,7 @@ Index: tools/tools/netrate/netblast/Makefile
  .include <bsd.prog.mk>
 Index: tools/tools/netrate/netreceive/Makefile
 ===================================================================
---- tools/tools/netrate/netreceive/Makefile	(revision 313696)
+--- tools/tools/netrate/netreceive/Makefile	(revision 316518)
 +++ tools/tools/netrate/netreceive/Makefile	(working copy)
 @@ -5,6 +5,7 @@
  PROG=	netreceive
@@ -66,7 +71,7 @@ Index: tools/tools/netrate/netreceive/Makefile
  
 Index: tools/tools/netrate/netsend/Makefile
 ===================================================================
---- tools/tools/netrate/netsend/Makefile	(revision 313696)
+--- tools/tools/netrate/netsend/Makefile	(revision 316518)
 +++ tools/tools/netrate/netsend/Makefile	(working copy)
 @@ -5,5 +5,6 @@
  CFLAGS+=	-Wall

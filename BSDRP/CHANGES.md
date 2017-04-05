@@ -2,10 +2,11 @@
 
 ## New features
 * FreeBSD 11-stable upgraded to r313696
-* ECMP (Equal-cost multi-path routing) support enabled
+* ECMP (Equal-cost multi-path routing) support enabled (but flow load-balancing seems not working)
 * nic-queue-usage: Display current usage of each queue for Chelsio/Intel NIC
 * Added chelsio_affinity and ix_affinity rc script
-* dtrace module added
+* dtrace modules added
+* Strongswan compiled with mediation and GCM AEAD wrapper crypto plugin options
 
 ## Bug fixes
 * Tayga RC script added
@@ -15,6 +16,7 @@
 * iperf3 to 3.1.7
 * quagga to 1.2.1
 * exabgp to 3.4.18
+* openvpn 2.4.1
 
 ## package list
 * bird-1.6.3_1
@@ -43,7 +45,7 @@
 * libpci-3.5.4
 * libsodium-1.0.12
 * libucl-0.8.0
-* lzo2-2.09
+* lzo2-2.10_1
 * mlvpn-2.3.1_1
 * monit-5.20.0
 * mpd5-5.8
@@ -51,21 +53,21 @@
 * netmap-fwd-0.2
 * ntraceroute-6.4.2_3
 * openldap-client-2.4.44
-* openvpn-2.4.0
+* openvpn-2.4.1
 * openvpn-auth-radius-2.1_3
-* pciids-20170310
+* pciids-20170316
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
 * pimd-2.3.2
 * pimdd-0.2.1.0_2
-* pkg-1.10.0_2
+* pkg-1.10.1
 * pmacct-1.6.1
 * py27-setuptools-32.1.0_1
 * python-2.7_3,2
 * python2-2_3
 * python27-2.7.13_1
-* quagga-1.2.1
+* quagga-1.2.1_1
 * readline-6.3.8
 * strongswan-5.5.1_1
 * sudo-1.8.19p2

@@ -415,7 +415,7 @@ add_port "net/openldap24-client"
 add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # IKEv2
-add_port "security/strongswan" "WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
+add_port "security/strongswan" "WITH="\MEDIATION GCM\" WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
 
 #IP accounting tool
 add_port "net-mgmt/pmacct"
