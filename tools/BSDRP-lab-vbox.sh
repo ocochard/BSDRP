@@ -500,6 +500,11 @@ case "$OS_DETECTED" in
 			echo "[WARNING] VirtualBox module not loaded ?"
 		break
 		;;
+	"Darwin")
+                kextstat -bundle-id org.virtualbox.kext.VBoxDrv > /dev/null 2>&1 || \
+                        echo "[WARNING] VirtualBox module not loaded ?"
+                break
+                ;;
 	*)
 		echo "ERROR: This script doesn't support $OS_DETECTED"
 		exit 1
@@ -585,8 +590,13 @@ for i do
 	esac
 done
 
-id ${USER} | grep -q vboxusers || \
-	die "[WARNING] Your user is not in the vboxusers group"
+if [ "$OS_DETECTED" = "Darwin" ]; then 
+	id ${USER} | grep -q staff || \
+		die "[WARNING] Your user is not in the staff group"
+else
+	id ${USER} | grep -q vboxusers || \
+                die "[WARNING] Your user is not in the vboxusers group"
+fi
 
 if [ "$NUMBER_VM" != "" ]; then
 	[ $NUMBER_VM -lt 1 ] && die "[ERROR] Use a minimal of 1 router in your lab."
