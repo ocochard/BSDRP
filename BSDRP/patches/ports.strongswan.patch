@@ -1,24 +1,24 @@
 Index: security/strongswan/Makefile
 ===================================================================
---- security/strongswan/Makefile	(revision 437660)
+--- security/strongswan/Makefile	(revision 438428)
 +++ security/strongswan/Makefile	(working copy)
-@@ -40,7 +40,7 @@
+@@ -39,7 +39,7 @@
  		--with-lib-prefix=${PREFIX}
  
  OPTIONS_DEFINE=	CURL EAPAKA3GPP2 EAPDYNAMIC EAPRADIUS EAPSIMFILE GCM IKEv1 \
 -		IPSECKEY KERNELLIBIPSEC LOADTESTER LDAP MYSQL PKI SCEP SMP \
 +		IPSECKEY KERNELLIBIPSEC LOADTESTER LDAP MEDIATION MYSQL PKI SCEP SMP \
- 		SQLITE SWANCTL TESTVECTOR UNBOUND UNITY VICI XAUTH
+ 		SQLITE SWANCTL TESTVECTOR TPM UNBOUND UNITY VICI XAUTH
  OPTIONS_DEFAULT=	IKEv1 BUILTIN PKI SWANCTL VICI
  OPTIONS_SINGLE=	PRINTF_HOOKS
-@@ -58,6 +58,7 @@
+@@ -57,6 +57,7 @@
  IPSECKEY_DESC=	Enable authentication with IPSECKEY resource records with DNSSEC
  KERNELLIBIPSEC_DESC=	Enable IPSec userland backend
  LOADTESTER_DESC=	Enable load testing plugin
 +MEDIATION_DESC=		Enable IKEv2 Mediation Extension
- TESTVECTOR_DESC=	Enable crypto test vectors
  PKI_DESC=	Enable PKI tools
  SCEP_DESC=	Enable Simple Certificate Enrollment Protocol
+ SMP_DESC=	Enable XML-based management protocol (DEPRECATED)
 @@ -86,6 +87,7 @@
  LOADTESTER_CONFIGURE_ON=--enable-load-tester
  LDAP_CONFIGURE_ON=	--enable-ldap
@@ -26,4 +26,4 @@ Index: security/strongswan/Makefile
 +MEDIATION_CONFIGURE_ON=	--enable-mediation
  MYSQL_CONFIGURE_ON=	--enable-mysql
  MYSQL_USES=		mysql
- SMP_LIB_DEPENDS=	libxml2.so:textproc/libxml2
+ PKI_CONFIGURE_OFF=	--disable-pki
