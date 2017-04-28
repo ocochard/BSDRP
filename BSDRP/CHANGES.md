@@ -16,14 +16,16 @@
 * iperf3 to 3.1.7
 * quagga to 1.2.1
 * exabgp to 3.4.18
+* monit to 5.22.0
 * openvpn 2.4.1
+* strongswan to 5.5.2
 
 ## package list
 * bird-1.6.3_1
 * bird6-1.6.3_1
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
-* ca_root_nss-3.30
+* ca_root_nss-3.30.2
 * dhcprelya-5.0
 * dlmalloc-2.8.6
 * easy-rsa-3.0.1_1
@@ -34,7 +36,7 @@
 * iperf-2.0.9
 * iperf3-3.1.7
 * ipmitool-1.8.18
-* ipsec-tools-0.8.2_1
+* ipsec-tools-0.8.2_2
 * isc-dhcp43-server-4.3.5
 * libev-4.22,1
 * libevent-2.1.8
@@ -47,7 +49,7 @@
 * libucl-0.8.0
 * lzo2-2.10_1
 * mlvpn-2.3.1_1
-* monit-5.20.0
+* monit-5.22.0
 * mpd5-5.8
 * mrouted-3.9.8
 * netmap-fwd-0.2
@@ -55,7 +57,7 @@
 * openldap-client-2.4.44
 * openvpn-2.4.1
 * openvpn-auth-radius-2.1_3
-* pciids-20170316
+* pciids-20170423
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
@@ -66,13 +68,13 @@
 * py27-setuptools-32.1.0_1
 * python-2.7_3,2
 * python2-2_3
-* python27-2.7.13_1
+* python27-2.7.13_3
 * quagga-1.2.1_1
-* readline-6.3.8
-* strongswan-5.5.1_1
+* readline-6.3.8_1
+* strongswan-5.5.2
 * sudo-1.8.19p2
 * tayga-0.9.2
-* tmux-2.3_2
+* tmux-2.4
 * ucarp-1.5.2_2
 
 -----------------------------------------------------
