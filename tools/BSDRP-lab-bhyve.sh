@@ -396,7 +396,7 @@ while [ $i -le $NUMBER_VM ]; do
 		while [ $j -le $NUMBER_VM ]; do
 			# Skip if i = j
 			if [ $i -ne $j ]; then
-				echo "- vtnet${NIC_NUMBER} connected to VM ${j}."
+				echo "- vtnet${NIC_NUMBER} connected to VM ${j}"
 				# PCI_SLOT must be between 0 and 7
 				# Need to increase PCI_BUS number if slot is more than 7
 		

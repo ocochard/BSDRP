@@ -1,12 +1,14 @@
 # Release 1.71 (not released)
 
 ## New features
-* FreeBSD 11-stable upgraded to r313696
+* FreeBSD 11-stable upgraded to r317891
+* VIMAGE support and jail tool added: Allow to create multi-tennant routers/firewalls
 * ECMP (Equal-cost multi-path routing) support enabled (but flow load-balancing seems not working)
 * nic-queue-usage: Display current usage of each queue for Chelsio/Intel NIC
 * Added chelsio_affinity and ix_affinity rc script
 * dtrace modules added
 * Strongswan compiled with mediation and GCM AEAD wrapper crypto plugin options
+  Mediation feature example here: https://bsdrp.net/documentation/examples/strongswan_ipsec_mediation_feature
 
 ## Bug fixes
 * Tayga RC script added

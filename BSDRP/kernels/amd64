@@ -392,8 +392,13 @@ device enc
 #options           RSS                             # Receive-side scaling support
 
 # RADIX_MPATH provides support for equal-cost multi-path routing.
-#
+# It allow to install multiple routes toward the same destination
+# but didn't do flow load-balancing using ecmp :-(
 options		RADIX_MPATH
+
+# Enable VIMAGE (VNET, for virtual network with jail)
+# Performance impact should be small (about 2%)
+options		VIMAGE
 
 # The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)
 
