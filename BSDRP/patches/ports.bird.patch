@@ -1,6 +1,6 @@
 Index: net/bird/Makefile
 ===================================================================
---- net/bird/Makefile	(revision 439596)
+--- net/bird/Makefile	(revision 440546)
 +++ net/bird/Makefile	(working copy)
 @@ -3,7 +3,7 @@
  
@@ -13,7 +13,7 @@ Index: net/bird/Makefile
  		http://bird.mpls.in/distfiles/bird/
 Index: net/bird/files/bird.in
 ===================================================================
---- net/bird/files/bird.in	(revision 439596)
+--- net/bird/files/bird.in	(revision 440546)
 +++ net/bird/files/bird.in	(working copy)
 @@ -29,6 +29,6 @@
  : ${bird_enable="NO"}
@@ -25,7 +25,7 @@ Index: net/bird/files/bird.in
  run_rc_command "$1"
 Index: net/bird/files/bird6.in
 ===================================================================
---- net/bird/files/bird6.in	(revision 439596)
+--- net/bird/files/bird6.in	(revision 440546)
 +++ net/bird/files/bird6.in	(working copy)
 @@ -29,6 +29,6 @@
  : ${bird6_enable="NO"}
@@ -37,7 +37,7 @@ Index: net/bird/files/bird6.in
  run_rc_command "$1"
 Index: net/bird/files/firewall_support.patch
 ===================================================================
---- net/bird/files/firewall_support.patch	(revision 439596)
+--- net/bird/files/firewall_support.patch	(revision 440546)
 +++ net/bird/files/firewall_support.patch	(working copy)
 @@ -161,7 +161,7 @@
  +CF_ADDTO(proto, firewall_proto '}')
@@ -83,3 +83,40 @@ Index: net/bird/files/firewall_support.patch
  +#define FW_ERR(x, y...)	log_rl(&rl_fw_err, L_ERR x, ##y)
  +
  +#endif
+Index: net/bird/files/patch-setkey.h
+===================================================================
+--- net/bird/files/patch-setkey.h	(nonexistent)
++++ net/bird/files/patch-setkey.h	(working copy)
+@@ -0,0 +1,17 @@
++--- sysdep/bsd/setkey.h.orig	2017-04-28 12:21:39.616325000 +0300
+++++ sysdep/bsd/setkey.h	2017-04-28 12:20:57.712621000 +0300
++@@ -160,10 +160,14 @@ sk_set_md5_in_sasp_db(sock *s, ip_addr local, ip_addr 
++ 
++     if (setkey_md5(&src, &dst, passwd, SADB_ADD) < 0)
++       ERR_MSG("Cannot add TCP-MD5 password into the IPsec SA/SP database");
+++    if (setkey_md5(&dst, &src, passwd, SADB_ADD) < 0)
+++      ERR_MSG("Cannot add TCP-MD5 password into the IPsec SA/SP database");
++   }
++   else
++   {
++     if (setkey_md5(&src, &dst, NULL, SADB_DELETE) < 0)
+++      ERR_MSG("Cannot delete TCP-MD5 password from the IPsec SA/SP database");
+++    if (setkey_md5(&dst, &src, NULL, SADB_DELETE) < 0)
++       ERR_MSG("Cannot delete TCP-MD5 password from the IPsec SA/SP database");
++   }
++   return 0;
+
+Property changes on: net/bird/files/patch-setkey.h
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property

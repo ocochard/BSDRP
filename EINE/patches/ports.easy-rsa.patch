@@ -1,0 +1,33 @@
+Index: security/easy-rsa/Makefile
+===================================================================
+--- security/easy-rsa/Makefile	(revision 409566)
++++ security/easy-rsa/Makefile	(working copy)
+@@ -2,7 +2,7 @@
+ 
+ PORTNAME=	easy-rsa
+ DISTVERSION=	3.0.1
+-PORTREVISION=	1
++PORTREVISION=	2
+ CATEGORIES=	security net-mgmt
+ MASTER_SITES=	https://github.com/OpenVPN/easy-rsa/releases/download/${DISTVERSION}/
+ DISTNAME=	EasyRSA-${DISTVERSION}
+@@ -34,7 +34,7 @@
+ 		${INSTALL_SCRIPT} ${WRKDIR}/easyrsa ${STAGEDIR}${PREFIX}/bin/
+ 		${INSTALL_SCRIPT} ${WRKSRC}/easyrsa ${STAGEDIR}${DATADIR}/easyrsa.real
+ 		${INSTALL_DATA} ${WRKSRC}/vars.example ${STAGEDIR}${DATADIR}/
+-		${INSTALL_DATA} ${WRKSRC}/openssl-1.0.cnf ${STAGEDIR}${DATADIR}/openssl-1.0.cnf.example
++		${INSTALL_DATA} ${WRKSRC}/openssl-1.0.cnf ${STAGEDIR}${DATADIR}/
+ 		(cd ${WRKSRC}/x509-types/ && ${COPYTREE_SHARE} . ${STAGEDIR}${DATADIR}/x509-types/)
+ 
+ do-install-DOCS-on:
+Index: security/easy-rsa/pkg-plist
+===================================================================
+--- security/easy-rsa/pkg-plist	(revision 409566)
++++ security/easy-rsa/pkg-plist	(working copy)
+@@ -1,4 +1,4 @@
+ bin/easyrsa
+ %%DATADIR%%/easyrsa.real
+-@sample %%DATADIR%%/openssl-1.0.cnf.example %%DATADIR%%/openssl-1.0.cnf
+-@sample %%DATADIR%%/vars.example %%DATADIR%%/vars
++%%DATADIR%%/openssl-1.0.cnf
++%%DATADIR%%/vars.example

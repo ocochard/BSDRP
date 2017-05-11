@@ -1,0 +1,12 @@
+Index: sys/conf/newvers.sh
+===================================================================
+--- sys/conf/newvers.sh	(revision 308878)
++++ sys/conf/newvers.sh	(working copy)
+@@ -45,6 +45,7 @@
+ #
+ findvcs()
+ {
++	return 1
+ 	local savedir
+ 
+ 	savedir=$(pwd)

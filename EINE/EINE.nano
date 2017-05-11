@@ -64,7 +64,6 @@ WITHOUT_FLOPPY=
 WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
 WITHOUT_GCOV=
-WITHOUT_GDB=
 WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
@@ -76,7 +75,6 @@ WITHOUT_IPFILTER=
 WITHOUT_IPX=
 WITHOUT_IPX_SUPPORT=
 WITHOUT_ISCSI=
-WITHOUT_JAIL=
 WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
 WITHOUT_LIB32=
@@ -114,7 +112,6 @@ WITHOUT_USB_GADGET_EXAMPLES=
 WITHOUT_ZFS=
 WITH_GCC=
 WITH_IDEA=
-WITH_FAST_DEPEND=
 WITH_DEBUG_FILES=
 WITH_REPRODUCIBLE_BUILD=
 '
@@ -179,7 +176,7 @@ PPLEVEL=3
 
 # Add netblast/netrecieve and netmap tools
 add_netrate () {
-    TOOLS_LIST="cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
+    TOOLS_LIST="cxgbtool ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
     mkdir -p ${NANO_WORLDDIR}/dev
     mount -t devfs devfs ${NANO_WORLDDIR}/dev
     mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
@@ -204,26 +201,6 @@ add_netrate () {
     rm -rf ${NANO_WORLDDIR}/usr/workdir
     umount ${NANO_WORLDDIR}/usr/src
     umount ${NANO_WORLDDIR}/dev
-}
-
-add_apuled () {
-    mkdir -p ${NANO_WORLDDIR}/dev
-    mount -t devfs devfs ${NANO_WORLDDIR}/dev
-	mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
-	mkdir -p ${NANO_WORLDDIR}/tmp/apuled
-    mount -t nullfs ${NANO_TOOLS}/tools/apuled ${NANO_WORLDDIR}/tmp/apuled
-    mkdir -p ${NANO_WORLDDIR}/usr/workdir
-    CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-		MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
-		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-        make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/'
-	CR 'make WRKDIRPREFIX=/usr/workdir -C /tmp/apuled/ install clean'
-    rm -rf ${NANO_WORLDDIR}/usr/workdir
-    umount ${NANO_WORLDDIR}/usr/src
-	umount ${NANO_WORLDDIR}/tmp/apuled
-    umount ${NANO_WORLDDIR}/dev
-	rm -r ${NANO_WORLDDIR}/tmp/apuled
 }
 
 # Need to check if this function works with cross-compiling architecture!!!!
@@ -361,19 +338,20 @@ add_port "devel/readline"
 add_port "devel/libffi"
 add_port "lang/python27"
 add_port "lang/python2"
-add_port "devel/py-setuptools27"
+add_port "lang/python"
+add_port "devel/py27-setuptools"
 
 # Add modules to the native FreeBSD bsnmpd daemon:
 #add_port "net-mgmt/bsnmp-regex"
 #add_port "net-mgmt/bsnmp-ucd"
 
 # routing protocol
+ add_port "converters/libiconv"
 add_port "net/bird"
 add_port "net/bird6" 
 
 # DNS/DHCP server
 add_port "math/gmp"
-add_port "converters/libiconv"
 add_port "dns/libidn"
 add_port "security/nettle"
 add_port "dns/dnsmasq" "WITH=\"IDN\""
@@ -431,7 +409,6 @@ add_port "security/ca_root_nss"
 
 # Ansible (used on the manager only)
 add_port "devel/py-yaml"
-#add_port "security/py-pycrypto"
   add_port "devel/py-enum34"
    add_port "devel/py-pycparser"
   add_port "devel/py-cffi"
@@ -446,6 +423,7 @@ add_port "textproc/py-MarkupSafe"
 add_port "devel/py-pytz"
 add_port "devel/py-babel"
 add_port "devel/py-Jinja2"
+ add_port "security/py-pycrypto"
 add_port "security/py-keyczar"
 add_port "net/py-netaddr"
 add_port "sysutils/ansible"
@@ -484,9 +462,6 @@ add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 
 # Add netrate tools
 customize_cmd add_netrate
-
-# Add PC Engines APU LED drivers
-customize_cmd add_apuled
 
 cleanup_ports () {
 		# When port are build, they install build dependency that are not usefull for running the port
