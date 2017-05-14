@@ -44,7 +44,7 @@ ix_affinity_start()
 	ix=$(sysctl dev.ix. | grep -c irqs)
 	for i in $(seq 1 ${ix}); do
 		for IRQ in `/usr/bin/vmstat -ai |\
-	    	/usr/bin/sed -nE '/ix${i}:que./ s/irq([[:digit:]]+):.*/\1/p'`; do
+	    	/usr/bin/sed -nE '/ix${i}:q./ s/irq([[:digit:]]+):.*/\1/p'`; do
 			echo "Bind ix${i} IRQ ${IRQ} to CPU ${CPU}"
 			/usr/bin/cpuset -l ${CPU} -x ${IRQ}
 			CPU=$(((CPU + 1) % NCPU))
