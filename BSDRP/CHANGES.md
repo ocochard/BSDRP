@@ -2,9 +2,7 @@
 
 ## New features
 * FreeBSD 11-stable upgraded to r317891
-* VIMAGE support and jail tool added: Allow to create multi-tennant routers/firewalls
-* ECMP (Equal-cost multi-path routing) support enabled (but flow load-balancing seems not working)
-* nic-queue-usage: Display current usage of each queue for Chelsio/Intel NIC
+* jail/VIMAGE support added: Allow to create multi-tennant routers/firewall (read tenant help more more detail)
 * Added chelsio_affinity and ix_affinity rc script
 * dtrace modules added
 * Strongswan compiled with mediation and GCM AEAD wrapper crypto plugin options
@@ -17,21 +15,21 @@
 * dhcprelya to 5.0
 * iperf3 to 3.1.7
 * quagga to 1.2.1
-* exabgp to 3.4.18
+* exabgp to 3.4.19
 * monit to 5.22.0
-* openvpn 2.4.1
+* openvpn 2.4.2
 * strongswan to 5.5.2
 
 ## package list
-* bird-1.6.3_1
-* bird6-1.6.3_1
+* bird-1.6.3_2
+* bird6-1.6.3_2
 * bsnmp-regex-0.6_1
 * bsnmp-ucd-0.4.2
 * ca_root_nss-3.30.2
 * dhcprelya-5.0
 * dlmalloc-2.8.6
 * easy-rsa-3.0.1_1
-* exabgp-3.4.18
+* exabgp-3.4.19
 * flashrom-0.9.9_1
 * freevrrpd-1.1_1
 * indexinfo-0.2.6
@@ -57,9 +55,9 @@
 * netmap-fwd-0.2
 * ntraceroute-6.4.2_3
 * openldap-client-2.4.44
-* openvpn-2.4.1
+* openvpn-2.4.2
 * openvpn-auth-radius-2.1_3
-* pciids-20170423
+* pciids-20170525
 * pim6-tools-20061214
 * pim6dd-0.2.1.0.a.15
 * pim6sd-2.1.0.a.23
@@ -73,8 +71,8 @@
 * python27-2.7.13_3
 * quagga-1.2.1_1
 * readline-6.3.8_1
-* strongswan-5.5.2
-* sudo-1.8.19p2
+* strongswan-5.5.2_1
+* sudo-1.8.20p1
 * tayga-0.9.2
 * tmux-2.4
 * ucarp-1.5.2_2
