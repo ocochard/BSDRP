@@ -39,6 +39,7 @@ delete=false
 tenant=""
 nics=""
 defaultgw=""
+authorizedkeys=""
 jailbase="/var/jails"
 
 #############################################
@@ -59,14 +60,25 @@ usage () {
 	echo "                 multiple interface are comma separated"
 	echo "                if interface a bridge, epair created and bind to it"
 	echo "  -j: jail name"
-	echo "example: $0 -c -j customer1 -f /tmp/auth -i bridge0,vtnet4.2/10.0.0.1/24 -g 10.0.0.254"
+	echo "Example:"
+	echo "   $0 -c -j customer1 -f /tmp/sshkey.pub -i bridge0,vtnet4.2/10.0.0.1/24 -g 10.0.0.254"
 	exit 1
 }
 
+# Create jail configuration files
+# TO DO: All die() call in this function need to do a cleanup
 create () {
 	[ -z "${tenant}" ] && die "BUG: tenant name mandatory"
 	if [ -f /etc/jail.conf ]; then
 		grep -q "^${tenant} {" /etc/jail.conf && die "Already existing entry into /etc/jail.conf"
+		# Check if interface are already declared
+		nicslist=$nics
+		while [ "$nicslist" ] ;do
+			iter=${nicslist%%,*}
+			nicname=${iter%%/*}
+			egrep -q "vnet\.interface.*${nicname}" /etc/jail.conf && die "Interface ${nicname} already declared into /etc/jail"
+			[ "$nicslist" = "$iter" ] && nicslist='' || nicslist="${nicslist#*,}"
+		done
 	fi
 
 	# Get last ID
@@ -88,21 +100,29 @@ create () {
 		for i in root bin sbin lib libexec usr; do
 			echo "/$i ${jailroot}/$i nullfs ro 0 0"
 		done
-		echo "/conf/base ${jailroot}/conf/base nullfs 0 0"
+		echo "/conf/base ${jailroot}/conf/base nullfs ro 0 0"
 		echo "/etc/jails/${tenant} ${jailroot}/cfg nullfs rw,noatime 0 0"
 	} > /etc/fstab.${tenant}
 
 	# Start to populate internal jail RC configuration file
 	mkdir -p ${jailcfg}
+
 	# Cleanup jail sysctl.conf
 	echo "#Nothing here" > ${jailcfg}/sysctl.conf
+
+	if [ -n "$authorizedkeys" ]; then
+		mkdir ${jailcfg}/dot.ssh.root || die "Can't create ${jailcfg}/dot.ssh.root"
+		cp $authorizedkeys ${jailcfg}/dot.ssh.root/authorized_keys || die "Can't copy $authorizedkeys into ${jailcfg}/dot.ssh.root/"
+	fi
+
+	# Start to generate internal jail RC configuration file
 	{
 		echo "#Automatically generated ${tenant} RC configuration file"
 		echo "hostname=${tenant}"
 		echo "sshd_enable=YES"
 	} > ${jailcfg}/rc.conf
 
-	# Start to generate jail configuration file
+	# Start to generate jail.conf file
 	cat >> /etc/jail.conf <<EOF
 ${tenant} {
     jid = ${id};
@@ -185,20 +205,16 @@ EOF
 		fi
 
 		echo ifconfig_${rcnicname}${value} >> ${jailcfg}/rc.conf
-		if [ -n "$defaultgw" ]; then
-			if echo $defaultgw | grep -q ':'; then
-				echo "ipv6_defaultrouter=\"${defaultgw}\"" >> ${jailcfg}/rc.conf
-			else
-				echo "defaultrouter=\"${defaultgw}\"" >> ${jailcfg}/rc.conf
-			fi
-		fi
 
-		if [ "$nics" = "$iter" ]; then
-			nics=''
-		else
-			nics="${nics#*,}"
-		fi
+		[ "$nics" = "$iter" ] && nics='' || nics="${nics#*,}"
 	done
+	if [ -n "$defaultgw" ]; then
+		if echo $defaultgw | grep -q ':'; then
+			echo "ipv6_defaultrouter=\"${defaultgw}\"" >> ${jailcfg}/rc.conf
+		else
+			echo "defaultrouter=\"${defaultgw}\"" >> ${jailcfg}/rc.conf
+		fi
+	fi
 	# Close jail configuration file
 	cat >> /etc/jail.conf <<EOF
     exec.prestart  += "logger jail ${tenant} pre-started";
@@ -224,6 +240,7 @@ EOF
 delete () {
 	[ -f /etc/jail.conf ] || die "ERROR: No jail configured"
 	jls -j ${tenant} > /dev/null 2>&1 && die "Jail is running: Stop it before delete it (service jail stop ${tenant})"
+	echo "TO DO: check if correctly unmounted"
 	for i in /etc/fstab.${tenant}; do
 		[ -f $i ] && rm $i
 	done
@@ -248,7 +265,7 @@ if [ $# -le 0 ] ; then
     usage
 fi
 
-args=$(getopt cdg:hi:j: $*)
+args=$(getopt cdf:g:hi:j: $*)
 
 set -- $args
 for i; do
@@ -263,6 +280,12 @@ for i; do
 		($create) && die "delete and create are mutualy exclusive"
 		create=false
 		delete=true
+		shift
+		;;
+	-f)
+		[ -f $2 ] || die "Can't found file $2"
+		authorizedkeys=$2
+		shift
 		shift
 		;;
 	-g)
