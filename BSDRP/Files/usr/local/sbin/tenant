@@ -195,6 +195,9 @@ EOF
     exec.prestart  += "ifconfig epair${id} create up";
     exec.prestart  += "ifconfig epair${id}a up";
     exec.prestart  += "ifconfig bridge0 addm epair${id}a up";
+    # fix bug that assing same MAC to all epairXb interface
+    # TO DO: convert this id into hexa
+    exec.prestart  += "ifconfig epair{id}b ether 02:ff:00:00:ff:${id}";
     exec.poststop  += "ifconfig bridge0 deletem epair${id}a";
     exec.poststop  += "ifconfig epair${id}a destroy";
 EOF
