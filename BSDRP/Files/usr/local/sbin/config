@@ -32,12 +32,19 @@
 set -e
 
 # Global variables
+
+lock="/var/run/config.bsdrp.lock"
+
 # Checking if script is running inside a jail or not
 [ $(sysctl -n security.jail.jailed) -eq 0 ] && INSIDEJAIL=false || INSIDEJAIL=true
 
-
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+
+# Because we are using running script, we need to cleanup mess before leaving
+cleanup () {
+	[ -d $lock ] && rm -rf $lock
+}
 
 # Display help
 usage () {
@@ -437,6 +444,15 @@ factory () {
 ###################
 ## Main function ##
 ###################
+
+# Prevent to execute this script twice
+trap cleanup EXIT INT TERM
+
+# We need a method for checking AND creating lock file in same step
+if ! mkdir $lock 2>/dev/null; then
+	echo "This script is already running (file $running detected)"
+	usage
+fi
 
 # Get options passed by user
 if [ $# -eq 0 ]; then

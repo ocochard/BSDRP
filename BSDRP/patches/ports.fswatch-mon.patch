@@ -1,0 +1,60 @@
+Index: sysutils/fswatch-mon/Makefile
+===================================================================
+--- sysutils/fswatch-mon/Makefile	(revision 442145)
++++ sysutils/fswatch-mon/Makefile	(working copy)
+@@ -3,6 +3,7 @@
+ 
+ PORTNAME=	fswatch
+ PORTVERSION=	1.9.3
++PORTREVISION=	1
+ CATEGORIES=	sysutils
+ PKGNAMESUFFIX=	-mon
+ 
+@@ -13,7 +14,7 @@
+ 
+ BROKEN_powerpc64=	fails to configure: A compiler with support for C++11 language features is required
+ 
+-USES=		autoreconf gettext libtool makeinfo
++USES=		autoreconf libtool makeinfo
+ USE_LDCONFIG=	yes
+ GNU_CONFIGURE=	yes
+ 
+@@ -30,6 +31,26 @@
+ USE_GITHUB=	yes
+ GH_ACCOUNT=	emcrisostomo
+ 
++post-patch:
++	${REINPLACE_CMD} 's|ABOUT-NLS AUTHORS|AUTHORS|'\
++		${WRKSRC}/Makefile.am
++
++post-patch-NLS-off:
++	${REINPLACE_CMD} 's| po/Makefile.in||' \
++		${WRKSRC}/configure.ac \
++		${WRKSRC}/libfswatch/configure.ac
++	${REINPLACE_CMD} 's|src po doc|src doc|' \
++		${WRKSRC}/libfswatch/Makefile.am \
++		${WRKSRC}/Makefile.am
++	${REINPLACE_CMD} -e 's|AM_GNU_GETTEXT(\[external\])||g ;\
++		s|AM_GNU_GETTEXT_VERSION(\[0.19.4\])||g' \
++		${WRKSRC}/configure.ac \
++		${WRKSRC}/libfswatch/configure.ac
++	${REINPLACE_CMD} -e 's|libfswatch_la_LDFLAGS += @LTLIBINTL@||g' \
++		${WRKSRC}/libfswatch/src/libfswatch/Makefile.am
++	${REINPLACE_CMD} -e 's|fswatch_LDADD += @LTLIBINTL@||g' \
++		${WRKSRC}/src/Makefile.am
++
+ post-install:
+ 	  ${STRIP_CMD} ${STAGEDIR}${PREFIX}/lib/libfswatch.so
+ 
+Index: sysutils/fswatch-mon/pkg-plist
+===================================================================
+--- sysutils/fswatch-mon/pkg-plist	(revision 442145)
++++ sysutils/fswatch-mon/pkg-plist	(working copy)
+@@ -21,7 +21,6 @@
+ lib/libfswatch.so.6
+ lib/libfswatch.so.6.2.0
+ man/man7/fswatch.7.gz
+-%%PORTDOCS%%%%DOCSDIR%%/ABOUT-NLS
+ %%PORTDOCS%%%%DOCSDIR%%/AUTHORS
+ %%PORTDOCS%%%%DOCSDIR%%/CONTRIBUTING.md
+ %%PORTDOCS%%%%DOCSDIR%%/COPYING

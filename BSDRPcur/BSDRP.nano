@@ -183,7 +183,7 @@ PPLEVEL=3
 
 # Add netblast/netrecieve and netmap tools
 add_netrate () {
-    TOOLS_LIST="cxgbtool ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
+    TOOLS_LIST="cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
     mkdir -p ${NANO_WORLDDIR}/dev
     mount -t devfs devfs ${NANO_WORLDDIR}/dev
     mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
@@ -367,11 +367,11 @@ add_port "ports-mgmt/pkg"
 # net-snmp support is not very good for FreeBSD, disable it
 #add_port "net-mgmt/net-snmp" "-DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
 
-# Add modules to the native FreeBSD bsnmpd daemon:
+# Extended bsnmpd modules:
 add_port "net-mgmt/bsnmp-regex"
 add_port "net-mgmt/bsnmp-ucd"
 
-# Quagga installation
+# Quagga: old routing daemon
 add_port "devel/libdlmalloc"
 add_port "print/indexinfo"
 add_port "security/libgpg-error"
@@ -380,68 +380,70 @@ add_port "devel/readline"
 add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
-# Add Bird
+# Bird: new routing daemon
 add_port "net/bird" "WITH=\"FIREWALL\""
 add_port "net/bird6" "WITH=\"FIREWALL\""
 
-# Add FreeVRRPd (netgraph dependent)
+# FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
 
-# IKEv1
+# ipsec-tools: IKEv1
 add_port "net/openldap24-client"
 add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
-# IKEv2
-add_port "security/strongswan" "WITH="\MEDIATION GCM\" WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
+# strongswan: IKEv2 and lot's more
+add_port "security/strongswan" "WITH=\"MEDIATION GCM\" WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
 
-#IP accounting tool
+# pmacct: IP accounting tool
 add_port "net-mgmt/pmacct"
 
-# Add ucarp (Userland carp): Enabling carp in the kernel prevent to use FreeVRRPd
+# ucarp: Userland carp because enabling carp in the kernel prevent to use FreeVRRPd
 # UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
 add_port "net/ucarp"
 
-# Add IPv6 multicast routing daemons and tools
+# pim6*: IPv6 multicast routing daemons and tools
 add_port "net/pim6-tools"
 add_port "net/pim6dd"
 add_port "net/pim6sd"
 
-# Add IPv4 DVMRP (multicast) routing daemon
+# mrouted: IPv4 DVMRP (multicast) routing daemon
 add_port "net/mrouted"
 
-# Add pimdd: IPv4 PIM Dense Mode daemon
+# pimdd: IPv4 PIM Dense Mode daemon
 add_port "net/pimdd"
 
-# Add pimd: IPv4 PIM Sparse Mode daemon
+# pimd: IPv4 PIM Sparse Mode daemon
 add_port "net/pimd"
 
-# Add tayga: userland NAT64 implementation
+# tayga: userland NAT64 implementation
 add_port "net/tayga"
 
-# Add dnsmasq (DHCP server, DNS forwarder)
+# dnsmasq:  DHCP server, DNS forwarder
 #add_port "math/gmp"
 #add_port "security/nettle"
 #add_port "dns/dnsmasq"
-
-# Add DHCP server and client
+# DHCP server and client
 add_port "net/isc-dhcp43-server"
 #add_port "net/isc-dhcp43-relay"
 add_port "net/dhcprelya"
 
-# Add monit, a managing and monitoring processes tool
+# fswatch-mon: file change monitor (used for auto_save configuration)
+add_port "sysutils/fswatch-mon"
+
+# monit: managing and monitoring processes tool
 add_port "sysutils/monit"
 
-# Add tmux (screen equivalent, but better because BSD)
+# tmux: screen equivalent, but better because BSD
 add_port "devel/libevent"
 add_port "sysutils/tmux"
 
-# Add ipmi tools
+# ipmi tools
 add_port "sysutils/ipmitool"
 
-# Add sudo for fine permission management
+# sudo: fine permission management
 add_port "security/sudo"
 
-# Add mpd5, a multi-link PPP protocol server (netgraph dependent)
+# mpd5: multi-link PPP protocol server (netgraph dependent)
 add_port "net/mpd5"
 
 # high-performance (bridge only) netmap-ipfw and netmap-fwd
@@ -451,25 +453,25 @@ if [ ${NANO_ARCH} = "amd64" ]; then
     add_port "net/netmap-fwd"
 fi
 
-# Link aggregator
+# mlvpn: Link aggregator
  add_port "devel/libev"
  add_port "security/libsodium"
 add_port "net/mlvpn"
 
-# Add openvpn
+# openvpn
 add_port "security/easy-rsa"
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
 add_port "security/openvpn"
 add_port "security/openvpn-auth-radius"
 
-# Add some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
+# some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 #add_port "benchmarks/netpipe" 
 add_port "benchmarks/iperf" "WITH=\"IPV6\""
 add_port "benchmarks/iperf3"
 
-# Add an LLDP daemon
-add_port "net-mgmt/lldpd" "WITHOUT=\"BASH JSON PROPRIETARY SNMP XML\""
+# LLDP daemon
+#add_port "net-mgmt/lldpd" "WITHOUT=\"BASH JSON PROPRIETARY SNMP XML\""
 
 #add_port "comms/conserver-com"
 #add_port "comms/ser2net"
@@ -481,7 +483,7 @@ add_port "lang/python2"
 add_port "lang/python"
 add_port "devel/py27-setuptools"
 
-# Now we can add python tool
+# ExaBGP: having fun with BGP
 add_port "net/exabgp"
 
 # VM tools

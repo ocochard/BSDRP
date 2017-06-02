@@ -116,11 +116,13 @@ create () {
 	fi
 
 	# Start to generate internal jail RC configuration file
-	{
-		echo "#Automatically generated ${tenant} RC configuration file"
-		echo "hostname=${tenant}"
-		echo "sshd_enable=YES"
-	} > ${jailcfg}/rc.conf
+	cat > ${jailcfg}/rc.conf <<EOF
+#Automatically generated ${tenant} RC configuration file
+hostname=${tenant}
+sshd_enable=YES
+gateway_enable=YES
+ipv6_gateway_enable=YES
+EOF
 
 	# Start to generate jail.conf file
 	cat >> /etc/jail.conf <<EOF
@@ -197,7 +199,7 @@ EOF
     exec.prestart  += "ifconfig bridge0 addm epair${id}a up";
     # fix bug that assing same MAC to all epairXb interface
     # TO DO: convert this id into hexa
-    exec.prestart  += "ifconfig epair{id}b ether 02:ff:00:00:ff:${id}";
+    exec.prestart  += "ifconfig epair${id}b ether 02:ff:00:00:ff:${id}";
     exec.poststop  += "ifconfig bridge0 deletem epair${id}a";
     exec.poststop  += "ifconfig epair${id}a destroy";
 EOF
@@ -318,5 +320,6 @@ done
 
 ($create) && create
 ($delete) && delete
+echo "TODO: need to watch /etc/jails/ and issue a config save when change detected"
 echo "Done, don't forget to SAVE config (config save)"
 
