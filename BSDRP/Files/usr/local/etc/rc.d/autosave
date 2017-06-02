@@ -1,9 +1,9 @@
 #!/bin/sh
 #
-# BSD Router Project:	autosaved Init script 
+# BSD Router Project:	autosave Init script
 # http://bsdrp.net
 #
-# Copyright (c) 2017, The BSDRP Development Team 
+# Copyright (c) 2017, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,55 +27,28 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+# PROVIDE: autosave
+# REQUIRE: DAEMON
+# KEYWORD: shutdown
+
 . /etc/rc.subr
 
 name=autosave
 rcvar=${name}_enable
+stop_cmd="${name}_stop"
 
-autosave_stop()
-{
-	if [ -f ${pidfile} ]; then
-		rc_pid=$(check_pidfile $pidfile ${name})
-		kill -TERM $rc_pid
-		wait_for_pids $rc_pid
-	fi
+autosave_stop () {
+	# autosave is a simple shell script with fswatch in a loop
+	# for stoping autosave, we need to stop fswatch
+	pkill -f "fswatch -dor /etc" || logger Failed to kill fswatch
 }
 
-stop_postcmd()
-{
-	rm -f "$pidfile" || warn "Could not remove $pidfile."
-}
-
-autosave_status()
-{
-	rc_pid=$(check_pidfile $pidfile ${name})
-
-	if [ -z "$rc_pid" ]; then
-		[ -n "$rc_fast" ] && return 0
-		if [ -n "$pidfile" ]; then
-			echo "${name} not running? (check $pidfile)."
-		else
-			echo "${name} not running?"
-		fi
-		return 1
-	fi
-	echo "${name} is running as pid ${rc_pid}"
-}
-
-# pidfile
 pidfile="/var/run/${name}.pid"
-rc_pid=$(check_pidfile $pidfile ame)
 
-# command and arguments
-procname="/usr/local/sbin/autosaved"
 command="/usr/sbin/daemon"
-
-# run this last
-stop_cmd="autosave_stop"
-stop_postcmd="stop_postcmd"
 
 load_rc_config ${name}
 
-command_args="-f -p ${pidfile} ${procname}"
+command_args="-f -P ${pidfile} -u root /usr/local/sbin/autosave"
 
 run_rc_command "$1"

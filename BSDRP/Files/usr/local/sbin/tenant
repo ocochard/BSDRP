@@ -89,6 +89,14 @@ create () {
 		id=1
 	fi
 
+	# Autosave should be enabled if jail is created
+	# It allow to automatically save customer configuration changes
+	if ! sysrc -c autosave_enable="YES"; then
+		echo "Enabling autosave feature"
+		sysrc autosave_enable="YES" > /dev/null 2>&1
+		service autosave start > /dev/null 2>&1 || echo "Warning: Can't start autosave"
+	fi
+
 	jailroot="${jailbase}/${tenant}"
 	jailcfg="/etc/jails/${tenant}"
 	# Generate pre-fstab for jail
@@ -234,8 +242,8 @@ EOF
 	} > /etc/jail.lastid
 
 	# Now enable this jail
-	sysrc -q jail_enable="YES"
-	sysrc -q jail_list+=${tenant}
+	sysrc -q jail_enable="YES" > /dev/null 2>&1
+	sysrc -q jail_list+=${tenant} > /dev/null 2>&1
 	
 	echo "Jail is created, you can start it now (service jail start ${tenant})"
 	return 0
@@ -320,6 +328,5 @@ done
 
 ($create) && create
 ($delete) && delete
-echo "TODO: need to watch /etc/jails/ and issue a config save when change detected"
-echo "Done, don't forget to SAVE config (config save)"
+echo "Done"
 

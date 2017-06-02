@@ -39,25 +39,26 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # Because we are using running script, we need to cleanup mess before leaving
 cleanup () {
+	logger autosave stoping
+	pkill fswatch || true
 	[ -d $lock ] && rm -rf $lock
 }
 
+logger autosave starting
 # Prevent to execute this script twice
 trap cleanup EXIT INT TERM
 
 # We need a method for checking AND creating lock file in same step
 if ! mkdir $lock 2>/dev/null; then
-	echo "This script is already running (file $running detected)"
+	logger "autosave is already running (file $lock detected)"
+	echo "This script is already running (file $lock detected)"
 	usage
 fi
 
-whereis -b fswatch || die "fswatch is mandatory"
+whereis -b fswatch > /dev/null 2>&1 || die "fswatch is mandatory"
 
-previous=""
-fswatch -l 30 -x -d -r -t /etc | while read -r day month daynum time year name event; do
-	#if [ "$previous" = "$time" ]; then
-	logger autosave triggered, event: $event on directory: $name
+echo "Watching /etc for change..."
+fswatch -dor /etc | while read -r num; do
+	logger autosave triggered
 	config save || logger autosave failed to save configuration
-	#fi
-	previous=$time
 done
