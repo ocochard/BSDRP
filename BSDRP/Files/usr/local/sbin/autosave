@@ -55,10 +55,13 @@ if ! mkdir $lock 2>/dev/null; then
 	usage
 fi
 
-whereis -b fswatch > /dev/null 2>&1 || die "fswatch is mandatory"
+[ -x /usr/local/bin/fswatch ] || die "fswatch is mandatory"
 
 echo "Watching /etc for change..."
-fswatch -dor /etc | while read -r num; do
-	logger autosave triggered
-	config save || logger autosave failed to save configuration
+# Need to exit fswatch once change detected for avoid multiple triggers
+while true; do
+	if fswatch -1dr /etc; then
+		logger autosave triggered
+		config save || logger autosave failed to save configuration
+	fi
 done

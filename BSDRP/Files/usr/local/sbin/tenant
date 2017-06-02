@@ -262,11 +262,12 @@ delete () {
 	done
 	sed -i "" -e "/^$tenant {/,/^}/d" /etc/jail.conf
 	# Removing this jail from the autostart
-	sysrc -q jail_list-=${tenant}
+	sysrc -q jail_list-=${tenant}  > /dev/null 2>&1
 	# If it's the last, disable jail and remove jail.conf
+	echo "Jail ${tenant} is deleted."
 	if ! grep -q '{' /etc/jail.conf; then
 		rm /etc/jail.conf
-		sysrc -q jail_enable="NO"
+		sysrc -q jail_enable="NO"  > /dev/null 2>&1
 	fi
 	return 0
 }
@@ -328,5 +329,3 @@ done
 
 ($create) && create
 ($delete) && delete
-echo "Done"
-
