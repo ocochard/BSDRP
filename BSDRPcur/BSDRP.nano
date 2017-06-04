@@ -499,7 +499,7 @@ add_port "security/ca_root_nss"
  # Curl is just a build-deps of cmake (needed by libftdi)
  # But curl need base kerberos, then we remove this deps
  # And we de-install curl on the custom script
- #add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE
+ #add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE\""
 #add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
   add_port "misc/pciids"
  add_port "devel/libpci"

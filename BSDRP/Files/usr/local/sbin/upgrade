@@ -204,6 +204,9 @@ write_new_image() {
        			echo "WARNING: Can't backup /boot.config"
 		fi
 	fi
+
+	# Need to stop autosave before touching /etc/fstab
+	service autosave onestop || true
 	
 	# Adapt fstab of the new system
 	for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab; do

@@ -90,7 +90,7 @@ usage () {
 	echo "  - get      : Get config from remote server"
 	echo "  - factory  : Return to default configuration"
 	echo "  - help (h) [option]  : Display this help message. "
-	echo "		  	If [option] given, display more detail about the option"
+	echo "  If [option] given, display more detail about the option"
 	exit 0
 }
 
@@ -331,7 +331,7 @@ restore_cfg ( ) {
 put () {
 	# option: protocol username@host:/path/[filename]
 	# example: scp admin@backup.host.fr:filename
-	HOST=`hostname -s`
+	HOST=$(hostname -s)
 	CONFIG_FILE="${HOST}.tar.xz"
 	case "$SECOND_OPTION" in
     	scp)
@@ -395,7 +395,7 @@ put_check_filename () {
 get () {
 	# option: protocol username@host <filename>
 	# example: scp admin@backup.host.fr:/path/filename
-	HOST=`hostname -s`
+	HOST=$(hostname -s)
 	CONFIG_FILE="${HOST}.tar.xz"
 	case "$SECOND_OPTION" in
 	scp)
@@ -427,6 +427,12 @@ get () {
 # Clear all existing configuration and return to default setting
 factory () {
     echo -n "Clear all saved configuration..."
+	# Autosave will prevent a rollback
+	if service autosave status  > /dev/null 2>&1 ; then
+		echo "Need to disable autosave feature"
+		service autosave onestop || die "ERROR, autosave not stopped"
+	fi
+
 	is_mounted /cfg || mount_cfg
 	rm -rf /cfg/*  || echo "WARNING: Error during rm -rf /cfg/"
     umount_cfg
@@ -450,7 +456,7 @@ trap cleanup EXIT INT TERM
 
 # We need a method for checking AND creating lock file in same step
 if ! mkdir $lock 2>/dev/null; then
-	echo "This script is already running (file $running detected)"
+	echo "This script is already running (file $lock detected)"
 	usage
 fi
 

@@ -252,6 +252,7 @@ EOF
 # Delete jail
 delete () {
 	[ -f /etc/jail.conf ] || die "ERROR: No jail configured"
+	grep -q $tenant /etc/jail.conf || die "ERROR: No jail named $tenant configured"
 	jls -j ${tenant} > /dev/null 2>&1 && die "Jail is running: Stop it before delete it (service jail stop ${tenant})"
 	echo "TO DO: check if correctly unmounted"
 	for i in /etc/fstab.${tenant}; do
@@ -327,5 +328,6 @@ for i; do
 	esac
 done
 
+[ -z "$tenant" ] && die "jail name mandatory"
 ($create) && create
 ($delete) && delete
