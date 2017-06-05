@@ -71,6 +71,7 @@ create () {
 	[ -z "${tenant}" ] && die "BUG: tenant name mandatory"
 	if [ -f /etc/jail.conf ]; then
 		grep -q "^${tenant} {" /etc/jail.conf && die "Already existing entry into /etc/jail.conf"
+		[ -d /etc/jails/${tenant} ] && die "Aleary existing directory /etc/jails/${tenant}"
 		# Check if interface are already declared
 		nicslist=$nics
 		while [ "$nicslist" ] ;do
@@ -243,10 +244,11 @@ EOF
 
 	# Now enable this jail
 	sysrc -q jail_enable="YES" > /dev/null 2>&1
+	sysrc -q jail_parallel_start="YES" > /dev/null 2>&1
 	sysrc -q jail_list+=${tenant} > /dev/null 2>&1
 	
 	echo "Jail is created, you can start it now (service jail start ${tenant})"
-	return 0
+	exit 0
 }
 
 # Delete jail
@@ -254,7 +256,7 @@ delete () {
 	[ -f /etc/jail.conf ] || die "ERROR: No jail configured"
 	grep -q $tenant /etc/jail.conf || die "ERROR: No jail named $tenant configured"
 	jls -j ${tenant} > /dev/null 2>&1 && die "Jail is running: Stop it before delete it (service jail stop ${tenant})"
-	echo "TO DO: check if correctly unmounted"
+	mount | grep -q "/var/jails/${tenant}" && die "There are still some mount points regarding ${tenant}"
 	for i in /etc/fstab.${tenant}; do
 		[ -f $i ] && rm $i
 	done
@@ -267,10 +269,11 @@ delete () {
 	# If it's the last, disable jail and remove jail.conf
 	echo "Jail ${tenant} is deleted."
 	if ! grep -q '{' /etc/jail.conf; then
-		rm /etc/jail.conf
+		rm /etc/jail.conf || die "ERROR during deleting /etc/jail.conf"
+		rm /etc/jail.lastid || die "ERROR during deleting /etc/jail.lastid"
 		sysrc -q jail_enable="NO"  > /dev/null 2>&1
 	fi
-	return 0
+	exit 0
 }
 ### Main function ###
 

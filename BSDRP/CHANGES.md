@@ -3,7 +3,7 @@
 ## New features
 * FreeBSD 11-stable upgraded to r317891
 * jail/VIMAGE support added: Allow to create multi-tennant routers/firewall (read tenant help more more detail)
-* Add autosave mode (autosave_enable="YES") that watch changes in /etc and trigger "config save" automatically
+* autosave config daemon (autosave_enable="YES") that watches for changes in /etc and triggers "config save"
 * Added chelsio_affinity and ix_affinity rc script
 * dtrace modules added
 * Strongswan compiled with mediation and GCM AEAD wrapper crypto plugin options
@@ -33,6 +33,7 @@
 * exabgp-3.4.19
 * flashrom-0.9.9_1
 * freevrrpd-1.1_1
+* fswatch-mon-1.9.3_1
 * indexinfo-0.2.6
 * iperf-2.0.9
 * iperf3-3.1.7
@@ -55,7 +56,7 @@
 * mrouted-3.9.8
 * netmap-fwd-0.2
 * ntraceroute-6.4.2_3
-* openldap-client-2.4.44
+* openldap-client-2.4.45
 * openvpn-2.4.2
 * openvpn-auth-radius-2.1_3
 * pciids-20170525
