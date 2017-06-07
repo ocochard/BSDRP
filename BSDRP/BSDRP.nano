@@ -806,7 +806,7 @@ usr/share/tmac/tmac.vgrind
 	done	
 	# Generate package inventory
 	if [ -x ${NANO_WORLDDIR}/usr/local/sbin/pkg ]; then
-		CR 'pkg info' > ${NANO_OBJ}/packages.info
+		CR 'pkg query \*\ %n\ %v:\ %c' > ${NANO_OBJ}/packages.info
 	fi
 }
 

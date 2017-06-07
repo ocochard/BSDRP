@@ -1,0 +1,26 @@
+Index: net/pimdd/Makefile
+===================================================================
+--- net/pimdd/Makefile	(revision 442591)
++++ net/pimdd/Makefile	(working copy)
+@@ -3,7 +3,7 @@
+ 
+ PORTNAME=	pimdd
+ PORTVERSION=	0.2.1.0
+-PORTREVISION=	2
++PORTREVISION=	3
+ CATEGORIES=	net
+ MASTER_SITES=	http://antc.uoregon.edu/PIMDM/
+ DISTNAME=	pimd-dense
+Index: net/pimdd/files/patch-Makefile
+===================================================================
+--- net/pimdd/files/patch-Makefile	(revision 442591)
++++ net/pimdd/files/patch-Makefile	(working copy)
+@@ -17,7 +17,7 @@
+  ### Compilation flags for different platforms. Uncomment only one of them
+  ## FreeBSD
+ -CFLAGS= -Wall -g	-Iinclude/freebsd ${MCAST_INCLUDE} ${SNMPDEF} ${RSRRDEF} ${MISCDEFS} -DFreeBSD -DPIM
+-+CFLAGS+=	${MCAST_INCLUDE} ${SNMPDEF} ${RSRRDEF} ${MISCDEFS} -DFreeBSD -DPIM -Dlog=logit ${CPPFLAGS}
+++CFLAGS+=	${MCAST_INCLUDE} ${SNMPDEF} ${RSRRDEF} ${MISCDEFS} -DFreeBSD -DPIM -Dlog=logit ${CPPFLAGS} -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW
+  
+  ## NetBSD   -DNetBSD is done by OS
+  #CFLAGS= -Wall -g	-Iinclude/netbsd ${MCAST_INCLUDE} ${SNMPDEF} ${RSRRDEF} ${MISCDEFS} -DPIM

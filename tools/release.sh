@@ -2,9 +2,11 @@
 #This script permit to help the generation and uploading process of new images
 #It generate the dokuwiki table too
 # For list of installed software to be include in CHANGES
-# cut -d ' ' -f 1 /usr/obj/BSDRP.amd64/packages.info | sed 's/^/* /g'
+# cat /usr/obj/BSDRP.amd64/packages.info
+# (it's a pkg query \*\ %n\ %v:\ %c)
 # For list of installed software to be incluled in AUTHORS
 # pkg query \*\ %n,\ License:%L,\ WWW:%w
+
 set -e
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
