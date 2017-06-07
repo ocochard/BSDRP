@@ -42,6 +42,7 @@ MESHED=true
 RAM="256M"
 DISK_CTRL="virtio-blk"
 VALE=false
+vnic="virtio-net"
 
 usage() {
 	# $1: Cause of displaying usage
@@ -52,6 +53,7 @@ usage() {
 	echo " -d           Delete All VMs, including the template"
 	echo " -D           Disk controller (default ${DISK_CTRL}, can be ahci-hd)"
 	echo " -h           Display this help"
+	echo " -e           Emulate Intel e82545 (e1000) in place of virtIO NIC"
 	echo " -i filename  FreeBSD file image"
 	echo " -l X         Number of LAN common to all VM (default ${LAN})"
 	echo " -m X         RAM size (default ${RAM})"
@@ -264,10 +266,10 @@ create_interface() {
 
 #### Main ####
 
-[ $# -lt 1 -a ! -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
+[ $# -lt 1 ] && ! [ -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ `id -u` -ne 0 ] && usage "ERROR: not executed as root"
 
-args=`getopt ac:dhD:i:l:m:n:sVw: $*`
+args=`getopt ac:dhD:ei:l:m:n:sVw: $*`
 
 set -- $args
 for i; do
@@ -291,6 +293,10 @@ for i; do
 	-D)
 		DISK_CTRL=$2
 		shift
+		shift
+		;;
+	-e)
+		vnic="e1000"
 		shift
 		;;
 	-h)
@@ -340,10 +346,10 @@ for i; do
 done #for
 
 # Check user input
-[ ! -f ${VM_TEMPLATE} -a -z "${FILE}" ] && usage "ERROR: No previous template \
+[ ! -f "${VM_TEMPLATE}" ] && [ -z "${FILE}" ] && usage "ERROR: No previous template \
 	neither image filename given"
 # If default number of VM and LAN, then create at least one LAN
-[ ${NUMBER_VM} -eq 1 -a ${LAN} -eq 0 ] && LAN=1
+[ ${NUMBER_VM} -eq 1 ] && [ ${LAN} -eq 0 ] && LAN=1
 
 [ -d ${WRK_DIR} ] || mkdir -p ${WRK_DIR}
 
@@ -361,6 +367,7 @@ echo "BSD Router Project (http://bsdrp.net) - bhyve full-meshed lab script"
 echo "Setting-up a virtual lab with $NUMBER_VM VM(s):"
 echo "- Working directory: ${WRK_DIR}"
 echo "- Each VM have ${CORE} core(s) and ${RAM} RAM"
+echo "- Emulated NIC: ${vnic}"
 echo -n "- Switch mode: "
 ( ${VALE} ) && echo "vale (netmap)" || echo "bridge + tap"
 echo "- $LAN LAN(s) between all VM"
@@ -400,10 +407,10 @@ while [ $i -le $NUMBER_VM ]; do
 				# PCI_SLOT must be between 0 and 7
 				# Need to increase PCI_BUS number if slot is more than 7
 		
-				PCI_BUS=$(( ${NIC_NUMBER} / 8 ))
-				PCI_SLOT=$(( ${NIC_NUMBER} - 8 * ${PCI_BUS} ))
+				PCI_BUS=$(( NIC_NUMBER / 8 ))
+				PCI_SLOT=$(( NIC_NUMBER - 8 * PCI_BUS ))
 				# All PCI_BUS before 2 are already used
-				PCI_BUS=$(( ${PCI_BUS} + 2 ))
+				PCI_BUS=$(( PCI_BUS + 2 ))
 				# Need to manage correct mac address
 				[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
 				[ $j -le 9 ] && MAC_J="0$j" || MAC_J="$j"
@@ -416,11 +423,7 @@ while [ $i -le $NUMBER_VM ]; do
 						TAP_IF=$( create_interface MESH_${i}-${j}_${i} tap ${BRIDGE_IF} )
 						SW_CMD=${TAP_IF}
 					fi
-					#eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
-#${TAP_IF},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
-					#eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
-#vale${VALE}:${VM_NAME}_$i,mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
-					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
+					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${vnic},\
 ${SW_CMD},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
 				
 				else
@@ -431,16 +434,12 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
 						TAP_IF=$( create_interface MESH_${j}-${i}_${i} tap ${BRIDGE_IF} )
 						SW_CMD=${TAP_IF}
 					fi
-					#eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
-#${TAP_IF},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
-					#eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
-#vale${VALE}:${VM_NAME}_$i,mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
-					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
+					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${vnic},\
 ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 				fi
-				NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
+				NIC_NUMBER=$(( NIC_NUMBER + 1 ))
 			fi
-			j=$(( $j + 1 ))
+			j=$(( j + 1 ))
 		done # while [ $j -le $NUMBER_VM ] (
 	fi # if $MESHED
 	j=1
@@ -457,10 +456,10 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 		echo "- vtnet${NIC_NUMBER} connected to LAN number ${j}"
 		# PCI_SLOT must be between 0 and 7
 		# Need to increase PCI_BUS number if slot is more than 7
-		PCI_BUS=$(( ${NIC_NUMBER} / 8 ))
-		PCI_SLOT=$(( ${NIC_NUMBER} - 8 * ${PCI_BUS} ))
+		PCI_BUS=$(( NIC_NUMBER / 8 ))
+		PCI_SLOT=$(( NIC_NUMBER - 8 * PCI_BUS ))
 		# All PCI_BUS before 2 are already used
-		PCI_BUS=$(( ${PCI_BUS} + 2 ))
+		PCI_BUS=$(( PCI_BUS + 2 ))
 		if (${VALE} ); then
 			SW_CMD="vale${j}:${VM_NAME}_$i"
 		else
@@ -468,15 +467,15 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 			TAP_IF=$( create_interface LAN_${j}_${i} tap ${BRIDGE_IF} )
 			SW_CMD=${TAP_IF}
 		fi
-		eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},virtio-net,\
+		eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${vnic},\
 ${SW_CMD},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
-        NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
-        j=$(( $j + 1 ))
+        NIC_NUMBER=$(( NIC_NUMBER + 1 ))
+        j=$(( j + 1 ))
 	done # while [ $j -le $LAN ]
 
 	# Start VM
 	run_vm $i &
-	i=$(( $i + 1 ))
+	i=$(( i + 1 ))
 done # Main loop: while [ $i -le $NUMBER_VM ]
 
 i=1
@@ -484,5 +483,5 @@ i=1
 echo "For connecting to VM'serial console, you can use:"
 while [ $i -le $NUMBER_VM ]; do
 	echo "- VM ${i} : cu -l /dev/nmdm${i}B"
-	i=$(( $i + 1 ))
+	i=$(( i + 1 ))
 done
