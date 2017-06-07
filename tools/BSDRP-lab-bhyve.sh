@@ -403,7 +403,8 @@ while [ $i -le $NUMBER_VM ]; do
 		while [ $j -le $NUMBER_VM ]; do
 			# Skip if i = j
 			if [ $i -ne $j ]; then
-				echo "- vtnet${NIC_NUMBER} connected to VM ${j}"
+				[ ${vnic} = "virtio-net" ] && echo -n "- vtnet" || echo -n "- em"
+				echo "${NIC_NUMBER} connected to VM ${j}"
 				# PCI_SLOT must be between 0 and 7
 				# Need to increase PCI_BUS number if slot is more than 7
 		
@@ -453,7 +454,8 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 		# Need to manage correct mac address
 		[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
 		[ $j -le 9 ] && MAC_J="0$i" || MAC_J="$i"
-		echo "- vtnet${NIC_NUMBER} connected to LAN number ${j}"
+		[ ${vnic} = "virtio-net" ] && echo -n "- vtnet" || echo -n "- em"
+		echo "${NIC_NUMBER} connected to LAN number ${j}"
 		# PCI_SLOT must be between 0 and 7
 		# Need to increase PCI_BUS number if slot is more than 7
 		PCI_BUS=$(( NIC_NUMBER / 8 ))
