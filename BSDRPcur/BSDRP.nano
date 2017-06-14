@@ -75,7 +75,6 @@ WITHOUT_HAST=
 WITHOUT_HTML=
 WITHOUT_ICONV=
 WITHOUT_INFO=
-WITHOUT_IPFILTER=
 WITHOUT_IPX=
 WITHOUT_IPX_SUPPORT=
 WITHOUT_ISCSI=
@@ -400,6 +399,9 @@ add_port "net-mgmt/pmacct"
 # ucarp: Userland carp because enabling carp in the kernel prevent to use FreeVRRPd
 # UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
 add_port "net/ucarp"
+
+# smcroute: Manipulate the multicast routes
+add_port "net/smcroute"
 
 # pim6*: IPv6 multicast routing daemons and tools
 add_port "net/pim6-tools"
@@ -774,7 +776,7 @@ usr/sbin/config
 	done	
 	# Generate package inventory
 	if [ -x ${NANO_WORLDDIR}/usr/local/sbin/pkg ]; then
-		CR 'pkg info' > ${NANO_OBJ}/packages.info
+		CR 'pkg query \*\ %n\ %v:\ %c' > ${NANO_OBJ}/packages.info
 	fi
 }
 
