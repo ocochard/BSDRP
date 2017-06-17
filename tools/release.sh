@@ -5,7 +5,7 @@
 # cat /usr/obj/BSDRP.amd64/packages.info
 # (it's a pkg query \*\ %n\ %v:\ %c)
 # For list of installed software to be incluled in AUTHORS
-# pkg query \*\ %n,\ License:%L,\ WWW:%w
+# pkg query \*\ %n,\ license:%L,\ %w
 
 set -e
 # A usefull function (from: http://code.google.com/p/sh-die/)

@@ -1,6 +1,6 @@
 Index: net/smcroute/Makefile
 ===================================================================
---- net/smcroute/Makefile	(revision 443552)
+--- net/smcroute/Makefile	(revision 443604)
 +++ net/smcroute/Makefile	(working copy)
 @@ -1,7 +1,7 @@
  # $FreeBSD$
@@ -25,7 +25,7 @@ Index: net/smcroute/Makefile
  DOCS_INSTALL_TARGET=	install
 Index: net/smcroute/distinfo
 ===================================================================
---- net/smcroute/distinfo	(revision 443552)
+--- net/smcroute/distinfo	(revision 443604)
 +++ net/smcroute/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1465680746
@@ -36,7 +36,7 @@ Index: net/smcroute/distinfo
 +SIZE (troglobit-smcroute-2.3.1_GH0.tar.gz) = 73638
 Index: net/smcroute/files/patch-Makefile.am
 ===================================================================
---- net/smcroute/files/patch-Makefile.am	(revision 443552)
+--- net/smcroute/files/patch-Makefile.am	(revision 443604)
 +++ net/smcroute/files/patch-Makefile.am	(nonexistent)
 @@ -1,12 +0,0 @@
 ---- Makefile.am.orig	2016-02-17 21:02:06 UTC
@@ -68,7 +68,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/smcroute/files/patch-ipc.c
 ===================================================================
---- net/smcroute/files/patch-ipc.c	(revision 443552)
+--- net/smcroute/files/patch-ipc.c	(revision 443604)
 +++ net/smcroute/files/patch-ipc.c	(nonexistent)
 @@ -1,52 +0,0 @@
 ---- ipc.c.orig	2016-02-17 21:02:06 UTC
@@ -140,7 +140,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/smcroute/files/patch-mcgroup.c
 ===================================================================
---- net/smcroute/files/patch-mcgroup.c	(revision 443552)
+--- net/smcroute/files/patch-mcgroup.c	(revision 443604)
 +++ net/smcroute/files/patch-mcgroup.c	(nonexistent)
 @@ -1,50 +0,0 @@
 ---- mcgroup.c.orig	2016-02-17 21:02:06 UTC
@@ -210,7 +210,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/smcroute/files/patch-mroute-api.c
 ===================================================================
---- net/smcroute/files/patch-mroute-api.c	(revision 443552)
+--- net/smcroute/files/patch-mroute-api.c	(revision 443604)
 +++ net/smcroute/files/patch-mroute-api.c	(nonexistent)
 @@ -1,55 +0,0 @@
 ---- mroute-api.c.orig	2016-02-17 21:02:06 UTC
@@ -283,9 +283,30 @@ Deleted: svn:mime-type
 ## -1 +0,0 ##
 -text/plain
 \ No newline at end of property
+Index: net/smcroute/files/smcroute.in
+===================================================================
+--- net/smcroute/files/smcroute.in	(revision 443604)
++++ net/smcroute/files/smcroute.in	(working copy)
+@@ -15,15 +15,8 @@
+ 
+ name="smcroute"
+ rcvar="${name}_enable"
+-command="%%PREFIX%%/sbin/${name}"
+-start_precmd="${name}_precmd"
++command="%%PREFIX%%/sbin/${name}d"
+ 
+-smcroute_precmd()
+-{
+-
+-	rc_flags="$rc_flags -d"
+-}
+-
+ load_rc_config $name
+ 
+ : ${smcroute_enable="NO"}
 Index: net/smcroute/pkg-plist
 ===================================================================
---- net/smcroute/pkg-plist	(revision 443552)
+--- net/smcroute/pkg-plist	(revision 443604)
 +++ net/smcroute/pkg-plist	(working copy)
 @@ -1,3 +1,7 @@
 -sbin/smcroute

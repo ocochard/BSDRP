@@ -17,59 +17,59 @@ The authors of BSDRP would like to thank the authors of these software for their
 * "show memory" is a bourn shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
 * PC Engines APU led drivers: Larry Baird
 * chelsio-queue-usage: Alexander V. Chernikov (melifaro@FreeBSD.org)
-* bird, License:GPLv2, WWW:http://bird.network.cz/
-* bird6, License:GPLv2, WWW:http://bird.network.cz/
-* bsnmp-regex, License:BSD3CLAUSE, WWW:http://thewalter.net/stef/software/bsnmp-regex/
-* bsnmp-ucd, License:BSD2CLAUSE, WWW:http://bsnmp-ucd.googlecode.com/
-* ca_root_nss, License:MPL
-* dhcprelya, License:BSD3CLAUSE
+* bird, license:GPLv2, http://bird.network.cz/
+* bird6, license:GPLv2, http://bird.network.cz/
+* bsnmp-regex, license:BSD3CLAUSE, http://thewalter.net/stef/software/bsnmp-regex/
+* bsnmp-ucd, license:BSD2CLAUSE, http://bsnmp-ucd.googlecode.com/
+* ca_root_nss, license:MPL
+* dhcprelya, license:BSD3CLAUSE
 * dlmalloc
-* easy-rsa, License:GPLv2, WWW:https://community.openvpn.net/openvpn/wiki/GettingEasyRsa
-* exabgp, License:BSD3CLAUSE, WWW:https://github.com/Exa-Networks/exabgp
-* flashrom, License:GPLv2, WWW:http://www.flashrom.org/
-* freevrrpd, License:BSD
-* fswatch-mon, License:GPLv3, WWW:https://github.com/emcrisostomo/fswatch
-* indexinfo, License:BSD2CLAUSE, WWW:https://github.com/bapt/indexinfo
-* iperf, License:BSD2CLAUSE, WWW:https://sourceforge.net/projects/iperf2/
-* iperf3, License:BSD3CLAUSE, MIT, WWW:http://software.es.net/iperf/
-* ipmitool, License:BSD3CLAUSE, WWW:https://sourceforge.net/projects/ipmitool/
-* ipsec-tools, License:, WWW:http://ipsec-tools.sourceforge.net/
-* isc-dhcp43-server, License:ISCL, WWW:https://www.isc.org/products/DHCP/
-* libev, License:BSD2CLAUSE, WWW:http://software.schmorp.de/pkg/libev.html
-* libevent, License:BSD3CLAUSE, WWW:http://libevent.org/
-* libffi, License:MIT, WWW:http://sources.redhat.com/libffi/
-* libgcrypt, License:GPLv2+, LGPL21+, WWW:http://www.gnupg.org/
-* libgpg-error, License:LGPL21, GPLv2
-* liblz4, License:BSD2CLAUSE, GPLv2, WWW:http://www.lz4.org/
-* libpci, License:GPLv2, WWW:http://mj.ucw.cz/sw/pciutils/
-* libsodium, License:ISCL, WWW:https://github.com/jedisct1/libsodium
-* libucl, License:BSD2CLAUSE, WWW:https://github.com/vstakhov/libucl
-* lzo2, License:GPLv2, WWW:http://www.oberhumer.com/opensource/lzo/
-* mlvpn, License:BSD2CLAUSE, WWW:https://zehome.github.io/MLVPN/
-* monit, License:AGPLv3, WWW:http://mmonit.com/monit/
-* mpd5, License:, WWW:http://www.sourceforge.net/projects/mpd
-* mrouted, License:MIT, WWW:http://freecode.com/projects/mrouted
-* netmap-fwd, License:BSD2CLAUSE, WWW:https://github.com/NetgateUSA/netmap-fwd
+* easy-rsa, license:GPLv2, https://community.openvpn.net/openvpn/wiki/GettingEasyRsa
+* exabgp, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
+* flashrom, license:GPLv2, http://www.flashrom.org/
+* freevrrpd, license:BSD
+* fswatch-mon, license:GPLv3, https://github.com/emcrisostomo/fswatch
+* indexinfo, license:BSD2CLAUSE, https://github.com/bapt/indexinfo
+* iperf, license:BSD2CLAUSE, https://sourceforge.net/projects/iperf2/
+* iperf3, license:BSD3CLAUSE, MIT, http://software.es.net/iperf/
+* ipmitool, license:BSD3CLAUSE, https://sourceforge.net/projects/ipmitool/
+* ipsec-tools, http://ipsec-tools.sourceforge.net/
+* isc-dhcp43-server, license:ISCL, https://www.isc.org/products/DHCP/
+* libev, license:BSD2CLAUSE, http://software.schmorp.de/pkg/libev.html
+* libevent, license:BSD3CLAUSE, http://libevent.org/
+* libffi, license:MIT, http://sources.redhat.com/libffi/
+* libgcrypt, license:GPLv2+, LGPL21+, https://www.gnupg.org/
+* libgpg-error, license:LGPL21, GPLv2
+* liblz4, license:BSD2CLAUSE, GPLv2, http://www.lz4.org/
+* libpci, license:GPLv2, http://mj.ucw.cz/sw/pciutils/
+* libsodium, license:ISCL, https://github.com/jedisct1/libsodium
+* libucl, license:BSD2CLAUSE, https://github.com/vstakhov/libucl
+* lzo2, license:GPLv2, http://www.oberhumer.com/opensource/lzo/
+* mlvpn, license:BSD2CLAUSE, https://zehome.github.io/MLVPN/
+* monit, license:AGPLv3, http://mmonit.com/monit/
+* mpd5, license:, http://www.sourceforge.net/projects/mpd
+* mrouted, license:MIT, http://freecode.com/projects/mrouted
+* netmap-fwd, license:BSD2CLAUSE, https://github.com/NetgateUSA/netmap-fwd
 * ntraceroute
-* openldap-client, License:OPENLDAP, WWW:http://www.OpenLDAP.org/
-* openvpn, License:GPLv2, WWW:http://openvpn.net/index.php/open-source.html
-* openvpn-auth-radius, License:GPLv2, WWW:http://www.nongnu.org/radiusplugin/index.html
-* pciids, License:BSD3CLAUSE, GPLv2+, WWW:http://pciids.sourceforge.net/
-* pim6-tools, License:BSD3CLAUSE, WWW:http://mcast-tools.sourceforge.net/
-* pim6dd, License:BSD3CLAUSE, WWW:http://mcast-tools.sourceforge.net/
-* pim6sd, License:BSD3CLAUSE, WWW:http://mcast-tools.sourceforge.net/
-* pimd, License:BSD3CLAUSE, WWW:http://troglobit.com/pimd.html
-* pimdd, License:MIT, WWW:http://antc.uoregon.edu/PIMDM/pimd-dense.html
-* pkg, License:BSD2CLAUSE, WWW:http://wiki.freebsd.org/pkgng
-* pmacct, License:GPLv2, WWW:http://www.pmacct.net/
-* py27-setuptools, License:PSFL, WWW:https://pypi.python.org/pypi/setuptools
-* python, License:, WWW:http://www.python.org/
-* python2, License:, WWW:http://www.python.org/
-* python27, License:PSFL, WWW:https://www.python.org/
-* quagga, License:GPLv2, WWW:http://www.quagga.net/
-* readline, License:GPLv3, WWW:https://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
-* strongswan, License:GPLv2, WWW:http://www.strongswan.org
-* sudo, License:sudo, WWW:http://www.sudo.ws/
-* tayga, License:GPLv2, WWW:http://www.litech.org/tayga/
-* tmux, License:ISCL, WWW:http://tmux.github.io/
-* ucarp, License:, WWW:http://www.ucarp.org/
+* openldap-client, license:OPENLDAP, http://www.OpenLDAP.org/
+* openvpn, license:GPLv2, http://openvpn.net/index.php/open-source.html
+* openvpn-auth-radius, license:GPLv2, http://www.nongnu.org/radiusplugin/index.html
+* pciids, license:BSD3CLAUSE, GPLv2+, http://pciids.sourceforge.net/
+* pim6-tools, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
+* pim6dd, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
+* pim6sd, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
+* pimd, license:BSD3CLAUSE, http://troglobit.com/pimd.html
+* pimdd, license:MIT, http://antc.uoregon.edu/PIMDM/pimd-dense.html
+* pkg, license:BSD2CLAUSE, http://wiki.freebsd.org/pkgng
+* pmacct, license:GPLv2, http://www.pmacct.net/
+* py27-setuptools, license:PSFL, https://pypi.python.org/pypi/setuptools
+* python27, license:PSFL, https://www.python.org/
+* quagga, license:GPLv2, http://www.quagga.net/
+* readline, license:GPLv3, https://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
+* smcroute, license:GPLv2+, https://github.com/troglobit/smcroute/
+* strongswan, license:GPLv2, http://www.strongswan.org
+* sudo, license:sudo, http://www.sudo.ws/
+* tayga, license:GPLv2, http://www.litech.org/tayga/
+* tmux, license:ISCL, http://tmux.github.io/
+* ucarp, license:, http://www.ucarp.org/
+

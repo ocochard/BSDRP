@@ -11,7 +11,6 @@
 
 set -eu
 
-
 ### Variables ###
 IMAGES_DIR=""
 PHABRID=""
@@ -46,7 +45,7 @@ build_project() {
 	sed -i "" -e "/SRC_REV=/s/.*/SRC_REV=${SVN_REV}/" $PROJECT/make.conf
 	[ ! -d $PROJECT/Files/etc ] && mkdir -p $PROJECT/Files/etc
 	echo ${SVN_REV} > $PROJECT/Files/etc/version
-	./make.sh -p ${PROJECT} -u -y -a ${ARCH} -c ${CONSOLE} > ${IMAGES_DIR}/bisec.log 2>&1 && true
+	./make.sh -p ${PROJECT} -C -u -y -a ${ARCH} -c ${CONSOLE} > ${IMAGES_DIR}/bisec.log 2>&1 && true
 	if [ ! -f /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ]; then
 			echo "Where are /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ?"
 			echo "Check error message in ${IMAGES_DIR}/bisec.log.${SVN_REV}"
@@ -89,25 +88,16 @@ if [ -z "${PHABRID}" ]; then
 	# 
 	SVN_REV_LIST='
 311014
-311014
-311703
 311703
 312237
-312237
-312652
 312652
 312969
-312969
 313287
-313287
-313690
 313690
 314286
 314687
 315091
 315216
-315216
-315217
 315217
 315516
 315968
