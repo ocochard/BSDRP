@@ -160,8 +160,8 @@ NANO_CONFSIZE=20480
 NANO_DATASIZE=20480
 
 # Size of the /etc ramdisk in 512 bytes sectors
-# 10240=5MB
-NANO_RAM_ETCSIZE=10240
+# 20480=10MB
+NANO_RAM_ETCSIZE=20480
 
 # Size of the /tmp+/var ramdisk in 512 bytes sectors
 # 40960=20MB (usefull for log files)

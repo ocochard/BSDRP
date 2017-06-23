@@ -1,7 +1,7 @@
 # Release 1.71 (not released)
 
 ## New features
-* FreeBSD 11-stable upgraded to r317891
+* FreeBSD 11-stable upgraded to r320089 (11.1-BETA2)
 * jail/VIMAGE support added: Allow to create multi-tennant routers/firewall (read tenant help more more detail)
 * autosave config daemon (autosave_enable="YES") that watches for changes in /etc and triggers "config save"
 * Added chelsio_affinity and ix_affinity rc script
