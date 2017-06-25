@@ -40,7 +40,7 @@ sysrc ifconfig_em1="inet 10.0.23.2/24"
 sysrc ifconfig_em1_ipv6="inet6 2001:db8:23::2 prefixlen 64"
 sysrc ifconfig_em4="inet 192.168.56.12/24"
 sysrc quagga_enable=YES
-sysrc quagga_daemons="zebra bgpd"
+sysrc frr_enable=YES
 sysrc dhcprelya_enable=YES
 sysrc dhcprelya_servers="10.0.3.3"
 sysrc dhcprelya_ifaces="em0"
@@ -150,7 +150,8 @@ add -6 2001:db8:23::2 2001:db8:23::3 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 
-cat > /usr/local/etc/quagga/bgpd.conf <<EOF
+[ -d /usr/local/etc/quagga ] && DIR=quagga || DIR=frr
+cat > /usr/local/etc/${DIR}/bgpd.conf <<EOF
 router bgp 100
  bgp router-id 0.0.0.0
  network 10.0.12.0/24
@@ -172,7 +173,8 @@ kldload carp
 service netif restart
 service ipsec start
 service rtadvd start
-service quagga start
+[ -d /usr/local/etc/quagga ] && service quagga start || service frr start
+service frr start
 service dhcprelya start
 service mpd5 start
 service ngnetflow start
@@ -191,7 +193,7 @@ sysrc ifconfig_lo1="inet 10.0.3.3/24"
 sysrc ifconfig_lo1_ipv6="inet6 2001:db8:3::3 prefixlen 64"
 sysrc ifconfig_em4="inet 192.168.56.13/24"
 sysrc quagga_enable=YES
-sysrc quagga_daemons="zebra bgpd ospfd ospf6d"
+sysrc frr_enable=YES
 sysrc dhcpd_enable=YES
 sysrc dhcpd_flags="-q"
 sysrc dhcpd_conf="/usr/local/etc/dhcpd.conf"
@@ -268,7 +270,8 @@ add -6 2001:db8:23::2 2001:db8:23::3 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 
-cat > /usr/local/etc/quagga/ospfd.conf <<EOF
+[ -d /usr/local/etc/quagga ] && DIR=quagga || DIR=frr
+cat > /usr/local/etc/${DIR}/ospfd.conf <<EOF
 interface em2
  ip ospf message-digest-key 1 md5 superpass
 !
@@ -285,7 +288,7 @@ router ospf
  area 0.0.0.0 authentication message-digest
 EOF
 
-cat > /usr/local/etc/quagga/ospf6d.conf <<EOF
+cat > /usr/local/etc/${DIR}/ospf6d.conf <<EOF
 debug ospf6 lsa unknown
 !
 interface em1
@@ -314,7 +317,7 @@ router ospf6
  interface lo1 area 0.0.0.0
 EOF
 
-cat > /usr/local/etc/quagga/bgpd.conf <<EOF
+cat > /usr/local/etc/${DIR}/bgpd.conf <<EOF
 router bgp 100
  bgp router-id 0.0.0.0
  network 10.0.3.0/24
@@ -336,7 +339,7 @@ config save
 hostname R3
 service netif restart
 service ipsec start
-service quagga start
+[ -d /usr/local/etc/quagga ] && service quagga start || service frr start
 service isc-dhcpd start
 service pf start
 echo "VM3 configured"

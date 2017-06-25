@@ -23,11 +23,11 @@ The authors of BSDRP would like to thank the authors of these software for their
 * bsnmp-ucd, license:BSD2CLAUSE, http://bsnmp-ucd.googlecode.com/
 * ca_root_nss, license:MPL
 * dhcprelya, license:BSD3CLAUSE
-* dlmalloc
 * easy-rsa, license:GPLv2, https://community.openvpn.net/openvpn/wiki/GettingEasyRsa
 * exabgp, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
 * flashrom, license:GPLv2, http://www.flashrom.org/
 * freevrrpd, license:BSD
+* frr, license:GPLv2, https://frrouting.org/
 * fswatch-mon, license:GPLv3, https://github.com/emcrisostomo/fswatch
 * indexinfo, license:BSD2CLAUSE, https://github.com/bapt/indexinfo
 * iperf, license:BSD2CLAUSE, https://sourceforge.net/projects/iperf2/
@@ -35,11 +35,12 @@ The authors of BSDRP would like to thank the authors of these software for their
 * ipmitool, license:BSD3CLAUSE, https://sourceforge.net/projects/ipmitool/
 * ipsec-tools, http://ipsec-tools.sourceforge.net/
 * isc-dhcp43-server, license:ISCL, https://www.isc.org/products/DHCP/
+* json-c, license:MIT, https://github.com/json-c/json-c/wiki
 * libev, license:BSD2CLAUSE, http://software.schmorp.de/pkg/libev.html
 * libevent, license:BSD3CLAUSE, http://libevent.org/
 * libffi, license:MIT, http://sources.redhat.com/libffi/
 * libgcrypt, license:GPLv2+, LGPL21+, https://www.gnupg.org/
-* libgpg-error, license:LGPL21, GPLv2
+* libgpg-error, license:GPLv2, LGPL21
 * liblz4, license:BSD2CLAUSE, GPLv2, http://www.lz4.org/
 * libpci, license:GPLv2, http://mj.ucw.cz/sw/pciutils/
 * libsodium, license:ISCL, https://github.com/jedisct1/libsodium
@@ -64,12 +65,10 @@ The authors of BSDRP would like to thank the authors of these software for their
 * pmacct, license:GPLv2, http://www.pmacct.net/
 * py27-setuptools, license:PSFL, https://pypi.python.org/pypi/setuptools
 * python27, license:PSFL, https://www.python.org/
-* quagga, license:GPLv2, http://www.quagga.net/
 * readline, license:GPLv3, https://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
 * smcroute, license:GPLv2+, https://github.com/troglobit/smcroute/
 * strongswan, license:GPLv2, http://www.strongswan.org
 * sudo, license:sudo, http://www.sudo.ws/
 * tayga, license:GPLv2, http://www.litech.org/tayga/
 * tmux, license:ISCL, http://tmux.github.io/
-* ucarp, license:, http://www.ucarp.org/
-
+* ucarp, http://www.ucarp.org/

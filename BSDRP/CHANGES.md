@@ -1,17 +1,13 @@
-# Release 1.71 (not released)
-
-## To do before release
-* quagga to frr migration: post-upgrade script to use
-* frr (END) vtysh problem (same with Quagga)
-* Need to solve pimd and FRR/pimd conflict: testing first FRR/pimd then using a new binary name for pimd
+# Release 1.80 (not released)
 
 ## New features
 * FreeBSD 11-stable upgraded to r320311 (11.1-BETA3)
-* Quagga replaced by it's fork FRRouting (https://frrouting.org/)
+* Quagga replaced by it's fork: FRRouting (https://frrouting.org/)
 * jail/VIMAGE support added: Allow to create multi-tennant routers/firewall (read tenant help more more detail)
 * autosave config daemon (autosave_enable="YES") that watches for changes in /etc and triggers "config save"
 * Added chelsio_affinity and ix_affinity rc script
 * dtrace modules added
+* CPU microcode update enabled
 * Strongswan compiled with mediation and GCM AEAD wrapper crypto plugin options
   Mediation feature example here: https://bsdrp.net/documentation/examples/strongswan_ipsec_mediation_feature
 
@@ -23,7 +19,7 @@
 * iperf3 to 3.1.7
 * exabgp to 3.4.19
 * monit to 5.23.0
-* openvpn 2.4.2
+* openvpn to 2.4.3
 * strongswan to 5.5.2
 * tmux to 2.5
 
@@ -33,12 +29,13 @@
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.31: Root certificate bundle from the Mozilla Project
+* devcpu-data 1.10: Intel and AMD CPUs microcode updates
 * dhcprelya 5.0: Lightweight DHCP relay agent. Yandex edition
-* dlmalloc 2.8.6: Small, fast malloc library by Doug Lea
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * exabgp 3.4.19: BGP engine and route injector
 * flashrom 0.9.9_1: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
+* frr 2.0: Free RIPv1, RIPv2, OSPFv2, BGP4, IS-IS route software
 * fswatch-mon 1.9.3_1: Cross-platform file change monitor
 * indexinfo 0.2.6: Utility to regenerate the GNU info page index
 * iperf 2.0.9: Tool to measure maximum TCP and UDP bandwidth
@@ -46,6 +43,7 @@
 * ipmitool 1.8.18: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_2: KAME racoon IKE daemon, ipsec-tools version
 * isc-dhcp43-server 4.3.5: ISC Dynamic Host Configuration Protocol server
+* json-c 0.12.1: JSON (JavaScript Object Notation) implementation in C
 * libev 4.22,1: Full-featured and high-performance event loop library
 * libevent 2.1.8: API for executing callback functions on events or timeouts
 * libffi 3.2.1: Foreign Function Interface
@@ -63,13 +61,13 @@
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.45: Open source LDAP client implementation
-* openvpn 2.4.2: Secure IP/Ethernet tunnel daemon
+* openvpn 2.4.3: Secure IP/Ethernet tunnel daemon
 * openvpn-auth-radius 2.1_3: RADIUS authentication plugin for OpenVPN
 * pciids 20170525: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
-* pimd 2.3.2: Lightweight stand-alone PIM-SM v2 multicast routing daemon
+* pimd 2.3.2_1: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
 * pkg 1.10.1: Package manager
 * pmacct 1.6.1: Accounting and aggregation tool for IPv4 and IPv6 traffic
@@ -77,7 +75,6 @@
 * python 2.7_3,2: "meta-port" for the default version of Python interpreter
 * python2 2_3: The "meta-port" for version 2 of the Python interpreter
 * python27 2.7.13_4: Interpreted object-oriented programming language
-* quagga 1.2.1_1: Free RIPv1, RIPv2, OSPFv2, BGP4, IS-IS route software
 * readline 6.3.8_1: Library for editing command lines as they are typed
 * smcroute 2.3.1: Static multicast routing tool
 * strongswan 5.5.2_1: Open Source IKEv2 IPsec-based VPN solution

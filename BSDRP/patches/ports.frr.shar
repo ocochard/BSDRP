@@ -26,7 +26,7 @@ XPORTVERSION=	2.0
 XCATEGORIES=	net ipv6
 X
 XMAINTAINER=	olivier@FreeBSD.org
-XCOMMENT=	Free RIPv1, RIPv2, OSPFv2, BGP4, IS-IS route software
+XCOMMENT=	IP routing protocol suite including BGP, IS-IS, OSPF, PIM, and RIP
 X
 XLICENSE=	GPLv2
 XLICENSE_FILE=	${WRKSRC}/COPYING
@@ -34,7 +34,7 @@ X
 XBUILD_DEPENDS=	gawk:lang/gawk
 XLIB_DEPENDS=	libjson-c.so:devel/json-c
 X
-XCONFLICTS=	openbgpd-[0-9]* openospfd-[0-9]* zebra-0* quagga-re-[0-9]* quagga-[0-9]* pimd-[0-9]*
+XCONFLICTS=	openbgpd-[0-9]* openospfd-[0-9]* zebra-0* quagga-re-[0-9]* quagga-[0-9]*
 X
 XUSE_GITHUB=	yes
 XGH_ACCOUNT=	FRRouting
@@ -74,11 +74,13 @@ XCPPFLAGS+=	-I${LOCALBASE}/include
 XLDFLAGS+=	-L${LOCALBASE}/lib
 XINSTALL_TARGET=	install-strip
 X
+X# PIM compile but didn't work on FreeBSD
 XCONFIGURE_ARGS=	--enable-user=frr \
 X		--enable-group=frr \
 X		--enable-vty-group=frrvty \
 X		--sysconfdir=${ETCDIR} \
-X		--localstatedir=/var/run/frr
+X		--localstatedir=/var/run/frr \
+X		--disable-pimd
 X
 XSHELLACCESS_CONFIGURE_ENABLE=	shell-access
 XFPM_CONFIGURE_ENABLE=	fpm
@@ -188,7 +190,6 @@ Xlib/libfrrospfapiclient.so.0
 Xlib/libfrrospfapiclient.so.0.0.0
 Xman/man1/frr.1.gz
 Xman/man8/isisd.8.gz
-Xman/man8/pimd.8.gz
 Xman/man8/watchfrr.8.gz
 X%%VTYSH%%man/man1/vtysh.1.gz
 Xman/man8/bgpd.8.gz
@@ -208,7 +209,6 @@ Xsbin/ripd
 Xsbin/ripngd
 Xsbin/zebra
 Xsbin/isisd
-Xsbin/pimd
 Xsbin/rfptest
 Xsbin/ssd
 Xsbin/watchfrr
@@ -219,7 +219,6 @@ X%%ETCDIR%%/isisd.conf.sample
 X%%LDPD%%%%ETCDIR%%/ldpd.conf.sample
 X%%ETCDIR%%/ospf6d.conf.sample
 X%%ETCDIR%%/ospfd.conf.sample
-X%%ETCDIR%%/pimd.conf.sample
 X%%ETCDIR%%/ripd.conf.sample
 X%%ETCDIR%%/ripngd.conf.sample
 X%%VTYSH%%%%ETCDIR%%/vtysh.conf.sample
@@ -298,6 +297,7 @@ X# If the frr daemons require additional shared libraries to start,
 X# use the following variable to run ldconfig(8) in advance:
 X#  frr_extralibs_path="/usr/local/lib ..."
 X#
+X# This RC script was adapted from the net/quagga port
 X
 X. /etc/rc.subr
 X
@@ -311,13 +311,12 @@ Xextra_commands=configtest
 Xcommand_args="-d"
 X
 Xload_rc_config $name
-X
-Xfrr_enable=${frr_enable:-"NO"}
-Xfrr_flags=${frr_flags:-""}
-Xfrr_daemons=${frr_daemons:-"zebra ripd ripngd ospfd ospf6d bgpd isisd pimd"}
-Xfrr_vtysh_boot=${frr_vtysh_boot:-"NO"}
-Xfrr_wait_for=${frr_wait_for:-""}
-Xfrr_wait_seconds=${frr_wait_seconds:-"90"}
+X: ${frr_enable:="NO"}
+X: ${frr_flags:=""}
+X: ${frr_daemons:="zebra ripd ripngd ospfd ospf6d bgpd isisd pimd"}
+X: ${frr_vtysh_boot:="NO"}
+X: ${frr_wait_for:=""}
+X: ${frr_wait_seconds:="90"}
 X
 Xcheck_config()
 X{
@@ -406,7 +405,8 @@ X    start)
 X	if [ -n "${frr_extralibs_path}" ]; then
 X	    /sbin/ldconfig -m ${frr_extralibs_path}
 X	fi
-X	do_cmd "start"
+X	# Why should I need to add this check ?
+X	checkyesno frr_enable && do_cmd "start"
 X	;;
 X    stop)
 X	frr_daemons=$(reverse_list ${frr_daemons})
@@ -416,7 +416,7 @@ X    restart)
 X	frr_daemons=$(reverse_list ${frr_daemons})
 X    	do_cmd "stop"
 X	frr_daemons=$(reverse_list ${frr_daemons})
-X	do_cmd "start"
+X	checkyesno frr_enable && do_cmd "start"
 X	;;
 X    *)
 X	do_cmd "${frr_cmd}"

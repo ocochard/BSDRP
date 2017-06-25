@@ -417,7 +417,8 @@ add_port "net/mrouted"
 add_port "net/pimdd"
 
 # pimd: IPv4 PIM Sparse Mode daemon
-#add_port "net/pimd"
+# Note: Binary renamed pimdsm for avoiding conflict with frr
+add_port "net/pimd"
 
 # tayga: userland NAT64 implementation
 add_port "net/tayga"
@@ -507,7 +508,7 @@ add_port "security/ca_root_nss"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 #add_port "sysutils/intel-nvmupdate"
 #add_port "sysutils/intel-qcu"
-
+add_port "sysutils/devcpu-data"
 
 # NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode
 add_port "net/ntraceroute"

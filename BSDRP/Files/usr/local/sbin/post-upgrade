@@ -1,9 +1,9 @@
 #!/bin/sh
 #
 # Post-upgrade fixup tool for BSD Router Project
-# http://bsdrp.net
+# https://bsdrp.net
 #
-# Copyright (c) 2009-2014, The BSDRP Development Team
+# Copyright (c) 2009-2017, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -62,6 +62,34 @@ if grep -q '^1.1$' /etc/version; then
 	if [ -f /boot/loader.conf.local ]; then
     	cp /boot/loader.conf.local /tmp/sysupgrade/boot || echo "WARNING: Can't backup /boot/loader.conf.local"
 	fi
+	umount_newpart
+fi
+
+# Release 1.7 (and previous, but they are very old, then we don't care here) need a Quagga to FRR upgrade
+if grep -q '^1.7' /etc/version; then
+	# Need to add new users and groups
+	pw groupadd frr -g 168
+	pw useradd frr -u 168 -c "FRRouting user" -d /var/empty -g 168 -s /usr/sbin/nologin
+	pw groupadd frrvty -M frr -g 152
+	config save
+	# Need to check if /cfg/group or /cfg/password and generation action
+	if grep -q quagga /etc/rc.conf; then
+		echo "Quagga seems configured, replacing quagga references by frr..."
+		# Replacing quagga by frr and copying quagga configuration files into frr
+		if mount | ! grep -q "/cfg"; then
+			mount /cfg
+		fi
+		sed -i "" -e s/quagga/frr/g /cfg/rc.conf
+		# We will change current /etc/rc.conf too for avoiding asking saving before reboot
+		sed -i "" -e s/quagga/frr/g /etc/rc.conf
+	
+		if [ -d /cfg/local/quagga ]; then
+			[ -d /cfg/local/frr ] || mkdir /cfg/local/frr
+			cp /cfg/local/quagga/* /cfg/local/frr/
+			chown -R 168:168 /cfg/local/frr/
+		fi
+		umount /cfg
+	fi
 fi
 
 # If we need to add new users (because local /etc/master.passw was modified by just changing the root password, the new one will be ignored)
@@ -69,5 +97,4 @@ fi
 #   pwd_mkdb -C /etc/master.passwd && pwd_mkdb -p /etc/master.passwd || die "error"
 #   config save
 
-umount_newpart
 exit 0
