@@ -15,7 +15,6 @@ vm1 () {
 	sysrc cloned_interfaces=lagg0
 	sysrc ifconfig_lagg0="laggproto loadbalance laggport em0 SYNCDHCP"
 	sysrc ifconfig_lagg0_ipv6="inet6 accept_rtadv"
-	sysrc quagga_enable=NO
 	sysrc sshd_enable=yes
 	sysrc ifconfig_em4="inet 192.168.56.11/24"
 	ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
@@ -25,7 +24,6 @@ vm1 () {
 	service netif restart
 	service sysctl reload
 	service routing restart
-	service quagga onestop
 	service sshd start
 	echo "VM1 configured"
 }
@@ -147,9 +145,9 @@ EOF
 cat > /etc/ipsec.conf <<EOF
 flush ;
 add 10.0.23.2 10.0.23.3 tcp 0x1000 -A tcp-md5 "abigpassword" ;
-add 10.0.23.3 10.0.23.2 tcp 0x1000 -A tcp-md5 "abigpassword" ;
-add -6 2001:db8:23::2 2001:db8:23::3 tcp 0x1000 -A tcp-md5 "abigpassword" ;
-add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1000 -A tcp-md5 "abigpassword" ;
+add 10.0.23.3 10.0.23.2 tcp 0x1001 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:23::2 2001:db8:23::3 tcp 0x1002 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 
 cat > /usr/local/etc/quagga/bgpd.conf <<EOF
@@ -157,12 +155,14 @@ router bgp 100
  bgp router-id 0.0.0.0
  network 10.0.12.0/24
  neighbor 10.0.23.3 remote-as 100
+ neighbor 10.0.23.3 soft-reconfiguration inbound
  neighbor 2001:db8:23::3 remote-as 100
  no neighbor 2001:db8:23::3 activate
 !
  address-family ipv6
  network 2001:db8:12::/64
  neighbor 2001:db8:23::3 activate
+ neighbor 2001:db8:23::3 soft-reconfiguration inbound
  exit-address-family
 EOF
 
@@ -263,9 +263,9 @@ EOF
 cat > /etc/ipsec.conf <<EOF
 flush ;
 add 10.0.23.2 10.0.23.3 tcp 0x1000 -A tcp-md5 "abigpassword" ;
-add 10.0.23.3 10.0.23.2 tcp 0x1000 -A tcp-md5 "abigpassword" ;
-add -6 2001:db8:23::2 2001:db8:23::3 tcp 0x1000 -A tcp-md5 "abigpassword" ;
-add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1000 -A tcp-md5 "abigpassword" ;
+add 10.0.23.3 10.0.23.2 tcp 0x1001 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:23::2 2001:db8:23::3 tcp 0x1002 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 
 cat > /usr/local/etc/quagga/ospfd.conf <<EOF
@@ -320,6 +320,7 @@ router bgp 100
  network 10.0.3.0/24
  network 10.0.34.0/24
  neighbor 10.0.23.2 remote-as 100
+ neighbor 10.0.23.2 soft-reconfiguration inbound
  neighbor 2001:db8:23::2 remote-as 100
  no neighbor 2001:db8:23::2 activate
 !
@@ -327,6 +328,7 @@ router bgp 100
  network 2001:db8:3::/64
  network 2001:db8:34::/64
  neighbor 2001:db8:23::2 activate
+ neighbor 2001:db8:23::2 soft-reconfiguration inbound
  exit-address-family
 EOF
 
@@ -350,7 +352,6 @@ sysrc ifconfig_em3_ipv6="inet6 2001:db8:45::4 prefixlen 64"
 sysrc ifconfig_em2="10.0.34.4/24"
 sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::4 prefixlen 64"
 sysrc ifconfig_em4="inet 192.168.56.14/24"
-sysrc quagga_enable=NO
 sysrc bird_enable=YES
 sysrc bird6_enable=YES
 sysrc freevrrpd_enable=YES
@@ -573,7 +574,6 @@ sysrc ifconfig_lagg0="laggproto failover laggport em3 SYNCDHCP"
 sysrc ifconfig_lagg0_ipv6="inet6 accept_rtadv"
 sysrc ifconfig_em4="inet 192.168.56.15/24"
 sysrc bsnmpd_enable=YES
-sysrc quagga_enable=NO
 sysrc gateway_enable=NO
 sysrc ipv6_gateway_enable=NO
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
@@ -581,7 +581,6 @@ config save
 hostname R5
 service netif restart
 service routing restart
-service quagga onestop
 service bsnmpd start
 echo "VM5 configured"
 }

@@ -369,16 +369,19 @@ add_port "ports-mgmt/pkg"
 add_port "net-mgmt/bsnmp-regex"
 add_port "net-mgmt/bsnmp-ucd"
 
-# Quagga: old routing daemon
-add_port "devel/libdlmalloc"
-add_port "print/indexinfo"
-add_port "security/libgpg-error"
-add_port "security/libgcrypt"
-add_port "devel/readline"
-add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
+# Quagga: routing daemon
+#add_port "devel/libdlmalloc"
+#add_port "print/indexinfo"
+#add_port "security/libgpg-error"
+#add_port "security/libgcrypt"
+#add_port "devel/readline"
+#add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
+
+add_port "devel/json-c"
+add_port "net/frr"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
-# Bird: new routing daemon
+# Bird: routing daemon
 add_port "net/bird" "WITH=\"FIREWALL\""
 add_port "net/bird6" "WITH=\"FIREWALL\""
 
@@ -414,7 +417,7 @@ add_port "net/mrouted"
 add_port "net/pimdd"
 
 # pimd: IPv4 PIM Sparse Mode daemon
-add_port "net/pimd"
+#add_port "net/pimd"
 
 # tayga: userland NAT64 implementation
 add_port "net/tayga"
@@ -589,6 +592,10 @@ EOF
 	# Set Quagga permission
 	grep -q quagga ${NANO_WORLDDIR}/etc/passwd && \
 		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
+
+	# Set FRR permission
+	grep -q frr ${NANO_WORLDDIR}/etc/passwd && \
+		CR 'chown -R frr:frr /usr/local/etc/frr'
 
 	# Compress the kernel (save 10Mb)
 	# Disabled: dtrace didn't support compressed kernel

@@ -1,8 +1,13 @@
 # TODO List fort the BSD Router Project
+
 ## Bugs #
 
 * if no-mandatory /data had a fsck problem, system refuse go in single user
 * add auto-trimming of all log files that are being created
+
+## Replacing Quagga by FRR ##
+* Need to test quagga configuration and RC scripts easy copy
+* Need to solve conflict with pimd (renaming pimd?)
 
 ## Arch #
 

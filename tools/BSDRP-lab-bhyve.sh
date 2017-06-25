@@ -191,16 +191,20 @@ destroy_all_if() {
 destroy_vm() {
 	# $1: VM name
 	# Check if this VM exist by small query
-	if [ -e /dev/vmm/$1 ]; then
+	if is_running $1; then
 		bhyvectl --vm=$1 --destroy || echo "Can't destroy VM $1"
 	fi
 	return 0
 }
 
+is_running() {
+	# $1: VM name
+	[ -e /dev/vmm/$1 ] && return 0 || return 1
+}
+
 run_vm() {
 	# $1: VM number
 	# Destroy previous if allready exist
-	destroy_vm ${VM_NAME}_$1
 	# Need an infinite loop: This permit to do a reboot initated from the VM
 	while [ 1 ]; do
 		# load a FreeBSD guest inside a bhyve virtual machine
@@ -376,6 +380,7 @@ echo "- $LAN LAN(s) between all VM"
 i=1                                                                   
 # Enter the main loop for each VM                                            
 while [ $i -le $NUMBER_VM ]; do
+	is_running ${VM_NAME}_$i && die "VM ${VM_NAME}_$i already runing"
 	# Erase already existing VM disk only if:
 	#   a image is given
 	#   OR it didn't already exists

@@ -1,7 +1,13 @@
 # Release 1.71 (not released)
 
+## To do before release
+* quagga to frr migration: post-upgrade script to use
+* frr (END) vtysh problem (same with Quagga)
+* Need to solve pimd and FRR/pimd conflict: testing first FRR/pimd then using a new binary name for pimd
+
 ## New features
-* FreeBSD 11-stable upgraded to r320089 (11.1-BETA2)
+* FreeBSD 11-stable upgraded to r320311 (11.1-BETA3)
+* Quagga replaced by it's fork FRRouting (https://frrouting.org/)
 * jail/VIMAGE support added: Allow to create multi-tennant routers/firewall (read tenant help more more detail)
 * autosave config daemon (autosave_enable="YES") that watches for changes in /etc and triggers "config save"
 * Added chelsio_affinity and ix_affinity rc script
@@ -15,7 +21,6 @@
 ## Updated packages
 * dhcprelya to 5.0
 * iperf3 to 3.1.7
-* quagga to 1.2.1
 * exabgp to 3.4.19
 * monit to 5.23.0
 * openvpn 2.4.2
