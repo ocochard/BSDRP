@@ -169,8 +169,8 @@ EOF
     exec.prestart  += "mount -t devfs -o rw,ruleset=4 devfs ${jailroot}/dev";
 
     # Copy reference and backuped files to /etc
-    exec.prestart  += "cp -av /conf/base/ ${jailroot}";
-    exec.prestart  += "cp -av ${jailcfg}/ ${jailroot}/etc/";
+    exec.prestart  += "cp -a /conf/base/ ${jailroot}";
+    exec.prestart  += "cp -a ${jailcfg}/ ${jailroot}/etc/";
     # Prevent diskless
     exec.prestart  += "test -f ${jailroot}/etc/diskless && rm ${jailroot}/etc/diskless || true";
 EOF
