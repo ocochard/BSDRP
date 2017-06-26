@@ -417,7 +417,6 @@ add_port "net/mrouted"
 add_port "net/pimdd"
 
 # pimd: IPv4 PIM Sparse Mode daemon
-# Note: Binary renamed pimdsm for avoiding conflict with frr
 add_port "net/pimd"
 
 # tayga: userland NAT64 implementation
@@ -549,8 +548,11 @@ bsdrp_custom () {
 	# Update login.conf db
 	CR 'cap_mkdb /etc/login.conf'
 
-	# Disable system beep with csh
-	echo "set nobeep" >> /etc/csh.cshrc
+	# Disable system beep and enable color with csh
+	{
+	echo "set nobeep"
+	echo "setenv CLICOLOR true"
+	} >> ${NANO_WORLDDIR}/etc/csh.cshrc
 	
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys

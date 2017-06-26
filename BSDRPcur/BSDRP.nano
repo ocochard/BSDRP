@@ -370,16 +370,19 @@ add_port "ports-mgmt/pkg"
 add_port "net-mgmt/bsnmp-regex"
 add_port "net-mgmt/bsnmp-ucd"
 
-# Quagga: old routing daemon
-add_port "devel/libdlmalloc"
-add_port "print/indexinfo"
-add_port "security/libgpg-error"
-add_port "security/libgcrypt"
-add_port "devel/readline"
-add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
+# Quagga: routing daemon
+#add_port "devel/libdlmalloc"
+#add_port "print/indexinfo"
+#add_port "security/libgpg-error"
+#add_port "security/libgcrypt"
+#add_port "devel/readline"
+#add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
+
+add_port "devel/json-c"
+add_port "net/frr"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
-# Bird: new routing daemon
+# Bird: routing daemon
 add_port "net/bird" "WITH=\"FIREWALL\""
 add_port "net/bird6" "WITH=\"FIREWALL\""
 
@@ -508,6 +511,7 @@ add_port "security/ca_root_nss"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 #add_port "sysutils/intel-nvmupdate"
 #add_port "sysutils/intel-qcu"
+add_port "sysutils/devcpu-data"
 
 
 # NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode
@@ -549,8 +553,11 @@ bsdrp_custom () {
 	# Update login.conf db
 	CR 'cap_mkdb /etc/login.conf'
 
-	# Disable system beep with csh
-	echo "set nobeep" >> /etc/csh.cshrc
+	# Disable system beep and enable color with csh
+	{
+	echo "set nobeep"
+	echo "setenv CLICOLOR true"
+	} >> ${NANO_WORLDDIR}/etc/csh.cshrc
 	
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys

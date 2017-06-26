@@ -56,9 +56,9 @@ usage () {
 	echo "  -d: delete a jail"
 	echo "  -f authorized_keys: SSH authorized_keys to be installed into jail"
 	echo "  -g default-gateway: Default gateway"
-	echo "  -i if/ip/mask: network interface name / IP addresse / mask"
+	echo "  -i if/ip/mask: network interface name / IP address / IP mask"
 	echo "                 multiple interface are comma separated"
-	echo "                if interface a bridge, epair created and bind to it"
+	echo "                 if interface a bridge, epair created and add to it"
 	echo "  -j: jail name"
 	echo "Example:"
 	echo "   $0 -c -j customer1 -f /tmp/sshkey.pub -i bridge0,vtnet4.2/10.0.0.1/24 -g 10.0.0.254"
@@ -207,8 +207,11 @@ EOF
     exec.prestart  += "ifconfig epair${id}a up";
     exec.prestart  += "ifconfig bridge0 addm epair${id}a up";
     # fix bug that assing same MAC to all epairXb interface
-    # TO DO: convert this id into hexa
-    exec.prestart  += "ifconfig epair${id}b ether 02:ff:00:00:ff:${id}";
+	# But need to convert id into hexa first
+	cent=$((id / 100))
+    unit=$((id - (cent * 100)))
+	[ "$unit" -lt 10 ] && unit="0${unit}"
+    exec.prestart  += "ifconfig epair${id}b ether 02:ff:00:00:f${cent}:${unit}";
     exec.poststop  += "ifconfig bridge0 deletem epair${id}a";
     exec.poststop  += "ifconfig epair${id}a destroy";
 EOF
@@ -254,9 +257,9 @@ EOF
 # Delete jail
 delete () {
 	[ -f /etc/jail.conf ] || die "ERROR: No jail configured"
-	grep -q $tenant /etc/jail.conf || die "ERROR: No jail named $tenant configured"
+	grep -q "^${tenant} {" /etc/jail.conf || die "ERROR: No jail named $tenant configured"
 	jls -j ${tenant} > /dev/null 2>&1 && die "Jail is running: Stop it before delete it (service jail stop ${tenant})"
-	mount | grep -q "/var/jails/${tenant}" && die "There are still some mount points regarding ${tenant}"
+	mount | grep -q "/var/jails/${tenant}/" && die "There are still some mount points regarding ${tenant}"
 	for i in /etc/fstab.${tenant}; do
 		[ -f $i ] && rm $i
 	done
