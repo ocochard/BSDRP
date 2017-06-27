@@ -313,7 +313,7 @@ X
 Xload_rc_config $name
 X: ${frr_enable:="NO"}
 X: ${frr_flags:=""}
-X: ${frr_daemons:="zebra ripd ripngd ospfd ospf6d bgpd isisd pimd"}
+X: ${frr_daemons:="zebra ripd ripngd ospfd ospf6d bgpd isisd"}
 X: ${frr_vtysh_boot:="NO"}
 X: ${frr_wait_for:=""}
 X: ${frr_wait_seconds:="90"}
