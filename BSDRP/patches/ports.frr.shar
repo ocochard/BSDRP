@@ -11,6 +11,7 @@
 #	net/frr/distinfo
 #	net/frr/files
 #	net/frr/files/watchfrr.in
+#	net/frr/files/patch-vtysh_vtysh.c
 #	net/frr/files/frr.in
 #	net/frr/files/patch-Makefile.am
 #	net/frr/pkg-descr
@@ -266,6 +267,20 @@ Xpidfile=%%LOCALSTATE_DIR%%/watchfrr.pid
 X
 Xrun_rc_command "$1"
 fae0b031bb65fd4f4c4e3247a54747a4
+echo x - net/frr/files/patch-vtysh_vtysh.c
+sed 's/^X//' >net/frr/files/patch-vtysh_vtysh.c << '532e6a3a5da90579b0ad4b7b35eaf928'
+X--- vtysh/vtysh.c.orig	2017-06-27 14:48:26 UTC
+X+++ vtysh/vtysh.c
+X@@ -261,7 +261,7 @@ vtysh_pager_init (void)
+X   if (pager_defined)
+X     vtysh_pager_name = strdup (pager_defined);
+X   else
+X-    vtysh_pager_name = strdup ("more");
+X+    vtysh_pager_name = strdup ("cat");
+X }
+X 
+X /* Command execution over the vty interface. */
+532e6a3a5da90579b0ad4b7b35eaf928
 echo x - net/frr/files/frr.in
 sed 's/^X//' >net/frr/files/frr.in << '1724b4d310ea295fa6953b963d04be7c'
 X#!/bin/sh

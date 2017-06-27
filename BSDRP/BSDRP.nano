@@ -548,7 +548,7 @@ bsdrp_custom () {
 	# Update login.conf db
 	CR 'cap_mkdb /etc/login.conf'
 
-	# Disable system beep and enable color with csh
+	# Disable system beep, enable color with csh
 	{
 	echo "set nobeep"
 	echo "setenv CLICOLOR true"
