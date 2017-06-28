@@ -90,8 +90,7 @@ XLDPD_CONFIGURE_ENABLE=	ldpd
 XMULTIPATH_CONFIGURE_ON=	--enable-multipath=64
 XTCMALLOC_CONFIGURE_ENABLE=	tcmalloc
 XTCMALLOC_LIB_DEPENDS=	libtcmalloc.so:devel/google-perftools
-X#SNMP_CONFIGURE_ENABLE=	snmp
-XSNMP_CONFIGURE_ON=	--enable-snmp
+XSNMP_CONFIGURE_ENABLE=	snmp
 XSNMP_LIB_DEPENDS=	libnetsnmp.so:net-mgmt/net-snmp
 XTCPSOCKETS_CONFIGURE_ENABLE=	tcp-zebra
 XVTYSH_CONFIGURE_ENABLE=	vtysh
@@ -377,7 +376,7 @@ X	ret=0
 X	for daemon in ${frr_daemons}; do
 X	    command=%%PREFIX%%/sbin/${daemon}
 X	    required_files=%%ETCDIR%%/${daemon}.conf
-X	    pidfile=/var/run/${daemon}.pid
+X	    pidfile=/var/run/frr/${daemon}.pid
 X	    if [ ${frr_cmd} = "restart" -o ${frr_cmd} = "start" ]; then
 X		check_config
 X	    fi

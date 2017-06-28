@@ -1,31 +1,34 @@
 #!/bin/sh
+# Helper script for building Maximum BSDRP features validation lab
+# https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab
+set -eu
 
 usage () {
 	echo "Usage:"
 	echo "$0 vm-number"
 	echo "Example:"
 	echo "$0 vm1"
+	exit 1
 }
 
 vm1 () {
-	sysrc hostname=R1
-	sysrc gateway_enable=NO
-	sysrc ipv6_gateway_enable=NO
-	sysrc ifconfig_em0=up
-	sysrc cloned_interfaces=lagg0
-	sysrc ifconfig_lagg0="laggproto loadbalance laggport em0 SYNCDHCP"
-	sysrc ifconfig_lagg0_ipv6="inet6 accept_rtadv"
-	sysrc sshd_enable=yes
-	sysrc ifconfig_em4="inet 192.168.56.11/24"
-	ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
-	echo "net.link.lagg.0.lacp.lacp_strict_mode=0" >> /etc/sysctl.conf
-	config save
-	hostname R1
-	service netif restart
-	service sysctl reload
-	service routing restart
-	service sshd start
-	echo "VM1 configured"
+sysrc hostname=R1
+sysrc gateway_enable=NO
+sysrc ipv6_gateway_enable=NO
+sysrc ifconfig_em0=up
+sysrc cloned_interfaces=lagg0
+sysrc ifconfig_lagg0="laggproto loadbalance laggport em0 SYNCDHCP"
+sysrc ifconfig_lagg0_ipv6="inet6 accept_rtadv"
+sysrc sshd_enable=yes
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+echo "net.link.lagg.0.lacp.lacp_strict_mode=0" >> /etc/sysctl.conf
+config save
+hostname R1
+service netif restart
+service sysctl reload
+service routing restart
+service sshd start
+echo "VM1 configured"
 }
 
 vm2 () {
@@ -38,12 +41,13 @@ sysrc ifconfig_em0_alias0="inet 10.0.12.254/32 vhid 1 pass testpass"
 sysrc ifconfig_em0_alias1="inet6 2001:db8:12::fe prefixlen 128 vhid 1 pass testpass"
 sysrc ifconfig_em1="inet 10.0.23.2/24"
 sysrc ifconfig_em1_ipv6="inet6 2001:db8:23::2 prefixlen 64"
-sysrc ifconfig_em4="inet 192.168.56.12/24"
-sysrc quagga_enable=YES
+sysrc cloned_interfaces="lo1"
+sysrc ifconfig_lo1="inet 10.0.0.2/32"
+sysrc ifconfig_lo1_ipv6="inet6 2001:db8::2 prefixlen 128"
 sysrc frr_enable=YES
 sysrc dhcprelya_enable=YES
-sysrc dhcprelya_servers="10.0.3.3"
-sysrc dhcprelya_ifaces="em0"
+sysrc dhcprelya_servers="10.0.4.4"
+sysrc dhcprelya_ifaces=em0
 sysrc mpd_enable=YES
 sysrc mpd_flags="-b -s ppp"
 sysrc ngnetflow_enable=YES
@@ -51,6 +55,7 @@ sysrc ngnetflow_if=em0
 sysrc ngnetflow_dst="10.0.12.1:2055"
 sysrc ipsec_enable=YES
 sysrc ipsec_file="/etc/ipsec.conf"
+sysrc pimd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
 mount -uw /
@@ -66,9 +71,9 @@ vpnipv4:
         # Create bundle called vpnipv4
         create bundle static vpnipv4
         # IP of client and server, on another subnet for avoiding problems
-        set ipcp ranges 10.4.15.2/32 10.4.15.4/32
-        # Remote LAN subnet
-        set iface route 10.0.45.0/24
+        set ipcp ranges 10.4.24.2/32 10.4.24.4/32
+        # Remote LAN subnet: Learned by ISIS
+        #set iface route 10.0.45.0/24
         # Enable Microsoft Point-to-Point encryption (MPPE)
         set bundle enable compression
         set ccp yes mppc
@@ -92,9 +97,9 @@ vpnipv4:
         # Client side, need to be positive (0 for allways)
         set link max-redial -1
         # Local WAN IP addresse
-        set pptp self 10.0.23.2
+        set pptp self 10.0.0.2
         # Remote WAN IP addresse
-        set pptp peer 10.0.34.4
+        set pptp peer 10.0.0.4
         # Allow incoming call
         set link enable incoming
 
@@ -102,11 +107,11 @@ vpnipv6:
         # Create bundle called vpnipv6
         create bundle static vpnipv6
         # Don't know how to disable IPv4 ipcp
-        set ipcp ranges 10.6.15.2/32 10.6.15.4/32
+        set ipcp ranges 10.6.24.2/32 10.6.24.4/32
         # Enable IPv6
         set bundle enable ipv6cp
-        # Remote LAN subnet
-        set iface route 2001:db8:45::/64
+        # Remote LAN subnet: Learned by ISIS
+        #set iface route 2001:db8:45::/64
         # Enable Microsoft Point-to-Point encryption (MPPE)
         set bundle enable compression
         set ccp yes mppc
@@ -130,9 +135,9 @@ vpnipv6:
         # Client side, need to be positive (0 for allways)
         set link max-redial -1
         # Local WAN IP addresse
-        set pptp self 2001:db8:23::2
+        set pptp self 2001:db8::2
         # Remote WAN IP addresse
-        set pptp peer 2001:db8:34::4
+        set pptp peer 2001:db8::4
         # Allow incoming call
         set link enable incoming
 EOF
@@ -150,21 +155,32 @@ add -6 2001:db8:23::2 2001:db8:23::3 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 
-[ -d /usr/local/etc/quagga ] && DIR=quagga || DIR=frr
-cat > /usr/local/etc/${DIR}/bgpd.conf <<EOF
+cat > /usr/local/etc/frr/bgpd.conf <<EOF
 router bgp 100
  bgp router-id 0.0.0.0
- network 10.0.12.0/24
+ network 10.0.0.2/32
  neighbor 10.0.23.3 remote-as 100
  neighbor 10.0.23.3 soft-reconfiguration inbound
  neighbor 2001:db8:23::3 remote-as 100
  no neighbor 2001:db8:23::3 activate
 !
  address-family ipv6
- network 2001:db8:12::/64
+ network 2001:db8::2/128
  neighbor 2001:db8:23::3 activate
  neighbor 2001:db8:23::3 soft-reconfiguration inbound
  exit-address-family
+EOF
+
+cat > /usr/local/etc/frr/ospfd.conf <<EOF
+interface ng0
+ ip ospf network point-to-point
+ ip ospf message-digest-key 1 md5 superpass
+!
+router ospf
+ ospf router-id 0.0.0.2
+ network 10.0.12.0/24 area 0.0.0.0
+ network 10.4.24.0/24 area 0.0.0.0
+ area 0.0.0.0 authentication message-digest
 EOF
 
 config save
@@ -173,13 +189,13 @@ kldload carp
 service netif restart
 service ipsec start
 service rtadvd start
-[ -d /usr/local/etc/quagga ] && service quagga start || service frr start
+service frr start
 service frr start
 service dhcprelya start
 service mpd5 start
 service ngnetflow start
+service pimd start
 echo "VM2 configured"
-
 }
 
 vm3 () {
@@ -188,15 +204,8 @@ sysrc ifconfig_em1="inet 10.0.23.3/24"
 sysrc ifconfig_em2="inet 10.0.34.3/24"
 sysrc ifconfig_em1_ipv6="inet6 2001:db8:23::3 prefixlen 64"
 sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::3 prefixlen 64"
-sysrc cloned_interfaces="lo1"
-sysrc ifconfig_lo1="inet 10.0.3.3/24"
-sysrc ifconfig_lo1_ipv6="inet6 2001:db8:3::3 prefixlen 64"
-sysrc ifconfig_em4="inet 192.168.56.13/24"
-sysrc quagga_enable=YES
-sysrc frr_enable=YES
-sysrc dhcpd_enable=YES
-sysrc dhcpd_flags="-q"
-sysrc dhcpd_conf="/usr/local/etc/dhcpd.conf"
+sysrc bird_enable=YES
+sysrc bird6_enable=YES
 sysrc pf_enable=YES
 sysrc pf_rules="/etc/pf.conf"
 sysrc ipsec_enable=YES
@@ -207,20 +216,20 @@ cat > /etc/pf.conf <<EOF
 #Variables definitions
 TO_R2_if = "{" vtnet1 em1 "}"
 TO_R4_if = "{" vtnet2 em2 "}"
-R2 = "10.0.23.2/32"
-R4 = "10.0.34.4/32"
+R2 = "10.0.0.2/32"
+R4 = "10.0.0.4/32"
 
 ## ALTQ rules
 # Queue outgoing from \$TO_R4_if (R2 => R4)
-# Rate-limit VPN traffic to 64Kb
+# Rate-limit inet 4 VPN traffic to 10Mb
 altq on \$TO_R4_if hfsc bandwidth 100Mb queue { VPN4_TO_R4, OTHER_TO_R4 }
-queue VPN4_TO_R4 bandwidth 64Kb hfsc(upperlimit 64Kb)
-queue OTHER_TO_R4 bandwidth 99Mb hfsc(default)
+queue VPN4_TO_R4 bandwidth 10Mb hfsc(upperlimit 10Mb)
+queue OTHER_TO_R4 bandwidth 90Mb hfsc(default)
 
 # Queue for outgoing traffic from \$TO_R2_if (R4 => R2)
 altq on \$TO_R2_if hfsc bandwidth 100Mb queue { VPN4_TO_R2, OTHER_TO_R2 }
-queue VPN4_TO_R2 bandwidth 64Kb hfsc(upperlimit 64Kb)
-queue OTHER_TO_R2 bandwidth 99Mb hfsc(default)
+queue VPN4_TO_R2 bandwidth 10Mb hfsc(upperlimit 10Mb)
+queue OTHER_TO_R2 bandwidth 90Mb hfsc(default)
 
 ## PF rules
 
@@ -235,33 +244,6 @@ pass out quick on \$TO_R4_if proto gre from \$R2 to \$R4 queue VPN4_TO_R4
 pass in quick on \$TO_R4_if proto gre from \$R4 to \$R2 queue VPN4_TO_R4
 pass out quick on \$TO_R2_if proto gre from \$R4 to \$R2 queue VPN4_TO_R2
 EOF
-
-cat > /usr/local/etc/dhcpd.conf <<EOF
-option domain-name "bsdrp.net";
-default-lease-time 600;
-max-lease-time 7200;
-ddns-update-style none;
-#Declare loopback network
-subnet 10.0.3.0 netmask 255.255.255.0 {
-}
-#Declare em1/vtnet1 network
-subnet 10.0.23.0 netmask 255.255.255.0 {
-}
-#Declare em2/vtnet2 network
-subnet 10.0.34.0 netmask 255.255.255.0 {
-}
-#Declare R1 LAN and gateway
-subnet 10.0.12.0 netmask 255.255.255.0 {
-  range 10.0.12.1 10.0.12.1;
-  option routers 10.0.12.254;
-}
-#Declare R5 subnet and gateway
-subnet 10.0.45.0 netmask 255.255.255.0 {
-  range 10.0.45.5 10.0.45.5;
-  option routers 10.0.45.254;
-}
-EOF
-
 cat > /etc/ipsec.conf <<EOF
 flush ;
 add 10.0.23.2 10.0.23.3 tcp 0x1000 -A tcp-md5 "abigpassword" ;
@@ -270,56 +252,9 @@ add -6 2001:db8:23::2 2001:db8:23::3 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 
-[ -d /usr/local/etc/quagga ] && DIR=quagga || DIR=frr
-cat > /usr/local/etc/${DIR}/ospfd.conf <<EOF
-interface em2
- ip ospf message-digest-key 1 md5 superpass
-!
-interface vtnet2
- ip ospf message-digest-key 1 md5 superpass
-!
-router ospf
- ospf router-id 0.0.0.3
- passive-interface em1
- passive-interface vtnet1
- network 10.0.3.0/24 area 0.0.0.0
- network 10.0.23.0/24 area 0.0.0.0
- network 10.0.34.0/24 area 0.0.0.0
- area 0.0.0.0 authentication message-digest
-EOF
-
-cat > /usr/local/etc/${DIR}/ospf6d.conf <<EOF
-debug ospf6 lsa unknown
-!
-interface em1
- ipv6 ospf6 passive
- ipv6 ospf6 network broadcast
-!
-interface em2
- ipv6 ospf6 network broadcast
-!
-interface lo1
- ipv6 ospf6 network broadcast
-!
-interface vtnet1
- ipv6 ospf6 passive
- ipv6 ospf6 network broadcast
-!
-interface vtnet2
- ipv6 ospf6 network broadcast
-!
-router ospf6
- router-id 0.0.0.3
- interface vtnet2 area 0.0.0.0
- interface vtnet1 area 0.0.0.0
- interface em2 area 0.0.0.0
- interface em1 area 0.0.0.0
- interface lo1 area 0.0.0.0
-EOF
-
-cat > /usr/local/etc/${DIR}/bgpd.conf <<EOF
+cat > /usr/local/etc/frr/bgpd.conf <<EOF
 router bgp 100
- bgp router-id 0.0.0.0
+ bgp router-id 0.0.0.3
  network 10.0.3.0/24
  network 10.0.34.0/24
  neighbor 10.0.23.2 remote-as 100
@@ -335,37 +270,6 @@ router bgp 100
  exit-address-family
 EOF
 
-config save
-hostname R3
-service netif restart
-service ipsec start
-[ -d /usr/local/etc/quagga ] && service quagga start || service frr start
-service isc-dhcpd start
-service pf start
-echo "VM3 configured"
-
-}
-
-vm4 () {
-sysrc hostname=R4
-sysrc rtadvd_enable=YES
-sysrc rtadvd_interfaces=em3
-sysrc ifconfig_em3="inet 10.0.45.4/24"
-sysrc ifconfig_em3_ipv6="inet6 2001:db8:45::4 prefixlen 64"
-sysrc ifconfig_em2="10.0.34.4/24"
-sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::4 prefixlen 64"
-sysrc ifconfig_em4="inet 192.168.56.14/24"
-sysrc bird_enable=YES
-sysrc bird6_enable=YES
-sysrc freevrrpd_enable=YES
-sysrc dhcprelya_enable=YES
-sysrc dhcprelya_servers=10.0.3.3
-sysrc dhcprelya_ifaces=em3
-sysrc mpd_enable=YES
-sysrc mpd_flags="-b -s ppp"
-sysrc firewall_enable=YES
-sysrc firewall_script="/etc/ipfw.rules"
-ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
 cat > /usr/local/etc/bird.conf <<EOF
 # Configure logging
@@ -374,7 +278,7 @@ log "/var/log/bird.log" all;
 log stderr all;
 
 # Override router ID
-router id 0.0.0.4;
+router id 0.0.0.3;
 
 # Sync bird routing table with kernel
 protocol kernel {
@@ -388,24 +292,23 @@ protocol device {
 
 # Include directly connected network
 protocol direct {
-        interface "vtnet3", "em3";
+        interface "vtnet1", "em1", "vtnet2", "em2";
 }
 
-protocol ospf R4 {
+protocol rip R4 {
         export all;
-        rfc1583compat yes;
-        area 0.0.0.0 {
-                interface "vtnet2","em2" {
-                        cost 10;
-                        type broadcast;
-                        passwords {
-                               password "superpass" {
-                                       id 1;
-                               };
-                       };
-                       authentication cryptographic;
-                };
+        interface "vtnet2","em2" {
+            version 2;
+            password "rippassword";
+            authentication cryptographic;
         };
+}
+
+protocol bgp R2 {
+        local as 100;
+		neighbor 10.0.23.2 as 100;
+        import all;
+        export all;
 }
 EOF
 
@@ -416,11 +319,10 @@ log "/var/log/bird6.log" all;
 log stderr all;
 
 # Override router ID
-router id 0.0.0.4;
+router id 0.0.0.3;
 
 # Sync bird routing table with kernel
 protocol kernel {
-        #import all;
         export all;
 }
 
@@ -428,18 +330,109 @@ protocol device {
         scan time 10;
 }
 protocol direct {
-        interface "vtnet3","em3";
+        interface "vtnet1", "em1", "vtnet2", "em2";
 }
-protocol ospf R4 {
+
+protocol rip R4 {
         export all;
-        rfc1583compat yes;
-        area 0.0.0.0 {
-                interface "vtnet2","em2" {
-                        cost 10;
-                        type broadcast;
-                };
-        };
+        interface "vtnet2","em2" ;
 }
+
+protocol bgp R2 {
+        local as 100;
+        neighbor 2001:db8:6::2 as 100;
+        import all;
+        export all;
+}
+EOF
+
+config save
+hostname R3
+service netif restart
+service ipsec start
+service pf start
+service bird start
+service bird6 start
+echo "VM3 configured"
+}
+
+vm4 () {
+sysrc hostname=R4
+sysrc ifconfig_em3="inet 10.0.45.4/24"
+sysrc ifconfig_em3_ipv6="inet6 2001:db8:45::4 prefixlen 64"
+sysrc ifconfig_em2="10.0.34.4/24"
+sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::4 prefixlen 64"
+sysrc cloned_interfaces="lo1"
+sysrc ifconfig_lo1="inet 10.0.0.4/32"
+sysrc ifconfig_lo1_ipv6="inet6 2001:db8::4 prefixlen 128"
+sysrc frr_enable=YES
+sysrc mpd_enable=YES
+sysrc mpd_flags="-b -s ppp"
+sysrc firewall_enable=YES
+sysrc firewall_script="/etc/ipfw.rules"
+sysrc pimd_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+
+cat > /usr/local/etc/frr/ripd.conf <<EOF
+key chain rippass
+ key 1
+  key-string rippassword
+interface em2
+ ip rip authentication key-chain rippass
+ ip rip authentication mode md5 auth-length rfc
+interface vtnet2
+ ip rip authentication key-chain rippass
+ ip rip authentication mode md5 auth-length rfc
+router rip
+ version 2
+ network lo1
+ network em2
+ network vtnet2
+EOF
+
+cat > /usr/local/etc/frr/ripngd.conf <<EOF
+router ripng
+ network lo1
+ network em2
+ network vtnet2
+EOF
+
+cat > /usr/local/etc/frr/ospfd.conf <<EOF
+interface ng0
+ ip ospf message-digest-key 1 md5 superpass
+ ip ospf network point-to-point
+!
+router ospf
+ ospf router-id 0.0.0.4
+ redistribute isis
+ passive-interface em3
+ passive-interface vtnet3
+ network 10.0.4.4/24 area 0.0.0.0
+ network 10.4.24.0/24 area 0.0.0.0
+ network 10.0.45.0/24 area 0.0.0.0
+ area 0.0.0.0 authentication message-digest
+EOF
+
+cat > /usr/local/etc/frr/ospf6d.conf <<EOF
+router ospf6
+ router-id 0.0.0.4
+ interface ng0 area 0.0.0.0
+ interface lo1 area 0.0.0.0
+EOF
+
+cat > /usr/local/etc/frr/isisd.conf <<EOF
+interface lo1
+ ip router isis BSDRP
+ isis passive 
+interface em3
+ ip router isis BSDRP
+interface vtnet3
+ ip router isis BSDRP
+router isis BSDRP
+ net 49.0001.1720.1600.4004.00
+ metric-style wide
+ redistribute ipv4 ospf level-1
+ redistribute ipv6 ospf6 level-1
 EOF
 
 cat > /usr/local/etc/mpd5/mpd.conf <<EOF
@@ -451,8 +444,8 @@ vpnipv4:
         create bundle static vpnipv4
         # Getting IP from the server
         set ipcp ranges 0.0.0.0/0
-        # Remote LAN subnet
-        set iface route 10.0.12.0/24
+        # Remote LAN subnet: Learned by ISIS
+        #set iface route 10.0.12.0/24
         # Enable Microsoft Point-to-Point encryption (MPPE)
         set bundle enable compression
         set ccp yes mppc
@@ -476,9 +469,9 @@ vpnipv4:
         # Client side, need to be positive (0 for allways)
         set link max-redial 0
         # Local WAN IP addresse
-        set pptp self 10.0.34.4
+        set pptp self 10.0.0.4
         # Remote WAN IP addresse
-        set pptp peer 10.0.23.2
+        set pptp peer 10.0.0.2
         # Open (initiate) the link to the server
         open
 vpnipv6:
@@ -488,8 +481,8 @@ vpnipv6:
         set ipcp ranges 0.0.0.0/0
         # Enable IPv6
         set bundle enable ipv6cp
-        # Remote LAN subnet
-        set iface route 2001:db8:12::/64
+        # Remote LAN subnet: Learned by ISIS
+        #set iface route 2001:db8:12::/64
         # Create a static pptp link called lvpnipv6
         create link static lvpnipv6 pptp
         # Attach this link to vpnipv6
@@ -506,9 +499,9 @@ vpnipv6:
         # Client side, need to be positive (0 for allways)
         set link max-redial 0
         # Local WAN IP addresse
-        set pptp self 2001:db8:34::4
+        set pptp self 2001:db8::4
         # Remote WAN IP addresse
-        set pptp peer 2001:db8:23::2
+        set pptp peer 2001:db8::2
         # Open (initiate) the link to the server
         open
 EOF
@@ -517,18 +510,6 @@ cat > /usr/local/etc/mpd5/mpd.secret <<EOF
 VpnLogin4       VpnPassword4
 VpnLogin6       VpnPassword6
 EOF
-
-cat > /usr/local/etc/freevrrpd.conf <<EOF
-[VRID]
-serverid = 1
-interface = em3
-# We want that this router is the master
-priority = 101
-addr = 10.0.45.254/24
-password = vrid1
-EOF
-
-ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /usr/local/etc/freevrrpd.conf
 
 echo "# IPFW we need to let it to pass IPv6 Unknown Extension Header for IPv6 PPTP" >> /etc/sysctl.conf
 echo "net.inet6.ip6.fw.deny_unknown_exthdrs=0" >> /etc/sysctl.conf
@@ -545,12 +526,12 @@ fi
 #Need to reduce the default queue size too
 #explanation on chapter "7.2.1.        Pipe Queues"
 #http://www.freebsd-howto.com/HOWTO/Ipfw-HOWTO
-\${fwcmd} pipe 10 config bw 128Kbit/s queue 10Kbytes
-\${fwcmd} pipe 20 config bw 128Kbit/s queue 10Kbytes
+\${fwcmd} pipe 10 config bw 20Mbit/s queue 2Mbytes
+\${fwcmd} pipe 20 config bw 20Mbit/s queue 2Mbytes
 #Traffic getting out vtnet2, is VPN PPTP traffic
-\${fwcmd} add 1000 pipe 10 all from 2001:db8:34::4 to 2001:db8:23::2 out via any
+\${fwcmd} add 1000 pipe 10 all from 2001:db8::4 to 2001:db8::2 out via any
 #Traffic getting out em3, is clear traffic
-\${fwcmd} add 2000 pipe 20 all from 2001:db8:12::/64 to 2001:db8:45::/64 out via any
+\${fwcmd} add 2000 pipe 20 all from 2001:db8:12::/64 to 2001:db8:56::/64 out via any
 #We don't want to block traffic, only shape some
 \${fwcmd} add 3000 allow ip from any to any
 EOF
@@ -558,34 +539,128 @@ EOF
 config save
 hostname R4
 service netif restart
-service rtadvd start
-service bird start
-service bird6 start
+service frr start
+service isc-dhcpd start
 service mpd5 start
-service dhcprelya start
-service freevrrpd start
 service ipfw start
 service sysctl reload
+service pimd start
 echo "VM4 configured"
 }
 
 vm5 () {
 sysrc hostname=R5
-sysrc ifconfig_em3="up"
+sysrc ifconfig_em3="inet 10.0.45.5/24"
+sysrc ifconfig_em3_ipv6="inet6 2001:db8:45::5 prefixlen 64"
+sysrc ifconfig_em4="10.0.56.5/24"
+sysrc ifconfig_em4_ipv6="inet6 2001:db8:56::5 prefixlen 64"
+sysrc rtadvd_enable=YES
+sysrc rtadvd_interfaces=em4
+sysrc freevrrpd_enable=YES
+sysrc dhcpd_enable=YES
+sysrc dhcpd_flags="-q"
+sysrc dhcpd_conf="/usr/local/etc/dhcpd.conf"
+sysrc frr_enable=YES
+sysrc nfacctd_enable=YES
+sysrc pimd_enable=YES
+cat > /usr/local/etc/freevrrpd.conf <<EOF
+[VRID]
+serverid = 1
+interface = em4
+# We want that this router is the master
+priority = 101
+addr = 10.0.56.254/24
+password = vrid1
+EOF
+
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /usr/local/etc/freevrrpd.conf
+
+cat > /usr/local/etc/dhcpd.conf <<EOF
+option domain-name "bsdrp.net";
+default-lease-time 600;
+max-lease-time 7200;
+ddns-update-style none;
+#Declare em3/vtnet3 network
+subnet 10.0.45.0 netmask 255.255.255.0 {
+}
+
+#Declare R1 LAN and gateway
+subnet 10.0.12.0 netmask 255.255.255.0 {
+  range 10.0.12.1 10.0.12.1;
+  option routers 10.0.12.254;
+}
+#Declare R6 subnet and gateway
+subnet 10.0.56.0 netmask 255.255.255.0 {
+  range 10.0.56.6 10.0.56.6;
+  option routers 10.0.56.254;
+}
+EOF
+
+cat > /usr/local/etc/frr/isisd.conf <<EOF
+interface em3
+ ip router isis BSDRP
+interface vtnet3
+ ip router isis BSDRP
+interface em4
+ ip router isis BSDRP
+ isis passive
+interface vtnet4
+ ip router isis BSDRP
+ isis passive
+router isis BSDRP
+ net 49.0001.1720.1600.5005.00
+ metric-style wide
+EOF
+
+cat > /usr/local/etc/nfacctd.conf<<EOF
+daemonize: true
+syslog: daemon
+!
+! interested in in and outbound traffic
+aggregate: src_host,dst_host
+! on this network
+pcap_filter: net 127.0.0.0/8
+nfacctd_ip: 10.0.45.5
+nfacctd_port: 2055
+aggregate[ip]: src_host, dst_host, timestamp_start, timestamp_end, src_port, dst_port, proto, src_as, dst_as, peer_src_ip
+plugins: print[ip]
+print_output: csv
+print_refresh_time: 300
+print_history: 1m
+print_output_file[ip]: /tmp/file-%Y%m%d-%H.txt
+print_history_roundoff: m
+print_output_file_append: true
+files_umask: 022
+EOF
+
+config save
+hostname R5
+service netif restart
+service rtadvd start
+service dhcprelya start
+service freevrrpd start
+service frr start
+service nfacctd start
+service pimd start
+echo "VM5 configured"
+}
+
+vm6 () {
+sysrc hostname=R6
+sysrc ifconfig_em4="up"
 sysrc cloned_interfaces="lagg0"
-sysrc ifconfig_lagg0="laggproto failover laggport em3 SYNCDHCP"
+sysrc ifconfig_lagg0="laggproto failover laggport em4 SYNCDHCP"
 sysrc ifconfig_lagg0_ipv6="inet6 accept_rtadv"
-sysrc ifconfig_em4="inet 192.168.56.15/24"
 sysrc bsnmpd_enable=YES
 sysrc gateway_enable=NO
 sysrc ipv6_gateway_enable=NO
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 config save
-hostname R5
+hostname R6
 service netif restart
 service routing restart
 service bsnmpd start
-echo "VM5 configured"
+echo "VM6 configured"
 }
 
 ### Main

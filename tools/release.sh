@@ -62,7 +62,7 @@ generate(){
 		# Initial build (update and rebuild all)
 		if ! ($FAST_MODE); then
 			( cd ${SRC_DIR}
-        	${DRY} ./make.sh -p ${PROJECT} -u -f -y -a ${arch}
+        	${DRY} ./make.sh -C -p ${PROJECT} -u -f -y -a ${arch}
         	)
 		fi
 		if ! ($FAST_MODE); then
