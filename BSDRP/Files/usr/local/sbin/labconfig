@@ -4,6 +4,8 @@
 set -eu
 
 usage () {
+	echo "Helper script for configuring BSDRP regrestion feature lab"
+	echo "DO NOT USE THIS SCRIPT ON OTHER ROUTERS: IT WILL ERASE YOUR CONFIGURATION"
 	echo "Usage:"
 	echo "$0 vm-number"
 	echo "Example:"
@@ -46,7 +48,7 @@ sysrc ifconfig_lo1="inet 10.0.0.2/32"
 sysrc ifconfig_lo1_ipv6="inet6 2001:db8::2 prefixlen 128"
 sysrc frr_enable=YES
 sysrc dhcprelya_enable=YES
-sysrc dhcprelya_servers="10.0.4.4"
+sysrc dhcprelya_servers="10.0.45.5"
 sysrc dhcprelya_ifaces=em0
 sysrc mpd_enable=YES
 sysrc mpd_flags="-b -s ppp"
@@ -189,7 +191,6 @@ kldload carp
 service netif restart
 service ipsec start
 service rtadvd start
-service frr start
 service frr start
 service dhcprelya start
 service mpd5 start
@@ -370,6 +371,10 @@ sysrc mpd_enable=YES
 sysrc mpd_flags="-b -s ppp"
 sysrc firewall_enable=YES
 sysrc firewall_script="/etc/ipfw.rules"
+sysrc ipfw_netflow_enable=YES
+sysrc ipfw_netflow_ip=10.0.45.5
+sysrc ipfw_netflow_port=2055
+sysrc ipfw_netflow_version=9
 sysrc pimd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
@@ -379,10 +384,10 @@ key chain rippass
   key-string rippassword
 interface em2
  ip rip authentication key-chain rippass
- ip rip authentication mode md5 auth-length rfc
+ ip rip authentication mode md5
 interface vtnet2
  ip rip authentication key-chain rippass
- ip rip authentication mode md5 auth-length rfc
+ ip rip authentication mode md5
 router rip
  version 2
  network lo1
@@ -529,21 +534,21 @@ fi
 \${fwcmd} pipe 10 config bw 20Mbit/s queue 2Mbytes
 \${fwcmd} pipe 20 config bw 20Mbit/s queue 2Mbytes
 #Traffic getting out vtnet2, is VPN PPTP traffic
-\${fwcmd} add 1000 pipe 10 all from 2001:db8::4 to 2001:db8::2 out via any
+\${fwcmd} add 2000 pipe 10 all from 2001:db8::4 to 2001:db8::2 out via any
 #Traffic getting out em3, is clear traffic
-\${fwcmd} add 2000 pipe 20 all from 2001:db8:12::/64 to 2001:db8:56::/64 out via any
+\${fwcmd} add 2001 pipe 20 all from 2001:db8:12::/64 to 2001:db8:56::/64 out via any
 #We don't want to block traffic, only shape some
-\${fwcmd} add 3000 allow ip from any to any
+\${fwcmd} add 2002 allow ip from any to any
 EOF
 
 config save
 hostname R4
 service netif restart
 service frr start
-service isc-dhcpd start
 service mpd5 start
 service ipfw start
 service sysctl reload
+service ipfw_netflow start
 service pimd start
 echo "VM4 configured"
 }
@@ -618,16 +623,14 @@ syslog: daemon
 !
 ! interested in in and outbound traffic
 aggregate: src_host,dst_host
-! on this network
-pcap_filter: net 127.0.0.0/8
 nfacctd_ip: 10.0.45.5
 nfacctd_port: 2055
 aggregate[ip]: src_host, dst_host, timestamp_start, timestamp_end, src_port, dst_port, proto, src_as, dst_as, peer_src_ip
 plugins: print[ip]
 print_output: csv
 print_refresh_time: 300
-print_history: 1m
-print_output_file[ip]: /tmp/file-%Y%m%d-%H.txt
+print_history: 5m
+print_output_file[ip]: /tmp/file-%Y%m%d-%H%M.txt
 print_history_roundoff: m
 print_output_file_append: true
 files_umask: 022
@@ -637,7 +640,7 @@ config save
 hostname R5
 service netif restart
 service rtadvd start
-service dhcprelya start
+service isc-dhcpd start
 service freevrrpd start
 service frr start
 service nfacctd start

@@ -23,6 +23,9 @@
 * strongswan to 5.5.2
 * tmux to 2.5
 
+## Known bugs
+* Routing multicast (using pimd) on ng interfaces (like PPP links managed by mpd5) can crash the system
+
 ## Packages list
 * bird 1.6.3_3: Dynamic IP routing daemon (IPv4 version)
 * bird6 1.6.3_3: Dynamic IP routing daemon (IPv6 version)

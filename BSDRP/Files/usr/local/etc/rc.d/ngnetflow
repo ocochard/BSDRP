@@ -42,12 +42,15 @@ load_rc_config $name
 
 start_cmd="${name}_start"
 stop_cmd="${name}_stop"
-start_precmd="${name}_prestart"
+status_cmd="${name}_status"
+required_modules="ng_netflow ng_ether"
 
-ngnetflow_prestart () {
-	#Need to manually load ng_ether.ko and ng_one2many.ko
-	kldstat -q -m ng_ether || kldload ng_ether
-	kldstat -q -m ng_one2many || kldload ng_one2many
+ngnetflow_status() {
+    if ngctl show netflow: > /dev/null 2>&1; then
+        echo "${name} is running"
+    else
+        echo "${name} is not running"
+    fi
 }
 
 ngnetflow_start() {
@@ -55,17 +58,16 @@ ngnetflow_start() {
 		warn "if name (ngnetflow_if) not configured"
 		return 1
 	fi
-	[ "${ngnetflow_ver}"="9" ] && version="" || version="${ngnetflow_ver}"
+	[ "${ngnetflow_ver}" = "5" ] && version="" || version="${ngnetflow_ver}"
 	/usr/sbin/ngctl -f- <<-EOF
 mkpeer ${ngnetflow_if}: netflow lower iface0
 name ${ngnetflow_if}:lower netflow
 connect ${ngnetflow_if}: netflow: upper out0
 mkpeer netflow: ksocket export${version} inet/dgram/udp
+name netflow:export${version} netflow_export
 EOF
 	if [ -n "${ngnetflow_src}" ]; then
-		/usr/sbin/ngctl -f- <<-EOF
-msg netflow: bind inet/${ngnetflow_src}
-EOF
+		/usr/sbin/ngctl msg netflow: bind inet/${ngnetflow_src}
 	fi
 	/usr/sbin/ngctl -f- <<-EOF
 msg netflow: settimeouts { inactive = ${ngnetflow_inactimeout} active = ${ngnetflow_actimeout} }
@@ -75,9 +77,7 @@ EOF
 }
 
 ngnetflow_stop() {
-	/usr/sbin/ngctl -f- <<-EOF
-shutdown netflow:
-EOF
+	/usr/sbin/ngctl shutdown netflow:
 }
 
 run_rc_command "$1"

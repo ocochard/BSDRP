@@ -207,11 +207,12 @@ EOF
 			[ "$unit" -lt 10 ] && unit="0${unit}"
 			cat >> /etc/jail.conf <<EOF
     vnet.interface  += "epair${id}b";
-    exec.prestart  += "ifconfig epair${id} create up";
+    exec.prestart  += "ifconfig epair${id} create";
+    # fix bug that assing same MAC to all epairXb interface
+	exec.prestart  += "ifconfig epair${id}a ether 02:ff:00:00:a${cent}:${unit}";
+    exec.prestart  += "ifconfig epair${id}b ether 02:ff:00:00:b${cent}:${unit}";
     exec.prestart  += "ifconfig epair${id}a up";
     exec.prestart  += "ifconfig bridge0 addm epair${id}a up";
-    # fix bug that assing same MAC to all epairXb interface
-    exec.prestart  += "ifconfig epair${id}b ether 02:ff:00:00:f${cent}:${unit}";
     exec.poststop  += "ifconfig bridge0 deletem epair${id}a";
     exec.poststop  += "ifconfig epair${id}a destroy";
 EOF

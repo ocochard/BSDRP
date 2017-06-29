@@ -1,0 +1,12 @@
+Index: net/pimd/files/pimd.in
+===================================================================
+--- net/pimd/files/pimd.in	(revision 444518)
++++ net/pimd/files/pimd.in	(working copy)
+@@ -17,6 +17,7 @@
+ command="%%PREFIX%%/sbin/${name}"
+ required_files="%%PREFIX%%/etc/${name}.conf"
+ extra_commands=reload
++required_modules="ip_mroute"
+ 
+ load_rc_config $name
+ : ${pimd_enable="NO"}
