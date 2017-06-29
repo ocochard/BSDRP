@@ -23,12 +23,10 @@ sysrc ifconfig_lagg0="laggproto loadbalance laggport em0 SYNCDHCP"
 sysrc ifconfig_lagg0_ipv6="inet6 accept_rtadv"
 sysrc sshd_enable=yes
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
-echo "net.link.lagg.0.lacp.lacp_strict_mode=0" >> /etc/sysctl.conf
 config save
 hostname R1
 service routing restart || true
 service netif restart
-service sysctl reload
 service sshd start
 echo "VM1 configured"
 }
@@ -212,7 +210,7 @@ interface ng0
 interface ng1
  ipv6 ospf6 network point-to-point
 router ospf6
- router-id 0.0.0.4
+ router-id 0.0.0.2
  redistribute isis
  interface ng1 area 0.0.0.0
  interface em0 area 0.0.0.0
