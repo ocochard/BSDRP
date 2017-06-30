@@ -67,7 +67,7 @@ cat > /usr/local/etc/mpd5/if-up.sh <<EOF
 set -e
 logger "\$0 called with parameters: \$@"
 if [ "\$2" == "inet6" ]; then
-        if ifconfig \$1 \$2 2001:db8::24:2; then
+        if ifconfig \$1 \$2 2001:db8:24::2; then
         logger "\$0: \$cmd successfull"
         return 0
         else
@@ -392,16 +392,24 @@ sysrc ipfw_netflow_version=9
 sysrc pimd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
+
+cat > /usr/local/etc/frr/zebra.conf <<EOF
+ip route 10.4.24.0/24 Null0
+EOF
+
 cat > /usr/local/etc/frr/ripd.conf <<EOF
 key chain rippass
  key 1
   key-string rippassword
+!
 interface em2
  ip rip authentication key-chain rippass
  ip rip authentication mode md5
+!
 interface vtnet2
  ip rip authentication key-chain rippass
  ip rip authentication mode md5
+!
 router rip
  version 2
  network lo1
@@ -435,6 +443,10 @@ EOF
 cat > /usr/local/etc/frr/ospf6d.conf <<EOF
 interface ng0
  ipv6 ospf6 passive
+interface em3
+ ipv6 ospf6 passive
+interface vtnet3
+ ipv6 ospf6 passive
 interface ng1
  ipv6 ospf6 network point-to-point
 router ospf6
@@ -442,19 +454,35 @@ router ospf6
  redistribute isis
  interface ng1 area 0.0.0.0
  interface lo1 area 0.0.0.0
+ interface em3 area 0.0.0.0
+ interface vtnet3 area 0.0.0.0
 EOF
 
 cat > /usr/local/etc/frr/isisd.conf <<EOF
 interface lo1
  ip router isis BSDRP
  isis passive 
+!
 interface em3
  ip router isis BSDRP
+ ipv6 router isis BSDRP
+!
 interface vtnet3
+ ip router isis BSDRPa
+ ipv6 router isis BSDRP
+!
+interface ng0
  ip router isis BSDRP
+ isis passive
+!
+interface ng1
+ isis passive
+ ipv6 router isis BSDRP
+!
 router isis BSDRP
  net 49.0001.1720.1600.4004.00
  metric-style wide
+ redistribute ipv4 static level-1
  redistribute ipv4 ospf level-1
  redistribute ipv6 ospf6 level-1
 EOF
@@ -464,7 +492,7 @@ cat > /usr/local/etc/mpd5/if-up.sh <<EOF
 set -e
 logger "\$0 called with parameters: \$@"
 if [ "\$2" == "inet6" ]; then
-        if ifconfig \$1 \$2 2001:db8::24:4; then
+        if ifconfig \$1 \$2 2001:db8:24::4; then
         logger "\$0: \$cmd successfull"
         return 0
         else
@@ -644,13 +672,17 @@ EOF
 cat > /usr/local/etc/frr/isisd.conf <<EOF
 interface em3
  ip router isis BSDRP
+ ipv6 router isis BSDRP
 interface vtnet3
  ip router isis BSDRP
+ ipv6 router isis BSDRP
 interface em4
  ip router isis BSDRP
+ ipv6 router isis BSDRP
  isis passive
 interface vtnet4
  ip router isis BSDRP
+ ipv6 router isis BSDRP
  isis passive
 router isis BSDRP
  net 49.0001.1720.1600.5005.00

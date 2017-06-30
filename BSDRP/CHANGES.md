@@ -1,7 +1,7 @@
-# Release 1.80 (not released)
+# Release 1.80 (2017-06-30)
 
 ## New features
-* FreeBSD 11-stable upgraded to r320410 (11.1-BETA3)
+* FreeBSD 11-stable upgraded to r320490 (11.1-PRERELEASE)
 * Quagga replaced by it's fork: FRRouting (https://frrouting.org/)
 * jail/VIMAGE support added: Allow to create multi-tennant routers/firewall (read tenant help more more detail)
 * autosave config daemon (autosave_enable="YES") that watches for changes in /etc and triggers "config save"
