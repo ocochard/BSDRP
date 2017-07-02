@@ -1,7 +1,16 @@
 Index: net/pimd/files/pimd.in
 ===================================================================
---- net/pimd/files/pimd.in	(revision 444518)
+--- net/pimd/files/pimd.in	(revision 444772)
 +++ net/pimd/files/pimd.in	(working copy)
+@@ -2,7 +2,7 @@
+ #
+ # PROVIDE: pimd
+ # REQUIRE: netif routing
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ #
+ # Add the following to /etc/rc.conf[.local] to enable this service
 @@ -17,6 +17,7 @@
  command="%%PREFIX%%/sbin/${name}"
  required_files="%%PREFIX%%/etc/${name}.conf"

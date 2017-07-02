@@ -1,0 +1,13 @@
+Index: etc/rc.d/rtadvd
+===================================================================
+--- etc/rc.d/rtadvd	(revision 320569)
++++ etc/rc.d/rtadvd	(working copy)
+@@ -6,7 +6,7 @@
+ # PROVIDE: rtadvd
+ # REQUIRE: DAEMON
+ # BEFORE:  LOGIN
+-# KEYWORD: nojail shutdown
++# KEYWORD: nojailvnet shutdown
+ 
+ . /etc/rc.subr
+ . /etc/network.subr

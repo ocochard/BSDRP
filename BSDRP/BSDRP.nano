@@ -486,6 +486,7 @@ add_port "devel/py27-setuptools"
 # ExaBGP: having fun with BGP
 add_port "net/exabgp"
 
+#add_port "net/openbfdd"
 # VM tools
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 #add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"

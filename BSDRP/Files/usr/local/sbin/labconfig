@@ -37,8 +37,6 @@ sysrc rtadvd_enable=YES
 sysrc rtadvd_interfaces="em0"
 sysrc ifconfig_em0="inet 10.0.12.2/24"
 sysrc ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64"
-sysrc ifconfig_em0_alias0="inet 10.0.12.254/32 vhid 1 pass testpass"
-sysrc ifconfig_em0_alias1="inet6 2001:db8:12::fe prefixlen 128 vhid 1 pass testpass"
 sysrc ifconfig_em1="inet 10.0.23.2/24"
 sysrc ifconfig_em1_ipv6="inet6 2001:db8:23::2 prefixlen 64"
 sysrc cloned_interfaces="lo1"
@@ -50,17 +48,26 @@ sysrc dhcprelya_servers="10.0.45.5"
 sysrc dhcprelya_ifaces=em0
 sysrc mpd_enable=YES
 sysrc mpd_flags="-b -s ppp"
-sysrc ngnetflow_enable=YES
-sysrc ngnetflow_if=em0
-sysrc ngnetflow_dst="10.0.12.1:2055"
+#sysrc ngnetflow_enable=YES
+#sysrc ngnetflow_if=em0
+#sysrc ngnetflow_dst="10.0.12.1:2055"
 sysrc ipsec_enable=YES
 sysrc ipsec_file="/etc/ipsec.conf"
 sysrc pimd_enable=YES
+sysrc freevrrpd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
-mount -uw /
-echo "carp_load="YES"" >> /boot/loader.conf.local
-mount -ur /
+cat > /usr/local/etc/freevrrpd.conf <<EOF
+[VRID]
+serverid = 1
+interface = em0
+# We want that this router is the master
+priority = 101
+addr = 10.0.12.254/24
+password = vrid1
+EOF
+
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /usr/local/etc/freevrrpd.conf
 
 cat > /usr/local/etc/mpd5/if-up.sh <<EOF
 #!/bin/sh
@@ -220,10 +227,10 @@ EOF
 
 config save
 hostname R2
-kldload carp
 service netif restart
 service ipsec start
 service rtadvd start
+service freevrrpd start
 service frr start
 service dhcprelya start
 service mpd5 start
@@ -622,38 +629,50 @@ echo "VM4 configured"
 }
 
 vm5 () {
+
 sysrc hostname=R5
-sysrc ifconfig_em3="inet 10.0.45.5/24"
-sysrc ifconfig_em3_ipv6="inet6 2001:db8:45::5 prefixlen 64"
-sysrc ifconfig_em4="10.0.56.5/24"
-sysrc ifconfig_em4_ipv6="inet6 2001:db8:56::5 prefixlen 64"
-sysrc rtadvd_enable=YES
-sysrc rtadvd_interfaces=em4
-sysrc freevrrpd_enable=YES
-sysrc dhcpd_enable=YES
-sysrc dhcpd_flags="-q"
-sysrc dhcpd_conf="/usr/local/etc/dhcpd.conf"
-sysrc frr_enable=YES
-sysrc nfacctd_enable=YES
-sysrc pimd_enable=YES
-cat > /usr/local/etc/freevrrpd.conf <<EOF
-[VRID]
-serverid = 1
-interface = em4
-# We want that this router is the master
-priority = 101
-addr = 10.0.56.254/24
-password = vrid1
+sysrc ifconfig_em3=up
+sysrc cloned_interfaces=epair0
+sysrc ifconfig_epair0a=up
+sysrc kld_list+=" if_lagg carp"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+cat > /etc/devfs.rules <<EOF
+[devfsrules_jailpf=4]
+add include \$devfsrules_hide_all
+add include \$devfsrules_unhide_basic
+add include \$devfsrules_unhide_login
+add path 'bpf*' unhide
 EOF
 
-ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /usr/local/etc/freevrrpd.conf
-
-cat > /usr/local/etc/dhcpd.conf <<EOF
+hostname R5
+service devfs restart
+service netif restart
+service kld start
+tenant -c -j jail5 -i em3,epair0a
+tenant -c -j jail6 -i epair0b
+sysrc -f /etc/jails/jail5/rc.conf hostname=jail5
+sysrc -f /etc/jails/jail5/rc.conf ifconfig_em3="inet 10.0.45.5/24"
+sysrc -f /etc/jails/jail5/rc.conf ifconfig_em3_ipv6="inet6 2001:db8:45::5 prefixlen 64"
+sysrc -f /etc/jails/jail5/rc.conf ifconfig_epair0a="10.0.56.5/24"
+sysrc -f /etc/jails/jail5/rc.conf ifconfig_epair0a_ipv6="inet6 2001:db8:56::5 prefixlen 64"
+sysrc -f /etc/jails/jail5/rc.conf ifconfig_epair0a_alias0="inet 10.0.56.254/32 vhid 1 pass testpass"
+sysrc -f /etc/jails/jail5/rc.conf ifconfig_epair0a_alias1="inet6 2001:db8:56::fe prefixlen 128 vhid 1 pass testpass"
+sysrc -f /etc/jails/jail5/rc.conf rtadvd_enable=YES
+sysrc -f /etc/jails/jail5/rc.conf rtadvd_interfaces=epair0a
+sysrc -f /etc/jails/jail5/rc.conf dhcpd_enable=YES
+sysrc -f /etc/jails/jail5/rc.conf dhcpd_flags="-q"
+sysrc -f /etc/jails/jail5/rc.conf dhcpd_conf="/usr/local/etc/dhcpd.conf"
+sysrc -f /etc/jails/jail5/rc.conf frr_enable=YES
+sysrc -f /etc/jails/jail5/rc.conf nfacctd_enable=YES
+sysrc -f /etc/jails/jail5/rc.conf pimd_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/jails/jail5/rc.conf
+mkdir -p /etc/jails/jail5/local/frr
+cat > /etc/jails/jail5/local/dhcpd.conf <<EOF
 option domain-name "bsdrp.net";
 default-lease-time 600;
 max-lease-time 7200;
 ddns-update-style none;
-#Declare em3/vtnet3 network
+#Declare useless network
 subnet 10.0.45.0 netmask 255.255.255.0 {
 }
 
@@ -669,18 +688,14 @@ subnet 10.0.56.0 netmask 255.255.255.0 {
 }
 EOF
 
-cat > /usr/local/etc/frr/isisd.conf <<EOF
+cat > /etc/jails/jail5/local/frr/isisd.conf <<EOF
 interface em3
  ip router isis BSDRP
  ipv6 router isis BSDRP
 interface vtnet3
  ip router isis BSDRP
  ipv6 router isis BSDRP
-interface em4
- ip router isis BSDRP
- ipv6 router isis BSDRP
- isis passive
-interface vtnet4
+interface epair0a
  ip router isis BSDRP
  ipv6 router isis BSDRP
  isis passive
@@ -689,7 +704,10 @@ router isis BSDRP
  metric-style wide
 EOF
 
-cat > /usr/local/etc/nfacctd.conf<<EOF
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/jails/jail5/local/frr/isisd.conf
+chown frr:frr /etc/jails/jail5/local/frr
+
+cat > /etc/jails/jail5/local/nfacctd.conf<<EOF
 daemonize: true
 syslog: daemon
 !
@@ -708,34 +726,16 @@ print_output_file_append: true
 files_umask: 022
 EOF
 
-config save
-hostname R5
-service netif restart
-service rtadvd start
-service isc-dhcpd start
-service freevrrpd start
-service frr start
-service nfacctd start
-service pimd start
-echo "VM5 configured"
-}
-
-vm6 () {
-sysrc hostname=R6
-sysrc ifconfig_em4="up"
-sysrc cloned_interfaces="lagg0"
-sysrc ifconfig_lagg0="laggproto failover laggport em4 SYNCDHCP"
-sysrc ifconfig_lagg0_ipv6="inet6 accept_rtadv"
-sysrc bsnmpd_enable=YES
-sysrc gateway_enable=NO
-sysrc ipv6_gateway_enable=NO
-ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
-config save
-hostname R6
-service routing restart || true
-service netif restart
-service bsnmpd start
-echo "VM6 configured"
+sysrc -f /etc/jails/jail6/rc.conf hostname=jail6
+sysrc -f /etc/jails/jail6/rc.conf ifconfig_epair0b="up"
+sysrc -f /etc/jails/jail6/rc.conf cloned_interfaces="lagg0"
+sysrc -f /etc/jails/jail6/rc.conf ifconfig_lagg0="laggproto failover laggport epair0b SYNCDHCP"
+sysrc -f /etc/jails/jail6/rc.conf ifconfig_lagg0_ipv6="inet6 accept_rtadv"
+sysrc -f /etc/jails/jail6/rc.conf bsnmpd_enable=YES
+sysrc -f /etc/jails/jail6/rc.conf gateway_enable=NO
+sysrc -f /etc/jails/jail6/rc.conf ipv6_gateway_enable=NO
+service jail start
+echo "VM5 (including jail5 and jail6) configured"
 }
 
 ### Main

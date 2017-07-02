@@ -1,0 +1,26 @@
+Index: net/frr/files/frr.in
+===================================================================
+--- net/frr/files/frr.in	(revision 444772)
++++ net/frr/files/frr.in	(working copy)
+@@ -5,7 +5,7 @@
+ 
+ # PROVIDE: frr
+ # REQUIRE: netif routing 
+-# KEYWORD: nojail shutdown
++# KEYWORD: nojailvnet shutdown
+ 
+ # Add the following line to /etc/rc.conf to enable frr:
+ #  frr_enable="YES"
+Index: net/frr/files/watchfrr.in
+===================================================================
+--- net/frr/files/watchfrr.in	(revision 444772)
++++ net/frr/files/watchfrr.in	(working copy)
+@@ -5,7 +5,7 @@
+ 
+ # PROVIDE: watchfrr
+ # REQUIRE: NETWORKING frr
+-# KEYWORD: shutdown
++# KEYWORD: nojailvtnet shutdown
+ 
+ # Add the following line to /etc/rc.conf to enable watchfrr:
+ # watchfrr_enable="YES"
