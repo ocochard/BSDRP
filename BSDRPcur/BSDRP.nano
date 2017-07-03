@@ -377,7 +377,8 @@ add_port "net-mgmt/bsnmp-ucd"
 #add_port "security/libgcrypt"
 #add_port "devel/readline"
 #add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
-
+add_port "print/indexinfo"
+add_port "devel/readline"
 add_port "devel/json-c"
 add_port "net/frr"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
@@ -468,6 +469,8 @@ add_port "security/easy-rsa"
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
 add_port "security/openvpn"
+  add_port "security/libgpg-error"
+ add_port "security/libgcrypt"
 add_port "security/openvpn-auth-radius"
 
 # some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf

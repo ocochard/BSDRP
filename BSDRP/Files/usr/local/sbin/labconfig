@@ -234,7 +234,7 @@ service freevrrpd start
 service frr start
 service dhcprelya start
 service mpd5 start
-service ngnetflow start
+#service ngnetflow start
 service pimd start
 echo "VM2 configured"
 }
