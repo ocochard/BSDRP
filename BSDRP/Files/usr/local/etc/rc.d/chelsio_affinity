@@ -41,7 +41,7 @@ chelsio_affinity_start()
         NCPU=$((NCPU - ${chelsio_affinity_avoidncpu}))
         CPU=0
 	cxl=$(sysctl dev.cxl. | grep -c nrxq)
-	for i in $(seq 1 ${cxl}); do
+	for i in $(seq 0 $((cxl - 1))); do
         	for IRQ in `/usr/bin/vmstat -ai |\
             		/usr/bin/sed -nE "/t5nex0:${i}a/s/irq([[:digit:]]+):.*/\1/p"`; do
 			echo "Bind t5nex0:${i}a IRQ ${IRQ} to CPU ${CPU}"

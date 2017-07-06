@@ -169,7 +169,7 @@ EOF
     exec.prestart  += "mount -t devfs -o rw,ruleset=4 devfs ${jailroot}/dev";
 
     # Copy reference and backuped files to /etc
-    exec.prestart  += "cp -a /conf/base/ ${jailroot}";
+    exec.prestart  += "test -d ${jailroot}/var/cron || cp -a /conf/base/ ${jailroot}";
     exec.prestart  += "cp -a ${jailcfg}/ ${jailroot}/etc/";
     # Prevent diskless
     exec.prestart  += "test -f ${jailroot}/etc/diskless && rm ${jailroot}/etc/diskless || true";
@@ -202,15 +202,24 @@ EOF
 		if echo $nicname | grep -q bridge; then
 			rcnicname=epair${id}b
 			# Convert id into hexa
+			host=""
+			host=$(sysctl -n kern.hostid)
+			if [ ${host} -eq 0 ]; then
+				host=$(od -txC -A n -N2 /dev/urandom | tr -s ' ')
+			else
+				host=$(echo $host | od -txC -A n -N2 | tr -s ' ')
+			fi
+			hostfirst=$(echo ${host} | cut -d ' ' -f 2)
+			hostsecond=$(echo ${host} | cut -d ' ' -f 3)
 			cent=$((id / 100))
 			unit=$((id - (cent * 100)))
 			[ "$unit" -lt 10 ] && unit="0${unit}"
 			cat >> /etc/jail.conf <<EOF
     vnet.interface  += "epair${id}b";
     exec.prestart  += "ifconfig epair${id} create";
-    # fix bug that assing same MAC to all epairXb interface
-	exec.prestart  += "ifconfig epair${id}a ether 02:ff:00:00:a${cent}:${unit}";
-    exec.prestart  += "ifconfig epair${id}b ether 02:ff:00:00:b${cent}:${unit}";
+    # fix bug that can create conflict on same LAN for epair
+	exec.prestart  += "ifconfig epair${id}a ether 02:ff:${hostfirst}:${hostsecond}:a${cent}:${unit}";
+    exec.prestart  += "ifconfig epair${id}b ether 02:ff:${hostfirst}:${hostsecond}:b${cent}:${unit}";
     exec.prestart  += "ifconfig epair${id}a up";
     exec.prestart  += "ifconfig bridge0 addm epair${id}a up";
     exec.poststop  += "ifconfig bridge0 deletem epair${id}a";
@@ -238,6 +247,7 @@ EOF
     exec.prestart  += "logger jail ${tenant} pre-started";
     exec.poststop  += "umount ${jailroot}/dev";
     exec.poststop  += "umount -a -F /etc/fstab.${tenant}";
+	exec.poststop  += "jail -r ${id}";
     exec.poststop  += "logger jail ${tenant} post-stopped";
 }
 EOF

@@ -1,0 +1,169 @@
+Index: etc/rc.d/defaultroute
+===================================================================
+--- etc/rc.d/defaultroute	(revision 320575)
++++ etc/rc.d/defaultroute	(working copy)
+@@ -7,7 +7,7 @@
+ 
+ # PROVIDE: defaultroute
+ # REQUIRE: devd netif stf
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ . /etc/rc.subr
+ . /etc/network.subr
+Index: etc/rc.d/dhclient
+===================================================================
+--- etc/rc.d/dhclient	(revision 320575)
++++ etc/rc.d/dhclient	(working copy)
+@@ -4,7 +4,7 @@
+ #
+ 
+ # PROVIDE: dhclient
+-# KEYWORD: nojail nostart
++# KEYWORD: nojailvnet nostart
+ 
+ . /etc/rc.subr
+ . /etc/network.subr
+Index: etc/rc.d/ip6addrctl
+===================================================================
+--- etc/rc.d/ip6addrctl	(revision 320575)
++++ etc/rc.d/ip6addrctl	(working copy)
+@@ -6,7 +6,7 @@
+ # PROVIDE: ip6addrctl
+ # REQUIRE: FILESYSTEMS
+ # BEFORE: netif
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ . /etc/rc.subr
+ . /etc/network.subr
+Index: etc/rc.d/natd
+===================================================================
+--- etc/rc.d/natd	(revision 320575)
++++ etc/rc.d/natd	(working copy)
+@@ -4,7 +4,7 @@
+ #
+ 
+ # PROVIDE: natd
+-# KEYWORD: nostart nojail
++# KEYWORD: nostart nojailvnet
+ 
+ . /etc/rc.subr
+ . /etc/network.subr
+Index: etc/rc.d/pf
+===================================================================
+--- etc/rc.d/pf	(revision 320575)
++++ etc/rc.d/pf	(working copy)
+@@ -6,7 +6,7 @@
+ # PROVIDE: pf
+ # REQUIRE: FILESYSTEMS netif pflog pfsync
+ # BEFORE:  routing
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ . /etc/rc.subr
+ 
+Index: etc/rc.d/pflog
+===================================================================
+--- etc/rc.d/pflog	(revision 320575)
++++ etc/rc.d/pflog	(working copy)
+@@ -5,7 +5,7 @@
+ 
+ # PROVIDE: pflog
+ # REQUIRE: FILESYSTEMS netif
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ . /etc/rc.subr
+ 
+Index: etc/rc.d/pfsync
+===================================================================
+--- etc/rc.d/pfsync	(revision 320575)
++++ etc/rc.d/pfsync	(working copy)
+@@ -5,7 +5,7 @@
+ 
+ # PROVIDE: pfsync
+ # REQUIRE: FILESYSTEMS netif
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ . /etc/rc.subr
+ 
+Index: etc/rc.d/rarpd
+===================================================================
+--- etc/rc.d/rarpd	(revision 320575)
++++ etc/rc.d/rarpd	(working copy)
+@@ -6,7 +6,7 @@
+ # PROVIDE: rarpd
+ # REQUIRE: DAEMON FILESYSTEMS
+ # BEFORE:  LOGIN
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ . /etc/rc.subr
+ 
+Index: etc/rc.d/route6d
+===================================================================
+--- etc/rc.d/route6d	(revision 320575)
++++ etc/rc.d/route6d	(working copy)
+@@ -5,7 +5,7 @@
+ 
+ # PROVIDE: route6d
+ # REQUIRE: netif routing
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ . /etc/rc.subr
+ 
+Index: etc/rc.d/routed
+===================================================================
+--- etc/rc.d/routed	(revision 320575)
++++ etc/rc.d/routed	(working copy)
+@@ -6,7 +6,7 @@
+ # PROVIDE: routed
+ # REQUIRE: netif routing
+ # BEFORE: NETWORK
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ . /etc/rc.subr
+ 
+Index: etc/rc.d/rtsold
+===================================================================
+--- etc/rc.d/rtsold	(revision 320575)
++++ etc/rc.d/rtsold	(working copy)
+@@ -6,7 +6,7 @@
+ # PROVIDE: rtsold
+ # REQUIRE: netif
+ # BEFORE: NETWORKING
+-# KEYWORD: nojail shutdown
++# KEYWORD: nojailvnet shutdown
+ 
+ . /etc/rc.subr
+ 
+Index: etc/rc.d/static_arp
+===================================================================
+--- etc/rc.d/static_arp	(revision 320575)
++++ etc/rc.d/static_arp	(working copy)
+@@ -31,7 +31,7 @@
+ 
+ # PROVIDE: static_arp
+ # REQUIRE: netif
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ . /etc/rc.subr
+ . /etc/network.subr
+Index: etc/rc.d/static_ndp
+===================================================================
+--- etc/rc.d/static_ndp	(revision 320575)
++++ etc/rc.d/static_ndp	(working copy)
+@@ -31,7 +31,7 @@
+ 
+ # PROVIDE: static_ndp
+ # REQUIRE: netif
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ . /etc/rc.subr
+ . /etc/network.subr

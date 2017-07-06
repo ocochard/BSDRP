@@ -21,12 +21,14 @@ sysrc ifconfig_em0=up
 sysrc cloned_interfaces=lagg0
 sysrc ifconfig_lagg0="laggproto loadbalance laggport em0 SYNCDHCP"
 sysrc ifconfig_lagg0_ipv6="inet6 accept_rtadv"
+sysrc rtsold_enable=yes
 sysrc sshd_enable=yes
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 config save
 hostname R1
 service routing restart || true
 service netif restart
+service rtsold start
 service sshd start
 echo "VM1 configured"
 }
@@ -731,6 +733,7 @@ sysrc -f /etc/jails/jail6/rc.conf ifconfig_epair0b="up"
 sysrc -f /etc/jails/jail6/rc.conf cloned_interfaces="lagg0"
 sysrc -f /etc/jails/jail6/rc.conf ifconfig_lagg0="laggproto failover laggport epair0b SYNCDHCP"
 sysrc -f /etc/jails/jail6/rc.conf ifconfig_lagg0_ipv6="inet6 accept_rtadv"
+sysrc -f /etc/jails/jail6/rc.conf rtsold_enable=YES
 sysrc -f /etc/jails/jail6/rc.conf bsnmpd_enable=YES
 sysrc -f /etc/jails/jail6/rc.conf gateway_enable=NO
 sysrc -f /etc/jails/jail6/rc.conf ipv6_gateway_enable=NO

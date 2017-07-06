@@ -343,6 +343,7 @@ device		crypto			# Required by IPSEC
 ####### BSDRP section #####
 
 # BSDRP added NICs.
+device		ena		# Elastic Network Adapter (ENA) family
 device      cxgb    # Chelsio T3 10 Gigabit Ethernet adapter driver
 device      cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
 device      my      # Myson Technology Ethernet PCI driver

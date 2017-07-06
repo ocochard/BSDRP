@@ -1,5 +1,12 @@
 # Release 1.81 (not released)
 
+## New features
+* Added igb_affinity rc script
+
+## Bug fixes
+* Fix behavior of ix_affinity and cxgbe_affinity rc script
+* Fix tenant script for generating non-conflicting epair MAC addresses
+
 -----------------------------------------------------
 # Release 1.80 (2017-06-30)
 
