@@ -215,10 +215,10 @@ save_cfg () {
     done
 	)	
 
-	# Deleting file or symlink on /cfg that are no more in /etc
+	# Deleting file, symlink or directory on /cfg that are no more in /etc
 	(
 	cd /cfg
-	for i in "$@" `find * \( -type l -o -type f \)`; do
+	for i in "$@" `find * \( -type dlf \)`; do
 		[ -e /etc/$i ] || rm -rf /cfg/$i
 	done
 	)

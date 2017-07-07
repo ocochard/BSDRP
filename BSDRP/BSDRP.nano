@@ -711,7 +711,6 @@ usr/bin/compile_et
 usr/bin/ctags
 usr/bin/file2c
 usr/bin/gprof
-usr/bin/od
 usr/bin/indent
 usr/bin/m4
 usr/bin/lex
