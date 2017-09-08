@@ -25,6 +25,11 @@ ARCH="amd64"
 # An usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
+usage() {
+	echo "$0 nanobsd-images-dir [phabricator-id]"
+	exit 0
+}
+
 # Build image
 # $1 Revision number
 # $2 file image extension (same as revision if empty)
@@ -64,8 +69,7 @@ build_project() {
 }
 ### Main ###
 if [ $# -lt 1 ]; then
-	echo "$0 nanobsd-images-dir phabricator-id"
-	exit 1
+	usage
 fi
 
 IMAGES_DIR="$1"

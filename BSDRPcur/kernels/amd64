@@ -28,7 +28,7 @@ options 	SCHED_ULE		# ULE scheduler
 options 	PREEMPTION		# Enable kernel thread preemption
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
-options 	IPSEC			# IP (v4/v6) security
+options		IPSEC_SUPPORT	# Allow kldload of ipsec and tcpmd5
 options 	TCP_OFFLOAD		# TCP offload
 options 	TCP_HHOOK		# hhook(9) framework for TCP
 options 	SCTP			# Stream Control Transmission Protocol
@@ -81,7 +81,7 @@ options 	INCLUDE_CONFIG_FILE	# Include this file in kernel
 #options 	RCTL			# Resource limits
 
 # Debugging support.  Always need this:
-options 	KDB			# Kernel debugger related code
+options 	KDB			# Enable kernel debugger support.
 options 	KDB_TRACE		# Print a stack trace for a panic
 # For full debugger support use (turn off in stable branch):
 #options	BUF_TRACKING	# Track buffer history
@@ -233,6 +233,7 @@ device		em			# Intel PRO/1000 Gigabit Ethernet Family
 device		ix			# Intel PRO/10GbE PCIE PF Ethernet
 device		ixv			# Intel PRO/10GbE PCIE VF Ethernet
 device		ixl			# Intel XL710 40Gbe PCIE Ethernet
+options		IXL_IW			# Enable iWARP Client Interface in ixl(4)
 device		ixlv			# Intel XL710 40Gbe VF PCIE Ethernet
 device		le			# AMD Am7900 LANCE and Am79C9xx PCnet
 device		ti			# Alteon Networks Tigon I/II gigabit Ethernet

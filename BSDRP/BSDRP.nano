@@ -80,7 +80,6 @@ WITHOUT_ISCSI=
 WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
 WITHOUT_LIB32=
-WITHOUT_LLDB=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
 WITHOUT_NCP=
@@ -660,6 +659,7 @@ usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample
 usr/share/misc/magic.mgc
 usr/share/misc/termcap.db
+var/db/services.db
 '
     for c in ${FILES_TO_REMOVE}
     do
@@ -681,12 +681,10 @@ usr/share/misc/termcap.db
 
 TOOLCHAIN_TO_REMOVE='
 usr/bin/addr2line
-usr/bin/gnu-ar
 usr/bin/as
 usr/bin/ld
 usr/bin/nm
 usr/bin/objcopy
-usr/bin/gnu-ranlib
 usr/bin/readelf
 usr/bin/size
 usr/bin/strings
@@ -699,15 +697,11 @@ usr/bin/c++
 usr/bin/g++
 usr/bin/CC
 usr/bin/c++filt
-usr/bin/gcov
-usr/bin/gdb
-usr/bin/gdbtui
 usr/bin/ar
 usr/bin/ranlib
 usr/bin/c89
 usr/bin/c99
 usr/bin/sum
-usr/bin/compile_et
 usr/bin/ctags
 usr/bin/file2c
 usr/bin/gprof
@@ -726,21 +720,17 @@ usr/bin/nvi
 usr/bin/vgrind
 usr/bin/lint
 usr/bin/xstr
-usr/bin/lzdec
 usr/bin/yacc
-usr/bin/yyfix
 usr/bin/byacc
 usr/bin/lzdec
 usr/bin/clang
 usr/bin/clang++
 usr/bin/clang-cpp
 usr/bin/clang-tblgen
-usr/bin/tblgen
 usr/bin/crunchgen
 usr/bin/crunchide
 usr/libexec/cc1
 usr/libexec/cc1plus
-usr/libexec/cc1obj
 usr/libexec/vfontedpr
 usr/libexec/lint1
 usr/libexec/lint2

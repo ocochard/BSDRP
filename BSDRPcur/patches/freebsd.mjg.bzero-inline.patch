@@ -1,0 +1,17 @@
+Index: sys/sys/systm.h
+===================================================================
+--- sys/sys/systm.h	(revision 323281)
++++ sys/sys/systm.h	(working copy)
+@@ -258,6 +258,12 @@
+ #define ovbcopy(f, t, l) bcopy((f), (t), (l))
+ void	bcopy(const void * _Nonnull from, void * _Nonnull to, size_t len);
+ void	bzero(void * _Nonnull buf, size_t len);
++#define bzero(buf, len) do {				\
++	if (__builtin_constant_p(len) && len <= 64)	\
++		__builtin_memset(buf, 0, len);		\
++	else						\
++		bzero(buf, len);			\
++} while (0)
+ void	explicit_bzero(void * _Nonnull, size_t);
+ 
+ void	*memcpy(void * _Nonnull to, const void * _Nonnull from, size_t len);

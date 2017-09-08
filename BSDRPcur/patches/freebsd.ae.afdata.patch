@@ -1,0 +1,216 @@
+Index: sys/net/if_llatbl.c
+===================================================================
+--- sys/net/if_llatbl.c	(revision 323281)
++++ sys/net/if_llatbl.c	(working copy)
+@@ -88,6 +88,7 @@
+ static int
+ lltable_dump_af(struct lltable *llt, struct sysctl_req *wr)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	int error;
+ 
+ 	LLTABLE_LIST_LOCK_ASSERT();
+@@ -448,6 +449,7 @@
+ llentry_alloc(struct ifnet *ifp, struct lltable *lt,
+     struct sockaddr_storage *dst)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *la, *la_tmp;
+ 
+ 	IF_AFDATA_RLOCK(ifp);
+Index: sys/net/if_var.h
+===================================================================
+--- sys/net/if_var.h	(revision 323281)
++++ sys/net/if_var.h	(working copy)
+@@ -75,9 +75,11 @@
+ #include <net/vnet.h>
+ #endif /* _KERNEL */
+ #include <sys/counter.h>
++#include <sys/cpuset.h>
+ #include <sys/lock.h>		/* XXX */
+ #include <sys/mutex.h>		/* struct ifqueue */
+ #include <sys/rwlock.h>		/* XXX */
++#include <sys/rmlock.h>		/* XXX */
+ #include <sys/sx.h>		/* XXX */
+ #include <sys/_task.h>		/* if_link_task */
+ 
+@@ -291,7 +293,7 @@
+ 	struct	ifaddr	*if_addr;	/* pointer to link-level address */
+ 	void	*if_hw_addr;		/* hardware link-level address */
+ 	const u_int8_t *if_broadcastaddr; /* linklevel broadcast bytestring */
+-	struct	rwlock if_afdata_lock;
++	struct	rmlock if_afdata_lock;
+ 	void	*if_afdata[AF_MAX];
+ 	int	if_afdata_initialized;
+ 
+@@ -454,21 +456,23 @@
+ #endif /* _SYS_EVENTHANDLER_H_ */
+ 
+ #define	IF_AFDATA_LOCK_INIT(ifp)	\
+-	rw_init(&(ifp)->if_afdata_lock, "if_afdata")
++	rm_init(&(ifp)->if_afdata_lock, "if_afdata")
+ 
+-#define	IF_AFDATA_WLOCK(ifp)	rw_wlock(&(ifp)->if_afdata_lock)
+-#define	IF_AFDATA_RLOCK(ifp)	rw_rlock(&(ifp)->if_afdata_lock)
+-#define	IF_AFDATA_WUNLOCK(ifp)	rw_wunlock(&(ifp)->if_afdata_lock)
+-#define	IF_AFDATA_RUNLOCK(ifp)	rw_runlock(&(ifp)->if_afdata_lock)
++#define	IF_AFDATA_RLOCK_TRACKER	struct rm_priotracker _afdata_tracker
++#define	IF_AFDATA_WLOCK(ifp)	rm_wlock(&(ifp)->if_afdata_lock)
++#define	IF_AFDATA_RLOCK(ifp)	rm_rlock(&(ifp)->if_afdata_lock,\
++    &_afdata_tracker)
++#define	IF_AFDATA_WUNLOCK(ifp)	rm_wunlock(&(ifp)->if_afdata_lock)
++#define	IF_AFDATA_RUNLOCK(ifp)	rm_runlock(&(ifp)->if_afdata_lock,\
++    &_afdata_tracker)
+ #define	IF_AFDATA_LOCK(ifp)	IF_AFDATA_WLOCK(ifp)
+ #define	IF_AFDATA_UNLOCK(ifp)	IF_AFDATA_WUNLOCK(ifp)
+-#define	IF_AFDATA_TRYLOCK(ifp)	rw_try_wlock(&(ifp)->if_afdata_lock)
+-#define	IF_AFDATA_DESTROY(ifp)	rw_destroy(&(ifp)->if_afdata_lock)
++#define	IF_AFDATA_DESTROY(ifp)	rm_destroy(&(ifp)->if_afdata_lock)
+ 
+-#define	IF_AFDATA_LOCK_ASSERT(ifp)	rw_assert(&(ifp)->if_afdata_lock, RA_LOCKED)
+-#define	IF_AFDATA_RLOCK_ASSERT(ifp)	rw_assert(&(ifp)->if_afdata_lock, RA_RLOCKED)
+-#define	IF_AFDATA_WLOCK_ASSERT(ifp)	rw_assert(&(ifp)->if_afdata_lock, RA_WLOCKED)
+-#define	IF_AFDATA_UNLOCK_ASSERT(ifp)	rw_assert(&(ifp)->if_afdata_lock, RA_UNLOCKED)
++#define	IF_AFDATA_LOCK_ASSERT(ifp)	rm_assert(&(ifp)->if_afdata_lock, RA_LOCKED)
++#define	IF_AFDATA_RLOCK_ASSERT(ifp)	rm_assert(&(ifp)->if_afdata_lock, RA_RLOCKED)
++#define	IF_AFDATA_WLOCK_ASSERT(ifp)	rm_assert(&(ifp)->if_afdata_lock, RA_WLOCKED)
++#define	IF_AFDATA_UNLOCK_ASSERT(ifp)	rm_assert(&(ifp)->if_afdata_lock, RA_UNLOCKED)
+ 
+ /*
+  * 72 was chosen below because it is the size of a TCP/IP
+Index: sys/netinet/if_ether.c
+===================================================================
+--- sys/netinet/if_ether.c	(revision 323281)
++++ sys/netinet/if_ether.c	(working copy)
+@@ -444,6 +444,7 @@
+ 	const struct sockaddr *dst, u_char *desten, uint32_t *pflags,
+ 	struct llentry **plle)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *la = NULL, *la_tmp;
+ 	struct mbuf *curr = NULL;
+ 	struct mbuf *next = NULL;
+@@ -610,6 +611,7 @@
+ 	const struct sockaddr *dst, u_char *desten, uint32_t *pflags,
+ 	struct llentry **plle)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *la = NULL;
+ 
+ 	if (pflags != NULL)
+@@ -786,6 +788,7 @@
+ static void
+ in_arpinput(struct mbuf *m)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct rm_priotracker in_ifa_tracker;
+ 	struct arphdr *ah;
+ 	struct ifnet *ifp = m->m_pkthdr.rcvif;
+Index: sys/netinet6/icmp6.c
+===================================================================
+--- sys/netinet6/icmp6.c	(revision 323281)
++++ sys/netinet6/icmp6.c	(working copy)
+@@ -2423,6 +2423,7 @@
+ void
+ icmp6_redirect_output(struct mbuf *m0, struct rtentry *rt)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct ifnet *ifp;	/* my outgoing interface */
+ 	struct in6_addr *ifp_ll6;
+ 	struct in6_addr *router_ll6;
+Index: sys/netinet6/nd6.c
+===================================================================
+--- sys/netinet6/nd6.c	(revision 323281)
++++ sys/netinet6/nd6.c	(working copy)
+@@ -1392,6 +1392,7 @@
+ int
+ nd6_is_addr_neighbor(const struct sockaddr_in6 *addr, struct ifnet *ifp)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *lle;
+ 	int rc = 0;
+ 
+@@ -1634,6 +1635,7 @@
+ int
+ nd6_ioctl(u_long cmd, caddr_t data, struct ifnet *ifp)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct in6_ndireq *ndi = (struct in6_ndireq *)data;
+ 	struct in6_nbrinfo *nbi = (struct in6_nbrinfo *)data;
+ 	struct in6_ndifreq *ndif = (struct in6_ndifreq *)data;
+@@ -1965,6 +1967,7 @@
+ nd6_cache_lladdr(struct ifnet *ifp, struct in6_addr *from, char *lladdr,
+     int lladdrlen, int type, int code)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *ln = NULL, *ln_tmp;
+ 	int is_newentry;
+ 	int do_update;
+@@ -2256,6 +2259,7 @@
+     const struct sockaddr *sa_dst, u_char *desten, uint32_t *pflags,
+     struct llentry **plle)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *ln = NULL;
+ 	const struct sockaddr_in6 *dst6;
+ 
+@@ -2332,6 +2336,7 @@
+     const struct sockaddr_in6 *dst, u_char *desten, uint32_t *pflags,
+     struct llentry **plle)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *lle = NULL, *lle_tmp;
+ 	struct in6_addr *psrc, src;
+ 	int send_ns, ll_len;
+Index: sys/netinet6/nd6_nbr.c
+===================================================================
+--- sys/netinet6/nd6_nbr.c	(revision 323281)
++++ sys/netinet6/nd6_nbr.c	(working copy)
+@@ -607,6 +607,7 @@
+ void
+ nd6_na_input(struct mbuf *m, int off, int icmp6len)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct ifnet *ifp = m->m_pkthdr.rcvif;
+ 	struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
+ 	struct nd_neighbor_advert *nd_na;
+Index: sys/netinet6/nd6_rtr.c
+===================================================================
+--- sys/netinet6/nd6_rtr.c	(revision 323281)
++++ sys/netinet6/nd6_rtr.c	(working copy)
+@@ -738,6 +738,7 @@
+ void
+ defrouter_select_fib(int fibnum)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct nd_defrouter *dr, *selected_dr, *installed_dr;
+ 	struct llentry *ln = NULL;
+ 
+@@ -1545,6 +1546,7 @@
+ static struct nd_pfxrouter *
+ find_pfxlist_reachable_router(struct nd_prefix *pr)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct nd_pfxrouter *pfxrtr;
+ 	struct llentry *ln;
+ 	int canreach;
+Index: sys/netinet6/scope6.c
+===================================================================
+--- sys/netinet6/scope6.c	(revision 323281)
++++ sys/netinet6/scope6.c	(working copy)
+@@ -207,6 +207,7 @@
+ static int
+ scope6_get(struct ifnet *ifp, struct scope6_id *idlist)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct scope6_id *sid;
+ 
+ 	/* We only need to lock the interface's afdata for SID() to work. */
+@@ -393,6 +394,7 @@
+ int
+ in6_setscope(struct in6_addr *in6, struct ifnet *ifp, u_int32_t *ret_id)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	int scope;
+ 	u_int32_t zoneid = 0;
+ 	struct scope6_id *sid;

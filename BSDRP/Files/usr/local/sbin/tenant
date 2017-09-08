@@ -199,8 +199,10 @@ EOF
 			value="=\"up\""
 		fi
 		# If it's a bridge, need to create epair (a added to bridge, b bound to jail)
+		# But multiple bridge can be added, then epair needs to use bridge id too
 		if echo $nicname | grep -q bridge; then
-			rcnicname=epair${id}b
+			bid=${nicname#bridge}
+			rcnicname=epair${id}${bid}b
 			# Convert id into hexa
 			host=""
 			host=$(sysctl -n kern.hostid)
@@ -209,21 +211,29 @@ EOF
 			else
 				host=$(echo $host | od -txC -A n -N2 | tr -s ' ')
 			fi
-			hostfirst=$(echo ${host} | cut -d ' ' -f 2)
-			hostsecond=$(echo ${host} | cut -d ' ' -f 3)
-			cent=$((id / 100))
-			unit=$((id - (cent * 100)))
-			[ "$unit" -lt 10 ] && unit="0${unit}"
+			hostfirst=$(echo ${host} | cut -d ' ' -f 1)
+			[ -z "${hostfirst}" ] && echo "WARNING bad MAC addresse generated: hostfirst is empty"
+			hostsecond=$(echo ${host} | cut -d ' ' -f 2)
+			[ -z "${hostsecond}" ] && echo "WARNING bad MAC addresse generated: hostsecond is empty"
+			#need to convert jail id into hexa
+			if [ "$id" -gt 255 ]; then
+				cent=$(printf '%x\n' $((id / 255)))
+				unit=$(printf '%02x\n' $((id % 255)))
+			else
+				cent="0"
+				unit=$(printf '%02x\n' ${id})
+			fi
 			cat >> /etc/jail.conf <<EOF
-    vnet.interface  += "epair${id}b";
-    exec.prestart  += "ifconfig epair${id} create";
+    vnet.interface  += "epair${id}${bid}b";
+    exec.prestart  += "ifconfig epair${id}${bid} create";
     # fix bug that can create conflict on same LAN for epair
-	exec.prestart  += "ifconfig epair${id}a ether 02:ff:${hostfirst}:${hostsecond}:a${cent}:${unit}";
-    exec.prestart  += "ifconfig epair${id}b ether 02:ff:${hostfirst}:${hostsecond}:b${cent}:${unit}";
-    exec.prestart  += "ifconfig epair${id}a up";
-    exec.prestart  += "ifconfig bridge0 addm epair${id}a up";
-    exec.poststop  += "ifconfig bridge0 deletem epair${id}a";
-    exec.poststop  += "ifconfig epair${id}a destroy";
+    # To do: if bridge id bigger than 10
+    exec.prestart  += "ifconfig epair${id}${bid}a ether 02:f${bid}:${hostfirst}:${hostsecond}:a${cent}:${unit}";
+    exec.prestart  += "ifconfig epair${id}${bid}b ether 02:f${bid}:${hostfirst}:${hostsecond}:b${cent}:${unit}";
+    exec.prestart  += "ifconfig epair${id}${bid}a up";
+    exec.prestart  += "ifconfig ${nicname} addm epair${id}${bid}a up";
+    exec.poststop  += "ifconfig ${nicname} deletem epair${id}${bid}a";
+    exec.poststop  += "ifconfig epair${id}${bid}a destroy";
 EOF
 
 		else
@@ -247,7 +257,7 @@ EOF
     exec.prestart  += "logger jail ${tenant} pre-started";
     exec.poststop  += "umount ${jailroot}/dev";
     exec.poststop  += "umount -a -F /etc/fstab.${tenant}";
-	exec.poststop  += "jail -r ${id}";
+    exec.poststop  += "jail -r ${id}";
     exec.poststop  += "logger jail ${tenant} post-stopped";
 }
 EOF
@@ -271,9 +281,7 @@ delete () {
 	grep -q "^${tenant} {" /etc/jail.conf || die "ERROR: No jail named $tenant configured"
 	jls -j ${tenant} > /dev/null 2>&1 && die "Jail is running: Stop it before delete it (service jail stop ${tenant})"
 	mount | grep -q "/var/jails/${tenant}/" && die "There are still some mount points regarding ${tenant}"
-	for i in /etc/fstab.${tenant}; do
-		[ -f $i ] && rm $i
-	done
+	[ -f /etc/fstab.${tenant} ] && rm /etc/fstab.${tenant}
 	for i in etc var; do
 		[ -d /$i/jails/${tenant} ] && rm -rf /$i/jails/${tenant}
 	done

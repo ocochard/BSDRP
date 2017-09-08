@@ -24,7 +24,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# $FreeBSD: head/tools/tools/nanobsd/nanobsd.sh 291917 2015-12-07 04:02:52Z imp $
+# $FreeBSD: head/tools/tools/nanobsd/nanobsd.sh 309271 2016-11-28 21:29:01Z imp $
 #
 
 set -e
@@ -44,9 +44,9 @@ do_installworld=true
 do_image=true
 do_copyout_partition=true
 do_native_xtools=false
-# Don't do the legacy build unless we detect 'old' variables being
-# set.
-do_legacy=false
+
+# Pull in legacy stuff for now automatically
+. "${topdir}/legacy.sh"
 
 set +e
 args=`getopt BKXWbc:fhiknqvw $*`
@@ -59,7 +59,7 @@ set -e
 set -- $args
 for i
 do
-	case "$i" 
+	case "$i"
 	in
 	-B)
 		do_installworld=false
@@ -72,6 +72,10 @@ do
 		;;
 	-X)
 		do_native_xtools=true
+		shift
+		;;
+	-W)
+		do_installworld=false
 		shift
 		;;
 	-b)
@@ -128,15 +132,6 @@ done
 if [ $# -gt 0 ] ; then
 	echo "$0: Extraneous arguments supplied"
 	usage
-fi
-
-if [ -n "$NANO_HEADS" -o -n "$NANO_SECTS" ]; then
-	do_legacy=true
-fi
-
-# If this uses the old, legacy image system, pull that in as well
-if $do_legacy ; then
-	. "${topdir}/legacy.sh"
 fi
 
 #######################################################################

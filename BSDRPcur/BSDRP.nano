@@ -81,7 +81,6 @@ WITHOUT_ISCSI=
 WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
 WITHOUT_LIB32=
-WITHOUT_LLDB=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
 WITHOUT_NCP=
@@ -665,6 +664,7 @@ usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample
 usr/share/misc/magic.mgc
 usr/share/misc/termcap.db
+var/db/services.db
 '
     for c in ${FILES_TO_REMOVE}
     do
@@ -706,16 +706,12 @@ usr/bin/ctags
 usr/bin/file2c
 usr/bin/flex
 usr/bin/flex++
-usr/bin/gdb
-usr/bin/gdbserver
-usr/bin/gdbtui
 usr/bin/indent
 usr/bin/ld
 usr/bin/ld.bfd
 usr/bin/lex
 usr/bin/lex++
 usr/bin/lint
-usr/bin/lldb
 usr/bin/llvm-tblgen
 usr/bin/mkstr
 usr/bin/nm
@@ -732,11 +728,8 @@ usr/bin/unifdefall
 usr/bin/xstr
 usr/bin/yacc
 usr/lib/libfl.a
-usr/lib/libfl_p.a
 usr/lib/libl.a
-usr/lib/libl_p.a
 usr/lib/libln.a
-usr/lib/libln_p.a
 usr/sbin/btxld
 usr/sbin/config
 '

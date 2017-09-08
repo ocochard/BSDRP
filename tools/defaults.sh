@@ -71,6 +71,7 @@ NANO_PMAKE="make -j 3"
 
 # The default name for any image we create.
 NANO_IMGNAME="_.disk.full"
+NANO_IMG1NAME="_.disk.image"
 
 # Options to put in make.conf during buildworld only
 CONF_BUILD=' '
@@ -131,10 +132,6 @@ NANO_RAM_ETCSIZE=10240
 
 # Size of the /tmp+/var ramdisk in 512 bytes sectors
 NANO_RAM_TMPVARSIZE=10240
-
-# Media geometry, only relevant if bios doesn't understand LBA.
-#NANO_SECTS=63
-#NANO_HEADS=16
 
 # boot0 flags/options and configuration
 NANO_BOOT0CFG="-o packet -s 1 -m 3"
@@ -638,7 +635,7 @@ populate_slice ( ) (
 	if [ -n "${dir}" -a -d "${dir}" ]; then
 		echo "Populating ${lbl} from ${dir}"
 		cd "${dir}"
-		find . -print | grep -Ev '/(CVS|\.svn|\.hg|\.git)' | cpio -dumpv ${mnt}
+		find . -print | grep -Ev '/(CVS|\.svn|\.hg|\.git)/' | cpio -dumpv ${mnt}
 	fi
 	df -i ${mnt}
 	nano_umount ${mnt}
@@ -656,7 +653,7 @@ last_orders ( ) (
 	# Redefine this function with any last orders you may have
 	# after the build completed, for instance to copy the finished
 	# image to a more convenient place:
-	# cp ${NANO_DISKIMGDIR}/_.disk.image /home/ftp/pub/nanobsd.disk
+	# cp ${NANO_DISKIMGDIR}/${NANO_IMG1NAME} /home/ftp/pub/nanobsd.disk
 	true
 )
 
@@ -787,7 +784,6 @@ cust_pkgng ( ) (
 		echo "FAILED: need a pkg/ package for bootstrapping"
 		exit 2
 	fi
-	NANO_PACKAGE_LIST="${_NANO_PKG_PACKAGE} ${NANO_PACKAGE_LIST}"
 
 	# Mount packages into chroot
 	mkdir -p ${NANO_WORLDDIR}/_.p
@@ -795,14 +791,25 @@ cust_pkgng ( ) (
 
 	trap "umount ${NANO_WORLDDIR}/_.p ; rm -rf ${NANO_WORLDDIR}/_.p" 1 2 15 EXIT
 
-	# Install packages
-	todo="$(echo "${NANO_PACKAGE_LIST}" | awk '{ print NF }')"
-	echo "=== TODO: $todo"
-	echo "${NANO_PACKAGE_LIST}"
-	echo "==="
-	for _PKG in ${NANO_PACKAGE_LIST}; do
-		CR "${PKGCMD} add /_.p/${_PKG}"
-	done
+	# Install pkg-* package
+	CR "${PKGCMD} add /_.p/${_NANO_PKG_PACKAGE}"
+
+	(
+		# Expand any glob characters in pacakge list
+		cd "${NANO_PACKAGE_DIR}"
+		_PKGS=`find ${NANO_PACKAGE_LIST} -not -name "${_NANO_PKG_PACKAGE}" -print | sort | uniq`
+
+		# Show todo
+		todo=`echo "$_PKGS" | wc -l`
+		echo "=== TODO: $todo"
+		echo "$_PKGS"
+		echo "==="
+
+		# Install packages
+		for _PKG in $_PKGS; do
+			CR "${PKGCMD} add /_.p/${_PKG}"
+		done
+	)
 
 	CR0 "${PKGCMD} info"
 
@@ -916,6 +923,7 @@ set_defaults_and_export ( ) {
 	export_var NANO_HEADS
 	export_var NANO_IMAGES
 	export_var NANO_IMGNAME
+	export_var NANO_IMG1NAME
 	export_var NANO_MAKE
 	export_var NANO_MAKE_CONF_BUILD
 	export_var NANO_MAKE_CONF_INSTALL

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-#Melifaro's script for displaying NIC queue usage/rate
+# Alexander V. Chernikov's script for displaying NIC queue usage/rate
+# Improved by BSDRP team
 
 from __future__ import division
 import re
@@ -9,11 +10,11 @@ import time
 
 if len(sys.argv) < 2:
     print("Usage: {} interface".format(sys.argv[0]))
-    print("       with interface as cxl,ix,igb or bxe")
+    print("       with interface as cxl,ix,igb, bxe or oce")
     sys.exit(1)
 
 def read_nic(name):
-    m = re.match('^(ix|cxl|igb|bxe)(\d+)$', name)
+    m = re.match('^(ix|cxl|igb|bxe|oce)(\d+)$', name)
     if not m:
         raise Exception('Invalid nic name: {}'.format(name))
     driver=m.group(1)
@@ -35,6 +36,9 @@ def read_nic(name):
         # dev.bxe.3.rx_bcast_packets: 1447
         # dev.bxe.3.rx_mcast_packets: 0
         # dev.bxe.3.rx_ucast_packets: 1524243
+		# dev.oce.0.stats.rx.queue3.rx_pkts: 0
+		# dev.oce.0.stats.tx.queue3.tx_pkts: 0
+		# dev.oce.0.stats.rx.total_pkts:
 
         items = line.split(":")
         #print("L: {}".format(line))
@@ -44,6 +48,8 @@ def read_nic(name):
             m = re.match('.*\.txq\.(\d+)\.r_enqueues:\s+(\d+)', line)
         elif driver in ("ix", "igb"):
             m = re.match('.*\.queue(\d+)\.tx_packets:\s+(\d+)', line)
+        elif driver == "oce":
+           m = re.match('.*\.stats.tx.queue(\d+)\.tx_pkts:\s+(\d+)', line)
         if m:
             txq[m.group(1)] = int(m.group(2))
             #print("TXQ {} value {}".format(m.group(1), m.group(2)))
@@ -53,6 +59,8 @@ def read_nic(name):
             m = re.match('.*\.rxq\.(\d+)\.rxcsum:\s+(\d+)', line)
         elif driver in ("ix", "igb"):
             m = re.match('.*\.queue(\d+)\.rx_packets:\s+(\d+)', line)
+        elif driver == "oce":
+            m = re.match('.*\.stats.rx.queue(\d+)\.rx_pkts:\s+(\d+)', line)
         if m:
             rxq[m.group(1)] = int(m.group(2))
             #print("RXQ {} value {}".format(m.group(1), m.group(2)))
@@ -65,6 +73,8 @@ def read_nic(name):
             m = re.match('.*\.total_pkts_recvd:\s+(\d+)', line)
         elif driver == "ix":
             m = re.match('.*\.total_pkts_rcvd:\s+(\d+)', line)
+        elif driver == "oce":
+            m = re.match('.*\.stats.rx.total_pkts:\s+(\d+)', line)
         if m:
             agg['rx_sum'] = int(m.group(1))
         if driver == "bxe":
@@ -74,6 +84,8 @@ def read_nic(name):
             m = re.match('.*\.total_pkts_txd:\s+(\d+)', line)
         elif driver == "cxl":
             m = re.match('.*\.stats.tx_frames:\s+(\d+)', line)
+        elif driver == "oce":
+            m = re.match('.*\.stats.tx.total_tx_pkts:\s+(\d+)', line)
         if m:
             agg['tx_sum'] = int(m.group(1))
     return [rxq, txq, agg]
