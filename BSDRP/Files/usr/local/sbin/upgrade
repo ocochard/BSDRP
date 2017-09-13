@@ -42,7 +42,7 @@
 set -eu
 
 # Variables
-ARCH=`uname -m`
+ARCH=$(uname -m)
 GPT=false
 
 # A usefull function (from: http://code.google.com/p/sh-die/)
@@ -61,12 +61,12 @@ mbr_get_info() {
 	# s1 is UFS with BSD slice a: first system partition (UFS label: NAMEs1a)
 	# s2 if UFS with BSD slice a: second system partition (UFS label: NAMEs2a)
 
-	if mount | grep -q "/dev/${NANO_DRIVE}s1a on / "; then 
+	if mount | grep -E -q "^/dev/${NANO_DRIVE}s1a on / "; then
 		CURRENT_SLICE="s1"
 		CURRENT_PART="1"
 		NEXT_SLICE="s2"
 		NEXT_PART="2"
-	elif mount | grep -q "/dev/${NANO_DRIVE}s2a on / " ; then                
+	elif mount | grep -E -q "^/dev/${NANO_DRIVE}s2a on / " ; then
 		CURRENT_SLICE="s2"
 		CURRENT_PART="2"
 		NEXT_SLICE="s1"
@@ -80,8 +80,8 @@ mbr_get_info() {
 	CURRENT_LABEL_ID="${CURRENT_SLICE}${BSD_SLICE}"
 
 	# ufs/BSDRPs1a     N/A  aacd0s1a
-	boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}${CURRENT_LABEL_ID} | \
-		awk '{ s=$3; sub(/s[12]a$/, "", s); print s; }'`
+	boot_dev=/dev/$(glabel status | grep ${NANO_DRIVE}${CURRENT_LABEL_ID} | \
+		awk '{ s=$3; sub(/s[12]a$/, "", s); print s; }')
 	[ -z "${boot_dev}" ] && die "Bug in mbr_get_info: boot_dev can't be empty"
 	return 0
 }
@@ -94,14 +94,14 @@ gpt_get_info() {
 	# p3 is first system with NAME1
 	# p4 is second system with NAME2
 
-	if mount | grep -q "/dev/${NANO_DRIVE}1 on / "; then
+	if mount | grep -E -q "^/dev/${NANO_DRIVE}1 on / "; then
 		CURRENT_SLICE="p3"
 		CURRENT_PART="3"
 		CURRENT_LABEL_ID="1"
 		NEXT_SLICE="p4"
 		NEXT_PART="4"
 		NEXT_LABEL_ID="2"
-	elif mount | grep -q "/dev/${NANO_DRIVE}2 on / " ; then
+	elif mount | grep -E -q "^/dev/${NANO_DRIVE}2 on / " ; then
 		CURRENT_SLICE="p4"
 		CURRENT_PART="4"
 		CURRENT_LABEL_ID="2"
@@ -115,8 +115,8 @@ gpt_get_info() {
 	BSD_SLICE=""
 
 	# gpt/BSDRP0     N/A  vtbd0p3	
-	boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}${CURRENT_LABEL_ID} | \
-		awk '{ s=$3; sub(/p[34]$/, "", s); print s; }'`
+	boot_dev=/dev/$(glabel status | grep ${NANO_DRIVE}${CURRENT_LABEL_ID} | \
+		awk '{ s=$3; sub(/p[34]$/, "", s); print s; }')
 	[ -z "${boot_dev}" ] && die "Bug in gpt_get_info: boot_dev can't be empty"
 	return 0
 }
@@ -131,20 +131,12 @@ get_info() {
 
 # Get label information for Sun VTOC
 vtoc_get_info() {
-	if mount | grep -q "/dev/${NANO_DRIVE}s1a on / "; then
-    	DST_SLICE="d"
-		DST_LABEL="${LABEL}s2a"
-    	SRC_SLICE="a"
-		SRC_LABEL="${LABEL}s1a"
+	if mount | grep -E -q "^/dev/${NANO_DRIVE}s1a on / "; then
 		CURRENT_SLICE="s1"
 		CURRENT_PART="a"
 		NEXT_SLICE="d"
 		NEXT_PART="d"
-	elif mount | grep -q "/dev/${NANO_DRIVE}s2a on / " ; then
-    	DST_SLICE="a"
-		DST_LABEL="${LABEL}s1a"
-    	SRC_SLICE="d"
-		SRC_LABEL="${LABEL}s2a"
+	elif emount | grep -E -q "^/dev/${NANO_DRIVE}s2a on / " ; then
 		CURRENT_SLICE="s2"
 		CURRENT_PART="d"
 		NEXT_SLICE="s1"
@@ -156,8 +148,8 @@ vtoc_get_info() {
 	NEXT_LABEL_ID="${NEXT_SLICE}a"
 	CURRENT_LABEL_ID="${CURRENT_SLICE}a"
 	# ufs/BSDRPs1a     N/A  ada1a
-	boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}${CURRENT_LABEL_ID} | \
-		awk '{ print $3; }'| sed 's/.$//'`
+	boot_dev=/dev/$(glabel status | grep ${NANO_DRIVE}${CURRENT_LABEL_ID} | \
+		awk '{ print $3; }'| sed 's/.$//')
 	return 0
 }
 
@@ -178,7 +170,7 @@ write_new_image() {
 		die "ERROR: New file system ${boot_dev}${NEXT_SLICE}${BSD_SLICE} check failed"
 
 	# Set UFS label into the new slice
-	if !($GPT); then
+	if ! ($GPT); then
 		tunefs -L ${LABEL}${NEXT_LABEL_ID} ${boot_dev}${NEXT_SLICE}${BSD_SLICE} || \
 			die "ERROR: Can't put label on the new filesystem"
 	fi
@@ -225,7 +217,7 @@ write_new_image() {
 	rm -r /tmp/sysupgrade || echo "WARNING: Can't remove tempdir"
 
 	# Save the fstab to /cfg
-	if mount | ! grep -q "/cfg"; then
+	if mount | ! grep -E -q '^/cfg'; then
 		mount /cfg || die "ERROR: Cant't mount /cfg"
 	fi
 	if ! cp /etc/fstab /cfg; then
@@ -274,7 +266,7 @@ boot_modif () {
 vtoc_boot_modif () {
 	# Get the actual disk and remove the last caracter
 	# Thanks for this tips hrs@ !
-	DISK=`kenv currdev | sed 's/.$//'`
+	DISK=$(kenv currdev | sed 's/.$//')
 	# Now DISK is like that: /pci@1f,0/ide@d/disk@1,0:
 	if eeprom boot-device=$DISK${NEXT_PART}; then
 		# http://docs.oracle.com/cd/E19127-01/ultra25.ws/819-1892-12/nvram.html

@@ -5,17 +5,11 @@
 * if no-mandatory /data had a fsck problem, system refuse go in single user
 * add auto-trimming of all log files that are being created
 
-## Replacing Quagga by FRR ##
-* Need to test quagga configuration and RC scripts easy copy
-* Need to solve conflict with pimd (renaming pimd?)
-
 ## Arch #
 
 * NEED to merge lot's of common task of create_arch_diskimage() in nanobsd
 
 ## Boot loader ##
-* FreeBSD boot0 (sys/boot/i386/boot0) is highly optimized ASM code and use int 0x14 for COM port access (limited to 9600 bauds).
-    => Is possible to use UART in place for highly baud rate ? 
 * How to add UEFI bootloader ? (available on -current), because some x86_64 machine didn't have UEFI compability (PC Engine APU)
 
 ## Authentication #
@@ -25,10 +19,8 @@
 ## misc #
 
 * Is utf-8 support for console usefull ?
-* Quagga rc script: limit all quagga process message when quagga is disabled
 * Need to publish an OVF (Open Virtualization Format) tar file
 * A netgraph documentation "for dummies" like this: http://nexus.org.ua/weblog/message/406/
-* Patch to routing branch: fast.diff usage: make sure you have you're gw as static lle (arp -s) and issue `route -n get gw-addr -proto1`. Then all IPv4 fast forwarding will use this gw rte/lle w/o lookup.
 
 ## TRIM ##
 
@@ -38,7 +30,6 @@ give "yes"
 
 ## labs #
 
-* PAM: tacacs+, radius, ldap, etc
 * Lab script: Generate a lab diagram in DOT language, see example in tools/bsdrp.lab.gv
 * Lab script: Add a libvirt script
 

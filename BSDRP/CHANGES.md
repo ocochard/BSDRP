@@ -9,6 +9,7 @@
 * Fix behavior of ix_affinity and cxgbe_affinity rc script
 * Fix tenant script for generating non-conflicting epair MAC addresses
 * Fix "config save" that didn't correctly delete no more existing directories
+* Fix upgrade script that badly detect already /cfg mounted if jails running
 
 ## Updated packages
 * exabgp to 3.4.20
@@ -23,7 +24,7 @@
 * bird6 1.6.3_3: Dynamic IP routing daemon (IPv6 version)
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.32: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.32.1: Root certificate bundle from the Mozilla Project
 * devcpu-data 1.10: Intel and AMD CPUs microcode updates
 * dhcprelya 5.0: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
