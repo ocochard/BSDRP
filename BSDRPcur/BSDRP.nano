@@ -604,6 +604,10 @@ EOF
 	grep -q quagga ${NANO_WORLDDIR}/etc/passwd && \
 		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
 
+	# Set FRR permission
+	grep -q frr ${NANO_WORLDDIR}/etc/passwd && \
+		CR 'chown -R frr:frr /usr/local/etc/frr'
+
 	# Compress the kernel (save 10Mb)
 	# Disabled: dtrace didn't support compressed kernel
 	#if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel ]; then

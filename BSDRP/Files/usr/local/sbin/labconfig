@@ -191,6 +191,7 @@ router bgp 100
  network 10.0.0.2/32
  neighbor 10.0.23.3 remote-as 100
  neighbor 10.0.23.3 soft-reconfiguration inbound
+ neighbor 10.0.23.3 password abigpassword
  neighbor 2001:db8:23::3 remote-as 100
  no neighbor 2001:db8:23::3 activate
 !
@@ -198,6 +199,7 @@ router bgp 100
  network 2001:db8::2/128
  neighbor 2001:db8:23::3 activate
  neighbor 2001:db8:23::3 soft-reconfiguration inbound
+ neighbor 2001:db8:23::3 password abigpassword
  exit-address-family
 EOF
 
@@ -322,15 +324,16 @@ protocol direct {
 protocol rip R4 {
         export all;
         interface "vtnet2","em2" {
-            version 2;
-            password "rippassword";
-            authentication cryptographic;
+        version 2;
+        password "rippassword";
+        authentication cryptographic;
         };
 }
 
 protocol bgp R2 {
         local as 100;
 		neighbor 10.0.23.2 as 100;
+        password "abigpassword";
         import all;
         export all;
 }
@@ -365,6 +368,7 @@ protocol rip R4 {
 protocol bgp R2 {
         local as 100;
         neighbor 2001:db8:23::2 as 100;
+        password "abigpassword";
         import all;
         export all;
 }

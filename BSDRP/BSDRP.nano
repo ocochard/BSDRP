@@ -816,7 +816,8 @@ usr/share/tmac/tmac.vgrind
 bsdrp_console_serial () {
 	# Since r266895, console is set as onifconsole
 	# Since r289634, 4 firsts serials console are set as onifconsole
-	#sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
+	# Force first 4 on in case of IPMI SoL using second port
+	sed -i "" -e '/^ttyu[0-3]/s/onifconsole/on/' ${NANO_WORLDDIR}/etc/ttys
 	#sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
 	#sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
 

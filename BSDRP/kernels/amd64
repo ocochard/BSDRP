@@ -9,6 +9,7 @@ options 	PREEMPTION		# Enable kernel thread preemption
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
 options 	IPSEC			# IP (v4/v6) security
+options 	IPSEC_SUPPORT		# Allow kldload of ipsec and tcpmd5
 options 	TCP_OFFLOAD		# TCP offload
 options 	SCTP			# Stream Control Transmission Protocol
 options 	FFS			# Berkeley Fast Filesystem
@@ -67,6 +68,7 @@ options 	KDB_TRACE		# Print a stack trace for a panic
 # Make an SMP-capable kernel by default
 options 	SMP			# Symmetric MultiProcessor Kernel
 options 	DEVICE_NUMA		# I/O Device Affinity
+options 	EARLY_AP_STARTUP
 
 # CPU frequency control
 device		cpufreq
@@ -398,7 +400,7 @@ device enc
 options		RADIX_MPATH
 
 # Enable VIMAGE (VNET, for virtual network with jail)
-# Performance impact should be small (about 2%)
+# Performance impact should be small (about 5%)
 options		VIMAGE
 
 # The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)

@@ -40,3 +40,7 @@ http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html
 ## Design
 
 PROJECT name and NAME in PROJECT/make.conf are redundant
+
+## Security
+
+Embedded the mtree file, and just store its hash online

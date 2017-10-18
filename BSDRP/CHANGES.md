@@ -16,6 +16,8 @@
 * iperf to 2.0.10
 * iperf3 to 3.2
 * isc-dhcp43-server to 4.3.6
+* openvpn to 2.4.4
+* monit to 5.24
 * strongswan to 5.6.0
 * sudo to 1.8.21
 
@@ -25,7 +27,7 @@
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.32.1: Root certificate bundle from the Mozilla Project
-* devcpu-data 1.10: Intel and AMD CPUs microcode updates
+* devcpu-data 1.11: Intel and AMD CPUs microcode updates
 * dhcprelya 5.0: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * exabgp 3.4.20: BGP engine and route injector
@@ -38,7 +40,7 @@
 * iperf3 3.2: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_2: KAME racoon IKE daemon, ipsec-tools version
-* isc-dhcp43-server 4.3.6: ISC Dynamic Host Configuration Protocol server
+* isc-dhcp43-server 4.3.6_1: ISC Dynamic Host Configuration Protocol server
 * json-c 0.12.1: JSON (JavaScript Object Notation) implementation in C
 * libev 4.22,1: Full-featured and high-performance event loop library
 * libevent 2.1.8: API for executing callback functions on events or timeouts
@@ -51,15 +53,15 @@
 * libucl 0.8.0: Universal configuration library parser
 * lzo2 2.10_1: Portable speedy, lossless data compression library
 * mlvpn 2.3.1_1: Multi-link VPN
-* monit 5.23.0: Unix system management and proactive monitoring
+* monit 5.24.0: Unix system management and proactive monitoring
 * mpd5 5.8_2: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8: Multicast routing daemon providing DVMRP for IPv4
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.45: Open source LDAP client implementation
-* openvpn 2.4.3: Secure IP/Ethernet tunnel daemon
+* openvpn 2.4.4: Secure IP/Ethernet tunnel daemon
 * openvpn-auth-radius 2.1_3: RADIUS authentication plugin for OpenVPN
-* pciids 20170825: Database of all known IDs used in PCI devices
+* pciids 20170916: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
@@ -70,11 +72,11 @@
 * py27-setuptools 36.2.2: Python packages installer
 * python 2.7_3,2: "meta-port" for the default version of Python interpreter
 * python2 2_3: The "meta-port" for version 2 of the Python interpreter
-* python27 2.7.13_7: Interpreted object-oriented programming language
+* python27 2.7.14: Interpreted object-oriented programming language
 * readline 7.0.3: Library for editing command lines as they are typed
 * smcroute 2.3.1: Static multicast routing tool
 * strongswan 5.6.0: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.21p1: Allow others to run commands as root
+* sudo 1.8.21p2: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.5_1: Terminal Multiplexer
 * ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol
