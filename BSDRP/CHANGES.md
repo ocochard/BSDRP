@@ -6,6 +6,7 @@
 * Disable HyperThreading by default
 
 ## Bug fixes
+* Fix mlxen module (Mellanox ConnectX-2 and ConnectX-3) load
 * Fix behavior of ix_affinity and cxgbe_affinity rc script
 * Fix tenant script for generating non-conflicting epair MAC addresses
 * Fix "config save" that didn't correctly delete no more existing directories
@@ -16,10 +17,12 @@
 * iperf to 2.0.10
 * iperf3 to 3.2
 * isc-dhcp43-server to 4.3.6
+* frr to 3.0
 * openvpn to 2.4.4
 * monit to 5.24
 * strongswan to 5.6.0
 * sudo to 1.8.21
+* tmux to 2.6
 
 ## Packages list
 * bird 1.6.3_3: Dynamic IP routing daemon (IPv4 version)
@@ -27,13 +30,13 @@
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.32.1: Root certificate bundle from the Mozilla Project
-* devcpu-data 1.11: Intel and AMD CPUs microcode updates
+* devcpu-data 1.11_1: Intel and AMD CPUs microcode updates
 * dhcprelya 5.0: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * exabgp 3.4.20: BGP engine and route injector
 * flashrom 0.9.9_2: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr 2.0: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr 3.0: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.9.3_1: Cross-platform file change monitor
 * indexinfo 0.2.6: Utility to regenerate the GNU info page index
 * iperf 2.0.10_1: Tool to measure maximum TCP and UDP bandwidth
@@ -61,7 +64,7 @@
 * openldap-client 2.4.45: Open source LDAP client implementation
 * openvpn 2.4.4: Secure IP/Ethernet tunnel daemon
 * openvpn-auth-radius 2.1_3: RADIUS authentication plugin for OpenVPN
-* pciids 20170916: Database of all known IDs used in PCI devices
+* pciids 20171011: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
@@ -69,16 +72,16 @@
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
 * pkg 1.10.1: Package manager
 * pmacct 1.6.1: Accounting and aggregation tool for IPv4 and IPv6 traffic
-* py27-setuptools 36.2.2: Python packages installer
+* py27-setuptools 36.5.0: Python packages installer
 * python 2.7_3,2: "meta-port" for the default version of Python interpreter
 * python2 2_3: The "meta-port" for version 2 of the Python interpreter
-* python27 2.7.14: Interpreted object-oriented programming language
+* python27 2.7.14_1: Interpreted object-oriented programming language
 * readline 7.0.3: Library for editing command lines as they are typed
 * smcroute 2.3.1: Static multicast routing tool
 * strongswan 5.6.0: Open Source IKEv2 IPsec-based VPN solution
 * sudo 1.8.21p2: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
-* tmux 2.5_1: Terminal Multiplexer
+* tmux 2.6: Terminal Multiplexer
 * ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol
 
 -----------------------------------------------------
