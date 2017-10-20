@@ -1,5 +1,10 @@
 # TODO List fort the BSD Router Project
 
+## TO FIX before release ##
+
+* BGP and MD5
+* mpd5 crashing at startup
+
 ## Bugs #
 
 * if no-mandatory /data had a fsck problem, system refuse go in single user

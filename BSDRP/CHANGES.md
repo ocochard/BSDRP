@@ -4,6 +4,7 @@
 * Add some Yandex (ae@)'s patches that remove locking problem (from 5Mpps to 10Mpps on 8 cores)
 * Added igb_affinity rc script (useless, drivers did it automatically?)
 * Disable HyperThreading by default
+* Add qlxgbe (QLogic 8300 series 10 Gigabit) drivers
 
 ## Bug fixes
 * Fix mlxen module (Mellanox ConnectX-2 and ConnectX-3) load

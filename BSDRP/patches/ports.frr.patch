@@ -1,6 +1,6 @@
 Index: net/frr/Makefile
 ===================================================================
---- net/frr/Makefile	(revision 451977)
+--- net/frr/Makefile	(revision 452420)
 +++ net/frr/Makefile	(working copy)
 @@ -1,7 +1,7 @@
  # $FreeBSD$
@@ -11,7 +11,13 @@ Index: net/frr/Makefile
  CATEGORIES=	net ipv6
  
  MAINTAINER=	olivier@FreeBSD.org
-@@ -18,11 +18,11 @@
+@@ -13,16 +13,16 @@
+ BUILD_DEPENDS=	gawk:lang/gawk
+ LIB_DEPENDS=	libjson-c.so:devel/json-c
+ 
+-CONFLICTS=	openbgpd-[0-9]* openospfd-[0-9]* zebra-0* quagga-re-[0-9]* quagga-[0-9]*
++CONFLICTS=	openbgpd openospfd zebra quagga-esr quagga
+ 
  USE_GITHUB=	yes
  GH_ACCOUNT=	FRRouting
  GH_PROJECT=	frr
@@ -42,7 +48,7 @@ Index: net/frr/Makefile
  VTYSH_DESC=		Build integrated vty shell
 Index: net/frr/distinfo
 ===================================================================
---- net/frr/distinfo	(revision 451977)
+--- net/frr/distinfo	(revision 452420)
 +++ net/frr/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1497785263
@@ -53,7 +59,7 @@ Index: net/frr/distinfo
 +SIZE (FRRouting-frr-3.0-frr-3.0_GH0.tar.gz) = 3166434
 Index: net/frr/files/frr.in
 ===================================================================
---- net/frr/files/frr.in	(revision 451977)
+--- net/frr/files/frr.in	(revision 452420)
 +++ net/frr/files/frr.in	(working copy)
 @@ -5,7 +5,7 @@
  
@@ -64,6 +70,15 @@ Index: net/frr/files/frr.in
  
  # Add the following line to /etc/rc.conf to enable frr:
  #  frr_enable="YES"
+@@ -52,7 +52,7 @@
+ {
+     echo "Checking $daemon.conf"
+ 	# pimd doesn't support -C
+-	if [ "$daemon" == "pimd" ]; then
++	if [ "$daemon" = "pimd" ]; then
+ 		echo "Ignored"
+ 	else
+     	$command $daemon_flags -C
 @@ -78,7 +78,7 @@
  		echo Waiting for ${frr_wait_for} route...
  		while [ ${waited_for} -lt ${frr_wait_seconds} ]; do
@@ -82,7 +97,7 @@ Index: net/frr/files/frr.in
  		check_config
  	    fi
 -	    if [ ${frr_cmd} = "start" -a ! -f ${required_files} ]; then
-+	    if [ ${frr_cmd} = "start" ] && ![ -f ${required_files} ]; then
++	    if [ ${frr_cmd} = "start" ] && ! [ -f ${required_files} ]; then
  			continue
  	    fi
 -	    if [ ${frr_cmd} = "stop" -a -z $(check_process ${command}) ]; then
@@ -92,7 +107,7 @@ Index: net/frr/files/frr.in
  	    eval flags=\$\{${daemon}_flags:-\"${frr_flags}\"\}
 Index: net/frr/files/patch-Makefile.am
 ===================================================================
---- net/frr/files/patch-Makefile.am	(revision 451977)
+--- net/frr/files/patch-Makefile.am	(revision 452420)
 +++ net/frr/files/patch-Makefile.am	(working copy)
 @@ -1,9 +1,9 @@
 ---- Makefile.am.orig	2017-04-02 05:22:47 UTC
@@ -110,7 +125,7 @@ Index: net/frr/files/patch-Makefile.am
   
 Index: net/frr/files/patch-vtysh_vtysh.c
 ===================================================================
---- net/frr/files/patch-vtysh_vtysh.c	(revision 451977)
+--- net/frr/files/patch-vtysh_vtysh.c	(revision 452420)
 +++ net/frr/files/patch-vtysh_vtysh.c	(working copy)
 @@ -1,11 +1,11 @@
 ---- vtysh/vtysh.c.orig	2017-06-27 14:48:26 UTC
@@ -134,7 +149,7 @@ Index: net/frr/files/patch-vtysh_vtysh.c
   /* Command execution over the vty interface. */
 Index: net/frr/files/watchfrr.in
 ===================================================================
---- net/frr/files/watchfrr.in	(revision 451977)
+--- net/frr/files/watchfrr.in	(revision 452420)
 +++ net/frr/files/watchfrr.in	(working copy)
 @@ -5,13 +5,13 @@
  
@@ -154,7 +169,7 @@ Index: net/frr/files/watchfrr.in
  
 Index: net/frr/pkg-plist
 ===================================================================
---- net/frr/pkg-plist	(revision 451977)
+--- net/frr/pkg-plist	(revision 452420)
 +++ net/frr/pkg-plist	(working copy)
 @@ -5,6 +5,7 @@
  include/frr/buffer.h

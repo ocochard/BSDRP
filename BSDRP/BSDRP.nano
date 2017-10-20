@@ -814,16 +814,11 @@ usr/share/tmac/tmac.vgrind
 
 # Enable only serial system only
 bsdrp_console_serial () {
-	# Since r266895, console is set as onifconsole
-	# Since r289634, 4 firsts serials console are set as onifconsole
-	# Force first 4 on in case of IPMI SoL using second port
-	sed -i "" -e '/^ttyu[0-3]/s/onifconsole/on/' ${NANO_WORLDDIR}/etc/ttys
-	#sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	#sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-
-    # Disable getty on syscons devices
-    #sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
-
+	# Force first 2 serial console into "on" in case (IPMI SoL used often 2nd)
+	# Forcing 2 and 3 generates too lot's of getty open /dev/ttyu No such file or directory
+	sed -i "" -e '/^ttyu[0-1]/s/onifconsole/on/' ${NANO_WORLDDIR}/etc/ttys
+    # Disable some syscons devices: No need for 8 on a router
+    sed -i "" -e '/^ttyv[4-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
     # Tell loader to use serial console early.
     echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
 }
@@ -840,11 +835,8 @@ bsdrp_console_dual () {
 
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
-	# Enable onifconsole to ttyu1 to ttyu3
-	# Since r289634, 4 firsts serials console are set as onifconsole
-	#sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	#sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-
+    # Disable some syscons devices: No need for 8 on a router
+    sed -i "" -e '/^ttyv[4-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)
     echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config 
 }

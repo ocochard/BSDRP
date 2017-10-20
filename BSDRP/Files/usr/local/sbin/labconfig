@@ -7,13 +7,17 @@ usage () {
 	echo "Helper script for configuring BSDRP regrestion feature lab"
 	echo "DO NOT USE THIS SCRIPT ON OTHER ROUTERS: IT WILL ERASE YOUR CONFIGURATION"
 	echo "Usage:"
-	echo "$0 vm-number"
+	echo "$0 lab_type_vm-number"
 	echo "Example:"
-	echo "$0 vm1"
+	echo "$0 full_vm1"
 	exit 1
 }
 
-vm1 () {
+
+### Full (maximum) features labs ###
+### https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab
+
+full_vm1 () {
 sysrc hostname=R1
 sysrc gateway_enable=NO
 sysrc ipv6_gateway_enable=NO
@@ -33,7 +37,7 @@ service sshd start
 echo "VM1 configured"
 }
 
-vm2 () {
+full_vm2 () {
 sysrc hostname=R2
 sysrc rtadvd_enable=YES
 sysrc rtadvd_interfaces="em0"
@@ -200,7 +204,6 @@ router bgp 100
  neighbor 2001:db8:23::3 activate
  neighbor 2001:db8:23::3 soft-reconfiguration inbound
  neighbor 2001:db8:23::3 password abigpassword
- exit-address-family
 EOF
 
 cat > /usr/local/etc/frr/ospfd.conf <<EOF
@@ -243,7 +246,7 @@ service pimd start
 echo "VM2 configured"
 }
 
-vm3 () {
+full_vm3 () {
 sysrc hostname=R3
 sysrc ifconfig_em1="inet 10.0.23.3/24"
 sysrc ifconfig_em2="inet 10.0.34.3/24"
@@ -253,8 +256,6 @@ sysrc bird_enable=YES
 sysrc bird6_enable=YES
 sysrc pf_enable=YES
 sysrc pf_rules="/etc/pf.conf"
-sysrc ipsec_enable=YES
-sysrc ipsec_file="/etc/ipsec.conf"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
 cat > /etc/pf.conf <<EOF
@@ -289,13 +290,6 @@ pass out quick on \$TO_R4_if proto gre from \$R2 to \$R4 queue VPN4_TO_R4
 pass in quick on \$TO_R4_if proto gre from \$R4 to \$R2 queue VPN4_TO_R4
 pass out quick on \$TO_R2_if proto gre from \$R4 to \$R2 queue VPN4_TO_R2
 EOF
-cat > /etc/ipsec.conf <<EOF
-flush ;
-add 10.0.23.2 10.0.23.3 tcp 0x1000 -A tcp-md5 "abigpassword" ;
-add 10.0.23.3 10.0.23.2 tcp 0x1001 -A tcp-md5 "abigpassword" ;
-add -6 2001:db8:23::2 2001:db8:23::3 tcp 0x1002 -A tcp-md5 "abigpassword" ;
-add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1003 -A tcp-md5 "abigpassword" ;
-EOF
 
 cat > /usr/local/etc/bird.conf <<EOF
 # Configure logging
@@ -322,20 +316,23 @@ protocol direct {
 }
 
 protocol rip R4 {
-        export all;
-        interface "vtnet2","em2" {
+    export all;
+    interface "vtnet2","em2" {
         version 2;
         password "rippassword";
         authentication cryptographic;
-        };
+    };
 }
 
 protocol bgp R2 {
-        local as 100;
-		neighbor 10.0.23.2 as 100;
-        password "abigpassword";
-        import all;
-        export all;
+    local as 100;
+    # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
+    # Otherwise it will use the wrong 0.0.0.0 IP as source
+    source address 10.0.23.3;
+    neighbor 10.0.23.2 as 100;
+    password "abigpassword";
+    import all;
+    export all;
 }
 EOF
 
@@ -367,6 +364,9 @@ protocol rip R4 {
 
 protocol bgp R2 {
         local as 100;
+        # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
+        # Otherwise it will use the wrong :: IP as source
+        source address 2001:db8:23::3;
         neighbor 2001:db8:23::2 as 100;
         password "abigpassword";
         import all;
@@ -384,7 +384,7 @@ service bird6 start
 echo "VM3 configured"
 }
 
-vm4 () {
+full_vm4 () {
 sysrc hostname=R4
 sysrc ifconfig_em3="inet 10.0.45.4/24"
 sysrc ifconfig_em3_ipv6="inet6 2001:db8:45::4 prefixlen 64"
@@ -634,7 +634,7 @@ service pimd start
 echo "VM4 configured"
 }
 
-vm5 () {
+full_vm5 () {
 
 sysrc hostname=R5
 sysrc ifconfig_em3=up
@@ -745,6 +745,303 @@ service jail start
 echo "VM5 (including jail5 and jail6) configured"
 }
 
+### FRR lab
+### https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab
+
+frr_vm1 () {
+sysrc hostname=router1
+sysrc cloned_interfaces=lo1
+sysrc ipsec_enable=YES
+sysrc ipsec_file="/etc/ipsec.conf"
+sysrc frr_enable=yes
+cat <<EOF > /etc/ipsec.conf
+flush ;
+add 192.168.12.1 192.168.12.2 tcp 0x1000 -A tcp-md5 "abigpassword" ;
+add 192.168.12.2 192.168.12.1 tcp 0x1001 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:12::1 2001:db8:12::2 tcp 0x1002 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:12::2 2001:db8:12::1 tcp 0x1003 -A tcp-md5 "abigpassword" ;
+EOF
+cat > /usr/local/etc/frr/zebra.conf <<EOF
+interface em0
+ ip address 192.168.12.1/24
+ ipv6 address 2001:db8:12::1/64
+interface vtnet0
+ ip address 192.168.12.1/24
+ ipv6 address 2001:db8:12::1/64
+interface lo1
+ ip address 192.168.10.1/24
+ ipv6 address 2001:db8:10::1/64
+EOF
+cat > /usr/local/etc/frr/bgpd.conf <<EOF
+router bgp 12
+ bgp router-id 192.168.10.1
+ neighbor 192.168.12.2 remote-as 12
+ neighbor 192.168.12.2 password abigpassword
+ neighbor 2001:db8:12::2 remote-as 12
+ neighbor 2001:db8:12::2 password abigpassword
+ !
+ address-family ipv4 unicast
+  network 192.168.10.0/24
+  neighbor 192.168.12.2 soft-reconfiguration inbound
+  no neighbor 2001:db8:12::2 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 2001:db8:10::/128
+  neighbor 2001:db8:12::2 activate
+  neighbor 2001:db8:12::2 soft-reconfiguration inbound
+ exit-address-family
+EOF
+hostname router1
+service netif restart
+service ipsec start
+service frr start
+config save
+echo "VM1 configured"
+}
+
+frr_vm2 () {
+sysrc hostname=router2
+sysrc ipsec_enable=YES
+sysrc ipsec_file="/etc/ipsec.conf"
+sysrc frr_enable=YES
+cat <<EOF > /etc/ipsec.conf
+flush ;
+add 192.168.12.1 192.168.12.2 tcp 0x1000 -A tcp-md5 "abigpassword" ;
+add 192.168.12.2 192.168.12.1 tcp 0x1001 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:12::1 2001:db8:12::2 tcp 0x1002 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:12::2 2001:db8:12::1 tcp 0x1003 -A tcp-md5 "abigpassword" ;
+EOF
+cat > /usr/local/etc/frr/zebra.conf <<EOF
+interface em0
+ ip address 192.168.12.2/24
+ ipv6 address 2001:db8:12::2/64
+interface vtnet0
+ ip address 192.168.12.2/24
+ ipv6 address 2001:db8:12::2/64
+interface em1
+ ip address 192.168.23.2/24
+ ipv6 address 2001:db8:23::2/64
+interface vtnet1
+ ip address 192.168.23.2/24
+ ipv6 address 2001:db8:23::2/64
+EOF
+cat > /usr/local/etc/frr/ripd.conf <<EOF
+key chain rippass
+ key 1
+  key-string rippassword
+!
+interface em1
+ ip rip authentication key-chain rippass
+ ip rip authentication mode md5
+!
+interface vtnet1
+ ip rip authentication key-chain rippass
+ ip rip authentication mode md5
+!
+router rip
+ version 2
+ network em1
+ network vtnet1
+ redistribute bgp
+ redistribute connected
+EOF
+cat > /usr/local/etc/frr/ripngd.conf <<EOF
+router ripng
+ network em1
+ network vtnet1
+ redistribute bgp
+ redistribute connected
+EOF
+
+cat > /usr/local/etc/frr/bgpd.conf <<EOF
+router bgp 12
+ bgp router-id 192.168.10.2
+ neighbor 192.168.12.1 remote-as 12
+ neighbor 192.168.12.1 password abigpassword
+ neighbor 2001:db8:12::1 remote-as 12
+ neighbor 2001:db8:12::1 password abigpassword
+ !
+ address-family ipv4 unicast
+  network 192.168.12.0/24
+  redistribute rip
+  neighbor 192.168.12.1 soft-reconfiguration inbound
+  no neighbor 2001:db8:12::1 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 2001:db8:12::/64
+  redistribute ripng
+  neighbor 2001:db8:12::1 activate
+  neighbor 2001:db8:12::1 soft-reconfiguration inbound
+ exit-address-family
+EOF
+hostname router2
+service ipsec start
+service frr start
+config save
+echo "VM2 configured"
+}
+
+frr_vm3 () {
+sysrc hostname=router3
+sysrc frr_enable=YES
+cat > /usr/local/etc/frr/zebra.conf <<EOF
+interface em1
+ ip address 192.168.23.3/24
+ ipv6 address 2001:db8:23::3/64
+interface vtnet1
+ ip address 192.168.23.3/24
+ ipv6 address 2001:db8:23::3/64
+interface em2
+ ip address 192.168.34.3/24
+ ipv6 address 2001:db8:34::3/64
+interface vtnet2
+ ip address 192.168.34.3/24
+ ipv6 address 2001:db8:34::3/64
+EOF
+cat > /usr/local/etc/frr/ospfd.conf <<EOF
+interface em2
+ ip ospf message-digest-key 1 md5 superpass
+interface vtnet2
+ ip ospf message-digest-key 1 md5 superpass
+router ospf
+ ospf router-id 3.3.3.3
+ redistribute rip
+ redistribute connected
+ network 192.168.34.0/24 area 0.0.0.0
+ area 0.0.0.0 authentication message-digest
+EOF
+cat > /usr/local/etc/frr/ospf6d.conf <<EOF
+router ospf6
+ router-id 2.2.2.2
+ redistribute ripng
+ redistribute connected
+ interface em2 area 0.0.0.0
+ interface vtnet2 area 0.0.0.0
+EOF
+cat > /usr/local/etc/frr/ripd.conf <<EOF
+key chain rippass
+ key 1
+  key-string rippassword
+!
+interface em1
+ ip rip authentication key-chain rippass
+ ip rip authentication mode md5
+!
+interface vtnet1
+ ip rip authentication key-chain rippass
+ ip rip authentication mode md5
+!
+router rip
+ version 2
+ network em1
+ network vtnet1
+ redistribute connected
+ redistribute ospf
+EOF
+cat > /usr/local/etc/frr/ripngd.conf <<EOF
+router ripng
+ network em1
+ network vtnet1
+ redistribute connected
+ redistribute ospf6
+EOF
+hostname router3
+service frr start
+echo "VM3 configured"
+}
+frr_vm4 () {
+sysrc hostname=router4
+sysrc frr_enable=YES
+cat > /usr/local/etc/frr/zebra.conf <<EOF
+interface em2
+ ip address 192.168.34.4/24
+ ipv6 address 2001:db8:34::4/64
+interface vtnet2
+ ip address 192.168.34.4/24
+ ipv6 address 2001:db8:34::4/64
+interface em3
+ ip address 192.168.45.4/24
+ ipv6 address 2001:db8:45::4/64
+interface vtnet3
+ ip address 192.168.45.4/24
+ ipv6 address 2001:db8:45::4/64
+EOF
+cat > /usr/local/etc/frr/ospfd.conf <<EOF
+interface em2
+ ip ospf message-digest-key 1 md5 superpass
+interface vtnet2
+ ip ospf message-digest-key 1 md5 superpass
+router ospf
+ ospf router-id 4.4.4.4
+ redistribute isis
+ redistribute connected
+ network 192.168.34.0/24 area 0.0.0.0
+ area 0.0.0.0 authentication message-digest
+EOF
+cat > /usr/local/etc/frr/ospf6d.conf <<EOF
+router ospf6
+ router-id 4.4.4.4
+ redistribute isis
+ redistribute connected
+ interface em2 area 0.0.0.0
+ interface vtnet2 area 0.0.0.0
+EOF
+cat > /etc/local/frr/isisd.conf <<EOF
+interface em3
+ ip router isis BSDRP
+ ipv6 router isis BSDRP
+interface vtnet3
+ ip router isis BSDRP
+ ipv6 router isis BSDRP
+router isis BSDRP
+ net 49.0000.0000.0004.00
+ metric-style wide
+ redistribute ipv4 ospf level-2
+ redistribute ipv6 ospf6 level-2
+ redistribute ipv4 connected level-2
+ redistribute ipv6 connected level-2
+EOF
+hostname router4
+service frr start
+echo "VM4 configured"
+}
+
+frr_vm5 () {
+sysrc hostname=router5
+sysrc cloned_interfaces=lo1
+sysrc frr_enable=YES
+cat > /usr/local/etc/frr/zebra.conf <<EOF
+interface em3
+ ip address 192.168.45.5/24
+ ipv6 address 2001:db8:45::5/64
+interface vtnet3
+ ip address 192.168.45.5/24
+ ipv6 address 2001:db8:45::5/64
+interface lo1
+ ip address 192.168.50.5/24
+ ipv6 address 2001:db8:50::5/64
+EOF
+cat > /etc/local/frr/isisd.conf <<EOF
+interface em3
+ ip router isis BSDRP
+ ipv6 router isis BSDRP
+interface vtnet3
+ ip router isis BSDRP
+ ipv6 router isis BSDRP
+interface lo1
+ ip router isis BSDRP
+ ipv6 router isis BSDRP
+router isis BSDRP
+ net 49.0000.0000.0005.00
+ metric-style wide
+EOF
+hostname router5
+service netif restart
+service frr start
+echo "VM5 configured"
+}
 ### Main
 
 [ $# -lt 1 ] && usage
