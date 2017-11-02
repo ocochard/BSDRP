@@ -135,7 +135,9 @@ get_forwarding_rate () {
 	# bench should running during 30 seconds minimum
 	PACKETS_TO_SENT=$(( PPS * 30 ))
 	# Start a receiver
-	pkt-gen -f rx -N -${AF} -i ${RX_NIC} > ${RX_FILE} 2>&1 &
+	CMD_RX="pkt-gen -f rx -N -${AF} -i ${RX_NIC}"
+	echo ${CMD_RX} > ${RX_FILE}
+	${CMD_RX} >> ${RX_FILE} 2>&1 &
 	# Start a generator
 	if (${SOFT_UDP_CHK}); then
 		SCHKSUM="-U"
@@ -145,10 +147,10 @@ get_forwarding_rate () {
 		ifconfig ${TX_NIC} txcsum
 		ifconfig ${TX_NIC} up
 	fi
-	CMD="pkt-gen -f tx -N ${SCHKSUM} -${AF} -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PACKETS_TO_SENT} \
+	CMD_TX="pkt-gen -f tx -N ${SCHKSUM} -${AF} -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PACKETS_TO_SENT} \
 -d ${DST_NET} -D ${DMAC} -S ${SMAC} -s ${SRC_NET}"
-	echo $CMD > ${TX_FILE}
-	${CMD} >> ${TX_FILE} 2>&1
+	echo ${CMD_TX} > ${TX_FILE}
+	${CMD_TX} >> ${TX_FILE} 2>&1
 	# Now close the receiver
 	pkill pkt-gen || die "can't close the receiver???"
 	# Check than generator correctly generate PPS value

@@ -3,7 +3,7 @@
 # System tool for BSD Router Project 
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2016, The BSDRP Development Team
+# Copyright (c) 2009-2017, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -40,8 +40,8 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # get label
 get_label () {
-	local label=`cut -d '/' -f 2 /etc/nanobsd.conf`
-	[ -n ${label} ] && echo ${label} || die "Can't retrieve nanobsd label"
+	local label=$(cut -d '/' -f 2 /etc/nanobsd.conf)
+	[ -n "${label}" ] && echo ${label} || die "Can't retrieve nanobsd label"
 }
 
 # Display help
@@ -69,7 +69,7 @@ usage () {
 	echo "  - halt/stop             : Poweroff the system"
 	echo "  - help/h [option]       : Display this help message. "
 	echo "    if [option] given, display more detail about the option"
-    echo "  - reboot/reload         : Restart the system"
+	echo "  - reboot/reload         : Restart the system"
 	echo "  - resize-system-slice [size] : Resize system slices (rare usage)"
 	echo "  - rollback              : Revert to previous version"
 	exit 0
@@ -86,17 +86,17 @@ dual_console () {
 	# We will use the serial speed value already configured in /etc/ttys
 	# But this value is set to "3wire" for FreeBSD 11, then we need to ask user for a value in this case
 	if [ -z ${SERIAL_SPEED} ]; then
-		egrep -q 'ttyu0.*std.*' /etc/ttys && \
-		SERIAL_SPEED=`grep ttyu0 /etc/ttys | cut -d'.' -f 2 | cut -d '"' -f 1`
+		grep -E -q 'ttyu0.*std.*' /etc/ttys && \
+		SERIAL_SPEED=$(grep ttyu0 /etc/ttys | cut -d'.' -f 2 | cut -d '"' -f 1)
 	fi
 	# Check that we get something regarding serial speed
 	[ -z "${SERIAL_SPEED}" ] && die "Can't determine serial speed from ttyu0
 	on /etc/ttys, add the speed value to your command: 9600, 19200, 38400,
-	   57600 and 115200"
+		57600 and 115200"
 	[ ${SERIAL_SPEED} -lt 9600 ] && die "Incorrect serial speed value: ${SERIAL_SPEED}"
 	[ ${SERIAL_SPEED} -gt 115200 ] && die "Incorrect serial speed value: ${SERIAL_SPEED}"
-    # On serial version, syscon devices was disabled, need to re-enable them:
-    sed -i "" -e '/^ttyv[0-7]/s/off /on /' /etc/ttys
+	# On serial version, syscon devices was disabled, need to re-enable them:
+	sed -i "" -e '/^ttyv[0-7]/s/off /on /' /etc/ttys
 	mount -uw / || die "Can't mount / in RW mode"
 	echo "-S${SERIAL_SPEED} -Dh" > /boot.config
 	mount -ur / || die "Error for remounting / in RO mode"
@@ -106,11 +106,11 @@ dual_console () {
 integrity () {
 	[ "${SECOND_OPTION}" = "" ] && die "ERROR: Reference mtree filename missing"
 	[ ! -f ${SECOND_OPTION} ] && die "ERROR: File ${SECOND_OPTION} didn't exist."
-	FILE_TYPE=`file ${SECOND_OPTION} | cut -d : -f 2`
-    echo "./etc" > /tmp/mtree-exclude
-    echo "./var" >> /tmp/mtree-exclude
-    echo "./tmp" >> /tmp/mtree-exclude
-    echo "./dev" >> /tmp/mtree-exclude
+	FILE_TYPE=$(file ${SECOND_OPTION} | cut -d : -f 2)
+	echo "./etc" > /tmp/mtree-exclude
+	echo "./var" >> /tmp/mtree-exclude
+	echo "./tmp" >> /tmp/mtree-exclude
+	echo "./dev" >> /tmp/mtree-exclude
 	if echo "${FILE_TYPE}" | grep -qi "ASCII text"; then
 		cmd="mtree -f ${SECOND_OPTION} -X /tmp/mtree-exclude -p /"
 	elif echo "${FILE_TYPE}" | grep -qi bzip; then
@@ -123,19 +123,19 @@ integrity () {
 	fi
 	echo "Here is the modified files comparing to the reference mtree file:"
 	eval $cmd
-	
+
 }
 
 #ask to save configuration
-ask_save () {	
+ask_save () {
 	echo "Warning: Unsaved changes detected !"
 	config diff
 	echo -n "Do you want to save the configuration before to continue or abort ? (y/n/a): "
 	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" -a "$USER_CONFIRM" != "a" ]; do
-       	read USER_CONFIRM <&1
+		read USER_CONFIRM <&1
 	done
 	if [ "$USER_CONFIRM" = "y" ]; then
-		config save	
+		config save
 	elif [ "$USER_CONFIRM" = "a" ]; then
 		exit 0
 	fi
@@ -143,10 +143,10 @@ ask_save () {
 
 #Install system to another disk
 install () {
-	label=`get_label`
-	boot_dev=`glabel status | grep ${label}s1 | awk '{ print $3; }'\  | cut -d s -f 1 | tail -n 1`
-	sectors=`gpart show ${boot_dev} | grep '\- free \-' | tr -s ' ' | cut -d ' ' -f 2 | tail -n 1`
-	disks=`sysctl -n kern.disks`
+	label=$(get_label)
+	boot_dev=$(glabel status | grep ${label}s1 | awk '{ print $3; }'\  | cut -d s -f 1 | tail -n 1)
+	sectors=$(gpart show ${boot_dev} | grep '\- free \-' | tr -s ' ' | cut -d ' ' -f 2 | tail -n 1)
+	disks=$(sysctl -n kern.disks)
 	[ $# -eq 0 ] && die "Missing destination disk (${disks})"
 	[ ${boot_dev} == $1 ] && die "Source disk (${boot_dev}) is same as destination disk ($1), use another disk on this list: ${disks}"
 	bytes=$(( 1 + ${sectors} / 2048 ))
@@ -154,8 +154,8 @@ install () {
 	# by cleaning the 2 GPT tables on the destination hard drive
 	echo "Cleaning GPT tables on destination hard drive $1..."
 	dd if=/dev/zero of=/dev/$1 bs=1m count=1 > /dev/null 2>&1 || die "Can't erase MBR/GPT table"
-	dd if=/dev/zero of=/dev/$1 bs=1m oseek=`diskinfo $1 \
-		| awk '{print int($3 / (1024*1024)) - 4;}'` > /dev/null 2>&1 || true
+	dd if=/dev/zero of=/dev/$1 bs=1m oseek=$(diskinfo $1 \
+		| awk '{print int($3 / (1024*1024)) - 4;}') > /dev/null 2>&1 || true
 	echo "Copying ${bytes}MB from ${boot_dev} to $1..."
 	dd if=/dev/${boot_dev} of=/dev/$1 bs=1M count=${bytes} || die "Meet error during install"
 }
@@ -167,32 +167,32 @@ expand_data_slice () {
 	#Load the NANO_DRIVE (label) variable:
 	. /etc/nanobsd.conf
 
-	if [ `uname -m` = "sparc64" ]; then
-		boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s1a \
-			 | awk '{ print $3; }' | sed 's/.$//'`
+	if [ $(uname -m) = "sparc64" ]; then
+		boot_dev=/dev/$(glabel status | grep ${NANO_DRIVE}s1a \
+			| awk '{ print $3; }' | sed 's/.$//')
 		die "Not supported: sparc64 for this function"
 	else
-		boot_dev=/dev/`glabel status | grep ${NANO_DRIVE}s1a \
-			 | awk '{ s=$3; sub(/s[12]a$/, "", s); print s; }'`
+		boot_dev=/dev/$(glabel status | grep ${NANO_DRIVE}s1a \
+			| awk '{ s=$3; sub(/s[12]a$/, "", s); print s; }')
 	fi
-	label=`get_label`
+	label=$(get_label)
 
 	if mount | grep -q "/data"; then
 		die "/data is mounted, you need to unmount it"
 	fi
 
 	#free space
-	FREE_SPACE=`gpart show ${boot_dev} | grep "\- free \-" | grep -v "K)" \
-			   | cut -d '-' -f 3 | tr -s ' '`
+	FREE_SPACE=$(gpart show ${boot_dev} | grep "\- free \-" | grep -v "K)" \
+			| cut -d '-' -f 3 | tr -s ' ')
 	[ -z "${FREE_SPACE}" ] && die "There is no space left on disk"
 	echo "There is ${FREE_SPACE} available on your disk that can be use for /data"
 	echo -n "Are you sure to repartition your disk ? (y/n)"
-    	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
-        	read USER_CONFIRM <&1
-    	done
+	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
+		read USER_CONFIRM <&1
+	done
 	[ "$USER_CONFIRM" = "n" ] && die "User cancel"
 
-	# Using "gpart resize" + growfs  is too slow and create a bug with 
+	# Using "gpart resize" + growfs  is too slow and create a bug with
 	# the geom label (pr=kern/165962)
 	#
 
@@ -211,7 +211,7 @@ expand_data_slice () {
 
 	# Formatting the new partition (SUJ)
 	# TO DO: Check if disks support TRIM and enable it
-	label=`get_label`
+	label=$(get_label)
 	newfs -UjL ${label}s4 ${boot_dev}s4 \
 	|| die "Unable to newfs -UjL ${label}s4 ${boot_dev}s4"
 
@@ -236,40 +236,39 @@ expand_data_slice () {
 # 0. Ask a user confirmation
 # 1. Check if there is a previous release
 # 2. Mount the previous and update the fstab
-# 3. Change the active slice and bootloader default choice	
+# 3. Change the active slice and bootloader default choice
 rollback () {
 	# Get the NANO_GLABEL_SYS variable
-	NANO_GLABEL_SYS=`get_label`
+	NANO_GLABEL_SYS=$(get_label)
 	# Get the NANO_GLABEL_SYS_FULL variable
 	# (kept the last number: 1 or 2)
-	NANO_GLABEL_SYS_FULL=`mount | grep " / " | cut -d'/' -f4 \
-	| cut -d' ' -f1`
+	NANO_GLABEL_SYS_FULL=$(mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1)
 
 	# Get the disk name using its label
-	NANO_DRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} \
-	| awk '{print $3}' | cut -d's' -f1`
+	NANO_DRIVE=$(glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} \
+	| awk '{print $3}' | cut -d's' -f1)
 
 	# Get the full disk name
-	NANO_FULLDRIVE=`glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} \
-	| awk '{print $3}'`
+	NANO_FULLDRIVE=$(glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} \
+	| awk '{print $3}')
 
 	# Check and set final variable
 	DST_SLICE=0
 
-	if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s1"` ]; then 
-    		DST_SLICE=2
-    		SRC_SLICE=1
+	if [ $(echo $NANO_FULLDRIVE | /usr/bin/grep -q "s1") ]; then
+		DST_SLICE=2
+		SRC_SLICE=1
 	fi
-	if [ `echo $NANO_FULLDRIVE | /usr/bin/grep "s2"` ]; then                
-    		DST_SLICE=1
-    		SRC_SLICE=2
+	if [ $(echo $NANO_FULLDRIVE | /usr/bin/grep -q "s2") ]; then
+		DST_SLICE=1
+		SRC_SLICE=2
 	fi
 
 	[ $DST_SLICE = 0 ] && die "Can't detect active slice"
-	
+
 	# Check if old system was good
 	if [ -e /dev/${NANO_DRIVE}s${DST_SLICE}a ]; then
-		fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a || 
+		fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a ||
 		die "ERROR: Missing or fsck problem on the previous system slice"
 	else
 		die "ERROR: This system was never upgraded"
@@ -277,7 +276,7 @@ rollback () {
 
 	echo -n "Warning: Are you sure to revert to the previous release ? (y/n)"
 	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
-       		read USER_CONFIRM <&1
+		read USER_CONFIRM <&1
 	done
 	[ "$USER_CONFIRM" = "n" ] && exit 0
 
@@ -290,26 +289,25 @@ rollback () {
 	# Save the config file that include the fstab
 	mount /cfg || die "ERROR: Cant't mount /cfg"
 	if ! cp /etc/fstab /cfg; then
-    		umount /cfg
+		umount /cfg
 		die "ERROR: Can't save fstab"
 	fi
 	umount /cfg || die "ERROR: Can't umount /cfg"
-	case `uname -m` in
+	case $(uname -m) in
 	i386|amd64)
 		boot0cfg -s ${DST_SLICE} -t 18 -v ${NANO_DRIVE} ||
-		   die "ERROR: Can't update FreeBSD bootloader"
-           
+		die "ERROR: Can't update FreeBSD bootloader"
 		gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE} ||
-		   die "ERROR: Can't update active partition"
-                ;;
-        arm)
-                echo "arm upgrade script not tested!"   
-                gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE} ||
-                   die "ERROR: Can't update active partition"
-                ;;
-        sparc64)
-                echo "You need to configure OBP for booting on"
-                ;;
+		die "ERROR: Can't update active partition"
+		;;
+	arm)
+		echo "arm upgrade script not tested!"
+		gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE} ||
+		die "ERROR: Can't update active partition"
+		;;
+	sparc64)
+		echo "You need to configure OBP for booting on"
+		;;
 	esac
 
 	# Log
@@ -331,31 +329,31 @@ check_cfg () {
 
 swap_system() {
 	echo -n "Active partition need to be partition 1, swaping it (Don't stop this fake-upgrade operation!)..."
-    cat /dev/${boot_dev}s2 | upgrade
+	cat /dev/${boot_dev}s2 | upgrade
 	echo "Done, rebooting..."
-    reboot
+	reboot
 }
 
 resize_system() {
 	# Need to check if already resized
 	echo -n "Resizing partition..."
-    gpart delete -i 4 ${boot_dev}
-    gpart delete -i 3 ${boot_dev}
-    gpart delete -i 2 ${boot_dev}
-    gpart resize -i 1 -a 4k -s ${SECOND_OPTION} ${boot_dev}
-    gpart commit ${boot_dev}s1
-    gpart add -t freebsd -i 2 -a 4k -s ${SECOND_OPTION} ${boot_dev}
-    gpart add -t freebsd -i 3 -a 4k -s 16M ${boot_dev}
-    gpart add -t freebsd -i 4 -a 4k ${boot_dev}
-    newfs -b 4096 -f 512 -i 8192 -U -L ${label}s3 /dev/${boot_dev}s3
-    newfs -b 4096 -f 512 -i 8192 -U -L ${label}s4 /dev/${boot_dev}s4
-    config save
+	gpart delete -i 4 ${boot_dev}
+	gpart delete -i 3 ${boot_dev}
+	gpart delete -i 2 ${boot_dev}
+	gpart resize -i 1 -a 4k -s ${SECOND_OPTION} ${boot_dev}
+	gpart commit ${boot_dev}s1
+	gpart add -t freebsd -i 2 -a 4k -s ${SECOND_OPTION} ${boot_dev}
+	gpart add -t freebsd -i 3 -a 4k -s 16M ${boot_dev}
+	gpart add -t freebsd -i 4 -a 4k ${boot_dev}
+	newfs -b 4096 -f 512 -i 8192 -U -L ${label}s3 /dev/${boot_dev}s3
+	newfs -b 4096 -f 512 -i 8192 -U -L ${label}s4 /dev/${boot_dev}s4
+	config save
 	echo "Done"
 }
 
 # Resize system slice
 resize_system_slice () {
-	[ -z ${SECOND_OPTION} ] && die "Missing size (in block)"
+	[ -z "${SECOND_OPTION}" ] && die "Missing size (in block)"
 	echo "This tool will expand the 2 systems slices to the given size."
 	echo "It's only usefull for specific upgrade"
 	echo "- If a partition swaping is needed, system will reboot automatically at the end of first step"
@@ -370,15 +368,15 @@ resize_system_slice () {
 
 	# Need to check total disk space
 	echo -n "Checking disk size..."
-	label=`get_label`
-	boot_dev=`glabel status | grep ${label}s1 | awk '{ print $3; }'\  | cut -d s -f 1`
+	label=$(get_label)
+	boot_dev=$(glabel status | grep ${label}s1 | awk '{ print $3; }'\  | cut -d s -f 1)
 	[ -z "${boot_dev}" ] && die "Can't detect the physical disk where BSDRP is installed"
-	disk_size=`gpart show ${boot_dev} | grep ${boot_dev} | tr -s ' ' | cut -d ' ' -f 3`
+	disk_size=$(gpart show ${boot_dev} | grep ${boot_dev} | tr -s ' ' | cut -d ' ' -f 3)
 	[ -z "${disk_size}" ] && die "Can't read the disk size"
 
 	# 1 000 000 sector at 512B
 	# Check that current disk sector size is enough for twice new system size AND cfg+data slices
-	minimum_size=$((${SECOND_OPTION} * 2 + 64260))
+	minimum_size=$((SECOND_OPTION * 2 + 64260))
 	[ ${disk_size} -lt ${minimum_size} ] && die "Disk too small for system slice expansion (minimum block size of ${minimum_size} but it has ${disk_size}"
 	. /etc/nanobsd.conf
 	mount /dev/${NANO_DRIVE}s1a > /dev/null 2>&1 && resize_system || swap_system
@@ -431,8 +429,8 @@ fi
 
 case "$FIRST_OPTION" in
 	check-vm)
-        check_vm
-        ;;
+		check_vm
+		;;
 	dual-console)
 		dual_console ${SECOND_OPTION}
 		;;
@@ -442,15 +440,15 @@ case "$FIRST_OPTION" in
 	halt|stop)
 		sys_halt
 		;;
-    help|h)
-        usage
-        ;;
+	help|h)
+		usage
+		;;
 	install)
 		install ${SECOND_OPTION}
 		;;
-    integrity)
-        integrity
-        ;;
+	integrity)
+		integrity
+		;;
 	reboot|reload)
 		sys_reboot
 		;;

@@ -202,7 +202,7 @@ usage () {
 		echo " -h   display this help message"
 		echo " -k   suppress [build|install]kernel"
 		echo " -p   project name to build"
-		echo " -s   size in MB of the target disk (default: 256)"
+		echo " -s   size in MB of the target disk (default: 1000)"
 		echo " -u   update all src (freebsd and ports)"
 		echo " -r   use a memory disk as destination dir" 
 		echo " -y   Answer yes to all confirmation"

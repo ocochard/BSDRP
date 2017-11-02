@@ -7,6 +7,8 @@
 * Add qlxgbe (QLogic 8300 series 10 Gigabit) drivers
 
 ## Bug fixes
+* Images CHS value fixed: An old bug in nanobsd was fixed, now disk image correctly
+  use 63 sectors and 255 heads (in place of 63 sectors and 16 heads)
 * Fix mlxen module (Mellanox ConnectX-2 and ConnectX-3) load
 * Fix behavior of ix_affinity and cxgbe_affinity rc script
 * Fix tenant script for generating non-conflicting epair MAC addresses
@@ -16,7 +18,7 @@
 ## Updated packages
 * exabgp to 3.4.20
 * iperf to 2.0.10
-* iperf3 to 3.2
+* iperf3 to 3.3
 * isc-dhcp43-server to 4.3.6
 * frr to 3.0
 * openvpn to 2.4.4
@@ -38,10 +40,10 @@
 * flashrom 0.9.9_2: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
 * frr 3.0: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
-* fswatch-mon 1.9.3_1: Cross-platform file change monitor
-* indexinfo 0.2.6: Utility to regenerate the GNU info page index
+* fswatch-mon 1.11.2: Cross-platform file change monitor
+* indexinfo 0.3: Utility to regenerate the GNU info page index
 * iperf 2.0.10_1: Tool to measure maximum TCP and UDP bandwidth
-* iperf3 3.2: Improved tool to measure TCP and UDP bandwidth
+* iperf3 3.3: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_2: KAME racoon IKE daemon, ipsec-tools version
 * isc-dhcp43-server 4.3.6_1: ISC Dynamic Host Configuration Protocol server
@@ -53,10 +55,10 @@
 * libgpg-error 1.27: Common error values for all GnuPG components
 * liblz4 1.8.0,1: LZ4 compression library, lossless and very fast
 * libpci 3.5.5: PCI configuration space I/O made easy
-* libsodium 1.0.12: Library to build higher-level cryptographic tools
+* libsodium 1.0.15: Library to build higher-level cryptographic tools
 * libucl 0.8.0: Universal configuration library parser
 * lzo2 2.10_1: Portable speedy, lossless data compression library
-* mlvpn 2.3.1_1: Multi-link VPN
+* mlvpn 2.3.1_2: Multi-link VPN
 * monit 5.24.0: Unix system management and proactive monitoring
 * mpd5 5.8_2: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8: Multicast routing daemon providing DVMRP for IPv4
@@ -77,7 +79,7 @@
 * python 2.7_3,2: "meta-port" for the default version of Python interpreter
 * python2 2_3: The "meta-port" for version 2 of the Python interpreter
 * python27 2.7.14_1: Interpreted object-oriented programming language
-* readline 7.0.3: Library for editing command lines as they are typed
+* readline 7.0.3_1: Library for editing command lines as they are typed
 * smcroute 2.3.1: Static multicast routing tool
 * strongswan 5.6.0: Open Source IKEv2 IPsec-based VPN solution
 * sudo 1.8.21p2: Allow others to run commands as root
