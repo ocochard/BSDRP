@@ -789,7 +789,7 @@ router bgp 12
  exit-address-family
  !
  address-family ipv6 unicast
-  network 2001:db8:10::/128
+  network 2001:db8:10::/64
   neighbor 2001:db8:12::2 activate
   neighbor 2001:db8:12::2 soft-reconfiguration inbound
  exit-address-family
@@ -995,9 +995,11 @@ cat > /etc/local/frr/isisd.conf <<EOF
 interface em3
  ip router isis BSDRP
  ipv6 router isis BSDRP
+ isis circuit-type level-2-only
 interface vtnet3
  ip router isis BSDRP
  ipv6 router isis BSDRP
+ isis circuit-type level-2-only
 router isis BSDRP
  net 49.0000.0000.0004.00
  metric-style wide
@@ -1030,9 +1032,11 @@ cat > /etc/local/frr/isisd.conf <<EOF
 interface em3
  ip router isis BSDRP
  ipv6 router isis BSDRP
+ isis circuit-type level-2-only
 interface vtnet3
  ip router isis BSDRP
  ipv6 router isis BSDRP
+ isis circuit-type level-2-only
 interface lo1
  ip router isis BSDRP
  ipv6 router isis BSDRP

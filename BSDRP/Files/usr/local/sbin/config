@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Configuration tool for BSD Router Project 
+# Configuration tool for BSD Router Project
 # http://bsdrp.net
 #
 # Copyright (c) 2009-2017, The BSDRP Development Team
@@ -135,7 +135,7 @@ mount_data () {
 	fi
 	grep -q "/data" /etc/fstab || \
 		echo "/dev/ufs/BSDRPs4 /data ufs rw,noauto 2 2" >> /etc/fstab
-	
+
 	mount /data && return 0 || return 1
 }
 
@@ -169,7 +169,7 @@ archive_cfg () {
 	if ! tar -cJvpf /data/archives/rollback.tar.xz -C /cfg/ . 2>/dev/null; then
 		echo "WARNING: Can't generate tar archive."
 	fi
-	
+
 	#If data was allready mounted, don't unmount it
 	if ! ($DATA_ALREADY_MOUNTED); then
 		umount_data
@@ -208,12 +208,12 @@ save_cfg () {
 			fi
 		fi # if [ -e /cfg/$i ]
 	done
-    
+
     #New empty directories need to be saved too
     for i in "$@" `find * -type d ! -path "cron/tabs"`; do
         [ -d /cfg/$i -o -d /conf/base/etc/$i ] || cp -av /etc/$i /cfg/$i
     done
-	)	
+	)
 
 	# Deleting file, symlink or directory on /cfg that are no more in /etc
 	(
@@ -250,7 +250,7 @@ apply_cfg () {
 		;;
 	*)
 		echo "This function will force routing process to reload the configuration files"
-		;;	
+		;;
 	esac
 	exit 0
 }
@@ -326,7 +326,7 @@ restore_cfg ( ) {
 	tar -x -C $2/ --exclude 'fstab' -f $1 || \
 		die "ERROR: untaring file failed."
 }
-	
+
 # Send configuration to an svn/cvs/scp server ?
 put () {
 	# option: protocol username@host:/path/[filename]
@@ -390,7 +390,7 @@ put_check_filename () {
 		return 0
 	fi
 }
-	
+
 # Get configuration from an svn/cvs/scp server
 get () {
 	# option: protocol username@host <filename>
@@ -422,7 +422,6 @@ get () {
     	esac
 	exit 0
 }
-	
 
 # Clear all existing configuration and return to default setting
 factory () {
@@ -466,7 +465,7 @@ if [ $# -eq 0 ]; then
 	SECOND_OPTION=""
 	THIRD_OPTION=""
 	usage
-	exit 0	
+	exit 0
 fi
 
 FIRST_OPTION="$1"
@@ -489,7 +488,7 @@ case "$FIRST_OPTION" in
 		save_cfg
 		;;
 	apply)
-		apply_cfg 
+		apply_cfg
 		;;
 	diff)
 		diff

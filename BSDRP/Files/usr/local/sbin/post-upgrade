@@ -49,7 +49,7 @@ mount_newpart () {
 }
 
 umount_newpart () {
-	if mount | grep -q "${DST} on /tmp/sysupgrade"; then	
+	if mount | grep -q "${DST} on /tmp/sysupgrade"; then
 		umount /tmp/sysupgrade || die "ERROR: Can't umount new partition"
 		rm -r /tmp/sysupgrade || echo "WARNING: Can't remove tempdir"
 	fi
@@ -82,7 +82,7 @@ if grep -q '^1.7' /etc/version; then
 		sed -i "" -e s/quagga/frr/g /cfg/rc.conf
 		# We will change current /etc/rc.conf too for avoiding asking saving before reboot
 		sed -i "" -e s/quagga/frr/g /etc/rc.conf
-	
+
 		if [ -d /cfg/local/quagga ]; then
 			[ -d /cfg/local/frr ] || mkdir /cfg/local/frr
 			cp /cfg/local/quagga/* /cfg/local/frr/

@@ -41,6 +41,7 @@ nics=""
 defaultgw=""
 authorizedkeys=""
 jailbase="/var/jails"
+[ -f /etc/nanobsd.conf ] && NANOBSD=true || NANOBSD=false
 
 #############################################
 ########### Function definition #############
@@ -90,12 +91,14 @@ create () {
 		id=1
 	fi
 
-	# Autosave should be enabled if jail is created
-	# It allow to automatically save customer configuration changes
-	if ! sysrc -c autosave_enable="YES"; then
-		echo "Enabling autosave feature"
-		sysrc autosave_enable="YES" > /dev/null 2>&1
-		service autosave start > /dev/null 2>&1 || echo "Warning: Can't start autosave"
+	if ($NANOBSD); then
+		# In NANOBSD mode, autosave should be enabled if jail is created
+		# It allow to automatically save customer configuration changes
+		if ! sysrc -c autosave_enable="YES"; then
+			echo "Enabling autosave feature"
+			sysrc autosave_enable="YES" > /dev/null 2>&1
+			service autosave start > /dev/null 2>&1 || echo "Warning: Can't start autosave"
+		fi
 	fi
 
 	jailroot="${jailbase}/${tenant}"
@@ -174,7 +177,7 @@ EOF
     # Prevent diskless
     exec.prestart  += "test -f ${jailroot}/etc/diskless && rm ${jailroot}/etc/diskless || true";
 EOF
-	
+
 # Parse nics variable (can be in form bridge0,vtnet4.4/10.0.0.1/24)
 	# And finish to populate jail RC and jail configuration file
 	while [ "$nics" ] ;do
@@ -270,7 +273,7 @@ EOF
 	sysrc -q jail_enable="YES" > /dev/null 2>&1
 	sysrc -q jail_parallel_start="YES" > /dev/null 2>&1
 	sysrc -q jail_list+=${tenant} > /dev/null 2>&1
-	
+
 	echo "Jail is created, you can start it now (service jail start ${tenant})"
 	exit 0
 }

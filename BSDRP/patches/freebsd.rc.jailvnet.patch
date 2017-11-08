@@ -1,6 +1,6 @@
 Index: etc/rc.d/bsnmpd
 ===================================================================
---- etc/rc.d/bsnmpd	(revision 320759)
+--- etc/rc.d/bsnmpd	(revision 325345)
 +++ etc/rc.d/bsnmpd	(working copy)
 @@ -5,7 +5,7 @@
  
@@ -13,7 +13,7 @@ Index: etc/rc.d/bsnmpd
  
 Index: etc/rc.d/defaultroute
 ===================================================================
---- etc/rc.d/defaultroute	(revision 320759)
+--- etc/rc.d/defaultroute	(revision 325345)
 +++ etc/rc.d/defaultroute	(working copy)
 @@ -7,7 +7,7 @@
  
@@ -26,7 +26,7 @@ Index: etc/rc.d/defaultroute
  . /etc/network.subr
 Index: etc/rc.d/dhclient
 ===================================================================
---- etc/rc.d/dhclient	(revision 320759)
+--- etc/rc.d/dhclient	(revision 325345)
 +++ etc/rc.d/dhclient	(working copy)
 @@ -4,7 +4,7 @@
  #
@@ -39,7 +39,7 @@ Index: etc/rc.d/dhclient
  . /etc/network.subr
 Index: etc/rc.d/ip6addrctl
 ===================================================================
---- etc/rc.d/ip6addrctl	(revision 320759)
+--- etc/rc.d/ip6addrctl	(revision 325345)
 +++ etc/rc.d/ip6addrctl	(working copy)
 @@ -6,7 +6,7 @@
  # PROVIDE: ip6addrctl
@@ -50,9 +50,22 @@ Index: etc/rc.d/ip6addrctl
  
  . /etc/rc.subr
  . /etc/network.subr
+Index: etc/rc.d/ipsec
+===================================================================
+--- etc/rc.d/ipsec	(revision 325345)
++++ etc/rc.d/ipsec	(working copy)
+@@ -6,7 +6,7 @@
+ # PROVIDE: ipsec
+ # REQUIRE: FILESYSTEMS
+ # BEFORE:  DAEMON mountcritremote
+-# KEYWORD: nojail
++# KEYWORD: nojailvnet
+ 
+ . /etc/rc.subr
+ 
 Index: etc/rc.d/natd
 ===================================================================
---- etc/rc.d/natd	(revision 320759)
+--- etc/rc.d/natd	(revision 325345)
 +++ etc/rc.d/natd	(working copy)
 @@ -4,7 +4,7 @@
  #
@@ -65,7 +78,7 @@ Index: etc/rc.d/natd
  . /etc/network.subr
 Index: etc/rc.d/pf
 ===================================================================
---- etc/rc.d/pf	(revision 320759)
+--- etc/rc.d/pf	(revision 325345)
 +++ etc/rc.d/pf	(working copy)
 @@ -6,7 +6,7 @@
  # PROVIDE: pf
@@ -78,7 +91,7 @@ Index: etc/rc.d/pf
  
 Index: etc/rc.d/pflog
 ===================================================================
---- etc/rc.d/pflog	(revision 320759)
+--- etc/rc.d/pflog	(revision 325345)
 +++ etc/rc.d/pflog	(working copy)
 @@ -5,7 +5,7 @@
  
@@ -91,7 +104,7 @@ Index: etc/rc.d/pflog
  
 Index: etc/rc.d/pfsync
 ===================================================================
---- etc/rc.d/pfsync	(revision 320759)
+--- etc/rc.d/pfsync	(revision 325345)
 +++ etc/rc.d/pfsync	(working copy)
 @@ -5,7 +5,7 @@
  
@@ -121,7 +134,7 @@ Index: etc/rc.d/pfsync
  
 Index: etc/rc.d/rarpd
 ===================================================================
---- etc/rc.d/rarpd	(revision 320759)
+--- etc/rc.d/rarpd	(revision 325345)
 +++ etc/rc.d/rarpd	(working copy)
 @@ -6,7 +6,7 @@
  # PROVIDE: rarpd
@@ -134,7 +147,7 @@ Index: etc/rc.d/rarpd
  
 Index: etc/rc.d/route6d
 ===================================================================
---- etc/rc.d/route6d	(revision 320759)
+--- etc/rc.d/route6d	(revision 325345)
 +++ etc/rc.d/route6d	(working copy)
 @@ -5,7 +5,7 @@
  
@@ -147,7 +160,7 @@ Index: etc/rc.d/route6d
  
 Index: etc/rc.d/routed
 ===================================================================
---- etc/rc.d/routed	(revision 320759)
+--- etc/rc.d/routed	(revision 325345)
 +++ etc/rc.d/routed	(working copy)
 @@ -6,7 +6,7 @@
  # PROVIDE: routed
@@ -160,7 +173,7 @@ Index: etc/rc.d/routed
  
 Index: etc/rc.d/rtadvd
 ===================================================================
---- etc/rc.d/rtadvd	(revision 320759)
+--- etc/rc.d/rtadvd	(revision 325345)
 +++ etc/rc.d/rtadvd	(working copy)
 @@ -6,7 +6,7 @@
  # PROVIDE: rtadvd
@@ -173,7 +186,7 @@ Index: etc/rc.d/rtadvd
  . /etc/network.subr
 Index: etc/rc.d/rtsold
 ===================================================================
---- etc/rc.d/rtsold	(revision 320759)
+--- etc/rc.d/rtsold	(revision 325345)
 +++ etc/rc.d/rtsold	(working copy)
 @@ -6,7 +6,7 @@
  # PROVIDE: rtsold
@@ -186,7 +199,7 @@ Index: etc/rc.d/rtsold
  
 Index: etc/rc.d/static_arp
 ===================================================================
---- etc/rc.d/static_arp	(revision 320759)
+--- etc/rc.d/static_arp	(revision 325345)
 +++ etc/rc.d/static_arp	(working copy)
 @@ -31,7 +31,7 @@
  
@@ -199,7 +212,7 @@ Index: etc/rc.d/static_arp
  . /etc/network.subr
 Index: etc/rc.d/static_ndp
 ===================================================================
---- etc/rc.d/static_ndp	(revision 320759)
+--- etc/rc.d/static_ndp	(revision 325345)
 +++ etc/rc.d/static_ndp	(working copy)
 @@ -31,7 +31,7 @@
  

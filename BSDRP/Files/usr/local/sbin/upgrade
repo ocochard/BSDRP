@@ -3,7 +3,7 @@
 # Upgrade tool for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2016, The BSDRP Development Team
+# Copyright (c) 2009-2017, The BSDRP Development Team
 # All rights reserved.
 # Based on the updatep1 and updatep2 script of nanoBSD
 #
@@ -31,7 +31,7 @@
 
 #######################
 ##  Example of Usage ##
-#######################	
+#######################
 
 # Put the bziped _.disk.image on my-server, in the  home dir of my-user,
 # and from the nanoBSD device, enter this command:
@@ -114,7 +114,7 @@ gpt_get_info() {
 
 	BSD_SLICE=""
 
-	# gpt/BSDRP0     N/A  vtbd0p3	
+	# gpt/BSDRP0     N/A  vtbd0p3
 	boot_dev=/dev/$(glabel status | grep ${NANO_DRIVE}${CURRENT_LABEL_ID} | \
 		awk '{ s=$3; sub(/p[34]$/, "", s); print s; }')
 	[ -z "${boot_dev}" ] && die "Bug in gpt_get_info: boot_dev can't be empty"
@@ -180,7 +180,7 @@ write_new_image() {
 
 	mount /dev/${NANO_DRIVE}${NEXT_LABEL_ID} /tmp/sysupgrade || \
 		die "ERROR: Can't mount new upgrade image"
-	
+
 	# Kept the /boot/loader.conf.local file
 	if [ -f /boot/loader.conf.local ]; then
     	cp /boot/loader.conf.local /tmp/sysupgrade/boot || \
@@ -199,13 +199,13 @@ write_new_image() {
 
 	# Need to stop autosave before touching /etc/fstab
 	service autosave onestop || true
-	
+
 	# Adapt fstab of the new system
 	for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab; do
 	    sed -i "" "s/${LABEL}${CURRENT_LABEL_ID}/${LABEL}${NEXT_LABEL_ID}/g" $f
 	done
 
-	# Check if there is a post-upgrade script on the new image 
+	# Check if there is a post-upgrade script on the new image
 	# (This script will be start at the end of the upgrade process)
 	if [ -f /tmp/sysupgrade/usr/local/sbin/post-upgrade ]; then
 		cp /tmp/sysupgrade/usr/local/sbin/post-upgrade /tmp/post-upgrade || \
@@ -217,7 +217,7 @@ write_new_image() {
 	rm -r /tmp/sysupgrade || echo "WARNING: Can't remove tempdir"
 
 	# Save the fstab to /cfg
-	if mount | ! grep -E -q '^/cfg'; then
+	if mount | ! grep -q 'on /cfg ('; then
 		mount /cfg || die "ERROR: Cant't mount /cfg"
 	fi
 	if ! cp /etc/fstab /cfg; then
@@ -248,7 +248,7 @@ gpt_boot_modif () {
 }
 
 arm_boot_modif () {
-	echo "arm upgrade script not tested!"	
+	echo "arm upgrade script not tested!"
 	gpart set -a active -i ${NEXT_PART} ${boot_dev} || \
 		die "ERROR: Can't update active partition"
 	return 0
@@ -270,7 +270,7 @@ vtoc_boot_modif () {
 	# Now DISK is like that: /pci@1f,0/ide@d/disk@1,0:
 	if eeprom boot-device=$DISK${NEXT_PART}; then
 		# http://docs.oracle.com/cd/E19127-01/ultra25.ws/819-1892-12/nvram.html
-		# "Initiates a warm boot where most NVRAM configuration parameters are read by 
+		# "Initiates a warm boot where most NVRAM configuration parameters are read by
 		# OpenBoot PROM. With power cycling or a cold boot, all NVRAM configuration parameters
 		# are read by the OpenBoot PROM."
 		echo "WARNING: You need to do a cold reboot for forcing OBP to re-read just modified eeprom value"
