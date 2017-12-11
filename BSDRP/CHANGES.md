@@ -1,8 +1,10 @@
 # Release 1.81 (not released)
 
 ## New features
+* Upgrade to bird 2: WARNING to old configuration not fully compliant with new
+    bird4 and bird6 were merged (and their configuration files too), read this:
+    https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
 * Add some Yandex (ae@)'s patches that remove locking problem (from 5Mpps to 10Mpps on 8 cores)
-* Added igb_affinity rc script (useless, drivers did it automatically?)
 * Disable HyperThreading by default
 * Add qlxgbe (QLogic 8300 series 10 Gigabit) drivers
 
@@ -20,28 +22,27 @@
 * iperf to 2.0.10
 * iperf3 to 3.3
 * isc-dhcp43-server to 4.3.6
-* frr to 3.0
+* frr to 3.0.2
 * openvpn to 2.4.4
-* monit to 5.24
+* monit to 5.25
 * strongswan to 5.6.0
 * sudo to 1.8.21
 * tmux to 2.6
 
 ## Packages list
-* bird 1.6.3_3: Dynamic IP routing daemon (IPv4 version)
-* bird6 1.6.3_3: Dynamic IP routing daemon (IPv6 version)
+* bird 2.0.0: Dynamic IP routing daemon
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.32.1: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.34.1: Root certificate bundle from the Mozilla Project
 * devcpu-data 1.11_1: Intel and AMD CPUs microcode updates
 * dhcprelya 5.0: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
-* exabgp 3.4.20: BGP engine and route injector
+* exabgp 3.4.20_1: BGP engine and route injector
 * flashrom 0.9.9_2: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr 3.0: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr 3.0.2: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.11.2: Cross-platform file change monitor
-* indexinfo 0.3: Utility to regenerate the GNU info page index
+* indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * iperf 2.0.10_1: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.3: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
@@ -54,12 +55,12 @@
 * libgcrypt 1.8.1: General purpose crypto library based on code used in GnuPG
 * libgpg-error 1.27: Common error values for all GnuPG components
 * liblz4 1.8.0,1: LZ4 compression library, lossless and very fast
-* libpci 3.5.5: PCI configuration space I/O made easy
+* libpci 3.5.6: PCI configuration space I/O made easy
 * libsodium 1.0.15: Library to build higher-level cryptographic tools
 * libucl 0.8.0: Universal configuration library parser
 * lzo2 2.10_1: Portable speedy, lossless data compression library
 * mlvpn 2.3.1_2: Multi-link VPN
-* monit 5.24.0: Unix system management and proactive monitoring
+* monit 5.25.0: Unix system management and proactive monitoring
 * mpd5 5.8_2: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8: Multicast routing daemon providing DVMRP for IPv4
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
@@ -67,14 +68,15 @@
 * openldap-client 2.4.45: Open source LDAP client implementation
 * openvpn 2.4.4: Secure IP/Ethernet tunnel daemon
 * openvpn-auth-radius 2.1_3: RADIUS authentication plugin for OpenVPN
-* pciids 20171011: Database of all known IDs used in PCI devices
+* pciids 20171206: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
 * pimd 2.3.2: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-* pkg 1.10.1: Package manager
+* pkg 1.10.3_1: Package manager
 * pmacct 1.6.1: Accounting and aggregation tool for IPv4 and IPv6 traffic
+* py27-ipaddress 1.0.18: Python 3.3's ipaddress for Python 2.6 and 2.7
 * py27-setuptools 36.5.0: Python packages installer
 * python 2.7_3,2: "meta-port" for the default version of Python interpreter
 * python2 2_3: The "meta-port" for version 2 of the Python interpreter
@@ -82,7 +84,7 @@
 * readline 7.0.3_1: Library for editing command lines as they are typed
 * smcroute 2.3.1: Static multicast routing tool
 * strongswan 5.6.0: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.21p2: Allow others to run commands as root
+* sudo 1.8.21p2_1: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.6: Terminal Multiplexer
 * ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol

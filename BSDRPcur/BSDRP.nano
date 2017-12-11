@@ -2,7 +2,7 @@
 # http://bsdrp.net
 #
 # NanoBSD port support added from Gitoyen:
-# http://www.gitoyen.net/Howto-NanoBSD-quagga-router 
+# http://www.gitoyen.net/Howto-NanoBSD-quagga-router
 # Some cleanup idea taken from imp@ nanoBSD script
 # Add other parts came from the FreeNAS 8 too (iXsystems)
 #
@@ -81,6 +81,7 @@ WITHOUT_ISCSI=
 WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
 WITHOUT_LIB32=
+WITHOUT_LOADER_GELI=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
 WITHOUT_NCP=
@@ -181,7 +182,7 @@ PPLEVEL=3
 
 # Add netblast/netrecieve and netmap tools
 add_netrate () {
-	TOOLS_LIST="cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
+	TOOLS_LIST="cxgbtool ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
 	mkdir -p ${NANO_WORLDDIR}/dev
 	mount -t devfs devfs ${NANO_WORLDDIR}/dev
 	mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
@@ -379,7 +380,7 @@ add_port "net/frr"
 
 # Bird: routing daemon
 add_port "net/bird" "WITH=\"FIREWALL\""
-add_port "net/bird6" "WITH=\"FIREWALL\""
+add_port "net/bird" "FLAVOR=ipv6 WITH=\"FIREWALL\""
 
 # FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
@@ -468,7 +469,7 @@ add_port "security/openvpn"
 add_port "security/openvpn-auth-radius"
 
 # some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
-#add_port "benchmarks/netpipe" 
+#add_port "benchmarks/netpipe"
 add_port "benchmarks/iperf" "WITH=\"IPV6\""
 add_port "benchmarks/iperf3"
 
@@ -483,9 +484,10 @@ add_port "devel/libffi"
 add_port "lang/python27"
 add_port "lang/python2"
 add_port "lang/python"
-add_port "devel/py27-setuptools"
+add_port "devel/py-setuptools"
 
 # ExaBGP: having fun with BGP
+add_port "net/py-ipaddress"
 add_port "net/exabgp"
 
 # VM tools
@@ -555,7 +557,7 @@ bsdrp_custom () {
 	echo "set nobeep"
 	echo "setenv CLICOLOR true"
 	} >> ${NANO_WORLDDIR}/etc/csh.cshrc
-	
+
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys
 	mkdir -p ${NANO_WORLDDIR}/etc/dot.ssh.root
@@ -572,8 +574,8 @@ bsdrp_custom () {
 	# This permit to save crontab (only /etc and /usr/local/etc are saved)
 	mkdir -p ${NANO_WORLDDIR}/etc/cron
 	rm -rf ${NANO_WORLDDIR}/var/cron
-	ln -s ../etc/cron ${NANO_WORLDDIR}/var/cron	
-	
+	ln -s ../etc/cron ${NANO_WORLDDIR}/var/cron
+
 	# Add /etc/rc.conf.misc into the /etc/default/rc.conf
 	#echo 'rc_conf_files+=/etc/rc.conf.misc' >> ${NANO_WORLDDIR}/etc/rc.conf
 	#sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
@@ -724,7 +726,7 @@ usr/sbin/config
 			echo "Missing file to delete: $c"
 		fi
 	done
-	
+
 	# Move termcap.small file
 	if [ -f ${NANO_WORLDDIR}/etc/termcap.small ]; then
 		mv ${NANO_WORLDDIR}/etc/termcap.small ${NANO_WORLDDIR}/usr/share/misc/termcap.db
@@ -752,7 +754,7 @@ usr/sbin/config
 		for f in $(find $dir -type f); do
 			strip 2>/dev/null $f || :
 		done
-	done	
+	done
 	# Generate package inventory
 	if [ -x ${NANO_WORLDDIR}/usr/local/sbin/pkg ]; then
 		CR 'pkg query \*\ %n\ %v:\ %c' > ${NANO_OBJ}/packages.info
@@ -828,7 +830,7 @@ bsdrp_secure () {
 	chflags -R schg ${NANO_WORLDDIR}/sbin
 	chflags -R schg ${NANO_WORLDDIR}/boot/kernel
 	chflags -R schg ${NANO_WORLDDIR}/libexec
-	chflags -R schg ${NANO_WORLDDIR}/lib	
+	chflags -R schg ${NANO_WORLDDIR}/lib
 }
 
 # Install Custom scripts and config files

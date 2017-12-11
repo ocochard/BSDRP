@@ -4,20 +4,23 @@
 set -eu
 
 usage () {
-	echo "Helper script for configuring BSDRP regrestion feature lab"
+	echo "Helper script for configuring BSDRP regression feature lab"
 	echo "DO NOT USE THIS SCRIPT ON OTHER ROUTERS: IT WILL ERASE YOUR CONFIGURATION"
 	echo "Usage:"
 	echo "$0 lab_type_vm-number"
 	echo "Example:"
 	echo "$0 full_vm1        for configuring VM1 of lab Full"
 	echo "$0 frr_vm3         for configuring VM3 of lab FRR"
-	echo "Lab list: full, frr, vpn"
+	echo "Lab list:"
+	echo "-full: https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab"
+	echo "-frr: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab "
+	echo "-vpn: https://bsdrp.net/documentation/examples/gre_ipsec_and_openvpn"
+	echo "-bgp: https://bsdrp.net/documentation/examples/bgp_route_reflector_and_confederation_using_quagga_and_bird"
 	exit 1
 }
 
 
 ### Full (maximum) features labs ###
-### https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab
 
 full_vm1 () {
 sysrc hostname=R1
@@ -476,7 +479,7 @@ EOF
 cat > /usr/local/etc/frr/isisd.conf <<EOF
 interface lo1
  ip router isis BSDRP
- isis passive 
+ isis passive
 !
 interface em3
  ip router isis BSDRP
@@ -748,7 +751,6 @@ echo "VM5 (including jail5 and jail6) configured"
 }
 
 ### FRR lab
-### https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab
 
 frr_vm1 () {
 sysrc hostname=router1
@@ -1089,14 +1091,14 @@ add 2001:db8:34::4 2001:db8:23::2 esp 0x1003 -E aes-gcm-16 "12345678901234567890
 EOF
 cat > /usr/local/etc/ipsec.conf <<EOF
 config setup
- 
+
 conn %default
      authby=secret
      keyexchange=ikev2
      mobike=no
      dpdaction=restart
      dpddelay=5
- 
+
 conn R4
     left=10.0.23.2
     leftsubnet=10.0.12.0/24
@@ -1156,7 +1158,7 @@ ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 hostname R3
 service netif restart
 config save
-} 
+}
 
 vpn_vm4 () {
 sysrc hostname=R4
@@ -1181,7 +1183,7 @@ add 2001:db8:34::4 2001:db8:23::2 esp 0x1003 -E aes-gcm-16 "12345678901234567890
 EOF
 cat > /usr/local/etc/ipsec.conf <<EOF
 config setup
- 
+
 conn %default
     authby=secret
     keyexchange=ikev2
@@ -1227,6 +1229,451 @@ ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 hostname R5
 service netif restart
 service routing restart
+config save
+}
+
+### BGP bird & quagga lab
+bgp_vm1 () {
+sysrc hostname=R1
+sysrc ifconfig_vtnet6="10.0.6.1/24"
+sysrc ifconfig_vtnet6_ipv6="inet6 2001:db8:6::1 prefixlen 64"
+sysrc ifconfig_vtnet0="10.0.1.1/24"
+sysrc ifconfig_vtnet0_ipv6="inet6 2001:db8:1::1 prefixlen 64"
+sysrc bird_enable=YES
+cat > /usr/local/etc/bird.conf <<EOF
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+log stderr all;
+
+# Override router ID
+router id 0.0.0.101;
+
+# Sync bird routing table with kernel
+protocol kernel kernel4 {
+    ipv4 {
+        export all;
+    };
+}
+protocol kernel kernel6 {
+    ipv6 {
+        export all;
+    };
+}
+
+# Include device route (warning, a device route is a /32)
+protocol device {
+        scan time 10;
+}
+
+# Include directly connected networks
+protocol direct {
+        ipv4;
+        ipv6;
+}
+
+protocol bgp R2inet4 {
+        local as 100;
+        neighbor 10.0.6.2 as 100;
+        ipv4 {
+            export all;
+            import all;
+        };
+}
+
+protocol bgp R2inet6 {
+        local as 100;
+        neighbor 2001:db8:6::2 as 100;
+        ipv6 {
+            export all;
+            import all;
+        };
+}
+EOF
+config save
+hostname R1
+service netif restart
+service bird start
+}
+
+bgp_vm2 () {
+sysrc hostname=R2
+sysrc ifconfig_vtnet6="10.0.6.2/24"
+sysrc ifconfig_vtnet6_ipv6="inet6 2001:db8:6::2 prefixlen 64"
+sysrc bird_enable=YES
+cat > /usr/local/etc/bird.conf <<EOF
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+log stderr all;
+
+# Override router ID
+router id 0.0.0.102;
+
+# Define variable
+define myas = 100;
+
+# Sync bird routing table with kernel
+protocol kernel kernel4 {
+    ipv4 {
+        export all;
+    };
+}
+protocol kernel kernel6 {
+    ipv6 {
+        export all;
+    };
+}
+
+protocol device {
+        scan time 10;
+}
+
+# Include directly connected networks
+protocol direct {
+        ipv4;
+        ipv6;
+}
+
+protocol bgp R1inet4 {
+        local as myas;
+        neighbor 10.0.6.1 as myas;
+        rr client;
+        ipv4 {
+            import all;
+            export all;
+        };
+}
+
+protocol bgp R3inet4 {
+        local as myas;
+        neighbor 10.0.6.3 as myas;
+        ipv4 {
+            import all;
+            export all;
+        };
+        rr client;
+}
+protocol bgp R1inet6 {
+        local as myas;
+        neighbor 2001:db8:6::1 as myas;
+        ipv6 {
+            import all;
+            export all;
+        };
+        rr client;
+}
+
+protocol bgp R3inet6 {
+        local as myas;
+        neighbor 2001:db8:6::3 as myas;
+        ipv6 {
+            import all;
+            export all;
+        };
+        rr client;
+}
+EOF
+hostname R2
+config save
+service netif restart
+service bird start
+}
+
+bgp_vm3 () {
+sysrc hostname=R3
+sysrc ifconfig_vtnet6="10.0.6.3/24"
+sysrc ifconfig_vtnet6_ipv6="inet6 2001:db8:6::3 prefixlen 64"
+sysrc ifconfig_vtnet2="10.0.2.3/24"
+sysrc ifconfig_vtnet2_ipv6="inet6 2001:db8:2::3 prefixlen 64"
+sysrc bird_enable=YES
+cat > /usr/local/etc/bird.conf <<EOF
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+log stderr all;
+
+# Override router ID
+router id 0.0.0.103;
+
+# Define variable
+define myas = 100;
+
+# Sync bird routing table with kernel
+protocol kernel kernel4 {
+    ipv4 {
+        export all;
+    };
+}
+protocol kernel kernel6 {
+    ipv6 {
+        export all;
+    };
+}
+
+protocol device {
+        scan time 10;
+}
+
+# Include directly connected networks
+protocol direct {
+        ipv4;
+        ipv6;
+}
+
+protocol bgp R2inet4 {
+        local as myas;
+        neighbor 10.0.6.2 as myas;
+        ipv4 {
+            import all;
+            export all;
+            next hop self;
+        };
+}
+
+protocol bgp R4inet4 {
+        local as myas;
+        # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
+        # Otherwise it will use the wrong 0.0.0.0 IP as source
+        source address 10.0.2.3;
+        neighbor 10.0.2.4 as 200;
+        password "abigpassword";
+        ipv4 {
+            import all;
+            export all;
+            next hop self;
+        };
+}
+
+protocol bgp R2inet6 {
+        local as myas;
+        neighbor 2001:db8:6::2 as myas;
+        ipv6 {
+            import all;
+            export all;
+            next hop self;
+        };
+}
+
+protocol bgp R4inet6 {
+        local as myas;
+        # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
+        # Otherwise it will use the wrong :: IP as source
+        source address 2001:db8:2::3;
+        neighbor 2001:db8:2::4 as 200;
+        password "abigpassword";
+        ipv6 {
+            import all;
+            export all;
+            next hop self;
+        };
+}
+EOF
+hostname R3
+service netif restart
+service bird start
+}
+
+bgp_vm4 () {
+sysrc hostname=R4
+hostname R4
+sysrc frr_enable=YES
+sysrc ipsec_enable=YES
+sysrc ipsec_file="/etc/ipsec.conf"
+cat <<EOF > /etc/ipsec.conf
+flush ;
+add 10.0.2.3 10.0.2.4 tcp 0x1000 -A tcp-md5 "abigpassword" ;
+add 10.0.2.4 10.0.2.3 tcp 0x1001 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:2::3 2001:db8:2::4 tcp 0x1002 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:2::4 2001:db8:2::3 tcp 0x1003 -A tcp-md5 "abigpassword" ;
+EOF
+service ipsec start
+cat <<EOF > /usr/local/etc/frr/zebra.conf
+interface vtnet2
+ ip address 10.0.2.4/24
+ ipv6 address 2001:db8:2::4/64
+interface vtnet3
+ ip address 10.0.3.4/24
+ ipv6 address 2001:db8:3::4/64
+EOF
+cat <<EOF > /usr/local/etc/frr/bgpd.conf
+router bgp 64512
+ bgp router-id 0.0.0.204
+ bgp confederation identifier 200
+ bgp confederation peers 65535
+ neighbor 10.0.2.3 remote-as 100
+ neighbor 10.0.2.3 password abigpassword
+ neighbor 10.0.3.5 remote-as 64512
+ neighbor 2001:db8:2::3 remote-as 100
+ neighbor 2001:db8:2::3 password abigpassword
+ neighbor 2001:db8:3::5 remote-as 64512
+ !
+ address-family ipv4 unicast
+  network 10.0.3.0/24
+  neighbor 10.0.3.5 next-hop-self
+  no neighbor 2001:db8:2::3 activate
+  no neighbor 2001:db8:3::5 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 2001:db8:3::/64
+  neighbor 2001:db8:2::3 activate
+  neighbor 2001:db8:3::5 activate
+  neighbor 2001:db8:3::5 next-hop-self
+ exit-address-family
+!
+EOF
+service frr start
+config save
+}
+
+bgp_vm5 () {
+sysrc hostname=R5
+sysrc frr_enable=YES
+cat <<EOF > /usr/local/etc/frr/zebra.conf
+interface vtnet3
+ ip address 10.0.3.5/24
+ ipv6 address 2001:db8:3::5/64
+!
+interface vtnet4
+ ip address 10.0.4.5/24
+ ipv6 address 2001:db8:4::5/64
+EOF
+
+cat <<EOF > /usr/local/etc/frr/bgpd.conf
+router bgp 64512
+ bgp router-id 0.0.0.205
+ bgp confederation identifier 200
+ bgp confederation peers 65535
+ neighbor 10.0.3.4 remote-as 64512
+ neighbor 10.0.4.6 remote-as 65535
+ neighbor 2001:db8:3::4 remote-as 64512
+ neighbor 2001:db8:4::6 remote-as 65535
+ !
+ address-family ipv4 unicast
+  network 10.0.3.0/24
+  network 10.0.4.0/24
+  neighbor 10.0.3.4 next-hop-self
+  neighbor 10.0.4.6 next-hop-self
+  no neighbor 2001:db8:3::4 activate
+  no neighbor 2001:db8:4::6 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 2001:db8:3::/64
+  network 2001:db8:4::/64
+  neighbor 2001:db8:3::4 activate
+  neighbor 2001:db8:3::4 next-hop-self
+  neighbor 2001:db8:4::6 activate
+  neighbor 2001:db8:4::6 next-hop-self
+ exit-address-family
+EOF
+hostname R5
+service frr start
+config save
+}
+
+bgp_vm6 () {
+sysrc hostname=R6
+hostname R6
+sysrc ipsec_enable=YES
+sysrc ipsec_file="/etc/ipsec.conf"
+sysrc frr_enable=YES
+cat <<EOF > /etc/ipsec.conf
+flush ;
+add 10.0.5.6 10.0.5.7 tcp 0x1000 -A tcp-md5 "abcdefgh" ;
+add 10.0.5.7 10.0.5.6 tcp 0x1001 -A tcp-md5 "abcdefgh" ;
+add -6 2001:db8:5::6 2001:db8:5::7 tcp 0x1002 -A tcp-md5 "abcdefgh" ;
+add -6 2001:db8:5::7 2001:db8:5::6 tcp 0x1003 -A tcp-md5 "abcdefgh" ;
+EOF
+service ipsec start
+cat <<EOF > /usr/local/etc/frr/zebra.conf
+interface vtnet4
+ ip address 10.0.4.6/24
+ ipv6 address 2001:db8:4::6/64
+!
+interface vtnet5
+ ip address 10.0.5.6/24
+ ipv6 address 2001:db8:5::6/64
+EOF
+cat <<EOF > /usr/local/etc/frr/bgpd.conf
+router bgp 65535
+ bgp router-id 0.0.0.206
+ bgp confederation identifier 200
+ bgp confederation peers 64512
+ neighbor 10.0.4.5 remote-as 64512
+ neighbor 10.0.5.7 remote-as 65535
+ neighbor 10.0.5.7 password abcdefgh
+ neighbor 2001:db8:4::5 remote-as 64512
+ neighbor 2001:db8:5::7 remote-as 65535
+ neighbor 2001:db8:5::7 password abcdefgh
+ !
+ address-family ipv4 unicast
+  network 10.0.5.0/24
+  neighbor 10.0.4.5 next-hop-self
+  neighbor 10.0.5.7 next-hop-self
+  no neighbor 2001:db8:4::5 activate
+  no neighbor 2001:db8:5::7 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 2001:db8:5::/64
+  neighbor 2001:db8:4::5 activate
+  neighbor 2001:db8:4::5 next-hop-self
+  neighbor 2001:db8:5::7 activate
+  neighbor 2001:db8:5::7 next-hop-self
+ exit-address-family
+EOF
+service frr start
+config save
+}
+
+bgp_vm7 () {
+sysrc hostname=R7
+hostname R7
+sysrc ipsec_enable=YES
+sysrc ipsec_file="/etc/ipsec.conf"
+sysrc frr_enable=YES
+cat <<EOF > /etc/ipsec.conf
+flush ;
+add 10.0.5.6 10.0.5.7 tcp 0x1000 -A tcp-md5 "abcdefgh" ;
+add 10.0.5.7 10.0.5.6 tcp 0x1001 -A tcp-md5 "abcdefgh" ;
+add -6 2001:db8:5::6 2001:db8:5::7 tcp 0x1002 -A tcp-md5 "abcdefgh" ;
+add -6 2001:db8:5::7 2001:db8:5::6 tcp 0x1003 -A tcp-md5 "abcdefgh" ;
+EOF
+service ipsec start
+cat <<EOF > /usr/local/etc/frr/zebra.conf
+interface vtnet0
+ ip address 10.0.7.7/24
+ ipv6 address 2001:db8:7::7/64
+!
+interface vtnet5
+ ip address 10.0.5.7/24
+ ipv6 address 2001:db8:5::7/64
+EOF
+cat <<EOF > /usr/local/etc/frr/bgpd.conf
+router bgp 65535
+ bgp router-id 0.0.0.207
+ bgp confederation identifier 200
+ bgp confederation peers 64512
+ neighbor 10.0.5.6 remote-as 65535
+ neighbor 10.0.5.6 password abcdefgh
+ neighbor 2001:db8:5::6 remote-as 65535
+ neighbor 2001:db8:5::6 password abcdefgh
+ !
+ address-family ipv4 unicast
+  network 10.0.5.0/24
+  network 10.0.7.0/24
+  no neighbor 2001:db8:5::6 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 2001:db8:5::/64
+  network 2001:db8:7::/64
+  neighbor 2001:db8:5::6 activate
+ exit-address-family
+EOF
+service frr start
 config save
 }
 ### Main

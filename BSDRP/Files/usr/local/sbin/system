@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# System tool for BSD Router Project 
+# System tool for BSD Router Project
 # http://bsdrp.net
 #
 # Copyright (c) 2009-2017, The BSDRP Development Team
@@ -255,11 +255,11 @@ rollback () {
 	# Check and set final variable
 	DST_SLICE=0
 
-	if [ $(echo $NANO_FULLDRIVE | /usr/bin/grep -q "s1") ]; then
+	if (echo $NANO_FULLDRIVE | grep -q "s1"); then
 		DST_SLICE=2
 		SRC_SLICE=1
 	fi
-	if [ $(echo $NANO_FULLDRIVE | /usr/bin/grep -q "s2") ]; then
+	if (echo $NANO_FULLDRIVE | grep -q "s2"); then
 		DST_SLICE=1
 		SRC_SLICE=2
 	fi

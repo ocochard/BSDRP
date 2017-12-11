@@ -3,7 +3,7 @@
 # VirtualBox lab script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2015, The BSDRP Development Team
+# Copyright (c) 2009-2017, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -47,7 +47,7 @@ check_system_common () {
 	VBVERSION_MIN=`echo $VBVERSION|cut -d . -f 2`
 
 	[ $VBVERSION_MAJ -lt 4 ] && die "[ERROR] Need Virtualbox 4.1 minimum"
-	
+
 	[ $VBVERSION_MAJ -eq 4 -a $VBVERSION_MIN -lt 1 ] &&
 		die "[ERROR] Need Virtualbox 4.1 minimum"
 
@@ -93,14 +93,14 @@ check_image () {
 
 	file -b ${FILENAME} | grep -q "boot sector"  >> ${LOG_FILE} 2>&1 || \
 		die "[ERROR] Not a BSDRP image??"
-	
+
 }
 
 # Create BSDRP template VM by converting BSDRP image disk file (given in parameter) into Virtualbox format and compress it
 # This template is used only for the image disk
 create_template () {
 	# Generate $VM_ARCH and $CONSOLE from the filename
-	
+
 	[ -z "$VM_ARCH" ] && parse_filename $1
 
 	echo "Create BSDRP template VM..." >> ${LOG_FILE}
@@ -202,7 +202,7 @@ else
 fi
 }
 
-delete_all_nic () { 
+delete_all_nic () {
 	#Delete all NIC
 	local NIC_LIST=""
 	NIC_lIST=`VBoxManage showvminfo $1 | grep MAC | cut -d ' ' -f 2 | cut -d ':' -f 1`
@@ -218,15 +218,15 @@ parse_filename () {
 		VM_ARCH="FreeBSD_64"
 		echo "x86-64 image"
 	fi
-	
+
 	if echo "$1" | grep -q "i386"; then
 		VM_ARCH="FreeBSD"
 		echo "i386 image"
 	fi
 	[ "$VM_ARCH" = "0" ] && die "[ERROR] Can't deduce arch type from filename"
- 
-	# SERIAL can bÃe allready set from CLI options 
-	if [ -z ${SERIAL} ]; then  
+
+	# SERIAL can bÃe allready set from CLI options
+	if [ -z ${SERIAL} ]; then
 		if echo "$1" | grep -q "serial"; then
 			SERIAL=true
 			echo "serial image"
@@ -259,7 +259,7 @@ build_lab () {
 		DRIVER_TYPE="em"
 	fi
 	[ -n "$RAM" ] && echo "- RAM: $RAM MB each"
-	
+
 	echo ""
 	local i=1
 	#Enter the main loop for each VM
@@ -328,7 +328,7 @@ build_lab () {
 		if ($HOSTONLY_NIC); then
 			#Need to manage correct mac address
 			[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
-			
+
 			echo "${DRIVER_TYPE}${NIC_NUMBER} connected to shared-with-host LAN."
 			NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
 			VBoxManage modifyvm BSDRP_lab_R$i --nic${NIC_NUMBER} hostonly \
@@ -390,7 +390,7 @@ delete_vm () {
 	[ "$1" = "" ] && die "BUG: In delete_vm (), no argument given"
 
 	echo "Delete VM $1" >> ${LOG_FILE} 2>&1
-   	echo "Delete VM $1" 
+   	echo "Delete VM $1"
 	VBoxManage unregistervm $1 --delete >> ${LOG_FILE} 2>&1 || \
 		die "[ERROR] Can't delete VM $1, Check ${LOG_FILE}."
 
@@ -454,7 +454,7 @@ usage () {
 	echo "  -l Y       Number of LAN between 0 and 9 (default: 0)"
 	echo "  -m         RAM (in MB) for each VM (default: ${DEFAULT_RAM})"
 	echo "  -n X       Number of router (between 1 and 9) full meshed (default: 1)"
-	echo "  -o CONS    Force console:vga (default if -a) or serial" 
+	echo "  -o CONS    Force console:vga (default if -a) or serial"
 	echo "  -s         Stop all VM"
 	echo "  -v         Enable virtio drivers"
 	echo ""

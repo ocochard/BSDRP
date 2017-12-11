@@ -223,14 +223,14 @@ add_quagga-bgp-netgen () {
 # Need to check if this function works with cross-compiling architecture!!!!
 # Recursive complex fonction: Generate one function for each ports
 add_port () {
-	port=`echo $1 | sed -e 's/\//_/'`
+	port=$(echo $1 | sed -e 's/\//_/')
 	# Check if package allready exist
 	cd ${PORTS_SRC}/$1
 	# Warning: a package name can change regarding the build option
 	if [ $# -gt 1 ]; then
-		PKG_NAME=`env PORTSDIR=${PORTS_SRC} make package-name "$2"`
+		PKG_NAME=$(env PORTSDIR=${PORTS_SRC} make package-name "$2")
 	else
-		PKG_NAME=`env PORTSDIR=${PORTS_SRC} make package-name`
+		PKG_NAME=$(env PORTSDIR=${PORTS_SRC} make package-name)
 	fi
 	if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.txz ]; then
 	# Pkg file found: Generate add_pkg_NAME function
@@ -308,7 +308,7 @@ EOF
 					UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 					make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 					install package BATCH=yes -DWITH_PKGNG \
-					WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+					WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS "$2" clean'
 			else
 				CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 					MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
@@ -316,14 +316,14 @@ EOF
 					UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 					make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 					install BATCH=yes -DWITH_PKGNG \
-					WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+					WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS "$2" clean'
 				CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 					MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
 					UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 					UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 					make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 					package BATCH=yes -DWITH_PKGNG \
-					WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+					WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS "$2" clean'
 			fi
 			rm \${NANO_WORLDDIR}/etc/resolv.conf
 			rm -rf \${NANO_WORLDDIR}/usr/obj
@@ -369,19 +369,19 @@ add_port "net-mgmt/bsnmp-ucd"
 add_port "print/indexinfo"
 add_port "devel/readline"
 add_port "devel/json-c"
-add_port "net/frr"
+add_port "net/frr" "WITH=\"MULTIPATH\""
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Bird: routing daemon
-add_port "net/bird" "WITH=\"FIREWALL\""
-add_port "net/bird6" "WITH=\"FIREWALL\""
+#add_port "net/bird" "WITH=\"FIREWALL\""
+add_port "net/bird"
 
 # FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
 
 # ipsec-tools: IKEv1
 add_port "net/openldap24-client"
-add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
+add_port "security/ipsec-tools" 'WITH="RC5 IDEA RADIUS LDAP"'
 
 # strongswan: IKEv2 and lot's more
 add_port "security/strongswan" "WITH=\"MEDIATION GCM\" WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
@@ -475,9 +475,10 @@ add_port "devel/libffi"
 add_port "lang/python27"
 add_port "lang/python2"
 add_port "lang/python"
-add_port "devel/py27-setuptools"
+add_port "devel/py-setuptools"
 
 # ExaBGP: having fun with BGP
+add_port "net/py-ipaddress"
 add_port "net/exabgp"
 
 #add_port "net/openbfdd"
@@ -536,7 +537,7 @@ customize_cmd cleanup_ports
 # BSDRP custom function
 bsdrp_custom () {
 	# Replace BSDRP_VERSION in /boot/brand.4th with the version number in etc/version
-	sed -i "" -e /BSDRP_VERSION/s//`cat ${NANO_WORLDDIR}/etc/version`/ ${NANO_WORLDDIR}/boot/brand.4th
+	sed -i "" -e /BSDRP_VERSION/s//$(cat ${NANO_WORLDDIR}/etc/version)/ ${NANO_WORLDDIR}/boot/brand.4th
 	# Disable reverse DNS in sshd:
 	echo "UseDNS no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
 	# Update login.conf db
@@ -720,7 +721,7 @@ usr/share/tmac/tmac.vgrind
 				echo "Error: Can't remove it!"
 			fi
 			# look for associated man page and delete it too
-			if ! find ${NANO_WORLDDIR}/usr/share/man -name `basename $c`".*.gz" -exec rm -- {} +; then
+			if ! find ${NANO_WORLDDIR}/usr/share/man -name $(basename $c)".*.gz" -exec rm -- {} +; then
 				echo "no man page for $c"
 			fi
 			# look for associated debug file and delete it too
@@ -757,7 +758,7 @@ usr/share/tmac/tmac.vgrind
 	# Generate a geom compressed image disk (Disabled)
 	#if [ -f ${NANO_OBJ}/debug.tar.xz ]; then
 	#	dd if=/dev/zero of=/tmp/debug.img seek=4050000 count=0
-	#	MDYOYO=`mdconfig -a -t vnode -f /tmp/debug.img`
+	#	MDYOYO=$(mdconfig -a -t vnode -f /tmp/debug.img)
 	#	newfs -o space -m 1 /dev/${MDYOYO}
 	#	[ -d /tmp/mdyoyo ] || mkdir /tmp/mdyoyo
 	#	mount /dev/${MDYOYO} /tmp/mdyoyo

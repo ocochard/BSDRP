@@ -50,19 +50,6 @@ Index: etc/rc.d/ip6addrctl
  
  . /etc/rc.subr
  . /etc/network.subr
-Index: etc/rc.d/ipsec
-===================================================================
---- etc/rc.d/ipsec	(revision 325345)
-+++ etc/rc.d/ipsec	(working copy)
-@@ -6,7 +6,7 @@
- # PROVIDE: ipsec
- # REQUIRE: FILESYSTEMS
- # BEFORE:  DAEMON mountcritremote
--# KEYWORD: nojail
-+# KEYWORD: nojailvnet
- 
- . /etc/rc.subr
- 
 Index: etc/rc.d/natd
 ===================================================================
 --- etc/rc.d/natd	(revision 325345)

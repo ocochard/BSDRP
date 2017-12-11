@@ -24,7 +24,6 @@ alias please 'sudo \!-1'
 
 #Ugly patch because birdc is compiled for using /usr/local/var/run
 alias birdc		'birdc -s /var/run/bird.ctl'
-alias birdc6	'birdc6 -s /var/run/bird6.ctl'
 
 # A righteous umask
 umask 22
@@ -48,8 +47,8 @@ if ($?prompt) then
 		bindkey -k up history-search-backward
 		bindkey -k down history-search-forward
 	endif
-	# command complete with TAB	
-	# lists  the  remaining 
+	# command complete with TAB
+	# lists  the  remaining
 	# choices (if any) whenever completion fails
 	set autolist=ambiguous
 	# recheck for new binary
@@ -64,7 +63,7 @@ if ($?prompt) then
 	# enables color display for the builtin ls-F and it
 	# passes --color=auto to ls
 	set color
-	# enables color escape sequence for NLS message files	
+	# enables color escape sequence for NLS message files
 	set colorcat
 	# Prevent overwritting existing file
 	# (disabled because prevent to use >> in script)

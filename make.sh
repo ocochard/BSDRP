@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Make script for BSD Router Project 
+# Make script for BSD Router Project
 # http://bsdrp.net
 #
 # Copyright (c) 2009-2017, The BSDRP Development Team
@@ -56,7 +56,7 @@ load_module () {
 update_src () {
 	echo "Updating/Installing FreeBSD source"
 
-	if [ ! -d ${FREEBSD_SRC}/.${SRC_METHOD} ]; then	
+	if [ ! -d ${FREEBSD_SRC}/.${SRC_METHOD} ]; then
 		echo "No existing FreeBSD source tree found: Checking out source..."
 		mkdir -p ${FREEBSD_SRC} || die "Can't create ${FREEBSD_SRC}"
 		if [ ${SRC_METHOD} = "svn" ]; then
@@ -194,7 +194,7 @@ usage () {
 		echo " -a   specify target architecture:"
 		echo "      i386, i386_xenpv, i386_xenhvm, amd64 or amd64_xenhvm"
 		echo "      if not specified, use local system arch (`uname -p`)"
-		echo "      cambria (arm) and sparc64 targets are in work-in-progress state"	
+		echo "      cambria (arm) and sparc64 targets are in work-in-progress state"
 		echo " -b   suppress build[world|kernel]"
 		echo " -c   specify console type: vga (default) or serial"
 		echo " -C   force a cleanup of previous object files"
@@ -204,7 +204,7 @@ usage () {
 		echo " -p   project name to build"
 		echo " -s   size in MB of the target disk (default: 1000)"
 		echo " -u   update all src (freebsd and ports)"
-		echo " -r   use a memory disk as destination dir" 
+		echo " -r   use a memory disk as destination dir"
 		echo " -y   Answer yes to all confirmation"
 		echo " -w   suppress buildworld"
 	) 1>&2
@@ -348,7 +348,7 @@ NANO_DIRS_INSTALL="${PROJECT_DIR}/Files"
 # -MASTER_PROJECT: For a child projet, name of the father project
 # -SVN_SRC_PATH: SVN path for the source tree
 # -SVN_PORTS_PATH: SVN path for the port source tree
-# -FREEBSD_SRC: directory for localy stored FreeBSD source tree 
+# -FREEBSD_SRC: directory for localy stored FreeBSD source tree
 # -SRC_PATCH_DIR: Directory for FreeBSD patches
 # -PORTS_SRC: Directory for localy stored ports source tree
 # -PORT_PATCH_DIR: Directory for port patches
@@ -434,7 +434,7 @@ case "${NANO_KERNEL}" in
 	*)
 		die "ERROR: Bad arch type"
 esac
-	
+
 # Cross compilation is not possible for the ports
 
 # Cambria is not compatible with vga output
@@ -558,7 +558,7 @@ echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\""
 
 eval echo NANO_MODULES=\\\"\${NANO_MODULES_${NANO_KERNEL}}\\\" >> /tmp/${PROJECT}.nano
 case ${NANO_KERNEL} in
-	"cambria") 
+	"cambria")
 		NANO_MAKEFS="makefs -B big \
 		-o bsize=4096,fsize=512,density=8192,optimization=space"
 		export NANO_MAKEFS
@@ -574,8 +574,8 @@ esac
 echo "# Bootloader type"  >> /tmp/${PROJECT}.nano
 
 case ${INPUT_CONSOLE} in
-	"-vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/${PROJECT}.nano 
-		# Configuring dual_console (vga and serial) can cause problem to 
+	"-vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/${PROJECT}.nano
+		# Configuring dual_console (vga and serial) can cause problem to
 		# some computer that have special serial port
 		echo "#Configure vga console port" >> /tmp/${PROJECT}.nano
 		echo "customize_cmd bsdrp_console_vga" >> /tmp/${PROJECT}.nano
@@ -643,7 +643,7 @@ case ${NANO_KERNEL} in
 		;;
 	"i386_xenhvm")
 		cp ${KERNELS_DIR}/i386 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
-        ;;	
+        ;;
 esac
 
 # Overwrite the nanobsd script with our own improved nanobsd
@@ -661,7 +661,7 @@ ERROR_CODE=$?
 if [ -n "${MASTER_PROJECT}" ]; then
 	# unmount previosly mounted dir (old unionfs code???)
 	check_clean ${NANO_OBJ}
-	trap - 1 2 15 EXIT                                                                                              
+	trap - 1 2 15 EXIT
 fi
 
 # Testing exit code of NanoBSD:
@@ -671,8 +671,8 @@ else
 	echo "ERROR: NanoBSD meet an error, check the log files here:"
 	echo "${NANO_OBJ}/"
 	echo "An error during the build world or kernel can be caused by"
-	echo "a bug in the FreeBSD-current code"	
-	echo "try to re-sync your code" 
+	echo "a bug in the FreeBSD-current code"
+	echo "try to re-sync your code"
 	exit 1
 fi
 
@@ -751,8 +751,8 @@ EOF
 		echo "- The extracted kernel: ${NANO_KERNEL}.kernel.gz"
 		mv ${NANO_OBJ}/_.mtree ${NANO_OBJ}/${NAME}-${VERSION}-${NANO_KERNEL}.mtree
 		FILENAME="${NAME}-${VERSION}-${NANO_KERNEL}"
-	else	
-		echo "Compressing ${NAME} full image..." 
+	else
+		echo "Compressing ${NAME} full image..."
 		xz -T0 -vf ${NANO_OBJ}/${FILENAME}
 		echo "Generating checksum for ${NAME} full image..."
 		sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
