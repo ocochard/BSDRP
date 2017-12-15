@@ -317,6 +317,105 @@ Added: svn:mime-type
 ## -0,0 +1 ##
 +text/plain
 \ No newline at end of property
+Index: net/bird/files/patch-nest_a-set.c
+===================================================================
+--- net/bird/files/patch-nest_a-set.c	(nonexistent)
++++ net/bird/files/patch-nest_a-set.c	(working copy)
+@@ -0,0 +1,15 @@
++--- nest/a-set.c.orig	2017-12-11 07:33:23 UTC
+++++ nest/a-set.c
++@@ -536,6 +536,12 @@ ec_set_sort(struct linpool *pool, struct adata *src)
++   return dst;
++ }
++ 
+++void
+++ec_set_sort_x(struct adata *set)
+++{
+++  /* Sort in place */
+++  qsort(set->data, set->length / 8, 8, ec_set_cmp);
+++}
++ 
++ static int
++ lc_set_cmp(const void *X, const void *Y)
+
+Property changes on: net/bird/files/patch-nest_a-set.c
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: net/bird/files/patch-nest_attrs.h
+===================================================================
+--- net/bird/files/patch-nest_attrs.h	(nonexistent)
++++ net/bird/files/patch-nest_attrs.h	(working copy)
+@@ -0,0 +1,9 @@
++--- nest/attrs.h.orig	2017-12-11 07:33:23 UTC
+++++ nest/attrs.h
++@@ -197,4 +197,6 @@ struct adata *int_set_sort(struct linpool *pool, struc
++ struct adata *ec_set_sort(struct linpool *pool, struct adata *src);
++ struct adata *lc_set_sort(struct linpool *pool, struct adata *src);
++ 
+++void ec_set_sort_x(struct adata *set); /* Sort in place */
+++
++ #endif
+
+Property changes on: net/bird/files/patch-nest_attrs.h
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: net/bird/files/patch-proto_bgp_attrs.c
+===================================================================
+--- net/bird/files/patch-proto_bgp_attrs.c	(nonexistent)
++++ net/bird/files/patch-proto_bgp_attrs.c	(working copy)
+@@ -0,0 +1,15 @@
++--- proto/bgp/attrs.c.orig	2017-12-11 07:33:26 UTC
+++++ proto/bgp/attrs.c
++@@ -550,10 +550,11 @@ bgp_decode_mp_unreach_nlri(struct bgp_parse_state *s, 
++ static void
++ bgp_export_ext_community(struct bgp_export_state *s, eattr *a)
++ {
+++  a->u.ptr = ec_set_del_nontrans(s->pool, a->u.ptr);
++   if (a->u.ptr->length == 0)
++     UNSET(a);
++ 
++-  a->u.ptr = ec_set_sort(s->pool, a->u.ptr);
+++  ec_set_sort_x(a->u.ptr);
++ }
++ 
++ static void
+
+Property changes on: net/bird/files/patch-proto_bgp_attrs.c
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
 Index: net/bird/files/patch-sysdep-bsd-setkey.h
 ===================================================================
 --- net/bird/files/patch-sysdep-bsd-setkey.h	(revision 456021)

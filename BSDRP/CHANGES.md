@@ -1,8 +1,10 @@
 # Release 1.81 (not released)
 
+## TO FIX before releasing
+* mpd5 is crashing at startup (Illegal instruction)
+
 ## New features
-* Upgrade to bird 2: WARNING to old configuration not fully compliant with new
-    bird4 and bird6 were merged (and their configuration files too), read this:
+* Upgrade to bird 2, WARNING: previous configuration needs to be adapted
     https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
 * Add some Yandex (ae@)'s patches that remove locking problem (from 5Mpps to 10Mpps on 8 cores)
 * Disable HyperThreading by default
@@ -18,7 +20,9 @@
 * Fix upgrade script that badly detect already /cfg mounted if jails running
 
 ## Updated packages
+* bird to 2.0.0
 * exabgp to 3.4.20
+* dhcprelya to 6.1
 * iperf to 2.0.10
 * iperf3 to 3.3
 * isc-dhcp43-server to 4.3.6
@@ -35,7 +39,7 @@
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.34.1: Root certificate bundle from the Mozilla Project
 * devcpu-data 1.11_1: Intel and AMD CPUs microcode updates
-* dhcprelya 5.0: Lightweight DHCP relay agent. Yandex edition
+* dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * exabgp 3.4.20_1: BGP engine and route injector
 * flashrom 0.9.9_2: Utility for reading, writing, verifying, and erasing flash ROM chips

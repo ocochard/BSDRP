@@ -310,7 +310,7 @@ EOF
 				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 				install package BATCH=yes -DWITH_PKGNG \
-				WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+				WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS "$2" clean'
 		else
 			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 				MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
@@ -318,14 +318,14 @@ EOF
 				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 				install BATCH=yes -DWITH_PKGNG \
-				WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+				WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS "$2" clean'
 			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
 				MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
 				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 				package BATCH=yes -DWITH_PKGNG \
-				WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+				WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS "$2" clean'
 		fi
 		rm \${NANO_WORLDDIR}/etc/resolv.conf
 		rm -rf \${NANO_WORLDDIR}/usr/obj
@@ -379,8 +379,8 @@ add_port "net/frr"
 # Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Bird: routing daemon
-add_port "net/bird" "WITH=\"FIREWALL\""
-add_port "net/bird" "FLAVOR=ipv6 WITH=\"FIREWALL\""
+#add_port "net/bird" "WITH=\"FIREWALL\""
+add_port "net/bird"
 
 # FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"

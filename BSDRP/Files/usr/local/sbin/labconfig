@@ -258,7 +258,6 @@ sysrc ifconfig_em2="inet 10.0.34.3/24"
 sysrc ifconfig_em1_ipv6="inet6 2001:db8:23::3 prefixlen 64"
 sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::3 prefixlen 64"
 sysrc bird_enable=YES
-sysrc bird6_enable=YES
 sysrc pf_enable=YES
 sysrc pf_rules="/etc/pf.conf"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
@@ -306,8 +305,15 @@ log stderr all;
 router id 0.0.0.3;
 
 # Sync bird routing table with kernel
-protocol kernel {
+protocol kernel kernel4 {
+    ipv4 {
         export all;
+    };
+}
+protocol kernel kernel6 {
+    ipv6 {
+        export all;
+    };
 }
 
 # Include device route (warning, a device route is a /32)
@@ -315,77 +321,62 @@ protocol device {
         scan time 10;
 }
 
-# Include directly connected network
+# Include directly connected networks
 protocol direct {
-        interface "vtnet1", "em1", "vtnet2", "em2";
+        ipv4;
+        ipv6;
 }
 
-protocol rip R4 {
-    export all;
+protocol rip R4inet4 {
     interface "vtnet2","em2" {
         version 2;
         password "rippassword";
         authentication cryptographic;
     };
+    ipv4 {
+         export all;
+    };
 }
 
-protocol bgp R2 {
+protocol rip ng R4inet6 {
+    interface "vtnet2","em2" ;
+    ipv6 {
+        export all;
+    };
+}
+
+protocol bgp R2inet4 {
     local as 100;
     # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
     # Otherwise it will use the wrong 0.0.0.0 IP as source
     source address 10.0.23.3;
     neighbor 10.0.23.2 as 100;
     password "abigpassword";
-    import all;
-    export all;
-}
-EOF
-
-cat > /usr/local/etc/bird6.conf <<EOF
-# Configure logging
-log syslog all;
-log "/var/log/bird6.log" all;
-log stderr all;
-
-# Override router ID
-router id 0.0.0.3;
-
-# Sync bird routing table with kernel
-protocol kernel {
-        export all;
-}
-
-protocol device {
-        scan time 10;
-}
-protocol direct {
-        interface "vtnet1", "em1", "vtnet2", "em2";
-}
-
-protocol rip R4 {
-        export all;
-        interface "vtnet2","em2" ;
-}
-
-protocol bgp R2 {
-        local as 100;
-        # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
-        # Otherwise it will use the wrong :: IP as source
-        source address 2001:db8:23::3;
-        neighbor 2001:db8:23::2 as 100;
-        password "abigpassword";
+    ipv4 {
         import all;
         export all;
+    };
+}
+
+protocol bgp R2inet6 {
+    local as 100;
+    # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
+    # Otherwise it will use the wrong :: IP as source
+    source address 2001:db8:23::3;
+    neighbor 2001:db8:23::2 as 100;
+    password "abigpassword";
+    ipv6 {
+        import all;
+        export all;
+    };
 }
 EOF
 
 config save
 hostname R3
 service netif restart
-service ipsec start
 service pf start
 service bird start
-service bird6 start
 echo "VM3 configured"
 }
 
