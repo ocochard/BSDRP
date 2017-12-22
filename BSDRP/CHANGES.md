@@ -1,7 +1,7 @@
 # Release 1.81 (not released)
 
 ## TO FIX before releasing
-* mpd5 is crashing at startup (Illegal instruction)
+* mpd5 is crashing at startup (Illegal instruction) (works on -current)
 
 ## New features
 * Upgrade to bird 2, WARNING: previous configuration needs to be adapted

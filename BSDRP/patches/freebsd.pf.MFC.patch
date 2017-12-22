@@ -1,0 +1,756 @@
+Index: sys/net/pfvar.h
+===================================================================
+--- sys/net/pfvar.h	(revision 327071)
++++ sys/net/pfvar.h	(working copy)
+@@ -154,6 +154,8 @@
+ #define	PF_RULES_RASSERT()	rw_assert(&pf_rules_lock, RA_RLOCKED)
+ #define	PF_RULES_WASSERT()	rw_assert(&pf_rules_lock, RA_WLOCKED)
+ 
++extern struct sx pf_end_lock;
++
+ #define	PF_MODVER	1
+ #define	PFLOG_MODVER	1
+ #define	PFSYNC_MODVER	1
+Index: sys/netpfil/pf/pf.c
+===================================================================
+--- sys/netpfil/pf/pf.c	(revision 327071)
++++ sys/netpfil/pf/pf.c	(working copy)
+@@ -132,6 +132,9 @@
+ VNET_DECLARE(int,			 pf_vnet_active);
+ #define	V_pf_vnet_active		 VNET(pf_vnet_active)
+ 
++static VNET_DEFINE(uint32_t, pf_purge_idx);
++#define V_pf_purge_idx	VNET(pf_purge_idx)
++
+ /*
+  * Queue for pf_intr() sends.
+  */
+@@ -302,6 +305,7 @@
+ int in4_cksum(struct mbuf *m, u_int8_t nxt, int off, int len);
+ 
+ extern int pf_end_threads;
++extern struct proc *pf_purge_proc;
+ 
+ VNET_DEFINE(struct pf_limit, pf_limits[PF_LIMIT_MAX]);
+ 
+@@ -1426,50 +1430,53 @@
+ pf_purge_thread(void *unused __unused)
+ {
+ 	VNET_ITERATOR_DECL(vnet_iter);
+-	u_int idx = 0;
+ 
+-	for (;;) {
+-		PF_RULES_RLOCK();
+-		rw_sleep(pf_purge_thread, &pf_rules_lock, 0, "pftm", hz / 10);
+-		PF_RULES_RUNLOCK();
++	sx_xlock(&pf_end_lock);
++	while (pf_end_threads == 0) {
++		sx_sleep(pf_purge_thread, &pf_end_lock, 0, "pftm", hz / 10);
+ 
+ 		VNET_LIST_RLOCK();
+ 		VNET_FOREACH(vnet_iter) {
+ 			CURVNET_SET(vnet_iter);
+ 
+-		if (pf_end_threads) {
+-			pf_end_threads++;
+-			wakeup(pf_purge_thread);
+-			kproc_exit(0);
+-		}
+ 
+-		/* Wait while V_pf_default_rule.timeout is initialized. */
+-		if (V_pf_vnet_active == 0) {
+-			CURVNET_RESTORE();
+-			continue;
+-		}
++			/* Wait until V_pf_default_rule is initialized. */
++			if (V_pf_vnet_active == 0) {
++				CURVNET_RESTORE();
++				continue;
++			}
+ 
+-		/* Process 1/interval fraction of the state table every run. */
+-		idx = pf_purge_expired_states(idx, pf_hashmask /
++			/*
++			 *  Process 1/interval fraction of the state
++			 * table every run.
++			 */
++			V_pf_purge_idx =
++			    pf_purge_expired_states(V_pf_purge_idx, pf_hashmask /
+ 			    (V_pf_default_rule.timeout[PFTM_INTERVAL] * 10));
+ 
+-		/* Purge other expired types every PFTM_INTERVAL seconds. */
+-		if (idx == 0) {
+ 			/*
+-			 * Order is important:
+-			 * - states and src nodes reference rules
+-			 * - states and rules reference kifs
++			 * Purge other expired types every
++			 * PFTM_INTERVAL seconds.
+ 			 */
+-			pf_purge_expired_fragments();
+-			pf_purge_expired_src_nodes();
+-			pf_purge_unlinked_rules();
+-			pfi_kif_purge();
++			if (V_pf_purge_idx == 0) {
++				/*
++				 * Order is important:
++				 * - states and src nodes reference rules
++				 * - states and rules reference kifs
++				 */
++				pf_purge_expired_fragments();
++				pf_purge_expired_src_nodes();
++				pf_purge_unlinked_rules();
++				pfi_kif_purge();
++			}
++			CURVNET_RESTORE();
+ 		}
+-		CURVNET_RESTORE();
+-		}
+ 		VNET_LIST_RUNLOCK();
+ 	}
+-	/* not reached */
++
++	pf_end_threads++;
++	sx_xunlock(&pf_end_lock);
++	kproc_exit(0);
+ }
+ 
+ void
+@@ -3640,7 +3647,7 @@
+ 		s->timeout = PFTM_OTHER_FIRST_PACKET;
+ 	}
+ 
+-	if (r->rt && r->rt != PF_FASTROUTE) {
++	if (r->rt) {
+ 		if (pf_map_addr(pd->af, r, pd->src, &s->rt_addr, NULL, &sn)) {
+ 			REASON_SET(&reason, PFRES_MAPFAILED);
+ 			pf_src_tree_remove_state(s);
+@@ -5447,41 +5454,24 @@
+ 	dst.sin_len = sizeof(dst);
+ 	dst.sin_addr = ip->ip_dst;
+ 
+-	if (r->rt == PF_FASTROUTE) {
+-		struct nhop4_basic nh4;
+-
+-		if (s)
+-			PF_STATE_UNLOCK(s);
+-
+-		if (fib4_lookup_nh_basic(M_GETFIB(m0), ip->ip_dst, 0,
+-		    m0->m_pkthdr.flowid, &nh4) != 0) {
+-			KMOD_IPSTAT_INC(ips_noroute);
+-			error = EHOSTUNREACH;
+-			goto bad;
+-		}
+-
+-		ifp = nh4.nh_ifp;
+-		dst.sin_addr = nh4.nh_addr;
++	if (TAILQ_EMPTY(&r->rpool.list)) {
++		DPFPRINTF(PF_DEBUG_URGENT,
++		    ("%s: TAILQ_EMPTY(&r->rpool.list)\n", __func__));
++		goto bad_locked;
++	}
++	if (s == NULL) {
++		pf_map_addr(AF_INET, r, (struct pf_addr *)&ip->ip_src,
++		    &naddr, NULL, &sn);
++		if (!PF_AZERO(&naddr, AF_INET))
++			dst.sin_addr.s_addr = naddr.v4.s_addr;
++		ifp = r->rpool.cur->kif ?
++		    r->rpool.cur->kif->pfik_ifp : NULL;
+ 	} else {
+-		if (TAILQ_EMPTY(&r->rpool.list)) {
+-			DPFPRINTF(PF_DEBUG_URGENT,
+-			    ("%s: TAILQ_EMPTY(&r->rpool.list)\n", __func__));
+-			goto bad_locked;
+-		}
+-		if (s == NULL) {
+-			pf_map_addr(AF_INET, r, (struct pf_addr *)&ip->ip_src,
+-			    &naddr, NULL, &sn);
+-			if (!PF_AZERO(&naddr, AF_INET))
+-				dst.sin_addr.s_addr = naddr.v4.s_addr;
+-			ifp = r->rpool.cur->kif ?
+-			    r->rpool.cur->kif->pfik_ifp : NULL;
+-		} else {
+-			if (!PF_AZERO(&s->rt_addr, AF_INET))
+-				dst.sin_addr.s_addr =
+-				    s->rt_addr.v4.s_addr;
+-			ifp = s->rt_kif ? s->rt_kif->pfik_ifp : NULL;
+-			PF_STATE_UNLOCK(s);
+-		}
++		if (!PF_AZERO(&s->rt_addr, AF_INET))
++			dst.sin_addr.s_addr =
++			    s->rt_addr.v4.s_addr;
++		ifp = s->rt_kif ? s->rt_kif->pfik_ifp : NULL;
++		PF_STATE_UNLOCK(s);
+ 	}
+ 	if (ifp == NULL)
+ 		goto bad;
+@@ -5623,16 +5613,6 @@
+ 	dst.sin6_len = sizeof(dst);
+ 	dst.sin6_addr = ip6->ip6_dst;
+ 
+-	/* Cheat. XXX why only in the v6 case??? */
+-	if (r->rt == PF_FASTROUTE) {
+-		if (s)
+-			PF_STATE_UNLOCK(s);
+-		m0->m_flags |= M_SKIP_FIREWALL;
+-		ip6_output(m0, NULL, NULL, 0, NULL, NULL, NULL);
+-		*m = NULL;
+-		return;
+-	}
+-
+ 	if (TAILQ_EMPTY(&r->rpool.list)) {
+ 		DPFPRINTF(PF_DEBUG_URGENT,
+ 		    ("%s: TAILQ_EMPTY(&r->rpool.list)\n", __func__));
+@@ -5928,7 +5908,7 @@
+ 	pd.sidx = (dir == PF_IN) ? 0 : 1;
+ 	pd.didx = (dir == PF_IN) ? 1 : 0;
+ 	pd.af = AF_INET;
+-	pd.tos = h->ip_tos;
++	pd.tos = h->ip_tos & ~IPTOS_ECN_MASK;
+ 	pd.tot_len = ntohs(h->ip_len);
+ 
+ 	/* handle fragments that didn't get reassembled by normalization */
+Index: sys/netpfil/pf/pf_if.c
+===================================================================
+--- sys/netpfil/pf/pf_if.c	(revision 327071)
++++ sys/netpfil/pf/pf_if.c	(working copy)
+@@ -89,9 +89,9 @@
+ static int	 pfi_unmask(void *);
+ static void	 pfi_attach_ifnet_event(void * __unused, struct ifnet *);
+ static void	 pfi_detach_ifnet_event(void * __unused, struct ifnet *);
+-static void	 pfi_attach_group_event(void *, struct ifg_group *);
+-static void	 pfi_change_group_event(void *, char *);
+-static void	 pfi_detach_group_event(void *, struct ifg_group *);
++static void	 pfi_attach_group_event(void * __unused, struct ifg_group *);
++static void	 pfi_change_group_event(void * __unused, char *);
++static void	 pfi_detach_group_event(void * __unused, struct ifg_group *);
+ static void	 pfi_ifaddr_event(void * __unused, struct ifnet *);
+ 
+ RB_HEAD(pfi_ifhead, pfi_kif);
+@@ -143,11 +143,11 @@
+ 	pfi_detach_cookie = EVENTHANDLER_REGISTER(ifnet_departure_event,
+ 	    pfi_detach_ifnet_event, NULL, EVENTHANDLER_PRI_ANY);
+ 	pfi_attach_group_cookie = EVENTHANDLER_REGISTER(group_attach_event,
+-	    pfi_attach_group_event, curvnet, EVENTHANDLER_PRI_ANY);
++	    pfi_attach_group_event, NULL, EVENTHANDLER_PRI_ANY);
+ 	pfi_change_group_cookie = EVENTHANDLER_REGISTER(group_change_event,
+-	    pfi_change_group_event, curvnet, EVENTHANDLER_PRI_ANY);
++	    pfi_change_group_event, NULL, EVENTHANDLER_PRI_ANY);
+ 	pfi_detach_group_cookie = EVENTHANDLER_REGISTER(group_detach_event,
+-	    pfi_detach_group_event, curvnet, EVENTHANDLER_PRI_ANY);
++	    pfi_detach_group_event, NULL, EVENTHANDLER_PRI_ANY);
+ 	pfi_ifaddr_event_cookie = EVENTHANDLER_REGISTER(ifaddr_event,
+ 	    pfi_ifaddr_event, NULL, EVENTHANDLER_PRI_ANY);
+ }
+@@ -523,7 +523,7 @@
+ 	int		 net2, af;
+ 
+ 	IF_ADDR_RLOCK(ifp);
+-	TAILQ_FOREACH(ia, &ifp->if_addrhead, ifa_list) {
++	TAILQ_FOREACH(ia, &ifp->if_addrhead, ifa_link) {
+ 		if (ia->ifa_addr == NULL)
+ 			continue;
+ 		af = ia->ifa_addr->sa_family;
+@@ -800,10 +800,8 @@
+ pfi_attach_ifnet_event(void *arg __unused, struct ifnet *ifp)
+ {
+ 
+-	CURVNET_SET(ifp->if_vnet);
+ 	if (V_pf_vnet_active == 0) {
+ 		/* Avoid teardown race in the least expensive way. */
+-		CURVNET_RESTORE();
+ 		return;
+ 	}
+ 	pfi_attach_ifnet(ifp);
+@@ -812,7 +810,6 @@
+ 	pf_altq_ifnet_event(ifp, 0);
+ 	PF_RULES_WUNLOCK();
+ #endif
+-	CURVNET_RESTORE();
+ }
+ 
+ static void
+@@ -823,10 +820,8 @@
+ 	if (kif == NULL)
+ 		return;
+ 
+-	CURVNET_SET(ifp->if_vnet);
+ 	if (V_pf_vnet_active == 0) {
+ 		/* Avoid teardown race in the least expensive way. */
+-		CURVNET_RESTORE();
+ 		return;
+ 	}
+ 	PF_RULES_WLOCK();
+@@ -839,32 +834,26 @@
+ 	pf_altq_ifnet_event(ifp, 1);
+ #endif
+ 	PF_RULES_WUNLOCK();
+-	CURVNET_RESTORE();
+ }
+ 
+ static void
+-pfi_attach_group_event(void *arg , struct ifg_group *ifg)
++pfi_attach_group_event(void *arg __unused, struct ifg_group *ifg)
+ {
+ 
+-	CURVNET_SET((struct vnet *)arg);
+ 	if (V_pf_vnet_active == 0) {
+ 		/* Avoid teardown race in the least expensive way. */
+-		CURVNET_RESTORE();
+ 		return;
+ 	}
+ 	pfi_attach_ifgroup(ifg);
+-	CURVNET_RESTORE();
+ }
+ 
+ static void
+-pfi_change_group_event(void *arg, char *gname)
++pfi_change_group_event(void *arg __unused, char *gname)
+ {
+ 	struct pfi_kif *kif;
+ 
+-	CURVNET_SET((struct vnet *)arg);
+ 	if (V_pf_vnet_active == 0) {
+ 		/* Avoid teardown race in the least expensive way. */
+-		CURVNET_RESTORE();
+ 		return;
+ 	}
+ 
+@@ -874,11 +863,10 @@
+ 	kif = pfi_kif_attach(kif, gname);
+ 	pfi_kif_update(kif);
+ 	PF_RULES_WUNLOCK();
+-	CURVNET_RESTORE();
+ }
+ 
+ static void
+-pfi_detach_group_event(void *arg, struct ifg_group *ifg)
++pfi_detach_group_event(void *arg __unused, struct ifg_group *ifg)
+ {
+ 	struct pfi_kif *kif = (struct pfi_kif *)ifg->ifg_pf_kif;
+ 
+@@ -885,10 +873,8 @@
+ 	if (kif == NULL)
+ 		return;
+ 
+-	CURVNET_SET((struct vnet *)arg);
+ 	if (V_pf_vnet_active == 0) {
+ 		/* Avoid teardown race in the least expensive way. */
+-		CURVNET_RESTORE();
+ 		return;
+ 	}
+ 	PF_RULES_WLOCK();
+@@ -897,7 +883,6 @@
+ 	kif->pfik_group = NULL;
+ 	ifg->ifg_pf_kif = NULL;
+ 	PF_RULES_WUNLOCK();
+-	CURVNET_RESTORE();
+ }
+ 
+ static void
+@@ -906,10 +891,8 @@
+ 	if (ifp->if_pf_kif == NULL)
+ 		return;
+ 
+-	CURVNET_SET(ifp->if_vnet);
+ 	if (V_pf_vnet_active == 0) {
+ 		/* Avoid teardown race in the least expensive way. */
+-		CURVNET_RESTORE();
+ 		return;
+ 	}
+ 	PF_RULES_WLOCK();
+@@ -918,5 +901,4 @@
+ 		pfi_kif_update(ifp->if_pf_kif);
+ 	}
+ 	PF_RULES_WUNLOCK();
+-	CURVNET_RESTORE();
+ }
+Index: sys/netpfil/pf/pf_ioctl.c
+===================================================================
+--- sys/netpfil/pf/pf_ioctl.c	(revision 327071)
++++ sys/netpfil/pf/pf_ioctl.c	(working copy)
+@@ -178,7 +178,7 @@
+ static int		dehook_pf(void);
+ static int		shutdown_pf(void);
+ static int		pf_load(void);
+-static int		pf_unload(void);
++static void		pf_unload(void);
+ 
+ static struct cdevsw pf_cdevsw = {
+ 	.d_ioctl =	pfioctl,
+@@ -198,9 +198,11 @@
+ #define V_pf_vnet_active	VNET(pf_vnet_active)
+ 
+ int pf_end_threads;
++struct proc *pf_purge_proc;
+ 
+ struct rwlock			pf_rules_lock;
+ struct sx			pf_ioctl_lock;
++struct sx			pf_end_lock;
+ 
+ /* pfsync */
+ pfsync_state_import_t 		*pfsync_state_import_ptr = NULL;
+@@ -1267,7 +1269,7 @@
+ 		pf_mv_pool(&V_pf_pabuf, &rule->rpool.list);
+ 		if (((((rule->action == PF_NAT) || (rule->action == PF_RDR) ||
+ 		    (rule->action == PF_BINAT)) && rule->anchor == NULL) ||
+-		    (rule->rt > PF_FASTROUTE)) &&
++		    (rule->rt > PF_NOPFROUTE)) &&
+ 		    (TAILQ_FIRST(&rule->rpool.list) == NULL))
+ 			error = EINVAL;
+ 
+@@ -1527,7 +1529,7 @@
+ 			if (((((newrule->action == PF_NAT) ||
+ 			    (newrule->action == PF_RDR) ||
+ 			    (newrule->action == PF_BINAT) ||
+-			    (newrule->rt > PF_FASTROUTE)) &&
++			    (newrule->rt > PF_NOPFROUTE)) &&
+ 			    !newrule->anchor)) &&
+ 			    (TAILQ_FIRST(&newrule->rpool.list) == NULL))
+ 				error = EINVAL;
+@@ -1850,6 +1852,8 @@
+ 			counter_u64_zero(V_pf_status.fcounters[i]);
+ 		for (int i = 0; i < SCNT_MAX; i++)
+ 			counter_u64_zero(V_pf_status.scounters[i]);
++		for (int i = 0; i < LCNT_MAX; i++)
++			counter_u64_zero(V_pf_status.lcounters[i]);
+ 		V_pf_status.since = time_second;
+ 		if (*V_pf_status.ifname)
+ 			pfi_update_status(V_pf_status.ifname, NULL);
+@@ -2426,11 +2430,12 @@
+ 
+ #undef ERROUT
+ DIOCCHANGEADDR_error:
+-		if (newpa->kif)
+-			pfi_kif_unref(newpa->kif);
++		if (newpa != NULL) {
++			if (newpa->kif)
++				pfi_kif_unref(newpa->kif);
++			free(newpa, M_PFRULE);
++		}
+ 		PF_RULES_WUNLOCK();
+-		if (newpa != NULL)
+-			free(newpa, M_PFRULE);
+ 		if (kif != NULL)
+ 			free(kif, PFI_MTYPE);
+ 		break;
+@@ -3707,18 +3712,9 @@
+ static void
+ pf_load_vnet(void)
+ {
+-	VNET_ITERATOR_DECL(vnet_iter);
++	TAILQ_INIT(&V_pf_tags);
++	TAILQ_INIT(&V_pf_qids);
+ 
+-	VNET_LIST_RLOCK();
+-	VNET_FOREACH(vnet_iter) {
+-		CURVNET_SET(vnet_iter);
+-		V_pf_pfil_hooked = 0;
+-		TAILQ_INIT(&V_pf_tags);
+-		TAILQ_INIT(&V_pf_qids);
+-		CURVNET_RESTORE();
+-	}
+-	VNET_LIST_RUNLOCK();
+-
+ 	pfattach_vnet();
+ 	V_pf_vnet_active = 1;
+ }
+@@ -3730,6 +3726,7 @@
+ 
+ 	rw_init(&pf_rules_lock, "pf rulesets");
+ 	sx_init(&pf_ioctl_lock, "pf ioctl");
++	sx_init(&pf_end_lock, "pf end thread");
+ 
+ 	pf_mtag_initialize();
+ 
+@@ -3738,7 +3735,7 @@
+ 		return (ENOMEM);
+ 
+ 	pf_end_threads = 0;
+-	error = kproc_create(pf_purge_thread, NULL, NULL, 0, 0, "pf purge");
++	error = kproc_create(pf_purge_thread, NULL, &pf_purge_proc, 0, 0, "pf purge");
+ 	if (error != 0)
+ 		return (error);
+ 
+@@ -3766,12 +3763,12 @@
+ 		return;
+ 	}
+ 
+-	pf_unload_vnet_purge();
+-
+ 	PF_RULES_WLOCK();
+ 	shutdown_pf();
+ 	PF_RULES_WUNLOCK();
+ 
++	pf_unload_vnet_purge();
++
+ 	pf_normalize_cleanup();
+ 	PF_RULES_WLOCK();
+ 	pfi_cleanup_vnet();
+@@ -3783,16 +3780,17 @@
+ 		pf_mtag_cleanup();
+ }
+ 
+-static int
++static void
+ pf_unload(void)
+ {
+-	int error = 0;
+ 
++	sx_xlock(&pf_end_lock);
+ 	pf_end_threads = 1;
+ 	while (pf_end_threads < 2) {
+ 		wakeup_one(pf_purge_thread);
+-		rw_sleep(pf_purge_thread, &pf_rules_lock, 0, "pftmo", 0);
++		sx_sleep(pf_purge_proc, &pf_end_lock, 0, "pftmo", 0);
+ 	}
++	sx_xunlock(&pf_end_lock);
+ 
+ 	if (pf_dev != NULL)
+ 		destroy_dev(pf_dev);
+@@ -3801,8 +3799,7 @@
+ 
+ 	rw_destroy(&pf_rules_lock);
+ 	sx_destroy(&pf_ioctl_lock);
+-
+-	return (error);
++	sx_destroy(&pf_end_lock);
+ }
+ 
+ static void
+@@ -3820,6 +3817,7 @@
+ 
+ 	pf_unload_vnet();
+ } 
++SYSUNINIT(pf_unload, SI_SUB_PROTO_FIREWALL, SI_ORDER_SECOND, pf_unload, NULL);
+ VNET_SYSUNINIT(vnet_pf_uninit, SI_SUB_PROTO_FIREWALL, SI_ORDER_THIRD,
+     vnet_pf_uninit, NULL);
+ 
+@@ -3840,7 +3838,8 @@
+ 		error = EBUSY;
+ 		break;
+ 	case MOD_UNLOAD:
+-		error = pf_unload();
++		/* Handled in SYSUNINIT(pf_unload) to ensure it's done after
++		 * the vnet_pf_uninit()s */
+ 		break;
+ 	default:
+ 		error = EINVAL;
+Index: sys/netpfil/pf/pf_norm.c
+===================================================================
+--- sys/netpfil/pf/pf_norm.c	(revision 327071)
++++ sys/netpfil/pf/pf_norm.c	(working copy)
+@@ -1815,7 +1815,7 @@
+ 		u_int16_t	ov, nv;
+ 
+ 		ov = *(u_int16_t *)h;
+-		h->ip_tos = tos;
++		h->ip_tos = tos | (h->ip_tos & IPTOS_ECN_MASK);
+ 		nv = *(u_int16_t *)h;
+ 
+ 		h->ip_sum = pf_cksum_fixup(h->ip_sum, ov, nv, 0);
+Index: sys/netpfil/pf/pf_table.c
+===================================================================
+--- sys/netpfil/pf/pf_table.c	(revision 327071)
++++ sys/netpfil/pf/pf_table.c	(working copy)
+@@ -184,10 +184,15 @@
+ static RB_PROTOTYPE(pfr_ktablehead, pfr_ktable, pfrkt_tree, pfr_ktable_compare);
+ static RB_GENERATE(pfr_ktablehead, pfr_ktable, pfrkt_tree, pfr_ktable_compare);
+ 
+-struct pfr_ktablehead	 pfr_ktables;
+-struct pfr_table	 pfr_nulltable;
+-int			 pfr_ktable_cnt;
++static VNET_DEFINE(struct pfr_ktablehead, pfr_ktables);
++#define	V_pfr_ktables	VNET(pfr_ktables)
+ 
++static VNET_DEFINE(struct pfr_table, pfr_nulltable);
++#define	V_pfr_nulltable	VNET(pfr_nulltable)
++
++static VNET_DEFINE(int, pfr_ktable_cnt);
++#define V_pfr_ktable_cnt	VNET(pfr_ktable_cnt)
++
+ void
+ pfr_initialize(void)
+ {
+@@ -256,7 +261,7 @@
+ 		return (ESRCH);
+ 	if (kt->pfrkt_flags & PFR_TFLAG_CONST)
+ 		return (EPERM);
+-	tmpkt = pfr_create_ktable(&pfr_nulltable, 0, 0);
++	tmpkt = pfr_create_ktable(&V_pfr_nulltable, 0, 0);
+ 	if (tmpkt == NULL)
+ 		return (ENOMEM);
+ 	SLIST_INIT(&workq);
+@@ -408,7 +413,7 @@
+ 		return (ESRCH);
+ 	if (kt->pfrkt_flags & PFR_TFLAG_CONST)
+ 		return (EPERM);
+-	tmpkt = pfr_create_ktable(&pfr_nulltable, 0, 0);
++	tmpkt = pfr_create_ktable(&V_pfr_nulltable, 0, 0);
+ 	if (tmpkt == NULL)
+ 		return (ENOMEM);
+ 	pfr_mark_addrs(kt);
+@@ -1083,7 +1088,7 @@
+ 		return (ENOENT);
+ 
+ 	SLIST_INIT(&workq);
+-	RB_FOREACH(p, pfr_ktablehead, &pfr_ktables) {
++	RB_FOREACH(p, pfr_ktablehead, &V_pfr_ktables) {
+ 		if (pfr_skip_table(filter, p, flags))
+ 			continue;
+ 		if (!strcmp(p->pfrkt_anchor, PF_RESERVED_ANCHOR))
+@@ -1118,7 +1123,7 @@
+ 		    flags & PFR_FLAG_USERIOCTL))
+ 			senderr(EINVAL);
+ 		key.pfrkt_flags |= PFR_TFLAG_ACTIVE;
+-		p = RB_FIND(pfr_ktablehead, &pfr_ktables, &key);
++		p = RB_FIND(pfr_ktablehead, &V_pfr_ktables, &key);
+ 		if (p == NULL) {
+ 			p = pfr_create_ktable(&key.pfrkt_t, tzero, 1);
+ 			if (p == NULL)
+@@ -1134,7 +1139,7 @@
+ 
+ 			/* find or create root table */
+ 			bzero(key.pfrkt_anchor, sizeof(key.pfrkt_anchor));
+-			r = RB_FIND(pfr_ktablehead, &pfr_ktables, &key);
++			r = RB_FIND(pfr_ktablehead, &V_pfr_ktables, &key);
+ 			if (r != NULL) {
+ 				p->pfrkt_root = r;
+ 				goto _skip;
+@@ -1190,7 +1195,7 @@
+ 		if (pfr_validate_table(&key.pfrkt_t, 0,
+ 		    flags & PFR_FLAG_USERIOCTL))
+ 			return (EINVAL);
+-		p = RB_FIND(pfr_ktablehead, &pfr_ktables, &key);
++		p = RB_FIND(pfr_ktablehead, &V_pfr_ktables, &key);
+ 		if (p != NULL && (p->pfrkt_flags & PFR_TFLAG_ACTIVE)) {
+ 			SLIST_FOREACH(q, &workq, pfrkt_workq)
+ 				if (!pfr_ktable_compare(p, q))
+@@ -1229,7 +1234,7 @@
+ 		*size = n;
+ 		return (0);
+ 	}
+-	RB_FOREACH(p, pfr_ktablehead, &pfr_ktables) {
++	RB_FOREACH(p, pfr_ktablehead, &V_pfr_ktables) {
+ 		if (pfr_skip_table(filter, p, flags))
+ 			continue;
+ 		if (n-- <= 0)
+@@ -1264,7 +1269,7 @@
+ 		return (0);
+ 	}
+ 	SLIST_INIT(&workq);
+-	RB_FOREACH(p, pfr_ktablehead, &pfr_ktables) {
++	RB_FOREACH(p, pfr_ktablehead, &V_pfr_ktables) {
+ 		if (pfr_skip_table(filter, p, flags))
+ 			continue;
+ 		if (n-- <= 0)
+@@ -1296,7 +1301,7 @@
+ 		bcopy(tbl + i, &key.pfrkt_t, sizeof(key.pfrkt_t));
+ 		if (pfr_validate_table(&key.pfrkt_t, 0, 0))
+ 			return (EINVAL);
+-		p = RB_FIND(pfr_ktablehead, &pfr_ktables, &key);
++		p = RB_FIND(pfr_ktablehead, &V_pfr_ktables, &key);
+ 		if (p != NULL) {
+ 			SLIST_INSERT_HEAD(&workq, p, pfrkt_workq);
+ 			xzero++;
+@@ -1328,7 +1333,7 @@
+ 		if (pfr_validate_table(&key.pfrkt_t, 0,
+ 		    flags & PFR_FLAG_USERIOCTL))
+ 			return (EINVAL);
+-		p = RB_FIND(pfr_ktablehead, &pfr_ktables, &key);
++		p = RB_FIND(pfr_ktablehead, &V_pfr_ktables, &key);
+ 		if (p != NULL && (p->pfrkt_flags & PFR_TFLAG_ACTIVE)) {
+ 			p->pfrkt_nflags = (p->pfrkt_flags | setflag) &
+ 			    ~clrflag;
+@@ -1370,7 +1375,7 @@
+ 	if (rs == NULL)
+ 		return (ENOMEM);
+ 	SLIST_INIT(&workq);
+-	RB_FOREACH(p, pfr_ktablehead, &pfr_ktables) {
++	RB_FOREACH(p, pfr_ktablehead, &V_pfr_ktables) {
+ 		if (!(p->pfrkt_flags & PFR_TFLAG_INACTIVE) ||
+ 		    pfr_skip_table(trs, p, 0))
+ 			continue;
+@@ -1415,7 +1420,7 @@
+ 		return (EBUSY);
+ 	tbl->pfrt_flags |= PFR_TFLAG_INACTIVE;
+ 	SLIST_INIT(&tableq);
+-	kt = RB_FIND(pfr_ktablehead, &pfr_ktables, (struct pfr_ktable *)tbl);
++	kt = RB_FIND(pfr_ktablehead, &V_pfr_ktables, (struct pfr_ktable *)tbl);
+ 	if (kt == NULL) {
+ 		kt = pfr_create_ktable(tbl, 0, 1);
+ 		if (kt == NULL)
+@@ -1428,7 +1433,7 @@
+ 		/* find or create root table */
+ 		bzero(&key, sizeof(key));
+ 		strlcpy(key.pfrkt_name, tbl->pfrt_name, sizeof(key.pfrkt_name));
+-		rt = RB_FIND(pfr_ktablehead, &pfr_ktables, &key);
++		rt = RB_FIND(pfr_ktablehead, &V_pfr_ktables, &key);
+ 		if (rt != NULL) {
+ 			kt->pfrkt_root = rt;
+ 			goto _skip;
+@@ -1505,7 +1510,7 @@
+ 	if (rs == NULL || !rs->topen || ticket != rs->tticket)
+ 		return (0);
+ 	SLIST_INIT(&workq);
+-	RB_FOREACH(p, pfr_ktablehead, &pfr_ktables) {
++	RB_FOREACH(p, pfr_ktablehead, &V_pfr_ktables) {
+ 		if (!(p->pfrkt_flags & PFR_TFLAG_INACTIVE) ||
+ 		    pfr_skip_table(trs, p, 0))
+ 			continue;
+@@ -1541,7 +1546,7 @@
+ 		return (EBUSY);
+ 
+ 	SLIST_INIT(&workq);
+-	RB_FOREACH(p, pfr_ktablehead, &pfr_ktables) {
++	RB_FOREACH(p, pfr_ktablehead, &V_pfr_ktables) {
+ 		if (!(p->pfrkt_flags & PFR_TFLAG_INACTIVE) ||
+ 		    pfr_skip_table(trs, p, 0))
+ 			continue;
+@@ -1687,7 +1692,7 @@
+ 	PF_RULES_ASSERT();
+ 
+ 	if (flags & PFR_FLAG_ALLRSETS)
+-		return (pfr_ktable_cnt);
++		return (V_pfr_ktable_cnt);
+ 	if (filter->pfrt_anchor[0]) {
+ 		rs = pf_find_ruleset(filter->pfrt_anchor);
+ 		return ((rs != NULL) ? rs->tables : -1);
+@@ -1720,8 +1725,8 @@
+ 
+ 	PF_RULES_WASSERT();
+ 
+-	RB_INSERT(pfr_ktablehead, &pfr_ktables, kt);
+-	pfr_ktable_cnt++;
++	RB_INSERT(pfr_ktablehead, &V_pfr_ktables, kt);
++	V_pfr_ktable_cnt++;
+ 	if (kt->pfrkt_root != NULL)
+ 		if (!kt->pfrkt_root->pfrkt_refcnt[PFR_REFCNT_ANCHOR]++)
+ 			pfr_setflags_ktable(kt->pfrkt_root,
+@@ -1752,7 +1757,7 @@
+ 	if (!(newf & PFR_TFLAG_ACTIVE))
+ 		newf &= ~PFR_TFLAG_USRMASK;
+ 	if (!(newf & PFR_TFLAG_SETMASK)) {
+-		RB_REMOVE(pfr_ktablehead, &pfr_ktables, kt);
++		RB_REMOVE(pfr_ktablehead, &V_pfr_ktables, kt);
+ 		if (kt->pfrkt_root != NULL)
+ 			if (!--kt->pfrkt_root->pfrkt_refcnt[PFR_REFCNT_ANCHOR])
+ 				pfr_setflags_ktable(kt->pfrkt_root,
+@@ -1759,7 +1764,7 @@
+ 				    kt->pfrkt_root->pfrkt_flags &
+ 					~PFR_TFLAG_REFDANCHOR);
+ 		pfr_destroy_ktable(kt, 1);
+-		pfr_ktable_cnt--;
++		V_pfr_ktable_cnt--;
+ 		return;
+ 	}
+ 	if (!(newf & PFR_TFLAG_ACTIVE) && kt->pfrkt_cnt) {
+@@ -1880,7 +1885,7 @@
+ pfr_lookup_table(struct pfr_table *tbl)
+ {
+ 	/* struct pfr_ktable start like a struct pfr_table */
+-	return (RB_FIND(pfr_ktablehead, &pfr_ktables,
++	return (RB_FIND(pfr_ktablehead, &V_pfr_ktables,
+ 	    (struct pfr_ktable *)tbl));
+ }
+ 
