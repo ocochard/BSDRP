@@ -435,6 +435,9 @@ add_port "sysutils/tmux"
 # ipmi tools
 add_port "sysutils/ipmitool"
 
+# processor information (usefull for checking microcode version)
+add_port "sysutils/x86info"
+
 # sudo: fine permission management
 add_port "security/sudo"
 
@@ -458,9 +461,9 @@ add_port "security/easy-rsa"
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
 add_port "security/openvpn"
-  add_port "security/libgpg-error"
- add_port "security/libgcrypt"
-add_port "security/openvpn-auth-radius"
+#  add_port "security/libgpg-error"
+# add_port "security/libgcrypt"
+#add_port "security/openvpn-auth-radius"
 
 # some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 #add_port "benchmarks/netpipe"

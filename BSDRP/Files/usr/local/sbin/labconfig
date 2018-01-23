@@ -16,6 +16,7 @@ usage () {
 	echo "-frr: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab "
 	echo "-vpn: https://bsdrp.net/documentation/examples/gre_ipsec_and_openvpn"
 	echo "-bgp: https://bsdrp.net/documentation/examples/bgp_route_reflector_and_confederation_using_quagga_and_bird"
+	echo "-jailpf: https://bsdrp.net/documentation/examples/multi-tenant_ha_pf_firewalls"
 	exit 1
 }
 
@@ -1665,6 +1666,200 @@ router bgp 65535
  exit-address-family
 EOF
 service frr start
+config save
+}
+
+jailpf_vm1 () {
+sysrc hostname=VM1
+sysrc cloned_interfaces="bridge0"
+sysrc ifconfig_bridge0="addm vtnet4"
+sysrc ifconfig_vtnet4="up"
+sysrc ifconfig_vtnet5="up"
+sysrc vlans_vtnet5="1 2"
+sysrc ifconfig_vtnet5_1="up"
+sysrc ifconfig_vtnet5_2="up"
+sysrc kld_list+=" carp pf pflog pfsync"
+cat > /etc/devfs.rules <<EOF
+[devfsrules_jailpf=4]
+add include \$devfsrules_hide_all
+add include \$devfsrules_unhide_basic
+add include \$devfsrules_unhide_login
+add path 'pf' unhide
+add path 'pflog*' unhide
+add path 'bpf*' unhide
+EOF
+hostname VM1
+service devfs restart
+service netif restart
+service kld start
+tenant -c -j jail11 -i bridge0,vtnet5.1
+cat > /etc/jails/jail11/rc.conf <<EOF
+hostname="jail11"
+sshd_enable=YES
+gateway_enable=YES
+ipv6_gateway_enable=YES
+ifconfig_vtnet5_1="inet 10.0.0.252/24"
+ifconfig_vtnet5_1_alias0="inet 10.0.0.254/32 vhid 1 advskew 100 pass customer1i"
+ifconfig_epair10b="inet 2.2.2.11/24"
+ifconfig_epair10b_alias0="inet 2.2.2.1/32 vhid 2 advskew 100 pass customer1e"
+pf_enable=YES
+pflog_enable=YES
+pfsync_enable=YES
+pfsync_syncdev=vtnet5.1
+EOF
+echo "net.inet.carp.preempt=1" >> /etc/jails/jail11/sysctl.conf
+cat > /etc/jails/jail11/pf.conf <<EOF
+nat on epair10b from vtnet5.1:network to any -> 2.2.2.1
+block
+pass quick on vtnet5.1 proto pfsync keep state (no-sync)
+pass quick on epair10b  proto carp keep state (no-sync)
+pass quick on vtnet5.1 proto carp keep state (no-sync)
+pass log from vtnet5.1:network to epair10b:network
+pass log from self to any
+EOF
+tenant -c -j jail12 -i bridge0,vtnet5.2
+cat > /etc/jails/jail12/rc.conf <<EOF
+hostname=jail12
+sshd_enable=YES
+gateway_enable=YES
+ipv6_gateway_enable=YES
+ifconfig_vtnet5_2="inet 10.0.0.252/24"
+ifconfig_vtnet5_2_alias0="inet 10.0.0.254/32 vhid 3 advskew 200 pass customer2i"
+ifconfig_epair20b="inet 2.2.2.12/24"
+ifconfig_epair20b_alias0="inet 2.2.2.2/32 vhid 4 advskew 200 pass customer2e"
+pf_enable=YES
+pflog_enable=YES
+pfsync_enable=YES
+pfsync_syncdev=vtnet5.2
+EOF
+echo "net.inet.carp.preempt=1" >> /etc/jails/jail12/sysctl.conf
+cat > /etc/jails/jail12/pf.conf <<EOF
+nat on epair20b from vtnet5.2:network to any -> 2.2.2.2
+block
+pass quick on vtnet5.2 proto pfsync keep state (no-sync)
+pass quick on epair20b  proto carp keep state (no-sync)
+pass quick on vtnet5.2 proto carp keep state (no-sync)
+pass log from vtnet5.2:network to epair20b:network
+pass log from self to any
+EOF
+service jail start
+}
+
+jailpf_vm2 () {
+sysrc hostname=VM2
+sysrc cloned_interfaces="bridge0"
+sysrc ifconfig_bridge0="addm vtnet4"
+sysrc ifconfig_vtnet4="up"
+sysrc ifconfig_vtnet5="up"
+sysrc vlans_vtnet5="1 2"
+sysrc ifconfig_vtnet5_1="up"
+sysrc ifconfig_vtnet5_2="up"
+sysrc kld_list+=" carp pf pflog pfsync"
+cat > /etc/devfs.rules <<EOF
+[devfsrules_jailpf=4]
+add include \$devfsrules_hide_all
+add include \$devfsrules_unhide_basic
+add include \$devfsrules_unhide_login
+add path 'pf' unhide
+add path 'pflog*' unhide
+add path 'bpf*' unhide
+EOF
+hostname VM2
+service devfs restart
+service netif restart
+service kld start
+tenant -c -j jail21 -i bridge0,vtnet5.1
+cat > /etc/jails/jail21/rc.conf <<EOF
+hostname=jail21
+sshd_enable=YES
+gateway_enable=YES
+ipv6_gateway_enable=YES
+ifconfig_vtnet5_1="inet 10.0.0.253/24"
+ifconfig_vtnet5_1_alias0="inet 10.0.0.254/32 vhid 1 advskew 200 pass customer1i"
+ifconfig_epair10b="inet 2.2.2.21/24"
+ifconfig_epair10b_alias0="inet 2.2.2.1/32 vhid 2 advskew 200 pass customer1e"
+pf_enable=YES
+pflog_enable=YES
+pfsync_enable=YES
+pfsync_syncdev=vtnet5.1
+EOF
+echo "net.inet.carp.preempt=1" >> /etc/jails/jail21/sysctl.conf
+cat > /etc/jails/jail21/pf.conf <<EOF
+nat on epair10b from vtnet5.1:network to any -> 2.2.2.1
+block
+pass quick on vtnet5.1 proto pfsync keep state (no-sync)
+pass quick on epair10b proto carp keep state (no-sync)
+pass quick on vtnet5.1 proto carp keep state (no-sync)
+pass log from vtnet5.1:network to epair10b:network
+pass log from self to any
+EOF
+tenant -c -j jail22 -i bridge0,vtnet5.2
+cat > /etc/jails/jail22/rc.conf <<EOF
+hostname=jail22
+sshd_enable=YES
+gateway_enable=YES
+ipv6_gateway_enable=YES
+ifconfig_vtnet5_2="inet 10.0.0.253/24"
+ifconfig_vtnet5_2_alias0="inet 10.0.0.254/32 vhid 3 advskew 100 pass customer2i"
+ifconfig_epair20b="inet 2.2.2.22/24"
+ifconfig_epair20b_alias0="inet 2.2.2.2/32 vhid 4 advskew 100 pass customer2e"
+pf_enable=YES
+pflog_enable=YES
+pfsync_enable=YES
+pfsync_syncdev=vtnet5.2
+EOF
+echo "net.inet.carp.preempt=1" >> /etc/jails/jail22/sysctl.conf
+cat > /etc/jails/jail22/pf.conf <<EOF
+nat on epair20b from vtnet5.2:network to any -> 2.2.2.2
+block
+pass quick on vtnet5.2 proto pfsync keep state (no-sync)
+pass quick on epair20b proto carp keep state (no-sync)
+pass quick on vtnet5.2 proto carp keep state (no-sync)
+pass log from vtnet5.2:network to epair20b:network
+pass log from self to any
+EOF
+service jail start
+}
+
+jailpf_vm3 () {
+sysrc hostname=VM3
+hostname VM3
+sysrc ifconfig_vtnet4="inet 2.2.2.3/24"
+sysrc -x gateway_enable
+sysrc -x ipv6_gateway_enable
+sysrc inetd_enable=YES
+sed -i -e 's/#echo/echo/g' /etc/inetd.conf
+service netif restart
+service routing restart
+service inetd start
+config save
+}
+
+jailpf_vm4 () {
+sysrc hostname=VM4
+hostname VM4
+sysrc ifconfig_vtnet5="up"
+sysrc vlans_vtnet5="1"
+sysrc ifconfig_vtnet5_1="inet 10.0.0.4/24"
+sysrc defaultrouter="10.0.0.254"
+sysrc -x gateway_enable
+sysrc -x ipv6_gateway_enable
+service netif restart
+service routing restart
+config save
+}
+
+jailpf_vm5 () {
+sysrc hostname=VM5
+hostname VM5
+sysrc ifconfig_vtnet5="up"
+sysrc vlans_vtnet5="2"
+sysrc ifconfig_vtnet5_2="inet 10.0.0.5/24"
+sysrc defaultrouter="10.0.0.254"
+sysrc -x gateway_enable
+sysrc -x ipv6_gateway_enable
+service netif restart
+service routing restart
 config save
 }
 ### Main

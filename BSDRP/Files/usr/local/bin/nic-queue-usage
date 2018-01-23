@@ -12,13 +12,13 @@ import time
 
 if len(sys.argv) < 2:
     print("Usage: {} interface".format(sys.argv[0]))
-    print("       with interface as bxe,cxl,ix,ixl,igb, mlxen or oce")
+    print("       with interface as bxe,cxl,ix,ixl,igb,mce,mlxen or oce")
     sys.exit(1)
 
 
 def read_nic(name):
     " Parse sysctl value for each queues of the NIC "
-    m = re.match('^(bxe|cxl|ix|ixl|igb|mlxen|oce)(\d+)$', name)
+    m = re.match('^(bxe|cxl|ix|ixl|igb|mce|mlxen|oce)(\d+)$', name)
     if not m:
         raise Exception('Invalid nic name: {}'.format(name))
     driver = m.group(1)
@@ -45,6 +45,7 @@ def read_nic(name):
                 agg['tx_sum'] = int(m.group(1))
     else:
         for line in subprocess.check_output("/sbin/sysctl dev.{}.{}".format(m.group(1), m.group(2)).split(), universal_newlines=True).split("\n"):
+            # Bug: number of RXQ can be different than TXQ
             # dev.cxl.0.rxq.1.rxcsum
             # dev.cxl.0.txq.1.r_enqueues: 359615473
             # dev.cxl.0.stats.rx_frames
@@ -70,6 +71,9 @@ def read_nic(name):
             # dev.oce.0.stats.rx.queue3.rx_pkts: 0
             # dev.oce.0.stats.tx.queue3.tx_pkts: 0
             # dev.oce.0.stats.rx.total_pkts:
+            # dev.mce.0.rxstat0.packets: 64563591
+            # dev.mce.0.txstat0tc0.packets
+            # dev.mce.0.pstats.frames_rx
 
             if driver == "bxe":
                 m = re.match('.*\.queue.(\d+)\.tx_pkts:\s+(\d+)', line)
@@ -79,6 +83,8 @@ def read_nic(name):
                 m = re.match('.*\.queue(\d+)\.tx_packets:\s+(\d+)', line)
             elif driver == "ixl":
                 m = re.match('.*\.pf.que(\d+)\.tx_packets:\s+(\d+)', line)
+            elif driver == "mce":
+                m = re.match('.*\.txstat(\d+)tc0\.packets:\s+(\d+)', line)
             elif driver == "oce":
                 m = re.match('.*\.stats.tx.queue(\d+)\.tx_pkts:\s+(\d+)', line)
             if m:
@@ -91,6 +97,8 @@ def read_nic(name):
                 m = re.match('.*\.queue(\d+)\.rx_packets:\s+(\d+)', line)
             elif driver == "ixl":
                 m = re.match('.*\.pf.que(\d+)\.rx_packets:\s+(\d+)', line)
+            elif driver == "mce":
+                m = re.match('.*\.rxstat(\d+)\.packets:\s+(\d+)', line)
             elif driver == "oce":
                 m = re.match('.*\.stats.rx.queue(\d+)\.rx_pkts:\s+(\d+)', line)
             if m:
@@ -107,6 +115,8 @@ def read_nic(name):
             elif driver == "ixl":
                 # To do: aggregate bcas/mcast and ucast
                 m = re.match('.*\.mac.ucast_pkts_rcvd:\s+(\d+)', line)
+            elif driver == "mce":
+                m = re.match('.*\.pstats.frames_rx:\s+(\d+)', line)
             elif driver == "oce":
                 m = re.match('.*\.stats.rx.total_pkts:\s+(\d+)', line)
             if m:
@@ -120,6 +130,8 @@ def read_nic(name):
                 m = re.match('.*\.mac.ucast_pkts_txd:\s+(\d+)', line)
             elif driver == "cxl":
                 m = re.match('.*\.stats.tx_frames:\s+(\d+)', line)
+            elif driver == "mce":
+                m = re.match('.*\.pstats.frames_tx:\s+(\d+)', line)
             elif driver == "oce":
                 m = re.match('.*\.stats.tx.total_tx_pkts:\s+(\d+)', line)
             if m:

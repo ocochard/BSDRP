@@ -3,7 +3,7 @@
 # Network drivers/stack tuning tool for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2014, The BSDRP Development Team 
+# Copyright (c) 2017, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -195,7 +195,7 @@ net_nic () {
     	done
 		# http://wiki.freebsd.org/NetworkPerformanceTuning
 		sysctl_atleast hw.igb.max_interrupt_rate 32000
-		# Need mbuf be increased if rx_process limit increased?	
+		# Need mbuf be increased if rx_process limit increased?
 		#sysctl_atleast hw.igb.rx_process_limit 500
 		# Disabling limit of rx frame
 		sysctl_equal hw.igb.rx_process_limit -1
@@ -220,8 +220,8 @@ net_nic () {
 	# General
 	# default value of send interface queue length
 	# If em or igb were tunned, need to change this too
-	# http://lists.freebsd.org/pipermail/freebsd-net/2012-July/032712.html	
-	sysctl_atleast net.link.ifqmaxlen 10240	
+	# http://lists.freebsd.org/pipermail/freebsd-net/2012-July/032712.html
+	sysctl_atleast net.link.ifqmaxlen 10240
 
 	# cxgbe (Chelsio) tuning
 	if ifconfig -l "ether" | egrep -q 'cxl[[:digit:]]'; then

@@ -1,6 +1,6 @@
 Index: net/bird/Makefile
 ===================================================================
---- net/bird/Makefile	(revision 456021)
+--- net/bird/Makefile	(revision 459025)
 +++ net/bird/Makefile	(working copy)
 @@ -2,20 +2,16 @@
  # $FreeBSD$
@@ -8,7 +8,7 @@ Index: net/bird/Makefile
  PORTNAME=	bird
 -PORTVERSION=	1.6.3
 -PORTREVISION=	3
-+PORTVERSION=	2.0.0
++PORTVERSION=	2.0.1
  CATEGORIES=	net
  MASTER_SITES=	ftp://bird.network.cz/pub/bird/ \
  		http://bird.mpls.in/distfiles/bird/
@@ -41,18 +41,72 @@ Index: net/bird/Makefile
  .include <bsd.port.options.mk>
 Index: net/bird/distinfo
 ===================================================================
---- net/bird/distinfo	(revision 456021)
+--- net/bird/distinfo	(revision 459025)
 +++ net/bird/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1485093974
 -SHA256 (bird-1.6.3.tar.gz) = 39c51cf57c3ba8b5978b2a657ffa2f647ec7f3ae643e91cf42ee5cb070cf7e7c
 -SIZE (bird-1.6.3.tar.gz) = 1337198
-+TIMESTAMP = 1512991173
-+SHA256 (bird-2.0.0.tar.gz) = a76300e1dabd9ae7178f12219ce7dc265438e48cc2d55667a94e00caf7028351
-+SIZE (bird-2.0.0.tar.gz) = 1002493
++TIMESTAMP = 1516141586
++SHA256 (bird-2.0.1.tar.gz) = 5614b60d31a0e224a7e484126641dee7a5386a939f59373a48dfc1233b13d063
++SIZE (bird-2.0.1.tar.gz) = 1006261
 Index: net/bird/files/bird6.in
 ===================================================================
---- net/bird/files/firewall_support.patch	(revision 456021)
+--- net/bird/files/bird6.in	(revision 459025)
++++ net/bird/files/bird6.in	(nonexistent)
+@@ -1,34 +0,0 @@
+-#!/bin/sh
+-
+-# $FreeBSD$
+-#
+-# PROVIDE: bird6 dynamicrouting
+-# REQUIRE: LOGIN
+-# KEYWORD: shutdown
+-#
+-# Add the following lines to /etc/rc.conf.local or /etc/rc.conf
+-# to enable this service:
+-#
+-# bird6_enable (bool):   Set to NO by default.
+-#               Set it to YES to enable bird6.
+-# bird6_config (path):   Set to %%PREFIX%%/etc/bird6.conf
+-#               by default.
+-#
+-
+-. /etc/rc.subr
+-
+-name="bird6"
+-rcvar=bird6_enable
+-
+-command=%%PREFIX%%/sbin/${name}
+-
+-load_rc_config $name
+-
+-extra_commands="reload"
+-
+-: ${bird6_enable="NO"}
+-: ${bird6_config="%%PREFIX%%/etc/bird6.conf"}
+-
+-command_args="-P /var/run/${name}.pid -c $bird6_config"
+-
+-run_rc_command "$1"
+
+Property changes on: net/bird/files/bird6.in
+___________________________________________________________________
+Deleted: svn:eol-style
+## -1 +0,0 ##
+-native
+\ No newline at end of property
+Deleted: svn:keywords
+## -1 +0,0 ##
+-FreeBSD=%H
+\ No newline at end of property
+Deleted: svn:mime-type
+## -1 +0,0 ##
+-text/plain
+\ No newline at end of property
+Index: net/bird/files/firewall_support.patch
+===================================================================
+--- net/bird/files/firewall_support.patch	(revision 459025)
 +++ net/bird/files/firewall_support.patch	(working copy)
 @@ -25,91 +25,6 @@
   create mode 100644 proto/firewall/firewall.h
@@ -317,108 +371,9 @@ Added: svn:mime-type
 ## -0,0 +1 ##
 +text/plain
 \ No newline at end of property
-Index: net/bird/files/patch-nest_a-set.c
-===================================================================
---- net/bird/files/patch-nest_a-set.c	(nonexistent)
-+++ net/bird/files/patch-nest_a-set.c	(working copy)
-@@ -0,0 +1,15 @@
-+--- nest/a-set.c.orig	2017-12-11 07:33:23 UTC
-++++ nest/a-set.c
-+@@ -536,6 +536,12 @@ ec_set_sort(struct linpool *pool, struct adata *src)
-+   return dst;
-+ }
-+ 
-++void
-++ec_set_sort_x(struct adata *set)
-++{
-++  /* Sort in place */
-++  qsort(set->data, set->length / 8, 8, ec_set_cmp);
-++}
-+ 
-+ static int
-+ lc_set_cmp(const void *X, const void *Y)
-
-Property changes on: net/bird/files/patch-nest_a-set.c
-___________________________________________________________________
-Added: fbsd:nokeywords
-## -0,0 +1 ##
-+yes
-\ No newline at end of property
-Added: svn:eol-style
-## -0,0 +1 ##
-+native
-\ No newline at end of property
-Added: svn:mime-type
-## -0,0 +1 ##
-+text/plain
-\ No newline at end of property
-Index: net/bird/files/patch-nest_attrs.h
-===================================================================
---- net/bird/files/patch-nest_attrs.h	(nonexistent)
-+++ net/bird/files/patch-nest_attrs.h	(working copy)
-@@ -0,0 +1,9 @@
-+--- nest/attrs.h.orig	2017-12-11 07:33:23 UTC
-++++ nest/attrs.h
-+@@ -197,4 +197,6 @@ struct adata *int_set_sort(struct linpool *pool, struc
-+ struct adata *ec_set_sort(struct linpool *pool, struct adata *src);
-+ struct adata *lc_set_sort(struct linpool *pool, struct adata *src);
-+ 
-++void ec_set_sort_x(struct adata *set); /* Sort in place */
-++
-+ #endif
-
-Property changes on: net/bird/files/patch-nest_attrs.h
-___________________________________________________________________
-Added: fbsd:nokeywords
-## -0,0 +1 ##
-+yes
-\ No newline at end of property
-Added: svn:eol-style
-## -0,0 +1 ##
-+native
-\ No newline at end of property
-Added: svn:mime-type
-## -0,0 +1 ##
-+text/plain
-\ No newline at end of property
-Index: net/bird/files/patch-proto_bgp_attrs.c
-===================================================================
---- net/bird/files/patch-proto_bgp_attrs.c	(nonexistent)
-+++ net/bird/files/patch-proto_bgp_attrs.c	(working copy)
-@@ -0,0 +1,15 @@
-+--- proto/bgp/attrs.c.orig	2017-12-11 07:33:26 UTC
-++++ proto/bgp/attrs.c
-+@@ -550,10 +550,11 @@ bgp_decode_mp_unreach_nlri(struct bgp_parse_state *s, 
-+ static void
-+ bgp_export_ext_community(struct bgp_export_state *s, eattr *a)
-+ {
-++  a->u.ptr = ec_set_del_nontrans(s->pool, a->u.ptr);
-+   if (a->u.ptr->length == 0)
-+     UNSET(a);
-+ 
-+-  a->u.ptr = ec_set_sort(s->pool, a->u.ptr);
-++  ec_set_sort_x(a->u.ptr);
-+ }
-+ 
-+ static void
-
-Property changes on: net/bird/files/patch-proto_bgp_attrs.c
-___________________________________________________________________
-Added: fbsd:nokeywords
-## -0,0 +1 ##
-+yes
-\ No newline at end of property
-Added: svn:eol-style
-## -0,0 +1 ##
-+native
-\ No newline at end of property
-Added: svn:mime-type
-## -0,0 +1 ##
-+text/plain
-\ No newline at end of property
 Index: net/bird/files/patch-sysdep-bsd-setkey.h
 ===================================================================
---- net/bird/files/patch-sysdep-bsd-setkey.h	(revision 456021)
+--- net/bird/files/patch-sysdep-bsd-setkey.h	(revision 459025)
 +++ net/bird/files/patch-sysdep-bsd-setkey.h	(nonexistent)
 @@ -1,19 +0,0 @@
 ---- sysdep/bsd/setkey.h	2017-05-15 14:04:47.215628000 +0300
@@ -457,7 +412,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/bird/files/patch-sysdep-bsd-sysio.h
 ===================================================================
---- net/bird/files/patch-sysdep-bsd-sysio.h	(revision 456021)
+--- net/bird/files/patch-sysdep-bsd-sysio.h	(revision 459025)
 +++ net/bird/files/patch-sysdep-bsd-sysio.h	(nonexistent)
 @@ -1,23 +0,0 @@
 -diff --git sysdep/bsd/sysio.h sysdep/bsd/sysio.h
@@ -539,7 +494,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/bird/files/patch-tools-Makefile.in
 ===================================================================
---- net/bird/files/patch-tools-Makefile.in	(revision 456021)
+--- net/bird/files/patch-tools-Makefile.in	(revision 459025)
 +++ net/bird/files/patch-tools-Makefile.in	(nonexistent)
 @@ -1,15 +0,0 @@
 ---- tools/Makefile.in.orig	2016-04-29 09:13:23 UTC
@@ -574,7 +529,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/bird/files/patch-tools-Rules.in
 ===================================================================
---- net/bird/files/patch-tools-Rules.in	(revision 456021)
+--- net/bird/files/patch-tools-Rules.in	(revision 459025)
 +++ net/bird/files/patch-tools-Rules.in	(nonexistent)
 @@ -1,14 +0,0 @@
 ---- tools/Rules.in.orig	2016-04-29 09:13:23 UTC
@@ -608,7 +563,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/bird/pkg-plist
 ===================================================================
---- net/bird/pkg-plist	(revision 456021)
+--- net/bird/pkg-plist	(revision 459025)
 +++ net/bird/pkg-plist	(working copy)
 @@ -1,4 +1,4 @@
 -@sample etc/bird%%VER%%.conf.example etc/bird%%VER%%.conf
@@ -619,57 +574,3 @@ Index: net/bird/pkg-plist
 +sbin/bird
 +sbin/birdc
 +sbin/birdcl
-Index: net/bird/files/bird6.in
-===================================================================
---- net/bird/files/bird6.in	(revision 456021)
-+++ net/bird/files/bird6.in	(nonexistent)
-@@ -1,34 +0,0 @@
--#!/bin/sh
--
--# $FreeBSD: head/net/bird/files/bird6.in 442031 2017-05-29 19:30:30Z olivier $
--#
--# PROVIDE: bird6 dynamicrouting
--# REQUIRE: LOGIN
--# KEYWORD: shutdown
--#
--# Add the following lines to /etc/rc.conf.local or /etc/rc.conf
--# to enable this service:
--#
--# bird6_enable (bool):   Set to NO by default.
--#               Set it to YES to enable bird6.
--# bird6_config (path):   Set to %%PREFIX%%/etc/bird6.conf
--#               by default.
--#
--
--. /etc/rc.subr
--
--name="bird6"
--rcvar=bird6_enable
--
--command=%%PREFIX%%/sbin/${name}
--
--load_rc_config $name
--
--extra_commands="reload"
--
--: ${bird6_enable="NO"}
--: ${bird6_config="%%PREFIX%%/etc/bird6.conf"}
--
--command_args="-P /var/run/${name}.pid -c $bird6_config"
--
--run_rc_command "$1"
-
-Property changes on: net/bird/files/bird6.in
-___________________________________________________________________
-Deleted: svn:eol-style
-## -1 +0,0 ##
--native
-\ No newline at end of property
-Deleted: svn:keywords
-## -1 +0,0 ##
--FreeBSD=%H
-\ No newline at end of property
-Deleted: svn:mime-type
-## -1 +0,0 ##
--text/plain
-\ No newline at end of property

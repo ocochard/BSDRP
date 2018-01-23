@@ -13,6 +13,8 @@
 #               Set it to YES to bind interrupt threads to different cores
 # chelsio_affinity_avoidncpu (int):  0 by default.
 #		Set to number of CPU to exclude from binding
+# chelsio_affinity_firstcpu (int): 0 by default.
+#		Allow to avoid a first range of CPU (for skiping a numa-domain)
 
 . /etc/rc.subr
 
@@ -39,7 +41,7 @@ chelsio_affinity_start()
 
 	# Exclude some CPU from binding
 	NCPU=$((NCPU - ${chelsio_affinity_avoidncpu}))
-	CPU=0
+	CPU=${chelsio_affinity_firstcpu}
 	cxl=$(sysctl dev.cxl. | grep -c nrxq)
 	for i in $(seq 0 $((cxl - 1))); do
 		for IRQ in `/usr/bin/vmstat -ai |\
@@ -48,7 +50,7 @@ chelsio_affinity_start()
 			/usr/bin/cpuset -l ${CPU} -x ${IRQ}
 			CPU=$(((CPU + 1) % NCPU))
 		done
-		CPU=0
+		CPU=${chelsio_affinity_firstcpu}
 	done
 }
 
@@ -56,6 +58,7 @@ load_rc_config $name
 
 : ${chelsio_affinity_enable="NO"}
 : ${chelsio_affinity_avoidncpu=0}
+: ${chelsio_affinity_firstcpu=0}
 
 run_rc_command "$1"
 

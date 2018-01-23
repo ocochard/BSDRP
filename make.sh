@@ -108,9 +108,7 @@ update_port () {
 		echo "Updating ports tree sources..."
 		${SVN_CMD} update ${PORTS_SRC} -r ${PORTS_REV} \
 		|| die "Can't update ports sources"
-		if [ -f ${PROJECT_DIR}/FreeBSD/ports-added ]; then
-			rm ${PROJECT_DIR}/FreeBSD/ports-added
-		fi
+		[ -f ${PROJECT_DIR}/FreeBSD/ports-added ] && rm ${PROJECT_DIR}/FreeBSD/ports-added
 	fi
 }
 
@@ -118,21 +116,10 @@ update_port () {
 patch_src() {
 	mkdir -p ${PROJECT_DIR}/FreeBSD/
 	: > ${PROJECT_DIR}/FreeBSD/src-patches
-	# Nuke the newly created files to avoid build errors, as
-	# patch(1) will automatically append to the previously
-	# non-existent file.
-	if [ ${SRC_METHOD} = "svn" ]; then
-		( cd ${FREEBSD_SRC} &&
-		${SVN_CMD} status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' \
-		| xargs -r rm -r)
-		: > ${PROJECT_DIR}/FreeBSD/.src_pulled
-	fi
 	for patch in $(cd ${SRC_PATCH_DIR} && ls freebsd.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/src-patches; then
 			echo "Applying patch $patch..."
-			(cd ${FREEBSD_SRC} &&
-			patch -C -p0 < ${SRC_PATCH_DIR}/$patch &&
-			patch -E -p0 -s < ${SRC_PATCH_DIR}/$patch)
+			${SVN_CMD} patch  ${SRC_PATCH_DIR}/$patch ${FREEBSD_SRC}
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/src-patches
 		fi
 	done
@@ -142,20 +129,10 @@ patch_src() {
 #TODO: avoid copy/past with patch_src()
 patch_port() {
 	: > ${PROJECT_DIR}/FreeBSD/ports-patches
-	# Nuke the newly created files to avoid build errors, as
-	# patch(1) will automatically append to the previously
-	# non-existent file.
-	( cd ${PORTS_SRC}
-	${SVN_CMD} status --no-ignore | grep -e ^\? -e ^I | awk '{print $2}' \
-	| xargs -r rm -r)
-	: > ${PROJECT_DIR}/FreeBSD/.port_pulled
-
 	for patch in $(cd ${PORT_PATCH_DIR} && ls ports.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/ports-patches; then
 			echo "Applying patch $patch..."
-			(cd ${PORTS_SRC} &&
-			patch -C -p0 < ${PORT_PATCH_DIR}/$patch &&
-			patch -E -p0 -s < ${PORT_PATCH_DIR}/$patch)
+			${SVN_CMD} patch ${PORT_PATCH_DIR}/$patch ${PORTS_SRC}
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/ports-patches
 		fi
 	done

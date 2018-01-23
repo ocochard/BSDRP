@@ -2,6 +2,7 @@ cpu		HAMMER
 ident		BSDRP-AMD64
 
 makeoptions	DEBUG=-g		# Build kernel with gdb(1) debug symbols
+#makeoptions DEBUG="-g -O0" # gdb debug symbols and no optimization
 makeoptions	WITH_CTF=1		# Run ctfconvert(1) for DTrace support
 
 options 	SCHED_ULE		# ULE scheduler
@@ -326,7 +327,7 @@ device		virtio_scsi		# VirtIO SCSI device
 device		virtio_balloon		# VirtIO Memory Balloon device
 
 # HyperV drivers and enhancement support
-device		hyperv			# HyperV drivers 
+device		hyperv			# HyperV drivers
 
 # Xen HVM Guest Optimizations
 # NOTE: XENHVM depends on xenpci.  They must be added or removed together.

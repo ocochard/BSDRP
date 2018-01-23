@@ -81,6 +81,7 @@ WITHOUT_ISCSI=
 WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
 WITHOUT_LIB32=
+WITHOUT_LOADER_FIREWIRE=
 WITHOUT_LOADER_GELI=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
@@ -182,7 +183,8 @@ PPLEVEL=3
 
 # Add netblast/netrecieve and netmap tools
 add_netrate () {
-	TOOLS_LIST="cxgbtool ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
+	TOOLS_LIST="cxgbtool ifinfo netmap netrate/netblast netrate/netreceive netrate/netsend"
+	# mctest didn't compile since clang6
 	mkdir -p ${NANO_WORLDDIR}/dev
 	mount -t devfs devfs ${NANO_WORLDDIR}/dev
 	mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
@@ -441,6 +443,9 @@ add_port "sysutils/tmux"
 # ipmi tools
 add_port "sysutils/ipmitool"
 
+# processor information (usefull for checking microcode version)
+#add_port "sysutils/x86info"
+
 # sudo: fine permission management
 add_port "security/sudo"
 
@@ -464,9 +469,9 @@ add_port "security/easy-rsa"
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
 add_port "security/openvpn"
-  add_port "security/libgpg-error"
- add_port "security/libgcrypt"
-add_port "security/openvpn-auth-radius"
+#  add_port "security/libgpg-error"
+# add_port "security/libgcrypt"
+#add_port "security/openvpn-auth-radius"
 
 # some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 #add_port "benchmarks/netpipe"

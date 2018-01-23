@@ -13,16 +13,20 @@
 ## Bug fixes
 * Images CHS value fixed: An old bug in nanobsd was fixed, now disk image correctly
   use 63 sectors and 255 heads (in place of 63 sectors and 16 heads)
-* Fix mlxen module (Mellanox ConnectX-2 and ConnectX-3) load
+* Fix loading problem with mlxen (Mellanox) drivers modules
 * Fix behavior of ix_affinity and cxgbe_affinity rc script
 * Fix tenant script for generating non-conflicting epair MAC addresses
 * Fix "config save" that didn't correctly delete no more existing directories
 * Fix upgrade script that badly detect already /cfg mounted if jails running
 
+## Security fixes
+* Intel microcode update regarding Meltdown and Spectre
+
 ## Updated packages
 * bird to 2.0.0
-* exabgp to 3.4.20
+* devcpu-data 1.14
 * dhcprelya to 6.1
+* exabgp to 3.4.20
 * iperf to 2.0.10
 * iperf3 to 3.3
 * isc-dhcp43-server to 4.3.6
@@ -38,27 +42,27 @@
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.34.1: Root certificate bundle from the Mozilla Project
-* devcpu-data 1.11_1: Intel and AMD CPUs microcode updates
+* devcpu-data 1.14_1: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * exabgp 3.4.20_1: BGP engine and route injector
 * flashrom 0.9.9_2: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr 3.0.2: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr 3.0.3_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.11.2: Cross-platform file change monitor
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * iperf 2.0.10_1: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.3: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_2: KAME racoon IKE daemon, ipsec-tools version
-* isc-dhcp43-server 4.3.6_1: ISC Dynamic Host Configuration Protocol server
-* json-c 0.12.1: JSON (JavaScript Object Notation) implementation in C
+* isc-dhcp43-server 4.3.6_2: ISC Dynamic Host Configuration Protocol server
+* json-c 0.13: JSON (JavaScript Object Notation) implementation in C
 * libev 4.22,1: Full-featured and high-performance event loop library
 * libevent 2.1.8: API for executing callback functions on events or timeouts
-* libffi 3.2.1_1: Foreign Function Interface
-* libgcrypt 1.8.1: General purpose crypto library based on code used in GnuPG
+* libffi 3.2.1_2: Foreign Function Interface
+* libgcrypt 1.8.2: General purpose crypto library based on code used in GnuPG
 * libgpg-error 1.27: Common error values for all GnuPG components
-* liblz4 1.8.0,1: LZ4 compression library, lossless and very fast
+* liblz4 1.8.1,1: LZ4 compression library, lossless and very fast
 * libpci 3.5.6: PCI configuration space I/O made easy
 * libsodium 1.0.15: Library to build higher-level cryptographic tools
 * libucl 0.8.0: Universal configuration library parser
@@ -66,7 +70,7 @@
 * mlvpn 2.3.1_2: Multi-link VPN
 * monit 5.25.0: Unix system management and proactive monitoring
 * mpd5 5.8_2: Multi-link PPP daemon based on netgraph(4)
-* mrouted 3.9.8: Multicast routing daemon providing DVMRP for IPv4
+* mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.45: Open source LDAP client implementation
@@ -78,10 +82,10 @@
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
 * pimd 2.3.2: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-* pkg 1.10.3_1: Package manager
+* pkg 1.10.4: Package manager
 * pmacct 1.6.1: Accounting and aggregation tool for IPv4 and IPv6 traffic
-* py27-ipaddress 1.0.18: Python 3.3's ipaddress for Python 2.6 and 2.7
-* py27-setuptools 36.5.0: Python packages installer
+* py27-ipaddress 1.0.19: Port of Python 3.3+ ipaddress module to 2.7
+* py27-setuptools 38.2.5: Python packages installer
 * python 2.7_3,2: "meta-port" for the default version of Python interpreter
 * python2 2_3: The "meta-port" for version 2 of the Python interpreter
 * python27 2.7.14_1: Interpreted object-oriented programming language
@@ -90,8 +94,9 @@
 * strongswan 5.6.0: Open Source IKEv2 IPsec-based VPN solution
 * sudo 1.8.21p2_1: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
-* tmux 2.6: Terminal Multiplexer
+* tmux 2.6_1: Terminal Multiplexer
 * ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol
+* x86info 1.31.s02: x86 CPU identification and feature display utility
 
 -----------------------------------------------------
 # Release 1.80 (2017-06-30)
