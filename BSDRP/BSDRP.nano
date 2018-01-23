@@ -510,6 +510,9 @@ add_port "sysutils/devcpu-data"
 # NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode
 add_port "net/ntraceroute"
 
+# BGPQ3: Lightweight prefix-list generator for Cisco and Juniper routers
+add_port "net-mgmt/bgpq3"
+
 #### End of port list section ####
 
 # Add netrate tools
