@@ -46,17 +46,21 @@ usage () {
 }
 
 ##### Check if previous NanoBSD make stop correctly by unoumt all tmp mount
-# exit with 0 if no problem detected                                            # exit with 1 if problem detected, but clean it                                 # exit with 2 if problem detected and can't clean it
+# exit with 0 if no problem detected
+# exit with 1 if problem detected, but clean it
+# exit with 2 if problem detected and can't clean it
 check_clean() {
     # Patch from Warner Losh (imp@)
 	__a=`mount | grep $1 | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}'`
 	if [ -n "$__a" ]; then
-        echo "unmounting $__a"                                                          umount $__a
-    fi                                                                          }
+        echo "unmounting $__a"
+		umount $__a
+    fi
+}
 
 generate(){
 	[ -d ${SRC_DIR} ] || die "Doesn't found source dir: ${SRC_DIR}"
-	
+
 	# Build of each arch/console
     for arch in ${ARCH_LIST}; do
 		# Initial build (update and rebuild all)
@@ -77,7 +81,7 @@ generate(){
         	)
 			if [ "${arch}" = "i386_xenpv" -o "${arch}" = "sparc64" ]; then
    				[ -f ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-${VERSION}-${arch}.mtree.xz ] || die "problem during final build regarding of ${arch}-${console}"
-	     	else	
+	     	else
 				[ -f ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-${VERSION}-${arch}-${console}.mtree.xz ] || die "problem during final build regarding of ${arch}-${console}"
 			fi
 			echo "done" > ${OBJ_BASE_DIR}/${PROJECT}.${arch}/release.done
@@ -111,10 +115,7 @@ dokuwiki(){
 	mtree
 	debug
 	'
-	if [ -d ${OBJ_BASE_DIR}/${PROJECT}.sparc64 ]; then
-		ARCH_LIST="${ARCH_LIST}sparc64"
-	fi
-	
+	[ -d ${OBJ_BASE_DIR}/${PROJECT}.sparc64 ] && ARCH_LIST="${ARCH_LIST}sparc64"
 	for type in ${FILE_TYPE}; do
 		TITLE_SET=false
 		OLD_TYPE=""

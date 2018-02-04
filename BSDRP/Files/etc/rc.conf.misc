@@ -37,4 +37,4 @@ disablelrotso_enable="YES"
 harvest_mask="351"
 
 # Update CPU microcode (fixing Meltdown and Spectre bugs)
-microcode_update="YES"
+microcode_update_enable="YES"
