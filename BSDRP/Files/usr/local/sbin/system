@@ -3,7 +3,7 @@
 # System tool for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2017, The BSDRP Development Team
+# Copyright (c) 2009-2018, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,8 +32,10 @@
 #set -xv
 
 # Strict script
-set -e
-#set -u
+set -eu
+
+# Variables
+USER_CONFIRM=""
 
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
@@ -73,6 +75,15 @@ usage () {
 	echo "  - resize-system-slice [size] : Resize system slices (rare usage)"
 	echo "  - rollback              : Revert to previous version"
 	exit 0
+}
+
+# Check if a partition is mounted
+# $1: Partition to be checked (like /data)
+# return 0: yes
+# return 1: No
+is_mounted () {
+	[ -z "$1" ] &&  die "BUG: is_mounted() need argument"
+	mount | grep -q -e "[[:space:]]$1[[:space:]]" && return 0 || return 1
 }
 
 # dual-console
@@ -129,7 +140,7 @@ integrity () {
 #ask to save configuration
 ask_save () {
 	echo "Warning: Unsaved changes detected !"
-	config diff
+	config diff || true
 	echo -n "Do you want to save the configuration before to continue or abort ? (y/n/a): "
 	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" -a "$USER_CONFIRM" != "a" ]; do
 		read USER_CONFIRM <&1
@@ -177,9 +188,7 @@ expand_data_slice () {
 	fi
 	label=$(get_label)
 
-	if mount | grep -q "/data"; then
-		die "/data is mounted, you need to unmount it"
-	fi
+	is_mounted "/data" && die "/data is mounted, you need to unmount it"
 
 	#free space
 	FREE_SPACE=$(gpart show ${boot_dev} | grep "\- free \-" | grep -v "K)" \
@@ -196,7 +205,7 @@ expand_data_slice () {
 	# the geom label (pr=kern/165962)
 	#
 
-	# Backup the s4 (data) partion
+	# Backuping s4 (data) partition
 	dump -0auf/tmp/s4.dump /dev/${NANO_DRIVE}s4 \
 	|| die "ERROR: dumping ${NANO_DRIVE}s4 to /tmp failed"
 
@@ -320,11 +329,7 @@ check_cfg () {
 	# Testing /etc/rc.conf
 	sh /etc/rc.conf || die "There is an error in /etc/rc.conf file"
 	echo "Checking if configuration is saved..."
-	# Don't know why I can't test the exist value of config diff quit in my if
-	set +e
-	config diff quiet
-	[ $? -eq 1 ] && ask_save
-	set -e
+	config diff quiet || ask_save
 }
 
 swap_system() {
@@ -378,6 +383,9 @@ resize_system_slice () {
 	# Check that current disk sector size is enough for twice new system size AND cfg+data slices
 	minimum_size=$((SECOND_OPTION * 2 + 64260))
 	[ ${disk_size} -lt ${minimum_size} ] && die "Disk too small for system slice expansion (minimum block size of ${minimum_size} but it has ${disk_size}"
+
+	is_mounted "/data" && die "/data is mounted, you need to unmount it"
+
 	. /etc/nanobsd.conf
 	mount /dev/${NANO_DRIVE}s1a > /dev/null 2>&1 && resize_system || swap_system
 

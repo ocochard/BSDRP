@@ -3,7 +3,7 @@
 # Make script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2017, The BSDRP Development Team
+# Copyright (c) 2009-2018, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -119,7 +119,7 @@ patch_src() {
 	for patch in $(cd ${SRC_PATCH_DIR} && ls freebsd.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/src-patches; then
 			echo "Applying patch $patch..."
-			${SVN_CMD} patch  ${SRC_PATCH_DIR}/$patch ${FREEBSD_SRC}
+			(${SVN_CMD} patch  ${SRC_PATCH_DIR}/$patch ${FREEBSD_SRC} | grep -B 4 'rejected hunk') && die "Patch failed"
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/src-patches
 		fi
 	done

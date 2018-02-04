@@ -1,0 +1,418 @@
+Index: sys/conf/files
+===================================================================
+--- sys/conf/files	(revision 323286)
++++ sys/conf/files	(working copy)
+@@ -3979,6 +3979,7 @@
+ 					 netgraph_sppp
+ net/toeplitz.c			optional inet rss | inet6 rss
+ net/vnet.c			optional vimage
++net/yandex.c		standard compile-with "${NORMAL_C} -I$S/contrib/ck/include"
+ net80211/ieee80211.c		optional wlan
+ net80211/ieee80211_acl.c	optional wlan wlan_acl
+ net80211/ieee80211_action.c	optional wlan
+Index: sys/dev/cxgbe/adapter.h
+===================================================================
+--- sys/dev/cxgbe/adapter.h	(revision 323286)
++++ sys/dev/cxgbe/adapter.h	(working copy)
+@@ -199,11 +199,18 @@
+ 	uint16_t rss_size;	/* size of VI's RSS table slice */
+ 	uint16_t rss_base;	/* start of VI's RSS table slice */
+ 
++	struct vlans_table *vlans;
+ 	eventhandler_tag vlan_c;
++	eventhandler_tag vlan_u;
+ 
+ 	int nintr;
+ 	int first_intr;
+ 
++	uint8_t qtof_mul;
++	uint8_t qtof_add;
++	uint8_t ftoq_div;
++	uint8_t ftoq_add;
++
+ 	/* These need to be int as they are used in sysctl */
+ 	int ntxq;		/* # of tx queues */
+ 	int first_txq;		/* index of first tx queue */
+Index: sys/dev/cxgbe/t4_main.c
+===================================================================
+--- sys/dev/cxgbe/t4_main.c	(revision 323286)
++++ sys/dev/cxgbe/t4_main.c	(working copy)
+@@ -57,6 +57,7 @@
+ #include <net/if_types.h>
+ #include <net/if_dl.h>
+ #include <net/if_vlan_var.h>
++#include <net/yandex.h>
+ #ifdef RSS
+ #include <net/rss_config.h>
+ #endif
+@@ -549,6 +550,7 @@
+ static void cxgbe_refresh_stats(struct adapter *, struct port_info *);
+ static void cxgbe_tick(void *);
+ static void cxgbe_vlan_config(void *, struct ifnet *, uint16_t);
++static void cxgbe_vlan_unconfig(void *, struct ifnet *, uint16_t);
+ static void cxgbe_sysctls(struct port_info *);
+ static int sysctl_int_array(SYSCTL_HANDLER_ARGS);
+ static int sysctl_bitfield(SYSCTL_HANDLER_ARGS);
+@@ -1474,7 +1476,8 @@
+ 
+ #define T4_CAP (IFCAP_VLAN_HWTAGGING | IFCAP_VLAN_MTU | IFCAP_HWCSUM | \
+     IFCAP_VLAN_HWCSUM | IFCAP_TSO | IFCAP_JUMBO_MTU | IFCAP_LRO | \
+-    IFCAP_VLAN_HWTSO | IFCAP_LINKSTATE | IFCAP_HWCSUM_IPV6 | IFCAP_HWSTATS)
++    IFCAP_VLAN_HWTSO | IFCAP_LINKSTATE | IFCAP_HWCSUM_IPV6 | IFCAP_HWSTATS | \
++    IFCAP_VLAN_HWFILTER)
+ #define T4_CAP_ENABLE (T4_CAP)
+ 
+ static int
+@@ -1521,8 +1524,11 @@
+ 	ifp->if_hw_tsomaxsegcount = TX_SGL_SEGS;
+ 	ifp->if_hw_tsomaxsegsize = 65536;
+ 
++	vi->vlans = malloc(sizeof(*vi->vlans), M_CXGBE, M_ZERO | M_WAITOK);
+ 	vi->vlan_c = EVENTHANDLER_REGISTER(vlan_config, cxgbe_vlan_config, ifp,
+ 	    EVENTHANDLER_PRI_ANY);
++	vi->vlan_u = EVENTHANDLER_REGISTER(vlan_unconfig,
++	    cxgbe_vlan_unconfig, ifp, EVENTHANDLER_PRI_ANY);
+ 
+ 	ether_ifattach(ifp, vi->hw_addr);
+ #ifdef DEV_NETMAP
+@@ -1592,6 +1598,10 @@
+ 	if (vi->vlan_c)
+ 		EVENTHANDLER_DEREGISTER(vlan_config, vi->vlan_c);
+ 
++	if (vi->vlan_u)
++	    EVENTHANDLER_DEREGISTER(vlan_unconfig, vi->vlan_u);
++
++	free(vi->vlans, M_CXGBE);
+ 	/* Let detach proceed even if these fail. */
+ #ifdef DEV_NETMAP
+ 	if (ifp->if_capabilities & IFCAP_NETMAP)
+@@ -1895,9 +1905,13 @@
+ 	/* Select a txq. */
+ 	txq = &sc->sge.txq[vi->first_txq];
+ 	if (M_HASHTYPE_GET(m) != M_HASHTYPE_NONE)
++#ifdef RSS
+ 		txq += ((m->m_pkthdr.flowid % (vi->ntxq - vi->rsrv_noflowq)) +
+ 		    vi->rsrv_noflowq);
+-
++#else
++		txq += (m->m_pkthdr.flowid / vi->ftoq_div +
++		    vi->ftoq_add) % vi->ntxq;
++#endif
+ 	items[0] = m;
+ 	rc = mp_ring_enqueue(txq->r, items, 1, 4096);
+ 	if (__predict_false(rc != 0))
+@@ -4384,6 +4398,14 @@
+ 	return (0);
+ }
+ 
++#define CXGBE_GET_TUNABLE(v, f) do {		\
++    char _name[50];							\
++    int _i;									\
++    sprintf(_name, "hw.cxgbe.%d." #f, device_get_unit((v)->dev));  \
++    if (getenv_int(_name, &_i) != 0 && _i >= 0)\
++    (v)->f = _i;							\
++} while (0)
++
+ /*
+  * It is ok for this function to fail midway and return right away.  t4_detach
+  * will walk the entire sc->irq list and clean up whatever is valid.
+@@ -4445,6 +4467,16 @@
+ 		for_each_vi(pi, v, vi) {
+ 			vi->first_intr = rid - 1;
+ 
++			/* Take binding tunables into account */
++			vi->qtof_mul = vi->ftoq_div = 1;
++			vi->qtof_add = vi->ftoq_add = 0;
++			CXGBE_GET_TUNABLE(vi, qtof_mul);
++			CXGBE_GET_TUNABLE(vi, qtof_add);
++			CXGBE_GET_TUNABLE(vi, ftoq_add);
++			CXGBE_GET_TUNABLE(vi, ftoq_div);
++			if (vi->ftoq_div == 0)
++				vi->ftoq_div = 1;
++
+ 			if (vi->nnmrxq > 0) {
+ 				int n = max(vi->nrxq, vi->nnmrxq);
+ 
+@@ -4482,6 +4514,10 @@
+ #ifdef RSS
+ 					bus_bind_intr(sc->dev, irq->res,
+ 					    rss_getcpu(q % nbuckets));
++#else
++					bus_bind_intr(sc->dev, irq->res,
++						(q * vi->qtof_mul +
++						vi->qtof_add) % mp_ncpus);
+ #endif
+ 					irq++;
+ 					rid++;
+@@ -5088,6 +5124,7 @@
+ static void
+ cxgbe_vlan_config(void *arg, struct ifnet *ifp, uint16_t vid)
+ {
++	struct vi_info *vi;
+ 	struct ifnet *vlan;
+ 
+ 	if (arg != ifp || ifp->if_type != IFT_ETHER)
+@@ -5095,8 +5132,23 @@
+ 
+ 	vlan = VLAN_DEVAT(ifp, vid);
+ 	VLAN_SETCOOKIE(vlan, ifp);
++
++	vi = ifp->if_softc;
++	yndx_vlan_set(vi->vlans, vid, vlan);
+ }
+ 
++static void
++cxgbe_vlan_unconfig(void *arg, struct ifnet *ifp, uint16_t vid)
++{
++	struct vi_info *vi;
++
++	if (arg != ifp || ifp->if_type != IFT_ETHER)
++		return;
++
++	vi = ifp->if_softc;
++	yndx_vlan_set(vi->vlans, vid, NULL);
++}
++
+ /*
+  * Should match fw_caps_config_<foo> enums in t4fw_interface.h
+  */
+Index: sys/dev/cxgbe/t4_sge.c
+===================================================================
+--- sys/dev/cxgbe/t4_sge.c	(revision 323286)
++++ sys/dev/cxgbe/t4_sge.c	(working copy)
+@@ -49,6 +49,7 @@
+ #include <net/ethernet.h>
+ #include <net/if.h>
+ #include <net/if_vlan_var.h>
++#include <net/yandex.h>
+ #include <netinet/in.h>
+ #include <netinet/ip.h>
+ #include <netinet/ip6.h>
+@@ -1864,12 +1865,21 @@
+ t4_eth_rx(struct sge_iq *iq, const struct rss_header *rss, struct mbuf *m0)
+ {
+ 	struct sge_rxq *rxq = iq_to_rxq(iq);
+-	struct ifnet *ifp = rxq->ifp;
++	struct ifnet *ifp = rxq->ifp, *rcvif;
++	struct vi_info *vi = ifp->if_softc;
+ 	struct adapter *sc = iq->adapter;
+ 	const struct cpl_rx_pkt *cpl = (const void *)(rss + 1);
+ #if defined(INET) || defined(INET6)
+ 	struct lro_ctrl *lro = &rxq->lro;
+ #endif
++	KASSERT(m0 != NULL, ("%s: no payload with opcode %02x", __func__,
++	    rss->opcode));
++
++	m0->m_pkthdr.len -= sc->params.sge.fl_pktshift;
++	m0->m_len -= sc->params.sge.fl_pktshift;
++	m0->m_data += sc->params.sge.fl_pktshift;
++
++#ifdef RSS
+ 	static const int sw_hashtype[4][2] = {
+ 		{M_HASHTYPE_NONE, M_HASHTYPE_NONE},
+ 		{M_HASHTYPE_RSS_IPV4, M_HASHTYPE_RSS_IPV6},
+@@ -1877,16 +1887,13 @@
+ 		{M_HASHTYPE_RSS_UDP_IPV4, M_HASHTYPE_RSS_UDP_IPV6},
+ 	};
+ 
+-	KASSERT(m0 != NULL, ("%s: no payload with opcode %02x", __func__,
+-	    rss->opcode));
+-
+-	m0->m_pkthdr.len -= sc->params.sge.fl_pktshift;
+-	m0->m_len -= sc->params.sge.fl_pktshift;
+-	m0->m_data += sc->params.sge.fl_pktshift;
+-
+-	m0->m_pkthdr.rcvif = ifp;
+ 	M_HASHTYPE_SET(m0, sw_hashtype[rss->hash_type][rss->ipv6]);
+ 	m0->m_pkthdr.flowid = be32toh(rss->hash_val);
++#else
++	M_HASHTYPE_SET(m0, M_HASHTYPE_OPAQUE);
++	m0->m_pkthdr.flowid = vi->qtof_add +
++		(rxq - &sc->sge.rxq[vi->first_rxq]) * vi->qtof_mul;
++#endif
+ 
+ 	if (cpl->csum_calc && !(cpl->err_vec & sc->params.tp.err_vec_mask)) {
+ 		if (ifp->if_capenable & IFCAP_RXCSUM &&
+@@ -1909,7 +1916,18 @@
+ 
+ 	if (cpl->vlan_ex) {
+ 		m0->m_pkthdr.ether_vtag = be16toh(cpl->vlan);
+-		m0->m_flags |= M_VLANTAG;
++		if (ifp->if_capenable & IFCAP_VLAN_HWFILTER) {
++			vi = ifp->if_softc;
++			rcvif = yndx_vlan_get(vi->vlans,
++				EVL_VLANOFTAG(m0->m_pkthdr.ether_vtag));
++		} else
++			rcvif = NULL;
++		if (rcvif == NULL)
++			m0->m_flags |= M_VLANTAG;
++		else {
++			ifp = rcvif;
++			if_inc_counter(rcvif, IFCOUNTER_IPACKETS, 1);
++		}
+ 		rxq->vlan_extraction++;
+ 	}
+ 
+@@ -1923,6 +1941,7 @@
+ 			return (0); /* queued for LRO */
+ 	}
+ #endif
++	m0->m_pkthdr.rcvif = ifp;
+ 	ifp->if_input(ifp, m0);
+ 
+ 	return (0);
+Index: sys/net/yandex.c
+===================================================================
+--- sys/net/yandex.c	(nonexistent)
++++ sys/net/yandex.c	(working copy)
+@@ -0,0 +1,74 @@
++/*-
++ * Copyright (c) 2017 Yandex LLC
++ * Copyright (c) 2017 Andrey V. Elsukov <ae@FreeBSD.org>
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ *
++ * $FreeBSD$
++ */
++
++#include <sys/param.h>
++#include <sys/systm.h>
++#include <sys/kernel.h>
++#include <sys/malloc.h>
++#include <sys/mbuf.h>
++#include <sys/queue.h>
++#include <sys/socket.h>
++#include <sys/sockio.h>
++#include <sys/sysctl.h>
++#include <sys/module.h>
++#include <sys/priv.h>
++#include <sys/lock.h>
++#include <sys/rmlock.h>
++#include <sys/sx.h>
++#include <sys/taskqueue.h>
++#include <sys/eventhandler.h>
++
++#include <net/ethernet.h>
++#include <net/if.h>
++#include <net/if_dl.h>
++#include <net/if_media.h>
++#include <net/if_var.h>
++#include <net/if_types.h>
++#include <net/if_vlan_var.h>
++#include <net/bpf.h>
++#include <net/vnet.h>
++#include <net/yandex.h>
++
++#include <ck_pr.h>
++
++struct ifnet *
++yndx_vlan_get(struct vlans_table *table, uint16_t vid)
++{
++
++	return (ck_pr_load_ptr(&table->vifp[vid]));
++}
++
++void
++yndx_vlan_set(struct vlans_table *table, uint16_t vid, struct ifnet *ifp)
++{
++
++	ck_pr_fence_store();
++	ck_pr_store_ptr(&table->vifp[vid], ifp);
++}
+
+Property changes on: sys/net/yandex.c
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:keywords
+## -0,0 +1 ##
++FreeBSD=%H
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sys/net/yandex.h
+===================================================================
+--- sys/net/yandex.h	(nonexistent)
++++ sys/net/yandex.h	(working copy)
+@@ -0,0 +1,41 @@
++/*-
++ * Copyright (c) 2017 Yandex LLC
++ * Copyright (c) 2017 Andrey V. Elsukov <ae@FreeBSD.org>
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ *
++ * $FreeBSD$
++ */
++
++#ifndef _NET_YANDEX_H_
++#define	_NET_YANDEX_H_
++
++struct vlans_table {
++	struct ifnet	*vifp[4096];
++};
++
++struct ifnet *yndx_vlan_get(struct vlans_table *table, uint16_t vid);
++void yndx_vlan_set(struct vlans_table *table, uint16_t vid, struct ifnet *ifp);
++
++#endif /* _NET_YANDEX_H_ */
+
+Property changes on: sys/net/yandex.h
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:keywords
+## -0,0 +1 ##
++FreeBSD=%H
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property

@@ -38,8 +38,6 @@ CONF_INSTALL='
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options or man src.conf for details
 # WITHOUT_FORTH= mandatory for the boot-loader
-# WITHOUT_GROFF= Ports needs for build man page
-# WITHOUT_KVM= and WITHOUT_KVM_SUPPORT= prevent buildworld to complet (don't know why)
 CONF_WORLD='
 WITHOUT_ACCT=
 WITHOUT_AMD=
@@ -70,6 +68,7 @@ WITHOUT_GCOV=
 WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
+WITHOUT_GROFF=
 WITHOUT_HAST=
 WITHOUT_HTML=
 WITHOUT_ICONV=
@@ -118,6 +117,7 @@ WITH_IDEA=
 WITH_OFED=
 WITH_DEBUG_FILES=
 WITH_REPRODUCIBLE_BUILD=
+WITH_SSP=
 '
 
 # Customize commands.
@@ -203,7 +203,7 @@ add_netrate () {
 	umount ${NANO_WORLDDIR}/dev
 }
 
-# Add Quagga BGP route injector
+# Add Quagga/FRR BGP route injector
 add_quagga-bgp-netgen () {
 	mkdir -p ${NANO_WORLDDIR}/dev
 	mount -t devfs devfs ${NANO_WORLDDIR}/dev
@@ -261,8 +261,8 @@ FreeBSD: {
  enabled: false
 }
 EOF
-			# Bug with pkg: not using the "-d" option prevent to install the package with error message "pkg fail to extract static"
-			# Need to force assume_always_yes for avoiding bootstrap pkg confirmation too
+				# Bug with pkg: not using the "-d" option prevent to install the package with error message "pkg fail to extract static"
+				# Need to force assume_always_yes for avoiding bootstrap pkg confirmation too
 				CR 'env ASSUME_ALWAYS_YES=true pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
 				umount \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports/packages
@@ -363,14 +363,12 @@ add_port "ports-mgmt/pkg"
 add_port "net-mgmt/bsnmp-regex"
 add_port "net-mgmt/bsnmp-ucd"
 
-# Quagga: routing daemon
-#add_port "devel/libdlmalloc"
-#add_port "net/quagga" "WITH=\"DLMALLOC ISISD OSPF_OPAQUE_LSA TCPSOCKETS\" WITHOUT=\"PIMD\""
+# FRRouting: routing daemon
 add_port "print/indexinfo"
 add_port "devel/readline"
 add_port "devel/json-c"
 add_port "net/frr" "WITH=\"MULTIPATH\""
-# Quagga install some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
+# FRR installs some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Bird: routing daemon
 #add_port "net/bird" "WITH=\"FIREWALL\""
@@ -379,9 +377,16 @@ add_port "net/bird"
 # FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
 
+# Python (install this port soon)
+add_port "devel/libffi"
+add_port "lang/python27"
+add_port "lang/python2"
+add_port "lang/python"
+add_port "devel/py-setuptools"
+
 # ipsec-tools: IKEv1
 add_port "net/openldap24-client"
-add_port "security/ipsec-tools" 'WITH="RC5 IDEA RADIUS LDAP"'
+add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # strongswan: IKEv2 and lot's more
 add_port "security/strongswan" "WITH=\"MEDIATION GCM\" WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
@@ -435,9 +440,6 @@ add_port "sysutils/tmux"
 # ipmi tools
 add_port "sysutils/ipmitool"
 
-# processor information (usefull for checking microcode version)
-add_port "sysutils/x86info"
-
 # sudo: fine permission management
 add_port "security/sudo"
 
@@ -473,13 +475,6 @@ add_port "benchmarks/iperf3"
 # LLDP daemon
 #add_port "net-mgmt/lldpd" "WITHOUT=\"BASH JSON PROPRIETARY SNMP XML\""
 
-# Python (being ansible manageable)
-add_port "devel/libffi"
-add_port "lang/python27"
-add_port "lang/python2"
-add_port "lang/python"
-add_port "devel/py-setuptools"
-
 # ExaBGP: having fun with BGP
 add_port "net/py-ipaddress"
 add_port "net/exabgp"
@@ -507,6 +502,10 @@ add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 #add_port "sysutils/intel-qcu"
 add_port "sysutils/devcpu-data"
 
+# processor information (usefull for checking microcode version)
+add_port "sysutils/x86info"
+add_port "sysutils/intel-pcm"
+
 # NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode
 add_port "net/ntraceroute"
 
@@ -522,20 +521,20 @@ customize_cmd add_netrate
 customize_cmd add_quagga-bgp-netgen
 
 cleanup_ports () {
-		# When port are build, they install build dependency that are not usefull for running the port
-		# The list of build-only package to be delete can be found like this:
-		# Fresh generate a BSDRP image, and copy packages.info to packages.info.first
-		# Restart a BSDRP image build with the "-b" option
-		# diff packages.info.first packages.info
-		set +e
-			CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* bison* cmake* curl* expat-* m4* gcc-* gawk* gettext* gmake* jsoncpp-* libtool* perl* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf* py27-Babel-* py27-Jinja2-* py27-MarkupSafe-* py27-alabaster-* py27-docutils-* py27-pygments-* py27-pystemmer-* py27-pytz-* py27-six-* py27-snowballstemmer-* py27-sphinx-* py27-sphinx_rtd_theme-*'
-		# usr/local/lib/perl5 : Dirty hack
-		#	pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
-		#	pkg didn't delete all MAN1 page related to perl too
-		[ -d ${NANO_WORLDDIR}/usr/local/lib/perl5 ] && rm -rf ${NANO_WORLDDIR}/usr/local/lib/perl5
-		[ -f ${NANO_WORLDDIR}/usr/local/man/man1/perl.1 ] && rm ${NANO_WORLDDIR}/usr/local/man/man1/perl*
-		[ -f ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT ] && rm ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT
-		set -e
+	# When port are build, they install build dependency that are not usefull for running the port
+	# The list of build-only package to be delete can be found like this:
+	# Fresh generate a BSDRP image, and copy packages.info to packages.info.first
+	# Restart a BSDRP image build with the "-b" option
+	# diff packages.info.first packages.info
+	set +e
+		CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* bison* cmake* curl* expat-* m4* gcc-* gawk* gettext* gmake* jsoncpp-* libtool* perl* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf* py27-Babel-* py27-Jinja2-* py27-MarkupSafe-* py27-alabaster-* py27-docutils-* py27-pygments-* py27-pystemmer-* py27-pytz-* py27-six-* py27-snowballstemmer-* py27-sphinx-* py27-sphinx_rtd_theme-*'
+	# usr/local/lib/perl5 : Dirty hack
+	#	pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
+	#	pkg didn't delete all MAN1 page related to perl too
+	[ -d ${NANO_WORLDDIR}/usr/local/lib/perl5 ] && rm -rf ${NANO_WORLDDIR}/usr/local/lib/perl5
+	[ -f ${NANO_WORLDDIR}/usr/local/man/man1/perl.1 ] && rm ${NANO_WORLDDIR}/usr/local/man/man1/perl*
+	[ -f ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT ] && rm ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT
+	set -e
 }
 
 customize_cmd cleanup_ports
@@ -549,7 +548,7 @@ bsdrp_custom () {
 	# Update login.conf db
 	CR 'cap_mkdb /etc/login.conf'
 
-	# Disable system beep, enable color with csh
+	# Disable system beep and enable color with csh
 	{
 	echo "set nobeep"
 	echo "setenv CLICOLOR true"
@@ -564,7 +563,6 @@ bsdrp_custom () {
 	sed -i "" -e "/cfg/s/rw/rw,noatime/" ${NANO_WORLDDIR}/etc/fstab
 	# Add /data partition to fstab (config script use it for archiving old configurations)
 	echo "/dev/ufs/${NANO_LABEL}s4 /data ufs rw,noauto,failok 2 2" >> ${NANO_WORLDDIR}/etc/fstab
-	# There is a problem around june 2014 with nanobsd: It didn't generate anymore the /data directory
 	[ -d ${NANO_WORLDDIR}/data ] || mkdir -p ${NANO_WORLDDIR}/data
 
 	# relocate /var/cron to /etc/cron

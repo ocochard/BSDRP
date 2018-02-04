@@ -52,6 +52,7 @@ pidfile="/var/run/${name}.pid"
 command="/usr/sbin/daemon"
 
 load_rc_config ${name}
+: ${autosave_enable="NO"}
 
 command_args="-f -P ${pidfile} -u root /usr/local/sbin/autosave"
 

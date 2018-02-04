@@ -36,5 +36,5 @@ disablelrotso_enable="YES"
 # This value is VERY important for 8 cores or more and allways improve performance
 harvest_mask="351"
 
-# Update CPU microcode
+# Update CPU microcode (fixing Meltdown and Spectre bugs)
 microcode_update="YES"

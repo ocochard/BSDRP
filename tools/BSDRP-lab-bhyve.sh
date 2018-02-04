@@ -3,7 +3,7 @@
 # Bhyve lab script for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2013-2016, The BSDRP Development Team
+# Copyright (c) 2013-2018, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@ NUMBER_VM="1"
 FILE=""
 LAN=0
 MESHED=true
-RAM="256M"
+RAM="512M"
 DISK_CTRL="virtio-blk"
 VALE=false
 vnic="virtio-net"
@@ -100,7 +100,7 @@ load_module () {
 # Common with vbox/quemu script
 uncompress_image () {
     [ -f ${FILE} ] || die "Can't find file ${FILE}"
-	FILE_TYPE=`file -b ${FILE} | cut -d ';' -f 1`
+	FILE_TYPE=$(file -b ${FILE} | cut -d ';' -f 1)
 
 	[ -f ${VM_TEMPLATE} ] && rm ${VM_TEMPLATE}
 
@@ -127,7 +127,7 @@ uncompress_image () {
 	# Once unzip, we need to re-check the format
 	if ! file -b ${VM_TEMPLATE} | grep -q "boot sector"; then
 		die "Not a correct image format ?"
-	fi	
+	fi
 
 	return 0
 
@@ -135,12 +135,12 @@ uncompress_image () {
 
 adapt_image_console () {
 	# No more needed
-	
+
 	mkdir -p ${WRK_DIR}/mnt || die "Can't create ${WRK_DIR}/mnt"
 
 	mount | grep -q "${WRK_DIR}/mnt"  && umount -f ${WRK_DIR}/mnt
 
-	MD=`mdconfig -a ${VM_TEMPLATE}`
+	MD=$(mdconfig -a ${VM_TEMPLATE})
 	fsck_ufs -y /dev/$MD"s1a" > /dev/null 2>&1 || die "Error regarding the FreeBSD image given"
 	mount /dev/$MD"s1a" ${WRK_DIR}/mnt  || die "Can't mount the image"
 
@@ -149,7 +149,7 @@ adapt_image_console () {
 		cat >> ${WRK_DIR}/mnt/etc/ttys << EOF
 console "/usr/libexec/getty std.9600"   vt100   on   secure
 EOF
-fi
+	fi
 	umount ${WRK_DIR}/mnt || "die can't unmount the disk image"
 	mdconfig -du $MD || "die can't destroy md image"
 }
@@ -157,11 +157,11 @@ fi
 erase_all_vm() {
 	# We can display vm by looking in /dev/vmm
 	# Search for VM disk image
-	local VM_LIST=`find ${WRK_DIR} -name "${VM_NAME}_*"`
+	local VM_LIST=$(find ${WRK_DIR} -name "${VM_NAME}_*")
 	local i=1
 	for i in ${VM_LIST}; do
 		echo "Deleting VM $i..."
-		local VM=`basename $i`
+		local VM=$(basename $i)
 		destroy_vm ${VM}
 		rm $i || echo "can't erase vm $i"
 	done
@@ -171,16 +171,16 @@ erase_all_vm() {
 
 stop_all_vm() {
 	if [ -e /dev/vmm ]; then
-		local VM_LIST=`find /dev/vmm -name "${VM_NAME}_*"`
+		local VM_LIST=$(find /dev/vmm -name "${VM_NAME}_*")
 		for i in ${VM_LIST}; do
-			destroy_vm `basename $i`
+			destroy_vm $(basename $i)
 		done
 	fi
 	return 0
 }
 
 destroy_all_if() {
-	IF_LIST=`ifconfig -l`
+	IF_LIST=$(ifconfig -l)
 	for i in ${IF_LIST}; do
 		ifconfig $i | grep -q "description: MESH_\|description: LAN_" && \
 			ifconfig $i destroy
@@ -222,7 +222,7 @@ run_vm() {
 		#    host CPU
 		# P: Force guest virtual CPUs to be pinned to host CPUs
 		# s: Configure a virtual PCI slot and function.
-		# S: Configure legacy ISA slot and function 
+		# S: Configure legacy ISA slot and function
 		# PCI 0:0 hostbridge
 		# PCI 0:1 lpc (serial)
 		# PCI 1:0 Hard drive
@@ -231,12 +231,13 @@ run_vm() {
 		VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
 		eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\$1A\"
 		eval VM_DISK_$1=\"-s 1:0,\${DISK_CTRL},\${WRK_DIR}/\${VM_NAME}_$1\"
-		#eval echo DEBUG \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_NAME}_$1
-		eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} ${VM_NAME}_$1
+
 		# Check bhyve exit code, and if error: exit the infinite loop
+		eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} ${VM_NAME}_$1
 		if [ $? -ne 0 ]; then
-        	break
-    	fi
+			break
+		fi
+
 		# Dirty fix for perventing bhyve bug that sometimes need input from console for unpausing
 		echo >> /dev/nmdm$1B
 	done
@@ -248,18 +249,18 @@ create_interface() {
 	# $2: Interface type (bridge or tap)
 	# $3: Name of the interface bridge to join (only for tap interface)
 	# echo: The name of the interface created (bridgeX or tapY)
-	
+
 	[ $# -lt 2 ] && die "Bug when calling create_interface(): not enought argument"
-	
+
 	# Begin to search if interface already exist
-	local IF_LIST=`ifconfig -g $2`
+	local IF_LIST=$(ifconfig -g $2)
 	for i in ${IF_LIST}; do
 		if ifconfig $i | grep -q "description: $1"; then
 			echo $i
 			return 0
 		fi
 	done
-	IF=`ifconfig $2 create`
+	IF=$(ifconfig $2 create)
 	ifconfig ${IF} description $1 up || die "Can't set $1 on ${IF}"
 	if [ $# -eq 3 ]; then
 		ifconfig $3 addm ${IF} || die "Can't add ${IF} on bridge $3"
@@ -271,9 +272,9 @@ create_interface() {
 #### Main ####
 
 [ $# -lt 1 ] && ! [ -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
-[ `id -u` -ne 0 ] && usage "ERROR: not executed as root"
+[ $(id -u) -ne 0 ] && usage "ERROR: not executed as root"
 
-args=`getopt ac:dhD:ei:l:m:n:sVw: $*`
+args=$(getopt ac:dhD:ei:l:m:n:sVw: $*)
 
 set -- $args
 for i; do
@@ -335,7 +336,7 @@ for i; do
 	-V)
 		VALE=true
 		shift
-		;;	
+		;;
 	-w)
 		WRK_DIR=$2
 		[ -d ${WRK_DIR} ] || usage "ERROR: Working directory not found"
@@ -370,15 +371,15 @@ destroy_all_if
 echo "BSD Router Project (http://bsdrp.net) - bhyve full-meshed lab script"
 echo "Setting-up a virtual lab with $NUMBER_VM VM(s):"
 echo "- Working directory: ${WRK_DIR}"
-echo "- Each VM have ${CORE} core(s) and ${RAM} RAM"
+echo "- Each VM has ${CORE} core(s) and ${RAM} RAM"
 echo "- Emulated NIC: ${vnic}"
 echo -n "- Switch mode: "
 ( ${VALE} ) && echo "vale (netmap)" || echo "bridge + tap"
 echo "- $LAN LAN(s) between all VM"
 ( ${MESHED} ) && echo "- Full mesh Ethernet links between each VM"
 
-i=1                                                                   
-# Enter the main loop for each VM                                            
+i=1
+# Enter the main loop for each VM
 while [ $i -le $NUMBER_VM ]; do
 	is_running ${VM_NAME}_$i && die "VM ${VM_NAME}_$i already runing"
 	# Erase already existing VM disk only if:
@@ -401,7 +402,7 @@ while [ $i -le $NUMBER_VM ]; do
 	#              \                   /
 	#           (TUN-BR1-3_3)   (TUN-BR2-3_3)
 	#                        VM3
-	# 
+	#
 	eval VM_NET_${i}=\"\"
 	if ( ${MESHED} ); then
 		j=1
@@ -412,7 +413,7 @@ while [ $i -le $NUMBER_VM ]; do
 				echo "${NIC_NUMBER} connected to VM ${j}"
 				# PCI_SLOT must be between 0 and 7
 				# Need to increase PCI_BUS number if slot is more than 7
-		
+
 				PCI_BUS=$(( NIC_NUMBER / 8 ))
 				PCI_SLOT=$(( NIC_NUMBER - 8 * PCI_BUS ))
 				# All PCI_BUS before 2 are already used
@@ -431,11 +432,11 @@ while [ $i -le $NUMBER_VM ]; do
 					fi
 					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${vnic},\
 ${SW_CMD},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
-				
+
 				else
 					if (${VALE} ); then
 						SW_CMD="vale${j}${i}:${VM_NAME}_$i"
-					else	
+					else
 						BRIDGE_IF=$( create_interface MESH_${j}-${i} bridge )
 						TAP_IF=$( create_interface MESH_${j}-${i}_${i} tap ${BRIDGE_IF} )
 						SW_CMD=${TAP_IF}

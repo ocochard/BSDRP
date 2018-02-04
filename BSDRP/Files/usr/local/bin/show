@@ -1,9 +1,9 @@
 #!/bin/sh
 #
-# Show tool for BSD Router Project 
+# Show tool for BSD Router Project
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2010, The BSDRP Development Team 
+# Copyright (c) 2009-2018, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -225,14 +225,14 @@ version () {
 route () {
 	case "$SECOND_OPTION" in
 		ipv4|4)
-			netstat -rnW -f inet 
+			netstat -rnW -f inet
 			;;
 		ipv6|6)
-			netstat -rnW -f inet6	
+			netstat -rnW -f inet6
 			;;
 		*)
 			netstat -rnW
-			;;	
+			;;
 	esac
 	exit 0
 }
@@ -294,20 +294,36 @@ memory () {
 	* $sysctl_pagesize" | bc`
         mem_inactive=`echo "\`sysctl -n vm.stats.vm.v_inactive_count\` \
 	* $sysctl_pagesize" | bc`
-        mem_cache=`echo "\`sysctl -n vm.stats.vm.v_cache_count\` \
-	* $sysctl_pagesize" | bc`
+		if sysctl -q vm.stats.vm.v_cache_count > /dev/null 2>&1 ; then
+        	mem_cache=`echo "\`sysctl -n vm.stats.vm.v_cache_count\` \
+				* $sysctl_pagesize" | bc`
+			mem_laundry=""
+		else
+			mem_laundry=`echo "\`sysctl -n vm.stats.vm.v_laundry_count\` \
+				* $sysctl_pagesize" | bc`
+			mem_cache=""
+		fi
         mem_free=`echo "\`sysctl -n vm.stats.vm.v_free_count\` \
 	* $sysctl_pagesize" | bc`
 
         #   determine the individual unknown information
-        mem_gap_vm=`echo "$mem_all - ( $mem_wire + $mem_active + \
-	$mem_inactive + $mem_cache + $mem_free )" | bc`
+		if [ -n "${mem_cache}" ]; then
+        	mem_gap_vm=`echo "$mem_all - ( $mem_wire + $mem_active + \
+				$mem_inactive + $mem_cache + $mem_free )" | bc`
+		else
+			mem_gap_vm=`echo "$mem_all - ( $mem_wire + $mem_active + \
+				$mem_inactive + $mem_laundry + $mem_free )" | bc`
+		fi
         mem_gap_sys=`echo "$mem_phys - $mem_all" | bc`
         mem_gap_hw=`echo "$mem_hw - $mem_phys" | bc`
 
         #   determine logical summary information
         mem_total=$mem_hw
-        mem_avail=`echo "$mem_inactive + $mem_cache + $mem_free" | bc`
+		if [ -n "${mem_cache}" ]; then
+        	mem_avail=`echo "$mem_inactive + $mem_cache + $mem_free" | bc`
+		else
+			mem_avail=`echo "$mem_inactive + $mem_laundry + $mem_free" | bc`
+		fi
         mem_used=`echo "$mem_total - $mem_avail" | bc`
 
         #   print system results
@@ -321,9 +337,15 @@ memory () {
         printf "mem_inactive:+ %12d (%7dMB) [%3d%%] %s\n" $mem_inactive \
 	`echo "$mem_inactive / ( 1024 * 1024 )" | bc` `echo "$mem_inactive \
 	* 100 / $mem_all" | bc` "Inactive: recently not referenced"
-        printf "mem_cache:   + %12d (%7dMB) [%3d%%] %s\n" $mem_cache \
-	`echo "$mem_cache / ( 1024 * 1024 )" | bc` `echo "$mem_cache \
-	* 100 / $mem_all" | bc` "Cached: almost avail. for allocation"
+		if [ -n "${mem_cache}" ]; then
+        	printf "mem_cache:   + %12d (%7dMB) [%3d%%] %s\n" $mem_cache \
+			`echo "$mem_cache / ( 1024 * 1024 )" | bc` `echo "$mem_cache \
+			* 100 / $mem_all" | bc` "Cached: almost avail. for allocation"
+		else
+			printf "mem_laundry: + %12d (%7dMB) [%3d%%] %s\n" $mem_laundry \
+			`echo "$mem_laundry / ( 1024 * 1024 )" | bc` `echo "$mem_laundry \
+			* 100 / $mem_all" | bc` "Laundry: Pages eligible for laundering"
+		fi
         printf "mem_free:    + %12d (%7dMB) [%3d%%] %s\n" $mem_free \
 	`echo "$mem_free / ( 1024 * 1024 )" | bc` `echo "$mem_free \
 	* 100 / $mem_all" | bc` "Free: fully available for allocation"

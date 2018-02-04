@@ -29,34 +29,11 @@
 #
 
 # Strict script
-set -e
-set -u
+set -eu
 
 # Global variables
 HOST=false
 ROUTER=false
-
-# Get options passed by user
-getoption () {
-    if [ $# -ge 1 ]; then
-        FIRST_OPTION="$1"
-    else
-		usage
-		exit 1
-    fi
-    case "$FIRST_OPTION" in
-		host)
-			HOST=true
-			;;
-		router)
-            ROUTER=true
-            ;;
-		help)
-            usage
-			exit 0
-            ;;
-	esac
-}
 
 usage () {
 	# Display usage
@@ -64,7 +41,6 @@ usage () {
 	echo " option can be:"
 	echo " -host: tuning tips for end-host"
 	echo " -router: tuning tips for router"
-	echo " -help: display this help"
 }
 
 sysctl_atleast () {
@@ -290,7 +266,23 @@ timecounter () {
 ## Main function ##
 ###################
 
-getoption $*
+if [ $# -ge 1 ]; then
+    case $1 in
+		host)
+			HOST=true
+			;;
+		router)
+            ROUTER=true
+            ;;
+		--)
+			usage
+			exit 0
+			;;
+	esac
+else
+		usage
+		exit 1
+fi
 #system_inventory
 # Look for VM environnement
 sysctl -n kern.vm_guest | grep -q -v "none" && VM_DETECTED=true || VM_DETECTED=false

@@ -2,13 +2,14 @@
 
 ## TO FIX before releasing
 * mpd5 is crashing at startup (Illegal instruction) (works on -current)
+* inet4 TCP MD5 is broken
 
 ## New features
 * Upgrade to bird 2, WARNING: previous configuration needs to be adapted
     https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
-* Add some Yandex (ae@)'s patches that remove locking problem (from 5Mpps to 10Mpps on 8 cores)
+* Add Yandex (ae@)'s patches that remove forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores)
 * Disable HyperThreading by default
-* Add qlxgbe (QLogic 8300 series 10 Gigabit) drivers
+* Add qlxgbe (QLogic 8300 series 10 Gigabit) and bnxt (Broadcom NetXtreme-C/NetXtreme-E) drivers
 
 ## Bug fixes
 * Images CHS value fixed: An old bug in nanobsd was fixed, now disk image correctly
@@ -22,11 +23,15 @@
 ## Security fixes
 * Intel microcode update regarding Meltdown and Spectre
 
+## New package
+* bgpq3: Generate prefix-list for bird and FRR
+* intel-pcm: Tool for displaying PCM counters and energy usage
+
 ## Updated packages
-* bird to 2.0.0
-* devcpu-data 1.14
+* bird to 2.0.1
+* devcpu-data 1.15
 * dhcprelya to 6.1
-* exabgp to 3.4.20
+* exabgp to 3.4.21
 * iperf to 2.0.10
 * iperf3 to 3.3
 * isc-dhcp43-server to 4.3.6
@@ -38,19 +43,21 @@
 * tmux to 2.6
 
 ## Packages list
-* bird 2.0.0: Dynamic IP routing daemon
+* bgpq3 0.1.33: Lightweight prefix-list generator for Cisco and Juniper routers
+* bird 2.0.1: Dynamic IP routing daemon
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.34.1: Root certificate bundle from the Mozilla Project
-* devcpu-data 1.14_1: Intel and AMD CPUs microcode updates
+* ca_root_nss 3.35: Root certificate bundle from the Mozilla Project
+* devcpu-data 1.15_1: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
-* exabgp 3.4.20_1: BGP engine and route injector
+* exabgp 3.4.21: BGP engine and route injector
 * flashrom 0.9.9_2: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
 * frr 3.0.3_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.11.2: Cross-platform file change monitor
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
+* intel-pcm 201710: Process Count Monitor (PCM) for Intel processors
 * iperf 2.0.10_1: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.3: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
@@ -58,12 +65,10 @@
 * isc-dhcp43-server 4.3.6_2: ISC Dynamic Host Configuration Protocol server
 * json-c 0.13: JSON (JavaScript Object Notation) implementation in C
 * libev 4.22,1: Full-featured and high-performance event loop library
-* libevent 2.1.8: API for executing callback functions on events or timeouts
+* libevent 2.1.8_1: API for executing callback functions on events or timeouts
 * libffi 3.2.1_2: Foreign Function Interface
-* libgcrypt 1.8.2: General purpose crypto library based on code used in GnuPG
-* libgpg-error 1.27: Common error values for all GnuPG components
-* liblz4 1.8.1,1: LZ4 compression library, lossless and very fast
-* libpci 3.5.6: PCI configuration space I/O made easy
+* liblz4 1.8.1.2,1: LZ4 compression library, lossless and very fast
+* libpci 3.5.6_1: PCI configuration space I/O made easy
 * libsodium 1.0.15: Library to build higher-level cryptographic tools
 * libucl 0.8.0: Universal configuration library parser
 * lzo2 2.10_1: Portable speedy, lossless data compression library
@@ -75,7 +80,6 @@
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.45: Open source LDAP client implementation
 * openvpn 2.4.4: Secure IP/Ethernet tunnel daemon
-* openvpn-auth-radius 2.1_3: RADIUS authentication plugin for OpenVPN
 * pciids 20171206: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
@@ -92,11 +96,11 @@
 * readline 7.0.3_1: Library for editing command lines as they are typed
 * smcroute 2.3.1: Static multicast routing tool
 * strongswan 5.6.0: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.21p2_1: Allow others to run commands as root
+* sudo 1.8.22: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.6_1: Terminal Multiplexer
 * ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol
-* x86info 1.31.s02: x86 CPU identification and feature display utility
+* x86info 1.31.s03: x86 CPU identification and feature display utility
 
 -----------------------------------------------------
 # Release 1.80 (2017-06-30)

@@ -25,12 +25,12 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# $FreeBSD: head/tools/tools/nanobsd/legacy.sh 324033 2017-09-26 21:54:19Z glebius $
+# $FreeBSD: head/tools/tools/nanobsd/legacy.sh 328833 2018-02-03 21:56:38Z imp $
 #
 
 # Media geometry, only relevant if bios doesn't understand LBA.
-[ -z "$NANO_SECTS" ] || NANO_SECTS=63
-[ -z "$NANO_HEADS" ] || NANO_HEADS=16
+[ -n "$NANO_SECTS" ] || NANO_SECTS=63
+[ -n "$NANO_HEADS" ] || NANO_HEADS=16
 
 # Functions and variable definitions used by the legacy nanobsd
 # image building system.

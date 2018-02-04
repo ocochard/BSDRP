@@ -1,19 +1,20 @@
 Index: tools/tools/netrate/netblast/Makefile
 ===================================================================
---- tools/tools/netrate/netblast/Makefile	(revision 258293)
+--- tools/tools/netrate/netblast/Makefile	(revision 328334)
 +++ tools/tools/netrate/netblast/Makefile	(working copy)
-@@ -4,5 +4,8 @@
+@@ -4,5 +4,9 @@
  
  PROG=	netblast
  MAN=
 +LDFLAGS += -lpthread
++BINDIR=	/usr/local/bin
  
 +WARNS?= 3
 +
  .include <bsd.prog.mk>
 Index: tools/tools/netrate/netblast/netblast.c
 ===================================================================
---- tools/tools/netrate/netblast/netblast.c	(revision 258293)
+--- tools/tools/netrate/netblast/netblast.c	(revision 328334)
 +++ tools/tools/netrate/netblast/netblast.c	(working copy)
 @@ -36,19 +36,29 @@
  

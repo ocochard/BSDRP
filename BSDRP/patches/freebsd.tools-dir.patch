@@ -46,17 +46,6 @@ Index: tools/tools/netmap/Makefile
 +	for i in ${PROGS}; do \
 +		install $$i ${DESTDIR}${BINDIR}; \
 +	done
-Index: tools/tools/netrate/netblast/Makefile
-===================================================================
---- tools/tools/netrate/netblast/Makefile	(revision 316518)
-+++ tools/tools/netrate/netblast/Makefile	(working copy)
-@@ -4,5 +4,6 @@
- 
- PROG=	netblast
- MAN=
-+BINDIR=	/usr/local/bin
- 
- .include <bsd.prog.mk>
 Index: tools/tools/netrate/netreceive/Makefile
 ===================================================================
 --- tools/tools/netrate/netreceive/Makefile	(revision 316518)
