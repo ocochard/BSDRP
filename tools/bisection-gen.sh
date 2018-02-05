@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# Bisection script for BSD Router Project 
+# Bisection script for BSD Router Project
 # http://bsdrp.net
-# 
+#
 # Purpose:
 #  This script permit to build multiple image regarding a given list of svn revision number.
 #  Coupled to an auto-bench script, this permit to found regression in -current code as example.
@@ -36,7 +36,7 @@ usage() {
 build_project() {
 	[ $# -lt 1 ] && die "BUG during build_project() call, missing argument"
 	SVN_REV=$1
-	FILENAME=$1	
+	FILENAME=$1
 	[ $# -eq 2 ] && FILENAME=$2
 	echo -n "Building image matching revision ${SVN_REV}..."
 	if [ -f ${IMAGES_DIR}/BSDRP-${FILENAME}-upgrade-${ARCH}-${CONSOLE}.img ]; then
@@ -50,7 +50,7 @@ build_project() {
 	sed -i "" -e "/SRC_REV=/s/.*/SRC_REV=${SVN_REV}/" $PROJECT/make.conf
 	[ ! -d $PROJECT/Files/etc ] && mkdir -p $PROJECT/Files/etc
 	echo ${SVN_REV} > $PROJECT/Files/etc/version
-	./make.sh -p ${PROJECT} -C -u -y -a ${ARCH} -c ${CONSOLE} > ${IMAGES_DIR}/bisec.log 2>&1 && true
+	./make.sh -p ${PROJECT} -C -u -y -a ${ARCH} -c ${CONSOLE} -r > ${IMAGES_DIR}/bisec.log 2>&1 && true
 	if [ ! -f /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ]; then
 			echo "Where are /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ?"
 			echo "Check error message in ${IMAGES_DIR}/bisec.log.${SVN_REV}"
@@ -63,7 +63,7 @@ build_project() {
 	for i in full-${ARCH}-${CONSOLE}.img.xz upgrade-${ARCH}-${CONSOLE}.img.xz debug-${ARCH}.tar.xz ${ARCH}-${CONSOLE}.mtree.xz ; do
 		mv /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-$i ${IMAGES_DIR}/BSDRP-${FILENAME}-$i
 	done
-	
+
 	echo "done"
 	return 0
 }
@@ -89,7 +89,7 @@ if [ -z "${PHABRID}" ]; then
 	# From Sunday 22 March, to each last commit of sundy of each week
 	# and if build failed, take the last monday commit and if it failed again
 	# take the last tusday commit
-	# 
+	#
 	SVN_REV_LIST='
 311014
 311703
@@ -116,6 +116,36 @@ if [ -z "${PHABRID}" ]; then
 319002
 319557
 319810
+319836
+320087
+320338
+320579
+320850
+321048
+321400
+321730
+322124
+322475
+322723
+322954
+323147
+323398
+323687
+323980
+324179
+324416
+324638
+324870
+325110
+325458
+325746
+326001
+326237
+326503
+326752
+326919
+327168
+327439
 	'
 	for SVN_REV in ${SVN_REV_LIST}; do
 		build_project ${SVN_REV}
