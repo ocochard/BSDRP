@@ -512,6 +512,9 @@ add_port "net/ntraceroute"
 # BGPQ3: Lightweight prefix-list generator for Cisco and Juniper routers
 add_port "net-mgmt/bgpq3"
 
+# ixl_unlock: Allow to remove SFP restriction to ixl(4)
+add_port "net/ixl_unlock"
+
 #### End of port list section ####
 
 # Add netrate tools

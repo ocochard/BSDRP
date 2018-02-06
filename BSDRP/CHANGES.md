@@ -26,6 +26,7 @@
 ## New package
 * bgpq3: Generate prefix-list for bird and FRR
 * intel-pcm: Tool for displaying PCM counters and energy usage
+* ixl_unlock: Remove SFP restriction on ixl(4) NIC
 
 ## Updated packages
 * bird to 2.0.1
@@ -63,6 +64,7 @@
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_2: KAME racoon IKE daemon, ipsec-tools version
 * isc-dhcp43-server 4.3.6_2: ISC Dynamic Host Configuration Protocol server
+* ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.13: JSON (JavaScript Object Notation) implementation in C
 * libev 4.22,1: Full-featured and high-performance event loop library
 * libevent 2.1.8_1: API for executing callback functions on events or timeouts
@@ -95,7 +97,7 @@
 * python27 2.7.14_1: Interpreted object-oriented programming language
 * readline 7.0.3_1: Library for editing command lines as they are typed
 * smcroute 2.3.1: Static multicast routing tool
-* strongswan 5.6.0: Open Source IKEv2 IPsec-based VPN solution
+* strongswan 5.6.0_1: Open Source IKEv2 IPsec-based VPN solution
 * sudo 1.8.22: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.6_1: Terminal Multiplexer

@@ -18,7 +18,7 @@
 hw.usb.no_shutdown_wait="1"
 
 ### Use next-gen MRSAS drivers in place of MFI for device supporting it
-# This solve lot's of [mfi] COMMAND 0x... TIMEOUT AFTER ## SECONDS
+# This solves lot of [mfi] COMMAND 0x... TIMEOUT AFTER ## SECONDS
 hw.mfi.mrsas_enable="1"
 
 ### Tune some global values ###

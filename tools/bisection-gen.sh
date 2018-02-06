@@ -20,6 +20,17 @@ PROJECT="TESTING"
 CONSOLE="serial"
 ARCH="amd64"
 
+# Enable TMPFS
+TMPFS=true
+
+if (${TMPFS}); then
+	TMPOPT="-r"
+	OBJDIR="/tmp/obj"
+else
+	TMPOPT=""
+	OBJDIR="/usr/obj"
+fi
+
 ### Functions ###
 
 # An usefull function (from: http://code.google.com/p/sh-die/)
@@ -50,18 +61,18 @@ build_project() {
 	sed -i "" -e "/SRC_REV=/s/.*/SRC_REV=${SVN_REV}/" $PROJECT/make.conf
 	[ ! -d $PROJECT/Files/etc ] && mkdir -p $PROJECT/Files/etc
 	echo ${SVN_REV} > $PROJECT/Files/etc/version
-	./make.sh -p ${PROJECT} -C -u -y -a ${ARCH} -c ${CONSOLE} -r > ${IMAGES_DIR}/bisec.log 2>&1 && true
-	if [ ! -f /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ]; then
-			echo "Where are /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ?"
+	./make.sh -p ${PROJECT} -C -u -y -a ${ARCH} -c ${CONSOLE} ${TMPOPT} > ${IMAGES_DIR}/bisec.log 2>&1 && true
+	if [ ! -f ${OBJDIR}/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ]; then
+			echo "Where are ${OBJDIR}/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ?"
 			echo "Check error message in ${IMAGES_DIR}/bisec.log.${SVN_REV}"
 			for i in _.bw _.bk _.iw _.ik; do
-				[ -f /usr/obj/${PROJECT}.${ARCH}/$i ] && mv /usr/obj/${PROJECT}.${ARCH}/$i ${IMAGES_DIR}/bisec.log.$i.${FILENAME}
+				[ -f ${OBJDIR}/${PROJECT}.${ARCH}/$i ] && mv ${OBJDIR}/${PROJECT}.${ARCH}/$i ${IMAGES_DIR}/bisec.log.$i.${FILENAME}
 			done
 			mv ${IMAGES_DIR}/bisec.log ${IMAGES_DIR}/bisec.log.${FILENAME}
 			return 0
 	fi
 	for i in full-${ARCH}-${CONSOLE}.img.xz upgrade-${ARCH}-${CONSOLE}.img.xz debug-${ARCH}.tar.xz ${ARCH}-${CONSOLE}.mtree.xz ; do
-		mv /usr/obj/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-$i ${IMAGES_DIR}/BSDRP-${FILENAME}-$i
+		mv ${OBJDIR}/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-$i ${IMAGES_DIR}/BSDRP-${FILENAME}-$i
 	done
 
 	echo "done"

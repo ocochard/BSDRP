@@ -1,0 +1,59 @@
+# This is a shell archive.  Save it in a file, remove anything before
+# this line, and then unpack it by entering "sh file".  Note, it may
+# create directories; files and directories will be owned by you and
+# have default permissions.
+#
+# This archive contains:
+#
+#	net/ixl_unlock
+#	net/ixl_unlock/pkg-descr
+#	net/ixl_unlock/Makefile
+#	net/ixl_unlock/distinfo
+#
+echo c - net/ixl_unlock
+mkdir -p net/ixl_unlock > /dev/null 2>&1
+echo x - net/ixl_unlock/pkg-descr
+sed 's/^X//' >net/ixl_unlock/pkg-descr << 'd241d2d356f77b3b37efd2ee4ae6295c'
+XThis utility is inteded to be used on FreeBSD with if_ixl(4) driver.
+XIt disables Module Qualification check to be able use any SFPs.
+X
+XNOTE: since the datacheet is not clear about the location of PHY capability
+Xdata structure, I made some assumptions when did the search. If my assumptions
+Xare wrong, this can damage your card. If you are not sure, do not use this
+Xutility. Also, it looks like the location highly depends from the firmware
+Xversion.
+X
+XWWW: https://github.com/bu7cher/ixl_unlock
+d241d2d356f77b3b37efd2ee4ae6295c
+echo x - net/ixl_unlock/Makefile
+sed 's/^X//' >net/ixl_unlock/Makefile << '574b5aa2df8a31162489f645f742f824'
+X# $FreeBSD$
+X
+XPORTNAME=	ixl_unlock
+XPORTVERSION=	1
+XCATEGORIES=	net
+X
+XMAINTAINER=	olivier@FreeBSD.org
+XCOMMENT=	Disable SFP Module Qualification on Intel XL710 network cards
+X
+XLICENSE=	BSD2CLAUSE
+X
+XUSE_GITHUB=	yes
+XGH_ACCOUNT=	bu7cher
+XGH_TAGNAME=	8e0c9a6
+X
+XPLIST_FILES=	sbin/ixl_unlock
+X
+Xdo-install:
+X	${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${PREFIX}/sbin/
+X
+X.include <bsd.port.mk>
+574b5aa2df8a31162489f645f742f824
+echo x - net/ixl_unlock/distinfo
+sed 's/^X//' >net/ixl_unlock/distinfo << '2fb1fa2274a6dc82e7116b2f85aa9437'
+XTIMESTAMP = 1517929893
+XSHA256 (bu7cher-ixl_unlock-1-8e0c9a6_GH0.tar.gz) = e44102d8b487df1eb413c9bee04139f1c51eabd362f71548b01caa96610bfd1a
+XSIZE (bu7cher-ixl_unlock-1-8e0c9a6_GH0.tar.gz) = 3583
+2fb1fa2274a6dc82e7116b2f85aa9437
+exit
+
