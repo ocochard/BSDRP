@@ -38,6 +38,7 @@ CONF_INSTALL='
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options or man src.conf for details
 # WITHOUT_FORTH= mandatory for the boot-loader
+# WITHOUT_KERBEROS= prevents to build ftp/curl
 CONF_WORLD='
 WITHOUT_ACCT=
 WITHOUT_AMD=
@@ -76,8 +77,6 @@ WITHOUT_INFO=
 WITHOUT_IPX=
 WITHOUT_IPX_SUPPORT=
 WITHOUT_ISCSI=
-WITHOUT_KERBEROS=
-WITHOUT_KERBEROS_SUPPORT=
 WITHOUT_LIB32=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
@@ -355,6 +354,11 @@ add_port "ports-mgmt/pkg"
 
 ## Add your custom port list here (not before the ports/mgmt/pkg!) ##
 
+# TO DO: Need to sort them by build dependencies
+
+# Allow fetching from SSL site
+add_port "security/ca_root_nss"
+
 # Then we need to install net-snmp without perl modules
 # net-snmp support is not very good for FreeBSD, disable it
 #add_port "net-mgmt/net-snmp" "-DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"
@@ -363,12 +367,28 @@ add_port "ports-mgmt/pkg"
 add_port "net-mgmt/bsnmp-regex"
 add_port "net-mgmt/bsnmp-ucd"
 
-# FRRouting: routing daemon
+# Python (install this port soon)
 add_port "print/indexinfo"
+add_port "devel/libffi"
 add_port "devel/readline"
+add_port "lang/python27"
+add_port "lang/python2"
+add_port "lang/python"
+add_port "devel/py-setuptools"
+
+# RPKI RTR client library
+# libssh build needs cmake and perl
+add_port "archivers/lzo2"
+add_port "archivers/liblz4"
+add_port "net/py-ipaddress"
+add_port "security/libssh"
+add_port "net-mgmt/rtrlib"
+
+# FRRouting: routing daemon
 add_port "devel/json-c"
 add_port "net/frr" "WITH=\"MULTIPATH\""
-# FRR installs some software that we don't need anymore after install: devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
+# FRR installs some software that we don't need anymore after install:
+# devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Bird: routing daemon
 #add_port "net/bird" "WITH=\"FIREWALL\""
@@ -376,13 +396,6 @@ add_port "net/bird"
 
 # FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
-
-# Python (install this port soon)
-add_port "devel/libffi"
-add_port "lang/python27"
-add_port "lang/python2"
-add_port "lang/python"
-add_port "devel/py-setuptools"
 
 # ipsec-tools: IKEv1
 add_port "net/openldap24-client"
@@ -460,8 +473,6 @@ add_port "net/mlvpn"
 
 # openvpn
 add_port "security/easy-rsa"
-add_port "archivers/lzo2"
-add_port "archivers/liblz4"
 add_port "security/openvpn"
 #  add_port "security/libgpg-error"
 # add_port "security/libgcrypt"
@@ -476,7 +487,6 @@ add_port "benchmarks/iperf3"
 #add_port "net-mgmt/lldpd" "WITHOUT=\"BASH JSON PROPRIETARY SNMP XML\""
 
 # ExaBGP: having fun with BGP
-add_port "net/py-ipaddress"
 add_port "net/exabgp"
 
 #add_port "net/openbfdd"
@@ -484,9 +494,6 @@ add_port "net/exabgp"
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 #add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
 #add_port "emulators/virtualbox-ose-additions/" "-DWITHOUT_X11 -DWITHOUT_HAL"
-
-# Allow fetching from SSL site
-add_port "security/ca_root_nss"
 
 # Permit BIOS upgrade
 #add_port "sysutils/dmidecode"
@@ -526,18 +533,82 @@ customize_cmd add_quagga-bgp-netgen
 cleanup_ports () {
 	# When port are build, they install build dependency that are not usefull for running the port
 	# The list of build-only package to be delete can be found like this:
-	# Fresh generate a BSDRP image, and copy packages.info to packages.info.first
-	# Restart a BSDRP image build with the "-b" option
-	# diff packages.info.first packages.info
-	set +e
-		CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* bison* cmake* curl* expat-* m4* gcc-* gawk* gettext* gmake* jsoncpp-* libtool* perl* help2man* libiconv* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf* py27-Babel-* py27-Jinja2-* py27-MarkupSafe-* py27-alabaster-* py27-docutils-* py27-pygments-* py27-pystemmer-* py27-pytz-* py27-six-* py27-snowballstemmer-* py27-sphinx-* py27-sphinx_rtd_theme-*'
+	# 1. Comment the clean-up line
+	# 2. Generate a BSDRP image with -c option (remove all previous obj tree)
+	# 3. Copy generated packages.info as packages.info.full
+	# 4. Restart a BSDRP image build with the "-b" option
+	# 5. diff packages.info.full packages.info
+	BUILD_DEP='
+autoconf
+autoconf-wrapper
+automake
+automake-wrapper
+binutils
+bison
+cmake
+curl
+expat
+gcc
+gawk
+gettext
+gmake
+help2man
+jsoncpp
+libarchive
+libiconv
+libnghttp2
+libsigsegv
+libtool
+libuv
+m4
+mpfr
+mpc
+ninja
+p5-gettext
+perl5
+pkgconf
+py27-Babel
+py27-Jinja2
+py27-MarkupSafe
+py27-alabaster
+py27-asn1crypto
+py27-certifi
+py27-cffi
+py27-chardet
+py27-cryptography
+py27-docutils
+py27-enum34
+py27-idna
+py27-imagesize
+py27-openssl
+py27-pycparser
+py27-pygments
+py27-pystemmer
+py27-pysocks
+py27-pytest-runner
+py27-pytz
+py27-setuptools_scm
+py27-six
+py27-snowballstemmer
+py27-sphinx
+py27-sphinxcontrib-websupport
+py27-sphinx_rtd_theme
+py27-typing
+py27-urllib3
+rhash
+scons
+texinfo
+'
+		#CR "env ASSUME_ALWAYS_YES=true pkg delete -g ${BUILD_DEP}" || true
+		for pkg in ${BUILD_DEP}; do
+			CR "env ASSUME_ALWAYS_YES=true pkg delete -iy $pkg" || true
+		done
 	# usr/local/lib/perl5 : Dirty hack
 	#	pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
 	#	pkg didn't delete all MAN1 page related to perl too
-	[ -d ${NANO_WORLDDIR}/usr/local/lib/perl5 ] && rm -rf ${NANO_WORLDDIR}/usr/local/lib/perl5
-	[ -f ${NANO_WORLDDIR}/usr/local/man/man1/perl.1 ] && rm ${NANO_WORLDDIR}/usr/local/man/man1/perl*
-	[ -f ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT ] && rm ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT
-	set -e
+	#[ -d ${NANO_WORLDDIR}/usr/local/lib/perl5 ] && rm -rf ${NANO_WORLDDIR}/usr/local/lib/perl5
+	#[ -f ${NANO_WORLDDIR}/usr/local/man/man1/perl.1 ] && rm ${NANO_WORLDDIR}/usr/local/man/man1/perl*
+	#[ -f ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT ] && rm ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT
 }
 
 customize_cmd cleanup_ports

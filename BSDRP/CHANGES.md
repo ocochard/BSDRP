@@ -27,6 +27,7 @@
 * bgpq3: Generate prefix-list for bird and FRR
 * intel-pcm: Tool for displaying PCM counters and energy usage
 * ixl_unlock: Remove SFP restriction on ixl(4) NIC
+* rtrlib: RPKI/Router Protocol client
 
 ## Updated packages
 * bird to 2.0.1
@@ -72,6 +73,7 @@
 * liblz4 1.8.1.2,1: LZ4 compression library, lossless and very fast
 * libpci 3.5.6_1: PCI configuration space I/O made easy
 * libsodium 1.0.15: Library to build higher-level cryptographic tools
+* libssh 0.7.5: Library implementing the SSH1 and SSH2 protocol
 * libucl 0.8.0: Universal configuration library parser
 * lzo2 2.10_1: Portable speedy, lossless data compression library
 * mlvpn 2.3.1_2: Multi-link VPN
@@ -96,6 +98,7 @@
 * python2 2_3: The "meta-port" for version 2 of the Python interpreter
 * python27 2.7.14_1: Interpreted object-oriented programming language
 * readline 7.0.3_1: Library for editing command lines as they are typed
+* rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.3.1: Static multicast routing tool
 * strongswan 5.6.0_1: Open Source IKEv2 IPsec-based VPN solution
 * sudo 1.8.22: Allow others to run commands as root

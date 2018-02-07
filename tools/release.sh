@@ -64,6 +64,7 @@ generate(){
 	# Build of each arch/console
     for arch in ${ARCH_LIST}; do
 		# Initial build (update and rebuild all)
+		# This build can let unclean building dependencies
 		if ! ($FAST_MODE); then
 			( cd ${SRC_DIR}
         	${DRY} ./make.sh -C -p ${PROJECT} -u -f -y -a ${arch}
@@ -73,6 +74,7 @@ generate(){
         	[ -f ${OBJ_BASE_DIR}/${PROJECT}.${arch}/_.mtree ] || die "problem during initial build of ${arch}"
 		fi
 		for console in ${CONSOLE_LIST}; do
+		# Definitive build, only installing pkg generated previously
 			[ "${arch}" = "i386_xenpv" -a "${console}" = "serial" ] && continue
 			[ "${arch}" = "sparc64" -a "${console}" = "serial" ] && continue
 			[ ! -f ${PROJECT}/kernels/${arch} ] && continue
