@@ -43,6 +43,7 @@ RAM="512M"
 DISK_CTRL="virtio-blk"
 VALE=false
 vnic="virtio-net"
+VERBOSE=true
 
 usage() {
 	# $1: Cause of displaying usage
@@ -59,12 +60,13 @@ usage() {
 	echo " -m X         RAM size (default ${RAM})"
 	echo " -n X         Number of VM full meshed (default ${NUMBER_VM})"
 	echo " -p           Patch FreeBSD disk-image for serial output (useless with BSDRP images or FreBSD >= 10.1)"
+	echo " -q           Quiet"
 	echo " -s           Stop all VM"
 	echo " -V           Use vale (netmap) switch in place of bridge+tap"
 	echo " -w dirname   Working directory (default ${WRK_DIR})"
 	echo " This script needs to be executed with superuser privileges"
 	echo ""
-    exit 1
+	exit 1
 }
 
 ### Functions ####
@@ -145,7 +147,7 @@ adapt_image_console () {
 	mount /dev/$MD"s1a" ${WRK_DIR}/mnt  || die "Can't mount the image"
 
 	if ! grep -q 'console "/usr/libexec/getty std.9600"' ${WRK_DIR}/mnt/etc/ttys; then
-		echo "Patching image file with a console bhyve compliant"
+		( ${VERBOSE} ) && echo "Patching image file with a console bhyve compliant"
 		cat >> ${WRK_DIR}/mnt/etc/ttys << EOF
 console "/usr/libexec/getty std.9600"   vt100   on   secure
 EOF
@@ -160,7 +162,7 @@ erase_all_vm() {
 	local VM_LIST=$(find ${WRK_DIR} -name "${VM_NAME}_*")
 	local i=1
 	for i in ${VM_LIST}; do
-		echo "Deleting VM $i..."
+		( ${VERBOSE} ) && echo "Deleting VM $i..."
 		local VM=$(basename $i)
 		destroy_vm ${VM}
 		rm $i || echo "can't erase vm $i"
@@ -274,7 +276,7 @@ create_interface() {
 [ $# -lt 1 ] && ! [ -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ $(id -u) -ne 0 ] && usage "ERROR: not executed as root"
 
-args=$(getopt ac:dhD:ei:l:m:n:sVw: $*)
+args=$(getopt ac:dhD:ei:l:m:n:qsVw: $*)
 
 set -- $args
 for i; do
@@ -328,6 +330,10 @@ for i; do
 		shift
 		shift
 		;;
+	-q)
+		VERBOSE=false
+		shift
+		;;
 	-s)
 		stop_all_vm
 		return 0
@@ -368,15 +374,17 @@ fi
 # Clean-up previous interfaces if existing
 destroy_all_if
 
-echo "BSD Router Project (http://bsdrp.net) - bhyve full-meshed lab script"
-echo "Setting-up a virtual lab with $NUMBER_VM VM(s):"
-echo "- Working directory: ${WRK_DIR}"
-echo "- Each VM has ${CORE} core(s) and ${RAM} RAM"
-echo "- Emulated NIC: ${vnic}"
-echo -n "- Switch mode: "
-( ${VALE} ) && echo "vale (netmap)" || echo "bridge + tap"
-echo "- $LAN LAN(s) between all VM"
-( ${MESHED} ) && echo "- Full mesh Ethernet links between each VM"
+if ( ${VERBOSE} ); then
+	echo "BSD Router Project (http://bsdrp.net) - bhyve full-meshed lab script"
+	echo "Setting-up a virtual lab with $NUMBER_VM VM(s):"
+	echo "- Working directory: ${WRK_DIR}"
+	echo "- Each VM has ${CORE} core(s) and ${RAM} RAM"
+	echo "- Emulated NIC: ${vnic}"
+	echo -n "- Switch mode: "
+	( ${VALE} ) && echo "vale (netmap)" || echo "bridge + tap"
+	echo "- $LAN LAN(s) between all VM"
+	( ${MESHED} ) && echo "- Full mesh Ethernet links between each VM"
+fi
 
 i=1
 # Enter the main loop for each VM
@@ -389,7 +397,7 @@ while [ $i -le $NUMBER_VM ]; do
 	[ ! -f ${WRK_DIR}/${VM_NAME}_$i -o -n "${FILE}" ] && cp ${VM_TEMPLATE} ${WRK_DIR}/${VM_NAME}_$i
 	# Network_config
 	NIC_NUMBER=0
-    echo "VM $i have the following NIC:"
+    ( ${VERBOSE} ) && echo "VM $i have the following NIC:"
 
 	# Entering the Meshed NIC loop NIC loop
 	# Now generate X (X-1)/2 full meshed link
@@ -410,7 +418,7 @@ while [ $i -le $NUMBER_VM ]; do
 			# Skip if i = j
 			if [ $i -ne $j ]; then
 				[ ${vnic} = "virtio-net" ] && echo -n "- vtnet" || echo -n "- em"
-				echo "${NIC_NUMBER} connected to VM ${j}"
+				( ${VERBOSE} ) && echo "${NIC_NUMBER} connected to VM ${j}"
 				# PCI_SLOT must be between 0 and 7
 				# Need to increase PCI_BUS number if slot is more than 7
 
@@ -461,7 +469,7 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 		[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
 		[ $j -le 9 ] && MAC_J="0$i" || MAC_J="$i"
 		[ ${vnic} = "virtio-net" ] && echo -n "- vtnet" || echo -n "- em"
-		echo "${NIC_NUMBER} connected to LAN number ${j}"
+		( ${VERBOSE} ) && echo "${NIC_NUMBER} connected to LAN number ${j}"
 		# PCI_SLOT must be between 0 and 7
 		# Need to increase PCI_BUS number if slot is more than 7
 		PCI_BUS=$(( NIC_NUMBER / 8 ))
@@ -488,8 +496,10 @@ done # Main loop: while [ $i -le $NUMBER_VM ]
 
 i=1
 # Enter tips main loop for each VM
-echo "For connecting to VM'serial console, you can use:"
-while [ $i -le $NUMBER_VM ]; do
-	echo "- VM ${i} : cu -l /dev/nmdm${i}B"
-	i=$(( i + 1 ))
-done
+if ( ${VERBOSE} ); then
+	echo "For connecting to VM'serial console, you can use:"
+		while [ $i -le $NUMBER_VM ]; do
+		echo "- VM ${i} : cu -l /dev/nmdm${i}B"
+		i=$(( i + 1 ))
+	done
+fi
