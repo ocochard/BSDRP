@@ -1,21 +1,20 @@
 Index: net/bird/Makefile
 ===================================================================
---- net/bird/Makefile	(revision 459887)
+--- net/bird/Makefile	(revision 461265)
 +++ net/bird/Makefile	(working copy)
 @@ -2,20 +2,16 @@
  # $FreeBSD$
  
  PORTNAME=	bird
 -PORTVERSION=	1.6.3
--PORTREVISION=	3
+-PORTREVISION=	4
 +PORTVERSION=	2.0.1
  CATEGORIES=	net
  MASTER_SITES=	ftp://bird.network.cz/pub/bird/ \
  		http://bird.mpls.in/distfiles/bird/
  
--MAINTAINER=	melifaro@ipfw.ru
+ MAINTAINER=	olivier@FreeBSD.org
 -COMMENT?=	Dynamic IP routing daemon (${FLAVOR:Uipv4:S/ip/IP/} version)
-+MAINTAINER=	olivier@FreeBSD.org
 +COMMENT?=	Dynamic IP routing daemon
  
  LICENSE=	GPLv2
@@ -42,7 +41,7 @@ Index: net/bird/Makefile
  .include <bsd.port.options.mk>
 Index: net/bird/distinfo
 ===================================================================
---- net/bird/distinfo	(revision 459887)
+--- net/bird/distinfo	(revision 461265)
 +++ net/bird/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1485093974
@@ -53,7 +52,7 @@ Index: net/bird/distinfo
 +SIZE (bird-2.0.1.tar.gz) = 1006261
 Index: net/bird/files/bird6.in
 ===================================================================
---- net/bird/files/bird6.in	(revision 459887)
+--- net/bird/files/bird6.in	(revision 461265)
 +++ net/bird/files/bird6.in	(nonexistent)
 @@ -1,34 +0,0 @@
 -#!/bin/sh
@@ -107,7 +106,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/bird/files/firewall_support.patch
 ===================================================================
---- net/bird/files/firewall_support.patch	(revision 459887)
+--- net/bird/files/firewall_support.patch	(revision 461265)
 +++ net/bird/files/firewall_support.patch	(working copy)
 @@ -25,91 +25,6 @@
   create mode 100644 proto/firewall/firewall.h
@@ -372,6 +371,36 @@ Added: svn:mime-type
 ## -0,0 +1 ##
 +text/plain
 \ No newline at end of property
+Index: net/bird/files/patch-filter-filter.c
+===================================================================
+--- net/bird/files/patch-filter-filter.c	(revision 461265)
++++ net/bird/files/patch-filter-filter.c	(nonexistent)
+@@ -1,10 +0,0 @@
+---- filter/filter.c.orig	2018-02-07 16:42:34.914441000 +0100
+-+++ filter/filter.c	2018-02-07 16:43:07.274018000 +0100
+-@@ -1559,6 +1559,7 @@
+-   case P('<','='): TWOARGS; break;
+- 
+-   case '!': ONEARG; break;
+-+  case P('!', '~'):
+-   case '~': TWOARGS; break;
+-   case P('d','e'): ONEARG; break;
+- 
+
+Property changes on: net/bird/files/patch-filter-filter.c
+___________________________________________________________________
+Deleted: fbsd:nokeywords
+## -1 +0,0 ##
+-yes
+\ No newline at end of property
+Deleted: svn:eol-style
+## -1 +0,0 ##
+-native
+\ No newline at end of property
+Deleted: svn:mime-type
+## -1 +0,0 ##
+-text/plain
+\ No newline at end of property
 Index: net/bird/files/patch-fix-merge-paths
 ===================================================================
 --- net/bird/files/patch-fix-merge-paths	(nonexistent)
@@ -453,7 +482,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/bird/files/patch-sysdep-bsd-setkey.h
 ===================================================================
---- net/bird/files/patch-sysdep-bsd-setkey.h	(revision 459887)
+--- net/bird/files/patch-sysdep-bsd-setkey.h	(revision 461265)
 +++ net/bird/files/patch-sysdep-bsd-setkey.h	(nonexistent)
 @@ -1,19 +0,0 @@
 ---- sysdep/bsd/setkey.h	2017-05-15 14:04:47.215628000 +0300
@@ -492,7 +521,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/bird/files/patch-sysdep-bsd-sysio.h
 ===================================================================
---- net/bird/files/patch-sysdep-bsd-sysio.h	(revision 459887)
+--- net/bird/files/patch-sysdep-bsd-sysio.h	(revision 461265)
 +++ net/bird/files/patch-sysdep-bsd-sysio.h	(nonexistent)
 @@ -1,23 +0,0 @@
 -diff --git sysdep/bsd/sysio.h sysdep/bsd/sysio.h
@@ -574,7 +603,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/bird/files/patch-tools-Makefile.in
 ===================================================================
---- net/bird/files/patch-tools-Makefile.in	(revision 459887)
+--- net/bird/files/patch-tools-Makefile.in	(revision 461265)
 +++ net/bird/files/patch-tools-Makefile.in	(nonexistent)
 @@ -1,15 +0,0 @@
 ---- tools/Makefile.in.orig	2016-04-29 09:13:23 UTC
@@ -609,7 +638,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/bird/files/patch-tools-Rules.in
 ===================================================================
---- net/bird/files/patch-tools-Rules.in	(revision 459887)
+--- net/bird/files/patch-tools-Rules.in	(revision 461265)
 +++ net/bird/files/patch-tools-Rules.in	(nonexistent)
 @@ -1,14 +0,0 @@
 ---- tools/Rules.in.orig	2016-04-29 09:13:23 UTC
@@ -643,7 +672,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/bird/pkg-plist
 ===================================================================
---- net/bird/pkg-plist	(revision 459887)
+--- net/bird/pkg-plist	(revision 461265)
 +++ net/bird/pkg-plist	(working copy)
 @@ -1,4 +1,4 @@
 -@sample etc/bird%%VER%%.conf.example etc/bird%%VER%%.conf

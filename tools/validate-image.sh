@@ -13,7 +13,7 @@ die() { echo -n "ERROR: " >&2; echo "$@" >&2; exit 1; }
 run_vm () {
 	echo "stop BSDRP-bhyve lab..."
 	${BSDRP_DIR}/BSDRP-lab-bhyve.sh -s
-	${BSDRP_DIR}/BSDRP-lab-bhyve.sh -i $1
+	${BSDRP_DIR}/BSDRP-lab-bhyve.sh -e -i $1
 }
 
 test_vm () {
@@ -32,7 +32,7 @@ stop_vm () {
 
 [ $# -lt 1 ] && die "Missing directory as argument"
 
-[ -f BSDRP-lab-bhyve.sh ] || die "Can't found BSDRP-lab-bhyve.sh"
+[ -f ${BSDRP_DIR}/BSDRP-lab-bhyve.sh ] || die "Can't found BSDRP-lab-bhyve.sh"
 [ -f /usr/local/bin/expect ] || die "Can't found expect installed"
 
 IMAGES_DIR=$1
@@ -53,7 +53,7 @@ expect {
 EOF
 chmod +x /tmp/wait-for-login
 
-echo "Testing to boot VM until to reach login prompt" 
+echo "Testing to boot VM until to reach login prompt"
 for IMAGE in $(ls -1 ${IMAGES_DIR}/BSDRP-* | egrep 'full.*\.img($|\.xz)'); do
 	run_vm ${IMAGE}
 	test_vm ${IMAGE}

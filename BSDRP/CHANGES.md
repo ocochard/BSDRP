@@ -1,8 +1,7 @@
 # Release 1.81 (not released)
 
 ## TO FIX before releasing
-* mpd5 is crashing at startup (Illegal instruction) (works on -current)
-* inet4 TCP MD5 is broken
+* mpd5 is crashing at startup (Illegal instruction) (works on 11.1 and -head but not on 11-stable)
 
 ## New features
 * Upgrade to bird 2, WARNING: previous configuration needs to be adapted
@@ -38,8 +37,9 @@
 * iperf3 to 3.3
 * isc-dhcp43-server to 4.3.6
 * frr to 3.0.2
-* openvpn to 2.4.4
 * monit to 5.25
+* openvpn to 2.4.4
+* pmacct to 1.6.2
 * strongswan to 5.6.0
 * sudo to 1.8.21
 * tmux to 2.6
@@ -67,7 +67,7 @@
 * isc-dhcp43-server 4.3.6_2: ISC Dynamic Host Configuration Protocol server
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.13: JSON (JavaScript Object Notation) implementation in C
-* libev 4.22,1: Full-featured and high-performance event loop library
+* libev 4.24,1: Full-featured and high-performance event loop library
 * libevent 2.1.8_1: API for executing callback functions on events or timeouts
 * libffi 3.2.1_2: Foreign Function Interface
 * liblz4 1.8.1.2,1: LZ4 compression library, lossless and very fast
@@ -91,9 +91,9 @@
 * pimd 2.3.2: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
 * pkg 1.10.4: Package manager
-* pmacct 1.6.1: Accounting and aggregation tool for IPv4 and IPv6 traffic
+* pmacct 1.6.2: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py27-ipaddress 1.0.19: Port of Python 3.3+ ipaddress module to 2.7
-* py27-setuptools 38.2.5: Python packages installer
+* py27-setuptools 38.5.1: Python packages installer
 * python 2.7_3,2: "meta-port" for the default version of Python interpreter
 * python2 2_3: The "meta-port" for version 2 of the Python interpreter
 * python27 2.7.14_1: Interpreted object-oriented programming language

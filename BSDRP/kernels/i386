@@ -60,7 +60,7 @@ options     INCLUDE_CONFIG_FILE     # Include this file in kernel
 #options	RCTL			# Resource limits
 
 # Debugging support.	Always need this:
-options		KDB		# Enable kernel debugger support.                       
+options		KDB		# Enable kernel debugger support.
 options		KDB_TRACE	# Print a stack trace for a panic.
 
 # To make an SMP kernel, the next two lines are needed
@@ -341,7 +341,7 @@ device		virtio_scsi		# VirtIO SCSI device
 device		virtio_balloon		# VirtIO Memory Balloon device
 
 # HyperV drivers and enhancement support
-device		hyperv			# HyperV drivers 
+device		hyperv			# HyperV drivers
 
 # Xen HVM Guest Optimizations
 # NOTE: XENHVM depends on xenpci.  They must be added or removed together.
