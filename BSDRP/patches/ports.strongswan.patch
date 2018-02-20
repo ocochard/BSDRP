@@ -1,0 +1,24 @@
+Index: security/strongswan/Makefile
+===================================================================
+--- security/strongswan/Makefile	(revision 460818)
++++ security/strongswan/Makefile	(working copy)
+@@ -3,6 +3,7 @@
+ 
+ PORTNAME=	strongswan
+ PORTVERSION=	5.6.0
++PORTREVISION=	1
+ CATEGORIES=	security
+ MASTER_SITES=	http://download.strongswan.org/ \
+ 		http://download2.strongswan.org/
+Index: security/strongswan/files/strongswan.in
+===================================================================
+--- security/strongswan/files/strongswan.in	(revision 460818)
++++ security/strongswan/files/strongswan.in	(working copy)
+@@ -15,6 +15,7 @@
+ extra_commands="reload statusall"
+ 
+ load_rc_config $name
++: ${strongswan_enable="NO"}
+ 
+ start_cmd="strongswan_command start"
+ stop_cmd="strongswan_command stop"
