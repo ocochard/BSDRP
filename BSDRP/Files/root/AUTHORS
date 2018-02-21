@@ -17,11 +17,12 @@ The authors of BSDRP would like to thank the authors of these software for their
 * "show memory" is a bourn shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
 * PC Engines APU led drivers: Larry Baird
 * chelsio-queue-usage: Alexander V. Chernikov (melifaro@FreeBSD.org)
+* bgpq3, license:BSD2CLAUSE, https://github.com/snar/bgpq3
 * bird, license:GPLv2, http://bird.network.cz/
-* bird6, license:GPLv2, http://bird.network.cz/
 * bsnmp-regex, license:BSD3CLAUSE, http://thewalter.net/stef/software/bsnmp-regex/
 * bsnmp-ucd, license:BSD2CLAUSE, http://bsnmp-ucd.googlecode.com/
-* ca_root_nss, license:MPL
+* ca_root_nss, license:MPL20
+* devcpu-data, license:EULA
 * dhcprelya, license:BSD3CLAUSE
 * easy-rsa, license:GPLv2, https://community.openvpn.net/openvpn/wiki/GettingEasyRsa
 * exabgp, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
@@ -30,31 +31,31 @@ The authors of BSDRP would like to thank the authors of these software for their
 * frr, license:GPLv2, https://frrouting.org/
 * fswatch-mon, license:GPLv3, https://github.com/emcrisostomo/fswatch
 * indexinfo, license:BSD2CLAUSE, https://github.com/bapt/indexinfo
+* intel-pcm, license:BSD3CLAUSE, https://github.com/opcm/pcm
 * iperf, license:BSD2CLAUSE, https://sourceforge.net/projects/iperf2/
 * iperf3, license:BSD3CLAUSE, MIT, http://software.es.net/iperf/
 * ipmitool, license:BSD3CLAUSE, https://sourceforge.net/projects/ipmitool/
-* ipsec-tools, http://ipsec-tools.sourceforge.net/
+* ipsec-tools, license:, http://ipsec-tools.sourceforge.net/
 * isc-dhcp43-server, license:ISCL, https://www.isc.org/products/DHCP/
+* ixl_unlock, license:BSD2CLAUSE, https://github.com/bu7cher/ixl_unlock
 * json-c, license:MIT, https://github.com/json-c/json-c/wiki
 * libev, license:BSD2CLAUSE, http://software.schmorp.de/pkg/libev.html
 * libevent, license:BSD3CLAUSE, http://libevent.org/
 * libffi, license:MIT, http://sources.redhat.com/libffi/
-* libgcrypt, license:GPLv2+, LGPL21+, https://www.gnupg.org/
-* libgpg-error, license:GPLv2, LGPL21
 * liblz4, license:BSD2CLAUSE, GPLv2, http://www.lz4.org/
 * libpci, license:GPLv2, http://mj.ucw.cz/sw/pciutils/
 * libsodium, license:ISCL, https://github.com/jedisct1/libsodium
+* libssh, license:LGPL21, http://www.libssh.org/
 * libucl, license:BSD2CLAUSE, https://github.com/vstakhov/libucl
 * lzo2, license:GPLv2, http://www.oberhumer.com/opensource/lzo/
 * mlvpn, license:BSD2CLAUSE, https://zehome.github.io/MLVPN/
 * monit, license:AGPLv3, http://mmonit.com/monit/
-* mpd5, license:, http://www.sourceforge.net/projects/mpd
+* mpd5, license:BSD3CLAUSE, https://sourceforge.net/projects/mpd/
 * mrouted, license:MIT, http://freecode.com/projects/mrouted
 * netmap-fwd, license:BSD2CLAUSE, https://github.com/NetgateUSA/netmap-fwd
 * ntraceroute
 * openldap-client, license:OPENLDAP, http://www.OpenLDAP.org/
 * openvpn, license:GPLv2, http://openvpn.net/index.php/open-source.html
-* openvpn-auth-radius, license:GPLv2, http://www.nongnu.org/radiusplugin/index.html
 * pciids, license:BSD3CLAUSE, GPLv2+, http://pciids.sourceforge.net/
 * pim6-tools, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
 * pim6dd, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
@@ -63,12 +64,18 @@ The authors of BSDRP would like to thank the authors of these software for their
 * pimdd, license:MIT, http://antc.uoregon.edu/PIMDM/pimd-dense.html
 * pkg, license:BSD2CLAUSE, http://wiki.freebsd.org/pkgng
 * pmacct, license:GPLv2, http://www.pmacct.net/
-* py27-setuptools, license:PSFL, https://pypi.python.org/pypi/setuptools
+* py27-ipaddress, license:PSFL, https://pypi.python.org/pypi/ipaddress
+* py27-setuptools, license:MIT, https://pypi.python.org/pypi/setuptools
+* python, license:, http://www.python.org/
+* python2, license:, http://www.python.org/
 * python27, license:PSFL, https://www.python.org/
 * readline, license:GPLv3, https://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
+* rtrlib, license:MIT, http://rtrlib.realmv6.org/
 * smcroute, license:GPLv2+, https://github.com/troglobit/smcroute/
 * strongswan, license:GPLv2, http://www.strongswan.org
 * sudo, license:sudo, http://www.sudo.ws/
 * tayga, license:GPLv2, http://www.litech.org/tayga/
 * tmux, license:ISCL, http://tmux.github.io/
-* ucarp, http://www.ucarp.org/
+* ucarp, license:, http://www.ucarp.org/
+* x86info, license:GPLv2, https://github.com/kernelslacker/x86info
+

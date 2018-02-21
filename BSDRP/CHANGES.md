@@ -34,12 +34,13 @@
 * dhcprelya to 6.1
 * exabgp to 3.4.21
 * iperf to 2.0.10
-* iperf3 to 3.3
+* iperf3 to 3.4
 * isc-dhcp43-server to 4.3.6
 * frr to 3.0.2
 * monit to 5.25
 * openvpn to 2.4.4
 * pmacct to 1.6.2
+* smcroute to 2.4.0
 * strongswan to 5.6.0
 * sudo to 1.8.21
 * tmux to 2.6
@@ -49,22 +50,22 @@
 * bird 2.0.1: Dynamic IP routing daemon
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.35: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.35_2: Root certificate bundle from the Mozilla Project
 * devcpu-data 1.15_1: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * exabgp 3.4.21: BGP engine and route injector
 * flashrom 0.9.9_2: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr 3.0.3_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr 3.0.3: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.11.2: Cross-platform file change monitor
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 201710: Process Count Monitor (PCM) for Intel processors
 * iperf 2.0.10_1: Tool to measure maximum TCP and UDP bandwidth
-* iperf3 3.3: Improved tool to measure TCP and UDP bandwidth
+* iperf3 3.4: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_2: KAME racoon IKE daemon, ipsec-tools version
-* isc-dhcp43-server 4.3.6_2: ISC Dynamic Host Configuration Protocol server
+* isc-dhcp43-server 4.3.6_3: ISC Dynamic Host Configuration Protocol server
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.13: JSON (JavaScript Object Notation) implementation in C
 * libev 4.24,1: Full-featured and high-performance event loop library
@@ -90,7 +91,7 @@
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
 * pimd 2.3.2: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-* pkg 1.10.4: Package manager
+* pkg 1.10.5: Package manager
 * pmacct 1.6.2: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py27-ipaddress 1.0.19: Port of Python 3.3+ ipaddress module to 2.7
 * py27-setuptools 38.5.1: Python packages installer
@@ -99,7 +100,7 @@
 * python27 2.7.14_1: Interpreted object-oriented programming language
 * readline 7.0.3_1: Library for editing command lines as they are typed
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
-* smcroute 2.3.1: Static multicast routing tool
+* smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.6.0_1: Open Source IKEv2 IPsec-based VPN solution
 * sudo 1.8.22: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon

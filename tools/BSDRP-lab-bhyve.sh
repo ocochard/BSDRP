@@ -204,13 +204,32 @@ is_running() {
 	[ -e /dev/vmm/$1 ] && return 0 || return 1
 }
 
+get_free_nmdm () {
+	# Check if /dev/nmdm$1 doesn't exist, and if not use a free one
+	# WARNING: /dev/nmdm are automatically created when direct access to them
+	#          So need to avoid direct test like [ -c /dev/nmdm${1}A ]
+        TMPFILE=$(mktemp /tmp/nmdmlist.XXXXXX) || die "Can not create tmp file"
+	find /dev/ -name 'nmdm*A' > $TMPFILE
+	# $1: VM number
+	local i=$1
+	while grep -q /dev/nmdm${i}A $TMPFILE; do
+		# This /dev/nmdm$1A already exist, need to use another
+		i=$(( i + 1 ))
+	done
+	rm $TMPFILE
+	echo $i
+	
+}
+
 run_vm() {
 	# $1: VM number
-	# Destroy previous if allready exist
+	# Destroy previous if already exist
+
 	# Need an infinite loop: This permit to do a reboot initated from the VM
-	while [ 1 ]; do
+	while [ true ]; do
 		# load a FreeBSD guest inside a bhyve virtual machine
-		eval VM_LOAD_$1=\"bhyveload -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm$1A \${VM_NAME}_$1\"
+		NMDM_ID=$(get_free_nmdm $1)
+		eval VM_LOAD_$1=\"bhyveload -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm\${NMDM_ID}A \${VM_NAME}_$1\"
 		#eval echo DEBUG \${VM_LOAD_$1}
 		eval \${VM_LOAD_$1}
 		# c: Number of guest virtual CPUs
@@ -231,8 +250,11 @@ run_vm() {
 		# PCI 2:0 and next: Network NIC
 		#   Note: It's not possible to have "hole" in PCI assignement
 		VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
-		eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\$1A\"
+		eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\${NMDM_ID}A\"
 		eval VM_DISK_$1=\"-s 1:0,\${DISK_CTRL},\${WRK_DIR}/\${VM_NAME}_$1\"
+
+		# Store VM_$1_VMDM data for displaying it later
+		echo "- VM $1 : cu -l /dev/nmdm${NMDM_ID}B" >> ${TMPCONSOLE}
 
 		# Check bhyve exit code, and if error: exit the infinite loop
 		eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} ${VM_NAME}_$1
@@ -241,7 +263,8 @@ run_vm() {
 		fi
 
 		# Dirty fix for perventing bhyve bug that sometimes need input from console for unpausing
-		echo >> /dev/nmdm$1B
+		# echo >> /dev/nmdm${NMDM_ID}B
+
 	done
 }
 
@@ -387,6 +410,9 @@ if ( ${VERBOSE} ); then
 fi
 
 i=1
+
+TMPCONSOLE=$(mktemp /tmp/console.XXXXXX)
+
 # Enter the main loop for each VM
 while [ $i -le $NUMBER_VM ]; do
 	is_running ${VM_NAME}_$i && die "VM ${VM_NAME}_$i already runing"
@@ -488,7 +514,7 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
         NIC_NUMBER=$(( NIC_NUMBER + 1 ))
         j=$(( j + 1 ))
 	done # while [ $j -le $LAN ]
-
+	
 	# Start VM
 	run_vm $i &
 	i=$(( i + 1 ))
@@ -498,8 +524,11 @@ i=1
 # Enter tips main loop for each VM
 if ( ${VERBOSE} ); then
 	echo "For connecting to VM'serial console, you can use:"
-		while [ $i -le $NUMBER_VM ]; do
-		echo "- VM ${i} : cu -l /dev/nmdm${i}B"
-		i=$(( i + 1 ))
+	# run_vm was started in background
+	# Then need to wait ${TMPCONSOLE} is full
+	while [ $(wc -l < ${TMPCONSOLE}) -ne ${NUMBER_VM} ]; do
+		sleep 1
 	done
+	cat ${TMPCONSOLE}
+	rm ${TMPCONSOLE}
 fi
