@@ -177,17 +177,14 @@ NANO_LABEL=${NANO_NAME}
 # Progress Print level
 PPLEVEL=3
 
-# Add netblast/netrecieve and netmap tools
+# Add netblast/netrecieve tools
 add_netrate () {
-	TOOLS_LIST="cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
+	TOOLS_LIST="cxgbtool crypto ifinfo mctest netrate/netblast netrate/netreceive netrate/netsend"
 	mkdir -p ${NANO_WORLDDIR}/dev
 	mount -t devfs devfs ${NANO_WORLDDIR}/dev
 	mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
 	mkdir -p ${NANO_WORLDDIR}/usr/workdir
 	for TOOL in ${TOOLS_LIST}; do
-		# netmap is not available on sparc64, and disabled on i386
-		[ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ] && continue
-		[ ${NANO_ARCH} = "i386" -a ${TOOL} = "netmap" ] && continue
 		export TOOL
 		CR 'make clean -C /usr/src/tools/tools/${TOOL}'
 		CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
@@ -482,6 +479,9 @@ add_port "security/openvpn"
 #add_port "benchmarks/netpipe"
 add_port "benchmarks/iperf" "WITH=\"IPV6\""
 add_port "benchmarks/iperf3"
+
+# Netmap's pkt-gen
+add_port "net/pkt-gen"
 
 # LLDP daemon
 #add_port "net-mgmt/lldpd" "WITHOUT=\"BASH JSON PROPRIETARY SNMP XML\""

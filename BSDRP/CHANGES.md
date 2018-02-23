@@ -92,6 +92,7 @@
 * pimd 2.3.2: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
 * pkg 1.10.5: Package manager
+* pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.6.2: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py27-ipaddress 1.0.19: Port of Python 3.3+ ipaddress module to 2.7
 * py27-setuptools 38.5.1: Python packages installer
