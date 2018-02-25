@@ -1,6 +1,6 @@
 Index: sys/net/pfvar.h
 ===================================================================
---- sys/net/pfvar.h	(revision 328783)
+--- sys/net/pfvar.h	(revision 329982)
 +++ sys/net/pfvar.h	(working copy)
 @@ -685,6 +685,29 @@
  	u_int8_t	pad[1];
@@ -52,18 +52,18 @@ Index: sys/net/pfvar.h
  struct pf_keyhash {
  	LIST_HEAD(, pf_state_key)	keys;
  	struct mtx			lock;
-@@ -1467,8 +1496,10 @@
- extern u_long		pf_hashmask;
+@@ -1468,8 +1497,10 @@
  extern u_long		pf_srchashmask;
  #define	PF_HASHSIZ	(32768)
+ #define	PF_SRCHASHSIZ	(PF_HASHSIZ/4)
 +VNET_DECLARE(struct pf_udpendpointhash *, pf_udpendpointhash);
  VNET_DECLARE(struct pf_keyhash *, pf_keyhash);
  VNET_DECLARE(struct pf_idhash *, pf_idhash);
-+#define V_pf_udpendpointhash	VNET(pf_udpendpointhash)
++#define V_pf_udpendpointhash   VNET(pf_udpendpointhash)
  #define V_pf_keyhash	VNET(pf_keyhash)
  #define	V_pf_idhash	VNET(pf_idhash)
  VNET_DECLARE(struct pf_srchash *, pf_srchash);
-@@ -1519,6 +1550,8 @@
+@@ -1520,6 +1551,8 @@
  #define	V_pf_state_z		 VNET(pf_state_z)
  VNET_DECLARE(uma_zone_t,	 pf_state_key_z);
  #define	V_pf_state_key_z	 VNET(pf_state_key_z)
@@ -72,7 +72,7 @@ Index: sys/net/pfvar.h
  VNET_DECLARE(uma_zone_t,	 pf_state_scrub_z);
  #define	V_pf_state_scrub_z	 VNET(pf_state_scrub_z)
  
-@@ -1557,6 +1590,14 @@
+@@ -1558,6 +1591,14 @@
  extern struct pf_state		*pf_find_state_byid(uint64_t, uint32_t);
  extern struct pf_state		*pf_find_state_all(struct pf_state_key_cmp *,
  				    u_int, int *);
@@ -87,7 +87,7 @@ Index: sys/net/pfvar.h
  extern struct pf_src_node	*pf_find_src_node(struct pf_addr *,
  				    struct pf_rule *, sa_family_t, int);
  extern void			 pf_unlink_src_node(struct pf_src_node *);
-@@ -1752,7 +1793,8 @@
+@@ -1753,7 +1794,8 @@
  			    int, int, struct pfi_kif *, struct pf_src_node **,
  			    struct pf_state_key **, struct pf_state_key **,
  			    struct pf_addr *, struct pf_addr *,
@@ -99,7 +99,7 @@ Index: sys/net/pfvar.h
  			    struct pf_addr *, u_int16_t, u_int16_t);
 Index: sys/netpfil/pf/pf.c
 ===================================================================
---- sys/netpfil/pf/pf.c	(revision 328783)
+--- sys/netpfil/pf/pf.c	(revision 329982)
 +++ sys/netpfil/pf/pf.c	(working copy)
 @@ -199,6 +199,7 @@
  uma_zone_t		pf_mtag_z;
@@ -153,18 +153,21 @@ Index: sys/netpfil/pf/pf.c
  	struct pf_srchash	*sh;
  	u_int i;
  
-@@ -804,15 +819,20 @@
+@@ -804,6 +819,8 @@
  	V_pf_state_key_z = uma_zcreate("pf state keys",
  	    sizeof(struct pf_state_key), pf_state_key_ctor, NULL, NULL, NULL,
  	    UMA_ALIGN_PTR, 0);
 +	V_pf_udp_mapping_z = uma_zcreate("pf UDP mappings",
-+	    sizeof(struct pf_udp_mapping), NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);
- 	V_pf_keyhash = malloc(pf_hashsize * sizeof(struct pf_keyhash),
- 	    M_PFHASH, M_WAITOK | M_ZERO);
- 	V_pf_idhash = malloc(pf_hashsize * sizeof(struct pf_idhash),
- 	    M_PFHASH, M_WAITOK | M_ZERO);
++		sizeof(struct pf_udp_mapping), NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);
+ 
+ 	V_pf_keyhash = mallocarray(pf_hashsize, sizeof(struct pf_keyhash),
+ 	    M_PFHASH, M_NOWAIT | M_ZERO);
+@@ -823,11 +840,14 @@
+ 		    sizeof(struct pf_idhash), M_PFHASH, M_WAITOK | M_ZERO);
+ 	}
+ 
 +	V_pf_udpendpointhash = malloc(pf_hashsize * sizeof(struct pf_udpendpointhash),
-+	    M_PFHASH, M_WAITOK | M_ZERO);
++		M_PFHASH, M_WAITOK | M_ZERO);
  	pf_hashmask = pf_hashsize - 1;
 -	for (i = 0, kh = V_pf_keyhash, ih = V_pf_idhash; i <= pf_hashmask;
 -	    i++, kh++, ih++) {
@@ -176,7 +179,7 @@ Index: sys/netpfil/pf/pf.c
  	}
  
  	/* Source nodes. */
-@@ -856,21 +876,26 @@
+@@ -881,21 +901,26 @@
  {
  	struct pf_keyhash	*kh;
  	struct pf_idhash	*ih;
@@ -205,7 +208,7 @@ Index: sys/netpfil/pf/pf.c
  
  	for (i = 0, sh = V_pf_srchash; i <= pf_srchashmask; i++, sh++) {
  		KASSERT(LIST_EMPTY(&sh->nodes),
-@@ -887,6 +912,7 @@
+@@ -912,6 +937,7 @@
  	uma_zdestroy(V_pf_sources_z);
  	uma_zdestroy(V_pf_state_z);
  	uma_zdestroy(V_pf_state_key_z);
@@ -213,7 +216,7 @@ Index: sys/netpfil/pf/pf.c
  }
  
  static int
-@@ -1374,6 +1400,114 @@
+@@ -1399,6 +1425,114 @@
  	return (ret);
  }
  
@@ -328,7 +331,7 @@ Index: sys/netpfil/pf/pf.c
  /* END state table stuff */
  
  static void
-@@ -1657,6 +1791,9 @@
+@@ -1682,6 +1816,9 @@
  	 * last reference here, only in pf_release_state(). */
  	(void)refcount_release(&s->refs);
  
@@ -338,7 +341,7 @@ Index: sys/netpfil/pf/pf.c
  	return (pf_release_state(s));
  }
  
-@@ -3143,6 +3280,7 @@
+@@ -3168,6 +3305,7 @@
  	u_int16_t		 bproto_sum = 0, bip_sum = 0;
  	u_int8_t		 icmptype = 0, icmpcode = 0;
  	struct pf_anchor_stackframe	anchor_stack[PF_ANCHOR_STACKSIZE];
@@ -346,7 +349,7 @@ Index: sys/netpfil/pf/pf.c
  
  	PF_RULES_RASSERT();
  
-@@ -3206,7 +3344,7 @@
+@@ -3231,7 +3369,7 @@
  
  	/* check packet for BINAT/NAT/RDR */
  	if ((nr = pf_get_translation(pd, m, off, direction, kif, &nsn, &sk,
@@ -355,7 +358,7 @@ Index: sys/netpfil/pf/pf.c
  		KASSERT(sk != NULL, ("%s: null sk", __func__));
  		KASSERT(nk != NULL, ("%s: null nk", __func__));
  
-@@ -3513,14 +3651,19 @@
+@@ -3538,14 +3676,19 @@
  		int action;
  		action = pf_create_state(r, nr, a, pd, nsn, nk, sk, m, off,
  		    sport, dport, &rewrite, kif, sm, tag, bproto_sum, bip_sum,
@@ -377,7 +380,7 @@ Index: sys/netpfil/pf/pf.c
  	}
  
  	/* copy back packet headers if we performed NAT operations */
-@@ -3545,6 +3688,8 @@
+@@ -3570,6 +3713,8 @@
  		uma_zfree(V_pf_state_key_z, sk);
  	if (nk != NULL)
  		uma_zfree(V_pf_state_key_z, nk);
@@ -386,7 +389,7 @@ Index: sys/netpfil/pf/pf.c
  	return (PF_DROP);
  }
  
-@@ -3553,7 +3698,8 @@
+@@ -3578,7 +3723,8 @@
      struct pf_pdesc *pd, struct pf_src_node *nsn, struct pf_state_key *nk,
      struct pf_state_key *sk, struct mbuf *m, int off, u_int16_t sport,
      u_int16_t dport, int *rewrite, struct pfi_kif *kif, struct pf_state **sm,
@@ -396,7 +399,7 @@ Index: sys/netpfil/pf/pf.c
  {
  	struct pf_state		*s = NULL;
  	struct pf_src_node	*sn = NULL;
-@@ -3759,6 +3905,7 @@
+@@ -3784,6 +3930,7 @@
  		REASON_SET(&reason, PFRES_SYNPROXY);
  		return (PF_SYNPROXY_DROP);
  	}
@@ -406,7 +409,7 @@ Index: sys/netpfil/pf/pf.c
  
 Index: sys/netpfil/pf/pf_lb.c
 ===================================================================
---- sys/netpfil/pf/pf_lb.c	(revision 328783)
+--- sys/netpfil/pf/pf_lb.c	(revision 329982)
 +++ sys/netpfil/pf/pf_lb.c	(working copy)
 @@ -65,7 +65,8 @@
  			    uint16_t, int, struct pf_anchor_stackframe *);
