@@ -34,14 +34,14 @@
 * dhcprelya to 6.1
 * exabgp to 3.4.21
 * iperf to 2.0.10
-* iperf3 to 3.4
+* iperf3 to 3.5
 * isc-dhcp43-server to 4.3.6
 * frr to 3.0.2
 * monit to 5.25
 * openvpn to 2.4.4
 * pmacct to 1.6.2
 * smcroute to 2.4.0
-* strongswan to 5.6.0
+* strongswan to 5.6.2
 * sudo to 1.8.21
 * tmux to 2.6
 
@@ -50,22 +50,23 @@
 * bird 2.0.1: Dynamic IP routing daemon
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.35_2: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.36: Root certificate bundle from the Mozilla Project
+* curl 7.58.0_3: Command line tool and library for transferring data with URLs
 * devcpu-data 1.15_1: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * exabgp 3.4.21: BGP engine and route injector
-* flashrom 0.9.9_2: Utility for reading, writing, verifying, and erasing flash ROM chips
+* flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
 * frr 3.0.3: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.11.2: Cross-platform file change monitor
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 201710: Process Count Monitor (PCM) for Intel processors
 * iperf 2.0.10_1: Tool to measure maximum TCP and UDP bandwidth
-* iperf3 3.4: Improved tool to measure TCP and UDP bandwidth
+* iperf3 3.5: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_2: KAME racoon IKE daemon, ipsec-tools version
-* isc-dhcp43-server 4.3.6_3: ISC Dynamic Host Configuration Protocol server
+* isc-dhcp43-server 4.3.6P1: ISC Dynamic Host Configuration Protocol server
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.13: JSON (JavaScript Object Notation) implementation in C
 * libev 4.24,1: Full-featured and high-performance event loop library
@@ -79,13 +80,13 @@
 * lzo2 2.10_1: Portable speedy, lossless data compression library
 * mlvpn 2.3.1_2: Multi-link VPN
 * monit 5.25.0: Unix system management and proactive monitoring
-* mpd5 5.8_2: Multi-link PPP daemon based on netgraph(4)
+* mpd5 5.8_3: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.45: Open source LDAP client implementation
-* openvpn 2.4.4: Secure IP/Ethernet tunnel daemon
-* pciids 20171206: Database of all known IDs used in PCI devices
+* openvpn 2.4.4_2: Secure IP/Ethernet tunnel daemon
+* pciids 20180219: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
@@ -95,14 +96,14 @@
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.6.2: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py27-ipaddress 1.0.19: Port of Python 3.3+ ipaddress module to 2.7
-* py27-setuptools 38.5.1: Python packages installer
+* py27-setuptools 38.5.2: Python packages installer
 * python 2.7_3,2: "meta-port" for the default version of Python interpreter
 * python2 2_3: The "meta-port" for version 2 of the Python interpreter
 * python27 2.7.14_1: Interpreted object-oriented programming language
 * readline 7.0.3_1: Library for editing command lines as they are typed
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
-* strongswan 5.6.0_1: Open Source IKEv2 IPsec-based VPN solution
+* strongswan 5.6.2_1: Open Source IKEv2 IPsec-based VPN solution
 * sudo 1.8.22: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.6_1: Terminal Multiplexer

@@ -403,6 +403,7 @@ add_port "net/openldap24-client"
 add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # strongswan: IKEv2 and lot's more
+add_port "ftp/curl" "WITHOUT=\"IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
 add_port "security/strongswan" "WITH=\"MEDIATION GCM\" WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
 
 # pmacct: IP accounting tool
@@ -549,7 +550,6 @@ automake-wrapper
 binutils
 bison
 cmake
-curl
 expat
 gcc
 gawk

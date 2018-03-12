@@ -1,9 +1,9 @@
 #!/bin/sh
 #
-# Network drivers/stack tuning tool for BSD Router Project
-# http://bsdrp.net
+# FreeBSD network tuning tool
+# https://bsdrp.net
 #
-# Copyright (c) 2017, The BSDRP Development Team
+# Copyright (c) 2017-2018, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,183 +31,240 @@
 # Strict script
 set -eu
 
-# Global variables
+### Global variables
 HOST=false
 ROUTER=false
+VM=false
+VERSION=""
+VERBOSE=false
+LOADERCFG=/tmp/loader.conf
+SYSCTLCFG=/tmp/sysctl.conf
+RCCONF=/tmp/rc.conf
+IF_LIST=""
+NCORE=0
+
+### Functions
+# name
+# chk_ : check if
+# add_ : add line to file
+
+# A usefull function (from: http://code.google.com/p/sh-die/)
+die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 usage () {
 	# Display usage
-	echo "Usage: $0 option"
-	echo " option can be:"
-	echo " -host: tuning tips for end-host"
-	echo " -router: tuning tips for router"
+	echo "Usage: $0 [-v]"
+	echo " -v: verbose mode"
+	exit 0
 }
 
-sysctl_atleast () {
-    # Check the sysctl parameter is at least configured to the value
-    # $1: sysctl parameter
-    # $2: recommended value
-    if [ `sysctl -n $1` -lt $2 ]; then
-		echo "$1=\"$2\""
+add () {
+	# Add $1 into file $2
+	# Prevent to do it twice
+	grep -q "$1" $2 && return 0
+	echo "$1" >> $2
+	if (${VERBOSE}); then
+		echo "File: $2"
+		echo "$1"
 	fi
+	return 0
 }
 
-sysctl_equal () {
-	# Check the sysctl parameter match (equal) the value
+add_loader () {
+	# Add $1 into LOADERCFG file
+	add "$1" ${LOADERCFG}
+	return 0
+}
+
+add_sysctl () {
+	add "$1" ${SYSCTLCFG}
+	return 0
+}
+
+add_rc () {
+	# Add $1 into ${RCCONF} file
+	add "$1" ${RCCONF}
+	return 0
+}
+
+update_rc () {
+	sysrc -f ${RCCONF} $1
+	#ifconfigcloned_interfaces+=" gif0"
+}
+
+chk_sysctl_lt () {
+	# Check the sysctl parameter is at least configured to the value
 	# $1: sysctl parameter
 	# $2: recommended value
-	if [ `sysctl -n $1` -ne $2 ]; then
-		echo "$1=\"$2\""
-	fi
+	# return 0 if yes, 1 if not
+	[ `sysctl -nq $1` -lt $2 ] && return 0 || return 1
 }
 
-if_have_cap () {
+chk_sysctl_eq () {
+	# Check the sysctl parameter match (equal) the value
+	# $1: sysctl parameter
+	# $2: value
+	# return 0 if yes, 1 if not
+	[ `sysctl -nq $1` -eq $2 ] && return 0 || return 1
+}
+
+chk_if_cap () {
 	# Check if the interface have capabilities and if it's enabled return true (0)
-	# $1: if
+	# $1: interface
 	# $2: capability
-    ifconfig -m $1 | egrep -q "capabilities.*$2" && return 0 || return 1
+	ifconfig -m $1 | egrep -q "capabilities.*$2" && return 0 || return 1
 }
 
-if_is_cap_enabled () {
-	# Check if the interface capability is enabled: return true
+chk_if_cap_enabled () {
+	# Check if the interface capability is enabled
 	# $1: if
 	# $2: capability
+	# return 0 if enabled, 1 is not
 	ifconfig -m $1 | egrep -q "options.*$2" && return 0 || return 1
 }
 
-tune () {
-	# Major function that call the others
-	# RO values need to be put in /boot/loader.conf.local
-	# RW values need to be put in /etc/sysctl.conf
-	echo "#==> Start of /boot/loader.conf.local"
-	echo "#TO DO All these values doesn't works here and need to be put in /etc/sysctl.conf"
-	net_nic
-	($ROUTER) && net_forward
-	($ROUTER) && net_inet
-	($ROUTER) && cpu_ht
-	net_netisr
-	# Autombuf tunning avoid the need fo checking them
-	# net_mbuf
-	echo "#<== End of /boot/loader.conf.local"
-	net_netstat
-	echo "#==> To be added to /etc/rc.conf"
-	#Need to replace this part by a list of modules (ichsmb coretemp aesni watchdog?)
-	if grep -q 'Feature.*AESNI' /var/run/dmesg.boot ; then
-		#CPU support, check if not allready loaded
-		if ! kldstat -n aesni 2>&1 | grep -q aesni; then
-			echo "#CPU has AESNI feature, you should load the modules"
-			echo 'kld_list="cryptodev aesni"'
-		fi
+tune_cpu_ht () {
+	# Check if HyperThreading is disabled (router only)
+	if sysctl kern.sched.topology_spec | grep -q THREAD; then
+		add_loader "# HyperThreading impact badly forwarding performance: Disable it"
+		add_loader "machdep.hyperthreading_allowed=\"0\""
 	fi
-	for NIC in `ifconfig -l "ether"`; do
-		#skip loopback interfaces
-        echo $NIC | egrep -q "lo[[:digit:]]" && continue
-		# Check only interface with vlan configured on them
-		if egrep -q "ifconfig_vlan.*${NIC}" /etc/rc.conf; then
-			if if_have_cap ${NIC} VLAN_HWFILTER; then
-				if ! if_is_cap_enabled ${NIC} VLAN_HWFILTER; then
-					echo "${NIC} configured with vlan and support VLAN_HWFILTER"
-					echo " => add the vlanhwfilter option to ifconfig_${NIC} in /etc/rc.conf"
-				fi
-			fi # if_have_cap
-		fi # rc.conf
-		# Router should not have LRO/TSO4/TSO6 enabled
-		if ($ROUTER); then
-			for CAP in LRO TSO4 TSO6; do
-				if_is_cap_enabled ${NIC} ${CAP} && \
-					echo "A router MUST NOT have ${CAP} enabled on forwarding NIC"
-			done
-		fi
-		# Check for virtualized
-		if (${VM_DETECTED}); then
-			if if_have_cap ${NIC} POLLING; then
-				if ! if_is_cap_enabled ${NIC} POLLING; then
-					# http://lists.freebsd.org/pipermail/freebsd-net/2013-May/035626.html
-					echo "In VM, ${NIC} can have better behavior if POLLING was enabled"
-					echo " => Enable polling in /etc/rc.conf.misc"
-				fi
+	return 0
+}
+
+tune_harvest () {
+	# Tune the harvest mask (router only)
+	if ! chk_sysctl_eq kern.random.harvest.mask 351; then
+		add_rc "# Disable INTERRUPT and ETHERNET from for entropy sources"
+		add_rc "harvest_mask=\"351\""
+	fi
+	return 0
+}
+
+tune_if_tsolro () {
+	# Disable TSO/LRO (router only)
+	# $1: list of interfaces to check
+	if chk_sysctl_eq net.inet.tcp.tso 0; then
+		add_sysctl "# A router/firewall Should not use TSO"
+		add_sysctl "net.inet.tcp.tso=0"
+	fi
+	# Check if TSO or LRO are enabled on each interfaces
+	# For each ethernet interfaces
+	for i in $1; do
+		for CAP in LRO TSO4 TSO6; do
+			if chk_if_cap_enabled $i ${CAP}; then
+				add_rc "# Disable TSO/LRO on interface $i"
+				add_rc "ifconfig_$i=\"-tso4 -tso6 -lro -vlanhwtso\""
 			fi
-			# need disable hardware assisted features (need to found reference about this tip)
-			for CAP in RXCSUM TXCSUM TSO4 TSO6; do
-            	if_is_cap_enabled ${NIC} ${CAP} && \
-					echo "${NIC} have ${CAP} enabled: Disable it in a VM"
-        	done # end for CAP
-		fi
-	done
-
-}
-
-cpu_ht () {
-	# Check if HyperThreading is enabled
-	grep -q "^FreeBSD/SMP.*SMT" /var/run/dmesg.boot && echo "You should disable HyperThreading"
-}
-
-net_nic () {
-	# NIC drivers tuning
-	# em tuning
-	if ifconfig -l "ether" | egrep -q 'em[[:digit:]]'; then
-		# Need to check if there are not 82542 or 82543 (support 256 max)
-		for VALUE in hw.em.txd hw.em.rxd; do
-			sysctl_equal ${VALUE} 2048
 		done
-		# Disabling limit of rx frame
-		#sysctl_atleast hw.em.rx_process_limit 500
-		sysctl_equal hw.em.rx_process_limit -1
-		# Increasing interrupt delay is bad for a router because it add latency
-		# http://www.intel.com/design/network/applnots/ap450.htm
-		if ! ($ROUTER); then
-			for VALUE in hw.em.rx_abs_int_delay hw.em.tx_abs_int_delay; do
-            	sysctl_equal ${VALUE} 1024
-        	done
-			for VALUE in hw.em.rx_int_delay hw.em.tx_int_delay; do
-            	sysctl_equal ${VALUE} 512
-        	done
-		fi
-	fi
-	# igb tuning
-	if ifconfig -l "ether" | egrep -q 'igb[[:digit:]]'; then
-		for VALUE in hw.igb.txd hw.igb.rxd; do
-            sysctl_equal ${VALUE} 2048
-    	done
-		# http://wiki.freebsd.org/NetworkPerformanceTuning
-		sysctl_atleast hw.igb.max_interrupt_rate 32000
-		# Need mbuf be increased if rx_process limit increased?
-		#sysctl_atleast hw.igb.rx_process_limit 500
-		# Disabling limit of rx frame
-		sysctl_equal hw.igb.rx_process_limit -1
-		# Default kern.ipc.nmbclusters is too small for multiple igb card and multicore
-		# Need to add a test [ `sysctl -n hw.ncpu` -gt 1 ] and arch (i386 don't like too much)
-		[ `sysctl -n hw.ncpu` -ge 4 ] && sysctl_atleast kern.ipc.nmbclusters 262144
-    fi
-	# ixgbe tuning
-	if ifconfig -l "ether" | egrep -q 'ixgbe[[:digit:]]'; then
-	# source: README in drivers source
-	#	 When using the ixgbe driver with RSS autoconfigured based on the number of
-  	# cores (the default setting) and that number is larger than 4, increase the
- 	# memory resources allocated for the mbuf pool as follows:
-		# Warning: Where to put this valuedepends if drivers is a module or in kernel
-		if [ `sysctl -n hw.ncpu` -ge 4 ]; then
-			#loader.conf ?
-			sysctl_atleast kern.ipc.nmbclusters 262144
-			#sysctl.conf ?
- 			sysctl_atleast kern.ipc.nmbjumbop 262144
-		fi
-	fi
-	# General
-	# default value of send interface queue length
-	# If em or igb were tunned, need to change this too
-	# http://lists.freebsd.org/pipermail/freebsd-net/2012-July/032712.html
-	sysctl_atleast net.link.ifqmaxlen 10240
+	done
+	return 0
+}
 
-	# cxgbe (Chelsio) tuning
-	if ifconfig -l "ether" | egrep -q 'cxl[[:digit:]]'; then
-		# source: http://bsdrp.net/documentation/examples/forwarding_performance_lab_of_a_hp_proliant_dl360p_gen8_with_10-gigabit_with_10-gigabit_chelsio_t540-cr
-		# If ncpu=8 and drivers is using 8 queue (default), should reduce the NIC queue to 4
-		if [  `sysctl -n hw.ncpu` -eq 8 ]; then
-			[ `sysctl -n dev.cxl.0.nrxq` -eq 8 ] && echo 'echo hw.cxgbe.nrxq10g="4" >> /boot/loader.conf.local'
-			[ `sysctl -n dev.cxl.0.ntxq` -eq 8 ] && echo 'echo hw.cxgbe.ntxq10g="4" >> /boot/loader.conf.local'
+tune_modules () {
+	# Check if usefull modules are loaded
+	if grep -q 'Feature.*AESNI' /var/run/dmesg.boot ; then
+		# CPU support it, check if not already loaded
+		if ! kldstat -n aesni 2>&1 | grep -q aesni; then
+			add_rc "# CPU has AESNI feature, load the module"
+			add_rc "kld_list=\"cryptodev aesni\""
 		fi
 	fi
+}
+
+get_ncores () {
+	# Get number of cores (excluding threads if enabled)
+	# Didn't found how to get number of physical core if HT is enabled using only sysctl
+	# Need to deal with /var/run/dmesg (dirty)
+	SMP=$(grep -e '^FreeBSD/SMP.*x' /var/run/dmesg.boot)
+	if echo ${SMP} | grep -q threads; then
+		PACKAGE=""
+		PACKAGE=$(echo ${SMP} | cut -d ' ' -f 2)
+		CORE=""
+		CORE=$(echo ${SMP} | cut -d ' ' -f 5)
+		[ -z "${PACKAGE}" ] && die "BUG in get_ncores regarding extracting PACKAGE number"
+		[ -z "${CORE}" ] && die "BUG in get_ncores regarding extracting CORE number"
+		echo $(( PACKAGE * CORE ))
+	else
+		# No Hyper threading, easy:
+		sysctl -n hw.ncpu
+	fi
+}
+
+get_if_eth () {
+	# Return list of Ethernet only interfaces, by excluding bridge, tag, lagg, vlan, wlan, etc.
+	# TO DO: complete this list
+	for i in $(ifconfig -l "ether"); do
+		ifconfig $i | grep -q groups || echo $i
+	done
+}
+
+tune_if_em () {
+	# Intel Gigabit
+	if ! chk_sysctl_eq hw.em.rx_process_limit -1; then
+		add_boot "# Remove limiting number of maximum packets to proceed"
+		add_boot "hw.em.rx_process_limit=\"-1\""
+	fi
+	if ! chk_sysctl_eq hw.igb.rx_process_limit -1; then
+		add_boot "# Remove limiting number of maximum packets to proceed"
+		add_boot "hw.igb.rx_process_limit=\"-1\""
+	fi
+	return 0
+}
+
+tune_if_ixgbe () {
+	# intel 10G
+	# RX queue = CORE
+	if ! chk_sysctl_eq hw.em.rx_process_limit -1; then
+		add_boot "# Remove limiting number of maximum packets to proceed"
+		add_boot "hw.em.rx_process_limit=\"-1\""
+	fi
+	# Increase number of rx queue if core>8, but keept power of 2
+	if [ ${NCORE} -ge 16 ]; then
+		RXQ=""
+		RXQ=$(sysctl dev.ixgbe.0 | grep txq_pidx | wc -l)
+		sysctl hw.ix.num_queue
+		[ -z "${RXQ}" ] && die "BUG in tune_if_ixgbe() to extract RXQ"
+		if [ ${RXQ} -lt 16 ]; then
+			add_boot "# ixgbe(4) create 8 RX queues per default, increase this to 16"
+			add_boot  "hw.ixgbe.blabla.rx.queue=\"16\""
+		fi
+	fi
+	# Allow unsupported SFP
+	# hw.ix.unsupported_sfp="1"
+	# hw.ix.allow_unsupported_sfp="1"
+}
+
+tune_if_cxgbe () {
+	# Chelsio 10G
+	# Global Chelsio parameters
+	for i in toe rdma iscsi fcoe; do
+		chk_sysctl_eq hw.cxgbe.${i}caps_allowed 0 || \
+			add_boot "hw.cxgbe.${i}caps_allowed=\"0\""
+	done
+	# Increase number of rx queue if core>8, but keept power of 2
+	if [ ${NCORE} -ge 16 ]; then
+		for i in $(seq 0 $(( $(sysctl dev.cxl. | grep nrxq | wc -l) - 1 )) ); do
+			RXQ=$(sysctl dev.cxl.$i.nrxq)
+			[ -z "${RXQ}" ] && die "BUG in tune_if_cxgbe() to extract RXQ"
+			if [ ${RXQ} -lt 16 ]; then
+				add_boot "# cxgbe(4) create 8 RX queues per default, increase this to 16"
+				add_boot  "dev.cxl.$i.nrxq=\"16\""
+			fi
+		done
+	fi
+}
+
+tune_if () {
+	# NIC drivers tuning
+	IF_LIST=$(get_if_eth)
+	($ROUTER) && tune_if_tsolro "${IF_LIST}"
+	# Need to found another way than interface name
+	# because interface can be renamed
+	sysctl -nq dev.em.0.rx_processing_limit > /dev/null 2>&1 && tune_if_em || true
+	sysctl -nq dev.igb.0.rx_processing_limit > /dev/null 2>&1 && tune_if_em || true
+	sysctl -nq dev.ix.0.rx_processing_limit > /dev/null 2>&1 && tune_if_ixgbe || true
+	sysctl -nq dev.cxl.0.nrxq > /dev/null 2>&1 && tune_if_cxgbe || true
 }
 
 net_netstat () {
@@ -215,30 +272,30 @@ net_netstat () {
 	echo "TODO: netstat"
 }
 
-net_forward () {
-	# http://wiki.freebsd.org/NetworkPerformanceTuning
-	sysctl_equal net.inet.ip.forwarding 1
-	if [ `sysrc -n ipsec_enable` == "YES" ]; then
-		sysctl_equal net.inet.ip.fastforwarding 0
-		echo "IPSec configuration detected"
-		echo "Check if your hardware support one of these crypto accelerator modules:"
-		echo " aesni(4), glxsb(4), hifn(4), ipsec(4), padlock(4), safe(4) or ubsec(4)"
-	fi
-}
-
 net_inet () {
 	# http://wiki.freebsd.org/NetworkPerformanceTuning
+	# default value of send interface queue length
+	# This value should be equal to the total of all interfaces's txd belonging to a lagg
+	# ixgbe uses a default txd of 2048, then let's suppose 4 ixgbe in a lagg: 8192
+	if chk_sysctl_lt net.link.ifqmaxlen 8192; then
+		add_sysctl "# Increasing the default ifqmaxlen, in case of lagg usage"
+		add_sysctl "net.link.ifqmaxlen=\"8192\""
+	fi
 	for VALUE in net.inet.raw.maxdgram net.inet.raw.recvspace; do
-        sysctl_atleast ${VALUE} 16384
+        if ! chk_sysctl_lt ${VALUE} 16384; then
+			add_sysctl "# Increase max datagram size"
+			add_sysctl "${VALUE}=\"16384\""
+		fi
     done
-	for VALUE in net.inet.ip.redirect; do
-        sysctl_equal ${VALUE} 0
-    done
+	if ! chk_sysctl_eq et.inet.ip.redirect 0; then
+		add_sysctl "# Disable generating ICMP redirect"
+		add_sysctl "net.inet.ip.redirect=\"0\""
+	fi
 }
 
 net_netisr () {
 	# http://wiki.freebsd.org/NetworkPerformanceTuning
-	sysctl_atleast net.route.netisr_maxqlen 2048
+	chk_sysctl_lt net.route.netisr_maxqlen 2048
 }
 
 net_mbuf () {
@@ -246,13 +303,11 @@ net_mbuf () {
 	# Need to calculate (regarding RAM size) this value
 	# Does vm.kmem_size should be upgraded too ?
 	# igb loads 8 rings, each of 1024 per NIC
-	sysctl_atleast kern.ipc.nmbclusters 262144
+	chk_sysctl_lt kern.ipc.nmbclusters 262144
 	echo "On the following output, with all your NIC already configured"
 	echo "  check the current and total"
 	netstat -m | grep "mbuf clusters in use"
 }
-
-
 
 timecounter () {
 	# Are the timecounter tuning usefull ?
@@ -266,25 +321,74 @@ timecounter () {
 ## Main function ##
 ###################
 
-if [ $# -ge 1 ]; then
-    case $1 in
-		host)
-			HOST=true
-			;;
-		router)
-            ROUTER=true
-            ;;
-		--)
-			usage
-			exit 0
-			;;
-	esac
-else
+args=$(getopt hv $*)
+set -- $args
+for i; do
+	case "$i" in
+	-h)
 		usage
-		exit 1
-fi
-#system_inventory
+		shift
+		;;
+	-v)
+		VERBOSE=true
+		shift
+		;;
+	--)
+		shift
+		break
+	esac
+done
+
+# Cleanup previous files
+for f in ${LOADERCFG} ${SYSCTLCFG} ${RCCONF}; do
+	echo "# BSD Router Project tuning script result" > $f
+done
+
 # Look for VM environnement
-sysctl -n kern.vm_guest | grep -q -v "none" && VM_DETECTED=true || VM_DETECTED=false
-tune
+sysctl -n kern.vm_guest | grep -q -v "none" && VM=true || VM=false
+# Check if is router/firewall mode
+chk_sysctl_eq net.inet.ip.forwarding 1 && ROUTER=true
+
+NCORE=$(get_ncores)
+
+tune_if
+net_inet
+($ROUTER) && tune_cpu_ht
+($ROUTER) && tune_harvest
+tune_modules
+
+exit 0
+net_netisr
+echo "#<== End of /boot/loader.conf.local"
+net_netstat
+echo "#==> To be added to /etc/rc.conf"
+for NIC in `ifconfig -l "ether"`; do
+	#skip loopback interfaces
+       echo $NIC | egrep -q "lo[[:digit:]]" && continue
+	# Check only interface with vlan configured on them
+	if egrep -q "ifconfig_vlan.*${NIC}" /etc/rc.conf; then
+		if chk_if_cap ${NIC} VLAN_HWFILTER; then
+			if ! chk_if_cap_enabled ${NIC} VLAN_HWFILTER; then
+				echo "${NIC} configured with vlan and support VLAN_HWFILTER"
+				echo " => add the vlanhwfilter option to ifconfig_${NIC} in /etc/rc.conf"
+			fi
+		fi # chk_if_cap
+	fi # rc.conf
+	# Check for virtualized
+	if (${VM}); then
+		if chk_if_cap ${NIC} POLLING; then
+			if ! chk_if_cap_enabled ${NIC} POLLING; then
+				# http://lists.freebsd.org/pipermail/freebsd-net/2013-May/035626.html
+				echo "In VM, ${NIC} can have better behavior if POLLING was enabled"
+				echo " => Enable polling in /etc/rc.conf.misc"
+			fi
+		fi
+		# need disable hardware assisted features (need to found reference about this tip)
+		for CAP in RXCSUM TXCSUM TSO4 TSO6; do
+           	chk_if_cap_enabled ${NIC} ${CAP} && \
+					echo "${NIC} have ${CAP} enabled: Disable it in a VM"
+       	done # end for CAP
+	fi
+done
+
 echo "Done!"
