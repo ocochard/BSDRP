@@ -37,8 +37,8 @@ ROUTER=false
 VM=false
 VERSION=""
 VERBOSE=false
-LOADERCFG=/tmp/loader.conf
-SYSCTLCFG=/tmp/sysctl.conf
+LOADERCONF=/tmp/loader.conf
+SYSCTLCONF=/tmp/sysctl.conf
 RCCONF=/tmp/rc.conf
 IF_LIST=""
 NCORE=0
@@ -61,7 +61,9 @@ usage () {
 add () {
 	# Add $1 into file $2
 	# Prevent to do it twice
-	grep -q "$1" $2 && return 0
+	if [ -f $2 ]; then
+		grep -q "$1" $2 && return 0
+	fi
 	echo "$1" >> $2
 	if (${VERBOSE}); then
 		echo "File: $2"
@@ -71,13 +73,13 @@ add () {
 }
 
 add_loader () {
-	# Add $1 into LOADERCFG file
-	add "$1" ${LOADERCFG}
+	# Add $1 into LOADERCONF file
+	add "$1" ${LOADERCONF}
 	return 0
 }
 
 add_sysctl () {
-	add "$1" ${SYSCTLCFG}
+	add "$1" ${SYSCTLCONF}
 	return 0
 }
 
@@ -97,7 +99,15 @@ chk_sysctl_lt () {
 	# $1: sysctl parameter
 	# $2: recommended value
 	# return 0 if yes, 1 if not
-	[ `sysctl -nq $1` -lt $2 ] && return 0 || return 1
+	value=$(sysctl -nq $1)
+	case ${value} in
+		''|*[!0-9]*)
+			die "BUG in chk_sysctl_lt, non integer: ${value}"
+			;;
+		*)
+			[ ${value} -lt $2 ] && return 0 || return 1
+			;;
+	esac
 }
 
 chk_sysctl_eq () {
@@ -105,7 +115,19 @@ chk_sysctl_eq () {
 	# $1: sysctl parameter
 	# $2: value
 	# return 0 if yes, 1 if not
-	[ `sysctl -nq $1` -eq $2 ] && return 0 || return 1
+	# Some sysctl return more than number, like dev.t5nex.0.iscsicaps
+	#  43<INITIATOR_PDU,TARGET_PDU,T10DIF>
+	value=$(sysctl -nq $1)
+	case ${value} in
+		''|*[!0-9]*)
+			value=$(echo $value | cut -d '<' -f 1)
+			[ ${value} -eq $2 ] && return 0 || return 1
+			;;
+	*)
+			[ ${value} -eq $2 ] && return 0 || return 1
+			;;
+	esac
+	#[ `sysctl -nq $1` -eq $2 ] && return 0 || return 1
 }
 
 chk_if_cap () {
@@ -193,7 +215,6 @@ get_ncores () {
 
 get_if_eth () {
 	# Return list of Ethernet only interfaces, by excluding bridge, tag, lagg, vlan, wlan, etc.
-	# TO DO: complete this list
 	for i in $(ifconfig -l "ether"); do
 		ifconfig $i | grep -q groups || echo $i
 	done
@@ -202,56 +223,57 @@ get_if_eth () {
 tune_if_em () {
 	# Intel Gigabit
 	if ! chk_sysctl_eq hw.em.rx_process_limit -1; then
-		add_boot "# Remove limiting number of maximum packets to proceed"
-		add_boot "hw.em.rx_process_limit=\"-1\""
+		add_loader "# Remove limiting number of maximum packets to proceed"
+		add_loader "hw.em.rx_process_limit=\"-1\""
 	fi
 	if ! chk_sysctl_eq hw.igb.rx_process_limit -1; then
-		add_boot "# Remove limiting number of maximum packets to proceed"
-		add_boot "hw.igb.rx_process_limit=\"-1\""
+		add_loader "# Remove limiting number of maximum packets to proceed"
+		add_loader "hw.igb.rx_process_limit=\"-1\""
 	fi
 	return 0
 }
 
 tune_if_ixgbe () {
 	# intel 10G
-	# RX queue = CORE
 	if ! chk_sysctl_eq hw.em.rx_process_limit -1; then
-		add_boot "# Remove limiting number of maximum packets to proceed"
-		add_boot "hw.em.rx_process_limit=\"-1\""
+		add_loader "# Remove limiting number of maximum packets to proceed"
+		add_loader "hw.ix.rx_process_limit=\"-1\""
 	fi
 	# Increase number of rx queue if core>8, but keept power of 2
 	if [ ${NCORE} -ge 16 ]; then
 		RXQ=""
-		RXQ=$(sysctl dev.ixgbe.0 | grep txq_pidx | wc -l)
-		sysctl hw.ix.num_queue
+		RXQ=$(sysctl -n hw.ix.num_queues)
 		[ -z "${RXQ}" ] && die "BUG in tune_if_ixgbe() to extract RXQ"
 		if [ ${RXQ} -lt 16 ]; then
-			add_boot "# ixgbe(4) create 8 RX queues per default, increase this to 16"
-			add_boot  "hw.ixgbe.blabla.rx.queue=\"16\""
+			add_loader "# ixgbe(4) create 8 RX queues per default if ncore >=8"
+			add_loader "# This system has ncore >=16, so increase RX queues to 16"
+			add_loader  "hw.ix.num_queues\"16\""
 		fi
 	fi
-	# Allow unsupported SFP
-	# hw.ix.unsupported_sfp="1"
-	# hw.ix.allow_unsupported_sfp="1"
+	if ! chk_sysctl_eq hw.ix.unsupported_sfp 1; then
+		add_loader "# Allow to use unsupported SFP"
+		add_loader "hw.ix.unsupported_sfp=\"1\""
+	fi
 }
 
 tune_if_cxgbe () {
 	# Chelsio 10G
-	# Global Chelsio parameters
 	for i in toe rdma iscsi fcoe; do
-		chk_sysctl_eq hw.cxgbe.${i}caps_allowed 0 || \
-			add_boot "hw.cxgbe.${i}caps_allowed=\"0\""
+		if ! chk_sysctl_eq "dev.t5nex.0.${i}caps" 0; then
+			add_loader "# Disable reserving ASIC ressource for ${i} offload"
+			add_loader "hw.cxgbe.${i}caps_allowed=\"0\""
+		fi
 	done
 	# Increase number of rx queue if core>8, but keept power of 2
 	if [ ${NCORE} -ge 16 ]; then
-		for i in $(seq 0 $(( $(sysctl dev.cxl. | grep nrxq | wc -l) - 1 )) ); do
-			RXQ=$(sysctl dev.cxl.$i.nrxq)
-			[ -z "${RXQ}" ] && die "BUG in tune_if_cxgbe() to extract RXQ"
-			if [ ${RXQ} -lt 16 ]; then
-				add_boot "# cxgbe(4) create 8 RX queues per default, increase this to 16"
-				add_boot  "dev.cxl.$i.nrxq=\"16\""
-			fi
-		done
+		RXQ=""
+		RXQ=$(sysctl -n dev.cxl.0.nrxq)
+		[ -z "${RXQ}" ] && die "BUG in tune_if_cxgbe() to extract RXQ"
+		if [ ${RXQ} -lt 16 ]; then
+			add_loader "# cxgbe(4) create 8 RX queues per default, increase this to 16"
+			add_loader "hw.cxgbe.nrxq=\"16\""
+			add_loader "hw.cxgbe.nrxq10g=\"16\""
+		fi
 	fi
 }
 
@@ -267,13 +289,7 @@ tune_if () {
 	sysctl -nq dev.cxl.0.nrxq > /dev/null 2>&1 && tune_if_cxgbe || true
 }
 
-net_netstat () {
-	# Analysing netstat -m output and provide advice regarding the result
-	echo "TODO: netstat"
-}
-
 net_inet () {
-	# http://wiki.freebsd.org/NetworkPerformanceTuning
 	# default value of send interface queue length
 	# This value should be equal to the total of all interfaces's txd belonging to a lagg
 	# ixgbe uses a default txd of 2048, then let's suppose 4 ixgbe in a lagg: 8192
@@ -287,7 +303,7 @@ net_inet () {
 			add_sysctl "${VALUE}=\"16384\""
 		fi
     done
-	if ! chk_sysctl_eq et.inet.ip.redirect 0; then
+	if ! chk_sysctl_eq net.inet.ip.redirect 0; then
 		add_sysctl "# Disable generating ICMP redirect"
 		add_sysctl "net.inet.ip.redirect=\"0\""
 	fi
@@ -295,7 +311,15 @@ net_inet () {
 
 net_netisr () {
 	# http://wiki.freebsd.org/NetworkPerformanceTuning
-	chk_sysctl_lt net.route.netisr_maxqlen 2048
+	if ! chk_sysctl_lt net.route.netisr_maxqlen 2048; then
+		add_sysctl "# route queue length (rtsock using "netstat -Q") (default 256)"
+		add_sysctl "net.route.netisr_maxqlen=\"2028\""
+	fi
+	if ! chk_sysctl_lt net.isr.maxqlimit 430080; then
+		add_sysctl "# Avoid message netisr_register: epair requested queue limit 430080 capped to net.isr.maxqlimit 1024"
+		add_sysctl "#  with jail/vnet usage"
+		add_sysctl "net.isr.maxqlimit=\"430080\""
+	fi
 }
 
 net_mbuf () {
@@ -340,8 +364,8 @@ for i; do
 done
 
 # Cleanup previous files
-for f in ${LOADERCFG} ${SYSCTLCFG} ${RCCONF}; do
-	echo "# BSD Router Project tuning script result" > $f
+for f in ${LOADERCONF} ${SYSCTLCONF} ${RCCONF}; do
+	[ -f $f ] && rm $f
 done
 
 # Look for VM environnement
@@ -352,43 +376,17 @@ chk_sysctl_eq net.inet.ip.forwarding 1 && ROUTER=true
 NCORE=$(get_ncores)
 
 tune_if
-net_inet
+($ROUTER) && net_inet
 ($ROUTER) && tune_cpu_ht
 ($ROUTER) && tune_harvest
+($ROUTER) && net_netisr
 tune_modules
 
-exit 0
-net_netisr
-echo "#<== End of /boot/loader.conf.local"
-net_netstat
-echo "#==> To be added to /etc/rc.conf"
-for NIC in `ifconfig -l "ether"`; do
-	#skip loopback interfaces
-       echo $NIC | egrep -q "lo[[:digit:]]" && continue
-	# Check only interface with vlan configured on them
-	if egrep -q "ifconfig_vlan.*${NIC}" /etc/rc.conf; then
-		if chk_if_cap ${NIC} VLAN_HWFILTER; then
-			if ! chk_if_cap_enabled ${NIC} VLAN_HWFILTER; then
-				echo "${NIC} configured with vlan and support VLAN_HWFILTER"
-				echo " => add the vlanhwfilter option to ifconfig_${NIC} in /etc/rc.conf"
-			fi
-		fi # chk_if_cap
-	fi # rc.conf
-	# Check for virtualized
-	if (${VM}); then
-		if chk_if_cap ${NIC} POLLING; then
-			if ! chk_if_cap_enabled ${NIC} POLLING; then
-				# http://lists.freebsd.org/pipermail/freebsd-net/2013-May/035626.html
-				echo "In VM, ${NIC} can have better behavior if POLLING was enabled"
-				echo " => Enable polling in /etc/rc.conf.misc"
-			fi
-		fi
-		# need disable hardware assisted features (need to found reference about this tip)
-		for CAP in RXCSUM TXCSUM TSO4 TSO6; do
-           	chk_if_cap_enabled ${NIC} ${CAP} && \
-					echo "${NIC} have ${CAP} enabled: Disable it in a VM"
-       	done # end for CAP
+for f in ${LOADERCONF} ${SYSCTLCONF} ${RCCONF}; do
+	if [ -f $f ]; then
+		bf=$(basename $f)
+		echo "======================== Lines to add to $bf =========================="
+		cat $f
 	fi
 done
-
-echo "Done!"
+exit 0
