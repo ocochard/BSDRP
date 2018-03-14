@@ -509,6 +509,7 @@ add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 #add_port "sysutils/intel-nvmupdate"
 #add_port "sysutils/intel-qcu"
 add_port "sysutils/devcpu-data"
+add_port "sysutils/cpupdate" "WITH=\"CPM\""
 
 # processor information (usefull for checking microcode version)
 add_port "sysutils/x86info"

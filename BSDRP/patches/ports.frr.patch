@@ -53,16 +53,14 @@ Index: net/frr/Makefile
  SHELLACCESS_DESC=	Allow users to access shell/telnet/ssh
  SNMP_DESC=		SNMP support
  TCMALLOC_DESC=		Use tcmalloc
-@@ -60,7 +62,8 @@
+@@ -60,6 +62,7 @@
  		--enable-vty-group=frrvty \
  		--sysconfdir=${ETCDIR} \
  		--localstatedir=/var/run/frr \
--		--disable-pimd
-+		--disable-pimd \
-+		--disable-nhrpd
++		--disable-nhrpd \
+ 		--disable-pimd
  
  SHELLACCESS_CONFIGURE_ENABLE=	shell-access
- FPM_CONFIGURE_ENABLE=		fpm
 @@ -67,6 +70,9 @@
  PAM_CONFIGURE_WITH=		libpam
  LDPD_CONFIGURE_ENABLE=		ldpd
@@ -84,6 +82,28 @@ Index: net/frr/distinfo
 +TIMESTAMP = 1520970456
 +SHA256 (FRRouting-frr-frr-4.0_GH0.tar.gz) = a9932ef116106d56b0e17aa569aa56a458acdd50e0d07c042fd5cc725bf742cc
 +SIZE (FRRouting-frr-frr-4.0_GH0.tar.gz) = 3989206
+Index: net/frr/files/frr.in
+===================================================================
+--- net/frr/files/frr.in	(revision 464399)
++++ net/frr/files/frr.in	(working copy)
+@@ -4,7 +4,7 @@
+ #
+ 
+ # PROVIDE: frr
+-# REQUIRE: netif routing 
++# REQUIRE: netif routing
+ # KEYWORD: nojailvnet shutdown
+ 
+ # Add the following line to /etc/rc.conf to enable frr:
+@@ -43,7 +43,7 @@
+ load_rc_config $name
+ : ${frr_enable:="NO"}
+ : ${frr_flags:=""}
+-: ${frr_daemons:="zebra ripd ripngd ospfd ospf6d bgpd isisd"}
++: ${frr_daemons:="zebra ripd ripngd ospfd ospf6d bgpd isisd eigrpd babeld"}
+ : ${frr_vtysh_boot:="NO"}
+ : ${frr_wait_for:=""}
+ : ${frr_wait_seconds:="90"}
 Index: net/frr/files/patch-Makefile.am
 ===================================================================
 --- net/frr/files/patch-Makefile.am	(revision 464399)
@@ -109,6 +129,37 @@ Index: net/frr/files/patch-Makefile.am
 - 	  isisd watchfrr vtysh ospfclient doc m4 pkgsrc redhat tests \
 + include ripd/subdir.am
 + include ripngd/subdir.am
+Index: net/frr/files/patch-configure.ac
+===================================================================
+--- net/frr/files/patch-configure.ac	(nonexistent)
++++ net/frr/files/patch-configure.ac	(working copy)
+@@ -0,0 +1,11 @@
++--- configure.ac.orig	2018-03-14 05:56:44 UTC
+++++ configure.ac
++@@ -292,7 +292,7 @@ AC_ARG_WITH(pkg-git-version,
++ 	[ test "x$withval" != "xno" && with_pkg_git_version="yes" ])
++ AC_ARG_WITH(vtysh_pager,
++ 	AS_HELP_STRING([--with-vtysh-pager=PAGER], [control what pager is compiled in as default]),
++-	VTYSH_PAGER=$withval, VTYSH_PAGER="more")
+++	VTYSH_PAGER=$withval, VTYSH_PAGER="cat")
++ AC_ARG_ENABLE(vtysh,
++   AS_HELP_STRING([--disable-vtysh], [do not build integrated vty shell for FRR]))
++ AC_ARG_ENABLE(doc,
+
+Property changes on: net/frr/files/patch-configure.ac
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
 Index: net/frr/files/patch-vtysh_vtysh.c
 ===================================================================
 --- net/frr/files/patch-vtysh_vtysh.c	(revision 464399)

@@ -1,0 +1,620 @@
+Index: sysutils/cpupdate/Makefile
+===================================================================
+--- sysutils/cpupdate/Makefile	(revision 464399)
++++ sysutils/cpupdate/Makefile	(working copy)
+@@ -3,6 +3,7 @@
+ 
+ PORTNAME=	cpupdate
+ DISTVERSION=	g20180302
++PORTREVISION=	1
+ CATEGORIES=	sysutils
+ 
+ MAINTAINER=	eugen@FreeBSD.org
+@@ -16,13 +17,12 @@
+ GH_PROJECT=	${PORTNAME}
+ GH_TAGNAME=	58bc0ca
+ 
+-PLIST_FILES=	bin/${PORTNAME} man/man8/${PORTNAME}.8.gz
+-
+ CPM_ACCOUNT=	platomav
+ CPM_PROJECT=	CPUMicrocodes
+-CPM_TAGNAME=	18a85ff
++CPM_TAGNAME=	2ece631
+ 
+ OPTIONS_DEFINE=	CPM
++OPTIONS_SUB=	yes
+ CPM_DESC=	Download platomav/CPUMicrocodes collection
+ CPM_GH_ACCOUNT=	${CPM_ACCOUNT}:cpm
+ CPM_GH_PROJECT=	${CPM_PROJECT}:cpm
+@@ -33,5 +33,16 @@
+ do-install:
+ 	${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${PREFIX}/bin
+ 	${INSTALL_MAN} ${WRKSRC}/${PORTNAME}.8 ${STAGEDIR}${MANPREFIX}/man/man8
++	${INSTALL_SCRIPT} ${WRKSRC}/rc.${PORTNAME} \
++		${STAGEDIR}${PREFIX}/etc/rc.d/${PORTNAME}
+ 
++.include <bsd.port.options.mk>
++
++post-install:
++.if ${PORT_OPTIONS:MCPM}
++	${MKDIR} ${STAGEDIR}${PREFIX}/share/${PORTNAME}/CPUMicrocodes
++	(cd ${WRKDIR}/${CPM_PROJECT}-${CPM_TAGNAME} && ${COPYTREE_SHARE} . \
++		${STAGEDIR}${PREFIX}/share/${PORTNAME}/CPUMicrocodes/)
++.endif
++
+ .include <bsd.port.mk>
+Index: sysutils/cpupdate/distinfo
+===================================================================
+--- sysutils/cpupdate/distinfo	(revision 464399)
++++ sysutils/cpupdate/distinfo	(working copy)
+@@ -1,5 +1,5 @@
+-TIMESTAMP = 1519969642
++TIMESTAMP = 1521021025
+ SHA256 (kernschmelze-cpupdate-g20180302-58bc0ca_GH0.tar.gz) = a44ff576290051b68241cb8e5af8874db8dbdb1d728a349d9ba1a174a5fc2483
+ SIZE (kernschmelze-cpupdate-g20180302-58bc0ca_GH0.tar.gz) = 12574
+-SHA256 (platomav-CPUMicrocodes-18a85ff_GH0.tar.gz) = 9ac44fd18a0ea348dcc0ed8056634289ffa89df0a9a17e26438e63971cdb64bd
+-SIZE (platomav-CPUMicrocodes-18a85ff_GH0.tar.gz) = 4568755
++SHA256 (platomav-CPUMicrocodes-2ece631_GH0.tar.gz) = bc45bad50b1c2bf86e0a4810d98d8e84328e84dd506d45774079bc87cfb01e15
++SIZE (platomav-CPUMicrocodes-2ece631_GH0.tar.gz) = 4577042
+Index: sysutils/cpupdate/files/patch-rc.cpupdate
+===================================================================
+--- sysutils/cpupdate/files/patch-rc.cpupdate	(nonexistent)
++++ sysutils/cpupdate/files/patch-rc.cpupdate	(working copy)
+@@ -0,0 +1,31 @@
++--- rc.cpupdate.orig	2018-03-01 22:13:31 UTC
+++++ rc.cpupdate
++@@ -1,14 +1,15 @@
++ #!/bin/sh
++ 
++ # PROVIDE: cpupdate
++-# REQUIRE: 
++-# BEFORE:  
+++# REQUIRE:
+++# BEFORE:
++ # KEYWORD: nojail
++ 
++ . /etc/rc.subr
++ 
++ name=cpupdate
++ rcvar=cpupdate_enable
+++required_modules="cpuctl"
++ 
++ command="/usr/local/sbin/${name}"
++ 
++@@ -22,7 +23,7 @@ load_rc_config $name
++ cpupdate_start()
++ {
++   echo "$cpupdate_msg"
++-  /usr/local/sbin/cpupdate -vv -w -u /usr/local/share/microcodes/intel-ucode
+++  /usr/local/bin/cpupdate -vv -w -u /usr/local/share/cpupdate/CPUMicrocodes/Intel
++ }
++ 
++-run_rc_command "$1"
++\ No newline at end of file
+++run_rc_command "$1"
+
+Property changes on: sysutils/cpupdate/files/patch-rc.cpupdate
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/cpupdate/files/pkg-message.in
+===================================================================
+--- sysutils/cpupdate/files/pkg-message.in	(revision 464399)
++++ sysutils/cpupdate/files/pkg-message.in	(working copy)
+@@ -1,7 +1,7 @@
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ NOTE: The following directory
+ 
+-%%DIR%%
++%%CPM%%%%DATADIR%%
+ 
+ contains platomav/CPUMicrocodes collection
+ if you have just built the port with CPM option enabled.
+Index: sysutils/cpupdate/pkg-plist
+===================================================================
+--- sysutils/cpupdate/pkg-plist	(nonexistent)
++++ sysutils/cpupdate/pkg-plist	(working copy)
+@@ -0,0 +1,478 @@
++bin/cpupdate
++man/man8/cpupdate.8.gz
++etc/rc.d/cpupdate
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00000F00_ver02000008_2007-06-14_C3A923BB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00000F01_ver0000001C_2002-10-31_EA861F76.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00000F10_ver00000003_2002-03-25_90CE0D2A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00000F11_ver0000001A_2002-10-31_4EAF2968.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00000F11_ver0000001E_2002-12-11_EECA361D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00000F11_ver0000001F_2003-02-20_2B623517.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00000F48_ver00000046_2004-07-19_3426F3F8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00000F4A_ver00000047_2004-07-19_5C34F524.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00000F50_ver00000022_2002-10-30_889F1724.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00000F50_ver00000024_2002-12-12_20682F71.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00000F51_ver00000025_2003-01-15_91C026F8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00010F50_ver00000041_2004-02-25_062A069E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00020F10_ver0000004D_2005-04-28_144618B8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00040F01_verC0012102_2005-09-16_F060FE60.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00040F0A_ver00000068_2006-09-20_EB4B0A43.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00040F13_ver0000007A_2008-05-08_06990B02.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00040F14_ver00000062_2006-01-27_25EFFF86.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00040F1B_ver0000006D_2006-09-20_996E09BF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00040F33_ver0000007B_2008-05-14_A576114D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00060F80_ver00000083_2006-09-29_E9470AA3.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu000C0F1B_ver0000006E_2006-09-21_163BFF6F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu000F0F00_ver00000005_2002-06-27_E5C61A69.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu000F0F01_ver00000015_2002-06-27_AF3F1FFC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00100F00_ver01000020_2007-03-26_06C70A4F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00100F20_ver010000CA_2010-03-31_0D0D029E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00100F22_ver010000C9_2010-03-31_4433FF76.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00100F40_ver01000085_2008-05-01_DF95073C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00100F41_ver010000DB_2011-10-24_25EFFD6D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00100F42_ver01000092_2008-10-21_96740942.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00100F43_ver010000C8_2010-03-11_6F580636.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00100F62_ver010000C7_2010-03-11_404A0145.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00100F80_ver010000DA_2011-10-24_4B81FF37.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00100F81_ver010000D9_2011-10-12_6227FC74.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00100FA0_ver010000DC_2011-10-24_710BF12A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00120F00_ver03000002_2010-03-24_9EBE0215.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00200F30_ver02000018_2007-09-21_639A1844.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00200F31_ver02000057_2008-05-02_EF8D0EBA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00200F32_ver02000034_2008-03-07_9E2D0266.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00300F01_ver0300000E_2010-10-04_B16F082A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00300F10_ver03000027_2011-13-09_044B0CEC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00500F00_ver0500000B_2010-06-01_1B3E0B0E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00500F01_ver0500001A_2010-09-08_C4A200BB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00500F10_ver05000029_2013-01-21_BB4608DE.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00500F20_ver05000119_2013-01-18_304BFCC5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00580F00_ver0500000B_2010-06-01_859DDDBC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00580F01_ver0500001A_2010-09-08_EF84CEDB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00580F10_ver05000028_2010-11-24_EB7FD378.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00580F20_ver05000101_2011-04-06_FAB8D46A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00600F00_ver06000017_2010-10-29_AA28FF32.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00600F01_ver0600011F_2011-02-27_9A0F190A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00600F10_ver06000425_2011-04-08_3EC9FCED.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00600F11_ver0600050D_2011-06-27_A811FD5F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00600F12_ver0600063D_2013-03-06_0E64F5CB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00600F20_ver0600084F_2016-01-25_C8460314.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00610F00_ver0600100E_2011-11-02_92EB1C47.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00610F01_ver06001119_2012-07-13_386705AF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00630F00_ver0600301C_2013-08-17_42F80F40.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00630F01_ver06003106_2014-04-18_18B1FA37.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00660F00_ver06006012_2014-10-14_5FF7FE99.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00660F01_ver06006118_2016-02-18_9718EBEF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00670F00_ver06006704_2015-12-10_29DAF409.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00680F00_ver06000017_2010-10-29_FE511F5B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00680F01_ver0600011F_2011-02-27_FFD003ED.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00680F10_ver06000410_2011-03-14_D1EDE11A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00700F00_ver0700002A_2012-12-18_00F61E8F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00700F01_ver0700010F_2014-02-19_EBB9EFA6.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00730F00_ver07030009_2013-12-06_B6FF2374.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00730F01_ver07030105_2014-05-05_1336F004.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00800F00_ver0800002A_2016-10-06_A3C03341.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00800F10_ver0800100C_2017-01-31_72EA2E9B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00800F11_ver08001136_2018-01-18_24878BCA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00800F12_ver08001213_2017-12-05_C1D5503C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00800F82_ver08008204_2018-01-22_B79F4E2F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00810F00_ver08100004_2016-11-20_70D8F43B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/AMD/cpu00810F10_ver08101007_2017-12-12_FACD50F0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00611_plat00_ver00000B27_1996-12-18_PRD_05793E46.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00612_plat00_ver000000C6_1996-12-10_PRD_374569E7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00616_plat00_ver000000C6_1996-12-10_PRD_2D239C7F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00617_plat00_ver000000C6_1996-12-10_PRD_3371797E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00619_plat00_ver000000D2_1998-02-18_PRD_C5C556C1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00630_plat00_ver00000013_1996-08-27_PRD_F316FC3B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00632_plat00_ver00000020_1996-09-03_PRD_EBC16165.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00633_plat00_ver00000036_1998-09-23_PRD_E92FAA0C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00634_plat00_ver00000037_1998-09-23_PRD_02C55597.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00650_plat01_ver00000040_1999-05-25_PRD_B6A8B9B9.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00650_plat02_ver00000041_1999-05-25_PRD_BC120EF5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00650_plat02_ver00000044_1999-05-25_PRD_61F61E79.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00650_plat03_ver00000024_1998-01-16_PRD_B9436264.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00650_plat04_ver00000019_1997-12-12_PRD_657D0D11.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00650_plat08_ver00000045_1999-05-25_PRD_429C2F70.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00650_plat20_ver0000002E_1998-02-11_PRD_2F41BF64.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00650_plat80_ver0000002F_1998-02-11_PRD_AC6D02E6.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00651_plat01_ver00000040_1999-05-25_PRD_F400B4AC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00651_plat02_ver00000041_1999-05-25_PRD_A6218306.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00651_plat08_ver00000042_1999-05-25_PRD_48947659.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00652_plat01_ver0000002A_1999-05-12_PRD_C8B34CC7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00652_plat02_ver0000002C_1999-05-17_PRD_05073130.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00652_plat04_ver0000002B_1999-05-12_PRD_D40D4BAF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00652_plat08_ver0000002D_1999-05-18_PRD_35182BC2.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00653_plat01_ver00000010_1999-06-28_PRD_4B6DFC5E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00653_plat02_ver0000000C_1999-05-18_PRD_810FE1AB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00653_plat04_ver0000000B_1999-05-20_PRD_E3F50F82.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00653_plat08_ver0000000D_1999-05-18_PRD_C28F9258.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00660_plat01_ver0000000A_1999-05-05_PRD_05B795F4.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00665_plat10_ver00000003_1999-05-05_PRD_2B9733F1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu0066A_plat02_ver0000000C_1999-05-05_PRD_1D9D265A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu0066A_plat08_ver0000000D_1999-05-05_PRD_BB94BAE6.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu0066A_plat20_ver0000000B_1999-05-05_PRD_5320EFC2.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu0066D_plat02_ver00000005_1999-03-12_PRD_270B86CF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu0066D_plat08_ver00000006_1999-03-12_PRD_5A11F8B1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu0066D_plat20_ver00000007_1999-05-05_PRD_35BA5E6E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00670_plat01_ver00000006_1998-05-28_PRD_0CE041AD.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00670_plat02_ver00000007_1998-06-02_PRD_494C50B7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00671_plat01_ver00000003_1998-08-11_PRD_F6CF7B0B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00671_plat04_ver00000014_1998-08-11_PRD_83239DD8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00672_plat01_ver00000010_1999-09-22_PRD_0FC53099.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00672_plat04_ver00000038_1999-09-22_PRD_FFD6AA2A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00673_plat01_ver0000000E_1999-09-10_PRD_F64116D1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00673_plat04_ver0000002E_1999-09-10_PRD_A5945ABF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00680_plat01_ver00000014_1999-06-10_PRD_2B6C7F13.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00680_plat04_ver00000017_1999-06-10_PRD_810296F5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00680_plat08_ver00000016_1999-06-10_PRD_E0CF925E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00680_plat20_ver00000015_1999-06-10_PRD_CC55D584.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00681_plat01_ver0000000D_1999-09-21_PRD_31708166.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00681_plat04_ver00000010_1999-09-21_PRD_04387DE5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00681_plat08_ver0000000F_1999-09-21_PRD_73F2CCA2.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00681_plat10_ver00000014_1999-12-09_PRD_C82EFA9B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00681_plat20_ver0000000E_1999-09-21_PRD_02AA9E53.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00683_plat01_ver00000013_2001-02-06_PRD_2F0DA1B0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00683_plat04_ver00000010_2001-02-06_PRD_30BF0A72.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00683_plat08_ver00000008_1999-10-15_PRD_2942E387.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00683_plat10_ver00000014_2001-02-06_PRD_0976FD98.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00683_plat20_ver00000007_1999-10-15_PRD_1C5EFD4B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00686_plat01_ver00000007_2000-05-05_PRD_87AA303F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00686_plat02_ver0000000A_2000-05-04_PRD_F3BB1079.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00686_plat04_ver00000002_2000-05-04_PRD_332C50FC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00686_plat08_ver00000009_2000-05-04_PRD_6ACF6AA0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00686_plat10_ver00000008_2000-05-05_PRD_EA2B7B61.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00686_plat20_ver0000000B_2000-05-04_PRD_C25B0947.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00686_plat80_ver0000000C_2000-05-04_PRD_B8F53B16.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu0068A_plat10_ver00000001_2000-11-02_PRD_80FC9E3B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu0068A_plat20_ver00000004_2000-12-07_PRD_995EC216.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu0068A_plat80_ver00000005_2000-12-07_PRD_B82BBBC1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00690_plat01_ver00000004_2000-02-06_PRD_BE8FFBD9.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00691_plat01_ver00000002_2000-02-07_PRD_E6DA1028.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00691_plat20_ver00000001_2002-05-27_PRD_64CEB1DA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00692_plat10_ver00000003_2000-03-22_PRD_B675019E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00692_plat20_ver00000001_2002-06-20_PRD_C2079575.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00694_plat20_ver00000002_2002-09-26_PRD_6028C834.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00695_plat30_ver00000007_2004-11-09_PRD_F7D045FF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00695_plat80_ver00000047_2004-11-09_PRD_A0324F3B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00696_plat10_ver00000001_2000-07-07_PRD_99C6BF9B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006A0_plat04_ver00000003_2000-01-10_PRD_DFF45617.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006A1_plat04_ver00000001_2000-03-06_PRD_DAC0A4CD.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006A4_plat04_ver00000001_2000-06-16_PRD_144A06E8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006B0_plat08_ver0000001A_2001-01-29_PRD_ABC74DD0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006B0_plat10_ver00000004_2000-11-15_PRD_65611EB6.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006B0_plat20_ver00000019_2001-01-29_PRD_7542A403.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006B1_plat10_ver0000001C_2001-02-15_PRD_6506E1CF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006B1_plat20_ver0000001D_2001-02-20_PRD_6D9B5661.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006B4_plat10_ver00000001_2002-01-10_PRD_58213E6A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006B4_plat20_ver00000002_2002-01-11_PRD_F512EC8F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006D0_plat20_ver00000006_2003-05-22_PRD_97346D74.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006D1_plat20_ver00000009_2003-07-09_PRD_02CD7D21.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006D2_plat20_ver00000010_2003-08-14_PRD_C20B4712.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006D6_plat20_ver00000018_2004-10-17_PRD_B7B66D41.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006D8_plat08_ver00000021_2006-08-31_PRD_DD4078DD.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006D8_plat20_ver00000020_2004-07-22_PRD_2F6D5732.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006E0_plat10_ver00000008_2005-02-15_PRD_9969C6CB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006E0_plat20_ver00000008_2005-02-15_PRD_9969C6BB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006E1_plat10_ver0000000C_2005-04-13_PRD_0470EEA8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006E1_plat20_ver0000000C_2005-04-13_PRD_0470EE98.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006E4_plat10_ver00000026_2005-08-16_PRD_EB21D149.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006E4_plat20_ver00000026_2005-08-16_PRD_EB21D139.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006E8_plat02_ver00000033_2005-09-25_PRD_069686AB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006E8_plat10_ver0000003C_2006-02-08_PRD_DF8AF029.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006E8_plat20_ver00000039_2005-11-15_PRD_00E9D6A3.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006EC_plat10_ver00000055_2006-05-01_PRD_918FFFEF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006EC_plat20_ver00000054_2006-05-01_PRD_7066B518.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006EC_plat40_ver00000056_2006-06-22_PRD_2E9A01E5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006EC_plat80_ver0000005B_2007-02-08_PRD_FC79E8D9.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F0_plat01_ver00000005_2005-08-18_PRD_6D5B2CCA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F0_plat02_ver00000005_2005-08-18_PRD_6D5B2CC9.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F0_plat04_ver00000005_2005-08-18_PRD_6D5B2CC7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F0_plat20_ver00000005_2005-08-18_PRD_6D5B2CAB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F1_plat27_ver00000012_2005-11-29_PRD_A67C6FEC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F2_plat01_ver0000005D_2010-10-02_PRD_9384A573.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F2_plat20_ver0000005C_2010-10-02_PRD_C335A60F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F4_platF5_ver00000028_2006-04-17_PRD_30DD8681.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F5_plat01_ver00000033_2006-05-01_PRD_6A962F22.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F5_plat04_ver00000033_2006-05-01_PRD_6A962F1F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F5_plat08_ver00000039_2006-07-27_PRD_07AD2E21.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F5_plat20_ver00000036_2006-05-23_PRD_97555A99.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F5_plat50_ver00000033_2006-05-01_PRD_6A962ED3.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F5_plat80_ver00000038_2006-07-25_PRD_6333B559.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F6_plat01_ver000000D0_2010-09-30_PRD_B61EC71A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F6_plat04_ver000000D2_2010-10-01_PRD_6618CFFF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F6_plat10_ver0000004A_2006-06-27_PRD_8A944E2B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F6_plat20_ver000000D1_2010-10-01_PRD_C3EFBA8F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F7_plat10_ver0000006A_2010-10-02_PRD_9911AAF2.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F7_plat40_ver0000006B_2010-10-02_PRD_CC4DEED3.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F9_plat01_ver00000082_2006-09-03_PRD_59C9FE00.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F9_plat04_ver00000082_2006-09-03_PRD_59C9FDFD.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F9_plat08_ver00000084_2006-10-12_PRD_6BADD6B5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F9_plat10_ver00000082_2006-09-03_PRD_59C9FDF1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F9_plat40_ver00000084_2006-10-12_PRD_6BADD67D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006F9_plat80_ver00000083_2006-09-28_PRD_85B7E1DF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FA_plat01_ver00000092_2007-03-13_PRD_13ED78C0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FA_plat08_ver00000092_2007-03-13_PRD_13ED78B9.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FA_plat80_ver00000095_2010-10-02_PRD_9F4B38D8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FB_plat01_ver000000C1_2011-10-04_PRD_0EF87396.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FB_plat04_ver000000BC_2010-10-03_PRD_9394765A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FB_plat08_ver000000BB_2010-10-03_PRD_E7FBF398.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FB_plat10_ver000000BA_2010-10-03_PRD_ED247070.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FB_plat20_ver000000BA_2010-10-03_PRD_9777492E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FB_plat40_ver000000BC_2010-10-03_PRD_F1A7A484.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FB_plat80_ver000000BA_2010-10-03_PRD_F953DC67.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FD_plat01_ver000000A4_2010-10-02_PRD_9ACE6116.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FD_plat20_ver000000A4_2010-10-02_PRD_9ACE60F7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FD_plat80_ver000000A4_2010-10-02_PRD_9ACE6097.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu006FD_platA1_ver000000A3_2007-08-13_PRD_89C0CFFE.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F05_plat01_ver0000000B_2000-08-24_PRD_50C99636.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F05_plat02_ver0000000C_2000-08-24_PRD_EDB8177B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F06_plat02_ver00000004_2000-09-11_PRD_680047B7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F07_plat01_ver00000012_2002-07-16_PRD_39E69FF0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F07_plat02_ver00000008_2000-11-15_PRD_B7B473E7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F08_plat02_ver00000008_2000-11-01_PRD_A8F18DDC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F09_plat02_ver00000008_2001-01-04_PRD_7EE4927C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F0A_plat01_ver00000013_2002-07-16_PRD_2A2CC3CB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F0A_plat02_ver00000015_2002-08-21_PRD_63E49A0C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F0A_plat04_ver00000014_2002-07-16_PRD_64731550.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F11_plat02_ver0000000A_2003-07-29_PRD_F72C94EC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F12_plat01_ver0000002D_2003-05-02_PRD_22BA6824.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F12_plat02_ver0000002F_2003-05-02_PRD_44847ACC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F12_plat04_ver0000002E_2003-05-02_PRD_B2548D0A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F13_plat04_ver00000005_2003-05-08_PRD_386C53DA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F20_plat04_ver00000001_2001-04-23_PRD_80719695.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F21_plat02_ver00000002_2001-05-29_PRD_0838C135.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F21_plat04_ver00000001_2001-05-29_PRD_78CDDD37.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F21_plat08_ver00000003_2001-05-29_PRD_2488646C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F22_plat02_ver00000005_2003-07-29_PRD_7190B462.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F23_plat02_ver00000009_2001-07-30_PRD_AD94879E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F23_plat04_ver00000008_2001-07-30_PRD_7483278F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F23_plat08_ver0000000D_2001-08-17_PRD_450D1064.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F24_plat02_ver0000001F_2003-06-05_PRD_1F19B59B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F24_plat04_ver0000001E_2003-06-05_PRD_9BA58D71.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F24_plat08_ver00000020_2003-06-05_PRD_828598C7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F24_plat10_ver00000021_2003-06-10_PRD_83ED02E7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F25_plat01_ver00000029_2004-08-11_PRD_2795BA4B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F25_plat02_ver0000002A_2004-08-11_PRD_AD53035D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F25_plat04_ver0000002B_2004-08-11_PRD_E4DCCE66.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F25_plat10_ver0000002C_2004-08-26_PRD_62D062AB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F26_plat02_ver00000010_2004-08-05_PRD_17CCAB58.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F27_plat02_ver00000038_2003-06-04_PRD_6D330D4A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F27_plat04_ver00000037_2003-06-04_PRD_972CD5FA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F27_plat08_ver00000039_2003-06-04_PRD_823432CA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F29_plat02_ver0000002D_2004-08-11_PRD_76E56915.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F29_plat04_ver0000002E_2004-08-11_PRD_7695D4DC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F29_plat08_ver0000002F_2004-08-11_PRD_FDB52A5D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F30_plat01_ver00000013_2003-08-15_PRD_C3DB4E87.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F30_plat04_ver00000012_2003-08-13_PRD_C683ADC5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F30_plat08_ver0000000E_2003-06-24_PRD_AE517ED6.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F31_plat0D_ver0000000B_2003-10-21_PRD_974050CD.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F31_plat1D_ver00000001_2003-07-25_PRD_12710760.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F32_plat0D_ver0000000A_2004-05-11_PRD_2538EF0A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F33_plat0D_ver0000000C_2005-04-21_PRD_58C41EFD.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F34_plat02_ver00000012_2004-06-30_PRD_E63383F0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F34_plat1D_ver00000017_2005-04-21_PRD_2CBD6146.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F34_plat9D_ver00000008_2004-02-10_PRD_C658E346.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F36_plat02_ver00000007_2004-03-09_PRD_5E05D4BD.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F37_plat01_ver00000003_2003-12-18_PRD_57CE5CBA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F37_plat0D_ver00000002_2003-12-09_PRD_2B57BD9E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F40_plat9D_ver00000006_2004-03-18_PRD_CC8CC6DD.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F41_plat02_ver00000016_2005-04-21_PRD_0A12A70A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F41_platBD_ver00000017_2005-04-22_PRD_326135C1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F42_plat9D_ver00000003_2005-04-21_PRD_7A20982B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F43_plat9D_ver00000005_2005-04-21_PRD_77812C17.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F44_plat9D_ver00000006_2005-04-21_PRD_9F60DB18.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F46_plat5D_ver00000004_2005-04-11_PRD_E0FC575F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F47_plat9D_ver00000003_2005-04-21_PRD_AF2CEF0D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F48_plat01_ver0000000C_2006-05-08_PRD_5B9AFEC7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F48_plat02_ver0000000E_2008-01-15_PRD_0E158E10.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F48_plat5F_ver00000007_2005-06-30_PRD_D0938263.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F49_platBD_ver00000003_2005-04-21_PRD_F85D53B8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F4A_plat5C_ver00000004_2005-12-14_PRD_5E7996D9.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F4A_plat5D_ver00000002_2005-06-10_PRD_DFBC9997.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F60_plat07_ver00000005_2005-01-24_PRD_A42FB999.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F61_plat01_ver00000008_2005-06-10_PRD_FBB38F28.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F61_plat04_ver00000007_2005-06-10_PRD_AB7DD242.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F62_plat01_ver00000005_2005-07-20_PRD_7445C8D2.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F62_plat04_ver0000000F_2005-12-15_PRD_0976D137.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F63_plat01_ver00000005_2005-10-10_PRD_583AC51B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F64_plat01_ver00000002_2005-12-15_PRD_680B0995.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F64_plat34_ver00000004_2005-12-23_PRD_C66DBF02.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F65_plat01_ver00000008_2006-04-26_PRD_5C58F575.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F65_plat04_ver0000000B_2007-05-10_PRD_69B15BBA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F66_plat02_ver0000001B_2006-03-10_PRD_19D845D7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu00F68_plat22_ver00000009_2006-07-14_PRD_0D8BB650.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu01632_plat00_ver00000002_1998-06-10_PRD_6AAE5598.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10650_plat01_ver00000002_2005-09-18_PRD_0168C04F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10650_plat02_ver00000002_2006-05-13_PRD_056DC04D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10650_plat10_ver00000002_2005-09-18_PRD_0168C040.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10650_plat20_ver00000002_2005-09-18_PRD_0168C030.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10660_plat03_ver00000004_2006-06-12_PRD_6CC60901.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10661_plat01_ver00000043_2010-10-04_PRD_4B64BA3A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10661_plat02_ver00000042_2010-10-04_PRD_0E219073.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10661_plat03_ver00000012_2006-09-11_PRD_DFF9A512.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10661_plat04_ver00000045_2010-10-04_PRD_3C6FEEC5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10661_plat08_ver00000035_2007-03-16_PRD_25D21171.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10661_plat80_ver00000044_2010-10-04_PRD_53BAADCC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10670_plat80_ver00000005_2007-02-09_PRD_7E1FBC19.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10671_plat01_ver00000106_2007-03-29_PRD_80731BAC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10671_plat10_ver00000106_2007-03-29_PRD_80731B9D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10671_plat44_ver00000106_2007-03-29_PRD_80731B69.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10671_plat80_ver00000106_2007-03-29_PRD_80731B2D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10674_plat01_ver00000404_2007-06-08_PRD_F9DEC4C0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10674_plat10_ver00000404_2007-06-08_PRD_F9DEC4B1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10674_plat44_ver00000404_2007-06-08_PRD_F9DEC47D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10674_plat80_ver00000405_2007-07-20_PRD_735D9FE0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10676_plat04_ver00000612_2015-08-02_PRD_AEAA6CC1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10676_plat40_ver00000612_2015-08-02_PRD_B6F50E9C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10676_plat44_ver0000060F_2010-09-29_PRD_8FE1A203.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10676_plat54_ver0000060C_2008-01-19_PRD_FBAC0F19.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10676_plat91_ver00000612_2015-08-02_PRD_1750A2A6.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10677_plat01_ver00000701_2007-10-26_PRD_7D1E6483.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu10677_plat10_ver0000070D_2015-08-02_PRD_DAE8586D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu1067A_plat44_ver00000A0E_2015-07-29_PRD_A3107D75.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu1067A_platB1_ver00000A0E_2015-07-29_PRD_59BF808E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106A4_plat03_ver00000013_2015-06-30_PRD_35DDB232.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106A5_plat03_ver0000001B_2015-06-27_PRD_B57A8827.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106C0_plat01_ver00000007_2007-08-24_PRD_923CDFA3.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106C1_plat01_ver00000109_2007-12-03_PRD_349F67A3.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106C2_plat01_ver00000217_2009-04-10_PRD_D987BC76.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106C2_plat04_ver00000218_2009-04-10_PRD_8FB7C1BA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106C2_plat08_ver00000219_2009-04-10_PRD_556338C1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106C9_plat01_ver00000007_2009-02-11_PRD_E1A67544.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106C9_plat04_ver00000007_2009-02-11_PRD_21C6E011.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106C9_plat08_ver00000007_2009-02-11_PRD_62A4AD62.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106C9_plat10_ver00000007_2009-02-13_PRD_C2DA0E36.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106CA_plat01_ver00000107_2009-08-25_PRD_F851A3D9.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106CA_plat04_ver00000107_2009-08-25_PRD_7DEB58B2.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106CA_plat08_ver00000107_2009-08-25_PRD_BE667CA5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106CA_plat10_ver00000107_2009-08-25_PRD_482CAE0E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106CA_plat20_ver00000106_2009-08-25_PRD_9B4B3396.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106D0_plat08_ver00000005_2007-12-04_PRD_B7B34F5C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106D1_plat08_ver0000002A_2015-08-03_PRD_2A0C91EE.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106E4_plat09_ver00000003_2013-07-01_PRD_A8C7E0F3.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu106E5_plat13_ver00000008_2015-06-30_PRD_12107441.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu20652_plat12_ver0000000F_2015-06-30_PRD_80BC1DC1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu20652_plat80_ver00000006_2009-09-15_PRD_B12EF96C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu20655_plat92_ver00000005_2015-06-30_PRD_470D62E6.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu20661_plat01_ver00000104_2009-10-23_PRD_38CB12B9.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu20661_plat02_ver00000105_2011-07-18_PRD_52558795.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206A0_plat12_ver00000029_2009-11-02_PRD_D6930586.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206A1_plat12_ver00000007_2009-12-23_PRD_8F1081F2.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206A2_plat12_ver00000027_2010-05-02_PRD_EB510B0E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206A3_plat12_ver00000009_2010-06-09_PRD_261BDACD.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206A4_plat12_ver00000022_2010-04-14_PRD_8A6F7F91.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206A5_plat12_ver00000007_2010-07-22_PRD_20B7FDE6.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206A6_plat12_ver00000028_2010-09-15_PRD_2B9BECC8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206A7_plat12_ver0000002D_2018-02-07_PRD_1BDB79EA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206C1_plat03_ver00000006_2009-12-22_PRD_45E27C49.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206C2_plat03_ver0000001D_2015-08-04_PRD_F7DC758B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206D5_plat6D_ver00000513_2011-10-13_PRD_BDB805CB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206D6_plat6D_ver0000061C_2018-01-30_PRD_2ED60C71.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206D7_plat6D_ver00000713_2018-01-26_PRD_C3EF7065.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206E6_plat04_ver0000000B_2015-07-24_PRD_176A1E69.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206F0_plat05_ver00000004_2010-06-30_PRD_4BD2CEF5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206F1_plat05_ver00000008_2010-10-13_PRD_00D18792.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu206F2_plat05_ver00000039_2015-07-26_PRD_5C4EB85E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30650_plat08_ver00000009_2012-01-18_PRD_21D95B62.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30651_plat01_ver00000110_2013-10-14_PRD_854EDC90.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30651_plat08_ver0000010D_2013-05-20_PRD_0C8D59A0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30660_plat04_ver00000003_2010-11-03_PRD_5173ABD8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30660_plat08_ver00000003_2010-11-03_PRD_0B1DEE36.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30661_plat01_ver0000010D_2011-12-22_PRD_B4762578.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30661_plat02_ver0000010D_2011-12-22_PRD_D687F85A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30661_plat04_ver0000010F_2015-07-21_PRD_F422CDF9.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30661_plat08_ver0000010F_2015-07-21_PRD_0E2514F3.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30669_plat01_ver0000010D_2013-05-15_PRD_3F0531D2.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30671_plat02_ver00000117_2013-04-10_PRD_2ABFD907.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30672_plat01_ver0000022D_2014-01-14_PRD_72CFE73B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30672_plat02_ver0000022E_2014-04-01_PRD_94CB9F8B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30672_plat0C_ver00000218_2013-07-22_PRD_A02D65A7.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30673_plat01_ver00000325_2014-11-19_PRD_5EDCD570.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30673_plat02_ver00000326_2018-01-10_PRD_90B9591E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30673_plat0C_ver00000326_2018-01-10_PRD_0A5D3660.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30678_plat01_ver00000832_2015-02-09_PRD_875B494A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30678_plat02_ver00000836_2018-01-10_PRD_DB1696C4.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30678_plat0C_ver00000836_2018-01-10_PRD_B221B0E8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu30679_plat0F_ver0000090A_2018-01-10_PRD_252563C5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306A0_plat12_ver00000007_2011-04-07_PRD_5F4A8285.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306A2_plat12_ver0000000C_2011-07-25_PRD_45CEAA5F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306A4_plat12_ver00000007_2011-09-08_PRD_7E23E5AF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306A5_plat12_ver00000009_2011-11-10_PRD_9F575F21.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306A6_plat12_ver00000004_2011-11-14_PRD_1D1150A5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306A8_plat12_ver00000010_2012-02-20_PRD_E44A4EF2.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306A9_plat12_ver0000001F_2018-02-07_PRD_3023E347.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306C3_plat32_ver00000024_2018-01-21_PRD_FCD4700E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306D4_platC0_ver0000002A_2018-01-18_PRD_CC79BBDA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306E0_platED_ver00000008_2012-07-26_PRD_D9675AA0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306E2_platED_ver0000020D_2013-03-21_PRD_5C18F686.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306E3_platED_ver00000308_2013-03-21_PRD_205AE8FA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306E4_platED_ver0000042C_2018-01-25_PRD_4221080D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306E6_platED_ver00000600_2013-06-19_PRD_14788DCE.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306E7_platED_ver00000713_2018-02-16_PRD_B2A3833C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306F1_platEF_ver00000014_2014-01-10_PRD_9F835FBB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306F2_plat6F_ver0000003C_2018-01-19_PRD_20E09DE3.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306F2_plat80_ver00000F07_2014-07-07_PRD_D88AA181.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306F3_plat80_ver0000000D_2016-02-11_PRD_2BB5E8E3.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu306F4_plat80_ver00000011_2018-01-22_PRD_9BB88980.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu40651_plat72_ver00000023_2018-01-18_PRD_0A6E6647.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu40661_plat32_ver00000019_2018-01-21_PRD_B89B9F8D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu40671_plat22_ver0000001D_2018-01-21_PRD_A34C93F0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu50662_plat10_ver00000015_2018-01-22_PRD_5DD3FD7A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu50663_plat10_ver07000012_2018-01-22_PRD_08EBB212.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu50664_plat10_ver0F000011_2018-01-22_PRD_297499EB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406A8_plat01_ver0000081F_2014-08-12_PRD_1EC9E61C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406A9_plat01_ver0000081F_2014-08-12_PRD_1EC9E61B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406C1_plat01_ver0000010B_2014-08-14_PRD_13129396.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406C2_plat01_ver00000221_2015-02-18_PRD_B46209E1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406C3_plat01_ver00000367_2017-12-25_PRD_C22C65F8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406C4_plat01_ver00000410_2018-01-04_PRD_EA01F4E4.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406D0_plat01_ver0000000E_2013-06-12_PRD_DD4E4ECB.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406D8_plat01_ver0000012A_2018-01-04_PRD_7CACB989.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406E1_plat80_ver00000020_2014-11-11_PRD_FE1CC0E2.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406E1_platF2_ver00000016_2014-08-06_PRD_2DFF9E39.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406E2_platC0_ver0000002C_2015-05-21_PRD_D28F2B75.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406E2_platF2_ver0000000A_2014-11-05_PRD_0A13EE5F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406E3_platC0_ver000000C2_2017-11-16_PRD_C6C6F699.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406E8_plat80_ver00000026_2016-04-14_PRD_4BA87933.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406F0_platEF_ver00000014_2015-07-02_PRD_F22A3585.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu406F1_platEF_ver0B00002A_2018-01-19_PRD_06390BF1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu50653_plat97_ver0100013F_2018-01-26_PRD_91976925.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu50654_platB7_ver02000043_2018-01-26_PRD_4840163E.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu50671_plat78_ver000001B6_2018-01-08_PRD_A1921B5B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506A0_plat01_ver00000038_2015-01-12_PRD_F3EDFCB8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506C2_plat01_ver0000000E_2017-06-06_PRD_C7BCD215.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506C8_plat01_ver00000010_2016-03-04_PRD_DE6EBB18.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506C9_plat03_ver0000002E_2017-11-22_PRD_2798C414.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506CA_plat03_ver00000008_2017-11-22_PRD_32F41375.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506D1_plat02_ver00000101_2014-11-20_PRD_BAB05F5F.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506D1_plat04_ver00000102_2015-06-05_PRD_04DB0C29.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506E0_plat22_ver00000018_2014-11-19_PRD_0948424C.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506E1_plat22_ver0000002A_2015-06-02_PRD_F48CBF3D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506E2_plat14_ver0000002E_2015-08-15_PRD_E8F66981.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506E3_plat36_ver000000C2_2017-11-16_PRD_328B43AF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506E8_plat22_ver00000034_2016-07-10_PRD_57D53E7A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu506F1_plat01_ver00000020_2017-11-22_PRD_1B275D2A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu60660_plat80_ver0000000C_2016-08-21_PRD_B3C8D44D.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu60661_plat80_ver0000000E_2017-01-28_PRD_398CC081.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu706A0_plat01_ver00000026_2017-07-12_PRD_E129C7BC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu706A1_plat01_ver00000022_2017-12-26_PRD_CA264967.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu80650_plat08_ver00000018_2018-01-08_PRD_19B5F433.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu806E9_platC0_ver00000084_2018-01-21_PRD_BC332364.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu806EA_platC0_ver00000084_2018-01-21_PRD_701254C0.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu906E9_plat2A_ver00000084_2018-01-21_PRD_A1B7222B.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu906EA_plat22_ver00000084_2018-01-21_PRD_05E7D428.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/Intel/cpu906EB_plat02_ver00000084_2018-01-21_PRD_23C48ABA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/README.md
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006F2_ver00000000_sig[006F2P2E]_2009-01-15_04BB1AF1.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006F3_ver00000000_sig[006F3P15]_2009-12-28_BB8AC9E5.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006F8_ver00000000_sig[006F8P34]_2010-11-16_E3A7BB95.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006FA_ver00000000_sig[06FA003BB]_2011-08-09_9B86F886.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006FA_ver00000000_sig[06FA003B]_2011-08-09_3CDAE4C9.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006FC_ver00000000_sig[06FC0027]_2011-08-09_12351D40.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006FC_ver00000000_sig[06FC0028]_2011-08-09_90F54C44.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006FC_ver00000000_sig[06FC0029]_2011-08-09_B6CDCADC.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006FD_ver00000000_sig[06FD0005]_2011-08-09_F595DFAA.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006FD_ver00000000_sig[06FD0007]_2011-08-09_CB00CFE8.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006FD_ver00000000_sig[06FD0009]_2011-08-09_4C8DA28A.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006FD_ver00000000_sig[06FD000C]_2011-08-09_27360FFF.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006FD_ver00000000_sig[06FD000D]_2011-08-09_5B946A74.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu006FE_ver00000001_sig[BJ_6FE_0205]_2017-01-09_25646399.bin
++%%CPM%%%%DATADIR%%/CPUMicrocodes/VIA/cpu10690_ver00000001_sig[BJ_10690.020]_2017-01-09_A8B24DC2.bin
+
+Property changes on: sysutils/cpupdate/pkg-plist
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property

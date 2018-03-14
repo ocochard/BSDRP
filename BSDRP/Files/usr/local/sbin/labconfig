@@ -862,6 +862,7 @@ router bgp 12
   network 192.168.12.0/24
   redistribute rip
   neighbor 192.168.12.1 soft-reconfiguration inbound
+  neighbor 192.168.12.1 next-hop-self
   no neighbor 2001:db8:12::1 activate
  exit-address-family
  !
@@ -1009,7 +1010,6 @@ echo "VM4 configured"
 
 frr_vm5 () {
 sysrc hostname=router5
-sysrc cloned_interfaces=lo1
 sysrc frr_enable=YES
 cat > /usr/local/etc/frr/zebra.conf <<EOF
 interface em3
@@ -1018,9 +1018,12 @@ interface em3
 interface vtnet3
  ip address 192.168.45.5/24
  ipv6 address 2001:db8:45::5/64
-interface lo1
- ip address 192.168.50.5/24
- ipv6 address 2001:db8:50::5/64
+interface em4
+ ip address 192.168.56.5/24
+ ipv6 address 2001:db8:56::5/64
+interface vtnet4
+ ip address 192.168.56.5/24
+ ipv6 address 2001:db8:56::5/64
 EOF
 cat > /etc/local/frr/isisd.conf <<EOF
 interface em3
@@ -1031,17 +1034,63 @@ interface vtnet3
  ip router isis BSDRP
  ipv6 router isis BSDRP
  isis circuit-type level-2-only
-interface lo1
+interface em4
  ip router isis BSDRP
+ isis passive
  ipv6 router isis BSDRP
+ isis circuit-type level-2-only
+interface vtnet4
+ ip router isis BSDRP
+ isis passive
+ ipv6 router isis BSDRP
+ isis circuit-type level-2-only
 router isis BSDRP
  net 49.0000.0000.0005.00
  metric-style wide
+ redistribute ipv4 babel level-2
+ redistribute ipv6 babel level-2
+EOF
+cat > /usr/local/etc/frr/babeld.conf <<EOF
+router babel
+ network em3
+ network vtnet3
+ network em4
+ network vtnet4
+ redistribute ipv4 isis
+ redistribute ipv6 isis
 EOF
 hostname router5
 service netif restart
 service frr start
 echo "VM5 configured"
+}
+
+frr_vm6 () {
+sysrc hostname=router6
+sysrc cloned_interfaces=lo1
+sysrc frr_enable=YES
+cat > /usr/local/etc/frr/zebra.conf <<EOF
+interface em4
+ ip address 192.168.56.6/24
+ ipv6 address 2001:db8:56::6/64
+interface vtnet4
+ ip address 192.168.56.6/24
+ ipv6 address 2001:db8:56::6/64
+interface lo1
+ ip address 192.168.60.6/24
+ ipv6 address 2001:db8:60::6/64
+EOF
+cat > /usr/local/etc/frr/babeld.conf <<EOF
+router babel
+ network em4
+ network vtnet4
+ redistribute ipv4 connected
+ redistribute ipv6 connected
+EOF
+hostname router6
+service netif restart
+service frr start
+echo "VM6 configured"
 }
 
 vpn_vm1 () {
