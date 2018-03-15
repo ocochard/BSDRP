@@ -191,6 +191,32 @@ Deleted: svn:mime-type
 ## -1 +0,0 ##
 -text/plain
 \ No newline at end of property
+Index: net/frr/pkg-message
+===================================================================
+--- net/frr/pkg-message	(nonexistent)
++++ net/frr/pkg-message	(working copy)
+@@ -0,0 +1,6 @@
++FRR's OSPF daemons tried to allocate big socket buffer.
++To avoid messages like:
++warnings: OSPF: setsockopt_so_sendbuf: fd 6: SO_SNDBUF set to 1048576 (requested 8388608)
++
++You may need to increase kern.ipc.maxsockbuf:
++sysctl kern.ipc.maxsockbuf=16777216
+
+Property changes on: net/frr/pkg-message
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
 Index: net/frr/pkg-plist
 ===================================================================
 --- net/frr/pkg-plist	(revision 464399)
