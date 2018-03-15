@@ -514,7 +514,6 @@ add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 add_port "sysutils/devcpu-data"
 
 # processor information (usefull for checking microcode version)
-add_port "sysutils/x86info"
 add_port "sysutils/intel-pcm"
 
 # NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode

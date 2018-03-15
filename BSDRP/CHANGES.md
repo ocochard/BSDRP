@@ -36,9 +36,9 @@
 * iperf to 2.0.10
 * iperf3 to 3.5
 * isc-dhcp43-server to 4.3.6
-* frr to 3.0.2
+* frr to 4.0
 * monit to 5.25
-* openvpn to 2.4.4
+* openvpn to 2.4.5
 * pmacct to 1.6.2
 * smcroute to 2.4.0
 * strongswan to 5.6.2
@@ -51,14 +51,14 @@
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.36: Root certificate bundle from the Mozilla Project
-* curl 7.58.0_3: Command line tool and library for transferring data with URLs
-* devcpu-data 1.15_1: Intel and AMD CPUs microcode updates
+* curl 7.59.0: Command line tool and library for transferring data with URLs
+* devcpu-data 1.16: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * exabgp 3.4.21: BGP engine and route injector
 * flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr 3.0.3: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr 4.0: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.11.2: Cross-platform file change monitor
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 201710: Process Count Monitor (PCM) for Intel processors
@@ -74,7 +74,7 @@
 * libffi 3.2.1_2: Foreign Function Interface
 * liblz4 1.8.1.2,1: LZ4 compression library, lossless and very fast
 * libpci 3.5.6_1: PCI configuration space I/O made easy
-* libsodium 1.0.15: Library to build higher-level cryptographic tools
+* libsodium 1.0.16: Library to build higher-level cryptographic tools
 * libssh 0.7.5: Library implementing the SSH1 and SSH2 protocol
 * libucl 0.8.0: Universal configuration library parser
 * lzo2 2.10_1: Portable speedy, lossless data compression library
@@ -85,7 +85,7 @@
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.45: Open source LDAP client implementation
-* openvpn 2.4.4_2: Secure IP/Ethernet tunnel daemon
+* openvpn 2.4.5: Secure IP/Ethernet tunnel daemon
 * pciids 20180219: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
@@ -108,7 +108,6 @@
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.6_1: Terminal Multiplexer
 * ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol
-* x86info 1.31.s03: x86 CPU identification and feature display utility
 
 -----------------------------------------------------
 # Release 1.80 (2017-06-30)
