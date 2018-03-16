@@ -4,23 +4,23 @@
 * mpd5 is crashing at startup (Illegal instruction) (works on 11.1 and -head but not on 11-stable)
 
 ## New features
-* Upgrade to bird 2, WARNING: previous configuration needs to be adapted
-    https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
+* Upgrade to bird 2, WARNING: previous configuration needs to be adapted!
+    cf upgrade notes: https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
 * Add Yandex (ae@)'s patches that remove forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores)
 * Disable HyperThreading by default
-* Add qlxgbe (QLogic 8300 series 10 Gigabit) and bnxt (Broadcom NetXtreme-C/NetXtreme-E) drivers
+* Add qlxgbe (QLogic 8300 series 10 Gigabit) and bnxt (Broadcom NetXtreme-C/NetXtreme-E) NIC drivers
 
 ## Bug fixes
 * Images CHS value fixed: An old bug in nanobsd was fixed, now disk image correctly
-  use 63 sectors and 255 heads (in place of 63 sectors and 16 heads)
-* Fix loading problem with mlxen (Mellanox) drivers modules
+  uses 63 sectors and 255 heads (in place of 63 sectors and 16 heads)
+* Fix loading problem with mlxen (Mellanox) drivers modules (missing Linux modules)
 * Fix behavior of ix_affinity and cxgbe_affinity rc script
 * Fix tenant script for generating non-conflicting epair MAC addresses
 * Fix "config save" that didn't correctly delete no more existing directories
 * Fix upgrade script that badly detect already /cfg mounted if jails running
 
 ## Security fixes
-* Intel microcode update regarding Meltdown and Spectre
+* Intel microcode update regarding Meltdown and Spectre (sysutils/devcpu-data, enabled by default)
 
 ## New package
 * bgpq3: Generate prefix-list for bird and FRR

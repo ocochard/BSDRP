@@ -382,6 +382,7 @@ add_port "devel/py-setuptools"
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
 add_port "net/py-ipaddress"
+add_port "ftp/curl" "WITHOUT=\"IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
 add_port "security/libssh"
 add_port "net-mgmt/rtrlib"
 
@@ -403,7 +404,6 @@ add_port "net/openldap24-client"
 add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # strongswan: IKEv2 and lot's more
-add_port "ftp/curl" "WITHOUT=\"IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
 add_port "security/strongswan" "WITH=\"MEDIATION GCM\" WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
 
 # pmacct: IP accounting tool
@@ -509,8 +509,12 @@ add_port "net/exabgp"
   add_port "misc/pciids"
  add_port "devel/libpci"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
+
+# Permit Intel Firmware upgrade
 #add_port "sysutils/intel-nvmupdate"
 #add_port "sysutils/intel-qcu"
+
+# Permit microcode upgrade
 add_port "sysutils/devcpu-data"
 
 # processor information (usefull for checking microcode version)
@@ -833,13 +837,11 @@ usr/sbin/config
 
 # Enable only serial system only
 bsdrp_console_serial () {
-	# Since r266895, console is set as onifconsole
-	# Since r289634, 4 firsts serials console are set as onifconsole
-	#sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
-	#sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	#sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	# Disable some syscons devices: No need for 8 on a router
-	sed -i "" -e '/^ttyv[4-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
+	# Disable local video devices: They should not exist on a serial image
+	#  and preventing to overload console with theses message:
+	#  getty[7]: open /dev/ttyv1: No such file or directory
+	#  init: getty repeating too quickly on port /dev/ttyv1, sleeping 30 secs
+	sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
 
 
 	# Tell loader to use serial console early.

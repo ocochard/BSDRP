@@ -331,7 +331,7 @@ protocol direct {
 protocol rip R4inet4 {
     interface "vtnet2","em2" {
         version 2;
-        password "rippassword";
+        password "rippassword" { algorithm keyed md5; };
         authentication cryptographic;
     };
     ipv4 {
