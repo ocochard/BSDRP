@@ -771,7 +771,6 @@ usr/bin/readelf
 usr/bin/rpcgen
 usr/bin/size
 usr/bin/strings
-usr/bin/strip
 usr/bin/unifdef
 usr/bin/unifdefall
 usr/bin/xstr

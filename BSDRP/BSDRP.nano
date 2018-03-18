@@ -508,6 +508,7 @@ add_port "net/exabgp"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 
 # Permit Intel Firmware upgrade
+# Disabled: oversized!
 #add_port "sysutils/intel-nvmupdate"
 #add_port "sysutils/intel-qcu"
 
@@ -739,7 +740,6 @@ usr/bin/objcopy
 usr/bin/readelf
 usr/bin/size
 usr/bin/strings
-usr/bin/strip
 usr/bin/cc
 usr/bin/gcc
 usr/bin/gcpp
