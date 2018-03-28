@@ -389,7 +389,6 @@ add_port "net/frr" "WITH=\"MULTIPATH\""
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Bird: routing daemon
-#add_port "net/bird" "WITH=\"FIREWALL\""
 add_port "net/bird"
 
 # FreeVRRPd (netgraph dependent)

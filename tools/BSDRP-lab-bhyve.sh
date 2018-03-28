@@ -226,9 +226,16 @@ run_vm() {
 	# Destroy previous if already exist
 
 	# Need an infinite loop: This permit to do a reboot initated from the VM
+	eval VM_FIRSTBOOT_$1=true
 	while [ true ]; do
 		# load a FreeBSD guest inside a bhyve virtual machine
-		NMDM_ID=$(get_free_nmdm $1)
+		# BUT: If it's a reboot, DO NOT ask for a new NMDM_ID!
+		eval "
+		if (\${VM_FIRSTBOOT_$1}); then
+			NMDM_ID=\$(get_free_nmdm \$1)
+			VM_FIRSTBOOT_$1=false
+		fi
+		"
 		eval VM_LOAD_$1=\"bhyveload -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm\${NMDM_ID}A \${VM_NAME}_$1\"
 		#eval echo DEBUG \${VM_LOAD_$1}
 		eval \${VM_LOAD_$1}
@@ -514,7 +521,7 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
         NIC_NUMBER=$(( NIC_NUMBER + 1 ))
         j=$(( j + 1 ))
 	done # while [ $j -le $LAN ]
-	
+
 	# Start VM
 	run_vm $i &
 	i=$(( i + 1 ))

@@ -1,33 +1,45 @@
 Index: net/bird/Makefile
 ===================================================================
---- net/bird/Makefile	(revision 461265)
+--- net/bird/Makefile	(revision 465813)
 +++ net/bird/Makefile	(working copy)
-@@ -2,20 +2,16 @@
+@@ -1,32 +1,56 @@
+-# Created by: Pav Lucistnik <pav@FreeBSD.org>
++# Created by: Alexander V. Chernikov <melifaro@FreeBSD.org>
  # $FreeBSD$
  
  PORTNAME=	bird
--PORTVERSION=	1.6.3
--PORTREVISION=	4
-+PORTVERSION=	2.0.1
+-PORTVERSION=	1.6.4
++DISTVERSION=	2.0.2
  CATEGORIES=	net
- MASTER_SITES=	ftp://bird.network.cz/pub/bird/ \
- 		http://bird.mpls.in/distfiles/bird/
+ MASTER_SITES=	ftp://bird.network.cz/pub/bird/
  
  MAINTAINER=	olivier@FreeBSD.org
 -COMMENT?=	Dynamic IP routing daemon (${FLAVOR:Uipv4:S/ip/IP/} version)
-+COMMENT?=	Dynamic IP routing daemon
++COMMENT=	Dynamic IP routing daemon
  
  LICENSE=	GPLv2
  
 -FLAVORS=	ipv4 ipv6
 -ipv6_PKGNAMESUFFIX=	6
--
- USES=		bison gmake ncurses readline
++LIB_DEPENDS=	libssh.so:security/libssh
+ 
+-USES=		autoreconf bison gmake ncurses readline
++CONFLICTS=	bird-[0-9]*
++CONFLICTS+=	bird6-[0-9]*
++
++USES=		bison gmake ncurses readline
  GNU_CONFIGURE=	yes
  CONFIGURE_ARGS=	--localstatedir=/var
-@@ -28,13 +24,6 @@
++USE_RC_SUBR=	bird
++SUB_FILES=	pkg-message
  
- USE_RC_SUBR=	${PKGBASE}
+ MAKE_JOBS_UNSAFE=	yes
+ 
+-USE_RC_SUBR=	${PKGBASE}
++OPTIONS_MULTI=	RP
++RP_DESC=	Routing Protocols
++OPTIONS_MULTI_RP=	BFD BABEL BGP OSPF PIPE RADV RIP STATIC
++OPTIONS_DEFAULT=	${OPTIONS_MULTI_RP}
  
 -.if ${FLAVOR:U} == ipv6
 -CONFIGURE_ARGS+=	--enable-ipv6
@@ -35,24 +47,71 @@ Index: net/bird/Makefile
 -.else
 -PLIST_SUB?=	VER=""
 -.endif
--
- FIREWALL_EXTRA_PATCHES+=	${FILESDIR}/firewall_support.patch
++BFD_DESC=	Bidirectional Forwarding Detection
++BABEL_DESC=	Babel routing protocol
++BGP_DESC=	Border Gateway Protocol
++OSPF_DESC=	Open Short Path First
++PIPE_DESC=	PIPE routing
++RADV_DESC=	Router Advertisement
++RIP_DESC=	Routing Information Protocol
++STATIC_DESC=	Static routing
  
- .include <bsd.port.options.mk>
++BFD_VARS=	rt_prot+=bfd
++BABEL_VARS=	rt_prot+=babel
++BGP_VARS=	rt_prot+=bgp
++OSPF_VARS=	rt_prot+=ospf
++PIPE_VARS=	rt_prot+=pipe
++RADV_VARS=	rt_prot+=radv
++RIP_VARS=	rt_prot+=rip
++STATIC_VARS=	rt_prot+=static
++
++CONFIGURE_ARGS+=--with-protocols="${RT_PROT}"
++
++post-patch:
++	${REINPLACE_CMD} -e 's|\.example|\.sample|g' ${WRKSRC}/Makefile.in
++	${MV} ${WRKSRC}/doc/bird.conf.example ${WRKSRC}/doc/bird.conf.sample
++
+ .include <bsd.port.mk>
 Index: net/bird/distinfo
 ===================================================================
---- net/bird/distinfo	(revision 461265)
+--- net/bird/distinfo	(revision 465813)
 +++ net/bird/distinfo	(working copy)
 @@ -1,3 +1,3 @@
--TIMESTAMP = 1485093974
--SHA256 (bird-1.6.3.tar.gz) = 39c51cf57c3ba8b5978b2a657ffa2f647ec7f3ae643e91cf42ee5cb070cf7e7c
--SIZE (bird-1.6.3.tar.gz) = 1337198
-+TIMESTAMP = 1516141586
-+SHA256 (bird-2.0.1.tar.gz) = 5614b60d31a0e224a7e484126641dee7a5386a939f59373a48dfc1233b13d063
-+SIZE (bird-2.0.1.tar.gz) = 1006261
+-TIMESTAMP = 1522168475
+-SHA256 (bird-1.6.4.tar.gz) = c26b8caae988dba81a9dbbee93502463d4326d1b749d728d62aa5529c605afc0
+-SIZE (bird-1.6.4.tar.gz) = 1018874
++TIMESTAMP = 1521724692
++SHA256 (bird-2.0.2.tar.gz) = 035f91d6f568f8ed438a0814235ac4c5c79147cd2acf201322c307732883480f
++SIZE (bird-2.0.2.tar.gz) = 1015224
+Index: net/bird/files/bird.in
+===================================================================
+--- net/bird/files/bird.in	(revision 465813)
++++ net/bird/files/bird.in	(working copy)
+@@ -2,7 +2,7 @@
+ 
+ # $FreeBSD$
+ #
+-# PROVIDE: bird dynamicrouting
++# PROVIDE: bird
+ # REQUIRE: LOGIN
+ # KEYWORD: shutdown
+ #
+@@ -24,11 +24,9 @@
+ 
+ load_rc_config $name
+ 
+-extra_commands="reload"
+-
+ : ${bird_enable="NO"}
+ : ${bird_config="%%PREFIX%%/etc/bird.conf"}
+ 
+-command_args="-P /var/run/${name}.pid -c $bird_config"
++command_args="-c $bird_config"
+ 
+ run_rc_command "$1"
 Index: net/bird/files/bird6.in
 ===================================================================
---- net/bird/files/bird6.in	(revision 461265)
+--- net/bird/files/bird6.in	(revision 465813)
 +++ net/bird/files/bird6.in	(nonexistent)
 @@ -1,34 +0,0 @@
 -#!/bin/sh
@@ -104,389 +163,13 @@ Deleted: svn:mime-type
 ## -1 +0,0 ##
 -text/plain
 \ No newline at end of property
-Index: net/bird/files/firewall_support.patch
-===================================================================
---- net/bird/files/firewall_support.patch	(revision 461265)
-+++ net/bird/files/firewall_support.patch	(working copy)
-@@ -25,91 +25,6 @@
-  create mode 100644 proto/firewall/firewall.h
-  create mode 100644 sysdep/bsd/fw.c
- 
--diff --git a/configure.in b/configure.in
--index 54993df..51b7cc2 100644
----- configure.in
--+++ configure.in
--@@ -137,10 +137,13 @@ else
-- 		ipv4:netbsd*)	sysdesc=bsd
-- 				CPPFLAGS="$CPPFLAGS -I/usr/pkg/include"
-- 				LDFLAGS="$LDFLAGS -L/usr/pkg/lib -R/usr/pkg/lib"
--+				AC_DEFINE(CONFIG_FIREWALL_PF, 1)
-- 				;;
-- 		ipv6:freebsd*)	sysdesc=bsd-v6
-- 				;;
-- 		ipv4:freebsd*)	sysdesc=bsd
--+				AC_DEFINE(CONFIG_FIREWALL_IPFW, 1)
--+				AC_DEFINE(CONFIG_FIREWALL_PF, 1)
-- 				;;
-- 		ipv6:dragonfly*)	sysdesc=bsd-v6
-- 				;;
--@@ -153,6 +156,7 @@ else
-- 		ipv6:openbsd*)	sysdesc=bsd-v6
-- 				;;
-- 		ipv4:openbsd*)	sysdesc=bsd
--+				AC_DEFINE(CONFIG_FIREWALL_PF, 1)
-- 				;;
-- 		*)		AC_MSG_ERROR([Cannot determine correct system configuration. Please use --with-sysconfig to set it manually.])
-- 				;;
--diff --git a/doc/bird.sgml b/doc/bird.sgml
--index 24bc302..a01ec99 100644
----- doc/bird.sgml
--+++ doc/bird.sgml
--@@ -2743,6 +2743,40 @@ protocol static {
-- }
-- </code>
-- 
--+<sect>Firewall
--+
--+<p>Firewall protocol doesn't communicate with any network devices,
--+but instead it allows you to add announced prefixes to given firewall table.
--+At the moment IPFW and PF are supported. One can also specify special integer tag
--+that can be passed as argument to IPFW table. Any number of instances can be configured.
--+
--+<p>Firewall protocol does not have many configuration options.
--+
--+<descrip>
--+	<tag>fwtype pf|ipfw</tag> Select firewall type.
--+	<tag>fwtable <m/name/</tag> Specifies firewall table name.
--+	<tag>keep on startup|shutdown</tag>Do not flush table on protocol startup or shutdown.
--+	<tag>keep always</tag>Do not flush table on protocol startup and shutdown.
--+</descrip>
--+
--+<p>Firewall defines single route attribute:
--+
--+<descrip>
--+	<tag>int <cf/fw_value/</tag> Value that can be passed with prefix.
--+	Value is unsigned 4-byte integer. It can be set when importing routes from the other
--+	protocols or on protocol export.
--+</descrip>
--+
--+<p>Example firewall config might look like this:
--+
--+<p><code>
--+protocol firewall {
--+	table testable;			 # Connect to a non-default routing table
--+	fwtype ipfw;			 # Use IPFW as backend
--+	fwtable "2";			 # Use table 2
--+	export filter { fw_value = 125; accept; }; # Set value 125 for all prefixes
--+}
--+</code>
-- <chapt>Conclusions
-- 
-- <sect>Future work
--diff --git a/nest/route.h b/nest/route.h
--index 524e69b..f3062a2 100644
----- nest/route.h
--+++ nest/route.h
--@@ -361,7 +361,8 @@ typedef struct eattr {
-- #define EAP_OSPF 3			/* OSPF */
-- #define EAP_KRT 4			/* Kernel route attributes */
-- #define EAP_BABEL 5			/* Babel attributes */
---#define EAP_MAX 6
--+#define EAP_FIREWALL 6			/* Abstact firewall interface */
--+#define EAP_MAX 7
-- 
-- #define EA_CODE(proto,id) (((proto) << 8) | (id))
-- #define EA_PROTO(ea) ((ea) >> 8)
- diff --git a/proto/firewall/Doc b/proto/firewall/Doc
- new file mode 100644
- index 0000000..5779342
-@@ -123,12 +38,12 @@
- --- /dev/null
- +++ proto/firewall/Makefile
- @@ -0,0 +1,6 @@
--+source=firewall.c
--+root-rel=../../
--+dir-name=proto/firewall
-++src := firewall.c
-++obj := $(src-o-files)
-++$(all-daemon)
-++$(cf-local)
- +
--+include ../../Rules
--+
-++tests_objs := $(tests_objs) $(src-o-files)
- diff --git a/proto/firewall/config.Y b/proto/firewall/config.Y
- new file mode 100644
- index 0000000..aefc606
-@@ -477,15 +392,6 @@
- +#define FW_ERR(x, y...)	log_rl(&rl_fw_err, L_ERR x, ##y)
- +
- +#endif
--diff --git a/sysdep/bsd/Modules b/sysdep/bsd/Modules
--index 3729587..0607321 100644
----- sysdep/bsd/Modules
--+++ sysdep/bsd/Modules
--@@ -1,3 +1,4 @@
-- krt-sock.c
-- krt-sys.h
-- sysio.h
--+fw.c
- diff --git a/sysdep/bsd/fw.c b/sysdep/bsd/fw.c
- new file mode 100644
- index 0000000..e841e06
-@@ -898,16 +804,88 @@
- +
- -- 
- 1.7.3.2
--
----- configure.orig	2012-08-07 13:28:04.000000000 +0400
--+++ configure	2012-08-15 15:54:05.000000000 +0400
--@@ -4361,6 +4361,8 @@
-- 		ipv6:freebsd*)	sysdesc=bsd-v6
-- 				;;
-- 		ipv4:freebsd*)	sysdesc=bsd
--+				$as_echo "#define CONFIG_FIREWALL_IPFW 1" >>confdefs.h
--+				$as_echo "#define CONFIG_FIREWALL_PF 1" >>confdefs.h
-- 				;;
-- 		ipv6:dragonfly*)	sysdesc=bsd-v6
-- 				;;
--
-+--- configure.ac.orig   2017-12-11 14:01:25.732945000 +0100
-++++ configure.ac        2017-12-11 14:01:43.164005000 +0100
-+@@ -181,6 +181,8 @@
-+       ;;
-+     freebsd*)
-+       sysdesc=bsd
-++      AC_DEFINE(CONFIG_FIREWALL_IPFW, 1)
-++      AC_DEFINE(CONFIG_FIREWALL_PF, 1)
-+       ;;
-+     kfreebsd*)
-+       sysdesc=bsd
-+--- doc/bird.sgml.orig	2017-12-11 08:33:26.000000000 +0100
-++++ doc/bird.sgml	2017-12-11 13:17:18.340766000 +0100
-+@@ -4654,6 +4654,40 @@
-+ </code>
-+ 
-+ 
-++<sect>Firewall
-++
-++<p>Firewall protocol doesn't communicate with any network devices,
-++but instead it allows you to add announced prefixes to given firewall table.
-++At the moment IPFW and PF are supported. One can also specify special integer tag
-++that can be passed as argument to IPFW table. Any number of instances can be configured.
-++
-++<p>Firewall protocol does not have many configuration options.
-++
-++<descrip>
-++	<tag>fwtype pf|ipfw</tag> Select firewall type.
-++	<tag>fwtable <m/name/</tag> Specifies firewall table name.
-++	<tag>keep on startup|shutdown</tag>Do not flush table on protocol startup or shutdown.
-++	<tag>keep always</tag>Do not flush table on protocol startup and shutdown.
-++</descrip>
-++
-++<p>Firewall defines single route attribute:
-++
-++<descrip>
-++	<tag>int <cf/fw_value/</tag> Value that can be passed with prefix.
-++	Value is unsigned 4-byte integer. It can be set when importing routes from the other
-++	protocols or on protocol export.
-++</descrip>
-++
-++<p>Example firewall config might look like this:
-++
-++<p><code>
-++protocol firewall {
-++	table testable;			 # Connect to a non-default routing table
-++	fwtype ipfw;			 # Use IPFW as backend
-++	fwtable "2";			 # Use table 2
-++	export filter { fw_value = 125; accept; }; # Set value 125 for all prefixes
-++}
-++</code>
-+ <chapt>Conclusions
-+ <label id="conclusion">
-+ 
-+--- nest/route.h.orig	2017-12-11 08:33:26.000000000 +0100
-++++ nest/route.h	2017-12-11 13:48:02.924220000 +0100
-+@@ -473,7 +473,8 @@
-+ #define EAP_KRT 4			/* Kernel route attributes */
-+ #define EAP_BABEL 5			/* Babel attributes */
-+ #define EAP_RADV 6			/* Router advertisment attributes */
-+-#define EAP_MAX 7
-++#define EAP_FIREWALL 7		/* Abstact firewall interface */
-++#define EAP_MAX 8
-+ 
-+ #define EA_CODE(proto,id) (((proto) << 8) | (id))
-+ #define EA_PROTO(ea) ((ea) >> 8)
-+--- sysdep/bsd/Makefile.orig	2017-12-11 13:42:23.023947000 +0100
-++++ sysdep/bsd/Makefile	2017-12-11 13:42:27.501505000 +0100
-+@@ -1,4 +1,4 @@
-+-src := krt-sock.c
-++src := krt-sock.c fw.c
-+ obj := $(src-o-files)
-+ $(all-daemon)
-+ $(conf-y-targets): $(s)krt-sock.Y
-+--- configure.orig	2017-12-11 09:38:25.000000000 +0100
-++++ configure	2017-12-11 13:50:54.163189000 +0100
-+@@ -4646,6 +4646,8 @@
-+       ;;
-+     freebsd*)
-+       sysdesc=bsd
-++      $as_echo "#define CONFIG_FIREWALL_IPFW 1" >>confdefs.h
-++      $as_echo "#define CONFIG_FIREWALL_PF 1" >>confdefs.h
-+       ;;
-+     kfreebsd*)
-+       sysdesc=bsd
-Index: net/bird/files/patch-Makefile.in
-===================================================================
---- net/bird/files/patch-Makefile.in	(nonexistent)
-+++ net/bird/files/patch-Makefile.in	(working copy)
-@@ -0,0 +1,15 @@
-+--- Makefile.in.orig	2018-01-16 09:46:06 UTC
-++++ Makefile.in
-+@@ -171,11 +171,7 @@ install: all
-+ 	if test -n "@CLIENT@" ; then								\
-+ 		$(INSTALL_PROGRAM) $(exedir)/birdc $(DESTDIR)/$(sbindir)/birdc ;		\
-+ 	fi
-+-	if ! test -f $(DESTDIR)/@CONFIG_FILE@ ; then						\
-+-		$(INSTALL_DATA) $(srcdir)/doc/bird.conf.example $(DESTDIR)/@CONFIG_FILE@ ;	\
-+-	else											\
-+-		echo "Not overwriting old bird.conf" ;						\
-+-	fi
-++	$(INSTALL_DATA) $(srcdir)/doc/bird.conf.example $(DESTDIR)/@CONFIG_FILE@.example
-+ 
-+ install-docs:
-+ 	$(INSTALL) -d $(DESTDIR)/$(docdir)
-
-Property changes on: net/bird/files/patch-Makefile.in
-___________________________________________________________________
-Added: fbsd:nokeywords
-## -0,0 +1 ##
-+yes
-\ No newline at end of property
-Added: svn:eol-style
-## -0,0 +1 ##
-+native
-\ No newline at end of property
-Added: svn:mime-type
-## -0,0 +1 ##
-+text/plain
-\ No newline at end of property
-Index: net/bird/files/patch-filter-filter.c
-===================================================================
---- net/bird/files/patch-filter-filter.c	(revision 461265)
-+++ net/bird/files/patch-filter-filter.c	(nonexistent)
-@@ -1,10 +0,0 @@
----- filter/filter.c.orig	2018-02-07 16:42:34.914441000 +0100
--+++ filter/filter.c	2018-02-07 16:43:07.274018000 +0100
--@@ -1559,6 +1559,7 @@
--   case P('<','='): TWOARGS; break;
-- 
--   case '!': ONEARG; break;
--+  case P('!', '~'):
--   case '~': TWOARGS; break;
--   case P('d','e'): ONEARG; break;
-- 
-
-Property changes on: net/bird/files/patch-filter-filter.c
-___________________________________________________________________
-Deleted: fbsd:nokeywords
-## -1 +0,0 ##
--yes
-\ No newline at end of property
-Deleted: svn:eol-style
-## -1 +0,0 ##
--native
-\ No newline at end of property
-Deleted: svn:mime-type
-## -1 +0,0 ##
--text/plain
-\ No newline at end of property
-Index: net/bird/files/patch-fix-merge-paths
-===================================================================
---- net/bird/files/patch-fix-merge-paths	(nonexistent)
-+++ net/bird/files/patch-fix-merge-paths	(working copy)
-@@ -0,0 +1,59 @@
-+--- sysdep/unix/krt.Y.orig	2018-01-16 09:46:07 UTC
-++++ sysdep/unix/krt.Y
-+@@ -17,16 +17,6 @@ CF_DEFINES
-+ #define KIF_IFACE ((struct kif_iface_config *) this_ipatt)
-+ 
-+ static void
-+-krt_set_merge_paths(struct channel_config *cc, uint merge, uint limit)
-+-{
-+-  if ((limit <= 0) || (limit > 255))
-+-    cf_error("Merge paths limit must be in range 1-255");
-+-
-+-  cc->ra_mode = merge ? RA_MERGED : RA_OPTIMAL;
-+-  cc->merge_limit = limit;
-+-}
-+-
-+-static void
-+ kif_set_preferred(ip_addr ip)
-+ {
-+   if (ipa_is_ip4(ip))
-+@@ -81,7 +71,7 @@ kern_item:
-+  | DEVICE ROUTES bool { THIS_KRT->devroutes = $3; }
-+  | GRACEFUL RESTART bool { THIS_KRT->graceful_restart = $3; }
-+  | MERGE PATHS bool kern_mp_limit {
-+-      krt_set_merge_paths(this_channel, $3, $4);
-++      THIS_KRT->merge_paths = $3 ? $4 : 0;
-+ #ifndef KRT_ALLOW_MERGE_PATHS
-+       if ($3)
-+ 	cf_error("Path merging not supported on this platform");
-+--- sysdep/unix/krt.c.orig	2018-01-16 09:46:07 UTC
-++++ sysdep/unix/krt.c
-+@@ -1059,10 +1059,17 @@ krt_postconfig(struct proto_config *CF)
-+     cf_error("All kernel syncers must use the same table scan interval");
-+ #endif
-+ 
-+-  struct rtable_config *tab = proto_cf_main_channel(CF)->table;
-++  struct channel_config *cc = proto_cf_main_channel(CF);
-++  struct rtable_config *tab = cc->table;
-+   if (tab->krt_attached)
-+     cf_error("Kernel syncer (%s) already attached to table %s", tab->krt_attached->name, tab->name);
-+   tab->krt_attached = CF;
-++
-++  if (cf->merge_paths)
-++  {
-++    cc->ra_mode = RA_MERGED;
-++    cc->merge_limit = cf->merge_paths;
-++  }
-+ 
-+   krt_sys_postconfig(cf);
-+ }
-+--- sysdep/unix/krt.h.orig	2018-01-16 09:46:07 UTC
-++++ sysdep/unix/krt.h
-+@@ -51,6 +51,7 @@ struct krt_config {
-+   int learn;			/* Learn routes from other sources */
-+   int devroutes;		/* XXX: remove */
-+   int graceful_restart;		/* Regard graceful restart recovery */
-++  int merge_paths;		/* Exported routes are merged for ECMP */
-+ };
-+ 
-+ struct krt_proto {
-
-Property changes on: net/bird/files/patch-fix-merge-paths
-___________________________________________________________________
-Added: fbsd:nokeywords
-## -0,0 +1 ##
-+yes
-\ No newline at end of property
-Added: svn:eol-style
-## -0,0 +1 ##
-+native
-\ No newline at end of property
-Added: svn:mime-type
-## -0,0 +1 ##
-+text/plain
-\ No newline at end of property
 Index: net/bird/files/patch-sysdep-bsd-setkey.h
 ===================================================================
---- net/bird/files/patch-sysdep-bsd-setkey.h	(revision 461265)
+--- net/bird/files/patch-sysdep-bsd-setkey.h	(revision 465813)
 +++ net/bird/files/patch-sysdep-bsd-setkey.h	(nonexistent)
 @@ -1,19 +0,0 @@
----- sysdep/bsd/setkey.h	2017-05-15 14:04:47.215628000 +0300
--+++ sysdep/bsd/setkey.h	2017-05-15 14:05:36.850028000 +0300
+---- sysdep/bsd/setkey.h.orig	2018-03-22 12:32:46 UTC
+-+++ sysdep/bsd/setkey.h
 -@@ -158,12 +158,14 @@ sk_set_md5_in_sasp_db(sock *s, ip_addr local, ip_addr 
 -     if (len > TCP_KEYLEN_MAX)
 -       ERR_MSG("The password for TCP MD5 Signature is too long");
@@ -519,55 +202,12 @@ Deleted: svn:mime-type
 ## -1 +0,0 ##
 -text/plain
 \ No newline at end of property
-Index: net/bird/files/patch-sysdep-bsd-sysio.h
-===================================================================
---- net/bird/files/patch-sysdep-bsd-sysio.h	(revision 461265)
-+++ net/bird/files/patch-sysdep-bsd-sysio.h	(nonexistent)
-@@ -1,23 +0,0 @@
--diff --git sysdep/bsd/sysio.h sysdep/bsd/sysio.h
--index 2610a47..9b10e6e 100644
----- sysdep/bsd/sysio.h
--+++ sysdep/bsd/sysio.h
--@@ -9,6 +9,7 @@
-- #include <net/if_dl.h>
-- #include <netinet/in_systm.h> // Workaround for some BSDs
-- #include <netinet/ip.h>
--+#include <sys/param.h>
-- 
-- 
-- #ifdef __NetBSD__
--@@ -179,8 +180,8 @@ sk_prepare_ip_header(sock *s, void *hdr, int dlen)
--   ip->ip_src = ipa_to_in4(s->saddr);
--   ip->ip_dst = ipa_to_in4(s->daddr);
-- 
---#ifdef __OpenBSD__
---  /* OpenBSD expects ip_len in network order, other BSDs expect host order */
--+#if (defined __OpenBSD__) || (defined __DragonFly__) || (defined __FreeBSD__ && (__FreeBSD_version >= 1100030))
--+  /* Different BSDs have different expectations of ip_len endianity */
--   ip->ip_len = htons(ip->ip_len);
-- #endif
-- }
-
-Property changes on: net/bird/files/patch-sysdep-bsd-sysio.h
-___________________________________________________________________
-Deleted: fbsd:nokeywords
-## -1 +0,0 ##
--yes
-\ No newline at end of property
-Deleted: svn:eol-style
-## -1 +0,0 ##
--native
-\ No newline at end of property
-Deleted: svn:mime-type
-## -1 +0,0 ##
--text/plain
-\ No newline at end of property
 Index: net/bird/files/patch-sysdep_bsd_setkey.h
 ===================================================================
 --- net/bird/files/patch-sysdep_bsd_setkey.h	(nonexistent)
 +++ net/bird/files/patch-sysdep_bsd_setkey.h	(working copy)
 @@ -0,0 +1,19 @@
-+--- sysdep/bsd/setkey.h.orig	2017-12-11 07:33:23 UTC
++--- sysdep/bsd/setkey.h.orig	2018-01-16 09:46:07 UTC
 ++++ sysdep/bsd/setkey.h
 +@@ -160,12 +160,14 @@ sk_set_md5_in_sasp_db(sock *s, ip_addr local, ip_addr 
 +     if (len > TCP_KEYLEN_MAX)
@@ -603,7 +243,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/bird/files/patch-tools-Makefile.in
 ===================================================================
---- net/bird/files/patch-tools-Makefile.in	(revision 461265)
+--- net/bird/files/patch-tools-Makefile.in	(revision 465813)
 +++ net/bird/files/patch-tools-Makefile.in	(nonexistent)
 @@ -1,15 +0,0 @@
 ---- tools/Makefile.in.orig	2016-04-29 09:13:23 UTC
@@ -638,7 +278,7 @@ Deleted: svn:mime-type
 \ No newline at end of property
 Index: net/bird/files/patch-tools-Rules.in
 ===================================================================
---- net/bird/files/patch-tools-Rules.in	(revision 461265)
+--- net/bird/files/patch-tools-Rules.in	(revision 465813)
 +++ net/bird/files/patch-tools-Rules.in	(nonexistent)
 @@ -1,14 +0,0 @@
 ---- tools/Rules.in.orig	2016-04-29 09:13:23 UTC
@@ -670,16 +310,58 @@ Deleted: svn:mime-type
 ## -1 +0,0 ##
 -text/plain
 \ No newline at end of property
+Index: net/bird/files/pkg-message.in
+===================================================================
+--- net/bird/files/pkg-message.in	(nonexistent)
++++ net/bird/files/pkg-message.in	(working copy)
+@@ -0,0 +1,9 @@
++#######################################################################
++
++%%LOCALBASE%%/sbin/birdc was added to /etc/shells
++To assign it to a user, the user needs to be in group wheel.
++
++Alternatively you could use security/sudo to grant a user access to it,
++which would allow '%%LOCALBASE%%/sbin/birdc -r' to restrict to read-only.
++
++#######################################################################
+
+Property changes on: net/bird/files/pkg-message.in
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: net/bird/pkg-descr
+===================================================================
+--- net/bird/pkg-descr	(revision 465813)
++++ net/bird/pkg-descr	(working copy)
+@@ -5,6 +5,8 @@
+ - BGP
+ - RIP
+ - OSPF
++- LDP
++- L3VPN
+ - Static routes
+ - Inter-table protocol
+ - Command-line interface
 Index: net/bird/pkg-plist
 ===================================================================
---- net/bird/pkg-plist	(revision 461265)
+--- net/bird/pkg-plist	(revision 465813)
 +++ net/bird/pkg-plist	(working copy)
 @@ -1,4 +1,4 @@
 -@sample etc/bird%%VER%%.conf.example etc/bird%%VER%%.conf
 -sbin/bird%%VER%%
 -sbin/birdc%%VER%%
 -sbin/birdcl%%VER%%
-+@sample etc/bird.conf.example etc/bird.conf
++@sample etc/bird.conf.sample
++@shell sbin/birdc
 +sbin/bird
-+sbin/birdc
 +sbin/birdcl

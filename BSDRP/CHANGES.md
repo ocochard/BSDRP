@@ -29,7 +29,7 @@
 * rtrlib: RPKI/Router Protocol client
 
 ## Updated packages
-* bird to 2.0.1
+* bird to 2.0.2
 * devcpu-data 1.15
 * dhcprelya to 6.1
 * exabgp to 3.4.21
@@ -47,7 +47,7 @@
 
 ## Packages list
 * bgpq3 0.1.33: Lightweight prefix-list generator for Cisco and Juniper routers
-* bird 2.0.1: Dynamic IP routing daemon
+* bird 2.0.2: Dynamic IP routing daemon
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.36: Root certificate bundle from the Mozilla Project
