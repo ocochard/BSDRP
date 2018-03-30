@@ -58,7 +58,6 @@ polling_start()
 			if echo ${DETECTED} | /usr/bin/grep -q "${SUPPORTED}"; then
 				echo -n "Try to enable polling for: ${DETECTED}..."
 				ifconfig ${DETECTED} polling && echo "done" || echo "failed"
-			else
 				break
 			fi
 		done
@@ -74,7 +73,6 @@ polling_stop()
 			if echo ${DETECTED} | /usr/bin/grep -q "${SUPPORTED}"; then
 				echo -n "Try to disable polling for: ${DETECTED}..."
 				ifconfig ${DETECTED} -polling && echo "done" || echo "failed"
-			else
 				break
 			fi
 		done
