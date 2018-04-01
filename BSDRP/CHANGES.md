@@ -32,7 +32,7 @@
 * bird to 2.0.2
 * devcpu-data 1.15
 * dhcprelya to 6.1
-* exabgp to 3.4.21
+* exabgp to 4.0.2
 * iperf to 2.0.10
 * iperf3 to 3.5
 * isc-dhcp43-server to 4.3.6
@@ -40,6 +40,7 @@
 * monit to 5.25
 * openvpn to 2.4.5
 * pmacct to 1.6.2
+* python to 3.6
 * smcroute to 2.4.0
 * strongswan to 5.6.2
 * sudo to 1.8.21
@@ -47,7 +48,7 @@
 
 ## Packages list
 * bgpq3 0.1.33: Lightweight prefix-list generator for Cisco and Juniper routers
-* bird 2.0.2: Dynamic IP routing daemon
+* bird 2.0.2_1: Dynamic IP routing daemon
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.36: Root certificate bundle from the Mozilla Project
@@ -55,7 +56,6 @@
 * devcpu-data 1.16: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
-* exabgp 3.4.21: BGP engine and route injector
 * flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
 * frr 4.0: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
@@ -84,7 +84,7 @@
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
-* openldap-client 2.4.45: Open source LDAP client implementation
+* openldap-client 2.4.46: Open source LDAP client implementation
 * openvpn 2.4.5: Secure IP/Ethernet tunnel daemon
 * pciids 20180219: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
@@ -95,11 +95,11 @@
 * pkg 1.10.5: Package manager
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.6.2: Accounting and aggregation tool for IPv4 and IPv6 traffic
-* py27-ipaddress 1.0.19: Port of Python 3.3+ ipaddress module to 2.7
-* py27-setuptools 38.5.2: Python packages installer
-* python 2.7_3,2: "meta-port" for the default version of Python interpreter
-* python2 2_3: The "meta-port" for version 2 of the Python interpreter
-* python27 2.7.14_1: Interpreted object-oriented programming language
+* py36-exabgp 4.0.2: BGP engine and route injector
+* py36-setuptools 39.0.1: Python packages installer
+* python 3.6_3,2: "meta-port" for the default version of Python interpreter
+* python3 3_3: The "meta-port" for version 3 of the Python interpreter
+* python36 3.6.4: Interpreted object-oriented programming language
 * readline 7.0.3_1: Library for editing command lines as they are typed
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool

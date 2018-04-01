@@ -46,9 +46,9 @@ stop_cmd="${name}_stop"
 
 # List of supported drivers
 # Get from the "man polling"
-SUPPORTED_DEVICES="bge dc em fwe fwip fxp ixgb nfe nge re rl sf sis ste stge vge vr xl"
+SUPPORTED_DEVICES="bge dc em igb fwe fwip fxp ixgb lem nfe nge re rl sf sis ste stge vge vr xl"
 # Get the list of detected devices
-DETECTED_DEVICES=`ifconfig -l "ether"`
+DETECTED_DEVICES=$(ifconfig -l "ether")
 
 polling_start()
 {

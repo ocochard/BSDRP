@@ -372,8 +372,8 @@ add_port "net-mgmt/bsnmp-ucd"
 add_port "print/indexinfo"
 add_port "devel/libffi"
 add_port "devel/readline"
-add_port "lang/python27"
-add_port "lang/python2"
+add_port "lang/python36"
+add_port "lang/python3"
 add_port "lang/python"
 add_port "devel/py-setuptools"
 
@@ -381,7 +381,6 @@ add_port "devel/py-setuptools"
 # libssh build needs cmake and perl
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
-add_port "net/py-ipaddress"
 add_port "ftp/curl" "WITHOUT=\"IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
 add_port "security/libssh"
 add_port "net-mgmt/rtrlib"
@@ -393,7 +392,6 @@ add_port "net/frr" "WITH=\"MULTIPATH\""
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Bird: routing daemon
-#add_port "net/bird" "WITH=\"FIREWALL\""
 add_port "net/bird"
 
 # FreeVRRPd (netgraph dependent)
@@ -511,6 +509,7 @@ add_port "net/exabgp"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 
 # Permit Intel Firmware upgrade
+# Disabled: oversized!
 #add_port "sysutils/intel-nvmupdate"
 #add_port "sysutils/intel-qcu"
 
@@ -573,34 +572,34 @@ ninja
 p5-gettext
 perl5
 pkgconf
-py27-Babel
-py27-Jinja2
-py27-MarkupSafe
-py27-alabaster
-py27-asn1crypto
-py27-certifi
-py27-cffi
-py27-chardet
-py27-cryptography
-py27-docutils
-py27-enum34
-py27-idna
-py27-imagesize
-py27-openssl
-py27-pycparser
-py27-pygments
-py27-pystemmer
-py27-pysocks
-py27-pytest-runner
-py27-pytz
-py27-setuptools_scm
-py27-six
-py27-snowballstemmer
-py27-sphinx
-py27-sphinxcontrib-websupport
-py27-sphinx_rtd_theme
-py27-typing
-py27-urllib3
+py36-Babel
+py36-Jinja2
+py36-MarkupSafe
+py36-alabaster
+py36-asn1crypto
+py36-certifi
+py26-cffi
+py36-chardet
+py36-cryptography
+py36-docutils
+py36-enum34
+py36-idna
+py36-imagesize
+py36-openssl
+py36-pycparser
+py36-pygments
+py36-pystemmer
+py36-pysocks
+py36-pytest-runner
+py36-pytz
+py36-setuptools_scm
+py36-six
+py36-snowballstemmer
+py36-sphinx
+py36-sphinxcontrib-websupport
+py36-sphinx_rtd_theme
+py36-typing
+py36-urllib3
 rhash
 scons
 texinfo
