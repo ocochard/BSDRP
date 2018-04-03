@@ -1,8 +1,8 @@
 Index: net/exabgp/Makefile
 ===================================================================
---- net/exabgp/Makefile	(revision 466024)
+--- net/exabgp/Makefile	(revision 466230)
 +++ net/exabgp/Makefile	(working copy)
-@@ -2,44 +2,42 @@
+@@ -2,44 +2,52 @@
  # $FreeBSD$
  
  PORTNAME=	exabgp
@@ -48,7 +48,16 @@ Index: net/exabgp/Makefile
  
 -post-extract:
 -	@${MV} -f ${WRKSRC}/etc/systemd ${WRKSRC}
--
++post-patch:
++	@${REINPLACE_CMD} -e 's|/etc/|${PREFIX}/etc/|' \
++		${WRKSRC}/doc/man/exabgp.1 \
++		${WRKSRC}/lib/exabgp/configuration/usage.py \
++		${WRKSRC}/lib/exabgp/configuration/process/parser.py \
++		${WRKSRC}/lib/exabgp/application/flow.py \
++		${WRKSRC}/lib/exabgp/application/healthcheck.py \
++		${WRKSRC}/lib/exabgp/application/bgp.py \
++		${WRKSRC}/lib/exabgp/application/cli.py
+ 
 -do-build:
 -	${PYTHON_CMD} -m compileall ${WRKSRC}/lib
 -
@@ -63,7 +72,7 @@ Index: net/exabgp/Makefile
  do-install-EXAMPLES-on:
 Index: net/exabgp/distinfo
 ===================================================================
---- net/exabgp/distinfo	(revision 466024)
+--- net/exabgp/distinfo	(revision 466230)
 +++ net/exabgp/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1516901646
@@ -74,17 +83,100 @@ Index: net/exabgp/distinfo
 +SIZE (Exa-Networks-exabgp-4.0.2_GH0.tar.gz) = 2905335
 Index: net/exabgp/files/exabgp.in
 ===================================================================
---- net/exabgp/files/exabgp.in	(revision 466024)
+--- net/exabgp/files/exabgp.in	(revision 466230)
 +++ net/exabgp/files/exabgp.in	(working copy)
-@@ -45,7 +45,7 @@
- 	install -d -o _bgpd -g _bgpd -m 755 /var/log/${name}
- 	rm -f ${pidfile}
+@@ -24,34 +24,51 @@
  
+ required_files=${exabgp_conf}
+ 
+-command="%%PYTHON_SITELIBDIR%%/${name}/application/bgp.py"
+-procname="%%PYTHON_CMD%%"
++command="%%PREFIX%%/bin/${name}"
++command_args="${exabgp_conf}"
+ 
+-start_cmd="exabgp_start"
++start_precmd="exabgp_precmd"
+ reload_all_cmd="exabgp_reload_all"
+ extra_commands="reload reload_all"
++stop_postcmd="exabgp_rmfifo"
+ sig_reload="USR1"
+ 
+-exabgp_start()
++exabgp_precmd()
+ {
++	FIFO=/var/run/${name}
+ 	if [ -z "$rc_fast" -a -n "$rc_pid" ]; then
+ 		echo 1>&2 "${name} already running? (pid=$rc_pid)."
+ 		return 1
+ 	fi
+ 
+-	echo "Starting ${name}."
+-
+ 	install -d -o _bgpd -g _bgpd -m 755 /var/run/${name}
+ 	install -d -o _bgpd -g _bgpd -m 755 /var/log/${name}
++	for i in in out; do
++		if [ ! -p ${FIFO}.$i ]; then
++                echo "Creating ${FIFO}.$i"
++                /usr/bin/mkfifo -m 600 ${FIFO}.$i
++				/usr/sbin/chown _bgpd:_bgpd ${FIFO}.$i
++        fi
++	done
++
+ 	rm -f ${pidfile}
+-
 -	${procname} ${command} --folder %%ETCDIR%% ${exabgp_conf}
-+	${procname} ${command} %%ETCDIR%%/${exabgp_conf}
  }
  
  exabgp_reload_all()
+ {
+-    	echo "Reloading exabgp configuration and processes."
++   	echo "Reloading exabgp configuration and processes."
+ 	kill -USR2 $rc_pid
+ }
+ 
++exabgp_rmfifo()
++{
++	FIFO=/var/run/${name}
++	for i in in out; do
++		if [ ! -p ${FIFO}.$i ]; then
++                echo "Removing ${FIFO}.$i"
++                /bin/rm ${FIFO}.$i
++        fi
++	done
++
++}
+ run_rc_command "$1"
+Index: net/exabgp/files/patch-lib_exabgp_application_bgp.py
+===================================================================
+--- net/exabgp/files/patch-lib_exabgp_application_bgp.py	(nonexistent)
++++ net/exabgp/files/patch-lib_exabgp_application_bgp.py	(working copy)
+@@ -0,0 +1,11 @@
++--- lib/exabgp/application/bgp.py.orig	2018-04-03 21:42:08 UTC
+++++ lib/exabgp/application/bgp.py
++@@ -139,7 +139,7 @@ def main ():
++ 		return
++ 
++ 	root = root_folder(options,['/bin/exabgp','/sbin/exabgp','/lib/exabgp/application/bgp.py','/lib/exabgp/application/control.py'])
++-	etc = root + '/etc/exabgp'
+++	etc = '/etc/exabgp'
++ 	os.environ['EXABGP_ETC'] = etc  # This is not most pretty
++ 
++ 	if options["--version"]:
+
+Property changes on: net/exabgp/files/patch-lib_exabgp_application_bgp.py
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
 Index: net/exabgp/files/patch-setup.py
 ===================================================================
 --- net/exabgp/files/patch-setup.py	(nonexistent)
@@ -117,7 +209,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/exabgp/pkg-plist
 ===================================================================
---- net/exabgp/pkg-plist	(revision 466024)
+--- net/exabgp/pkg-plist	(revision 466230)
 +++ net/exabgp/pkg-plist	(working copy)
 @@ -1,391 +1,94 @@
  @sample etc/exabgp/exabgp.env.sample
