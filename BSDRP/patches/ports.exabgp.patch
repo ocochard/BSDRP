@@ -1,8 +1,8 @@
 Index: net/exabgp/Makefile
 ===================================================================
---- net/exabgp/Makefile	(revision 465838)
+--- net/exabgp/Makefile	(revision 466024)
 +++ net/exabgp/Makefile	(working copy)
-@@ -2,44 +2,39 @@
+@@ -2,44 +2,42 @@
  # $FreeBSD$
  
  PORTNAME=	exabgp
@@ -29,8 +29,9 @@ Index: net/exabgp/Makefile
 +USES=		python shebangfix
 +USE_PYTHON=	distutils autoplist
  SUB_FILES=	pkg-message exabgp.sh
--SUB_LIST=	PYTHON_LIBDIR=${PYTHON_LIBDIR} PYTHON_CMD=${PYTHON_CMD} \
--		PYTHON_SITELIBDIR=${PYTHON_SITELIBDIR}
+ SUB_LIST=	PYTHON_LIBDIR=${PYTHON_LIBDIR} PYTHON_CMD=${PYTHON_CMD} \
+ 		PYTHON_SITELIBDIR=${PYTHON_SITELIBDIR}
++
  USE_RC_SUBR=	${PORTNAME}
  NO_ARCH=	yes
 +SHEBANG_FILES=	etc/exabgp/run/*.run \
@@ -62,7 +63,7 @@ Index: net/exabgp/Makefile
  do-install-EXAMPLES-on:
 Index: net/exabgp/distinfo
 ===================================================================
---- net/exabgp/distinfo	(revision 465838)
+--- net/exabgp/distinfo	(revision 466024)
 +++ net/exabgp/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1516901646
@@ -71,6 +72,19 @@ Index: net/exabgp/distinfo
 +TIMESTAMP = 1522388010
 +SHA256 (Exa-Networks-exabgp-4.0.2_GH0.tar.gz) = 5564eff2394714edc48e075d8810e545afe855bb36e47a02c1ab54be95c76188
 +SIZE (Exa-Networks-exabgp-4.0.2_GH0.tar.gz) = 2905335
+Index: net/exabgp/files/exabgp.in
+===================================================================
+--- net/exabgp/files/exabgp.in	(revision 466024)
++++ net/exabgp/files/exabgp.in	(working copy)
+@@ -45,7 +45,7 @@
+ 	install -d -o _bgpd -g _bgpd -m 755 /var/log/${name}
+ 	rm -f ${pidfile}
+ 
+-	${procname} ${command} --folder %%ETCDIR%% ${exabgp_conf}
++	${procname} ${command} %%ETCDIR%%/${exabgp_conf}
+ }
+ 
+ exabgp_reload_all()
 Index: net/exabgp/files/patch-setup.py
 ===================================================================
 --- net/exabgp/files/patch-setup.py	(nonexistent)
@@ -103,7 +117,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/exabgp/pkg-plist
 ===================================================================
---- net/exabgp/pkg-plist	(revision 465838)
+--- net/exabgp/pkg-plist	(revision 466024)
 +++ net/exabgp/pkg-plist	(working copy)
 @@ -1,391 +1,94 @@
  @sample etc/exabgp/exabgp.env.sample

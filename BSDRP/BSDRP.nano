@@ -179,7 +179,9 @@ PPLEVEL=3
 
 # Add netblast/netrecieve tools
 add_netrate () {
-	TOOLS_LIST="cxgbtool crypto ifinfo mctest netrate/netblast netrate/netreceive netrate/netsend"
+	TOOLS_LIST="cxgbtool ifinfo netrate/netblast netrate/netreceive netrate/netsend"
+	# crypto didn't compile anymore but I don't understand why
+	# mctest didn't compile since clang6
 	mkdir -p ${NANO_WORLDDIR}/dev
 	mount -t devfs devfs ${NANO_WORLDDIR}/dev
 	mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
@@ -488,7 +490,6 @@ add_port "net/pkt-gen"
 # ExaBGP: having fun with BGP
 add_port "net/exabgp"
 
-#add_port "net/openbfdd"
 # VM tools
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 #add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
@@ -730,63 +731,52 @@ usr/local/etc/rc.d/freevrrpd.sh.sample
 usr/share/misc/magic.mgc
 usr/share/misc/termcap.db
 var/db/services.db
-usr/bin/addr2line
-usr/bin/as
-usr/bin/ld
-usr/bin/nm
-usr/bin/objcopy
-usr/bin/readelf
-usr/bin/size
-usr/bin/strings
-usr/bin/cc
-usr/bin/gcc
-usr/bin/gcpp
-usr/bin/cpp
-usr/bin/c++
-usr/bin/g++
 usr/bin/CC
-usr/bin/c++filt
+usr/bin/addr2line
 usr/bin/ar
-usr/bin/ranlib
+usr/bin/as
+usr/bin/byacc
+usr/bin/c++
+usr/bin/c++filt
 usr/bin/c89
 usr/bin/c99
-usr/bin/sum
-usr/bin/ctags
-usr/bin/file2c
-usr/bin/gprof
-usr/bin/indent
-usr/bin/m4
-usr/bin/lex
-usr/bin/lex++
-usr/bin/flex
-usr/bin/flex++
-usr/bin/mt
-usr/bin/mkstr
-usr/bin/rpcgen
-usr/bin/unifdef
-usr/bin/unifdefall
-usr/bin/nvi
-usr/bin/vgrind
-usr/bin/lint
-usr/bin/xstr
-usr/bin/yacc
-usr/bin/byacc
-usr/bin/lzdec
+usr/bin/cc
 usr/bin/clang
 usr/bin/clang++
 usr/bin/clang-cpp
 usr/bin/clang-tblgen
+usr/bin/cpp
 usr/bin/crunchgen
 usr/bin/crunchide
-usr/libexec/cc1
-usr/libexec/cc1plus
-usr/libexec/vfontedpr
-usr/libexec/lint1
-usr/libexec/lint2
+usr/bin/ctags
+usr/bin/file2c
+usr/bin/flex
+usr/bin/flex++
+usr/bin/indent
+usr/bin/ld
+usr/bin/ld.bfd
+usr/bin/lex
+usr/bin/lex++
+usr/bin/lint
+usr/bin/llvm-tblgen
+usr/bin/mkstr
+usr/bin/nm
+usr/bin/objcopy
+usr/bin/objdump
+usr/bin/ranlib
+usr/bin/readelf
+usr/bin/rpcgen
+usr/bin/size
+usr/bin/strings
+usr/bin/unifdef
+usr/bin/unifdefall
+usr/bin/xstr
+usr/bin/yacc
+usr/lib/libfl.a
+usr/lib/libl.a
+usr/lib/libln.a
 usr/sbin/btxld
 usr/sbin/config
-usr/sbin/i2c
-usr/sbin/rmt
 usr/share/misc/gprof.flat
 usr/share/misc/gprof.callg
 usr/share/misc/vgrindefs

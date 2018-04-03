@@ -10,10 +10,10 @@
 # modification, are permitted provided that the following conditions
 # are met:
 # 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
+#	 notice, this list of conditions and the following disclaimer.
 # 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
+#	 notice, this list of conditions and the following disclaimer in the
+#	 documentation and/or other materials provided with the distribution.
 #
 # THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -72,7 +72,7 @@ usage () {
 		echo "Options for put:"
 		echo " - scp username@host:[/path/filename]"
 		echo "	 send the configuration to a remote host"
-		echo "   if no destination filename given, it will be named: hostname.tar.xz"
+		echo "	 if no destination filename given, it will be named: hostname.tar.xz"
 		exit 0
 		;;
 	get)
@@ -83,17 +83,17 @@ usage () {
 		;;
 	esac
 
-# value $0 is the name of the called script
+	# value $0 is the name of the called script
 	echo "Usage: $0 option"
-	echo "  - diff [quiet|factory]    : Show diff between current and saved config"
-	echo "  - save     : Save current config"
-	echo "  - apply    : Apply current config"
-	echo "  - rollback : Revert to previous config"
-	echo "  - put      : Put the saved config to a remote server"
-	echo "  - get      : Get config from remote server"
-	echo "  - factory  : Return to default configuration"
-	echo "  - help (h) [option]  : Display this help message. "
-	echo "  If [option] given, display more detail about the option"
+	echo "	- diff [quiet|factory]	  : Show diff between current and saved config"
+	echo "	- save	   : Save current config"
+	echo "	- apply    : Apply current config"
+	echo "	- rollback : Revert to previous config"
+	echo "	- put	   : Put the saved config to a remote server"
+	echo "	- get	   : Get config from remote server"
+	echo "	- factory  : Return to default configuration"
+	echo "	- help (h) [option]  : Display this help message. "
+	echo "	If [option] given, display more detail about the option"
 	exit 0
 }
 
@@ -101,7 +101,7 @@ usage () {
 # $1: volume to check
 # result: true or false
 is_mounted () {
-	[ -z "$1" ] &&  die "BUG: is_mounted() need argument"
+	[ -z "$1" ] &&	die "BUG: is_mounted() need argument"
 	mount | grep -q -e "[[:space:]]$1[[:space:]]" && return 0 || return 1
 }
 
@@ -121,7 +121,7 @@ umount_cfg () {
 	umount /cfg || echo "WARNING: Can't umount /cfg"
 }
 
-# Mount data
+# Mount data partition
 mount_data () {
 	#Skip is already mounted
 	is_mounted /data && return 0
@@ -142,11 +142,12 @@ mount_data () {
 	mount /data && return 0 || return 1
 }
 
-# umount data
+# umount data partition
 umount_data () {
 	umount /data || echo "WARNING: Can't umount /data"
 }
-# Archive cfg
+
+# Create a tgz of current /cfg and store it into /data
 archive_cfg () {
 	# TO DO: No archive support inside a jail
 	(${INSIDEJAIL}) && return 0
@@ -164,20 +165,21 @@ archive_cfg () {
 		mkdir /data/archives || die "ERROR: Can't create /data/archives"
 	else
 		if [ -f /data/archives/rollback.tar.xz ]; then
-       		rm /data/archives/rollback.tar.xz || \
-           	echo "WARNING: Can't delete /data/archives/rollback.tar.xz"
-       	fi
+				rm /data/archives/rollback.tar.xz || \
+				echo "WARNING: Can't delete /data/archives/rollback.tar.xz"
+		fi
 	fi
 
 	if ! tar -cJvpf /data/archives/rollback.tar.xz -C /cfg/ . 2>/dev/null; then
 		echo "WARNING: Can't generate tar archive."
 	fi
 
-	#If data was allready mounted, don't unmount it
+	# If data was allready mounted, don't unmount it
 	if ! ($DATA_ALREADY_MOUNTED); then
 		umount_data
 	fi
 }
+
 # save configuration
 # TODO: Need to backup /boot/loader.conf.local in case of restoring
 #		configuration to other routers
@@ -186,43 +188,43 @@ save_cfg () {
 	mount_cfg || die "ERROR: Can't mount /cfg"
 	archive_cfg || echo "WARNING: Can't archive"
 	echo "Saving configuration..."
+
 	(
 	cd /etc
-	# Looking for all regular files AND symlinks in /etc
-	# symlinks: user can create symlink in /usr/local/etc/rc.d as example (multipe openvpn)
-	for i in "$@" `find * \( -type l -o -type f \)`; do
-		if [ -f /cfg/$i -o -h /cfg/$i ]; then
-            # If this file was previously saved, compare the saved-version (/cfg) and the running-version (/etc)
-			# Instruct cmp to not follow symbolic links, because some software (like freeradius) install symlink to /dev/random
+	# Looking for all regular files, symlinks AND directory in /etc
+	# symlinks can be created into /usr/local/etc/rc.d as example (multipe openvpn)
+	# directory because user can create empty directory and new one need to use
+	# tar (cpio didn't preserve full path owner)
+	for i in "$@" $(find * \( -type d -o -type f -o -type l \) ! -path "cron/tabs"); do
+		if [ -d /etc/$i ] ; then
+			# Is this directory a default one ?
+			if ! [ -d /conf/base/etc/$i ]; then
+				# Was it already backuped ?
+				# Need to use tar (not cp -a neither cpio -dump) because
+				# need to preserve full path owners and permission
+				[ -d /cfg/$i ] || tar cf - $i -C /etc | tar xf - -C /cfg
+			fi
+		elif [ -f /cfg/$i -o -h /cfg/$i ]; then
+			# If this file/symlink was previously saved, compare the saved-version (/cfg) and the running-version (/etc)
+			# Instruct cmp to not follow symbolic links, because some software (like freeradius)
+			# install symlink to /dev/random
 			if ! cmp -hs /etc/$i /cfg/$i; then
 				cp -pfv /etc/$i /cfg/$i 2>/dev/null
 			fi
 		else
-            # If this file was'nt previously saved, compare the running-version (/etc) and the default-version (/conf/base/etc)
+			# If this file was not previously saved, compare the running-version (/etc) and
+			# the default-version (/conf/base/etc)
 			if ! cmp -hs /conf/base/etc/$i /etc/$i; then
-				#cpio didn't preserve owner/permission on non-existant directory
-				#Need to check if destination dir exists, and if not create it
-				#But this method copy all files in this directory too :-(
-				if [ ! -d /cfg/`dirname $i` ]; then
-                	(find `dirname $i`  -print | cpio -dumpv  /cfg/ 2>/dev/null)
-				# Because the previous cpio copied all files (even unmodified), we need to delete them (dirty hack)
-				rm -rf /cfg/`dirname $i`/*
-           		fi
 				(find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
 			fi
-		fi # if [ -e /cfg/$i ]
+		fi
 	done
-
-    #New empty directories need to be saved too
-    for i in "$@" `find * -type d ! -path "cron/tabs"`; do
-        [ -d /cfg/$i -o -d /conf/base/etc/$i ] || cp -av /etc/$i /cfg/$i
-    done
 	)
 
-	# Deleting file, symlink or directory on /cfg that are no more in /etc
+	# Deleting file, symlink or directory in /cfg that are no more in /etc
 	(
 	cd /cfg
-	for i in "$@" `find * \( -type dlf \)`; do
+	for i in "$@" $(find * \( -type d -o -type l -o -type f \)); do
 		[ -e /etc/$i ] || rm -rf /cfg/$i
 	done
 	)
@@ -277,7 +279,7 @@ diff () {
 	fi
 	(
 	cd /etc
-	for i in "$@" `find * -type f`; do
+	for i in "$@" $(find * -type f); do
 		if [ -f ${REFERENCE}/$i ]; then
 			if ! cmp -hs /etc/$i ${REFERENCE}/$i; then
 				echo "1" > /tmp/DIFF_FOUND
@@ -340,7 +342,7 @@ put () {
 	HOST=$(hostname -s)
 	CONFIG_FILE="${HOST}.tar.xz"
 	case "$SECOND_OPTION" in
-    	scp)
+	scp)
 		echo "Send saved configuration by SCP to ${THIRD_OPTION}"
 		if [ -f /tmp/${CONFIG_FILE} ]; then
 			rm /tmp/${CONFIG_FILE} || \
@@ -357,18 +359,18 @@ put () {
 		if [ -f /tmp/${CONFIG_FILE} ]; then
 			rm /tmp/${CONFIG_FILE} || \
 				die "WARNING: Can't delete /tmp/${CONFIG_FILE}"
-        	fi
-      		;;
+		fi
+		;;
 	cvs)
 		echo "TO DO: CVS commit to $THIRD_OPTION"
 		;;
 	svn)
-        	echo "TO DO: SVN commit to $THIRD_OPTION"
-        	;;
+		echo "TO DO: SVN commit to $THIRD_OPTION"
+		;;
 	*)
-        	echo "Bad arguments, see 'config help put' for usage"
-        	;;
-    esac
+		echo "Bad arguments, see 'config help put' for usage"
+		;;
+	esac
 
 	exit 0
 }
@@ -415,33 +417,33 @@ get () {
 		restore_cfg /tmp/${CONFIG_FILE} /etc
 		echo "Configuration restored"
 		echo "Don't forget confirming your restoration by a 'config save'"
-        	;;
+		;;
 	cvs)
-        	echo "TO DO: CVS commit to $THIRD_OPTION"
-       		;;
-    	svn)
-        	echo "TO DO: SVN commit to $THIRD_OPTION"
-        	;;
-    	*)
-        	echo "Bad arguments, see 'config help get' for usage"
-        	;;
-    	esac
+		echo "TO DO: CVS commit to $THIRD_OPTION"
+		;;
+	svn)
+		echo "TO DO: SVN commit to $THIRD_OPTION"
+		;;
+	*)
+		echo "Bad arguments, see 'config help get' for usage"
+		;;
+		esac
 	exit 0
 }
 
 # Clear all existing configuration and return to default setting
 factory () {
 	setlock
-    echo -n "Clear all saved configuration..."
+	echo -n "Clear all saved configuration..."
 	# Autosave will prevent a rollback
-	if service autosave status  > /dev/null 2>&1 ; then
+	if service autosave status	> /dev/null 2>&1 ; then
 		echo "Need to disable autosave feature"
 		service autosave onestop || die "ERROR, autosave not stopped"
 	fi
 
 	is_mounted /cfg || mount_cfg
 	rm -rf /cfg/*  || echo "WARNING: Error during rm -rf /cfg/"
-    umount_cfg
+	umount_cfg
 	if [ -f /boot/loader.conf.local ]; then
 		mount -uw /
 		rm -rf /boot/loader.conf.local
@@ -450,7 +452,7 @@ factory () {
 	echo "Done"
 	echo "For confirming this action: Reboot and answer 'no' to the question about saving configuration"
 	echo "For canceling this action: Simply save the running configuration with 'config save'"
-    exit 0
+	exit 0
 }
 
 # Set a lock preventing to run this script in parrallel

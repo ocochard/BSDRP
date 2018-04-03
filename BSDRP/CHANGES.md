@@ -16,7 +16,7 @@
 * Fix loading problem with mlxen (Mellanox) drivers modules (missing Linux modules)
 * Fix behavior of ix_affinity and cxgbe_affinity rc script
 * Fix tenant script for generating non-conflicting epair MAC addresses
-* Fix "config save" that didn't correctly delete no more existing directories
+* Fix "config save" that didn't: correctly delete no more existing directories and kept full ownership of new path
 * Fix upgrade script that badly detect already /cfg mounted if jails running
 
 ## Security fixes
