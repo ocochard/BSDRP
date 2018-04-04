@@ -196,12 +196,19 @@ save_cfg () {
 	# directory because user can create empty directory and new one need to use
 	for i in "$@" $(find * \( -type d -o -type f -o -type l \) ! -path "cron/tabs"); do
 		if [ -d /etc/$i ] ; then
-			# Is this directory a default one ?
+			# Does this directory exist in reference configuration ?
 			if ! [ -d /conf/base/etc/$i ]; then
-				# Was it already backuped ?
-				# Need to use tar (not cp -a neither cpio -dump) because
-				# need to preserve full path owners and permission
-				[ -d /cfg/$i ] || tar cf - $i -C /etc | tar xf - -C /cfg
+				# Does this directory already saved ?
+				if ! [ -d /cfg/$i ]; then
+					# Need to give full parent path dir to tar for preserving owner
+					dir=""
+					full=""
+					for c in $(echo $i | tr "/" " "); do
+						[ -z "${dir}" ] && dir=$c || dir="${dir}/${c}"
+						full="$full $dir"
+					done
+					tar cf - ${full} -C /etc | tar xf - -C /cfg
+				fi
 			fi
 		elif [ -f /cfg/$i -o -h /cfg/$i ]; then
 			# If this file/symlink was previously saved, compare the saved-version (/cfg) and the running-version (/etc)
