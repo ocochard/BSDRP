@@ -260,7 +260,7 @@ tune_if_cxgbe () {
 	# Chelsio 10G
 	for i in toe rdma iscsi fcoe; do
 		if ! chk_sysctl_eq "dev.t5nex.0.${i}caps" 0; then
-			add_loader "# Disable reserving ASIC ressource for ${i} offload"
+			add_loader "# Disable reserving Chelsio ASIC ressources for ${i} offload"
 			add_loader "hw.cxgbe.${i}caps_allowed=\"0\""
 		fi
 	done
@@ -372,8 +372,16 @@ done
 sysctl -n kern.vm_guest | grep -q -v "none" && VM=true || VM=false
 # Check if is router/firewall mode
 chk_sysctl_eq net.inet.ip.forwarding 1 && ROUTER=true
+chk_sysctl_eq net.inet6.ip6.forwarding 1 && ROUTER=true
 
 NCORE=$(get_ncores)
+
+echo "WARNING: Work-in-progress"
+if ($ROUTER); then
+	echo "IP forwarding enabled: Tuning advice for a router/firewall"
+else
+	echo "IP forwarding disabled: Tuning advice for an end-point (TO DO)"
+fi
 
 tune_if
 ($ROUTER) && net_inet
