@@ -194,7 +194,6 @@ save_cfg () {
 	# Looking for all regular files, symlinks AND directory in /etc
 	# symlinks can be created into /usr/local/etc/rc.d as example (multipe openvpn)
 	# directory because user can create empty directory and new one need to use
-	# tar (cpio didn't preserve full path owner)
 	for i in "$@" $(find * \( -type d -o -type f -o -type l \) ! -path "cron/tabs"); do
 		if [ -d /etc/$i ] ; then
 			# Is this directory a default one ?
@@ -215,7 +214,16 @@ save_cfg () {
 			# If this file was not previously saved, compare the running-version (/etc) and
 			# the default-version (/conf/base/etc)
 			if ! cmp -hs /conf/base/etc/$i /etc/$i; then
-				(find $i -print | cpio -dumpv /cfg/ 2>/dev/null)
+				# tar can preserve full parent path owners only if list of full path is given
+				# As example for file1 in etc/dir1/dir2/file1 we need to backup
+				#  etc/dir1 etc/dir1/dir2 etc/dir1/dir2/file1
+				dir=""
+				full=""
+				for c in $(echo $i | tr "/" " "); do
+					[ -z "${dir}" ] && dir=$c || dir="${dir}/${c}"
+					full="$full $dir"
+				done
+				tar cf - ${full} -C /etc | tar xf - -C /cfg
 			fi
 		fi
 	done
