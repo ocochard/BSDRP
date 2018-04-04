@@ -24,11 +24,12 @@ Index: net/exabgp/Makefile
 -USE_GITHUB=	yes
 -GH_ACCOUNT=	Exa-Networks
 -USES=		python:2.7
+-SUB_FILES=	pkg-message exabgp.sh
 +RUN_DEPENDS=	${PY_IPADDRESS}
 +
 +USES=		python shebangfix
 +USE_PYTHON=	distutils autoplist
- SUB_FILES=	pkg-message exabgp.sh
++SUB_FILES=	pkg-message
  SUB_LIST=	PYTHON_LIBDIR=${PYTHON_LIBDIR} PYTHON_CMD=${PYTHON_CMD} \
  		PYTHON_SITELIBDIR=${PYTHON_SITELIBDIR}
 +
@@ -85,7 +86,7 @@ Index: net/exabgp/files/exabgp.in
 ===================================================================
 --- net/exabgp/files/exabgp.in	(revision 466230)
 +++ net/exabgp/files/exabgp.in	(working copy)
-@@ -24,34 +24,51 @@
+@@ -24,34 +24,52 @@
  
  required_files=${exabgp_conf}
  
@@ -93,12 +94,13 @@ Index: net/exabgp/files/exabgp.in
 -procname="%%PYTHON_CMD%%"
 +command="%%PREFIX%%/bin/${name}"
 +command_args="${exabgp_conf}"
++command_interpreter="%%PYTHON_CMD%%"
  
 -start_cmd="exabgp_start"
 +start_precmd="exabgp_precmd"
++stop_postcmd="exabgp_rmfifo"
  reload_all_cmd="exabgp_reload_all"
  extra_commands="reload reload_all"
-+stop_postcmd="exabgp_rmfifo"
  sig_reload="USR1"
  
 -exabgp_start()
@@ -118,7 +120,7 @@ Index: net/exabgp/files/exabgp.in
 +		if [ ! -p ${FIFO}.$i ]; then
 +                echo "Creating ${FIFO}.$i"
 +                /usr/bin/mkfifo -m 600 ${FIFO}.$i
-+				/usr/sbin/chown _bgpd:_bgpd ${FIFO}.$i
++		/usr/sbin/chown _bgpd:_bgpd ${FIFO}.$i
 +        fi
 +	done
 +
@@ -138,7 +140,7 @@ Index: net/exabgp/files/exabgp.in
 +{
 +	FIFO=/var/run/${name}
 +	for i in in out; do
-+		if [ ! -p ${FIFO}.$i ]; then
++		if [ -p ${FIFO}.$i ]; then
 +                echo "Removing ${FIFO}.$i"
 +                /bin/rm ${FIFO}.$i
 +        fi
@@ -146,6 +148,42 @@ Index: net/exabgp/files/exabgp.in
 +
 +}
  run_rc_command "$1"
+Index: net/exabgp/files/exabgp.sh.in
+===================================================================
+--- net/exabgp/files/exabgp.sh.in	(revision 466230)
++++ net/exabgp/files/exabgp.sh.in	(nonexistent)
+@@ -1,16 +0,0 @@
+-#!/bin/sh
+-
+-export PYTHONPATH=%%PYTHON_LIBDIR%%:%%PYTHON_SITELIBDIR%%/exabgp
+-
+-INTERPRETER=%%PYTHON_CMD%%
+-
+-APPLICATIONS=`$INTERPRETER -c "import sys,os; print ' '.join(os.path.join(_,'exabgp','application','bgp.py') for _ in sys.path if os.path.isfile('/'.join((_,'exabgp','application','bgp.py'))))"`
+-APPLICATION=`echo $APPLICATIONS | awk '{ print $1; }'`
+-
+-if [ $# -eq 0 ]; then
+-	$INTERPRETER -m exabgp.debug $APPLICATION --folder %%PREFIX%%/etc/exabgp --help
+-	echo "===> To start exabgp, you should use:"
+-	echo "===>   service exabgp start"
+-else
+-	exec $INTERPRETER -m exabgp.debug $APPLICATION --folder %%PREFIX%%/etc/exabgp $*
+-fi
+
+Property changes on: net/exabgp/files/exabgp.sh.in
+___________________________________________________________________
+Deleted: fbsd:nokeywords
+## -1 +0,0 ##
+-yes
+\ No newline at end of property
+Deleted: svn:eol-style
+## -1 +0,0 ##
+-native
+\ No newline at end of property
+Deleted: svn:mime-type
+## -1 +0,0 ##
+-text/plain
+\ No newline at end of property
 Index: net/exabgp/files/patch-lib_exabgp_application_bgp.py
 ===================================================================
 --- net/exabgp/files/patch-lib_exabgp_application_bgp.py	(nonexistent)
