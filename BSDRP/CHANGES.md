@@ -1,13 +1,10 @@
-# Release 1.81 (not released)
-
-## TO FIX before releasing
-* mpd5 is crashing at startup (Illegal instruction) (works on 11.1 and -head but not on 11-stable)
+# Release 1.81 (06/04/2018)
 
 ## New features
 * Upgrade to bird 2, WARNING: previous configuration needs to be adapted!
     cf upgrade notes: https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
 * Add Yandex (ae@)'s patches that remove forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores)
-* Disable HyperThreading by default
+* Disable HyperThreading by default: Do not help regarding forwarding performance
 * Add qlxgbe (QLogic 8300 series 10 Gigabit) and bnxt (Broadcom NetXtreme-C/NetXtreme-E) NIC drivers
 
 ## Bug fixes
@@ -16,11 +13,15 @@
 * Fix loading problem with mlxen (Mellanox) drivers modules (missing Linux modules)
 * Fix behavior of ix_affinity and cxgbe_affinity rc script
 * Fix tenant script for generating non-conflicting epair MAC addresses
-* Fix "config save" that didn't: correctly delete no more existing directories and kept full ownership of new path
+* Fix "config save" that didn't correctly delete no more existing directories neither kept full ownership of new directory
 * Fix upgrade script that badly detect already /cfg mounted if jails running
 
 ## Security fixes
 * Intel microcode update regarding Meltdown and Spectre (sysutils/devcpu-data, enabled by default)
+
+## Known bug
+* mpd5 is crashing at startup (Illegal instruction) on VM (confirmed on bhyve and VirtualBox)
+* Only 64bits images releases, 32bit will be uploaded only if specific needs
 
 ## New package
 * bgpq3: Generate prefix-list for bird and FRR
