@@ -1,6 +1,12 @@
 # Release 1.81 (06/04/2018)
 
+## NEED TO FIX
+* forwarding performance on 11-stable: Forwarding speed is only 450Kpps on APU2 (should be 750Kpps) and 510Kpps on Netgate rcc-ve 4860 (should be 1Mpps)
+* mpd5 is crashing at startup (Illegal instruction) on VM (confirmed on bhyve and VirtualBox)
+  it seems to be related to the way mpd5 port is build, need to dig
+
 ## New features
+* Based on FreeBSD 11.1-RELEASE-p9
 * Upgrade to bird 2, WARNING: previous configuration needs to be adapted!
     cf upgrade notes: https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
 * Add Yandex (ae@)'s patches that remove forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores)
@@ -20,7 +26,6 @@
 * Intel microcode update regarding Meltdown and Spectre (sysutils/devcpu-data, enabled by default)
 
 ## Known bug
-* mpd5 is crashing at startup (Illegal instruction) on VM (confirmed on bhyve and VirtualBox)
 * Only 64bits images releases, 32bit will be uploaded only if specific needs
 
 ## New package

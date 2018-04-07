@@ -1,0 +1,15 @@
+Index: etc/login.conf
+===================================================================
+--- etc/login.conf	(revision 304003)
++++ etc/login.conf	(working copy)
+@@ -44,7 +44,9 @@
+ 	:pseudoterminals=unlimited:\
+ 	:priority=0:\
+ 	:ignoretime@:\
+-	:umask=022:
++	:umask=022:\
++	:charset=UTF-8:\
++	:lang=en_US.UTF-8:
+ 
+ 
+ #

@@ -21,7 +21,8 @@ More details on the website:
 http://bsdrp.net/documentation/technical_docs
 
 ## Child projects
- * BSDRPcur: Same as BSDRP but based of FreeBSD-current code
+ * BSDRPstable: Same as BSDRP but based on FreeBSD-stable code
+ * BSDRPcur: Same as BSDRP but based on FreeBSD-current code
  * TESTING: Generate a small nanobsd image (without packages), used for following network performance evolution in time
  * BSDMC: BSD Media Center, allow to test code factorisation/re-usability on a totally different project
  * [EINE](EINE/README.md): Easy Internet vPn Extender, it's a firmware that allow large scale and plug&play VPN routers deployement over internet. This project is member of [Orange Open Source](http://opensource.orange.com) sponsored by [Orange Business Services](http://orange-business.com).

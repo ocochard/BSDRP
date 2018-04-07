@@ -1,0 +1,119 @@
+Index: etc/defaults/rc.conf
+===================================================================
+--- etc/defaults/rc.conf	(revision 328772)
++++ etc/defaults/rc.conf	(working copy)
+@@ -167,6 +167,7 @@
+ firewall_nat_interface=""	# Public interface or IPaddress to use
+ firewall_nat_flags=""		# Additional configuration parameters
+ dummynet_enable="NO"		# Load the dummynet(4) module
++ipfw_netflow_enable="NO"	# Enable netflow logging via ng_netflow
+ ip_portrange_first="NO"		# Set first dynamically allocated port
+ ip_portrange_last="NO"		# Set last dynamically allocated port
+ ike_enable="NO"			# Enable IKE daemon (usually racoon or isakmpd)
+Index: etc/rc.d/Makefile
+===================================================================
+--- etc/rc.d/Makefile	(revision 328772)
++++ etc/rc.d/Makefile	(working copy)
+@@ -214,6 +214,13 @@
+ FILES+=		inetd
+ .endif
+ 
++.if ${MK_IPFW} != "no"
++FILES+=		ipfw
++.if ${MK_NETGRAPH} != "no"
++FILES+=		ipfw_netflow
++.endif
++.endif
++
+ .if ${MK_ISCSI} != "no"
+ FILES+=		iscsictl
+ FILES+=		iscsid
+Index: etc/rc.d/ipfw_netflow
+===================================================================
+--- etc/rc.d/ipfw_netflow	(nonexistent)
++++ etc/rc.d/ipfw_netflow	(working copy)
+@@ -0,0 +1,77 @@
++#!/bin/sh
++#
++# $FreeBSD: head/etc/rc.d/ipfw_netflow 321128 2017-07-18 14:02:02Z manu $
++#
++
++# PROVIDE: ipfw_netflow
++# REQUIRE: ipfw
++# KEYWORD: nojailvnet
++
++. /etc/rc.subr
++. /etc/network.subr
++
++name="ipfw_netflow"
++desc="firewall, ipfw, netflow"
++rcvar="${name}_enable"
++start_cmd="${name}_start"
++stop_cmd="${name}_stop"
++start_precmd="${name}_test"
++status_cmd="${name}_status"
++required_modules="ipfw ng_netflow ng_ipfw"
++extra_commands="status"
++
++: ${ipfw_netflow_hook:=9995}
++: ${ipfw_netflow_rule:=01000}
++: ${ipfw_netflow_ip:=127.0.0.1}
++: ${ipfw_netflow_port:=9995}
++: ${ipfw_netflow_version:=}
++
++ipfw_netflow_test()
++{
++    if [ "${ipfw_netflow_version}" != "" ] && [ "${ipfw_netflow_version}" != 9 ]; then
++	err 1 "Unknown netflow version \'${ipfw_netflow_version}\'"
++    fi
++    case "${ipfw_netflow_hook}" in
++	[!0-9]*)
++	    err 1 "Bad value \"${ipfw_netflow_hook}\": Hook must be numerical"
++    esac
++    case "${ipfw_netflow_rule}" in
++	[!0-9]*)
++	    err 1 "Bad value \"${ipfw_netflow_rule}\": Rule number must be numerical"
++    esac
++}
++
++ipfw_netflow_is_running()
++{
++	ngctl show netflow: > /dev/null 2>&1 && return 0 || return 1
++}
++
++ipfw_netflow_status()
++{
++	ipfw_netflow_is_running && echo "ipfw_netflow is active" || echo "ipfw_netflow is not active"
++}
++
++ipfw_netflow_start()
++{
++	ipfw_netflow_is_running && err 1 "ipfw_netflow is already active"
++	ipfw add ${ipfw_netflow_rule} ngtee ${ipfw_netflow_hook} ip from any to any ${ipfw_netflow_fib:+fib ${ipfw_netflow_fib}}
++	ngctl -f - <<-EOF
++	mkpeer ipfw: netflow ${ipfw_netflow_hook} iface0
++	name ipfw:${ipfw_netflow_hook} netflow
++	mkpeer netflow: ksocket export${ipfw_netflow_version} inet/dgram/udp
++	msg netflow: setdlt {iface=0 dlt=12}
++	name netflow:export${ipfw_netflow_version} netflow_export
++	msg netflow:export${ipfw_netflow_version} connect inet/${ipfw_netflow_ip}:${ipfw_netflow_port}
++EOF
++}
++
++ipfw_netflow_stop()
++{
++    ipfw_netflow_is_running || err 1 "ipfw_netflow is not active"
++    ngctl shutdown netflow:
++    ipfw delete ${ipfw_netflow_rule}
++}
++
++load_rc_config $name
++
++run_rc_command $*
+
+Property changes on: etc/rc.d/ipfw_netflow
+___________________________________________________________________
+Added: svn:executable
+## -0,0 +1 ##
++*
+\ No newline at end of property

@@ -1,0 +1,577 @@
+Index: sys/dev/vxge/vxgehal/vxgehal-mrpcim.c
+===================================================================
+--- sys/dev/vxge/vxgehal/vxgehal-mrpcim.c	(revision 322489)
++++ sys/dev/vxge/vxgehal/vxgehal-mrpcim.c	(working copy)
+@@ -5654,10 +5654,10 @@
+ 			if ((vpd_data[count] == 'S') &&
+ 			    (vpd_data[count + 1] == 'N') &&
+ 			    (vpd_data[count + 2] < VXGE_HAL_VPD_LENGTH)) {
+-				(void) vxge_os_memzero(
++				vxge_os_memzero(
+ 				    hldev->mrpcim->vpd_data.serial_num,
+ 				    VXGE_HAL_VPD_LENGTH);
+-				(void) vxge_os_memcpy(
++				vxge_os_memcpy(
+ 				    hldev->mrpcim->vpd_data.serial_num,
+ 				    &vpd_data[count + 3],
+ 				    vpd_data[count + 2]);
+@@ -5666,9 +5666,9 @@
+ 		}
+ 
+ 		if (vpd_data[1] < VXGE_HAL_VPD_LENGTH) {
+-			(void) vxge_os_memzero(
++			vxge_os_memzero(
+ 			    hldev->mrpcim->vpd_data.product_name, vpd_data[1]);
+-			(void) vxge_os_memcpy(hldev->mrpcim->vpd_data.product_name,
++			vxge_os_memcpy(hldev->mrpcim->vpd_data.product_name,
+ 			    &vpd_data[3], vpd_data[1]);
+ 		}
+ 	}
+Index: sys/kern/subr_witness.c
+===================================================================
+--- sys/kern/subr_witness.c	(revision 322489)
++++ sys/kern/subr_witness.c	(working copy)
+@@ -520,7 +520,7 @@
+ 	 * Routing
+ 	 */
+ 	{ "so_rcv", &lock_class_mtx_sleep },
+-	{ "radix node head", &lock_class_rw },
++	{ "radix node head", &lock_class_rm },
+ 	{ "rtentry", &lock_class_mtx_sleep },
+ 	{ "ifaddr", &lock_class_mtx_sleep },
+ 	{ NULL, NULL },
+Index: sys/kern/vfs_export.c
+===================================================================
+--- sys/kern/vfs_export.c	(revision 322489)
++++ sys/kern/vfs_export.c	(working copy)
+@@ -49,7 +49,7 @@
+ #include <sys/mbuf.h>
+ #include <sys/mount.h>
+ #include <sys/mutex.h>
+-#include <sys/rwlock.h>
++#include <sys/rmlock.h>
+ #include <sys/refcount.h>
+ #include <sys/signalvar.h>
+ #include <sys/socket.h>
+@@ -443,6 +443,7 @@
+ static struct netcred *
+ vfs_export_lookup(struct mount *mp, struct sockaddr *nam)
+ {
++	RADIX_NODE_HEAD_RLOCK_TRACKER;
+ 	struct netexport *nep;
+ 	register struct netcred *np;
+ 	register struct radix_node_head *rnh;
+Index: sys/net/if_llatbl.c
+===================================================================
+--- sys/net/if_llatbl.c	(revision 322489)
++++ sys/net/if_llatbl.c	(working copy)
+@@ -83,6 +83,7 @@
+ static int
+ lltable_dump_af(struct lltable *llt, struct sysctl_req *wr)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	int error;
+ 
+ 	LLTABLE_LOCK_ASSERT();
+@@ -443,6 +444,7 @@
+ llentry_alloc(struct ifnet *ifp, struct lltable *lt,
+     struct sockaddr_storage *dst)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *la, *la_tmp;
+ 
+ 	IF_AFDATA_RLOCK(ifp);
+Index: sys/net/if_var.h
+===================================================================
+--- sys/net/if_var.h	(revision 322489)
++++ sys/net/if_var.h	(working copy)
+@@ -75,9 +75,11 @@
+ #include <net/vnet.h>
+ #endif /* _KERNEL */
+ #include <sys/counter.h>
++#include <sys/cpuset.h>
+ #include <sys/lock.h>		/* XXX */
+ #include <sys/mutex.h>		/* struct ifqueue */
+ #include <sys/rwlock.h>		/* XXX */
++#include <sys/rmlock.h>		/* XXX */
+ #include <sys/sx.h>		/* XXX */
+ #include <sys/_task.h>		/* if_link_task */
+ 
+@@ -242,7 +244,7 @@
+ 	int	if_amcount;		/* number of all-multicast requests */
+ 	struct	ifaddr	*if_addr;	/* pointer to link-level address */
+ 	const u_int8_t *if_broadcastaddr; /* linklevel broadcast bytestring */
+-	struct	rwlock if_afdata_lock;
++	struct	rmlock if_afdata_lock;
+ 	void	*if_afdata[AF_MAX];
+ 	int	if_afdata_initialized;
+ 
+@@ -401,21 +403,23 @@
+ #endif /* _SYS_EVENTHANDLER_H_ */
+ 
+ #define	IF_AFDATA_LOCK_INIT(ifp)	\
+-	rw_init(&(ifp)->if_afdata_lock, "if_afdata")
++	rm_init(&(ifp)->if_afdata_lock, "if_afdata")
+ 
+-#define	IF_AFDATA_WLOCK(ifp)	rw_wlock(&(ifp)->if_afdata_lock)
+-#define	IF_AFDATA_RLOCK(ifp)	rw_rlock(&(ifp)->if_afdata_lock)
+-#define	IF_AFDATA_WUNLOCK(ifp)	rw_wunlock(&(ifp)->if_afdata_lock)
+-#define	IF_AFDATA_RUNLOCK(ifp)	rw_runlock(&(ifp)->if_afdata_lock)
++#define	IF_AFDATA_RLOCK_TRACKER	struct rm_priotracker _afdata_tracker
++#define	IF_AFDATA_WLOCK(ifp)	rm_wlock(&(ifp)->if_afdata_lock)
++#define	IF_AFDATA_RLOCK(ifp)	rm_rlock(&(ifp)->if_afdata_lock,\
++    &_afdata_tracker)
++#define	IF_AFDATA_WUNLOCK(ifp)	rm_wunlock(&(ifp)->if_afdata_lock)
++#define	IF_AFDATA_RUNLOCK(ifp)	rm_runlock(&(ifp)->if_afdata_lock,\
++    &_afdata_tracker)
+ #define	IF_AFDATA_LOCK(ifp)	IF_AFDATA_WLOCK(ifp)
+ #define	IF_AFDATA_UNLOCK(ifp)	IF_AFDATA_WUNLOCK(ifp)
+-#define	IF_AFDATA_TRYLOCK(ifp)	rw_try_wlock(&(ifp)->if_afdata_lock)
+-#define	IF_AFDATA_DESTROY(ifp)	rw_destroy(&(ifp)->if_afdata_lock)
++#define	IF_AFDATA_DESTROY(ifp)	rm_destroy(&(ifp)->if_afdata_lock)
+ 
+-#define	IF_AFDATA_LOCK_ASSERT(ifp)	rw_assert(&(ifp)->if_afdata_lock, RA_LOCKED)
+-#define	IF_AFDATA_RLOCK_ASSERT(ifp)	rw_assert(&(ifp)->if_afdata_lock, RA_RLOCKED)
+-#define	IF_AFDATA_WLOCK_ASSERT(ifp)	rw_assert(&(ifp)->if_afdata_lock, RA_WLOCKED)
+-#define	IF_AFDATA_UNLOCK_ASSERT(ifp)	rw_assert(&(ifp)->if_afdata_lock, RA_UNLOCKED)
++#define	IF_AFDATA_LOCK_ASSERT(ifp)	rm_assert(&(ifp)->if_afdata_lock, RA_LOCKED)
++#define	IF_AFDATA_RLOCK_ASSERT(ifp)	rm_assert(&(ifp)->if_afdata_lock, RA_RLOCKED)
++#define	IF_AFDATA_WLOCK_ASSERT(ifp)	rm_assert(&(ifp)->if_afdata_lock, RA_WLOCKED)
++#define	IF_AFDATA_UNLOCK_ASSERT(ifp)	rm_assert(&(ifp)->if_afdata_lock, RA_UNLOCKED)
+ 
+ /*
+  * 72 was chosen below because it is the size of a TCP/IP
+Index: sys/net/radix.c
+===================================================================
+--- sys/net/radix.c	(revision 322489)
++++ sys/net/radix.c	(working copy)
+@@ -37,7 +37,7 @@
+ #ifdef	_KERNEL
+ #include <sys/lock.h>
+ #include <sys/mutex.h>
+-#include <sys/rwlock.h>
++#include <sys/rmlock.h>
+ #include <sys/systm.h>
+ #include <sys/malloc.h>
+ #include <sys/syslog.h>
+Index: sys/net/radix.h
+===================================================================
+--- sys/net/radix.h	(revision 322489)
++++ sys/net/radix.h	(working copy)
+@@ -36,7 +36,7 @@
+ #ifdef _KERNEL
+ #include <sys/_lock.h>
+ #include <sys/_mutex.h>
+-#include <sys/_rwlock.h>
++#include <sys/_rmlock.h>
+ #endif
+ 
+ #ifdef MALLOC_DECLARE
+@@ -136,7 +136,7 @@
+ 	rn_close_t	*rnh_close;	/*do something when the last ref drops*/
+ 	struct	radix_node rnh_nodes[3];	/* empty tree for common case */
+ #ifdef _KERNEL
+-	struct	rwlock rnh_lock;		/* locks entire radix tree */
++	struct	rmlock rnh_lock;		/* locks entire radix tree */
+ #endif
+ };
+ 
+@@ -157,18 +157,18 @@
+ #define R_Zalloc(p, t, n) (p = (t) malloc((unsigned long)(n), M_RTABLE, M_NOWAIT | M_ZERO))
+ #define R_Free(p) free((caddr_t)p, M_RTABLE);
+ 
++#define	RADIX_NODE_HEAD_RLOCK_TRACKER	struct rm_priotracker _rhn_tracker
+ #define	RADIX_NODE_HEAD_LOCK_INIT(rnh)	\
+-    rw_init_flags(&(rnh)->rnh_lock, "radix node head", 0)
+-#define	RADIX_NODE_HEAD_LOCK(rnh)	rw_wlock(&(rnh)->rnh_lock)
+-#define	RADIX_NODE_HEAD_UNLOCK(rnh)	rw_wunlock(&(rnh)->rnh_lock)
+-#define	RADIX_NODE_HEAD_RLOCK(rnh)	rw_rlock(&(rnh)->rnh_lock)
+-#define	RADIX_NODE_HEAD_RUNLOCK(rnh)	rw_runlock(&(rnh)->rnh_lock)
+-#define	RADIX_NODE_HEAD_LOCK_TRY_UPGRADE(rnh)	rw_try_upgrade(&(rnh)->rnh_lock)
+-
+-
+-#define	RADIX_NODE_HEAD_DESTROY(rnh)	rw_destroy(&(rnh)->rnh_lock)
+-#define	RADIX_NODE_HEAD_LOCK_ASSERT(rnh) rw_assert(&(rnh)->rnh_lock, RA_LOCKED)
+-#define	RADIX_NODE_HEAD_WLOCK_ASSERT(rnh) rw_assert(&(rnh)->rnh_lock, RA_WLOCKED)
++    rm_init(&(rnh)->rnh_lock, "radix node head")
++#define	RADIX_NODE_HEAD_LOCK(rnh)	rm_wlock(&(rnh)->rnh_lock)
++#define	RADIX_NODE_HEAD_UNLOCK(rnh)	rm_wunlock(&(rnh)->rnh_lock)
++#define	RADIX_NODE_HEAD_RLOCK(rnh)	rm_rlock(&(rnh)->rnh_lock,\
++    &_rhn_tracker)
++#define	RADIX_NODE_HEAD_RUNLOCK(rnh)	rm_runlock(&(rnh)->rnh_lock,\
++    &_rhn_tracker)
++#define	RADIX_NODE_HEAD_DESTROY(rnh)	rm_destroy(&(rnh)->rnh_lock)
++#define	RADIX_NODE_HEAD_LOCK_ASSERT(rnh) rm_assert(&(rnh)->rnh_lock, RA_LOCKED)
++#define	RADIX_NODE_HEAD_WLOCK_ASSERT(rnh) rm_assert(&(rnh)->rnh_lock, RA_WLOCKED)
+ #endif /* _KERNEL */
+ 
+ int	 rn_inithead(void **, int);
+Index: sys/net/radix_mpath.c
+===================================================================
+--- sys/net/radix_mpath.c	(revision 322489)
++++ sys/net/radix_mpath.c	(working copy)
+@@ -41,12 +41,15 @@
+ 
+ #include <sys/param.h>
+ #include <sys/systm.h>
++#include <sys/lock.h>
+ #include <sys/malloc.h>
++#include <sys/mutex.h>
+ #include <sys/socket.h>
+ #include <sys/domain.h>
+ #include <sys/syslog.h>
+ #include <net/radix.h>
+ #include <net/radix_mpath.h>
++#include <sys/rmlock.h>
+ #include <net/route.h>
+ #include <net/route_var.h>
+ #include <net/if.h>
+Index: sys/net/route.c
+===================================================================
+--- sys/net/route.c	(revision 322489)
++++ sys/net/route.c	(working copy)
+@@ -52,6 +52,8 @@
+ #include <sys/proc.h>
+ #include <sys/domain.h>
+ #include <sys/kernel.h>
++#include <sys/lock.h>
++#include <sys/rmlock.h>
+ 
+ #include <net/if.h>
+ #include <net/if_var.h>
+@@ -352,7 +354,7 @@
+ 	rh->head.rnh_masks = &rh->rmhead;
+ 
+ 	/* Init locks */
+-	rw_init(&rh->rib_lock, "rib head lock");
++	RIB_LOCK_INIT(rh);
+ 
+ 	/* Finally, set base callbacks */
+ 	rh->rnh_addaddr = rn_addroute;
+@@ -384,7 +386,7 @@
+ 	rn_walktree(&rh->rmhead.head, rt_freeentry, &rh->rmhead.head);
+ 
+ 	/* Assume table is already empty */
+-	rw_destroy(&rh->rib_lock);
++	RIB_LOCK_DESTROY(rh);
+ 	free(rh, M_RTABLE);
+ }
+ 
+@@ -439,6 +441,7 @@
+ rtalloc1_fib(struct sockaddr *dst, int report, u_long ignflags,
+ 		    u_int fibnum)
+ {
++	RIB_RLOCK_TRACKER;
+ 	struct rib_head *rh;
+ 	struct radix_node *rn;
+ 	struct rtentry *newrt;
+@@ -923,6 +926,7 @@
+ rib_lookup_info(uint32_t fibnum, const struct sockaddr *dst, uint32_t flags,
+     uint32_t flowid, struct rt_addrinfo *info)
+ {
++	RIB_RLOCK_TRACKER;
+ 	struct rib_head *rh;
+ 	struct radix_node *rn;
+ 	struct rtentry *rt;
+@@ -2010,6 +2014,7 @@
+ static inline  int
+ rtinit1(struct ifaddr *ifa, int cmd, int flags, int fibnum)
+ {
++	RIB_RLOCK_TRACKER;
+ 	struct sockaddr *dst;
+ 	struct sockaddr *netmask;
+ 	struct rtentry *rt = NULL;
+Index: sys/net/route_var.h
+===================================================================
+--- sys/net/route_var.h	(revision 322489)
++++ sys/net/route_var.h	(working copy)
+@@ -44,16 +44,19 @@
+ 	rt_gen_t		rnh_gen;	/* generation counter */
+ 	int			rnh_multipath;	/* multipath capable ? */
+ 	struct radix_node	rnh_nodes[3];	/* empty tree for common case */
+-	struct rwlock		rib_lock;	/* config/data path lock */
++	struct rmlock		rib_lock;	/* config/data path lock */
+ 	struct radix_mask_head	rmhead;		/* masks radix head */
+ };
+ 
+-#define	RIB_RLOCK(rh)		rw_rlock(&(rh)->rib_lock)
+-#define	RIB_RUNLOCK(rh)		rw_runlock(&(rh)->rib_lock)
+-#define	RIB_WLOCK(rh)		rw_wlock(&(rh)->rib_lock)
+-#define	RIB_WUNLOCK(rh)		rw_wunlock(&(rh)->rib_lock)
+-#define	RIB_LOCK_ASSERT(rh)	rw_assert(&(rh)->rib_lock, RA_LOCKED)
+-#define	RIB_WLOCK_ASSERT(rh)	rw_assert(&(rh)->rib_lock, RA_WLOCKED)
++#define    RIB_RLOCK_TRACKER   struct rm_priotracker _rib_tracker
++#define    RIB_LOCK_INIT(rh)   rm_init(&(rh)->rib_lock, "rib head lock")
++#define    RIB_LOCK_DESTROY(rh)    rm_destroy(&(rh)->rib_lock)
++#define    RIB_RLOCK(rh)       rm_rlock(&(rh)->rib_lock, &_rib_tracker)
++#define    RIB_RUNLOCK(rh)     rm_runlock(&(rh)->rib_lock, &_rib_tracker)
++#define    RIB_WLOCK(rh)       rm_wlock(&(rh)->rib_lock)
++#define    RIB_WUNLOCK(rh)     rm_wunlock(&(rh)->rib_lock)
++#define    RIB_LOCK_ASSERT(rh) rm_assert(&(rh)->rib_lock, RA_LOCKED)
++#define    RIB_WLOCK_ASSERT(rh)    rm_assert(&(rh)->rib_lock, RA_WLOCKED)
+ 
+ struct rib_head *rt_tables_get_rnh(int fib, int family);
+ 
+Index: sys/net/rtsock.c
+===================================================================
+--- sys/net/rtsock.c	(revision 322489)
++++ sys/net/rtsock.c	(working copy)
+@@ -44,6 +44,7 @@
+ #include <sys/priv.h>
+ #include <sys/proc.h>
+ #include <sys/protosw.h>
++#include <sys/rmlock.h>
+ #include <sys/rwlock.h>
+ #include <sys/signalvar.h>
+ #include <sys/socket.h>
+@@ -535,6 +536,7 @@
+ static int
+ route_output(struct mbuf *m, struct socket *so, ...)
+ {
++	RIB_RLOCK_TRACKER;
+ 	struct rt_msghdr *rtm = NULL;
+ 	struct rtentry *rt = NULL;
+ 	struct rib_head *rnh;
+@@ -1825,6 +1827,7 @@
+ static int
+ sysctl_rtsock(SYSCTL_HANDLER_ARGS)
+ {
++	RIB_RLOCK_TRACKER;
+ 	int	*name = (int *)arg1;
+ 	u_int	namelen = arg2;
+ 	struct rib_head *rnh = NULL; /* silence compiler. */
+Index: sys/netinet/if_ether.c
+===================================================================
+--- sys/netinet/if_ether.c	(revision 322489)
++++ sys/netinet/if_ether.c	(working copy)
+@@ -444,6 +444,7 @@
+ 	const struct sockaddr *dst, u_char *desten, uint32_t *pflags,
+ 	struct llentry **plle)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *la = NULL, *la_tmp;
+ 	struct mbuf *curr = NULL;
+ 	struct mbuf *next = NULL;
+@@ -610,6 +611,7 @@
+ 	const struct sockaddr *dst, u_char *desten, uint32_t *pflags,
+ 	struct llentry **plle)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *la = NULL;
+ 
+ 	if (pflags != NULL)
+@@ -786,6 +788,7 @@
+ static void
+ in_arpinput(struct mbuf *m)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct rm_priotracker in_ifa_tracker;
+ 	struct arphdr *ah;
+ 	struct ifnet *ifp = m->m_pkthdr.rcvif;
+Index: sys/netinet/in_fib.c
+===================================================================
+--- sys/netinet/in_fib.c	(revision 322489)
++++ sys/netinet/in_fib.c	(working copy)
+@@ -37,7 +37,7 @@
+ #include <sys/param.h>
+ #include <sys/systm.h>
+ #include <sys/lock.h>
+-#include <sys/rwlock.h>
++#include <sys/rmlock.h>
+ #include <sys/malloc.h>
+ #include <sys/mbuf.h>
+ #include <sys/socket.h>
+@@ -134,6 +134,7 @@
+ fib4_lookup_nh_basic(uint32_t fibnum, struct in_addr dst, uint32_t flags,
+     uint32_t flowid, struct nhop4_basic *pnh4)
+ {
++	RIB_RLOCK_TRACKER;
+ 	struct rib_head *rh;
+ 	struct radix_node *rn;
+ 	struct sockaddr_in sin;
+@@ -182,6 +183,7 @@
+ fib4_lookup_nh_ext(uint32_t fibnum, struct in_addr dst, uint32_t flags,
+     uint32_t flowid, struct nhop4_extended *pnh4)
+ {
++	RIB_RLOCK_TRACKER;
+ 	struct rib_head *rh;
+ 	struct radix_node *rn;
+ 	struct sockaddr_in sin;
+Index: sys/netinet6/icmp6.c
+===================================================================
+--- sys/netinet6/icmp6.c	(revision 322489)
++++ sys/netinet6/icmp6.c	(working copy)
+@@ -2422,6 +2422,7 @@
+ void
+ icmp6_redirect_output(struct mbuf *m0, struct rtentry *rt)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct ifnet *ifp;	/* my outgoing interface */
+ 	struct in6_addr *ifp_ll6;
+ 	struct in6_addr *router_ll6;
+Index: sys/netinet6/in6_fib.c
+===================================================================
+--- sys/netinet6/in6_fib.c	(revision 322489)
++++ sys/netinet6/in6_fib.c	(working copy)
+@@ -38,7 +38,7 @@
+ #include <sys/param.h>
+ #include <sys/systm.h>
+ #include <sys/lock.h>
+-#include <sys/rwlock.h>
++#include <sys/rmlock.h>
+ #include <sys/malloc.h>
+ #include <sys/mbuf.h>
+ #include <sys/socket.h>
+@@ -171,6 +171,7 @@
+ fib6_lookup_nh_basic(uint32_t fibnum, const struct in6_addr *dst, uint32_t scopeid,
+     uint32_t flags, uint32_t flowid, struct nhop6_basic *pnh6)
+ {
++	RIB_RLOCK_TRACKER;
+ 	struct rib_head *rh;
+ 	struct radix_node *rn;
+ 	struct sockaddr_in6 sin6;
+@@ -220,6 +221,7 @@
+ fib6_lookup_nh_ext(uint32_t fibnum, const struct in6_addr *dst,uint32_t scopeid,
+     uint32_t flags, uint32_t flowid, struct nhop6_extended *pnh6)
+ {
++	RIB_RLOCK_TRACKER;
+ 	struct rib_head *rh;
+ 	struct radix_node *rn;
+ 	struct sockaddr_in6 sin6;
+Index: sys/netinet6/nd6.c
+===================================================================
+--- sys/netinet6/nd6.c	(revision 322489)
++++ sys/netinet6/nd6.c	(working copy)
+@@ -1392,6 +1392,7 @@
+ int
+ nd6_is_addr_neighbor(const struct sockaddr_in6 *addr, struct ifnet *ifp)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *lle;
+ 	int rc = 0;
+ 
+@@ -1634,6 +1635,7 @@
+ int
+ nd6_ioctl(u_long cmd, caddr_t data, struct ifnet *ifp)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct in6_ndireq *ndi = (struct in6_ndireq *)data;
+ 	struct in6_nbrinfo *nbi = (struct in6_nbrinfo *)data;
+ 	struct in6_ndifreq *ndif = (struct in6_ndifreq *)data;
+@@ -1965,6 +1967,7 @@
+ nd6_cache_lladdr(struct ifnet *ifp, struct in6_addr *from, char *lladdr,
+     int lladdrlen, int type, int code)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *ln = NULL, *ln_tmp;
+ 	int is_newentry;
+ 	int do_update;
+@@ -2256,6 +2259,7 @@
+     const struct sockaddr *sa_dst, u_char *desten, uint32_t *pflags,
+     struct llentry **plle)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *ln = NULL;
+ 	const struct sockaddr_in6 *dst6;
+ 
+@@ -2333,6 +2337,7 @@
+     const struct sockaddr_in6 *dst, u_char *desten, uint32_t *pflags,
+     struct llentry **plle)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct llentry *lle = NULL, *lle_tmp;
+ 	struct in6_addr *psrc, src;
+ 	int send_ns, ll_len;
+Index: sys/netinet6/nd6_nbr.c
+===================================================================
+--- sys/netinet6/nd6_nbr.c	(revision 322489)
++++ sys/netinet6/nd6_nbr.c	(working copy)
+@@ -607,6 +607,7 @@
+ void
+ nd6_na_input(struct mbuf *m, int off, int icmp6len)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct ifnet *ifp = m->m_pkthdr.rcvif;
+ 	struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
+ 	struct nd_neighbor_advert *nd_na;
+Index: sys/netinet6/nd6_rtr.c
+===================================================================
+--- sys/netinet6/nd6_rtr.c	(revision 322489)
++++ sys/netinet6/nd6_rtr.c	(working copy)
+@@ -738,6 +738,7 @@
+ void
+ defrouter_select_fib(int fibnum)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct nd_defrouter *dr, *selected_dr, *installed_dr;
+ 	struct llentry *ln = NULL;
+ 
+@@ -1545,6 +1546,7 @@
+ static struct nd_pfxrouter *
+ find_pfxlist_reachable_router(struct nd_prefix *pr)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct nd_pfxrouter *pfxrtr;
+ 	struct llentry *ln;
+ 	int canreach;
+Index: sys/netinet6/scope6.c
+===================================================================
+--- sys/netinet6/scope6.c	(revision 322489)
++++ sys/netinet6/scope6.c	(working copy)
+@@ -207,6 +207,7 @@
+ static int
+ scope6_get(struct ifnet *ifp, struct scope6_id *idlist)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	struct scope6_id *sid;
+ 
+ 	/* We only need to lock the interface's afdata for SID() to work. */
+@@ -393,6 +394,7 @@
+ int
+ in6_setscope(struct in6_addr *in6, struct ifnet *ifp, u_int32_t *ret_id)
+ {
++	IF_AFDATA_RLOCK_TRACKER;
+ 	int scope;
+ 	u_int32_t zoneid = 0;
+ 	struct scope6_id *sid;
+Index: sys/netpfil/ipfw/ip_fw_table_algo.c
+===================================================================
+--- sys/netpfil/ipfw/ip_fw_table_algo.c	(revision 322489)
++++ sys/netpfil/ipfw/ip_fw_table_algo.c	(working copy)
+@@ -4046,6 +4046,7 @@
+ ta_foreach_kfib(void *ta_state, struct table_info *ti, ta_foreach_f *f,
+     void *arg)
+ {
++	RIB_RLOCK_TRACKER;
+ 	struct rib_head *rh;
+ 	int error;
+ 
+Index: sys/nfs/bootp_subr.c
+===================================================================
+--- sys/nfs/bootp_subr.c	(revision 322489)
++++ sys/nfs/bootp_subr.c	(working copy)
+@@ -375,6 +375,7 @@
+ void
+ bootpboot_p_rtlist(void)
+ {
++	RIB_RLOCK_TRACKER;
+ 	struct rib_head *rnh;
+ 
+ 	printf("Routing table:\n");
+Index: sys/sys/systm.h
+===================================================================
+--- sys/sys/systm.h	(revision 322489)
++++ sys/sys/systm.h	(working copy)
+@@ -257,6 +257,12 @@
+ #define ovbcopy(f, t, l) bcopy((f), (t), (l))
+ void	bcopy(const void * _Nonnull from, void * _Nonnull to, size_t len);
+ void	bzero(void * _Nonnull buf, size_t len);
++#define bzero(buf, len) do {				\
++	if (__builtin_constant_p(len) && len <= 64)	\
++		__builtin_memset(buf, 0, len);		\
++	else						\
++		bzero(buf, len);			\
++} while (0)
+ void	explicit_bzero(void * _Nonnull, size_t);
+ 
+ void	*memcpy(void * _Nonnull to, const void * _Nonnull from, size_t len);

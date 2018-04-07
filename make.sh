@@ -108,7 +108,7 @@ update_port () {
 		echo "Updating ports tree sources..."
 		${SVN_CMD} update ${PORTS_SRC} -r ${PORTS_REV} \
 		|| die "Can't update ports sources"
-		[ -f ${PROJECT_DIR}/FreeBSD/ports-added ] && rm ${PROJECT_DIR}/FreeBSD/ports-added
+		[ -f ${PROJECT_DIR}/FreeBSD/ports-added ] && rm ${PROJECT_DIR}/FreeBSD/ports-added || true
 	fi
 }
 

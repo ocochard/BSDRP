@@ -44,5 +44,8 @@ update BSDRP/make.conf SRC_REV $rev
 get_last_rev BSDRP/FreeBSD/ports
 update BSDRP/make.conf PORTS_REV $rev
 
+get_last_rev BSDRPstable/FreeBSD/src
+update BSDRPstable/make.conf SRC_REV $rev
+
 get_last_rev BSDRPcur/FreeBSD/src
 update BSDRPcur/make.conf SRC_REV $rev
