@@ -1,7 +1,7 @@
 # Release 1.81 (06/04/2018)
 
 ## NEED TO FIX
-* forwarding performance on 11-stable: Forwarding speed is only 450Kpps on APU2 (should be 750Kpps) and 510Kpps on Netgate rcc-ve 4860 (should be 1Mpps)
+* Performance problem on 10Giga Chelsio 8 cores: 6.7Mpps in place of 11Mpps
 * mpd5 is crashing at startup (Illegal instruction) on VM (confirmed on bhyve and VirtualBox)
   it seems to be related to the way mpd5 port is build, need to dig
 
@@ -11,6 +11,7 @@
     cf upgrade notes: https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
 * Add Yandex (ae@)'s patches that remove forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores)
 * Disable HyperThreading by default: Do not help regarding forwarding performance
+* ALTQ removed: Performance impact is too huge (only 450Kpps on APU2 in place of 850Kpps)
 * Add qlxgbe (QLogic 8300 series 10 Gigabit) and bnxt (Broadcom NetXtreme-C/NetXtreme-E) NIC drivers
 
 ## Bug fixes
@@ -92,7 +93,7 @@
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.46: Open source LDAP client implementation
 * openvpn 2.4.5: Secure IP/Ethernet tunnel daemon
-* pciids 20180219: Database of all known IDs used in PCI devices
+* pciids 20180406: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
@@ -105,7 +106,7 @@
 * py36-setuptools 39.0.1: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
-* python36 3.6.4: Interpreted object-oriented programming language
+* python36 3.6.5: Interpreted object-oriented programming language
 * readline 7.0.3_1: Library for editing command lines as they are typed
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool

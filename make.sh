@@ -132,7 +132,7 @@ patch_port() {
 	for patch in $(cd ${PORT_PATCH_DIR} && ls ports.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/ports-patches; then
 			echo "Applying patch $patch..."
-			${SVN_CMD} patch ${PORT_PATCH_DIR}/$patch ${PORTS_SRC}
+			(${SVN_CMD} patch ${PORT_PATCH_DIR}/$patch ${PORTS_SRC} | grep -B 4 'rejected hunk') && die "Patch failed"
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/ports-patches
 		fi
 	done
