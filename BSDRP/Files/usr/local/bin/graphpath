@@ -50,7 +50,9 @@ usage() {
 [ $(sysctl -n net.inet.ip.forwarding) -eq 0 ] && forwarding=false || forwarding=true
 [ $(sysctl -n net.inet6.ip6.forwarding) -eq  0 ] && forwarding6=false || forwarding6=true
 
+device="ROUTER"
 if [ $forwarding = false -o $forwarding6 = false ]; then
+	device="HOST  "
 	echo "This tool is designed for troubleshooting router table mainly"
 fi
 
@@ -97,54 +99,85 @@ for i in source destination; do
 	"
 done # for
 
-cat <<EOF
-+----------------------------+
-|         source host        |
-| IP: ${source_ip}
+
+if [ "${source_gateway}" == "${destination_gateway}" ]; then
+	cat <<EOF
++----------------------------+    +----------------------------+
+|         source host        |    |      destination host      |
 EOF
-if [ "${source_gateway}" != "LAN" ]; then
+printf '| IP:  %-18s    |    | IP: %-18s     |\n' ${source_ip} ${destination_ip}
+cat <<EOF
++----------------------------+    +----------------------------+
+                  |                             |
+            --+---+-----------------------------+---
+EOF
+else
 	cat <<EOF
 +----------------------------+
+|         source host        |
+EOF
+printf '| IP:  %-18s    |\n' ${source_ip}
+	cat <<EOF
++----------------------------+
+EOF
+fi
+if [ "${source_gateway}" != "LAN" ]; then
+	cat <<EOF
               |
 +----------------------------+
 |   router towards source    |
-| IP:  ${source_gateway}
 EOF
+	printf '| IP:   %-18s   |\n' ${source_gateway}
+fi # [ "${source_gateway}" != "LAN" ]
+
+printf '| ARP:  %-18s   |\n' ${source_gateway_arp}
+cat <<EOF
++----------------------------+
+              |
++----------------------------+
+EOF
+printf '| IF:   %-18s   |\n' ${source_interface}
+printf '| MAC:  %-18s   |\n' ${source_interface_mac}
+printf '| IP:   %-18s   |\n' ${source_interface_ip}
+printf '| net:  %-18s   |\n' ${source_destination}
+printf '| mask: %-18s   |\n' ${source_mask}
+cat <<EOF
+|                            |
+|          THIS ${device}       |
+EOF
+if [ "${source_destination}" != ${destination_destination} ]; then
+	cat <<EOF
+|                            |
+EOF
+	printf '| net:  %-18s   |\n' ${destination_destination}
+	printf '| mask: %-18s   |\n' ${destination_mask}
+fi
+if [ "${source_interface}" != ${destination_interface} ]; then
+	printf '| IP:   %-18s   |\n' ${destination_interface_ip}
+	printf '| MAC:  %-18s   |\n' ${destination_interface_mac}
+	printf '| IF:   %-18s   |\n' ${destination_interface}
 fi
 cat <<EOF
-| ARP: ${source_gateway_arp}
 +----------------------------+
-              |
-+----------------------------+
-| IF:  ${source_interface}
-| MAC: ${source_interface_mac}
-| IP:  ${source_interface_ip}
-| net: ${source_destination}
-| mask:${source_mask}
-|                            |
-|          THIS ROUTER       |
-|                            |
-| net: ${destination_destination}
-| mask:${destination_mask}
-| IP:  ${destination_interface_ip}
-| MAC: ${destination_interface_mac}
-| IF:  ${destination_interface}
-+----------------------------+
-              |
-+----------------------------+
-| ARP: ${destination_gateway_arp}
 EOF
-if [ "${destination_gateway}" != "LAN" ]; then
+if [ "${source_gateway}" != "${destination_gateway}" ]; then
 	cat <<EOF
-| IP:  ${destination_gateway}
+              |
++----------------------------+
+EOF
+	printf '| ARP:  %-18s   |\n' ${destination_gateway_arp}
+	if [ "${destination_gateway}" != "LAN" ]; then
+		printf '| IP:   %-18s   |\n' ${destination_gateway}
+		cat <<EOF
 | router towards destination |
 +----------------------------+
               |
 +----------------------------+
 EOF
-fi
-cat <<EOF
-| IP:  ${destination_ip}
+	fi # [ "${destination_gateway}" != "LAN" ]
+printf '| IP:  %-18s    |\n' ${destination_ip}
+	cat <<EOF
 |      destination host      |
 +----------------------------+
 EOF
+fi # [ "${source_gateway}" != "${destination_gateway}" ]
