@@ -95,28 +95,41 @@ for i in source destination; do
 		done < /tmp/output.txt
 		if [ \"\${${i}_gateway}\" == \"LAN\" ]; then
 			${i}_gateway_arp=\$(arp -n \${${i}_ip} | cut -d ' ' -f 4)
+			[ \"\${${i}_gateway_arp}\" == \"no\" ] && ${i}_gateway_arp='empty' || true
 		fi
 	"
 done # for
 
 
-if [ "${source_gateway}" == "${destination_gateway}" ]; then
+if [ "${source_interface}" == "${destination_interface}" ]; then
 	cat <<EOF
 +----------------------------+    +----------------------------+
-|         source host        |    |      destination host      |
+|         SOURCE HOST        |    |      DESTINATION HOST      |
 EOF
-printf '| IP:  %-18s    |    | IP: %-18s     |\n' ${source_ip} ${destination_ip}
-cat <<EOF
+	printf '| IP:  %-18s    |    | IP:  %-18s    |\n' ${source_ip} ${destination_ip}
+	if [ "${destination_gateway}" == "LAN" ]; then
+		printf '|                            |    | ARP: %-18s    |\n' ${destination_gateway_arp}
+	fi
+	cat <<EOF
 +----------------------------+    +----------------------------+
                   |                             |
+EOF
+
+	if [ "${source_gateway}" != "${destination_gateway}" ]; then
+		cat <<EOF
+            --+---+---                          |
+EOF
+	else
+		cat <<EOF
             --+---+-----------------------------+---
 EOF
+	fi
 else
 	cat <<EOF
 +----------------------------+
-|         source host        |
+|         SOURCE HOST        |
 EOF
-printf '| IP:  %-18s    |\n' ${source_ip}
+printf '| IP:   %-18s   |\n' ${source_ip}
 	cat <<EOF
 +----------------------------+
 EOF
@@ -125,14 +138,29 @@ if [ "${source_gateway}" != "LAN" ]; then
 	cat <<EOF
               |
 +----------------------------+
-|   router towards source    |
+|   ROUTER TOWARDS SOURCE    |
 EOF
+	if [ "${source_gateway}" == "${destination_gateway}" ]; then
+cat <<EOF
+|   AND DESTINATION          |
+EOF
+	fi
 	printf '| IP:   %-18s   |\n' ${source_gateway}
 fi # [ "${source_gateway}" != "LAN" ]
 
 printf '| ARP:  %-18s   |\n' ${source_gateway_arp}
 cat <<EOF
 +----------------------------+
+EOF
+if [ "${source_interface}" == "${destination_interface}" ]; then
+	if [ "${destination_gateway}" == "LAN" ]; then
+		cat <<EOF
+              |                                 |
+           ---+---------------------------------+---
+EOF
+	fi
+fi
+cat <<EOF
               |
 +----------------------------+
 EOF
@@ -143,7 +171,7 @@ printf '| net:  %-18s   |\n' ${source_destination}
 printf '| mask: %-18s   |\n' ${source_mask}
 cat <<EOF
 |                            |
-|          THIS ${device}       |
+|         THIS ${device}        |
 EOF
 if [ "${source_destination}" != ${destination_destination} ]; then
 	cat <<EOF
@@ -161,23 +189,25 @@ cat <<EOF
 +----------------------------+
 EOF
 if [ "${source_gateway}" != "${destination_gateway}" ]; then
-	cat <<EOF
-              |
-+----------------------------+
-EOF
-	printf '| ARP:  %-18s   |\n' ${destination_gateway_arp}
-	if [ "${destination_gateway}" != "LAN" ]; then
-		printf '| IP:   %-18s   |\n' ${destination_gateway}
+	if [ "${source_interface}" != "${destination_interface}" ]; then
 		cat <<EOF
-| router towards destination |
+              |
++----------------------------+
+EOF
+		printf '| ARP:  %-18s   |\n' ${destination_gateway_arp}
+		if [ "${destination_gateway}" != "LAN" ]; then
+			printf '| IP:   %-18s   |\n' ${destination_gateway}
+				cat <<EOF
+| ROUTER TOWARDS DESTINATION |
 +----------------------------+
               |
 +----------------------------+
 EOF
-	fi # [ "${destination_gateway}" != "LAN" ]
-printf '| IP:  %-18s    |\n' ${destination_ip}
-	cat <<EOF
-|      destination host      |
+		fi # [ "${destination_gateway}" != "LAN" ]
+		printf '| IP:   %-18s   |\n' ${destination_ip}
+			cat <<EOF
+|      DESTINATION HOST      |
 +----------------------------+
 EOF
+	fi
 fi # [ "${source_gateway}" != "${destination_gateway}" ]
