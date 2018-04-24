@@ -32,8 +32,7 @@
 # set -xv
 
 # Strict script
-set -e
-set -u
+set -eu
 
 # Get options passed by user
 getoption () {
@@ -117,7 +116,7 @@ usage () {
         route)
 			echo "Options for route:"
 			echo " - ipv4/4 : Display only IPv4 routes"
-			echo " - ipv6/6 : Display only IPv6 routes" 
+			echo " - ipv6/6 : Display only IPv6 routes"
 			;;
 		process|proc)
 			echo "Options for process:"
@@ -145,8 +144,8 @@ usage () {
 		echo "  - tech-support : Display Lot's of information"
 		echo "  - version/ver  : Display BSDRP version"
 		echo "  - zone         : Display memory used by the kernel zone allocator"
-			;;	
-	esac	
+			;;
+	esac
 	exit 0
 }
 
@@ -414,7 +413,7 @@ tech-support () {
 	echo "==== BPF state: netstat -B ===="
 	netstat -B
 	echo  "=== Zone allocator vmstat -z ===="
-	vmstat -z | head -1 ; vmstat -z | grep -i mbuf	
+	vmstat -z | head -1 ; vmstat -z | grep -i mbuf
 	echo "==== mbuf usage: netstat -m ===="
 	netstat -m
 	echo "==== netstat -nxaL ===="
@@ -441,7 +440,7 @@ tech-support () {
 	echo "==== devinfo -rv ==="
 	devinfo -rv
 	echo "=== dmesg ==="
-	cat /var/run/dmesg.boot	
+	cat /var/run/dmesg.boot
 	echo "==== pkg info (show packages) ===="
 	pkg info
 }

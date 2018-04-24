@@ -38,6 +38,7 @@ setenv	XZ_DEFAULTS	'--threads=0'
 if ($?prompt) then
 	# An interactive shell -- set some stuff up
 	set prompt='%B[%n@%m]%~%b%# '
+	#set prompt="%{\033]0;%n@%m\007%}%N@%m:%~ %# "
 	set filec
 	set history = 1000
 	set savehist = (1000 merge)

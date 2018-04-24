@@ -1,17 +1,15 @@
-# Release 1.81 (06/04/2018)
+# Release 1.81 (NOT RELEASED)
 
 ## NEED TO FIX
-* Performance problem on 10Giga Chelsio 8 cores: 6.7Mpps in place of 11Mpps
 * mpd5 is crashing at startup (Illegal instruction) on VM (confirmed on bhyve and VirtualBox)
   it seems to be related to the way mpd5 port is build, need to dig
 
 ## New features
-* Based on FreeBSD 11.1-RELEASE-p9
 * Upgrade to bird 2, WARNING: previous configuration needs to be adapted!
     cf upgrade notes: https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
 * Add Yandex (ae@)'s patches that remove forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores)
-* Disable HyperThreading by default: Do not help regarding forwarding performance
-* ALTQ removed: Performance impact is too huge (only 450Kpps on APU2 in place of 850Kpps)
+* Disable HyperThreading by default: Doesn't help regarding forwarding performance
+* ALTQ removed: Performance impact is too huge (-50% on 4core Atom with igb as example)
 * Add qlxgbe (QLogic 8300 series 10 Gigabit) and bnxt (Broadcom NetXtreme-C/NetXtreme-E) NIC drivers
 
 ## Bug fixes
@@ -34,6 +32,7 @@
 * intel-pcm: Tool for displaying PCM counters and energy usage
 * ixl_unlock: Remove SFP restriction on ixl(4) NIC
 * rtrlib: RPKI/Router Protocol client
+* arping: ARP level "ping" utility
 
 ## Updated packages
 * bird to 2.0.2
@@ -46,7 +45,7 @@
 * frr to 4.0
 * monit to 5.25
 * openvpn to 2.4.5
-* pmacct to 1.6.2
+* pmacct to 1.7.0
 * python to 3.6
 * smcroute to 2.4.0
 * strongswan to 5.6.2
@@ -54,25 +53,26 @@
 * tmux to 2.6
 
 ## Packages list
+* arping 2.19: ARP level "ping" utility
 * bgpq3 0.1.33: Lightweight prefix-list generator for Cisco and Juniper routers
 * bird 2.0.2_1: Dynamic IP routing daemon
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.36: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.36.1: Root certificate bundle from the Mozilla Project
 * curl 7.59.0: Command line tool and library for transferring data with URLs
 * devcpu-data 1.16: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr 4.0: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr 4.0_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.11.2: Cross-platform file change monitor
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 201710: Process Count Monitor (PCM) for Intel processors
 * iperf 2.0.10_1: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.5: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
-* ipsec-tools 0.8.2_2: KAME racoon IKE daemon, ipsec-tools version
+* ipsec-tools 0.8.2_3: KAME racoon IKE daemon, ipsec-tools version
 * isc-dhcp43-server 4.3.6P1: ISC Dynamic Host Configuration Protocol server
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.13: JSON (JavaScript Object Notation) implementation in C
@@ -80,6 +80,7 @@
 * libevent 2.1.8_1: API for executing callback functions on events or timeouts
 * libffi 3.2.1_2: Foreign Function Interface
 * liblz4 1.8.1.2,1: LZ4 compression library, lossless and very fast
+* libnet 1.1.6_5,1: C library for creating IP packets
 * libpci 3.5.6_1: PCI configuration space I/O made easy
 * libsodium 1.0.16: Library to build higher-level cryptographic tools
 * libssh 0.7.5: Library implementing the SSH1 and SSH2 protocol
@@ -92,7 +93,7 @@
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.46: Open source LDAP client implementation
-* openvpn 2.4.5: Secure IP/Ethernet tunnel daemon
+* openvpn 2.4.5_1: Secure IP/Ethernet tunnel daemon
 * pciids 20180406: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
@@ -101,7 +102,7 @@
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
 * pkg 1.10.5: Package manager
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
-* pmacct 1.6.2: Accounting and aggregation tool for IPv4 and IPv6 traffic
+* pmacct 1.7.0: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py36-exabgp 4.0.2: BGP engine and route injector
 * py36-setuptools 39.0.1: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
@@ -111,9 +112,9 @@
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.6.2_1: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.22: Allow others to run commands as root
+* sudo 1.8.22_3: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
-* tmux 2.6_1: Terminal Multiplexer
+* tmux 2.7: Terminal Multiplexer
 * ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol
 
 -----------------------------------------------------

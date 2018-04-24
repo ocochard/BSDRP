@@ -16,7 +16,7 @@
 
 set -eu
 
-#### (default) Variables 
+#### (default) Variables
 # tolerance in %
 TOLERANCE=0.01
 # output file for iperf and pkt-gen
@@ -122,7 +122,6 @@ extract () {
 
 get_forwarding_rate () {
 	# Start load process
-	# 
 	[ -f ${RX_FILE} ] && rm ${RX_FILE}
 	[ -f ${TX_FILE} ] && rm ${TX_FILE}
 	# We are using pkt-gen, and its rate value is pps, need some conversion
@@ -198,7 +197,7 @@ do
 			TOLERANCE=$2
 			shift
 			shift
-			;;	
+			;;
         -t)
 			TX_NIC=$2
 			shift
@@ -333,7 +332,7 @@ for i in $(seq 1 16);do
 		[ ${STEP} -lt 2 ] && die "Offered load reached 0 ${UNIT} (Too much packets dropped/corrupted?), can't continue"
 		echo "  - Too big initial value, need to reduce STEP"
 		STEP=$(( STEP / 2 ))
-		OLOAD=$((OLOAD + STEP ))	
+		OLOAD=$((OLOAD + STEP ))
 	fi
 	FLOAT=$(echo "(${OLOAD} * ${TOLERANCE})/1" | bc)
 	if [ ${STEP} -le ${FLOAT} ]; then

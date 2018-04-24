@@ -220,7 +220,6 @@ add_quagga-bgp-netgen () {
 	umount ${NANO_WORLDDIR}/dev
 }
 
-# Need to check if this function works with cross-compiling architecture!!!!
 # Recursive complex fonction: Generate one function for each ports
 add_port () {
 	port=$(echo $1 | sed -e 's/\//_/')
@@ -296,35 +295,14 @@ EOF
 			# Run ldconfig before
 			CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
 			# Start the build
-			# With staging (mandatory for creating user packag during "install"),
-			# there is a bug if we use one command "make install package":
-			# It failed during do-package call. We had to do a "make install" && "make package"
-			# But this method failed if the port didn't support staging :-(
-			# Now I have to found a solution for avoiding this two same long command
-			if grep -q NO_STAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
-				CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-					MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-					UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
-					UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-					make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-					install package BATCH=yes -DWITH_PKGNG \
-					WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS "$2" clean'
-			else
-				CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-					MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-					UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
-					UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-					make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-					install BATCH=yes -DWITH_PKGNG \
-					WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS "$2" clean'
-				CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-					MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-					UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
-					UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-					make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-					package BATCH=yes -DWITH_PKGNG \
-					WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_SSP_PORTS "$2" clean'
-			fi
+			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+				MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
+				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
+				package install BATCH=yes -DWITH_PKGNG \
+				WITHOUT=\"NLS X11 DOCS EXAMPLES\" "$2" clean'
+
 			rm \${NANO_WORLDDIR}/etc/resolv.conf
 			rm -rf \${NANO_WORLDDIR}/usr/obj
 			rm -rf \${NANO_WORLDDIR}/usr/pobj

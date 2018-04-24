@@ -1,9 +1,9 @@
 #!/bin/sh
 #
-# Image manipulation tool for BSDRP 
+# Image manipulation tool for BSDRP
 # http://bsdrp.net
 #
-# Copyright (c) 2009-2012, The BSDRP Development Team 
+# Copyright (c) 2009-2018, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,7 @@ getoption () {
         	mount_img
        		;;
         umount)
-		umount_img 
+		umount_img
 		;;
 	update)
 		update_img
@@ -67,7 +67,7 @@ getoption () {
 	*)
        		if [ ! -n ${OPTION} ]; then
        			echo "missing option"
-        	else    
+        	else
             		echo "illegal option: $OPTION"
         	fi
         	usage
@@ -123,8 +123,8 @@ update_img () {
 		echo "Don't found ${BSDRP_SRC}/Files !"
 		exit 1
 	fi
-	
-	# Copying all Files (and create dir) 
+
+	# Copying all Files (and create dir)
 	# execpt:
 	# .svn and /usr/local/etc (because need special permission for quagga)
 	# boot/ (because line are added to this file in serial or dual mode)
@@ -159,7 +159,7 @@ check_img () {
  with this tools"
                 exit 1
         fi
-	
+
 }
 
 # Convert to qcow2 format
@@ -249,8 +249,8 @@ mount_img () {
 	echo " - root partition: ${DEST_ROOT}"
 	echo " - cfg partition : ${DEST_CFG}"
 	echo " - data partition : ${DEST_DATA}"
-	
-	exit 0	
+
+	exit 0
 }
 
 # umount the image
@@ -276,7 +276,7 @@ umount_img () {
 
 	# Destroy memory disk:
 	echo "Destroy ${MD}"
-	
+
 	if ! mdconfig -d -u $MD; then
 		echo "ERROR: Can't destroy md $MD"
 	fi
@@ -284,7 +284,7 @@ umount_img () {
 
 	# cleanup
 	rm /tmp/bsdrp_image_tool.tmp
-	
+
 	exit 0
 }
 
@@ -292,4 +292,3 @@ umount_img () {
 ### Main function ###
 
 getoption $*
-

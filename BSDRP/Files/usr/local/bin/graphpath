@@ -1,0 +1,150 @@
+#!/bin/sh
+#
+# ASCII graph route path
+# http://bsdrp.net
+#
+# Copyright (c) 2018, The BSDRP Development Team
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+set -eu
+
+# Functions definitions
+
+# A usefull function (from: http://code.google.com/p/sh-die/)
+die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+
+usage() {
+	echo "Usage:"
+	echo "$0 source-ip destination-ip"
+	exit 0
+}
+
+
+# Main function
+
+[  "$#" -ne 2 ] && usage
+
+# forwarding on?
+
+[ $(sysctl -n net.inet.ip.forwarding) -eq 0 ] && forwarding=false || forwarding=true
+[ $(sysctl -n net.inet6.ip6.forwarding) -eq  0 ] && forwarding6=false || forwarding6=true
+
+if [ $forwarding = false -o $forwarding6 = false ]; then
+	echo "This tool is designed for troubleshooting router table mainly"
+fi
+
+source_ip=$1
+destination_ip=$2
+
+for i in source destination; do
+	eval "
+		route -n get \${${i}_ip} > /tmp/output.txt || die \"Route towards \${${i}_ip} not found\"
+		${i}_gateway="LAN"
+		while read line; do
+			data=\$(echo \$line | cut -d ':' -f 1)
+			case \$data in
+			\"route to\")
+				${i}_routeto=\$(echo \$line | cut -d ':' -f 2 | tr -d ' ')
+				;;
+			destination)
+				${i}_destination=\$(echo \$line | cut -d ':' -f 2 | tr -d ' ')
+				;;
+			mask)
+				${i}_mask=\$(echo \$line | cut -d ':' -f 2 | tr -d ' ')
+				;;
+			gateway)
+				${i}_gateway=\$(echo \$line | cut -d ':' -f 2 | tr -d ' ')
+				#if source_gateway is not default 0.0.0.0
+				${i}_gateway_arp=\$(arp -n \${${i}_gateway} | cut -d ' ' -f 4)
+				;;
+			fib)
+				${i}_fib=\$(echo \$line | cut -d ':' -f 2)
+				;;
+			interface)
+				${i}_interface=\$(echo \$line | cut -d ':' -f 2 | tr -d ' ')
+				${i}_interface_mac=\$(ifconfig \${${i}_interface} link | grep ether | cut -d ' ' -f 2)
+				${i}_interface_ip=\$(ifconfig \${${i}_interface} inet | grep inet | cut -d ' ' -f 2)
+				;;
+			flags)
+				${i}_flags=\$(echo \$line | cut -d ':' -f 2)
+				;;
+			esac
+		done < /tmp/output.txt
+		if [ \"\${${i}_gateway}\" == \"LAN\" ]; then
+			${i}_gateway_arp=\$(arp -n \${${i}_ip} | cut -d ' ' -f 4)
+		fi
+	"
+done # for
+
+cat <<EOF
++----------------------------+
+|         source host        |
+| IP: ${source_ip}
+EOF
+if [ "${source_gateway}" != "LAN" ]; then
+	cat <<EOF
++----------------------------+
+              |
++----------------------------+
+|   router towards source    |
+| IP:  ${source_gateway}
+EOF
+fi
+cat <<EOF
+| ARP: ${source_gateway_arp}
++----------------------------+
+              |
++----------------------------+
+| IF:  ${source_interface}
+| MAC: ${source_interface_mac}
+| IP:  ${source_interface_ip}
+| net: ${source_destination}
+| mask:${source_mask}
+|                            |
+|          THIS ROUTER       |
+|                            |
+| net: ${destination_destination}
+| mask:${destination_mask}
+| IP:  ${destination_interface_ip}
+| MAC: ${destination_interface_mac}
+| IF:  ${destination_interface}
++----------------------------+
+              |
++----------------------------+
+| ARP: ${destination_gateway_arp}
+EOF
+if [ "${destination_gateway}" != "LAN" ]; then
+	cat <<EOF
+| IP:  ${destination_gateway}
+| router towards destination |
++----------------------------+
+              |
++----------------------------+
+EOF
+fi
+cat <<EOF
+| IP:  ${destination_ip}
+|      destination host      |
++----------------------------+
+EOF
