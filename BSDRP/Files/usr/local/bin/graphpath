@@ -1,7 +1,8 @@
 #!/bin/sh
 #
-# ASCII graph route path
-# http://bsdrp.net
+# ASCII graph route path: From a source and destination IP addresses, draw
+# a small graph of the network
+# https://bsdrp.net
 #
 # Copyright (c) 2018, The BSDRP Development Team
 # All rights reserved.
@@ -53,7 +54,7 @@ usage() {
 device="ROUTER"
 if [ $forwarding = false -o $forwarding6 = false ]; then
 	device="HOST  "
-	echo "This tool is designed for troubleshooting router table mainly"
+	echo "This tool is mainly designed for drawing router or firewall routing view"
 fi
 
 source_ip=$1
@@ -118,10 +119,12 @@ EOF
 	if [ "${source_gateway}" != "${destination_gateway}" ]; then
 		cat <<EOF
             --+---+---                          |
+              |                                 |
 EOF
 	else
 		cat <<EOF
             --+---+-----------------------------+---
+              |
 EOF
 	fi
 else
@@ -132,11 +135,11 @@ EOF
 printf '| IP:   %-18s   |\n' ${source_ip}
 	cat <<EOF
 +----------------------------+
+              |
 EOF
 fi
 if [ "${source_gateway}" != "LAN" ]; then
 	cat <<EOF
-              |
 +----------------------------+
 |   ROUTER TOWARDS SOURCE    |
 EOF
