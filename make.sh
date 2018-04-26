@@ -78,6 +78,7 @@ update_src () {
 		#cleaning local patced source
 		if [ ${SRC_METHOD} = "svn" ]; then
 			${SVN_CMD} revert -R ${FREEBSD_SRC}
+			${SVN_CMD} cleanup ${FREEBSD_SRC} --remove-unversioned
 		elif [ ${SRC_METHOD} = "git" ]; then
 			(cd ${FREEBSD_SRC}; git checkout . )
 		fi
@@ -105,6 +106,8 @@ update_port () {
 		#cleaning local patched ports sources
 		echo "Cleaning local port tree patches..."
 		${SVN_CMD} revert -R ${PORTS_SRC}
+		echo "Removing unrevisionned files..."
+		${SVN_CMD} cleanup ${PORTS_SRC} --remove-unversioned
 		echo "Updating ports tree sources..."
 		${SVN_CMD} update ${PORTS_SRC} -r ${PORTS_REV} \
 		|| die "Can't update ports sources"
@@ -119,7 +122,7 @@ patch_src() {
 	for patch in $(cd ${SRC_PATCH_DIR} && ls freebsd.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/src-patches; then
 			echo "Applying patch $patch..."
-			(${SVN_CMD} patch  ${SRC_PATCH_DIR}/$patch ${FREEBSD_SRC} | grep -B 4 'rejected hunk') && die "Patch failed"
+			(${SVN_CMD} patch  ${SRC_PATCH_DIR}/$patch ${FREEBSD_SRC} | grep -B 4 'rejected hunk\|Skipped') && die "Patch failed"
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/src-patches
 		fi
 	done
@@ -132,7 +135,7 @@ patch_port() {
 	for patch in $(cd ${PORT_PATCH_DIR} && ls ports.*.patch); do
 		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/ports-patches; then
 			echo "Applying patch $patch..."
-			(${SVN_CMD} patch ${PORT_PATCH_DIR}/$patch ${PORTS_SRC} | grep -B 4 'rejected hunk') && die "Patch failed"
+			(${SVN_CMD} patch ${PORT_PATCH_DIR}/$patch ${PORTS_SRC} | grep -B 4 'rejected hunk\|Skipped') && die "Patch failed"
 			echo $patch >> ${PROJECT_DIR}/FreeBSD/ports-patches
 		fi
 	done
