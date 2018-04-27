@@ -132,7 +132,7 @@ draw_block () {
 	local ip=$3          # IP address for src & dst host (=direct for a router)
 	local gateway=$4     #  IP address for a router
 	local gateway_arp=$5 # ARP cache if directly connected to "me" block
-	local postition=$6
+	local position=$6
 	left=""
 	right=""
 	# There is a special case: If ip=direct, this mean this block is useless
