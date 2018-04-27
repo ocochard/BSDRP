@@ -136,21 +136,21 @@ draw_block () {
 	left=""
 	right=""
 	# There is a special case: If ip=direct, this mean this block is useless
-	[ "$ip" == direct ] && return 0
+	[ "$ip" = direct ] && return 0
 	# If in second family mode, need to move or add vertical line
-	[ "${position}" == "left" ] && left="                  |               "
-	[ "${position}" == "right" ] && right="                  |"
+	[ "${position}" = "left" ] && left="                  |               "
+	[ "${position}" = "right" ] && right="                  |"
 	# If label is "ROUTER TOWARDS DESTINATION", need to move this block to the left
 	#echo ${label} | grep -q "ROUTER TOWARDS DESTINATION" && left="                  |               "
 	# If label is "ROUTER TOWARDS SOURCE", need to add an vertical line to the left"
 	#echo ${label} | grep -q "ROUTER TOWARDS SOURCE" && right="                  |"
-	[ "$model" == "dst" -a -z "${left}" ] && echo "${left}              |${right}"
+	[ "$model" = "dst" -a -z "${left}" ] && echo "${left}              |${right}"
 	echo "${left}+----------------------------+${right}"
 	printf '%s| %-26s |%s\n' "${left}" "${label}" "${right}"
 	printf '%s| IP:   %-21s|%s\n' "${left}" ${ip} "${right}"
-	[ "$gateway" == "direct" ] && printf '%s| ARP:  %-21s|%s\n' "${left}" "${gateway_arp}" "${right}"
+	[ "$gateway" = "direct" ] && printf '%s| ARP:  %-21s|%s\n' "${left}" "${gateway_arp}" "${right}"
 	echo "${left}+----------------------------+${right}"
-	[ "$model" == "src" -o -n "${left}" ] && echo "${left}              |               ${right}" || true
+	[ "$model" = "src" -o -n "${left}" ] && echo "${left}              |               ${right}" || true
 }
 
 draw_2blocks () {
@@ -166,14 +166,14 @@ draw_2blocks () {
 	else
     	printf '| IP:   %-18s   |    | IP:  %-18s    |\n' ${src_ip} ${dst_ip}
 	fi
-	if [ "${src_gateway}" == "direct" ]; then
+	if [ "${src_gateway}" = "direct" ]; then
 		printf '| ARP:  %-18s   |' ${src_gateway_arp}
-	elif [ "${dst_gateway}" == "direct" ]; then
+	elif [ "${dst_gateway}" = "direct" ]; then
 		printf '|                            |'
 	fi
-    if [ "${dst_gateway}" == "direct" ]; then
+    if [ "${dst_gateway}" = "direct" ]; then
         printf '    | ARP: %-18s    |\n' ${dst_gateway_arp}
-	elif [ "${src_gateway}" == "direct" ]; then
+	elif [ "${src_gateway}" = "direct" ]; then
 		printf '    |                            |\n'
     fi
 	echo "+----------------------------+    +----------------------------+"
@@ -260,9 +260,9 @@ get_freebsd() {
 					;;
 				esac
 			done < /tmp/output.txt
-			if [ \"\${${i}_gateway}\" == \"direct\" ]; then
+			if [ \"\${${i}_gateway}\" = \"direct\" ]; then
 				${i}_gateway_arp=\$(arp -n \${${i}_ip} | cut -d ' ' -f 4)
-				[ \"\${${i}_gateway_arp}\" == \"no\" ] && ${i}_gateway_arp='empty' || true
+				[ \"\${${i}_gateway_arp}\" = \"no\" ] && ${i}_gateway_arp='empty' || true
 			fi
 		"
 	done
@@ -278,10 +278,10 @@ get_linux () {
 	for i in src dst; do
 		eval "
 			# if route didn't fill _gateway, this mean its directly connected
-			${i}_gateway="direct"
+			${i}_gateway=\"direct\"
 
 			# No mask on linux (using a / into the destination variable)
-			${i}_mask=""
+			${i}_mask=\"\"
 
 			# call route only once
 			ip -o route get \${${i}_ip} > /tmp/output.txt
@@ -294,13 +294,13 @@ get_linux () {
 			# local 127.0.0.1 dev lo src 127.0.0.1
 
 			read ip via gateway dev if src if_ip < /tmp/output.txt
-			if [ \"\${via}\" == \"via\" ]; then
+			if [ \"\${via}\" = \"via\" ]; then
 				${i}_routeto=\${${i}_ip}
 				${i}_gateway=\${gateway}
 				${i}_gateway_arp=\$(ip neigh show \${${i}_gateway} | cut -d ' ' -f 5)
 				${i}_interface=\${if}
 				${i}_interface_ip=\$(echo \${if_ip} | cut -d ' ' -f1)
-			elif [ \"\${via}\" == \"dev\" ]; then
+			elif [ \"\${via}\" = \"dev\" ]; then
 				${i}_routeto=\${${i}_ip}
 				${i}_interface=\${gateway}
 				${i}_interface_ip=\$(echo \${if} | cut -d ' ' -f1)
@@ -316,9 +316,9 @@ get_linux () {
 			# 192.168.229.56/29 via 192.168.237.100 dev eth1.337
 			${i}_destination=\$(ip -o route show to match \${${i}_ip} | grep \${if} | cut -d ' ' -f1)
 
-			if [ \"\${${i}_gateway}\" == \"direct\" ]; then
+			if [ \"\${${i}_gateway}\" = \"direct\" ]; then
 				${i}_gateway_arp=\$(ip neigh show \${${i}_routeto} | cut -d ' ' -f 5)
-				[ \"\${${i}_gateway_arp}\" == \"no\" ] && ${i}_gateway_arp='empty' || true
+				[ \"\${${i}_gateway_arp}\" = \"no\" ] && ${i}_gateway_arp='empty' || true
 			fi
 		"
 	done
@@ -333,7 +333,7 @@ dst_ip=$2
 device="ROUTER"
 
 # Small checks
-[ "${src_ip}" == "${dst_ip}" ] && die "Same source and destination IP addresses"
+[ "${src_ip}" = "${dst_ip}" ] && die "Same source and destination IP addresses"
 
 OS=$(uname)
 case ${OS} in
@@ -353,7 +353,7 @@ if [ $forwarding = false -o $forwarding6 = false ]; then
 fi
 
 
-[ "${device}" == "HOST" ] && echo "This tool is mainly designed for drawing router or firewall routing view"
+[ "${device}" = "HOST" ] && echo "This tool is mainly designed for drawing router or firewall routing view"
 
 ### Start ASCII drawing
 
@@ -371,14 +371,14 @@ if [ "${src_interface}" != "${dst_interface}" ]; then
 else
 	# Second model family
 	draw_2blocks 'SOURCE HOST' 'DESTINATION HOST'
-	if [ "${src_gateway}" == "${dst_gateway}" ]; then
+	if [ "${src_gateway}" = "${dst_gateway}" ]; then
 		echo "            --+---+-----------------------------+---"
 		echo "              | "
 		draw_block src 'ROUTER' ${src_gateway} direct ${src_gateway_arp} ""
 	else
-		if [ "${src_gateway}" != "direct" -a "${dst_gateway}" == "direct" ]; then
+		if [ "${src_gateway}" != "direct" -a "${dst_gateway}" = "direct" ]; then
 			draw_block src 'ROUTER TOWARDS SOURCE' ${src_gateway} direct ${src_gateway_arp} "right"
-		elif [ "${dst_gateway}" != "direct" -a "${src_gateway}" == "direct" ]; then
+		elif [ "${dst_gateway}" != "direct" -a "${src_gateway}" = "direct" ]; then
 			draw_block dst 'ROUTER TOWARDS DESTINATION' ${dst_gateway} direct ${dst_gateway_arp} "left"
 		else
 			draw_2blocks 'ROUTER TOWARDS SOURCE' 'ROUTER TOWARDS DESTINATION'
