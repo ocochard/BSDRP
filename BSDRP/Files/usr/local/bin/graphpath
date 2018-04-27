@@ -212,10 +212,10 @@ get_freebsd() {
 	for i in src dst; do
 		eval "
 			# if route didn't fill _gateway, this mean its directly connected
-			${i}_gateway="direct"
+			${i}_gateway='direct'
 
 			# some route crossing PPP tun doesn't have _mask
-			${i}_mask="255.255.255.255"
+			${i}_mask='255.255.255.255'
 
 			# call route only once
 			route -n get \${${i}_ip} > /tmp/output.txt || die \"Route towards \${${i}_ip} not found\"
@@ -269,28 +269,29 @@ get_freebsd() {
 }
 
 get_linux () {
-	# Extract routes data
+	# Extract routes data from a Linux
+	# ip route has a non consistent output: STUPID Linux !
 	# Check if router enabled
 	[ $(cat /proc/sys/net/ipv4/ip_forward) -eq 0 ] && forwarding=false || forwarding=true
 	[ $(cat /proc/sys/net/ipv6/conf/all/forwarding) -eq  0 ] && forwarding6=false || forwarding6=true
 
 	# Populate src_* and dst_* variables
 	for i in src dst; do
+		[ -f /tmp/output.txt ] && rm /tmp/output.txt
 		eval "
 			# if route didn't fill _gateway, this mean its directly connected
-			${i}_gateway=\"direct\"
+			${i}_gateway='direct'
 
 			# No mask on linux (using a / into the destination variable)
-			${i}_mask=\"\"
+			${i}_mask=''
 
 			# call route only once
 			ip -o route get \${${i}_ip} > /tmp/output.txt
-			# Output are like this one:
-			# non consistent output... STUPID Linux!!!!!
+
+			# Output are like these:
 			# 2.2.2.3 via 10.253.52.126 dev eth2 src 10.253.52.115 \ cache
 			# 192.168.237.116 dev eth1.337 src 192.168.237.115 \    cache
 			# 10.253.52.124 dev eth2 src 10.253.52.115 \    cache
-
 			# local 127.0.0.1 dev lo src 127.0.0.1
 
 			read ip via gateway dev if src if_ip < /tmp/output.txt
@@ -305,7 +306,10 @@ get_linux () {
 				${i}_interface=\${gateway}
 				${i}_interface_ip=\$(echo \${if} | cut -d ' ' -f1)
 			else
+				echo "WARNING: Not supported condition!"
+				${i}_routeto=\${via}
 				${i}_interface=\${dev}
+				${i}_interface_ip=\${via}
 			fi
 			${i}_interface_mac=\$(ip link show \${${i}_interface}| grep ether | tr -s ' ' | cut -d ' ' -f 3)
 
@@ -321,6 +325,7 @@ get_linux () {
 				[ \"\${${i}_gateway_arp}\" = \"no\" ] && ${i}_gateway_arp='empty' || true
 			fi
 		"
+		[ -f /tmp/output.txt ] && rm /tmp/output.txt
 	done
 }
 
@@ -360,13 +365,13 @@ fi
 if [ "${src_interface}" != "${dst_interface}" ]; then
 	# First model family
 	if [ "${src_ip}" != "${src_interface_ip}" ]; then
-		draw_block src 'SOURCE HOST' ${src_ip} ${src_gateway} ${src_gateway_arp} ""
-		[ "${src_gateway}" != "direct" ] && draw_block src 'ROUTER TOWARDS SOURCE' ${src_gateway} direct ${src_gateway_arp} ""
+		draw_block src 'SOURCE HOST' "${src_ip}" "${src_gateway}" "${src_gateway_arp}" ""
+		[ "${src_gateway}" != "direct" ] && draw_block src 'ROUTER TOWARDS SOURCE' "${src_gateway}" direct "${src_gateway_arp}" ""
 	fi
 	draw_me
 	if [ "${dst_ip}" != "${dst_interface_ip}" ]; then
-		[ "${dst_gateway}" != "direct" ] && draw_block dst 'ROUTER TOWARDS DESTINATION' ${dst_gateway} direct ${dst_gateway_arp} ""
-		draw_block dst 'DESTINATION HOST' ${dst_ip} ${dst_gateway} ${dst_gateway_arp} ""
+		[ "${dst_gateway}" != "direct" ] && draw_block dst 'ROUTER TOWARDS DESTINATION' "${dst_gateway}" direct "${dst_gateway_arp}" ""
+		draw_block dst 'DESTINATION HOST' "${dst_ip}" "${dst_gateway}" "${dst_gateway_arp}" ""
 	fi
 else
 	# Second model family
@@ -374,12 +379,12 @@ else
 	if [ "${src_gateway}" = "${dst_gateway}" ]; then
 		echo "            --+---+-----------------------------+---"
 		echo "              | "
-		draw_block src 'ROUTER' ${src_gateway} direct ${src_gateway_arp} ""
+		draw_block src 'ROUTER' "${src_gateway}" direct "${src_gateway_arp}" ""
 	else
 		if [ "${src_gateway}" != "direct" -a "${dst_gateway}" = "direct" ]; then
-			draw_block src 'ROUTER TOWARDS SOURCE' ${src_gateway} direct ${src_gateway_arp} "right"
+			draw_block src 'ROUTER TOWARDS SOURCE' "${src_gateway}" direct "${src_gateway_arp}" "right"
 		elif [ "${dst_gateway}" != "direct" -a "${src_gateway}" = "direct" ]; then
-			draw_block dst 'ROUTER TOWARDS DESTINATION' ${dst_gateway} direct ${dst_gateway_arp} "left"
+			draw_block dst 'ROUTER TOWARDS DESTINATION' "${dst_gateway}" direct "${dst_gateway_arp}" "left"
 		else
 			draw_2blocks 'ROUTER TOWARDS SOURCE' 'ROUTER TOWARDS DESTINATION'
 		fi
