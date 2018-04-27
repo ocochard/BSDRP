@@ -218,7 +218,8 @@ EOF
 			[ -z "${hostfirst}" ] && echo "WARNING bad MAC addresse generated: hostfirst is empty"
 			hostsecond=$(echo ${host} | cut -d ' ' -f 2)
 			[ -z "${hostsecond}" ] && echo "WARNING bad MAC addresse generated: hostsecond is empty"
-			#need to convert jail id into hexa
+
+			#need to convert jail id and bid into hexa
 			if [ "$id" -gt 255 ]; then
 				cent=$(printf '%x\n' $((id / 255)))
 				unit=$(printf '%02x\n' $((id % 255)))
@@ -226,13 +227,18 @@ EOF
 				cent="0"
 				unit=$(printf '%02x\n' ${id})
 			fi
+			if [ "$bid" -lt 256 ]; then
+				bridgemac=$(printf '%02x\n' ${bid})
+			else
+				die "[BUG] bridge id bigged than 255, code not implemented"
+			fi
 			cat >> /etc/jail.conf <<EOF
     vnet.interface  += "epair${id}${bid}b";
     exec.prestart  += "ifconfig epair${id}${bid} create";
     # fix bug that can create conflict on same LAN for epair
-    # To do: if bridge id bigger than 10
-    exec.prestart  += "ifconfig epair${id}${bid}a ether 02:f${bid}:${hostfirst}:${hostsecond}:a${cent}:${unit}";
-    exec.prestart  += "ifconfig epair${id}${bid}b ether 02:f${bid}:${hostfirst}:${hostsecond}:b${cent}:${unit}";
+    # To do: if bridge id bigger than 255
+    exec.prestart  += "ifconfig epair${id}${bid}a ether 02:${bridgemac}:${hostfirst}:${hostsecond}:a${cent}:${unit}";
+    exec.prestart  += "ifconfig epair${id}${bid}b ether 02:${bridgemac}:${hostfirst}:${hostsecond}:b${cent}:${unit}";
     exec.prestart  += "ifconfig epair${id}${bid}a up";
     exec.prestart  += "ifconfig ${nicname} addm epair${id}${bid}a up";
     exec.poststop  += "ifconfig ${nicname} deletem epair${id}${bid}a";
