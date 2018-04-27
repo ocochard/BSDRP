@@ -292,7 +292,7 @@ if [ "${src_interface}" != "${dst_interface}" ]; then
 	draw_me
 	if [ "${dst_ip}" != "${dst_interface_ip}" ]; then
 		[ "${dst_gateway}" != "direct" ] && draw_block dst 'ROUTER TOWARDS DESTINATION' ${dst_gateway} direct ${dst_gateway_arp} ""
-		draw_block dst 'DESTINATION HOST' ${dst_ip} ${dst_gateway} ${dst_gateway_arp}
+		draw_block dst 'DESTINATION HOST' ${dst_ip} ${dst_gateway} ${dst_gateway_arp} ""
 	fi
 else
 	# Second model family
