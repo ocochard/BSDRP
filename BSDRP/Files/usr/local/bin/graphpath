@@ -202,7 +202,7 @@ draw_me () {
 	echo "+----------------------------+"
 }
 
-get_freebsd() {
+get_bsd() {
 	# Extract routes data
 	# Check if router enabled
 	[ $(sysctl -n net.inet.ip.forwarding) -eq 0 ] && forwarding=false || forwarding=true
@@ -245,25 +245,33 @@ get_freebsd() {
 					;;
 				gateway)
 					${i}_gateway=\$(echo \$line | cut -d ':' -f 2 | tr -d ' ')
-					${i}_gateway_arp=\$(arp -n \${${i}_gateway} | cut -d ' ' -f 4)
 					;;
 				fib)
 					${i}_fib=\$(echo \$line | cut -d ':' -f 2)
-						;;
+					;;
 				interface)
 					${i}_interface=\$(echo \$line | cut -d ':' -f 2 | tr -d ' ')
-					${i}_interface_mac=\$(ifconfig \${${i}_interface} link | grep ether | cut -d ' ' -f 2)
-					${i}_interface_ip=\$(ifconfig \${${i}_interface} inet | grep inet | cut -d ' ' -f 2)
+					${i}_interface_mac=\$(ifconfig \${${i}_interface} | grep -E 'ether|lladdr' | cut -d ' ' -f 2)
+					${i}_interface_ip=\$(ifconfig \${${i}_interface} | grep -w inet | cut -d ' ' -f 2)
 					;;
 				flags)
 					${i}_flags=\$(echo \$line | cut -d ':' -f 2)
 					;;
 				esac
 			done < /tmp/output.txt
-			if [ \"\${${i}_gateway}\" = \"direct\" ]; then
-				${i}_gateway_arp=\$(arp -n \${${i}_ip} | cut -d ' ' -f 4)
-				[ \"\${${i}_gateway_arp}\" = \"no\" ] && ${i}_gateway_arp='empty' || true
-			fi
+			[ \"\${${i}_gateway}\" = \"direct\" ] && lookup=\${${i}_routeto} || lookup=\${${i}_gateway}
+			case \${OS} in
+			OpenBSD)
+				${i}_gateway_arp=\$(arp -n \${lookup} | grep \${lookup} | tr -s ' ' | cut -d ' ' -f 2)
+				;;
+			FreeBSD)
+				${i}_gateway_arp=\$(arp -n \${lookup} | cut -d ' ' -f 4)
+				;;
+			*)
+				die \"Bug, not tested on this platform (\${OS})\"
+				;;
+			esac
+			[ \"\${${i}_gateway_arp}\" = \"no\" ] && ${i}_gateway_arp='empty' || true
 		"
 	done
 }
@@ -342,14 +350,14 @@ device="ROUTER"
 
 OS=$(uname)
 case ${OS} in
-	FreeBSD)
-		get_freebsd
+	FreeBSD|OpenBSD)
+		get_bsd
 		;;
 	Linux)
 		get_linux
 		;;
 	*)
-		die "This script was not tested on $(OS)"
+		die "This script was not tested on ${OS}"
 		;;
 esac
 
