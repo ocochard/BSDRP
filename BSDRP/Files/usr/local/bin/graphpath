@@ -251,7 +251,7 @@ get_bsd() {
 					;;
 				interface)
 					${i}_interface=\$(echo \$line | cut -d ':' -f 2 | tr -d ' ')
-					${i}_interface_mac=\$(ifconfig \${${i}_interface} | grep -E 'ether|lladdr' | cut -d ' ' -f 2)
+					${i}_interface_mac=\$(ifconfig \${${i}_interface} | grep -E 'ether|lladdr|address' | cut -d ' ' -f 2)
 					${i}_interface_ip=\$(ifconfig \${${i}_interface} | grep -w inet | cut -d ' ' -f 2)
 					;;
 				flags)
@@ -264,11 +264,8 @@ get_bsd() {
 			OpenBSD)
 				${i}_gateway_arp=\$(arp -n \${lookup} | grep \${lookup} | tr -s ' ' | cut -d ' ' -f 2)
 				;;
-			FreeBSD)
-				${i}_gateway_arp=\$(arp -n \${lookup} | cut -d ' ' -f 4)
-				;;
 			*)
-				die \"Bug, not tested on this platform (\${OS})\"
+				${i}_gateway_arp=\$(arp -n \${lookup} | cut -d ' ' -f 4)
 				;;
 			esac
 			[ \"\${${i}_gateway_arp}\" = \"no\" ] && ${i}_gateway_arp='empty' || true
@@ -350,7 +347,7 @@ device="ROUTER"
 
 OS=$(uname)
 case ${OS} in
-	FreeBSD|OpenBSD)
+	FreeBSD|OpenBSD|NetBSD)
 		get_bsd
 		;;
 	Linux)
