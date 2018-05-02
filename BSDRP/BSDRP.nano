@@ -389,6 +389,10 @@ add_port "net-mgmt/pmacct"
 # UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
 add_port "net/ucarp"
 
+# ARP level "ping" utility
+add_port "net/libnet"
+add_port "net/arping"
+
 # smcroute: Manipulate the multicast routes
 add_port "net/smcroute"
 
@@ -505,6 +509,9 @@ add_port "net-mgmt/bgpq3"
 
 # ixl_unlock: Allow to remove SFP restriction to ixl(4)
 add_port "net/ixl_unlock"
+
+# Add my ASCII network diagram tool
+add_port "net/graphpath"
 
 #### End of port list section ####
 
@@ -851,9 +858,7 @@ bsdrp_console_serial () {
 # Enable use of keyboard/vga and serial
 bsdrp_console_dual () {
 	# Set serial speed (3wire is available since 11 only)
-	sed -i "" -e /ttyu[1-2]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[1-2]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[0-2]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[0-1]/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use serial and vga console, set baud speed
 	echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 }

@@ -44,7 +44,7 @@
 * isc-dhcp43-server to 4.3.6
 * frr to 4.0
 * monit to 5.25
-* openvpn to 2.4.5
+* openvpn to 2.4.6
 * pmacct to 1.7.0
 * python to 3.6
 * smcroute to 2.4.0
@@ -67,12 +67,13 @@
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
 * frr 4.0_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.11.2: Cross-platform file change monitor
+* graphpath 1.0: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 201710: Process Count Monitor (PCM) for Intel processors
 * iperf 2.0.10_1: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.5: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
-* ipsec-tools 0.8.2_3: KAME racoon IKE daemon, ipsec-tools version
+* ipsec-tools 0.8.2_4: KAME racoon IKE daemon, ipsec-tools version
 * isc-dhcp43-server 4.3.6P1: ISC Dynamic Host Configuration Protocol server
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.13: JSON (JavaScript Object Notation) implementation in C
@@ -93,7 +94,7 @@
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.46: Open source LDAP client implementation
-* openvpn 2.4.5_1: Secure IP/Ethernet tunnel daemon
+* openvpn 2.4.6: Secure IP/Ethernet tunnel daemon
 * pciids 20180406: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
@@ -112,7 +113,7 @@
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.6.2_1: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.22_3: Allow others to run commands as root
+* sudo 1.8.22_5: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.7: Terminal Multiplexer
 * ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol

@@ -299,7 +299,9 @@ EOF
 				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 				package install BATCH=yes -DWITH_PKGNG \
-				WITHOUT=\"NLS X11 DOCS EXAMPLES\" -DWITH_DEBUG "$2" clean'
+				WITHOUT=\"NLS X11 DOCS EXAMPLES\" "$2" clean'
+			# add a -DWITH_DEBUG before the $2 for building port with debug
+			# and comment the strip command
 
 			rm \${NANO_WORLDDIR}/etc/resolv.conf
 			rm -rf \${NANO_WORLDDIR}/usr/obj
@@ -437,7 +439,7 @@ add_port "sysutils/ipmitool"
 add_port "security/sudo"
 
 # mpd5: multi-link PPP protocol server (netgraph dependent)
-add_port "net/mpd5" "WITH=\"DEBUG\""
+add_port "net/mpd5"
 
 # high-performance (bridge only) netmap-ipfw and netmap-fwd
 if [ ${NANO_ARCH} = "amd64" ]; then
@@ -507,6 +509,9 @@ add_port "net-mgmt/bgpq3"
 
 # ixl_unlock: Allow to remove SFP restriction to ixl(4)
 add_port "net/ixl_unlock"
+
+# Add my ASCII network diagram tool
+add_port "net/graphpath"
 
 #### End of port list section ####
 
@@ -838,14 +843,16 @@ usr/share/tmac/tmac.vgrind
 
 # Enable only serial system only
 bsdrp_console_serial () {
-	# Force first 2 serial console into "on" in case (IPMI SoL used often 2nd)
+	# Force first 2 serial console into "onifexists" in case (IPMI SoL often use 2nd port)
 	# Forcing 2 and 3 generates too lot's of getty open /dev/ttyu No such file or directory
 	sed -i "" -e '/^ttyu[0-1]/s/onifconsole/on/' ${NANO_WORLDDIR}/etc/ttys
-	# Enable local video devices only if they exist
+	# Enable local video devices only if they exists
 	#  this prevent to overload console with theses message:
 	#  getty[7]: open /dev/ttyv1: No such file or directory
 	#  init: getty repeating too quickly on port /dev/ttyv1, sleeping 30 secs
-	sed -i "" -e '/^ttyv[0-8]/s/on /onifexists /' ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e '/^ttyv[0-4]/s/on /onifexists /' ${NANO_WORLDDIR}/etc/ttys
+	# Disable some syscons devices: No need for 8 on a router
+	sed -i "" -e '/^ttyv[4-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use serial console early.
 	echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
 }
@@ -853,9 +860,7 @@ bsdrp_console_serial () {
 # Enable use of keyboard/vga and serial
 bsdrp_console_dual () {
 	# Set serial speed (3wire is available since 11 only)
-	sed -i "" -e /ttyu[1-2]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[1-2]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[0-2]/s/std.9600/std.${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e /ttyu[0-1]/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use serial and vga console, set baud speed
 	echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 }
