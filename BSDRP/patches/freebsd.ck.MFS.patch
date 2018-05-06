@@ -21911,13 +21911,3 @@ Index: sys/mips/mips/stdatomic.c
  #define	EMIT_FETCH_AND_OP_4(name, op)					\
  uint32_t								\
  __sync_##name##_4(uint32_t *mem, uint32_t val)				\
-Index: .
-===================================================================
---- .	(revision 328514)
-+++ .	(revision 328515)
-
-Property changes on: .
-___________________________________________________________________
-Modified: svn:mergeinfo
-## -0,0 +0,1 ##
-   Merged /head:r309260,309264,309266-309268,309270,310846,314435,316665,316691,316702
