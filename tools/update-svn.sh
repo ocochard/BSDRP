@@ -5,6 +5,10 @@ set -eu
 SVN_CMD=""
 rev=""
 
+# We need to use standard SVN language
+export LANG=C
+export LC_MESSAGES=C
+
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
