@@ -1,12 +1,12 @@
 Index: archivers/liblz4/Makefile
 ===================================================================
---- archivers/liblz4/Makefile	(revision 459648)
-+++ archivers/liblz4/Makefile	(working copy)
+--- archivers/liblz4/Makefile	(révision 469434)
++++ archivers/liblz4/Makefile	(copie de travail)
 @@ -17,6 +17,7 @@
- USES=		gmake pathfix pkgconfig
+ USES=		gmake pkgconfig
  USE_GITHUB=	yes
  USE_LDCONFIG=	yes
 +MAKE_ENV+=	TARGET_ARCH=
- #PATHFIX_MAKEFILEIN=	Makefile
- 
- ALL_TARGET=	default		# don't remove this
+ MAKE_ARGS=	PREFIX="${PREFIX}" LIBDIR="${PREFIX}/lib" \
+ 		INSTALL_PROGRAM="${INSTALL_PROGRAM}" \
+ 		MANDIR="${MAN1PREFIX}/man"
