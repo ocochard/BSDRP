@@ -58,7 +58,7 @@
 * bird 2.0.2_1: Dynamic IP routing daemon
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.36.1: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.37: Root certificate bundle from the Mozilla Project
 * curl 7.59.0: Command line tool and library for transferring data with URLs
 * devcpu-data 1.16: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
@@ -80,7 +80,7 @@
 * libev 4.24,1: Full-featured and high-performance event loop library
 * libevent 2.1.8_1: API for executing callback functions on events or timeouts
 * libffi 3.2.1_2: Foreign Function Interface
-* liblz4 1.8.1.2,1: LZ4 compression library, lossless and very fast
+* liblz4 1.8.2,1: LZ4 compression library, lossless and very fast
 * libnet 1.1.6_5,1: C library for creating IP packets
 * libpci 3.5.6_1: PCI configuration space I/O made easy
 * libsodium 1.0.16: Library to build higher-level cryptographic tools
@@ -101,7 +101,7 @@
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
 * pimd 2.3.2: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-* pkg 1.10.5: Package manager
+* pkg 1.10.5_1: Package manager
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.7.0: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py36-exabgp 4.0.2: BGP engine and route injector
@@ -113,7 +113,7 @@
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.6.2_1: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.22_5: Allow others to run commands as root
+* sudo 1.8.23_2: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.7: Terminal Multiplexer
 * ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol

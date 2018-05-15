@@ -1,12 +1,11 @@
 Index: archivers/liblz4/Makefile
 ===================================================================
---- archivers/liblz4/Makefile	(révision 469434)
+--- archivers/liblz4/Makefile	(révision 470011)
 +++ archivers/liblz4/Makefile	(copie de travail)
-@@ -17,6 +17,7 @@
- USES=		gmake pkgconfig
- USE_GITHUB=	yes
- USE_LDCONFIG=	yes
-+MAKE_ENV+=	TARGET_ARCH=
- MAKE_ARGS=	PREFIX="${PREFIX}" LIBDIR="${PREFIX}/lib" \
+@@ -20,5 +20,6 @@
+ MAKE_ARGS=	PREFIX="${PREFIX}" \
  		INSTALL_PROGRAM="${INSTALL_PROGRAM}" \
  		MANDIR="${MAN1PREFIX}/man"
++MAKE_ENV+=	TARGET_ARCH=
+ 
+ .include <bsd.port.mk>

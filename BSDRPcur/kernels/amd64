@@ -383,7 +383,6 @@ device      cxgb    # Chelsio T3 10 Gigabit Ethernet adapter driver
 device      cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
 device      my      # Myson Technology Ethernet PCI driver
 device      mxge    # Myricom Myri10GE 10 Gigabit Ethernet adapter driver
-device      nxge    # Neterion Xframe 10GbE Server/Storage adapter driver
 device		qlxge	# QLogic 8100 Series 10 Gigabit Ethernet
 device      oce     # Device driver for Emulex OneConnect 10Gb network adapters
 device		sfxge	# Solarflare 10Gb Ethernet adapter driver

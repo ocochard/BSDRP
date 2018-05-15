@@ -383,7 +383,6 @@ device		crypto			# Required by IPSEC
 #device      cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
 #device      my      # Myson Technology Ethernet PCI driver
 #device      mxge    # Myricom Myri10GE 10 Gigabit Ethernet adapter driver
-#device      nxge    # Neterion Xframe 10GbE Server/Storage adapter driver
 
 # Add support for some network appliances:
 options		CPU_SOEKRIS
