@@ -59,8 +59,8 @@
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.37: Root certificate bundle from the Mozilla Project
-* curl 7.59.0: Command line tool and library for transferring data with URLs
-* devcpu-data 1.16: Intel and AMD CPUs microcode updates
+* curl 7.60.0: Command line tool and library for transferring data with URLs
+* devcpu-data 1.16_1: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
@@ -95,7 +95,7 @@
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.46: Open source LDAP client implementation
 * openvpn 2.4.6: Secure IP/Ethernet tunnel daemon
-* pciids 20180406: Database of all known IDs used in PCI devices
+* pciids 20180428: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
