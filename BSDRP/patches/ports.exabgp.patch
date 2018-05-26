@@ -1,13 +1,13 @@
 Index: net/exabgp/Makefile
 ===================================================================
---- net/exabgp/Makefile	(revision 466230)
+--- net/exabgp/Makefile	(revision 470880)
 +++ net/exabgp/Makefile	(working copy)
-@@ -2,44 +2,52 @@
+@@ -2,10 +2,11 @@
  # $FreeBSD$
  
  PORTNAME=	exabgp
 -PORTVERSION=	3.4.21
-+PORTVERSION=	4.0.2
++PORTVERSION=	4.0.6
  CATEGORIES=	net
  MASTER_SITES=	GH \
  		ZI
@@ -15,9 +15,7 @@ Index: net/exabgp/Makefile
  
  MAINTAINER=	zi@FreeBSD.org
  COMMENT=	BGP engine and route injector
- 
--RUN_DEPENDS=	${PYTHON_PKGNAMEPREFIX}ipaddress>0:net/py-ipaddress
--
+@@ -15,31 +16,40 @@
  LICENSE=	BSD3CLAUSE
  LICENSE_FILE=	${WRKSRC}/COPYRIGHT
  
@@ -32,13 +30,13 @@ Index: net/exabgp/Makefile
 +SUB_FILES=	pkg-message
  SUB_LIST=	PYTHON_LIBDIR=${PYTHON_LIBDIR} PYTHON_CMD=${PYTHON_CMD} \
  		PYTHON_SITELIBDIR=${PYTHON_SITELIBDIR}
-+
  USE_RC_SUBR=	${PORTNAME}
  NO_ARCH=	yes
+ 
 +SHEBANG_FILES=	etc/exabgp/run/*.run \
 +		etc/exabgp/run/*.pl \
 +		etc/exabgp/run/*.py
- 
++
 +USE_GITHUB=	yes
 +GH_ACCOUNT=	Exa-Networks
 +
@@ -73,18 +71,18 @@ Index: net/exabgp/Makefile
  do-install-EXAMPLES-on:
 Index: net/exabgp/distinfo
 ===================================================================
---- net/exabgp/distinfo	(revision 466230)
+--- net/exabgp/distinfo	(revision 470880)
 +++ net/exabgp/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1516901646
 -SHA256 (Exa-Networks-exabgp-3.4.21_GH0.tar.gz) = 7c592e3fc07934d37ccca9695d9cedc711c0dd58a7fd423f8b5abc411f6c6c60
 -SIZE (Exa-Networks-exabgp-3.4.21_GH0.tar.gz) = 544105
-+TIMESTAMP = 1522388010
-+SHA256 (Exa-Networks-exabgp-4.0.2_GH0.tar.gz) = 5564eff2394714edc48e075d8810e545afe855bb36e47a02c1ab54be95c76188
-+SIZE (Exa-Networks-exabgp-4.0.2_GH0.tar.gz) = 2905335
++TIMESTAMP = 1527054749
++SHA256 (Exa-Networks-exabgp-4.0.6_GH0.tar.gz) = 11c4b40732334d073d58fd8c4e9f846972135932f8d6721c031a650f92469ea1
++SIZE (Exa-Networks-exabgp-4.0.6_GH0.tar.gz) = 2904391
 Index: net/exabgp/files/exabgp.in
 ===================================================================
---- net/exabgp/files/exabgp.in	(revision 466230)
+--- net/exabgp/files/exabgp.in	(revision 470880)
 +++ net/exabgp/files/exabgp.in	(working copy)
 @@ -24,34 +24,52 @@
  
@@ -150,7 +148,7 @@ Index: net/exabgp/files/exabgp.in
  run_rc_command "$1"
 Index: net/exabgp/files/exabgp.sh.in
 ===================================================================
---- net/exabgp/files/exabgp.sh.in	(revision 466230)
+--- net/exabgp/files/exabgp.sh.in	(revision 470880)
 +++ net/exabgp/files/exabgp.sh.in	(nonexistent)
 @@ -1,16 +0,0 @@
 -#!/bin/sh
@@ -184,37 +182,6 @@ Deleted: svn:mime-type
 ## -1 +0,0 ##
 -text/plain
 \ No newline at end of property
-Index: net/exabgp/files/patch-lib_exabgp_application_bgp.py
-===================================================================
---- net/exabgp/files/patch-lib_exabgp_application_bgp.py	(nonexistent)
-+++ net/exabgp/files/patch-lib_exabgp_application_bgp.py	(working copy)
-@@ -0,0 +1,11 @@
-+--- lib/exabgp/application/bgp.py.orig	2018-04-03 21:42:08 UTC
-++++ lib/exabgp/application/bgp.py
-+@@ -139,7 +139,7 @@ def main ():
-+ 		return
-+ 
-+ 	root = root_folder(options,['/bin/exabgp','/sbin/exabgp','/lib/exabgp/application/bgp.py','/lib/exabgp/application/control.py'])
-+-	etc = root + '/etc/exabgp'
-++	etc = '/etc/exabgp'
-+ 	os.environ['EXABGP_ETC'] = etc  # This is not most pretty
-+ 
-+ 	if options["--version"]:
-
-Property changes on: net/exabgp/files/patch-lib_exabgp_application_bgp.py
-___________________________________________________________________
-Added: fbsd:nokeywords
-## -0,0 +1 ##
-+yes
-\ No newline at end of property
-Added: svn:eol-style
-## -0,0 +1 ##
-+native
-\ No newline at end of property
-Added: svn:mime-type
-## -0,0 +1 ##
-+text/plain
-\ No newline at end of property
 Index: net/exabgp/files/patch-setup.py
 ===================================================================
 --- net/exabgp/files/patch-setup.py	(nonexistent)
@@ -247,7 +214,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/exabgp/pkg-plist
 ===================================================================
---- net/exabgp/pkg-plist	(revision 466230)
+--- net/exabgp/pkg-plist	(revision 470880)
 +++ net/exabgp/pkg-plist	(working copy)
 @@ -1,391 +1,94 @@
  @sample etc/exabgp/exabgp.env.sample

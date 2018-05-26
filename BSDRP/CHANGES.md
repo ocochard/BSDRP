@@ -38,7 +38,7 @@
 * bird to 2.0.2
 * devcpu-data 1.15
 * dhcprelya to 6.1
-* exabgp to 4.0.2
+* exabgp to 4.0.6
 * iperf to 2.0.10
 * iperf3 to 3.5
 * isc-dhcp43-server to 4.3.6
@@ -60,7 +60,7 @@
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.37: Root certificate bundle from the Mozilla Project
 * curl 7.60.0: Command line tool and library for transferring data with URLs
-* devcpu-data 1.16_1: Intel and AMD CPUs microcode updates
+* devcpu-data 1.16_2: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
@@ -104,7 +104,7 @@
 * pkg 1.10.5_1: Package manager
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.7.0: Accounting and aggregation tool for IPv4 and IPv6 traffic
-* py36-exabgp 4.0.2: BGP engine and route injector
+* py36-exabgp 4.0.6: BGP engine and route injector
 * py36-setuptools 39.0.1: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
