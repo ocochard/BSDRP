@@ -66,7 +66,6 @@ WITHOUT_FLOPPY=
 WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
 WITHOUT_GCOV=
-WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
 WITHOUT_GROFF=
@@ -111,12 +110,10 @@ WITHOUT_USB_GADGET_EXAMPLES=
 WITHOUT_WIRELESS=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
 WITHOUT_ZFS=
-WITH_GCC=
 WITH_IDEA=
 WITH_OFED=
 WITH_DEBUG_FILES=
 WITH_REPRODUCIBLE_BUILD=
-WITH_SSP=
 '
 
 # Customize commands.
@@ -370,7 +367,7 @@ add_port "net/frr" "WITH=\"MULTIPATH\""
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Bird: routing daemon
-add_port "net/bird"
+add_port "net/bird2"
 
 # FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"

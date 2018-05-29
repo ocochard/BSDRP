@@ -1,0 +1,62 @@
+#!/bin/sh
+# Bind Intel interrupt threads to different cores
+# Adapted from same chelsio RC script by farrokhi@FreeBSD.org
+
+# PROVIDE:	ix_affinity
+# REQUIRE:	FILESYSTEMS netif
+# KEYWORD:	nojail
+
+#
+# Add the following lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# ix_affinity_enable (bool):   Set to NO by default.
+#               Set it to YES to bind interrupt threads to different cores
+# ix_affinity_avoidncpu (int):  0 by default.
+#		Set to number of CPU to exclude from binding
+
+. /etc/rc.subr
+
+name="ix_affinity"
+rcvar=${name}_enable
+
+start_cmd="ix_affinity_start"
+
+ix_affinity_start()
+{
+	# Need an Intel NIC
+	#NQ=$(/sbin/sysctl -ni hw.ix.num_queues)
+	NQ=$(sysctl dev.ix.0. | grep irqs | wc -l | sed 's/ //g')
+	if [ "${NQ}" -eq 0 ]; then
+		echo "No Intel ix port detected"
+		exit 0;
+	fi
+
+	# Work with 2 CPU minimum
+	NCPU=$(/sbin/sysctl -n hw.ncpu)
+	if [ ${NCPU} -le 2 ]; then
+		echo "Not enought CPU detected"
+		exit 0
+	fi
+
+	# Exclude some CPU from binding
+	NCPU=$((NCPU - ${ix_affinity_avoidncpu}))
+	CPU=0
+	ix=$(sysctl dev.ix. | grep -c link_irq)
+	for i in $(seq 0 $((ix - 1))); do
+		for IRQ in `/usr/bin/vmstat -ai |\
+	    	/usr/bin/sed -nE "/ix${i}:rxq./ s/irq([[:digit:]]+):.*/\1/p"`; do
+			echo "Bind ix${i} IRQ ${IRQ} to CPU ${CPU}"
+			/usr/bin/cpuset -l ${CPU} -x ${IRQ}
+			CPU=$(((CPU + 1) % NCPU))
+		done
+		CPU=0
+	done
+}
+
+load_rc_config $name
+
+: ${ix_affinity_enable="NO"}
+: ${ix_affinity_avoidncpu=0}
+
+run_rc_command "$1"

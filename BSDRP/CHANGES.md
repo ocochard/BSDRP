@@ -1,10 +1,7 @@
 # Release 1.81 (NOT RELEASED)
 
-## NEED TO FIX
-* mpd5 is crashing at startup (Illegal instruction) on VM (confirmed on bhyve and VirtualBox)
-  it seems to be related to the way mpd5 port is build, need to dig
-
 ## New features
+* FreeBSD upgraded to 11.2-BETA3
 * Upgrade to bird 2, WARNING: previous configuration needs to be adapted!
     cf upgrade notes: https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
 * Add Yandex (ae@)'s patches that remove forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores)
@@ -39,7 +36,7 @@
 * devcpu-data 1.15
 * dhcprelya to 6.1
 * exabgp to 4.0.6
-* iperf to 2.0.10
+* iperf to 2.0.11
 * iperf3 to 3.5
 * isc-dhcp43-server to 4.3.6
 * frr to 4.0
@@ -55,10 +52,10 @@
 ## Packages list
 * arping 2.19: ARP level "ping" utility
 * bgpq3 0.1.33: Lightweight prefix-list generator for Cisco and Juniper routers
-* bird 2.0.2_1: Dynamic IP routing daemon
+* bird2 2.0.2_2: Dynamic IP routing daemon
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.37: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.37.1: Root certificate bundle from the Mozilla Project
 * curl 7.60.0: Command line tool and library for transferring data with URLs
 * devcpu-data 1.16_2: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
@@ -70,7 +67,7 @@
 * graphpath 1.0: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 201710: Process Count Monitor (PCM) for Intel processors
-* iperf 2.0.10_1: Tool to measure maximum TCP and UDP bandwidth
+* iperf 2.0.11: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.5: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_4: KAME racoon IKE daemon, ipsec-tools version
@@ -105,7 +102,7 @@
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.7.0: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py36-exabgp 4.0.6: BGP engine and route injector
-* py36-setuptools 39.0.1: Python packages installer
+* py36-setuptools 39.2.0: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
 * python36 3.6.5: Interpreted object-oriented programming language

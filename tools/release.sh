@@ -198,7 +198,12 @@ fi
 if [ ! -d ${SRC_DIR} ]; then
 	echo "You need to install BSDRP source"
 else
-	VERSION=`cat ${SRC_DIR}/${PROJECT}/Files/etc/version`
+    if [ -f ${SRC_DIR}/${PROJECT}/Files/etc/version ]; then
+		VERSION=$(cat ${SRC_DIR}/${PROJECT}/Files/etc/version)
+	else
+		MASTER=$(grep -E '^MASTER_PROJECT=' ${PROJECT}/make.conf | cut -d '"' -f 2)
+		VERSION=$(cat ${SRC_DIR}/${MASTER}/Files/etc/version)
+	fi
 fi
 
 if [ $# -eq 1 ]; then
