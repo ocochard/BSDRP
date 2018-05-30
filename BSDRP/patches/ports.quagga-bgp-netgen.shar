@@ -1,0 +1,53 @@
+# This is a shell archive.  Save it in a file, remove anything before
+# this line, and then unpack it by entering "sh file".  Note, it may
+# create directories; files and directories will be owned by you and
+# have default permissions.
+#
+# This archive contains:
+#
+#	net/quagga-bgp-netgen
+#	net/quagga-bgp-netgen/Makefile
+#	net/quagga-bgp-netgen/pkg-descr
+#	net/quagga-bgp-netgen/distinfo
+#
+echo c - net/quagga-bgp-netgen
+mkdir -p net/quagga-bgp-netgen > /dev/null 2>&1
+echo x - net/quagga-bgp-netgen/Makefile
+sed 's/^X//' >net/quagga-bgp-netgen/Makefile << '371c89f90e3f2cda5c52cff6114fcea2'
+X# $FreeBSD$
+X
+XPORTNAME=	quagga-bgp-netgen
+XPORTVERSION=	0.1
+XCATEGORIES=	net
+X
+XMAINTAINER=	olivier@FreeBSD.org
+XCOMMENT=	Generates Quagga/FRR bgp configuration file with lot's of routes
+X
+XLICENSE=	BSD2CLAUSE
+XLICENSE_FILE=	${WRKSRC}/LICENSE
+X
+XUSE_GITHUB=	yes
+XGH_ACCOUNT=	ocochard
+X
+XPLIST_FILES=	bin/${PORTNAME}
+X
+Xdo-install:
+X	${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${PREFIX}/bin/
+X
+X.include <bsd.port.mk>
+371c89f90e3f2cda5c52cff6114fcea2
+echo x - net/quagga-bgp-netgen/pkg-descr
+sed 's/^X//' >net/quagga-bgp-netgen/pkg-descr << '869fc9a7e72bf796866a76c60ae38127'
+XGenerate a Quagga/FRR bgp configuration file with lot's of routes.
+XAllows to use Quagga/FRR as simple BGP routes generator on a lab.
+X
+XWWW: https://github.com/ocochard/quagga-bgp-netgen
+869fc9a7e72bf796866a76c60ae38127
+echo x - net/quagga-bgp-netgen/distinfo
+sed 's/^X//' >net/quagga-bgp-netgen/distinfo << '0fb3c3f83f73881628e56c45d916475e'
+XTIMESTAMP = 1527662176
+XSHA256 (ocochard-quagga-bgp-netgen-0.1_GH0.tar.gz) = c7061f6a44d9dac1dcb8f0097ce79b63b5ec474fb57b3c6171190932940bd676
+XSIZE (ocochard-quagga-bgp-netgen-0.1_GH0.tar.gz) = 2069
+0fb3c3f83f73881628e56c45d916475e
+exit
+

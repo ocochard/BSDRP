@@ -203,23 +203,6 @@ add_netrate () {
 	umount ${NANO_WORLDDIR}/dev
 }
 
-# Add Quagga/FRR BGP route injector
-add_quagga-bgp-netgen () {
-	mkdir -p ${NANO_WORLDDIR}/dev
-	mount -t devfs devfs ${NANO_WORLDDIR}/dev
-	mount -t nullfs ${NANO_TOOLS}/tools/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/src
-	mkdir -p ${NANO_WORLDDIR}/usr/workdir
-	CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-		MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
-		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-		make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
-	CR 'make WRKDIRPREFIX=/usr/workdir -C /usr/src/ install clean'
-	rm -rf ${NANO_WORLDDIR}/usr/workdir
-	umount ${NANO_WORLDDIR}/usr/src
-	umount ${NANO_WORLDDIR}/dev
-}
-
 # Recursive complex fonction: Generate one function for each ports
 add_port () {
 	port=$(echo $1 | sed -e 's/\//_/')
@@ -443,6 +426,8 @@ add_port "net/mpd5"
 
 # high-performance (bridge only) netmap-ipfw and netmap-fwd
 if [ ${NANO_ARCH} = "amd64" ]; then
+	# Netmap's pkt-gen
+	add_port "net/pkt-gen"
 	#add_port "net/netmap-ipfw"
 	add_port "textproc/libucl"
 	add_port "net/netmap-fwd"
@@ -464,9 +449,6 @@ add_port "security/openvpn"
 #add_port "benchmarks/netpipe"
 add_port "benchmarks/iperf" "WITH=\"IPV6\""
 add_port "benchmarks/iperf3"
-
-# Netmap's pkt-gen
-add_port "net/pkt-gen"
 
 # LLDP daemon
 #add_port "net-mgmt/lldpd" "WITHOUT=\"BASH JSON PROPRIETARY SNMP XML\""
@@ -513,13 +495,13 @@ add_port "net/ixl_unlock"
 # Add my ASCII network diagram tool
 add_port "net/graphpath"
 
+# Add my Quagga/FRR BGP route generator
+add_port "net/quagga-bgp-netgen"
+
 #### End of port list section ####
 
 # Add netrate tools
 customize_cmd add_netrate
-
-# Add quagga-bgp-netgen tools
-customize_cmd add_quagga-bgp-netgen
 
 cleanup_ports () {
 	# When port are build, they install build dependency that are not usefull for running the port

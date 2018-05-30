@@ -1,13 +1,16 @@
-# Release 1.81 (NOT RELEASED)
+# Release 1.81 (30/05/2018)
 
 ## New features
 * FreeBSD upgraded to 11.2-BETA3
 * Upgrade to bird 2, WARNING: previous configuration needs to be adapted!
     cf upgrade notes: https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
-* Add Yandex (ae@)'s patches that remove forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores)
+* Add Yandex (ae@)'s patches limiting forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores)
 * Disable HyperThreading by default: Doesn't help regarding forwarding performance
-* ALTQ removed: Performance impact is too huge (-50% on 4core Atom with igb as example)
 * Add qlxgbe (QLogic 8300 series 10 Gigabit) and bnxt (Broadcom NetXtreme-C/NetXtreme-E) NIC drivers
+
+## Removed feature
+* pf's ALTQ removed: Performance impact is too huge (-50% on 4core Atom as example)
+* Only 64bits images releases, 32bit will be uploaded only if specific needs
 
 ## Bug fixes
 * Images CHS value fixed: An old bug in nanobsd was fixed, now disk image correctly
@@ -21,9 +24,6 @@
 ## Security fixes
 * Intel microcode update regarding Meltdown and Spectre (sysutils/devcpu-data, enabled by default)
 
-## Known bug
-* Only 64bits images releases, 32bit will be uploaded only if specific needs
-
 ## New package
 * bgpq3: Generate prefix-list for bird and FRR
 * intel-pcm: Tool for displaying PCM counters and energy usage
@@ -33,7 +33,7 @@
 
 ## Updated packages
 * bird to 2.0.2
-* devcpu-data 1.15
+* devcpu-data 1.17
 * dhcprelya to 6.1
 * exabgp to 4.0.6
 * iperf to 2.0.11
@@ -57,7 +57,7 @@
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.37.1: Root certificate bundle from the Mozilla Project
 * curl 7.60.0: Command line tool and library for transferring data with URLs
-* devcpu-data 1.16_2: Intel and AMD CPUs microcode updates
+* devcpu-data 1.17: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
@@ -106,6 +106,7 @@
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
 * python36 3.6.5: Interpreted object-oriented programming language
+* quagga-bgp-netgen 0.1: Generates Quagga/FRR bgp configuration file with lot's of routes
 * readline 7.0.3_1: Library for editing command lines as they are typed
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
