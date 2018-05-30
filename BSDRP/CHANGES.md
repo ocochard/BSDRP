@@ -1,7 +1,7 @@
 # Release 1.81 (30/05/2018)
 
 ## New features
-* FreeBSD upgraded to 11.2-BETA3
+* FreeBSD upgraded to 11.2-BETA3, but using pf code from -head (performance improvement)
 * Upgrade to bird 2, WARNING: previous configuration needs to be adapted!
     cf upgrade notes: https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
 * Add Yandex (ae@)'s patches limiting forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores)
@@ -23,6 +23,9 @@
 
 ## Security fixes
 * Intel microcode update regarding Meltdown and Spectre (sysutils/devcpu-data, enabled by default)
+
+## Know bugs
+* FRR 4.0 is not very stable
 
 ## New package
 * bgpq3: Generate prefix-list for bird and FRR

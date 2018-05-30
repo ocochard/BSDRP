@@ -265,35 +265,38 @@ ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
 cat > /etc/pf.conf <<EOF
 #Variables definitions
-TO_R2_if = "{" vtnet1 em1 "}"
-TO_R4_if = "{" vtnet2 em2 "}"
-R2 = "10.0.0.2/32"
-R4 = "10.0.0.4/32"
+#TO_R2_if = "{" vtnet1 em1 "}"
+#TO_R4_if = "{" vtnet2 em2 "}"
+#R2 = "10.0.0.2/32"
+#R4 = "10.0.0.4/32"
 
 ## ALTQ rules
 # Queue outgoing from \$TO_R4_if (R2 => R4)
 # Rate-limit inet 4 VPN traffic to 10Mb
-altq on \$TO_R4_if hfsc bandwidth 100Mb queue { VPN4_TO_R4, OTHER_TO_R4 }
-queue VPN4_TO_R4 bandwidth 10Mb hfsc(upperlimit 10Mb)
-queue OTHER_TO_R4 bandwidth 90Mb hfsc(default)
+#altq on \$TO_R4_if hfsc bandwidth 100Mb queue { VPN4_TO_R4, OTHER_TO_R4 }
+#queue VPN4_TO_R4 bandwidth 10Mb hfsc(upperlimit 10Mb)
+#queue OTHER_TO_R4 bandwidth 90Mb hfsc(default)
 
 # Queue for outgoing traffic from \$TO_R2_if (R4 => R2)
-altq on \$TO_R2_if hfsc bandwidth 100Mb queue { VPN4_TO_R2, OTHER_TO_R2 }
-queue VPN4_TO_R2 bandwidth 10Mb hfsc(upperlimit 10Mb)
-queue OTHER_TO_R2 bandwidth 90Mb hfsc(default)
+#altq on \$TO_R2_if hfsc bandwidth 100Mb queue { VPN4_TO_R2, OTHER_TO_R2 }
+#queue VPN4_TO_R2 bandwidth 10Mb hfsc(upperlimit 10Mb)
+#queue OTHER_TO_R2 bandwidth 90Mb hfsc(default)
 
 ## PF rules
 
 # R2 => R4
 # Shapping works on outgoing traffic only, but need to 'mark' traffic
 # entering the interface for putting returning traffic in the good queue
-pass in quick on \$TO_R2_if proto gre from \$R2 to \$R4 queue VPN4_TO_R2
+#pass in quick on \$TO_R2_if proto gre from \$R2 to \$R4 queue VPN4_TO_R2
 # Apply ALTQ to traffic that get out from \$TO_R4_if
-pass out quick on \$TO_R4_if proto gre from \$R2 to \$R4 queue VPN4_TO_R4
+#pass out quick on \$TO_R4_if proto gre from \$R2 to \$R4 queue VPN4_TO_R4
 
 # PF rules R4 => R2
-pass in quick on \$TO_R4_if proto gre from \$R4 to \$R2 queue VPN4_TO_R4
-pass out quick on \$TO_R2_if proto gre from \$R4 to \$R2 queue VPN4_TO_R2
+#pass in quick on \$TO_R4_if proto gre from \$R4 to \$R2 queue VPN4_TO_R4
+#pass out quick on \$TO_R2_if proto gre from \$R4 to \$R2 queue VPN4_TO_R2
+
+# ALTQ is disabled since BSDRP 1.81 (too much performance impact)
+pass all
 EOF
 
 cat > /usr/local/etc/bird.conf <<EOF
@@ -331,8 +334,6 @@ protocol direct {
 protocol rip R4inet4 {
     interface "vtnet2","em2" {
         version 2;
-        password "rippassword" { algorithm keyed md5; };
-        authentication cryptographic;
     };
     ipv4 {
          export all;
@@ -408,18 +409,6 @@ ip route 10.4.24.0/24 Null0
 EOF
 
 cat > /usr/local/etc/frr/ripd.conf <<EOF
-key chain rippass
- key 1
-  key-string rippassword
-!
-interface em2
- ip rip authentication key-chain rippass
- ip rip authentication mode md5
-!
-interface vtnet2
- ip rip authentication key-chain rippass
- ip rip authentication mode md5
-!
 router rip
  version 2
  network lo1
