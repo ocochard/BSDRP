@@ -278,7 +278,7 @@ EOF
 				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
 				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-				package install BATCH=yes -DWITH_PKGNG \
+				package install BATCH=yes \
 				WITHOUT=\"NLS X11 DOCS EXAMPLES\" "$2" clean'
 			# add a -DWITH_DEBUG before the $2 for building port with debug
 			# and comment the strip command
@@ -345,7 +345,7 @@ add_port "net-mgmt/rtrlib"
 
 # FRRouting: routing daemon
 add_port "devel/json-c"
-add_port "net/frr" "WITH=\"MULTIPATH\""
+add_port "net/frr3" "WITH=\"MULTIPATH\""
 # FRR installs some software that we don't need anymore after install:
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 

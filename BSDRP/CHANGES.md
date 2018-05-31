@@ -1,4 +1,4 @@
-# Release 1.81 (30/05/2018)
+# Release 1.81 (not released)
 
 ## New features
 * FreeBSD upgraded to 11.2-BETA3, but using pf code from -head (performance improvement)
@@ -24,9 +24,6 @@
 ## Security fixes
 * Intel microcode update regarding Meltdown and Spectre (sysutils/devcpu-data, enabled by default)
 
-## Know bugs
-* FRR 4.0 is not very stable
-
 ## New package
 * bgpq3: Generate prefix-list for bird and FRR
 * intel-pcm: Tool for displaying PCM counters and energy usage
@@ -42,7 +39,7 @@
 * iperf to 2.0.11
 * iperf3 to 3.5
 * isc-dhcp43-server to 4.3.6
-* frr to 4.0
+* frr to 3.0.3 (4.0 is not very stable and crashs with tun/gre/gif interfaces)
 * monit to 5.25
 * openvpn to 2.4.6
 * pmacct to 1.7.0
@@ -53,7 +50,7 @@
 * tmux to 2.6
 
 ## Packages list
-* arping 2.19: ARP level "ping" utility
+* arping 2.19: ARP level "ping" utility                                                                                                                                            [39/9414]
 * bgpq3 0.1.33: Lightweight prefix-list generator for Cisco and Juniper routers
 * bird2 2.0.2_2: Dynamic IP routing daemon
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
@@ -65,7 +62,7 @@
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr 4.0_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr 3.0.3: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.11.2: Cross-platform file change monitor
 * graphpath 1.0: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
