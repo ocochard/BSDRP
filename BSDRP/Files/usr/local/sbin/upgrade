@@ -55,6 +55,26 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 #Extract LABEL name
 LABEL=${NANO_DRIVE##*/}
 
+# Verbose umount: Give detail of why it can't unmount
+# $1: mount point to umount
+# return 0: ok
+# return 1: failed, and display troubleshooting data
+v_umount () {
+	mount=$1
+	[ -z "${mount}" ] && die "Bug calling $0: Empty argument"
+	[ -d "${mount}" ] || die "Bug calling $0: Not a directory"
+	if ! mount | grep -E -q "[[:space:]]on[[:space:]].*${mount}[[:space:]]"; then
+		echo "WARNING: ${mount} is not mounted!"
+	else
+		if ! umount ${mount}; then
+			echo "Can't unmount ${mount}, here is processes list using it:"
+			fstat | grep "${mount}" || true
+			return 1
+		fi
+	fi
+	return 0
+}
+
 # Get Label information for MBR
 mbr_get_info() {
 	# On a MBR system, partition number/name map is:
@@ -212,7 +232,7 @@ write_new_image() {
 			echo "WARNING: Can't copy post-upgrade script!"
 	fi
 
-	umount /tmp/sysupgrade || die "ERROR: Can't umount new image"
+	v_umount /tmp/sysupgrade || die "ERROR: Can't umount new image partition"
 
 	rm -r /tmp/sysupgrade || echo "WARNING: Can't remove tempdir"
 
@@ -221,10 +241,11 @@ write_new_image() {
 		mount /cfg || die "ERROR: Cant't mount /cfg"
 	fi
 	if ! cp /etc/fstab /cfg; then
-		umount /cfg || echo "Can't unmount /cfg"
+		v_umount /cfg || echo "Can't unmount /cfg"
 		die "ERROR: Can't save fstab"
 	fi
-	umount /cfg || die "ERROR: Can't umount /cfg"
+
+	v_umount /cfg || die "ERROR: Can't umount /cfg"
 	return 0
 }
 
