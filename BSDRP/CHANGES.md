@@ -1,16 +1,17 @@
-# Release 1.81 (not released)
+# Release 1.81 (01/06/2018)
 
 ## New features
-* FreeBSD upgraded to 11.2-BETA3, but using pf code from -head (performance improvement)
-* Upgrade to bird 2, WARNING: previous configuration needs to be adapted!
-    cf upgrade notes: https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
-* Add Yandex (ae@)'s patches limiting forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores)
-* Disable HyperThreading by default: Doesn't help regarding forwarding performance
+* FreeBSD upgraded to 11.2-BETA3
+* Yandex (ae@)'s patched: limiting forwarding and ipfw-stateful locking problem (from 5Mpps to 10Mpps on 8 cores Intel Xeon)
+* pf code merged from current (from 3Mpps to 5Mpps on 8 cores Intel Xeon)
+* Upgraded to bird 2, so previous configuration needs to be adapted!
+    cf bird upgrade notes: https://gitlab.labs.nic.cz/labs/bird/wikis/transition-notes-to-bird-2
+* Disable HyperThreading by default: This feature doesn't help regarding forwarding performance
 * Add qlxgbe (QLogic 8300 series 10 Gigabit) and bnxt (Broadcom NetXtreme-C/NetXtreme-E) NIC drivers
 
 ## Removed feature
 * pf's ALTQ removed: Performance impact is too huge (-50% on 4core Atom as example)
-* Only 64bits images releases, 32bit will be uploaded only if specific needs
+* Only 64bit images released (32bit "upgrade" images still available, but no "full" 32 bit images)
 
 ## Bug fixes
 * Images CHS value fixed: An old bug in nanobsd was fixed, now disk image correctly
