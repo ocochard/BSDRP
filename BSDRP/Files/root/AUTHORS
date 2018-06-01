@@ -17,25 +17,27 @@ The authors of BSDRP would like to thank the authors of these software for their
 * "show memory" is a bourn shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
 * PC Engines APU led drivers: Larry Baird
 * chelsio-queue-usage: Alexander V. Chernikov (melifaro@FreeBSD.org)
+* arping, license:GPLv2, http://www.habets.pp.se/synscan/programs.php?prog=arping
 * bgpq3, license:BSD2CLAUSE, https://github.com/snar/bgpq3
-* bird, license:GPLv2, http://bird.network.cz/
+* bird2, license:GPLv2, http://bird.network.cz/
 * bsnmp-regex, license:BSD3CLAUSE, http://thewalter.net/stef/software/bsnmp-regex/
 * bsnmp-ucd, license:BSD2CLAUSE, http://bsnmp-ucd.googlecode.com/
 * ca_root_nss, license:MPL20
+* curl, license:MIT, https://curl.haxx.se/
 * devcpu-data, license:EULA
 * dhcprelya, license:BSD3CLAUSE
 * easy-rsa, license:GPLv2, https://community.openvpn.net/openvpn/wiki/GettingEasyRsa
-* exabgp, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
 * flashrom, license:GPLv2, http://www.flashrom.org/
 * freevrrpd, license:BSD
-* frr, license:GPLv2, https://frrouting.org/
+* frr3, license:GPLv2, https://frrouting.org/
 * fswatch-mon, license:GPLv3, https://github.com/emcrisostomo/fswatch
+* graphpath, license:BSD2CLAUSE, https://github.com/ocochard/graphpath
 * indexinfo, license:BSD2CLAUSE, https://github.com/bapt/indexinfo
 * intel-pcm, license:BSD3CLAUSE, https://github.com/opcm/pcm
 * iperf, license:BSD2CLAUSE, https://sourceforge.net/projects/iperf2/
 * iperf3, license:BSD3CLAUSE, MIT, http://software.es.net/iperf/
 * ipmitool, license:BSD3CLAUSE, https://sourceforge.net/projects/ipmitool/
-* ipsec-tools, license:, http://ipsec-tools.sourceforge.net/
+* ipsec-tools, license:BSD3CLAUSE, http://ipsec-tools.sourceforge.net/
 * isc-dhcp43-server, license:ISCL, https://www.isc.org/products/DHCP/
 * ixl_unlock, license:BSD2CLAUSE, https://github.com/bu7cher/ixl_unlock
 * json-c, license:MIT, https://github.com/json-c/json-c/wiki
@@ -43,6 +45,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * libevent, license:BSD3CLAUSE, http://libevent.org/
 * libffi, license:MIT, http://sources.redhat.com/libffi/
 * liblz4, license:BSD2CLAUSE, GPLv2, http://www.lz4.org/
+* libnet, license:BSD2CLAUSE, https://sourceforge.net/projects/libnet-dev/
 * libpci, license:GPLv2, http://mj.ucw.cz/sw/pciutils/
 * libsodium, license:ISCL, https://github.com/jedisct1/libsodium
 * libssh, license:LGPL21, http://www.libssh.org/
@@ -62,13 +65,15 @@ The authors of BSDRP would like to thank the authors of these software for their
 * pim6sd, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
 * pimd, license:BSD3CLAUSE, http://troglobit.com/pimd.html
 * pimdd, license:MIT, http://antc.uoregon.edu/PIMDM/pimd-dense.html
-* pkg, license:BSD2CLAUSE, http://wiki.freebsd.org/pkgng
+* pkg, license:BSD2CLAUSE, https://wiki.freebsd.org/pkgng
+* pkt-gen, license:BSD2CLAUSE, https://github.com/luigirizzo/netmap
 * pmacct, license:GPLv2, http://www.pmacct.net/
-* py27-ipaddress, license:PSFL, https://pypi.python.org/pypi/ipaddress
-* py27-setuptools, license:MIT, https://pypi.python.org/pypi/setuptools
+* py36-exabgp, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
+* py36-setuptools, license:MIT, https://pypi.org/project/setuptools/
 * python, license:, http://www.python.org/
-* python2, license:, http://www.python.org/
-* python27, license:PSFL, https://www.python.org/
+* python3, license:, http://www.python.org/
+* python36, license:PSFL, https://www.python.org/
+* quagga-bgp-netgen, license:BSD2CLAUSE, https://github.com/ocochard/quagga-bgp-netgen
 * readline, license:GPLv3, https://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
 * rtrlib, license:MIT, http://rtrlib.realmv6.org/
 * smcroute, license:GPLv2+, https://github.com/troglobit/smcroute/
@@ -77,5 +82,3 @@ The authors of BSDRP would like to thank the authors of these software for their
 * tayga, license:GPLv2, http://www.litech.org/tayga/
 * tmux, license:ISCL, http://tmux.github.io/
 * ucarp, license:, http://www.ucarp.org/
-* x86info, license:GPLv2, https://github.com/kernelslacker/x86info
-
