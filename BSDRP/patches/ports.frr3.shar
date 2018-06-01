@@ -432,6 +432,8 @@ X# watchfrr_enable="YES"
 X#
 X# You may also wish to use the following variables to fine-tune startup:
 X# watchfrr_flags
+X# Example of flags usage:
+X# watchfrr_flags=" -d -r /usr/sbin/servicebBfrrbBrestartbB%s -s /usr/sbin/servicebBfrrbBstartbB%s -k /usr/sbin/servicebBfrrbBstopbB%s -b bB -t 30 zebra ripd ripngd ospfd ospf6d bgpd isisd"
 X
 X. /etc/rc.subr
 X
@@ -443,9 +445,10 @@ X
 Xstop_postcmd="rm -f $pidfile"
 X
 Xwatchfrr_enable=${watchfrr_enable:-"NO"}
+Xwatchfrr_flags=${watchfrr_flags:-"-d -r /usr/sbin/servicebBfrrbBrestartbB%s -s /usr/sbin/servicebBfrrbBstartbB%s -k /usr/sbin/servicebBfrrbBstopbB%s -b bB -t 30 zebra ripd ripngd ospfd ospf6d bgpd isisd"}
 X
 Xcommand=%%PREFIX%%/sbin/watchfrr
-Xpidfile=%%LOCALSTATE_DIR%%/watchfrr.pid
+Xpidfile=/var/run/frr/watchfrr.pid
 X
 Xrun_rc_command "$1"
 88920f3fdbbf828dde0e553c5d6190f0
