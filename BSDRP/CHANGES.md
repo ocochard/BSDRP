@@ -46,12 +46,12 @@
 * pmacct to 1.7.0
 * python to 3.6
 * smcroute to 2.4.0
-* strongswan to 5.6.2
+* strongswan to 5.6.3
 * sudo to 1.8.21
 * tmux to 2.6
 
 ## Packages list
-* arping 2.19: ARP level "ping" utility                                                                                                                                            [39/9414]
+* arping 2.19: ARP level "ping" utility
 * bgpq3 0.1.33: Lightweight prefix-list generator for Cisco and Juniper routers
 * bird2 2.0.2_2: Dynamic IP routing daemon
 * bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
@@ -63,7 +63,7 @@
 * easy-rsa 3.0.1_1: Small RSA key management package based on openssl
 * flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr 3.0.3: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr3 3.0.3: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.11.2: Cross-platform file change monitor
 * graphpath 1.0: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
@@ -86,7 +86,7 @@
 * libucl 0.8.0: Universal configuration library parser
 * lzo2 2.10_1: Portable speedy, lossless data compression library
 * mlvpn 2.3.1_2: Multi-link VPN
-* monit 5.25.0: Unix system management and proactive monitoring
+* monit 5.25.2: Unix system management and proactive monitoring
 * mpd5 5.8_3: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
@@ -111,7 +111,7 @@
 * readline 7.0.3_1: Library for editing command lines as they are typed
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
-* strongswan 5.6.2_1: Open Source IKEv2 IPsec-based VPN solution
+* strongswan 5.6.3: Open Source IKEv2 IPsec-based VPN solution
 * sudo 1.8.23_2: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.7: Terminal Multiplexer
