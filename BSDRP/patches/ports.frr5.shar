@@ -60,14 +60,9 @@ X
 XINFO=		frr
 X
 XOPTIONS_DEFINE=		FPM LDPD PAM SHELLACCESS TCPSOCKETS VTYSH MANPAGES \
-X					MULTIPATH TCMALLOC RPKI
+X					MULTIPATH TCMALLOC RPKI SNMP
 XOPTIONS_DEFAULT=	VTYSH RPKI FPM MANPAGES
 XOPTIONS_SUB=	yes
-X# SNMP option build failed
-X# checksum.c:79:21: warning: implicit declaration of function 'typeof' is
-X#   invalid in C99 [-Wimplicit-function-declaration]
-X# IRDP option needs something freebsd does not seem to have:
-X# configure: error: 'IRDP requires in_pktinfo at the moment!'
 X
 XFPM_DESC=		Enable Forwarding Plane Manager support
 XLDPD_DESC=		Build ldpd
@@ -109,6 +104,7 @@ X						libssh.so:security/libssh
 XTCMALLOC_CONFIGURE_ENABLE=	tcmalloc
 XTCMALLOC_LIB_DEPENDS=		libtcmalloc.so:devel/google-perftools
 XSNMP_CONFIGURE_ENABLE=		snmp
+XSNMP_CFLAGS=	"-std=gnu99"
 XSNMP_LIB_DEPENDS=		libnetsnmp.so:net-mgmt/net-snmp
 XTCPSOCKETS_CONFIGURE_ENABLE=	tcp-zebra
 XVTYSH_CONFIGURE_ENABLE=		vtysh
@@ -459,11 +455,20 @@ Xlib/libfrrospfapiclient.a
 Xlib/libfrrospfapiclient.so
 Xlib/libfrrospfapiclient.so.0
 Xlib/libfrrospfapiclient.so.0.0.0
+X%%SNMP%%lib/frr/modules/bgpd_snmp.so
+X%%SNMP%%lib/frr/modules/ospf6d_snmp.so
+X%%SNMP%%lib/frr/modules/ospfd_snmp.so
+X%%SNMP%%lib/frr/modules/ripd_snmp.so
+X%%SNMP%%lib/frr/modules/zebra_snmp.so
 X%%FPM%%lib/frr/modules/zebra_fpm.so
 X%%FPM%%lib/libfrrfpm_pb.a
 X%%FPM%%lib/libfrrfpm_pb.so
 X%%FPM%%lib/libfrrfpm_pb.so.0
 X%%FPM%%lib/libfrrfpm_pb.so.0.0.0
+X%%SNMP%%lib/libfrrsnmp.a
+X%%SNMP%%lib/libfrrsnmp.so
+X%%SNMP%%lib/libfrrsnmp.so.0
+X%%SNMP%%lib/libfrrsnmp.so.0.0.0
 X%%RPKI%%lib/frr/modules/bgpd_rpki.so
 X%%MANPAGES%%man/man1/frr.1.gz
 X%%MANPAGES%%man/man8/eigrpd.8.gz
@@ -517,8 +522,8 @@ X"setsockopt_so_sendbuf: fd 6: SO_SNDBUF set to 1048576 (requested 8388608)"
 XTo prevent such message kern.ipc.maxsockbuf can be increased:
 Xsysctl kern.ipc.maxsockbuf=16777216
 X
-XError messages like "if_ioctl(SIOCGIFMEDIA) failed: Invalid argument" and
-X crashs with tun,gre or gif interfaces are under investigation.
+XError messages like "if_ioctl(SIOCGIFMEDIA) failed: Invalid argument" are
+Xunder investigation.
 3aedd4cf16b7505c09767dde87d0f60b
 exit
 
