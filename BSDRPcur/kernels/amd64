@@ -374,6 +374,7 @@ device		crypto			# Required by IPSEC
 
 ####### BSDRP section #####
 
+options		NUMA	# Enables use of Non-Uniform Memory Access policies
 options		ZSTDIO	# Enable Zstd-compressed core dumps
 
 # BSDRP added NICs.

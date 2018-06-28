@@ -590,7 +590,7 @@ for i do
 	esac
 done
 
-if [ "$OS_DETECTED" = "Darwin" ]; then 
+if [ "$OS_DETECTED" = "Darwin" ]; then
 	id ${USER} | grep -q staff || \
 		die "[WARNING] Your user is not in the staff group"
 else

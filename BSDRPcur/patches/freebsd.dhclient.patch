@@ -1,8 +1,8 @@
 Index: sbin/dhclient/bpf.c
 ===================================================================
---- sbin/dhclient/bpf.c	(revision 320869)
+--- sbin/dhclient/bpf.c	(revision 335629)
 +++ sbin/dhclient/bpf.c	(working copy)
-@@ -173,6 +173,8 @@
+@@ -175,6 +175,8 @@
  	if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &on,
  	    sizeof(on)) == -1)
  		error("setsockopt(IP_HDRINCL): %m");
@@ -13,9 +13,9 @@ Index: sbin/dhclient/bpf.c
  
 Index: sbin/dhclient/dhclient.c
 ===================================================================
---- sbin/dhclient/dhclient.c	(revision 320869)
+--- sbin/dhclient/dhclient.c	(revision 335629)
 +++ sbin/dhclient/dhclient.c	(working copy)
-@@ -352,6 +352,7 @@
+@@ -374,6 +374,7 @@
  	int			 ch, fd, quiet = 0, i = 0;
  	int			 pipe_fd[2];
  	int			 immediate_daemon = 0;
@@ -23,7 +23,7 @@ Index: sbin/dhclient/dhclient.c
  	struct passwd		*pw;
  	pid_t			 otherpid;
  	cap_rights_t		 rights;
-@@ -371,6 +372,9 @@
+@@ -395,6 +396,9 @@
  		case 'd':
  			no_daemon = 1;
  			break;
@@ -33,7 +33,7 @@ Index: sbin/dhclient/dhclient.c
  		case 'l':
  			path_dhclient_db = optarg;
  			break;
-@@ -419,6 +423,7 @@
+@@ -443,6 +447,7 @@
  	if (quiet)
  		log_perror = 0;
  
@@ -41,20 +41,22 @@ Index: sbin/dhclient/dhclient.c
  	tzset();
  	time(&cur_time);
  
-@@ -541,7 +546,7 @@
- 	extern char	*__progname;
+@@ -563,8 +568,8 @@
+ usage(void)
+ {
  
- 	fprintf(stderr, "usage: %s [-bdqu] ", __progname);
+-	fprintf(stderr, "usage: %s [-bdqu] ", getprogname());
 -	fprintf(stderr, "[-c conffile] [-l leasefile] interface\n");
++	fprintf(stderr, "usage: %s [-bdqu] ", __progname);
 +	fprintf(stderr, "[-c conffile] [-l leasefile] [-f fib] interface\n");
  	exit(1);
  }
  
 Index: sbin/dhclient/dhcpd.h
 ===================================================================
---- sbin/dhclient/dhcpd.h	(revision 320869)
+--- sbin/dhclient/dhcpd.h	(revision 335629)
 +++ sbin/dhclient/dhcpd.h	(working copy)
-@@ -210,6 +210,7 @@
+@@ -215,6 +215,7 @@
  	int			 dead;
  	u_int16_t		 index;
  	int			 linkstat;

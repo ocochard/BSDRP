@@ -113,12 +113,10 @@ WITHOUT_USB_GADGET_EXAMPLES=
 WITHOUT_WIRELESS=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
 WITHOUT_ZFS=
-WITH_GCC=
 WITH_IDEA=
 WITH_OFED=
 WITH_DEBUG_FILES=
 WITH_REPRODUCIBLE_BUILD=
-WITH_SSP=
 '
 
 # Customize commands.
@@ -350,7 +348,7 @@ add_port "net-mgmt/rtrlib"
 
 # FRRouting: routing daemon
 add_port "devel/json-c"
-add_port "net/frr3" "WITH=\"MULTIPATH\""
+add_port "net/frr5" "WITH=\"MULTIPATH\""
 # FRR installs some software that we don't need anymore after install:
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
@@ -541,6 +539,7 @@ ninja
 p5-gettext
 perl5
 pkgconf
+python27
 py36-Babel
 py36-Jinja2
 py36-MarkupSafe
