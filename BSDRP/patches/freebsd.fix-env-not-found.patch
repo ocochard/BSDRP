@@ -1,0 +1,17 @@
+Index: Makefile.inc1
+===================================================================
+--- Makefile.inc1	(revision 333008)
++++ Makefile.inc1	(working copy)
+@@ -963,9 +963,9 @@
+ .endif
+ 
+ ITOOLS=	[ awk cap_mkdb cat chflags chmod chown cmp cp \
+-	date echo egrep find grep id install ${_install-info} \
+-	ln make mkdir mtree mv pwd_mkdb \
+-	rm sed services_mkdb sh strip sysctl test true uname wc ${_zoneinfo} \
++	date echo egrep env find grep hostname id install ${_install-info} \
++	ln make mkdir mktemp mtree mv pwd_mkdb \
++	rm sed services_mkdb sh strip sysctl test touch true uname wc ${_zoneinfo} \
+ 	${LOCAL_ITOOLS}
+ 
+ # Needed for share/man

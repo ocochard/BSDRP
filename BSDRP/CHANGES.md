@@ -1,10 +1,16 @@
 # Release 1.91 (not released)
 
+## New features
+* Base upgraded to FreeBSD 11.2-RELEASE
+
 ## Bug fixes
 * Fix upgrade script that didn't wait for autosave end
+* bsnmpd not showing out octets for vlan interfaces [issue 8](https://github.com/ocochard/BSDRP/issues/8)
+* FRR: Fix set metric in route-map [issue 21](https://github.com/ocochard/BSDRP/issues/21)
 
 ## upgraded packages
 * easy-rsa to 3.0.4
+* frr to 5.0
 * iperf to 2.0.12
 * iperf3 to 3.6
 

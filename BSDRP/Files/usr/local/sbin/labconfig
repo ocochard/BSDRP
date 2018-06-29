@@ -47,10 +47,12 @@ full_vm2 () {
 sysrc hostname=R2
 sysrc rtadvd_enable=YES
 sysrc rtadvd_interfaces="em0"
+sysrc vlans_em1="23"
+sysrc ifconfig_em1="up"
 sysrc ifconfig_em0="inet 10.0.12.2/24"
 sysrc ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64"
-sysrc ifconfig_em1="inet 10.0.23.2/24"
-sysrc ifconfig_em1_ipv6="inet6 2001:db8:23::2 prefixlen 64"
+sysrc ifconfig_em1_23="inet 10.0.23.2/24"
+sysrc ifconfig_em1_24_ipv6="inet6 2001:db8:23::2 prefixlen 64"
 sysrc cloned_interfaces="lo1"
 sysrc ifconfig_lo1="inet 10.0.0.2/32"
 sysrc ifconfig_lo1_ipv6="inet6 2001:db8::2 prefixlen 128"
@@ -60,9 +62,6 @@ sysrc dhcprelya_servers="10.0.45.5"
 sysrc dhcprelya_ifaces=em0
 sysrc mpd_enable=YES
 sysrc mpd_flags="-b -s ppp"
-#sysrc ngnetflow_enable=YES
-#sysrc ngnetflow_if=em0
-#sysrc ngnetflow_dst="10.0.12.1:2055"
 sysrc ipsec_enable=YES
 sysrc ipsec_file="/etc/ipsec.conf"
 sysrc pimd_enable=YES
@@ -247,16 +246,17 @@ service freevrrpd start
 service frr start
 service dhcprelya start
 service mpd5 start
-#service ngnetflow start
 service pimd start
 echo "VM2 configured"
 }
 
 full_vm3 () {
 sysrc hostname=R3
-sysrc ifconfig_em1="inet 10.0.23.3/24"
+sysrc vlans_em1="23"
+sysrc ifconfig_em1="up"
+sysrc ifconfig_em1_23="inet 10.0.23.3/24"
+sysrc ifconfig_em1_23_ipv6="inet6 2001:db8:23::3 prefixlen 64"
 sysrc ifconfig_em2="inet 10.0.34.3/24"
-sysrc ifconfig_em1_ipv6="inet6 2001:db8:23::3 prefixlen 64"
 sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::3 prefixlen 64"
 sysrc bird_enable=YES
 sysrc pf_enable=YES
@@ -265,7 +265,7 @@ ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
 cat > /etc/pf.conf <<EOF
 #Variables definitions
-#TO_R2_if = "{" vtnet1 em1 "}"
+#TO_R2_if = "{" vtnet1.23 em1.23 "}"
 #TO_R4_if = "{" vtnet2 em2 "}"
 #R2 = "10.0.0.2/32"
 #R4 = "10.0.0.4/32"
@@ -598,14 +598,19 @@ fi
 #Need to reduce the default queue size too
 #explanation on chapter "7.2.1.        Pipe Queues"
 #http://www.freebsd-howto.com/HOWTO/Ipfw-HOWTO
-\${fwcmd} pipe 10 config bw 20Mbit/s queue 2Mbytes
-\${fwcmd} pipe 20 config bw 20Mbit/s queue 2Mbytes
-#Traffic getting out vtnet2, is VPN PPTP traffic
-\${fwcmd} add 2000 pipe 10 all from 2001:db8::4 to 2001:db8::2 out via any
-#Traffic getting out em3, is clear traffic
-\${fwcmd} add 2001 pipe 20 all from 2001:db8:12::/64 to 2001:db8:56::/64 out via any
+\${fwcmd} pipe 60 config bw 20Mbit/s queue 2Mbytes
+\${fwcmd} pipe 61 config bw 20Mbit/s queue 2Mbytes
+\${fwcmd} pipe 40 config bw 10Mbit/s queue 1Mbytes
+\${fwcmd} pipe 41 config bw 10Mbit/s queue 1Mbytes
+#Traffic to/from 10.0.0.4 to/from 10.0.0.2 is VPN PPTP traffic
+#It's useless to shape input traffic, in case of UDP it's too late
+#because already on the link
+\${fwcmd} add pipe 40 all from 10.0.0.4 to 10.0.0.2 out via any
+\${fwcmd} add pipe 41 all from 10.0.0.2 to 10.0.0.4 out via any
+\${fwcmd} add pipe 60 all from 2001:db8::4 to 2001:db8::2 out via any
+\${fwcmd} add pipe 61 all from 2001:db8::2 to 2001:db8::4 out via any
 #We don't want to block traffic, only shape some
-\${fwcmd} add 2002 allow ip from any to any
+\${fwcmd} add allow ip from any to any
 EOF
 
 config save
