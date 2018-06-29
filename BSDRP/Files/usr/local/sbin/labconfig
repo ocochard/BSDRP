@@ -452,7 +452,6 @@ router ospf6
  router-id 0.0.0.4
  redistribute isis
  interface ng1 area 0.0.0.0
- interface lo1 area 0.0.0.0
  interface em3 area 0.0.0.0
  interface vtnet3 area 0.0.0.0
 EOF
@@ -460,22 +459,19 @@ EOF
 cat > /usr/local/etc/frr/isisd.conf <<EOF
 interface lo1
  ip router isis BSDRP
- isis passive
 !
 interface em3
  ip router isis BSDRP
  ipv6 router isis BSDRP
 !
 interface vtnet3
- ip router isis BSDRPa
+ ip router isis BSDRP
  ipv6 router isis BSDRP
 !
 interface ng0
  ip router isis BSDRP
- isis passive
 !
 interface ng1
- isis passive
  ipv6 router isis BSDRP
 !
 router isis BSDRP
@@ -595,21 +591,17 @@ fi
 
 # Flush out the list before we begin.
 \${fwcmd} -f flush
-#Need to reduce the default queue size too
-#explanation on chapter "7.2.1.        Pipe Queues"
-#http://www.freebsd-howto.com/HOWTO/Ipfw-HOWTO
-\${fwcmd} pipe 60 config bw 20Mbit/s queue 2Mbytes
-\${fwcmd} pipe 61 config bw 20Mbit/s queue 2Mbytes
-\${fwcmd} pipe 40 config bw 10Mbit/s queue 1Mbytes
-\${fwcmd} pipe 41 config bw 10Mbit/s queue 1Mbytes
-#Traffic to/from 10.0.0.4 to/from 10.0.0.2 is VPN PPTP traffic
-#It's useless to shape input traffic, in case of UDP it's too late
-#because already on the link
+# Create hard-limited pipes: One for each direction
+\${fwcmd} pipe 60 config bw 20Mbit/s
+\${fwcmd} pipe 61 config bw 20Mbit/s
+\${fwcmd} pipe 40 config bw 10Mbit/s
+\${fwcmd} pipe 41 config bw 10Mbit/s
+# Put PPTP Traffic into pipes
 \${fwcmd} add pipe 40 all from 10.0.0.4 to 10.0.0.2 out via any
-\${fwcmd} add pipe 41 all from 10.0.0.2 to 10.0.0.4 out via any
+\${fwcmd} add pipe 41 all from 10.0.0.2 to 10.0.0.4 in via any
 \${fwcmd} add pipe 60 all from 2001:db8::4 to 2001:db8::2 out via any
-\${fwcmd} add pipe 61 all from 2001:db8::2 to 2001:db8::4 out via any
-#We don't want to block traffic, only shape some
+\${fwcmd} add pipe 61 all from 2001:db8::2 to 2001:db8::4 in via any
+# We don't want to block traffic, only shape some
 \${fwcmd} add allow ip from any to any
 EOF
 
@@ -645,7 +637,11 @@ hostname R5
 service devfs restart
 service netif restart
 service kld start
-tenant -c -j jail5 -i em3,epair0a
+if ifconfig -l | grep -q vtnet; then
+	tenant -c -j jail5 -i vtnet3,epair0a
+else
+	tenant -c -j jail5 -i em3,epair0a
+fi
 tenant -c -j jail6 -i epair0b
 sysrc -f /etc/jails/jail5/rc.conf hostname=jail5
 sysrc -f /etc/jails/jail5/rc.conf ifconfig_em3="inet 10.0.45.5/24"
