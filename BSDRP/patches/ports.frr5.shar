@@ -14,6 +14,7 @@
 #	net/frr5/files/patch-Makefile.am
 #	net/frr5/files/frr.in
 #	net/frr5/files/watchfrr.in
+#	net/frr5/files/patch-zebra_ioctl.c
 #	net/frr5/files/patch-zebra_zserv.c
 #	net/frr5/pkg-plist
 #	net/frr5/pkg-message
@@ -346,6 +347,29 @@ Xpidfile=/var/run/frr/watchfrr.pid
 X
 Xrun_rc_command "$1"
 d777544ed5a7896e32dc2c52aabcee4b
+echo x - net/frr5/files/patch-zebra_ioctl.c
+sed 's/^X//' >net/frr5/files/patch-zebra_ioctl.c << 'c618ea7376e5974179a186c152b23f34'
+X--- zebra/ioctl.c.orig	2018-06-08 01:39:07 UTC
+X+++ zebra/ioctl.c
+X@@ -430,10 +430,13 @@ void if_get_flags(struct interface *ifp)
+X 		strncpy(ifmr.ifm_name, ifp->name, IFNAMSIZ);
+X 
+X 		/* Seems not all interfaces implement this ioctl */
+X-		if (if_ioctl(SIOCGIFMEDIA, (caddr_t)&ifmr) < 0)
+X-			zlog_err("if_ioctl(SIOCGIFMEDIA) failed: %s",
+X-				 safe_strerror(errno));
+X-		else if (ifmr.ifm_status & IFM_AVALID) /* Link state is valid */
+X+		if (if_ioctl(SIOCGIFMEDIA, (caddr_t)&ifmr) < 0) {
+X+			/* Ignore EINVAL to avoid being too verbose */
+X+			if (errno != EINVAL)
+X+				zlog_err("if_ioctl(SIOCGIFMEDIA) failed: %s",
+X+					 safe_strerror(errno));
+X+		} else if (ifmr.ifm_status
+X+			   & IFM_AVALID) /* Link state is valid */
+X 		{
+X 			if (ifmr.ifm_status & IFM_ACTIVE)
+X 				SET_FLAG(ifreq.ifr_flags, IFF_RUNNING);
+c618ea7376e5974179a186c152b23f34
 echo x - net/frr5/files/patch-zebra_zserv.c
 sed 's/^X//' >net/frr5/files/patch-zebra_zserv.c << '5191c66b345094a5a161d339bdf4cada'
 X--- zebra/zserv.c.orig	2018-06-08 01:39:07 UTC
@@ -608,8 +632,7 @@ X"setsockopt_so_sendbuf: fd 6: SO_SNDBUF set to 1048576 (requested 8388608)"
 XTo prevent such message kern.ipc.maxsockbuf can be increased:
 Xsysctl kern.ipc.maxsockbuf=16777216
 X
-XError messages like "if_ioctl(SIOCGIFMEDIA) failed: Invalid argument" are
-Xunder investigation.
+XError message "ifam_read() doesn't read all socket data" is under investigation
 3aedd4cf16b7505c09767dde87d0f60b
 exit
 
