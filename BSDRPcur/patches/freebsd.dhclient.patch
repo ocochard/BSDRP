@@ -47,7 +47,7 @@ Index: sbin/dhclient/dhclient.c
  
 -	fprintf(stderr, "usage: %s [-bdqu] ", getprogname());
 -	fprintf(stderr, "[-c conffile] [-l leasefile] interface\n");
-+	fprintf(stderr, "usage: %s [-bdqu] ", __progname);
++	fprintf(stderr, "usage: %s [-bdqu] ", getprogname());
 +	fprintf(stderr, "[-c conffile] [-l leasefile] [-f fib] interface\n");
  	exit(1);
  }

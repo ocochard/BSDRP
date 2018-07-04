@@ -28,9 +28,11 @@ makeoptions WITH_CTF=1      # Run ctfconvert(1) for DTrace support
 
 options 	SCHED_ULE		# ULE scheduler
 options 	PREEMPTION		# Enable kernel thread preemption
+options 	VIMAGE			# Subsystem virtualization, e.g. VNET
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
-options		IPSEC_SUPPORT	# Allow kldload of ipsec and tcpmd5
+options 	IPSEC			# IP (v4/v6) security
+options 	IPSEC_SUPPORT		# Allow kldload of ipsec and tcpmd5
 options 	TCP_HHOOK		# hhook(9) framework for TCP
 options 	TCP_OFFLOAD		# TCP offload
 options 	SCTP			# Stream Control Transmission Protocol
@@ -84,6 +86,12 @@ options     INCLUDE_CONFIG_FILE     # Include this file in kernel
 options		KDB		# Enable kernel debugger support.                       
 options		KDB_TRACE	# Print a stack trace for a panic.
 
+# Kernel dump features.
+options 	EKCD			# Support for encrypted kernel dumps
+options 	GZIO			# gzip-compressed kernel and user dumps
+options 	ZSTDIO			# zstd-compressed kernel and user dumps
+options 	NETDUMP			# netdump(4) client support
+
 # To make an SMP kernel, the next two lines are needed
 options 	SMP			# Symmetric MultiProcessor Kernel
 device		apic			# I/O APIC
@@ -109,11 +117,6 @@ device		siis			# SiliconImage SiI3124/SiI3132/SiI3531 SATA
 
 # SCSI Controllers
 device		ahc			# AHA2940 and onboard AIC7xxx devices
-options 	AHC_REG_PRETTY_PRINT	# Print register bitfields in debug
-					# output.  Adds ~128k to driver.
-device		ahd			# AHA39320/29320 and onboard AIC79xx devices
-options 	AHD_REG_PRETTY_PRINT	# Print register bitfields in debug
-					# output.  Adds ~215k to driver.
 device		esp			# AMD Am53C974 (Tekram DC-390(T))
 device		hptiop			# Highpoint RocketRaid 3xxx series
 device		isp			# Qlogic family
@@ -201,8 +204,6 @@ device		vt_vga
 
 # Power management support (see NOTES for more options)
 #device		apm
-# Add suspend/resume support for the i8254.
-#device		pmtimer
 
 # PCCARD (PCMCIA) support
 # PCMCIA and cardbus bridge support
@@ -418,9 +419,5 @@ device enc
 # It allows to install multiple routes toward the same destination
 # but didn't do flow load-balancing using ecmp :-(
 options		RADIX_MPATH
-
-# Enable VIMAGE (VNET, for virtual network with jail)
-# Performance impact should be small (about 2%)
-options		VIMAGE
 
 # The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)

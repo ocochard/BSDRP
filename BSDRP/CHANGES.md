@@ -18,7 +18,7 @@
 * arping 2.19: ARP level "ping" utility
 * bgpq3 0.1.33: Lightweight prefix-list generator for Cisco and Juniper routers
 * bird2 2.0.2_2: Dynamic IP routing daemon
-* bsnmp-regex 0.6_1: bsnmpd module allowing creation of counters from log files
+* bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.38: Root certificate bundle from the Mozilla Project
 * curl 7.60.0: Command line tool and library for transferring data with URLs
