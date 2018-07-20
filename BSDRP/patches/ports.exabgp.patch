@@ -1,12 +1,12 @@
 Index: net/exabgp/Makefile
 ===================================================================
---- net/exabgp/Makefile	(revision 470880)
+--- net/exabgp/Makefile	(revision 474991)
 +++ net/exabgp/Makefile	(working copy)
-@@ -2,10 +2,11 @@
+@@ -2,44 +2,52 @@
  # $FreeBSD$
  
  PORTNAME=	exabgp
--PORTVERSION=	3.4.21
+-PORTVERSION=	3.4.25
 +PORTVERSION=	4.0.6
  CATEGORIES=	net
  MASTER_SITES=	GH \
@@ -15,7 +15,9 @@ Index: net/exabgp/Makefile
  
  MAINTAINER=	zi@FreeBSD.org
  COMMENT=	BGP engine and route injector
-@@ -15,31 +16,40 @@
+ 
+-RUN_DEPENDS=	${PY_IPADDRESS}
+-
  LICENSE=	BSD3CLAUSE
  LICENSE_FILE=	${WRKSRC}/COPYRIGHT
  
@@ -71,18 +73,18 @@ Index: net/exabgp/Makefile
  do-install-EXAMPLES-on:
 Index: net/exabgp/distinfo
 ===================================================================
---- net/exabgp/distinfo	(revision 470880)
+--- net/exabgp/distinfo	(revision 474991)
 +++ net/exabgp/distinfo	(working copy)
 @@ -1,3 +1,3 @@
--TIMESTAMP = 1516901646
--SHA256 (Exa-Networks-exabgp-3.4.21_GH0.tar.gz) = 7c592e3fc07934d37ccca9695d9cedc711c0dd58a7fd423f8b5abc411f6c6c60
--SIZE (Exa-Networks-exabgp-3.4.21_GH0.tar.gz) = 544105
-+TIMESTAMP = 1527054749
-+SHA256 (Exa-Networks-exabgp-4.0.6_GH0.tar.gz) = 11c4b40732334d073d58fd8c4e9f846972135932f8d6721c031a650f92469ea1
-+SIZE (Exa-Networks-exabgp-4.0.6_GH0.tar.gz) = 2904391
+-TIMESTAMP = 1531317755
+-SHA256 (Exa-Networks-exabgp-3.4.25_GH0.tar.gz) = ea09c2ba0babda836887665e2de2973263f5f06cb6dc80d253fbc0e94f729984
+-SIZE (Exa-Networks-exabgp-3.4.25_GH0.tar.gz) = 544345
++TIMESTAMP = 1532071703
++SHA256 (Exa-Networks-exabgp-4.0.8_GH0.tar.gz) = 094039090a1d17ec8fc6ae0f98f29fd551238727aa838067bcba12763c37f3e3
++SIZE (Exa-Networks-exabgp-4.0.8_GH0.tar.gz) = 2906512
 Index: net/exabgp/files/exabgp.in
 ===================================================================
---- net/exabgp/files/exabgp.in	(revision 470880)
+--- net/exabgp/files/exabgp.in	(revision 474991)
 +++ net/exabgp/files/exabgp.in	(working copy)
 @@ -24,34 +24,52 @@
  
@@ -148,7 +150,7 @@ Index: net/exabgp/files/exabgp.in
  run_rc_command "$1"
 Index: net/exabgp/files/exabgp.sh.in
 ===================================================================
---- net/exabgp/files/exabgp.sh.in	(revision 470880)
+--- net/exabgp/files/exabgp.sh.in	(revision 474991)
 +++ net/exabgp/files/exabgp.sh.in	(nonexistent)
 @@ -1,16 +0,0 @@
 -#!/bin/sh
@@ -214,7 +216,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/exabgp/pkg-plist
 ===================================================================
---- net/exabgp/pkg-plist	(revision 470880)
+--- net/exabgp/pkg-plist	(revision 474991)
 +++ net/exabgp/pkg-plist	(working copy)
 @@ -1,391 +1,94 @@
  @sample etc/exabgp/exabgp.env.sample

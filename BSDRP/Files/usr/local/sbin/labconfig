@@ -194,6 +194,10 @@ add -6 2001:db8:23::2 2001:db8:23::3 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 
+cat > /usr/local/etc/frr/zebra.conf <<EOF
+log syslog
+EOF
+
 cat > /usr/local/etc/frr/bgpd.conf <<EOF
 router bgp 100
  bgp router-id 0.0.0.0
@@ -230,7 +234,6 @@ interface ng1
  ipv6 ospf6 network point-to-point
 router ospf6
  router-id 0.0.0.2
- redistribute isis
  interface ng1 area 0.0.0.0
  interface em0 area 0.0.0.0
  interface vtnet0 area 0.0.0.0
@@ -403,10 +406,13 @@ sysrc ipfw_netflow_version=9
 sysrc pimd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
-
 cat > /usr/local/etc/frr/zebra.conf <<EOF
-ip route 10.4.24.0/24 Null0
+log syslog
 EOF
+
+#cat > /usr/local/etc/frr/zebra.conf <<EOF
+#ip route 10.4.24.0/24 Null0
+#EOF
 
 cat > /usr/local/etc/frr/ripd.conf <<EOF
 router rip
@@ -681,6 +687,10 @@ subnet 10.0.56.0 netmask 255.255.255.0 {
 }
 EOF
 
+cat > /etc/jails/jail5/local/frr/zebra.conf <<EOF
+log syslog
+EOF
+
 cat > /etc/jails/jail5/local/frr/isisd.conf <<EOF
 interface em3
  ip router isis BSDRP
@@ -747,7 +757,9 @@ add 192.168.12.2 192.168.12.1 tcp 0x1001 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:12::1 2001:db8:12::2 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:12::2 2001:db8:12::1 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
+
 cat > /usr/local/etc/frr/zebra.conf <<EOF
+log syslog
 interface em0
  ip address 192.168.12.1/24
  ipv6 address 2001:db8:12::1/64
@@ -799,6 +811,7 @@ add -6 2001:db8:12::1 2001:db8:12::2 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:12::2 2001:db8:12::1 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 cat > /usr/local/etc/frr/zebra.conf <<EOF
+log syslog
 interface em0
  ip address 192.168.12.2/24
  ipv6 address 2001:db8:12::2/64
@@ -874,6 +887,7 @@ frr_vm3 () {
 sysrc hostname=router3
 sysrc frr_enable=YES
 cat > /usr/local/etc/frr/zebra.conf <<EOF
+log syslog
 interface em1
  ip address 192.168.23.3/24
  ipv6 address 2001:db8:23::3/64
@@ -943,6 +957,7 @@ frr_vm4 () {
 sysrc hostname=router4
 sysrc frr_enable=YES
 cat > /usr/local/etc/frr/zebra.conf <<EOF
+log syslog
 interface em2
  ip address 192.168.34.4/24
  ipv6 address 2001:db8:34::4/64
@@ -1002,6 +1017,7 @@ frr_vm5 () {
 sysrc hostname=router5
 sysrc frr_enable=YES
 cat > /usr/local/etc/frr/zebra.conf <<EOF
+log syslog
 interface em3
  ip address 192.168.45.5/24
  ipv6 address 2001:db8:45::5/64
@@ -1060,6 +1076,7 @@ sysrc hostname=router6
 sysrc cloned_interfaces=lo1
 sysrc frr_enable=YES
 cat > /usr/local/etc/frr/zebra.conf <<EOF
+log syslog
 interface em4
  ip address 192.168.56.6/24
  ipv6 address 2001:db8:56::6/64
@@ -1519,6 +1536,9 @@ add -6 2001:db8:2::3 2001:db8:2::4 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:2::4 2001:db8:2::3 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 service ipsec start
+cat > /usr/local/etc/frr/zebra.conf <<EOF
+log syslog
+EOF
 cat <<EOF > /usr/local/etc/frr/zebra.conf
 interface vtnet2
  ip address 10.0.2.4/24
@@ -1563,6 +1583,7 @@ bgp_vm5 () {
 sysrc hostname=R5
 sysrc frr_enable=YES
 cat <<EOF > /usr/local/etc/frr/zebra.conf
+log syslog
 interface vtnet3
  ip address 10.0.3.5/24
  ipv6 address 2001:db8:3::5/64
@@ -1621,6 +1642,7 @@ add -6 2001:db8:5::7 2001:db8:5::6 tcp 0x1003 -A tcp-md5 "abcdefgh" ;
 EOF
 service ipsec start
 cat <<EOF > /usr/local/etc/frr/zebra.conf
+log syslog
 interface vtnet4
  ip address 10.0.4.6/24
  ipv6 address 2001:db8:4::6/64
@@ -1677,6 +1699,7 @@ add -6 2001:db8:5::7 2001:db8:5::6 tcp 0x1003 -A tcp-md5 "abcdefgh" ;
 EOF
 service ipsec start
 cat <<EOF > /usr/local/etc/frr/zebra.conf
+log syslog
 interface vtnet0
  ip address 10.0.7.7/24
  ipv6 address 2001:db8:7::7/64

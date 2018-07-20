@@ -98,6 +98,7 @@ WITHOUT_RCS=
 WITHOUT_RESCUE=
 WITHOUT_ROUTED=
 WITHOUT_SENDMAIL=
+WITHOUT_SERVICESDB=
 WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
 WITHOUT_SYSCONS=
@@ -699,7 +700,6 @@ usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample
 usr/share/misc/magic.mgc
 usr/share/misc/termcap.db
-var/db/services.db
 usr/bin/CC
 usr/bin/addr2line
 usr/bin/ar

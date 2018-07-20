@@ -21,6 +21,7 @@ NANO_ARCH=${TARGET_ARCH}
 # Options to put in make.conf during buildworld only
 # BOOT_COMCONSOLE_SPEED is useless because we using /boot.config with -Sspeed option
 CONF_BUILD='
+WITH_META_MODE=
 MALLOC_PRODUCTION=
 BOOT_BOOT0_COMCONSOLE_SPEED=0
 '
@@ -65,9 +66,9 @@ WITHOUT_FLOPPY=
 WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
 WITHOUT_GCOV=
-WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
+WITHOUT_GROFF=
 WITHOUT_HAST=
 WITHOUT_HTML=
 WITHOUT_ICONV=
@@ -78,6 +79,8 @@ WITHOUT_ISCSI=
 WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
 WITHOUT_LIB32=
+WITHOUT_LOADER_FIREWIRE=
+WITHOUT_LOADER_GELI=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
 WITHOUT_NCP=
@@ -97,6 +100,7 @@ WITHOUT_RCS=
 WITHOUT_RESCUE=
 WITHOUT_ROUTED=
 WITHOUT_SENDMAIL=
+WITHOUT_SERVICESDB=
 WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
 WITHOUT_SYSCONS=
@@ -175,66 +179,28 @@ PPLEVEL=3
 
 # Add netblast/netrecieve and netmap tools
 add_netrate () {
-    TOOLS_LIST="cxgbetool cxgbtool crypto ifinfo mctest netmap netrate/netblast netrate/netreceive netrate/netsend"
-    mkdir -p ${NANO_WORLDDIR}/dev
-    mount -t devfs devfs ${NANO_WORLDDIR}/dev
-    mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
-    mkdir -p ${NANO_WORLDDIR}/usr/workdir
-    for TOOL in ${TOOLS_LIST}; do
-        # netmap is not available on sparc64, and disabled on i386
-        if [ ${NANO_ARCH} = "sparc64" -a ${TOOL} = "netmap" ]; then
-        	continue
-        fi
-		if [ ${NANO_ARCH} = "i386" -a ${TOOL} = "netmap" ]; then
-			continue
-		fi
-        export TOOL
-        CR 'make clean -C /usr/src/tools/tools/${TOOL}'
-       	CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-            MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-            UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
-            UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-            make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
-        # each Makefile have a different variable names
-        for MAKE_CMD in PROG PROGS ALL; do
-            for file in `make -V $MAKE_CMD -C ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL`; do
-                if file ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file | grep -q "shared object"; then
-					[ -d ${NANO_WORLDDIR}/usr/local/lib ] || mkdir -p ${NANO_WORLDDIR}/usr/local/lib
-                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/lib
-                else
-					[ -d ${NANO_WORLDDIR}/usr/local/bin ] || mkdir -p ${NANO_WORLDDIR}/usr/local/bin
-                    mv ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file ${NANO_WORLDDIR}/usr/local/bin
-                fi
-                if [ -f ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o ]; then
-                    if ! rm ${NANO_WORLDDIR}/usr/src/tools/tools/$TOOL/$file.o; then
-                        echo "WARNING: Can't delete $TOOL/$file.o"
-                    fi
-                fi
-            done # for all files
-        done # for MAKE_CMD
-    done # for TOOL
-    rm -rf ${NANO_WORLDDIR}/usr/workdir
-    umount ${NANO_WORLDDIR}/usr/src
-    umount ${NANO_WORLDDIR}/dev
+	TOOLS_LIST="cxgbtool ifinfo netrate/netblast netrate/netreceive netrate/netsend"
+	# crypto didn't compile anymore but I don't understand why
+	# mctest didn't compile since clang6
+	mkdir -p ${NANO_WORLDDIR}/dev
+	mount -t devfs devfs ${NANO_WORLDDIR}/dev
+	mount -t nullfs ${NANO_SRC} ${NANO_WORLDDIR}/usr/src
+	mkdir -p ${NANO_WORLDDIR}/usr/workdir
+	for TOOL in ${TOOLS_LIST}; do
+		export TOOL
+		CR 'make clean -C /usr/src/tools/tools/${TOOL}'
+		CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+			MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+			UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
+			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
+		CR 'make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL} install clean'
+	done # for TOOL
+	rm -rf ${NANO_WORLDDIR}/usr/workdir
+	umount ${NANO_WORLDDIR}/usr/src
+	umount ${NANO_WORLDDIR}/dev
 }
 
-# Add Quagga BGP route injector
-add_quagga-bgp-netgen () {
-    mkdir -p ${NANO_WORLDDIR}/dev
-    mount -t devfs devfs ${NANO_WORLDDIR}/dev
-    mount -t nullfs ${NANO_TOOLS}/tools/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/src
-    mkdir -p ${NANO_WORLDDIR}/usr/workdir
-    CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-		MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
-		UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-        make WRKDIRPREFIX=/usr/workdir -C /usr/src/'
-    mv ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen ${NANO_WORLDDIR}/usr/local/bin
-    rm ${NANO_WORLDDIR}/usr/src/quagga-bgp-netgen.o
-    rm -rf ${NANO_WORLDDIR}/usr/workdir
-    umount ${NANO_WORLDDIR}/usr/src
-    umount ${NANO_WORLDDIR}/dev
-}
 
 #### Ports list section #####
 
@@ -446,9 +412,6 @@ usr/share/tmac/tmac.vgrind
 			strip 2>/dev/null $f || :
 		done
 	done
-	# Generate package inventory
-	#chroot ${NANO_WORLDDIR} /bin/sh -exc \
-	#'pkg info' > ${NANO_OBJ}/packages.info
 }
 
 # Enable only serial system only
