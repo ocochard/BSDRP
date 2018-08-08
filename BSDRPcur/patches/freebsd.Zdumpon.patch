@@ -1,7 +1,7 @@
-Index: etc/defaults/rc.conf
+Index: sbin/init/rc.conf
 ===================================================================
---- etc/defaults/rc.conf	(revision 329245)
-+++ etc/defaults/rc.conf	(working copy)
+--- sbin/init/rc.conf	(revision 329245)
++++ sbin/init/rc.conf	(working copy)
 @@ -599,7 +599,7 @@
  chkprintcap_enable="NO"	# Run chkprintcap(8) before running lpd.
  chkprintcap_flags="-d"	# Create missing directories by default.

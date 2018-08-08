@@ -9,6 +9,7 @@ options 	PREEMPTION		# Enable kernel thread preemption
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
 #options 	IPSEC			# IP (v4/v6) security
+#options 	IPSEC_SUPPORT		# Allow kldload of ipsec and tcpmd5
 options 	TCP_OFFLOAD		# TCP offload
 options 	SCTP			# Stream Control Transmission Protocol
 options 	FFS			# Berkeley Fast Filesystem
@@ -65,6 +66,7 @@ options 	KDB_TRACE		# Print a stack trace for a panic.
 # Make an SMP-capable kernel by default
 options 	SMP			# Symmetric MultiProcessor Kernel
 options 	DEVICE_NUMA		# I/O Device Affinity
+options 	EARLY_AP_STARTUP
 
 # CPU frequency control
 device		cpufreq
@@ -73,9 +75,11 @@ device		cpufreq
 device		acpi
 options 	ACPI_DMAR
 device		pci
-#options 	PCI_HP			# PCI-Express native HotPlug
+options 	PCI_HP			# PCI-Express native HotPlug
+options		PCI_IOV			# PCI SR-IOV support
 
-# device		fdc
+# Floppy drives
+device		fdc
 
 # ATA controllers
 device		ahci			# AHCI-compatible SATA controllers
@@ -84,38 +88,39 @@ device		mvs			# Marvell 88SX50XX/88SX60XX/88SX70XX/SoC SATA
 device		siis			# SiliconImage SiI3124/SiI3132/SiI3531 SATA
 
 # SCSI Controllers
-device		ahc		# AHA2940 and onboard AIC7xxx devices
+device		ahc			# AHA2940 and onboard AIC7xxx devices
 options 	AHC_REG_PRETTY_PRINT	# Print register bitfields in debug
 					# output.  Adds ~128k to driver.
-device		ahd		# AHA39320/29320 and onboard AIC79xx devices
+device		ahd			# AHA39320/29320 and onboard AIC79xx devices
 options 	AHD_REG_PRETTY_PRINT	# Print register bitfields in debug
 					# output.  Adds ~215k to driver.
-device		esp		# AMD Am53C974 (Tekram DC-390(T))
-device		hptiop		# Highpoint RocketRaid 3xxx series
-device		isp		# Qlogic family
-#device		ispfw		# Firmware for QLogic HBAs- normally a module
-device		mpt		# LSI-Logic MPT-Fusion
-device		mps		# LSI-Logic MPT-Fusion 2
-device		mpr		# LSI-Logic MPT-Fusion 3
-#device		ncr		# NCR/Symbios Logic
-device		sym		# NCR/Symbios Logic (newer chipsets + those of `ncr')
-device		trm		# Tekram DC395U/UW/F DC315U adapters
+device		esp			# AMD Am53C974 (Tekram DC-390(T))
+device		hptiop			# Highpoint RocketRaid 3xxx series
+device		isp			# Qlogic family
+#device		ispfw			# Firmware for QLogic HBAs- normally a module
+device		mpt			# LSI-Logic MPT-Fusion
+device		mps			# LSI-Logic MPT-Fusion 2
+device		mpr			# LSI-Logic MPT-Fusion 3
+#device		ncr			# NCR/Symbios Logic
+device		sym			# NCR/Symbios Logic (newer chipsets + those of `ncr')
+device		trm			# Tekram DC395U/UW/F DC315U adapters
 
-device		adv		# Advansys SCSI adapters
-device		adw		# Advansys wide SCSI adapters
-device		aic		# Adaptec 15[012]x SCSI adapters, AIC-6[23]60.
-device		bt		# Buslogic/Mylex MultiMaster SCSI adapters
-device		isci		# Intel C600 SAS controller
+device		adv			# Advansys SCSI adapters
+device		adw			# Advansys wide SCSI adapters
+device		aic			# Adaptec 15[012]x SCSI adapters, AIC-6[23]60.
+device		bt			# Buslogic/Mylex MultiMaster SCSI adapters
+device		isci			# Intel C600 SAS controller
+device		ocs_fc			# Emulex FC adapters
 
 # ATA/SCSI peripherals
-device		scbus		# SCSI bus (required for ATA/SCSI)
-#device		ch		# SCSI media changers
-device		da		# Direct Access (disks)
-#device		sa		# Sequential Access (tape etc)
-device		cd		# CD
-device		pass		# Passthrough device (direct ATA/SCSI access)
-device		ses		# Enclosure Services (SES and SAF-TE)
-#device		ctl		# CAM Target Layer
+device		scbus			# SCSI bus (required for ATA/SCSI)
+device		ch			# SCSI media changers
+device		da			# Direct Access (disks)
+device		sa			# Sequential Access (tape etc)
+device		cd			# CD
+device		pass			# Passthrough device (direct ATA/SCSI access)
+device		ses			# Enclosure Services (SES and SAF-TE)
+#device		ctl			# CAM Target Layer
 
 # RAID controllers interfaced to the SCSI subsystem
 #device		amr		# AMI MegaRAID
@@ -146,8 +151,8 @@ device		ses		# Enclosure Services (SES and SAF-TE)
 device		twe			# 3ware ATA RAID
 
 # NVM Express (NVMe) support
-#device		nvme			# base NVMe driver
-#device		nvd			# expose NVMe namespaces as disks, depends on nvme
+device		nvme			# base NVMe driver
+device		nvd			# expose NVMe namespaces as disks, depends on nvme
 
 # atkbdc0 controls both the keyboard and the PS/2 mouse
 device		atkbdc		# AT keyboard controller
@@ -242,32 +247,32 @@ device		wb		# Winbond W89C840F
 device		xl		# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 
 # Wireless NIC cards
-device		wlan		# 802.11 support
-options 	IEEE80211_DEBUG	# enable debug msgs
-options 	IEEE80211_AMPDU_AGE # age frames in AMPDU reorder q's
+device		wlan			# 802.11 support
+options 	IEEE80211_DEBUG		# enable debug msgs
+options 	IEEE80211_AMPDU_AGE	# age frames in AMPDU reorder q's
 options 	IEEE80211_SUPPORT_MESH	# enable 802.11s draft support
-device		wlan_wep	# 802.11 WEP support
-device		wlan_ccmp	# 802.11 CCMP support
-device		wlan_tkip	# 802.11 TKIP support
-device		wlan_amrr	# AMRR transmit rate control algorithm
-device		an		# Aironet 4500/4800 802.11 wireless NICs.
-device		ath		# Atheros NICs
-device		ath_pci		# Atheros pci/cardbus glue
-device		ath_hal		# pci/cardbus chip support
+device		wlan_wep		# 802.11 WEP support
+device		wlan_ccmp		# 802.11 CCMP support
+device		wlan_tkip		# 802.11 TKIP support
+device		wlan_amrr		# AMRR transmit rate control algorithm
+device		an			# Aironet 4500/4800 802.11 wireless NICs.
+device		ath			# Atheros NICs
+device		ath_pci			# Atheros pci/cardbus glue
+device		ath_hal			# pci/cardbus chip support
 options 	AH_SUPPORT_AR5416	# enable AR5416 tx/rx descriptors
-options 	AH_AR5416_INTERRUPT_MITIGATION	# AR5416 interrupt mitigation
-options 	ATH_ENABLE_11N	# Enable 802.11n support for AR5416 and later
-device		ath_rate_sample	# SampleRate tx rate control for ath
-#device		bwi		# Broadcom BCM430x/BCM431x wireless NICs.
-#device		bwn		# Broadcom BCM43xx wireless NICs.
-device		ipw		# Intel 2100 wireless NICs.
-device		iwi		# Intel 2200BG/2225BG/2915ABG wireless NICs.
-device		iwn		# Intel 4965/1000/5000/6000 wireless NICs.
-device		malo		# Marvell Libertas wireless NICs.
-device		mwl		# Marvell 88W8363 802.11n wireless NICs.
-device		ral		# Ralink Technology RT2500 wireless NICs.
-device		wi		# WaveLAN/Intersil/Symbol 802.11 wireless NICs.
-device		wpi		# Intel 3945ABG wireless NICs.
+options 	AH_AR5416_INTERRUPT_MITIGATION # AR5416 interrupt mitigation
+options 	ATH_ENABLE_11N		# Enable 802.11n support for AR5416 and later
+device		ath_rate_sample		# SampleRate tx rate control for ath
+#device		bwi			# Broadcom BCM430x/BCM431x wireless NICs.
+#device		bwn			# Broadcom BCM43xx wireless NICs.
+device		ipw			# Intel 2100 wireless NICs.
+device		iwi			# Intel 2200BG/2225BG/2915ABG wireless NICs.
+device		iwn			# Intel 4965/1000/5000/6000 wireless NICs.
+device		malo			# Marvell Libertas wireless NICs.
+device		mwl			# Marvell 88W8363 802.11n wireless NICs.
+device		ral			# Ralink Technology RT2500 wireless NICs.
+device		wi			# WaveLAN/Intersil/Symbol 802.11 wireless NICs.
+device		wpi			# Intel 3945ABG wireless NICs.
 
 # Pseudo devices.
 device		loop		# Network loopback

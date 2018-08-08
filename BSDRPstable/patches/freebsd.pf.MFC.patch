@@ -1,6 +1,6 @@
 Index: sys/net/pfvar.h
 ===================================================================
---- sys/net/pfvar.h	(revision 334330)
+--- sys/net/pfvar.h	(revision 337391)
 +++ sys/net/pfvar.h	(working copy)
 @@ -1,4 +1,6 @@
 -/*
@@ -58,7 +58,7 @@ Index: sys/net/pfvar.h
  int	pf_socket_lookup(int, struct pf_pdesc *, struct mbuf *);
 Index: sys/netpfil/pf/if_pflog.c
 ===================================================================
---- sys/netpfil/pf/if_pflog.c	(revision 334330)
+--- sys/netpfil/pf/if_pflog.c	(revision 337391)
 +++ sys/netpfil/pf/if_pflog.c	(working copy)
 @@ -1,4 +1,6 @@
  /*-
@@ -69,7 +69,7 @@ Index: sys/netpfil/pf/if_pflog.c
   * Niels Provos (provos@physnet.uni-hamburg.de).
 Index: sys/netpfil/pf/if_pfsync.c
 ===================================================================
---- sys/netpfil/pf/if_pfsync.c	(revision 334330)
+--- sys/netpfil/pf/if_pfsync.c	(revision 337391)
 +++ sys/netpfil/pf/if_pfsync.c	(working copy)
 @@ -1,4 +1,6 @@
  /*-
@@ -89,7 +89,7 @@ Index: sys/netpfil/pf/if_pfsync.c
  
 Index: sys/netpfil/pf/in4_cksum.c
 ===================================================================
---- sys/netpfil/pf/in4_cksum.c	(revision 334330)
+--- sys/netpfil/pf/in4_cksum.c	(revision 337391)
 +++ sys/netpfil/pf/in4_cksum.c	(working copy)
 @@ -3,7 +3,9 @@
  /*	$KAME: in4_cksum.c,v 1.10 2001/11/30 10:06:15 itojun Exp $	*/
@@ -104,7 +104,7 @@ Index: sys/netpfil/pf/in4_cksum.c
   *
 Index: sys/netpfil/pf/pf.c
 ===================================================================
---- sys/netpfil/pf/pf.c	(revision 334330)
+--- sys/netpfil/pf/pf.c	(revision 337391)
 +++ sys/netpfil/pf/pf.c	(working copy)
 @@ -1,4 +1,6 @@
  /*-
@@ -249,7 +249,7 @@ Index: sys/netpfil/pf/pf.c
  
  	return (pf_release_state(s));
  }
-@@ -3666,7 +3680,7 @@
+@@ -3686,7 +3700,7 @@
  		s->timeout = PFTM_OTHER_FIRST_PACKET;
  	}
  
@@ -258,7 +258,7 @@ Index: sys/netpfil/pf/pf.c
  		if (pf_map_addr(pd->af, r, pd->src, &s->rt_addr, NULL, &sn)) {
  			REASON_SET(&reason, PFRES_MAPFAILED);
  			pf_src_tree_remove_state(s);
-@@ -5473,41 +5487,24 @@
+@@ -5493,41 +5507,24 @@
  	dst.sin_len = sizeof(dst);
  	dst.sin_addr = ip->ip_dst;
  
@@ -317,7 +317,7 @@ Index: sys/netpfil/pf/pf.c
  	}
  	if (ifp == NULL)
  		goto bad;
-@@ -5649,16 +5646,6 @@
+@@ -5669,16 +5666,6 @@
  	dst.sin6_len = sizeof(dst);
  	dst.sin6_addr = ip6->ip6_dst;
  
@@ -334,7 +334,7 @@ Index: sys/netpfil/pf/pf.c
  	if (TAILQ_EMPTY(&r->rpool.list)) {
  		DPFPRINTF(PF_DEBUG_URGENT,
  		    ("%s: TAILQ_EMPTY(&r->rpool.list)\n", __func__));
-@@ -5740,8 +5727,7 @@
+@@ -5760,8 +5747,7 @@
  
  /*
   * FreeBSD supports cksum offloads for the following drivers.
@@ -344,7 +344,7 @@ Index: sys/netpfil/pf/pf.c
   *
   * CSUM_DATA_VALID | CSUM_PSEUDO_HDR :
   *  network driver performed cksum including pseudo header, need to verify
-@@ -5888,6 +5874,8 @@
+@@ -5908,6 +5894,8 @@
  	struct pf_pdesc		 pd;
  	int			 off, dirndx, pqid = 0;
  
@@ -353,7 +353,7 @@ Index: sys/netpfil/pf/pf.c
  	M_ASSERTPKTHDR(m);
  
  	if (!V_pf_status.running)
-@@ -5954,7 +5942,7 @@
+@@ -5974,7 +5962,7 @@
  	pd.sidx = (dir == PF_IN) ? 0 : 1;
  	pd.didx = (dir == PF_IN) ? 1 : 0;
  	pd.af = AF_INET;
@@ -362,7 +362,7 @@ Index: sys/netpfil/pf/pf.c
  	pd.tot_len = ntohs(h->ip_len);
  
  	/* handle fragments that didn't get reassembled by normalization */
-@@ -6275,6 +6263,7 @@
+@@ -6295,6 +6283,7 @@
  	struct pf_pdesc		 pd;
  	int			 off, terminal = 0, dirndx, rh_cnt = 0, pqid = 0;
  
@@ -372,7 +372,7 @@ Index: sys/netpfil/pf/pf.c
  	if (!V_pf_status.running)
 Index: sys/netpfil/pf/pf.h
 ===================================================================
---- sys/netpfil/pf/pf.h	(revision 334330)
+--- sys/netpfil/pf/pf.h	(revision 337391)
 +++ sys/netpfil/pf/pf.h	(working copy)
 @@ -1,4 +1,6 @@
 -/*
@@ -384,7 +384,7 @@ Index: sys/netpfil/pf/pf.h
   *
 Index: sys/netpfil/pf/pf_altq.h
 ===================================================================
---- sys/netpfil/pf/pf_altq.h	(revision 334330)
+--- sys/netpfil/pf/pf_altq.h	(revision 337391)
 +++ sys/netpfil/pf/pf_altq.h	(working copy)
 @@ -1,4 +1,6 @@
 -/*
@@ -396,7 +396,7 @@ Index: sys/netpfil/pf/pf_altq.h
   *
 Index: sys/netpfil/pf/pf_if.c
 ===================================================================
---- sys/netpfil/pf/pf_if.c	(revision 334330)
+--- sys/netpfil/pf/pf_if.c	(revision 337391)
 +++ sys/netpfil/pf/pf_if.c	(working copy)
 @@ -1,4 +1,6 @@
  /*-
@@ -566,7 +566,7 @@ Index: sys/netpfil/pf/pf_if.c
  }
 Index: sys/netpfil/pf/pf_ioctl.c
 ===================================================================
---- sys/netpfil/pf/pf_ioctl.c	(revision 334330)
+--- sys/netpfil/pf/pf_ioctl.c	(revision 337391)
 +++ sys/netpfil/pf/pf_ioctl.c	(working copy)
 @@ -1,4 +1,6 @@
  /*-
@@ -834,7 +834,7 @@ Index: sys/netpfil/pf/pf_ioctl.c
  	if (error != 0)
  		return (error);
  
-@@ -3950,12 +3963,12 @@
+@@ -3949,12 +3962,12 @@
  		return;
  	}
  
@@ -846,10 +846,10 @@ Index: sys/netpfil/pf/pf_ioctl.c
  
 +	pf_unload_vnet_purge();
 +
+ 	swi_remove(V_pf_swi_cookie);
+ 
  	pf_normalize_cleanup();
- 	PF_RULES_WLOCK();
- 	pfi_cleanup_vnet();
-@@ -3967,16 +3980,17 @@
+@@ -3968,16 +3981,17 @@
  		pf_mtag_cleanup();
  }
  
@@ -870,7 +870,7 @@ Index: sys/netpfil/pf/pf_ioctl.c
  
  	if (pf_dev != NULL)
  		destroy_dev(pf_dev);
-@@ -3983,10 +3997,9 @@
+@@ -3984,10 +3998,9 @@
  
  	pfi_cleanup();
  
@@ -883,7 +883,7 @@ Index: sys/netpfil/pf/pf_ioctl.c
  }
  
  static void
-@@ -4004,6 +4017,7 @@
+@@ -4005,6 +4018,7 @@
  
  	pf_unload_vnet();
  } 
@@ -891,7 +891,7 @@ Index: sys/netpfil/pf/pf_ioctl.c
  VNET_SYSUNINIT(vnet_pf_uninit, SI_SUB_PROTO_FIREWALL, SI_ORDER_THIRD,
      vnet_pf_uninit, NULL);
  
-@@ -4017,14 +4031,9 @@
+@@ -4018,14 +4032,9 @@
  	case MOD_LOAD:
  		error = pf_load();
  		break;
@@ -910,7 +910,7 @@ Index: sys/netpfil/pf/pf_ioctl.c
  		error = EINVAL;
 Index: sys/netpfil/pf/pf_lb.c
 ===================================================================
---- sys/netpfil/pf/pf_lb.c	(revision 334330)
+--- sys/netpfil/pf/pf_lb.c	(revision 337391)
 +++ sys/netpfil/pf/pf_lb.c	(working copy)
 @@ -1,4 +1,6 @@
  /*-
@@ -929,7 +929,7 @@ Index: sys/netpfil/pf/pf_lb.c
  
 Index: sys/netpfil/pf/pf_mtag.h
 ===================================================================
---- sys/netpfil/pf/pf_mtag.h	(revision 334330)
+--- sys/netpfil/pf/pf_mtag.h	(revision 337391)
 +++ sys/netpfil/pf/pf_mtag.h	(working copy)
 @@ -1,5 +1,7 @@
  /*	$FreeBSD$	*/
@@ -942,7 +942,7 @@ Index: sys/netpfil/pf/pf_mtag.h
   *
 Index: sys/netpfil/pf/pf_norm.c
 ===================================================================
---- sys/netpfil/pf/pf_norm.c	(revision 334330)
+--- sys/netpfil/pf/pf_norm.c	(revision 337391)
 +++ sys/netpfil/pf/pf_norm.c	(working copy)
 @@ -1,4 +1,6 @@
  /*-
@@ -989,7 +989,7 @@ Index: sys/netpfil/pf/pf_norm.c
  		h->ip_sum = pf_cksum_fixup(h->ip_sum, ov, nv, 0);
 Index: sys/netpfil/pf/pf_osfp.c
 ===================================================================
---- sys/netpfil/pf/pf_osfp.c	(revision 334330)
+--- sys/netpfil/pf/pf_osfp.c	(revision 337391)
 +++ sys/netpfil/pf/pf_osfp.c	(working copy)
 @@ -1,4 +1,6 @@
  /*-
@@ -1008,7 +1008,7 @@ Index: sys/netpfil/pf/pf_osfp.c
  #include <netinet/in.h>
 Index: sys/netpfil/pf/pf_ruleset.c
 ===================================================================
---- sys/netpfil/pf/pf_ruleset.c	(revision 334330)
+--- sys/netpfil/pf/pf_ruleset.c	(revision 337391)
 +++ sys/netpfil/pf/pf_ruleset.c	(working copy)
 @@ -1,4 +1,6 @@
  /*-
@@ -1019,7 +1019,7 @@ Index: sys/netpfil/pf/pf_ruleset.c
   * All rights reserved.
 Index: sys/netpfil/pf/pf_table.c
 ===================================================================
---- sys/netpfil/pf/pf_table.c	(revision 334330)
+--- sys/netpfil/pf/pf_table.c	(revision 337391)
 +++ sys/netpfil/pf/pf_table.c	(working copy)
 @@ -1,4 +1,6 @@
  /*-

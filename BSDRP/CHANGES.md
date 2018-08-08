@@ -1,7 +1,7 @@
 # Release 1.91 (not released)
 
 ## New features
-* Base upgraded to FreeBSD 11.2-RELEASE
+* Base upgraded to FreeBSD 11.2-RELEASE-p1
 
 ## Bug fixes
 * Fix upgrade script that didn't wait for autosave end
@@ -10,9 +10,11 @@
 
 ## upgraded packages
 * easy-rsa to 3.0.4
+* exabgp to 4.0.8
 * frr to 5.0
 * iperf to 2.0.12
 * iperf3 to 3.6
+* isc-dhcp-server to 4.4
 
 ## Packages list
 * arping 2.19: ARP level "ping" utility
@@ -21,14 +23,14 @@
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.38: Root certificate bundle from the Mozilla Project
-* curl 7.60.0: Command line tool and library for transferring data with URLs
-* devcpu-data 1.17: Intel and AMD CPUs microcode updates
+* curl 7.61.0_1: Command line tool and library for transferring data with URLs
+* devcpu-data 1.18: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.4: Small RSA key management package based on openssl
 * flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr5 5.0: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
-* fswatch-mon 1.11.2: Cross-platform file change monitor
+* frr5 5.0.1_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* fswatch-mon 1.11.2_1: Cross-platform file change monitor
 * graphpath 1.0: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 201710: Process Count Monitor (PCM) for Intel processors
@@ -36,7 +38,7 @@
 * iperf3 3.6: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_4: KAME racoon IKE daemon, ipsec-tools version
-* isc-dhcp43-server 4.3.6P1_1: ISC Dynamic Host Configuration Protocol server
+* isc-dhcp44-server 4.4.1_3: ISC Dynamic Host Configuration Protocol server
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.13: JSON (JavaScript Object Notation) implementation in C
 * libev 4.24,1: Full-featured and high-performance event loop library
@@ -44,20 +46,20 @@
 * libffi 3.2.1_2: Foreign Function Interface
 * liblz4 1.8.2,1: LZ4 compression library, lossless and very fast
 * libnet 1.1.6_5,1: C library for creating IP packets
-* libpci 3.5.6_1: PCI configuration space I/O made easy
+* libpci 3.6.1: PCI configuration space I/O made easy
 * libsodium 1.0.16: Library to build higher-level cryptographic tools
 * libssh 0.7.5: Library implementing the SSH1 and SSH2 protocol
 * libucl 0.8.0: Universal configuration library parser
 * lzo2 2.10_1: Portable speedy, lossless data compression library
 * mlvpn 2.3.1_2: Multi-link VPN
 * monit 5.25.2: Unix system management and proactive monitoring
-* mpd5 5.8_5: Multi-link PPP daemon based on netgraph(4)
+* mpd5 5.8_7: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.46: Open source LDAP client implementation
 * openvpn 2.4.6_1: Secure IP/Ethernet tunnel daemon
-* pciids 20180428: Database of all known IDs used in PCI devices
+* pciids 20180721: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
@@ -66,11 +68,11 @@
 * pkg 1.10.5_1: Package manager
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.7.0: Accounting and aggregation tool for IPv4 and IPv6 traffic
-* py36-exabgp 4.0.6: BGP engine and route injector
-* py36-setuptools 39.2.0: Python packages installer
+* py36-exabgp 4.0.8: BGP engine and route injector
+* py36-setuptools 40.0.0: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
-* python36 3.6.5: Interpreted object-oriented programming language
+* python36 3.6.6_1: Interpreted object-oriented programming language
 * quagga-bgp-netgen 0.1: Generates Quagga/FRR bgp configuration file with lot's of routes
 * readline 7.0.3_1: Library for editing command lines as they are typed
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
@@ -79,7 +81,7 @@
 * sudo 1.8.23_2: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.7: Terminal Multiplexer
-* ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol
+* ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 
 -----------------------------------------------------
 # Release 1.90 (01/06/2018)

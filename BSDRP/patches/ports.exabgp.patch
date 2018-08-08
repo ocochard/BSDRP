@@ -1,13 +1,13 @@
 Index: net/exabgp/Makefile
 ===================================================================
---- net/exabgp/Makefile	(revision 474991)
+--- net/exabgp/Makefile	(revision 476488)
 +++ net/exabgp/Makefile	(working copy)
 @@ -2,44 +2,52 @@
  # $FreeBSD$
  
  PORTNAME=	exabgp
 -PORTVERSION=	3.4.25
-+PORTVERSION=	4.0.6
++PORTVERSION=	4.0.8
  CATEGORIES=	net
  MASTER_SITES=	GH \
  		ZI
@@ -73,7 +73,7 @@ Index: net/exabgp/Makefile
  do-install-EXAMPLES-on:
 Index: net/exabgp/distinfo
 ===================================================================
---- net/exabgp/distinfo	(revision 474991)
+--- net/exabgp/distinfo	(revision 476488)
 +++ net/exabgp/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1531317755
@@ -84,7 +84,7 @@ Index: net/exabgp/distinfo
 +SIZE (Exa-Networks-exabgp-4.0.8_GH0.tar.gz) = 2906512
 Index: net/exabgp/files/exabgp.in
 ===================================================================
---- net/exabgp/files/exabgp.in	(revision 474991)
+--- net/exabgp/files/exabgp.in	(revision 476488)
 +++ net/exabgp/files/exabgp.in	(working copy)
 @@ -24,34 +24,52 @@
  
@@ -150,7 +150,7 @@ Index: net/exabgp/files/exabgp.in
  run_rc_command "$1"
 Index: net/exabgp/files/exabgp.sh.in
 ===================================================================
---- net/exabgp/files/exabgp.sh.in	(revision 474991)
+--- net/exabgp/files/exabgp.sh.in	(revision 476488)
 +++ net/exabgp/files/exabgp.sh.in	(nonexistent)
 @@ -1,16 +0,0 @@
 -#!/bin/sh
@@ -216,7 +216,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/exabgp/pkg-plist
 ===================================================================
---- net/exabgp/pkg-plist	(revision 474991)
+--- net/exabgp/pkg-plist	(revision 476488)
 +++ net/exabgp/pkg-plist	(working copy)
 @@ -1,391 +1,94 @@
  @sample etc/exabgp/exabgp.env.sample

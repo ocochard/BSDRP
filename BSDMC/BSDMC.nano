@@ -1,7 +1,7 @@
 # BSD Media Center NanoBSD configuration file
 #
 # NanoBSD port support added from Gitoyen:
-# http://www.gitoyen.net/Howto-NanoBSD-quagga-router 
+# http://www.gitoyen.net/Howto-NanoBSD-quagga-router
 # Some cleanup idea taken from imp@ nanoBSD script
 #
 ################## Common section #################
@@ -21,6 +21,7 @@ NANO_ARCH=${TARGET_ARCH}
 # But for baud higher than 9600 is not supported by boot0:
 #  then we let the speed already configured by the BIOS by setting it to 0
 CONF_BUILD='
+WITH_META_MODE=
 MALLOC_PRODUCTION=
 BOOT_BOOT0_COMCONSOLE_SPEED=0
 '
@@ -29,7 +30,8 @@ BOOT_BOOT0_COMCONSOLE_SPEED=0
 # Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
 # Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
 # We would compile symbol files, but not install them by default
-CONF_INSTALL=''
+CONF_INSTALL='
+'
 
 # Options to put in make.conf during both build- & installworld.
 # See the file /usr/src/tools/build/options or man src.conf for details
@@ -64,10 +66,9 @@ WITHOUT_FLOPPY=
 WITHOUT_FREEBSD_UPDATE=
 WITHOUT_GAMES=
 WITHOUT_GCOV=
-WITHOUT_GDB=
-WITHOUT_GNUCXX=
 WITHOUT_GPIB=
 WITHOUT_GPIO=
+WITHOUT_GROFF=
 WITHOUT_HAST=
 WITHOUT_HTML=
 WITHOUT_INFO=
@@ -97,7 +98,7 @@ WITHOUT_NS_CACHING=
 WITHOUT_PC_SYSINSTALL=
 WITHOUT_PAM=
 WITHOUT_PAM_SUPPORT=
-WITHOUT_PPP= 
+WITHOUT_PPP=
 WITHOUT_PORTSNAP=
 WITHOUT_PROFILE=
 WITHOUT_QUOTAS=
@@ -107,6 +108,7 @@ WITHOUT_RCS=
 WITHOUT_RESCUE=
 WITHOUT_ROUTED=
 WITHOUT_SENDMAIL=
+WITHOUT_SERVICESDB=
 WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
 WITHOUT_SYSCONS=
@@ -182,14 +184,14 @@ PPLEVEL=3
 # Need to check if this function works with cross-compiling architecture!!!!
 # Recursive complex fonction: Generate one function for each ports
 add_port () {
-	port=`echo $1 | sed -e 's/\//_/'`
+	port=$(echo $1 | sed -e 's/\//_/')
 	# Check if package allready exist
 	cd ${PORTS_SRC}/$1
 	# Warning: a package name can change regarding the build option
 	if [ $# -gt 1 ]; then
-		PKG_NAME=`env PORTSDIR=${PORTS_SRC} make package-name "$2"`
+		PKG_NAME=$(env PORTSDIR=${PORTS_SRC} make package-name "$2")
 	else
-		PKG_NAME=`env PORTSDIR=${PORTS_SRC} make package-name`
+		PKG_NAME=$(env PORTSDIR=${PORTS_SRC} make package-name)
 	fi
 	if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.txz ]; then
 	# Pkg file found: Generate add_pkg_NAME function
@@ -232,72 +234,52 @@ EOF
 		fi
 	else
 	# No pkg file: Generate add_port_NAME function
-       	eval "
-       	add_port_${port} () {
-		#Need to create ${NANO_OBJ}/ports in this add_port_${port} function
-		[ -d \${NANO_OBJ}/ports ] ||
-		  mkdir -p \${NANO_OBJ}/ports/packages
-       		mount -t nullfs \${NANO_SRC} \${NANO_WORLDDIR}/usr/src
-		mkdir -p \${NANO_WORLDDIR}/usr/ports
-       		mount -t nullfs \${PORTS_SRC} \${NANO_WORLDDIR}/usr/ports
-		mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
-		mount -t nullfs \${NANO_OBJ}/ports/packages \
-		  \${NANO_WORLDDIR}/usr/ports/packages
-       		mkdir -p \${NANO_WORLDDIR}/dev
-       		mount -t devfs devfs \${NANO_WORLDDIR}/dev
-       		mkdir -p \${NANO_WORLDDIR}/usr/pobj
-       		mkdir -p \${NANO_WORLDDIR}/usr/workdir
-       		cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
-		# If a port have NO_PACKAGE, comment-it
-              	if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
-               		mv \${NANO_WORLDDIR}/usr/ports/$1/Makefile \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd
-               		sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
-               	fi
-		# Run ldconfig before
-		CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
-		# Start the build
-		# With staging (mandatory for creating user packag during "install"),
-		# there is a bug if we use one command "make install package":
-		# It failed during do-package call. We had to do a "make install" && "make package"
-		# But this method failed if the port didn't support staging :-(
-		# Now I have to found a solution for avoiding this two same long command
-			if grep -q NO_STAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
-   					CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
-		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-                  install package BATCH=yes -DWITH_PKGNG \
-		  WITHOUT=\"NLS DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
-			else
-       			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
-		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-                  install BATCH=yes -DWITH_PKGNG \
-		  WITHOUT=\"NLS DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
-          		CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-		  MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-		  UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
-		  UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
-		  make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
-                  package BATCH=yes -DWITH_PKGNG \
-		  WITHOUT=\"NLS DOCS EXAMPLES\" -DWITH_SSP_PORTS $2 clean'
+		eval "
+		add_port_${port} () {
+			#Need to create ${NANO_OBJ}/ports in this add_port_${port} function
+			[ -d \${NANO_OBJ}/ports ] || mkdir -p \${NANO_OBJ}/ports/packages
+			mount -t nullfs \${NANO_SRC} \${NANO_WORLDDIR}/usr/src
+			mkdir -p \${NANO_WORLDDIR}/usr/ports
+			mount -t nullfs \${PORTS_SRC} \${NANO_WORLDDIR}/usr/ports
+			mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
+			mount -t nullfs \${NANO_OBJ}/ports/packages \
+				\${NANO_WORLDDIR}/usr/ports/packages
+			mkdir -p \${NANO_WORLDDIR}/dev
+			mount -t devfs devfs \${NANO_WORLDDIR}/dev
+			mkdir -p \${NANO_WORLDDIR}/usr/pobj
+			mkdir -p \${NANO_WORLDDIR}/usr/workdir
+			cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
+			# If a port have NO_PACKAGE, comment-it
+			if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
+				mv \${NANO_WORLDDIR}/usr/ports/$1/Makefile \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd
+				sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
 			fi
-		rm \${NANO_WORLDDIR}/etc/resolv.conf
-               	rm -rf \${NANO_WORLDDIR}/usr/obj
-               	rm -rf \${NANO_WORLDDIR}/usr/pobj
-               	rm -rf \${NANO_WORLDDIR}/usr/workdir
-               	umount \${NANO_WORLDDIR}/dev
-		umount \${NANO_WORLDDIR}/usr/ports/packages
-		rmdir \${NANO_WORLDDIR}/usr/ports/packages
-               	umount \${NANO_WORLDDIR}/usr/ports
-               	rmdir \${NANO_WORLDDIR}/usr/ports
-               	umount \${NANO_WORLDDIR}/usr/src
-        }
-        customize_cmd add_port_${port}
-       	"
+			# Run ldconfig before
+			CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
+			# Start the build
+			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+				MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
+				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
+				package install BATCH=yes \
+				WITHOUT=\"NLS X11 DOCS EXAMPLES\" "$2" clean'
+			# add a -DWITH_DEBUG before the $2 for building port with debug
+			# and comment the strip command
+
+			rm \${NANO_WORLDDIR}/etc/resolv.conf
+			rm -rf \${NANO_WORLDDIR}/usr/obj
+			rm -rf \${NANO_WORLDDIR}/usr/pobj
+			rm -rf \${NANO_WORLDDIR}/usr/workdir
+			umount \${NANO_WORLDDIR}/dev
+			umount \${NANO_WORLDDIR}/usr/ports/packages
+			rmdir \${NANO_WORLDDIR}/usr/ports/packages
+			umount \${NANO_WORLDDIR}/usr/ports
+			rmdir \${NANO_WORLDDIR}/usr/ports
+			umount \${NANO_WORLDDIR}/usr/src
+		}
+		customize_cmd add_port_${port}
+		"
 	fi
 }
 
@@ -312,16 +294,16 @@ add_port "ports-mgmt/pkg"
 #add_port "sysutils/automount"
 
 # Python
-    add_port "print/indexinfo"
+   add_port "devel/gettext-runtime"
    add_port "devel/readline"
    add_port "devel/libffi"
   add_port "lang/python27"
  add_port "lang/python2"
 add_port "lang/python"
-add_port "devel/py-setuptools27"
+add_port "devel/py-setuptools"
 
 # Perl
-add_port "lang/perl5.20"
+add_port "lang/perl5.26"
 
 # Add xorg-minimal (and all its package-depends-list)
   add_port "devel/libpthread-stubs"
@@ -330,38 +312,25 @@ add_port "lang/perl5.20"
    add_port "devel/libdevq"
  add_port "graphics/libdrm"
   add_port "devel/libedit"
- add_port "devel/llvm36"
-   add_port "x11/kbproto"
-    add_port "x11/xproto"
+ add_port "devel/llvm38"
+   add_port "x11/xorgproto"
    add_port "x11/libXau"
    add_port "x11/libXdmcp"
     add_port "textproc/libxml2"
    add_port "x11/libxcb"
-   add_port "x11/xextproto"
-   add_port "x11/inputproto"
   add_port "x11/libX11"
   add_port "x11/libXext"
-   add_port "x11/videoproto"
   add_port "x11/libXv"
  add_port "x11/libXvMC"
-   add_port "x11/xf86vidmodeproto"
   add_port "x11/libXxf86vm"
    add_port "textproc/expat2"
-     add_port "x11/dri2proto"
-     add_port "x11/fixesproto"
     add_port "x11/libXfixes"
-    add_port "x11/damageproto"
    add_port "x11/libXdamage"
    add_port "x11/libxshmfence"
    add_port "devel/gettext-runtime"
-   add_port "x11/glproto"
    add_port "devel/libclc"
-  add_port "graphics/libglapi"
-add_port "graphics/dri"
-add_port "graphics/libGL"
  add_port "x11/libICE"
 add_port "x11/libSM"
- add_port "x11-fonts/fontsproto"
  add_port "print/freetype2"
  add_port "x11-fonts/libfontenc"
 add_port "x11-fonts/libXfont"
@@ -369,24 +338,15 @@ add_port "x11-fonts/libXfont"
 add_port "x11/xkbcomp"
 add_port "x11/xkeyboard-config"
 add_port "x11-fonts/font-util"
- add_port "x11/xineramaproto"
 add_port "x11/libXinerama"
  add_port "x11-toolkits/libXt"
  add_port "x11-toolkits/libXmu"
-   add_port "x11/printproto"
   add_port "x11/libXp"
   add_port "x11/libXpm"
  add_port "x11-toolkits/libXaw"
-  add_port "x11/xf86miscproto"
  add_port "x11/libXxf86misc"
  add_port "x11/libxkbui"
  add_port "x11/pixman"
- add_port "x11/renderproto"
- add_port "x11/randrproto"
- add_port "x11/compositeproto"
-   add_port "graphics/libglesv2"
-    add_port "graphics/gbm"
-   add_port "graphics/libEGL"
  add_port "graphics/libepoxy"
 add_port "x11-servers/xorg-server"
 
@@ -474,13 +434,9 @@ add_port "comms/lirc" "WITH=\"MINIMAL\""
   add_port "devel/talloc"
   add_port "devel/tevent"
   add_port "databases/tdb"
- add_port "net/samba-nmblookup"
  add_port "security/libssh"
-  add_port "x11/xf86dgaproto"
  add_port "x11/libXxf86dga"
-  add_port "x11/recordproto"
  add_port "x11/libXtst"
-  add_port "x11/dmxproto"
  add_port "x11/libdmx"
  add_port "x11/xdpyinfo"
   add_port "graphics/libGLU"
@@ -490,78 +446,12 @@ add_port "comms/lirc" "WITH=\"MINIMAL\""
  add_port "databases/sqlite3"
  add_port "databases/py-sqlite3"
  add_port "databases/mysql56-client"
-  add_port "x11/scrnsaverproto"
- add_port "x11/libXScrnSaver"
- add_port "devel/sdl20"
- add_port "graphics/giflib"
- add_port "graphics/webp"
-  add_port "graphics/aalib"
-  add_port "devel/sdl12"
- add_port "graphics/sdl_image"
- add_port "www/libmicrohttpd"
- add_port "multimedia/libvdpau"
- add_port "multimedia/libva"
- add_port "net/samba-libsmbclient"
- add_port "multimedia/librtmp"
-  add_port "security/libgpg-error"
-  add_port "security/libgcrypt"
- add_port "multimedia/libbdplus"
- add_port "multimedia/libaacs"
- add_port "multimedia/libbluray"
- add_port "multimedia/libcec"
-# add_port "audio/libao"
-# add_port "audio/shairplay"
- add_port "devel/libplist"
- add_port "devel/yajl"
- add_port "textproc/libxslt"
- add_port "textproc/tinyxml"
- add_port "audio/taglib"
-  add_port "audio/libogg"
- add_port "audio/libvorbis"
-  add_port "audio/flac"
- add_port "audio/libsndfile"
- add_port "audio/libsamplerate"
- add_port "multimedia/libmpeg2"
- add_port "audio/libmodplug"
-# add_port "devel/libltdl"
- add_port "x11-toolkits/gtk20" "WITHOUT=\"CUPS\""
- add_port "converters/recode"
-   add_port "converters/p5-Unicode-String"
-  add_port "converters/p5-Unicode-Map8"
- add_port "converters/enca"
- add_port "converters/fribidi"
- add_port "devel/boost-libs"
-  add_port "dns/libidn"
-  add_port "security/libtasn1"
-  add_port "security/p11-kit"
-   add_port "math/gmp"
-  add_port "security/nettle"
-  add_port "security/trousers"
- add_port "security/gnutls"
-  add_port "audio/libcddb"
- add_port "sysutils/libcdio"
- add_port "multimedia/libass"
- add_port "devel/libltdl"
- add_port "net/libnfs"
-add_port "multimedia/kodi" "WITH=\"NONFREE\" WITHOUT=\"AVAHI AIRPLAY AIRTUNES PULSEAUDIO\""
-
-#### End of port list section ####
-
-cleanup_ports () {
-		# When port are build, they install build dependency that are not usefull for running the port
-		# The list of build-only package to be delete can be found like this:
-		# Fresh generate a BSDRP image, and copy packages.info to packages.info.first
-		# Restart a BSDRP image build with the "-b" option
-		# diff packages.info.first packages.info
-		set +e
-        	CR 'env ASSUME_ALWAYS_YES=true pkg delete -g nvidia-driver* cmake* evieext* gperf* bdftopcf* nasm* autoconf* automake* gmake* libtool* libcheck* xorg-macro* makedepend* gawk* help2man* p5-gettext* p5-XML-Parser* glproto* intltool*'
 		# usr/local/lib/perl5 : Dirty hack
 		#   pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
 		#   pkg didn't delete all MAN1 page related to perl too
-		[ -d ${NANO_WORLDDIR}/usr/local/lib/perl5 ] && rm -rf ${NANO_WORLDDIR}/usr/local/lib/perl5
-		[ -f ${NANO_WORLDDIR}/usr/local/man/man1/perl.1 ] && rm ${NANO_WORLDDIR}/usr/local/man/man1/perl*
-		set -e
-}
+#		[ -d ${NANO_WORLDDIR}/usr/local/lib/perl5 ] && rm -rf ${NANO_WORLDDIR}/usr/local/lib/perl5
+#		[ -f ${NANO_WORLDDIR}/usr/local/man/man1/perl.1 ] && rm ${NANO_WORLDDIR}/usr/local/man/man1/perl*
+#		set -e
 
 customize_cmd cleanup_ports
 
@@ -602,8 +492,7 @@ usr/local/share/hal/fdi/preprobe
 usr/local/lib/ConsoleKit/run-seat.d
 usr/local/lib/ConsoleKit/run-session.d
 '
-	for c in ${FOLDERS_TO_CREATE}
-	do	
+	for c in ${FOLDERS_TO_CREATE}; do
 		if [ -d ${NANO_WORLDDIR}/$c ]; then
 			echo "Folder ${NANO_WORLDDIR}/$c allready exist"
 			echo "check:"
@@ -822,11 +711,11 @@ usr/share/tmac/tmac.vgrind
 	fi
 
 	# Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
-    find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
+	find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
 
 	# Moving kerned & world debug symbols into debug.tar.xz file
 	if [ -d ${NANO_WORLDDIR}/usr/lib/debug ]; then
-		if [ -f ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
+		if [ -f  ${NANO_WORLDDIR}/boot/kernel/kernel.symbols ]; then
 			if [ ! -d ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel ]; then
 				mkdir -p ${NANO_WORLDDIR}/usr/lib/debug/boot/kernel
 			fi
@@ -853,7 +742,9 @@ usr/share/tmac/tmac.vgrind
 	[ -d ${NANO_WORLDDIR}/tmp/hsperfdata_root ] && rm -rf  ${NANO_WORLDDIR}/tmp/hsperfdata_root
 
 	# Generate package inventory
-	CR 'pkg info' > ${NANO_OBJ}/packages.info
+	if [ -x ${NANO_WORLDDIR}/usr/local/sbin/pkg ]; then
+		CR 'pkg query \*\ %n\ %v:\ %c' > ${NANO_OBJ}/packages.info
+	fi
 
 }
 

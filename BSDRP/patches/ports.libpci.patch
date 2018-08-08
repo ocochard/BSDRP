@@ -1,19 +1,14 @@
 Index: devel/libpci/Makefile
 ===================================================================
---- devel/libpci/Makefile	(revision 460647)
+--- devel/libpci/Makefile	(revision 476488)
 +++ devel/libpci/Makefile	(working copy)
-@@ -3,6 +3,7 @@
+@@ -19,8 +19,9 @@
  
- PORTNAME=	libpci
- PORTVERSION=	3.5.6
-+PORTREVISION=	1
- CATEGORIES=	devel
- MASTER_SITES=	KERNEL_ORG/software/utils/pciutils \
- 		ftp://atrey.karlin.mff.cuni.cz/pub/linux/pci/ \
-@@ -21,6 +22,7 @@
+ ALL_TARGET=	lib/libpci.a
  CFLAGS+=	-fPIC
++USES=		gmake tar:xz
  USE_LDCONFIG=	yes
- USES=		gmake tar:xz
+-USES=		gmake tar:xz
 +MAKE_ENV+=	TARGET_ARCH=
  
  PLIST_FILES=	${LIBPCI_FILES} \

@@ -398,8 +398,8 @@ add_port "net/tayga"
 #add_port "security/nettle"
 #add_port "dns/dnsmasq"
 # DHCP server and client
-add_port "net/isc-dhcp43-server"
-#add_port "net/isc-dhcp43-relay"
+add_port "net/isc-dhcp44-server"
+#add_port "net/isc-dhcp44-relay"
 add_port "net/dhcprelya"
 
 # fswatch-mon: file change monitor (used for auto_save configuration)
