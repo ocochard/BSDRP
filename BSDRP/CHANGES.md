@@ -7,6 +7,7 @@
 * Fix upgrade script that didn't wait for autosave end
 * bsnmpd not showing out octets for vlan interfaces [issue 8](https://github.com/ocochard/BSDRP/issues/8)
 * FRR: Fix set metric in route-map [issue 21](https://github.com/ocochard/BSDRP/issues/21)
+* VXLAN: add if_vxlan.ko modules [pull request 22](https://github.com/ocochard/BSDRP/pull/22/)
 
 ## upgraded packages
 * easy-rsa to 3.0.4

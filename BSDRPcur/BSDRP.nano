@@ -40,7 +40,6 @@ CONF_INSTALL='
 # WITHOUT_FORTH= mandatory for the boot-loader
 # WITHOUT_KERBEROS= prevents to build ftp/curl
 CONF_WORLD='
-DB_FROM_SRC=
 WITHOUT_ACCT=
 WITHOUT_AMD=
 WITHOUT_APM=
