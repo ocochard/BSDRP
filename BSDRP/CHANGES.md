@@ -1,7 +1,7 @@
-# Release 1.91 (not released)
+# Release 1.91 (19/08/2018)
 
 ## New features
-* Base upgraded to FreeBSD 11.2-RELEASE-p1
+* Base upgraded to FreeBSD 11.2-RELEASE-p2
 
 ## Bug fixes
 * Fix upgrade script that didn't wait for autosave end
