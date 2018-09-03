@@ -1,15 +1,29 @@
 Index: net/frr5/Makefile
 ===================================================================
---- net/frr5/Makefile	(revision 475003)
+--- net/frr5/Makefile	(revision 478874)
 +++ net/frr5/Makefile	(working copy)
-@@ -3,6 +3,7 @@
+@@ -2,7 +2,7 @@
+ 
  PORTNAME=	frr
  PORTVERSION=	5.0.1
+-PORTREVISION=	1
++PORTREVISION=	2
  DISTVERSIONPREFIX=	frr-
-+PORTREVISION=	1
  CATEGORIES=	net ipv6
  PKGNAMESUFFIX=	5
+Index: net/frr5/files/frr.in
+===================================================================
+--- net/frr5/files/frr.in	(revision 478874)
++++ net/frr5/files/frr.in	(working copy)
+@@ -131,7 +131,7 @@
+ fi
  
+ case "${frr_cmd}" in
+-    start)
++    start|quietstart)
+ 	if [ -n "${frr_extralibs_path}" ]; then
+ 	    /sbin/ldconfig -m ${frr_extralibs_path}
+ 	fi
 Index: net/frr5/files/patch-isisd_isis__circuit.c
 ===================================================================
 --- net/frr5/files/patch-isisd_isis__circuit.c	(nonexistent)

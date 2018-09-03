@@ -1896,7 +1896,7 @@ sysrc -x ipv6_gateway_enable
 sysrc inetd_enable=YES
 sed -i -e 's/#echo/echo/g' /etc/inetd.conf
 service netif restart
-service routing restart
+service routing restart || true
 service inetd start
 config save
 }

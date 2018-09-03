@@ -7,7 +7,7 @@
 # For list of installed software to be incluled in AUTHORS
 # pkg query \*\ %n,\ license:%L,\ %w
 
-set -e
+set -eu
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
@@ -18,8 +18,7 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # env DISK_SIZE=512 BSDRP/tools/release.sh generate fast
 DRY=""
 SRC_DIR="/usr/local/BSDRP"
-[ -n "${PROJECT}" ] || PROJECT="BSDRP"
-set -u
+: ${PROJECT:=BSDRP}
 OBJ_BASE_DIR="/usr/obj"
 VERSION=""
 FAST_MODE=false

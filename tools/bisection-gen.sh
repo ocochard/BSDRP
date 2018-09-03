@@ -16,9 +16,11 @@ IMAGES_DIR=""
 PHABRID=""
 # Name of the BSDRP project
 # TESTING project is a very small (should build fast)
-PROJECT="TESTING"
-CONSOLE="serial"
-ARCH="amd64"
+# Set PROJECT variable like this example:
+# env ARCH=i386 tools/bisection-gen.sh
+: ${PROJECT:=TESTING}
+: ${CONSOLE:=serial}
+: ${ARCH:=amd64}
 
 # Enable TMPFS
 TMPFS=true
@@ -102,8 +104,14 @@ if [ -z "${PHABRID}" ]; then
 	# take the last tusday commit
 	#
 	SVN_REV_LIST='
-323954
-323953
+330000
+331000
+332000
+333000
+334000
+335000
+336000
+337000
 	'
 	for SVN_REV in ${SVN_REV_LIST}; do
 		build_project ${SVN_REV}

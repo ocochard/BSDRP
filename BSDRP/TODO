@@ -1,10 +1,5 @@
 # TODO List fort the BSD Router Project
 
-## TO FIX before release ##
-
-* BGP and MD5 not working ?
-* mpd5 crashing at startup !
-
 ## Bugs #
 
 * if no-mandatory /data had a fsck problem, system refuse go in single user
@@ -16,6 +11,7 @@
 
 ## Boot loader ##
 * How to add UEFI bootloader ? (available on -current), because some x86_64 machine didn't have UEFI compability (PC Engine APU)
+* poudriere-image uses EFI, need to test generated image on APU
 
 ## Authentication #
 
@@ -37,8 +33,9 @@ give "yes"
 
 * Lab script: Generate a lab diagram in DOT language, see example in tools/bsdrp.lab.gv
 * Lab script: Add a libvirt script
+* Lab script: Add jail based lab
 
-## nanobsd patches to study for inclusion # 
+## nanobsd patches to study for inclusion #
 
 http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html
 
