@@ -42,7 +42,7 @@ update () {
 }
 SVN_CMD=$(which svn) || SVN_CMD=$(which svnlite)
 
-for i in BSDRP BSDRPstable BSDRPcur RELEASE STABLE HEAD; do
+for i in BSDRP BSDRPstable BSDRPcur RELEASE STABLE HEAD TESTING; do
 	if [ -d $i/FreeBSD/src ]; then
 		get_last_rev $i/FreeBSD/src
 		update $i/make.conf SRC_REV $rev

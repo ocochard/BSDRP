@@ -46,7 +46,7 @@ NANO_SRC=/usr/src
 NANO_TOOLS=tools/tools/nanobsd
 
 # Where cust_pkgng() finds packages to install
-NANO_PACKAGE_DIR=${NANO_SRC}/${NANO_TOOLS}/Pkg
+NANO_PACKAGE_DIR="${NANO_SRC}/${NANO_TOOLS}/Pkg"
 NANO_PACKAGE_LIST="*"
 
 # where package metadata gets placed
@@ -294,17 +294,17 @@ CR0 ( ) {
 clean_build ( ) (
 	pprint 2 "Clean and create object directory (${MAKEOBJDIRPREFIX})"
 
-	if ! rm -rf ${MAKEOBJDIRPREFIX}/ > /dev/null 2>&1 ; then
-		chflags -R noschg ${MAKEOBJDIRPREFIX}/
-		rm -r ${MAKEOBJDIRPREFIX}/
+	if ! rm -rf "${MAKEOBJDIRPREFIX}/" > /dev/null 2>&1 ; then
+		chflags -R noschg "${MAKEOBJDIRPREFIX}/"
+		rm -r "${MAKEOBJDIRPREFIX}/"
 	fi
 )
 
 make_conf_build ( ) (
 	pprint 2 "Construct build make.conf ($NANO_MAKE_CONF_BUILD)"
 
-	mkdir -p ${MAKEOBJDIRPREFIX}
-	printenv > ${MAKEOBJDIRPREFIX}/_.env
+	mkdir -p "${MAKEOBJDIRPREFIX}"
+	printenv > "${MAKEOBJDIRPREFIX}/_.env"
 
 	# Make sure we get all the global settings that NanoBSD wants
 	# in addition to the user's global settings
@@ -312,7 +312,7 @@ make_conf_build ( ) (
 	nano_global_make_env
 	echo "${CONF_WORLD}"
 	echo "${CONF_BUILD}"
-	) > ${NANO_MAKE_CONF_BUILD}
+	) > "${NANO_MAKE_CONF_BUILD}"
 )
 
 build_world ( ) (
@@ -324,7 +324,7 @@ build_world ( ) (
 	set -o xtrace
 	cd "${NANO_SRC}"
 	${NANO_PMAKE} buildworld
-	) > ${MAKEOBJDIRPREFIX}/_.bw 2>&1
+	) > "${MAKEOBJDIRPREFIX}/_.bw" 2>&1
 )
 
 build_kernel ( ) (
@@ -342,18 +342,18 @@ build_kernel ( ) (
 	set -o xtrace
 	cd "${NANO_SRC}"
 	${NANO_PMAKE} buildkernel
-	) > ${MAKEOBJDIRPREFIX}/_.bk 2>&1
+	) > "${MAKEOBJDIRPREFIX}/_.bk" 2>&1
 )
 
 clean_world ( ) (
 	if [ "${NANO_OBJ}" != "${MAKEOBJDIRPREFIX}" ]; then
 		pprint 2 "Clean and create object directory (${NANO_OBJ})"
-		if ! rm -rf ${NANO_OBJ}/ > /dev/null 2>&1 ; then
-			chflags -R noschg ${NANO_OBJ}
-			rm -r ${NANO_OBJ}/
+		if ! rm -rf "${NANO_OBJ}/" > /dev/null 2>&1 ; then
+			chflags -R noschg "${NANO_OBJ}"
+			rm -r "${NANO_OBJ}/"
 		fi
 		mkdir -p "${NANO_OBJ}" "${NANO_WORLDDIR}"
-		printenv > ${NANO_LOG}/_.env
+		printenv > "${NANO_LOG}/_.env"
 	else
 		pprint 2 "Clean and create world directory (${NANO_WORLDDIR})"
 		if ! rm -rf "${NANO_WORLDDIR}/" > /dev/null 2>&1 ; then
@@ -377,7 +377,7 @@ make_conf_install ( ) (
 	    echo NO_ROOT=t
 	    echo METALOG=${NANO_METALOG}
 	fi
-	) >  ${NANO_MAKE_CONF_INSTALL}
+	) > "${NANO_MAKE_CONF_INSTALL}"
 )
 
 install_world ( ) (
@@ -390,7 +390,7 @@ install_world ( ) (
 	cd "${NANO_SRC}"
 	${NANO_MAKE} installworld DESTDIR="${NANO_WORLDDIR}" DB_FROM_SRC=yes
 	chflags -R noschg "${NANO_WORLDDIR}"
-	) > ${NANO_LOG}/_.iw 2>&1
+	) > "${NANO_LOG}/_.iw" 2>&1
 )
 
 install_etc ( ) (
@@ -405,7 +405,7 @@ install_etc ( ) (
 	# make.conf doesn't get created by default, but some ports need it
 	# so they can spam it.
 	cp /dev/null "${NANO_WORLDDIR}"/etc/make.conf
-	) > ${NANO_LOG}/_.etc 2>&1
+	) > "${NANO_LOG}/_.etc" 2>&1
 )
 
 install_kernel ( ) (
@@ -426,7 +426,7 @@ install_kernel ( ) (
 	cd "${NANO_SRC}"
 	${NANO_MAKE} installkernel DESTDIR="${NANO_WORLDDIR}" DB_FROM_SRC=yes
 
-	) > ${NANO_LOG}/_.ik 2>&1
+	) > "${NANO_LOG}/_.ik" 2>&1
 )
 
 native_xtools ( ) (
@@ -441,7 +441,7 @@ native_xtools ( ) (
 	${NANO_MAKE} native-xtools
 	${NANO_MAKE} native-xtools-install DESTDIR="${NANO_WORLDDIR}"
 
-	) > ${NANO_LOG}/_.native_xtools 2>&1
+	) > "${NANO_LOG}/_.native_xtools" 2>&1
 )
 
 #
@@ -455,7 +455,7 @@ run_early_customize ( ) {
 		pprint 2 "early customize \"$c\""
 		pprint 3 "log: ${NANO_LOG}/_.early_cust.$c"
 		pprint 4 "`type $c`"
-		{ set -x ; $c ; set +x ; } >${NANO_LOG}/_.early_cust.$c 2>&1
+		{ set -x ; $c ; set +x ; } >"${NANO_LOG}/_.early_cust.$c" 2>&1
 	done
 }
 
@@ -472,7 +472,7 @@ run_customize ( ) (
 		pprint 2 "customize \"$c\""
 		pprint 3 "log: ${NANO_LOG}/_.cust.$c"
 		pprint 4 "`type $c`"
-		( set -x ; $c ) > ${NANO_LOG}/_.cust.$c 2>&1
+		( set -x ; $c ) > "${NANO_LOG}/_.cust.$c" 2>&1
 	done
 )
 
@@ -487,7 +487,7 @@ run_late_customize ( ) (
 		pprint 2 "late customize \"$c\""
 		pprint 3 "log: ${NANO_LOG}/_.late_cust.$c"
 		pprint 4 "`type $c`"
-		( set -x ; $c ) > ${NANO_LOG}/_.late_cust.$c 2>&1
+		( set -x ; $c ) > "${NANO_LOG}/_.late_cust.$c" 2>&1
 	done
 )
 
@@ -891,8 +891,8 @@ set_defaults_and_export ( ) {
 	: ${NANO_DISKIMGDIR:=${NANO_OBJ}}
 	: ${NANO_WORLDDIR:=${NANO_OBJ}/_.w}
 	: ${NANO_LOG:=${NANO_OBJ}}
-	NANO_MAKE_CONF_BUILD=${MAKEOBJDIRPREFIX}/make.conf.build
-	NANO_MAKE_CONF_INSTALL=${NANO_OBJ}/make.conf.install
+	NANO_MAKE_CONF_BUILD="${MAKEOBJDIRPREFIX}/make.conf.build"
+	NANO_MAKE_CONF_INSTALL="${NANO_OBJ}/make.conf.install"
 
 	# Override user's NANO_DRIVE if they specified a NANO_LABEL
 	[ -n "${NANO_LABEL}" ] && NANO_DRIVE="ufs/${NANO_LABEL}" || true
@@ -902,7 +902,7 @@ set_defaults_and_export ( ) {
 		NANO_TOOLS="${NANO_SRC}/${NANO_TOOLS}" || true
 
 	[ -n "${NANO_NOPRIV_BUILD}" ] && [ -z "${NANO_METALOG}" ] && \
-		NANO_METALOG=${NANO_OBJ}/_.metalog || true
+		NANO_METALOG="${NANO_OBJ}/_.metalog" || true
 
 	NANO_STARTTIME=`date +%s`
 	pprint 3 "Exporting NanoBSD variables"

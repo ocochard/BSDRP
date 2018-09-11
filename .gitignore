@@ -1,4 +1,5 @@
 # ignore downloaded FreeBSD source and porttree
+workdir/
 BSDRP/FreeBSD
 BSDRPcur/FreeBSD
 BSDRPstable/FreeBSD

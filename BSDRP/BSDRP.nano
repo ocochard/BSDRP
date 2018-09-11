@@ -1,5 +1,5 @@
 # BSD Router Project NanoBSD configuration file
-# http://bsdrp.net
+# https://bsdrp.net
 #
 # NanoBSD port support added from Gitoyen:
 # http://www.gitoyen.net/Howto-NanoBSD-quagga-router
@@ -205,14 +205,14 @@ add_netrate () {
 add_port () {
 	port=$(echo $1 | sed -e 's/\//_/')
 	# Check if package allready exist
-	cd ${PORTS_SRC}/$1
+	cd "${PORTS_SRC}/$1"
 	# Warning: a package name can change regarding the build option
 	if [ $# -gt 1 ]; then
-		PKG_NAME=$(env PORTSDIR=${PORTS_SRC} make package-name "$2")
+		PKG_NAME=$(env PORTSDIR="${PORTS_SRC}" make package-name "$2")
 	else
-		PKG_NAME=$(env PORTSDIR=${PORTS_SRC} make package-name)
+		PKG_NAME=$(env PORTSDIR="${PORTS_SRC}" make package-name)
 	fi
-	if [ -f ${NANO_OBJ}/ports/packages/All/${PKG_NAME}.txz ]; then
+	if [ -f "${NANO_OBJ}"/ports/packages/All/${PKG_NAME}.txz ]; then
 	# Pkg file found: Generate add_pkg_NAME function
 		#Don't try to install pkg, the boot strap will install it
 		if [ "$1" != "ports-mgmt/pkg" ]; then

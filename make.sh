@@ -56,20 +56,20 @@ load_module () {
 update_src () {
 	echo "Updating/Installing FreeBSD source"
 
-	if [ ! -d ${FREEBSD_SRC}/.${SRC_METHOD} ]; then
+	if [ ! -d "${FREEBSD_SRC}"/.${SRC_METHOD} ]; then
 		echo "No existing FreeBSD source tree found: Checking out source..."
-		mkdir -p ${FREEBSD_SRC} || die "Can't create ${FREEBSD_SRC}"
+		mkdir -p "${FREEBSD_SRC}" || die "Can't create ${FREEBSD_SRC}"
 		if [ ${SRC_METHOD} = "svn" ]; then
-			${SVN_CMD} co https://${SRC_REPO} ${FREEBSD_SRC} -r ${SRC_REV} \
+			${SVN_CMD} co https://${SRC_REPO} "${FREEBSD_SRC}" -r ${SRC_REV} \
 			|| die "Can't check out sources from svn repo"
 		elif [ ${SRC_METHOD} = "git" ]; then
-			git clone ${SRC_REPO} ${FREEBSD_SRC} || die "Can't clone sources from git repo"
+			git clone "${SRC_REPO}" "${FREEBSD_SRC}" || die "Can't clone sources from git repo"
 			#git checkout REV?
 		fi
 	else
 		if [ ${SRC_METHOD} = "svn" ]; then
 			#Checking repo change
-			if ! ${SVN_CMD} info ${FREEBSD_SRC} | grep -q "${SRC_REPO}"; then
+			if ! ${SVN_CMD} info "${FREEBSD_SRC}" | grep -q "${SRC_REPO}"; then
 				die "svn repo changed: delete your source tree with rm -rf ${FREEBSD_SRC}"
 				die "or relocate it: cd {FREEBSD_SRC}; svn relocate svn://svn.freebsd.org https://svn.freebsd.org"
 			fi
@@ -77,53 +77,53 @@ update_src () {
 		echo "Cleaning local FreeBSD patches..."
 		#cleaning local patced source
 		if [ ${SRC_METHOD} = "svn" ]; then
-			${SVN_CMD} revert -R ${FREEBSD_SRC}
-			${SVN_CMD} cleanup ${FREEBSD_SRC} --remove-unversioned
+			${SVN_CMD} revert -R "${FREEBSD_SRC}"
+			${SVN_CMD} cleanup "${FREEBSD_SRC}" --remove-unversioned
 		elif [ ${SRC_METHOD} = "git" ]; then
-			(cd ${FREEBSD_SRC}; git checkout . )
+			(cd "${FREEBSD_SRC}"; git checkout . )
 		fi
 		echo "Updating FreeBSD sources..."
 		if [ ${SRC_METHOD} = "svn" ]; then
-			${SVN_CMD} update ${FREEBSD_SRC} -r ${SRC_REV} || die "Can't update FreeBSD src"
+			${SVN_CMD} update "${FREEBSD_SRC}" -r ${SRC_REV} || die "Can't update FreeBSD src"
 		elif [ ${SRC_METHOD} = "git" ]; then
-			(cd ${FREEBSD_SRC}; git pull )
+			(cd "${FREEBSD_SRC}"; git pull )
 		fi
 	fi
 }
 
 update_port () {
 	echo "Updating/Installing ports tree"
-	if [ ! -d ${PORTS_SRC}/.svn ]; then
+	if [ ! -d "${PORTS_SRC}"/.svn ]; then
 		echo "No existing source port tree found: Checking out ports source..."
-		mkdir -p ${PORTS_SRC} || die "Can't create ${PORTS_SRC}"
-		${SVN_CMD} co https://${SVN_PORTS_PATH} ${PORTS_SRC} -r ${PORTS_REV} \
+		mkdir -p "${PORTS_SRC}" || die "Can't create ${PORTS_SRC}"
+		${SVN_CMD} co https://${SVN_PORTS_PATH} "${PORTS_SRC}" -r ${PORTS_REV} \
 		|| die "Can't check out ports sources"
 	else
 		#Checking repo change
-		if ! ${SVN_CMD} info ${PORTS_SRC} | grep -q "${SVN_PORTS_PATH}"; then
+		if ! ${SVN_CMD} info "${PORTS_SRC}" | grep -q "${SVN_PORTS_PATH}"; then
 			die "svn repo changed, delete your source tree with rm -rf ${PORTS_SRC}"
 		fi
 		#cleaning local patched ports sources
 		echo "Cleaning local port tree patches..."
-		${SVN_CMD} revert -R ${PORTS_SRC}
+		${SVN_CMD} revert -R "${PORTS_SRC}"
 		echo "Removing unrevisionned files..."
-		${SVN_CMD} cleanup ${PORTS_SRC} --remove-unversioned
+		${SVN_CMD} cleanup "${PORTS_SRC}" --remove-unversioned
 		echo "Updating ports tree sources..."
-		${SVN_CMD} update ${PORTS_SRC} -r ${PORTS_REV} \
+		${SVN_CMD} update "${PORTS_SRC}" -r ${PORTS_REV} \
 		|| die "Can't update ports sources"
-		[ -f ${PROJECT_DIR}/FreeBSD/ports-added ] && rm ${PROJECT_DIR}/FreeBSD/ports-added || true
+		[ -f "${PROJECT_DIR}"/FreeBSD/ports-added ] && rm "${PROJECT_DIR}"/FreeBSD/ports-added || true
 	fi
 }
 
 #patch the source tree
 patch_src() {
-	mkdir -p ${PROJECT_DIR}/FreeBSD/
-	: > ${PROJECT_DIR}/FreeBSD/src-patches
-	for patch in $(cd ${SRC_PATCH_DIR} && ls freebsd.*.patch); do
-		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/src-patches; then
+	mkdir -p "${PROJECT_DIR}/FreeBSD/"
+	: > "${PROJECT_DIR}/FreeBSD/src-patches"
+	for patch in $(cd "${SRC_PATCH_DIR}" && ls freebsd.*.patch); do
+		if ! grep -q $patch "${PROJECT_DIR}/FreeBSD/src-patches"; then
 			echo "Applying patch $patch..."
-			(${SVN_CMD} patch  ${SRC_PATCH_DIR}/$patch ${FREEBSD_SRC} | grep -B 4 'rejected hunk\|Skipped') && die "Patch failed"
-			echo $patch >> ${PROJECT_DIR}/FreeBSD/src-patches
+			(${SVN_CMD} patch  "${SRC_PATCH_DIR}"/$patch "${FREEBSD_SRC}" | grep -B 4 'rejected hunk\|Skipped') && die "Patch failed"
+			echo $patch >> "${PROJECT_DIR}"/FreeBSD/src-patches
 		fi
 	done
 }
@@ -131,24 +131,24 @@ patch_src() {
 #patch the port tree
 #TODO: avoid copy/past with patch_src()
 patch_port() {
-	: > ${PROJECT_DIR}/FreeBSD/ports-patches
-	for patch in $(cd ${PORT_PATCH_DIR} && ls ports.*.patch); do
-		if ! grep -q $patch ${PROJECT_DIR}/FreeBSD/ports-patches; then
+	: > "${PROJECT_DIR}"/FreeBSD/ports-patches
+	for patch in $(cd "${PORT_PATCH_DIR}" && ls ports.*.patch); do
+		if ! grep -q $patch "${PROJECT_DIR}/FreeBSD/ports-patches"; then
 			echo "Applying patch $patch..."
-			(${SVN_CMD} patch ${PORT_PATCH_DIR}/$patch ${PORTS_SRC} | grep -B 4 'rejected hunk\|Skipped') && die "Patch failed"
-			echo $patch >> ${PROJECT_DIR}/FreeBSD/ports-patches
+			(${SVN_CMD} patch "${PORT_PATCH_DIR}"/$patch "${PORTS_SRC}" | grep -B 4 'rejected hunk\|Skipped') && die "Patch failed"
+			echo $patch >> "${PROJECT_DIR}"/FreeBSD/ports-patches
 		fi
 	done
 }
 
 #Add new ports (in shar format)
 add_new_port() {
-	for ports in $(cd ${PORT_PATCH_DIR} && ls ports.*.shar); do
-		if ! grep -q $ports ${PROJECT_DIR}/FreeBSD/ports-added; then
+	for ports in $(cd "${PORT_PATCH_DIR}" && ls ports.*.shar); do
+		if ! grep -q $ports "${PROJECT_DIR}"/FreeBSD/ports-added; then
 			echo "Adding port $ports..."
-			(cd ${PORTS_SRC} &&
-			sh ${PORT_PATCH_DIR}/$ports)
-			echo $ports >> ${PROJECT_DIR}/FreeBSD/ports-added
+			(cd "${PORTS_SRC}" &&
+			sh "${PORT_PATCH_DIR}"/$ports)
+			echo $ports >> "${PROJECT_DIR}"/FreeBSD/ports-added
 		fi
 	done
 }
@@ -198,13 +198,14 @@ usage () {
 echo "BSD Router Project image build script"
 echo ""
 
-#Get argument
-
+# Temporary (working) directory
+TMPDIR="$(pwd)"/workdir
+# Is svn or svnlite available ?
 SVN_CMD=$(which svn) || SVN_CMD=$(which svnlite)
 # script (make.sh) file name
 SCRIPT=$(readlink -f $0)
 # directory where make.sh file is
-SCRIPT_DIR=$(dirname $SCRIPT)
+SCRIPT_DIR=$(dirname "$SCRIPT")
 # boolean for answering YES automatically
 ALWAYS_YES=false
 # Host arch (i386, amd64, sparc64, et...)
@@ -229,6 +230,8 @@ UPDATE_PORT=false
 TMPFS=false
 # Boolean for forcing a cleanup
 NOCLEAN="-n"
+
+#Get argument
 args=$(getopt a:bCc:dfhkp:s:uryw $*)
 
 set -- $args
@@ -316,7 +319,7 @@ fi
 MAKE_JOBS=$(sysctl -n kern.smp.cpus)
 
 # Checking TARGET folder
-[ -d ${SCRIPT_DIR}/${PROJECT} ] || die "Can't found target ${PROJECT}"
+[ -d "${SCRIPT_DIR}/${PROJECT}" ] || die "Can't found target ${PROJECT}"
 
 PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
 KERNELS_DIR="${PROJECT_DIR}/kernels"
@@ -336,7 +339,7 @@ NANO_DIRS_INSTALL="${PROJECT_DIR}/Files"
 # -NANO_MODULES_ARCH: List of kernel modules to build for ARCH
 # -DISK_SIZE: Target size of the flash disk media
 
-. ${SCRIPT_DIR}/${PROJECT}/make.conf
+. "${SCRIPT_DIR}"/${PROJECT}/make.conf
 
 # Check if no previously mounted dirs
 check_clean ${PROJECT}.${TARGET_ARCH}
@@ -348,16 +351,16 @@ if [ -n "${MASTER_PROJECT}" ]; then
 	# It's a child project: Load MASTER_PROJECT/make.conf
 	# But set PROJECT_DIR to MASTER_PROJECT before calling make.conf
 	PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
-	. ${SCRIPT_DIR}/${MASTER_PROJECT}/make.conf
+	. "${SCRIPT_DIR}"/${MASTER_PROJECT}/make.conf
 	# Now overide variables learn on MASTER_PROJECT by our child one
 	PROJECT_DIR="${SCRIPT_DIR}/${PROJECT}"
-	. ${SCRIPT_DIR}/${PROJECT}/make.conf
+	. "${SCRIPT_DIR}"/${PROJECT}/make.conf
 	MASTER_PROJECT_DIR="${SCRIPT_DIR}/${MASTER_PROJECT}"
 	trap "echo 'Running exit trap code' ; check_clean ${PROJECT}.${TARGET_ARCH}" 1 2 15 EXIT
 	# If there is no kernels config on sub-project, use the master dir
-	[ -d ${PROJECT_DIR}/kernels ] ||
+	[ -d "${PROJECT_DIR}"/kernels ] ||
 	  KERNELS_DIR="${MASTER_PROJECT_DIR}/kernels"
-	if [ -d ${PROJECT_DIR}/Files ]; then
+	if [ -d "${PROJECT_DIR}"/Files ]; then
 		NANO_DIRS_INSTALL="${MASTER_PROJECT_DIR}/Files ${PROJECT_DIR}/Files"
 	else
 		NANO_DIRS_INSTALL="${MASTER_PROJECT_DIR}/Files"
@@ -365,17 +368,17 @@ if [ -n "${MASTER_PROJECT}" ]; then
 fi
 
 # project version
-for dir in ${NANO_DIRS_INSTALL}; do
+for dir in "${NANO_DIRS_INSTALL}"; do
 	[ -z "${dir}" ] && die "Bug: Empty NANO_DIRS_INSTALL variable"
-	if [ -f ${dir}/etc/version ]; then
-		VERSION=$(cat ${dir}/etc/version)
+	if [ -f "${dir}"/etc/version ]; then
+		VERSION=$(cat "${dir}"/etc/version)
 	else
 		die "No ${dir}/etc/version found"
 	fi
 done
 
 # Check for a kernel
-[ -f ${KERNELS_DIR}/${NANO_KERNEL} ] || die "Can't found kernels/${NANO_KERNEL}"
+[ -f "${KERNELS_DIR}"/${NANO_KERNEL} ] || die "Can't found kernels/${NANO_KERNEL}"
 
 # Checking target ARCH cross-compilation compatibilities
 case "${NANO_KERNEL}" in
@@ -432,18 +435,23 @@ if [ $(sysctl -n hw.usermem) -lt 2000000000 ]; then
 	TMPFS=false
 fi
 
+mkdir -p "${TMPDIR}" || die "ERROR: Cannot create ${TMPDIR}"
+
 if ($TMPFS); then
-	if mount | grep -q -e "^tmpfs[[:space:]].*/tmp/obj[[:space:]]"; then
+	if mount | grep -q -e "^tmpfs[[:space:]].*${TMPDIR}/tmpfs[[:space:]]"; then
 		echo "Existing tmpfs file system detected"
 	else
-		if [ ! -d /tmp/obj ]; then
-			mkdir /tmp/obj || die "ERROR: Cannot create /tmp/obj"
+		mkdir -p "${TMPDIR}"/tmpfs || die "ERROR: Cannot create tmpfs"
+fi
+		# only root can use mount -t tmpfs
+		if [ "$(id -u)" != "0" ]; then
+   			die "Need to be root for issuing 'mount -t tmpfs tmpfs ${TMPDIR}/tmpfs'"
+		else
+		mount -t tmpfs tmpfs "${TMPDIR}"/tmpfs || die "ERROR: Cannot mount a tmpfs"
 		fi
-		mount -t tmpfs tmpfs /tmp/obj/ || die "ERROR: Cannot create a tmpfs on /tmp/obj"
-	fi
-	NANO_OBJ=/tmp/obj/${PROJECT}.${NANO_KERNEL}
+	NANO_OBJ="${TMPDIR}"/tmpfs/${PROJECT}.${NANO_KERNEL}
 else
-	NANO_OBJ=/usr/obj/${PROJECT}.${NANO_KERNEL}
+	NANO_OBJ="${TMPDIR}"/${PROJECT}.${NANO_KERNEL}
 fi
 if [ -n "${SKIP_REBUILD}" ]; then
 	if ! [ -d ${NANO_OBJ} ]; then
@@ -453,14 +461,14 @@ if [ -n "${SKIP_REBUILD}" ]; then
 fi
 
 # Check if no previously tempo obj folder still mounted
-check_clean ${NANO_OBJ}
+check_clean "${NANO_OBJ}"
 
 # If no source installed, force installing them
-[ -d ${FREEBSD_SRC}/.svn ] || UPDATE_SRC=true
+[ -d "${FREEBSD_SRC}"/.svn ] || UPDATE_SRC=true
 
 #Check if the project uses port before installing/updating port tree
-if grep -q '^add_port[[:blank:]]\+"' ${PROJECT_DIR}/${NAME}.nano; then
-	[ -d ${PORTS_SRC}/.svn ] || UPDATE_PORT=true
+if grep -q '^add_port[[:blank:]]\+"' "${PROJECT_DIR}"/${NAME}.nano; then
+	[ -d "${PORTS_SRC}"/.svn ] || UPDATE_PORT=true
 	PROJECT_WITH_PORT=true
 else
 	PROJECT_WITH_PORT=false
@@ -494,10 +502,12 @@ echo "# Name of this NanoBSD build (Used to construct workdir names)"
 echo "NANO_NAME=${NAME}"
 echo "# Source tree directory"
 echo "NANO_SRC=\"${FREEBSD_SRC}\""
-} > /tmp/${PROJECT}.nano
+} > "${TMPDIR}"/${PROJECT}.nano
 if ($PROJECT_WITH_PORT); then
-	echo "# Where the port tree is" >> /tmp/${PROJECT}.nano
-	echo "PORTS_SRC=\"${PORTS_SRC}\"" >> /tmp/${PROJECT}.nano
+	{
+	echo "# Where the port tree is"
+	echo "PORTS_SRC=\"${PORTS_SRC}\""
+	} >> "${TMPDIR}"/${PROJECT}.nano
 fi
 
 {
@@ -505,11 +515,11 @@ echo "# Where nanobsd additional files live under the source tree"
 echo "NANO_TOOLS=\"${PROJECT_DIR}\""
 echo "NANO_OBJ=\"${NANO_OBJ}\""
 echo "NANO_DIRS_INSTALL=\"${NANO_DIRS_INSTALL}\""
-} >> /tmp/${PROJECT}.nano
+} >> "${TMPDIR}"/${PROJECT}.nano
 
 # Copy the common nanobsd configuration file to /tmp
-if [ -f ${PROJECT_DIR}/${NAME}.nano ]; then
-	cat ${PROJECT_DIR}/${NAME}.nano >> /tmp/${PROJECT}.nano
+if [ -f "${PROJECT_DIR}"/${NAME}.nano ]; then
+	cat "${PROJECT_DIR}"/${NAME}.nano >> "${TMPDIR}"/${PROJECT}.nano
 else
 	die "No ${NAME}.nano configuration files"
 fi
@@ -534,9 +544,9 @@ echo "# Parallel Make"
 # Special ARCH commands
 # Note for modules names: They are relative to /usr/src/sys/modules
 echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\""
-} >> /tmp/${PROJECT}.nano
+} >> "${TMPDIR}"/${PROJECT}.nano
 
-eval echo NANO_MODULES=\\\"\${NANO_MODULES_${NANO_KERNEL}}\\\" >> /tmp/${PROJECT}.nano
+eval echo NANO_MODULES=\\\"\${NANO_MODULES_${NANO_KERNEL}}\\\" >> "${TMPDIR}"/${PROJECT}.nano
 case ${NANO_KERNEL} in
 	"cambria")
 		NANO_MAKEFS="makefs -B big \
@@ -546,23 +556,31 @@ case ${NANO_KERNEL} in
 	"i386_xenpv" | "i386_xenhvm" | "amd64_xenhvm" | "amd64_xenpv" )
 		#echo "add_port \"lang/python27\" \"-DNOPORTDATA\"" >> /tmp/${PROJECT}.nano
 		#echo "add_port \"sysutils/xen-tools\"" >> /tmp/${PROJECT}.nano
-		echo "#Configure xen console port" >> /tmp/${PROJECT}.nano
-        echo "customize_cmd bsdrp_console_xen" >> /tmp/${PROJECT}.nano
+		{
+		echo "#Configure xen console port"
+        echo "customize_cmd bsdrp_console_xen"
+		} >> "${TMPDIR}"/${PROJECT}.nano
 		;;
 esac
 
-echo "# Bootloader type"  >> /tmp/${PROJECT}.nano
+echo "# Bootloader type"  >> "${TMPDIR}"/${PROJECT}.nano
 
 case ${INPUT_CONSOLE} in
-	"-vga") echo "NANO_BOOTLOADER=\"boot/boot0\"" >> /tmp/${PROJECT}.nano
+	"-vga")
+		{
+		echo "NANO_BOOTLOADER=\"boot/boot0\""
 		# Configuring dual_console (vga and serial) can cause problem to
 		# some computer that have special serial port
-		echo "#Configure vga console port" >> /tmp/${PROJECT}.nano
-		echo "customize_cmd bsdrp_console_vga" >> /tmp/${PROJECT}.nano
+		echo "#Configure vga console port"
+		echo "customize_cmd bsdrp_console_vga"
+		} >> "${TMPDIR}"/${PROJECT}.nano
 		;;
-	"-serial") echo "NANO_BOOTLOADER=\"boot/boot0sio\"" >> /tmp/${PROJECT}.nano
-		echo "#Configure serial console port" >> /tmp/${PROJECT}.nano
-		echo "customize_cmd bsdrp_console_serial" >> /tmp/${PROJECT}.nano
+	"-serial")
+		{
+		echo "NANO_BOOTLOADER=\"boot/boot0sio\""
+		echo "#Configure serial console port"
+		echo "customize_cmd bsdrp_console_serial"
+		} >> "${TMPDIR}"/${PROJECT}.nano
 		;;
 esac
 
@@ -606,41 +624,41 @@ fi
 
 # Export some variables for using them under nanobsd
 # Somes ports needs the correct uname -r output
-REV=$(grep -m 1 REVISION= ${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"')
-BRA=$(grep -m 1 BRANCH=	${FREEBSD_SRC}/sys/conf/newvers.sh | cut -f2 -d '"')
+REV=$(grep -m 1 REVISION= "${FREEBSD_SRC}/sys/conf/newvers.sh" | cut -f2 -d '"')
+BRA=$(grep -m 1 BRANCH=	"${FREEBSD_SRC}/sys/conf/newvers.sh" | cut -f2 -d '"')
 export FBSD_DST_RELEASE="${REV}-${BRA}"
 export FBSD_DST_OSVERSION=$(awk '/\#define.*__FreeBSD_version/ { print $3 }' \
     "${FREEBSD_SRC}/sys/sys/param.h")
 export TARGET_ARCH
 
 echo "Copying ${NANO_KERNEL} Kernel configuration file"
-cp ${KERNELS_DIR}/${NANO_KERNEL} ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
+cp "${KERNELS_DIR}"/${NANO_KERNEL} "${FREEBSD_SRC}"/sys/${TARGET_ARCH}/conf/
 
 # The xen_hvm kernel include the standard kernel, need to copy it too
 case ${NANO_KERNEL} in
 	"amd64_xenhvm")
-		cp ${KERNELS_DIR}/amd64 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
+		cp "${KERNELS_DIR}"/amd64 "${FREEBSD_SRC}"/sys/${TARGET_ARCH}/conf/
 		;;
 	"i386_xenhvm")
-		cp ${KERNELS_DIR}/i386 ${FREEBSD_SRC}/sys/${TARGET_ARCH}/conf/
+		cp "${KERNELS_DIR}"/i386 "${FREEBSD_SRC}"/sys/${TARGET_ARCH}/conf/
         ;;
 esac
 
 # Overwrite the nanobsd script with our own improved nanobsd
 # Mandatory for supporting multiple folders to be installed
-cp tools/defaults.sh ${NANOBSD_DIR}/
-cp tools/legacy.sh ${NANOBSD_DIR}/
-cp tools/nanobsd.sh ${NANOBSD_DIR}/
-chmod +x ${NANOBSD_DIR}/nanobsd.sh
+cp tools/defaults.sh "${NANOBSD_DIR}"/
+cp tools/legacy.sh "${NANOBSD_DIR}"/
+cp tools/nanobsd.sh "${NANOBSD_DIR}"/
+chmod +x "${NANOBSD_DIR}"/nanobsd.sh
 
 # Start nanobsd using the BSDRP configuration file
 echo "Launching NanoBSD build process..."
-cd ${NANOBSD_DIR}
-sh ${NANOBSD_DIR}/nanobsd.sh ${NOCLEAN} ${SKIP_REBUILD} -c /tmp/${PROJECT}.nano
+cd "${NANOBSD_DIR}"
+sh "${NANOBSD_DIR}"/nanobsd.sh ${NOCLEAN} ${SKIP_REBUILD} -c "${TMPDIR}"/${PROJECT}.nano
 ERROR_CODE=$?
 if [ -n "${MASTER_PROJECT}" ]; then
 	# unmount previosly mounted dir (old unionfs code???)
-	check_clean ${NANO_OBJ}
+	check_clean "${NANO_OBJ}"
 	trap - 1 2 15 EXIT
 fi
 
@@ -657,7 +675,7 @@ else
 fi
 
 # The exit code on NanoBSD doesn't work for port compilation/installation
-if [ ! -f ${NANO_OBJ}/_.disk.image ]; then
+if [ ! -f "${NANO_OBJ}"/_.disk.image ]; then
 	echo "ERROR: NanoBSD meet an error (port installation/compilation ?)"
 	exit 1
 fi
@@ -665,7 +683,7 @@ fi
 # Renaming debug/symbol files archive
 if [ -f ${NANO_OBJ}/debug.tar.xz ]; then
 	FILENAME="${NAME}-${VERSION}-debug-${NANO_KERNEL}.tar.xz"
-	mv ${NANO_OBJ}/debug.tar.xz ${NANO_OBJ}/${FILENAME}
+	mv "${NANO_OBJ}"/debug.tar.xz "${NANO_OBJ}"/${FILENAME}
 	echo "Debug files archive here:"
 	echo "${NANO_OBJ}/${FILENAME}"
 fi
@@ -674,20 +692,20 @@ fi
 FILENAME="${NAME}-${VERSION}-upgrade-${NANO_KERNEL}${INPUT_CONSOLE}.img"
 
 #Remove old upgrade images if present
-[ -f ${NANO_OBJ}/${FILENAME} ] && rm ${NANO_OBJ}/${FILENAME}
-[ -f ${NANO_OBJ}/${FILENAME}.xz ] && rm ${NANO_OBJ}/${FILENAME}.xz
+[ -f "${NANO_OBJ}"/${FILENAME} ] && rm ${NANO_OBJ}/${FILENAME}
+[ -f "${NANO_OBJ}"/${FILENAME}.xz ] && rm ${NANO_OBJ}/${FILENAME}.xz
 
-mv ${NANO_OBJ}/_.disk.image ${NANO_OBJ}/${FILENAME}
+mv "${NANO_OBJ}"/_.disk.image "${NANO_OBJ}"/${FILENAME}
 
 if ! $FAST; then
 	if echo ${NANO_KERNEL} | grep -q xenpv -; then
-		mv ${NANO_OBJ}/${FILENAME} ${NANO_OBJ}/${NAME}-${VERSION}-upgrade-${NANO_KERNEL}.img
+		mv "${NANO_OBJ}"/${FILENAME} "${NANO_OBJ}"/${NAME}-${VERSION}-upgrade-${NANO_KERNEL}.img
         FILENAME="${NAME}-${VERSION}-upgrade-${NANO_KERNEL}.img"
 	fi
 	echo "Compressing ${NAME} upgrade image..."
-	xz -T0 -vf ${NANO_OBJ}/${FILENAME}
+	xz -T0 -vf "${NANO_OBJ}"/${FILENAME}
 	echo "Generating checksum for ${NAME} upgrade image..."
-	sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
+	sha256 "${NANO_OBJ}"/${FILENAME}.xz > "${NANO_OBJ}"/${FILENAME}.sha256
 	echo "${NAME} upgrade image file here:"
 	echo "${NANO_OBJ}/${FILENAME}.xz"
 else
@@ -699,14 +717,14 @@ fi
 FILENAME="${NAME}-${VERSION}-full-${NANO_KERNEL}${INPUT_CONSOLE}.img"
 
 #Remove old images if present
-[ -f ${NANO_OBJ}/${FILENAME}.xz ] && rm ${NANO_OBJ}/${FILENAME}.xz
+[ -f "${NANO_OBJ}"/${FILENAME}.xz ] && rm "${NANO_OBJ}"/${FILENAME}.xz
 if ! $FAST; then
 	if echo ${NANO_KERNEL} | grep -q xenpv -; then
-		mv ${NANO_OBJ}/${FILENAME} ${NANO_OBJ}/${NAME}-${VERSION}-full-${NANO_KERNEL}.img
+		mv "${NANO_OBJ}"/${FILENAME} "${NANO_OBJ}"/${NAME}-${VERSION}-full-${NANO_KERNEL}.img
 		FILENAME="${NAME}-${VERSION}-full-${NANO_KERNEL}"
-		[ -f ${NANO_OBJ}/${FILENAME}.tar.xz ] && rm ${NANO_OBJ}/${FILENAME}.tar.xz
+		[ -f "${NANO_OBJ}"/${FILENAME}.tar.xz ] && rm "${NANO_OBJ}"/${FILENAME}.tar.xz
     	echo "Generate the XEN PV archive..."
-		cat <<EOF > ${NANO_OBJ}/${FILENAME}.conf
+		cat <<EOF > "${NANO_OBJ}"/${FILENAME}.conf
 name = "${NAME}-${NANO_KERNEL}"
 memory = 196
 disk = [ 'file:${FILENAME}.img,hda,w']
@@ -714,36 +732,36 @@ vif = [' ']
 kernel = "${FILENAME}.kernel.gz"
 extra = ",vfs.root.mountfrom=ufs:/ufs/BSDRPs1a"
 EOF
-		cp ${NANO_OBJ}/_.w/boot/kernel/kernel.gz ${NANO_OBJ}/${NAME}-${NANO_KERNEL}.kernel.gz
-		tar cvfJ ${NANO_OBJ}/${FILENAME}.tar.xz \
+		cp "${NANO_OBJ}"/_.w/boot/kernel/kernel.gz "${NANO_OBJ}"/${NAME}-${NANO_KERNEL}.kernel.gz
+		tar cvfJ "${NANO_OBJ}"/${FILENAME}.tar.xz \
 			-C ${NANO_OBJ} \
 			${FILENAME}.conf \
 			${FILENAME}.img	\
 			${NAME}-${NANO_KERNEL}.kernel.gz
-		rm ${NANO_OBJ}/${FILENAME}.conf
-		rm ${NANO_OBJ}/${FILENAME}.img
-		rm ${NANO_OBJ}/${NAME}-${NANO_KERNEL}.kernel.gz
+		rm "${NANO_OBJ}"/${FILENAME}.conf
+		rm "${NANO_OBJ}"/${FILENAME}.img
+		rm "${NANO_OBJ}"/${NAME}-${NANO_KERNEL}.kernel.gz
 		echo "Generating checksum for ${NAME} Xen archive..."
-        sha256 ${NANO_OBJ}/${FILENAME}.tar.xz > ${NANO_OBJ}/${FILENAME}.sha256
+        sha256 "${NANO_OBJ}"/${FILENAME}.tar.xz > "${NANO_OBJ}"/${FILENAME}.sha256
 		echo "${NANO_OBJ}/${FILENAME}.tar.xz include:"
 		echo "- XEN example configuration file: ${FILENAME}.conf"
 		echo "- The disk image: ${FILENAME}.img"
 		echo "- The extracted kernel: ${NANO_KERNEL}.kernel.gz"
-		mv ${NANO_OBJ}/_.mtree ${NANO_OBJ}/${NAME}-${VERSION}-${NANO_KERNEL}.mtree
+		mv "${NANO_OBJ}"/_.mtree "${NANO_OBJ}"/${NAME}-${VERSION}-${NANO_KERNEL}.mtree
 		FILENAME="${NAME}-${VERSION}-${NANO_KERNEL}"
 	else
 		echo "Compressing ${NAME} full image..."
-		xz -T0 -vf ${NANO_OBJ}/${FILENAME}
+		xz -T0 -vf "${NANO_OBJ}"/${FILENAME}
 		echo "Generating checksum for ${NAME} full image..."
-		sha256 ${NANO_OBJ}/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
+		sha256 "${NANO_OBJ}"/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
 		echo "Zipped ${NAME} full image file here:"
 		echo "${NANO_OBJ}/${FILENAME}.xz"
-		mv ${NANO_OBJ}/_.mtree ${NANO_OBJ}/${NAME}-${VERSION}-${NANO_KERNEL}${INPUT_CONSOLE}.mtree
+		mv "${NANO_OBJ}"/_.mtree ${NANO_OBJ}/${NAME}-${VERSION}-${NANO_KERNEL}${INPUT_CONSOLE}.mtree
 		FILENAME="${NAME}-${VERSION}-${NANO_KERNEL}${INPUT_CONSOLE}"
 	fi
 	echo "Zipping and renaming mtree..."
-	[ -f ${NANO_OBJ}/${FILENAME}.mtree.xz ] && rm ${NANO_OBJ}/${FILENAME}.mtree.xz
-	xz -T0 -vf ${NANO_OBJ}/${FILENAME}.mtree
+	[ -f "${NANO_OBJ}"/${FILENAME}.mtree.xz ] && rm "${NANO_OBJ}"/${FILENAME}.mtree.xz
+	xz -T0 -vf "${NANO_OBJ}"/${FILENAME}.mtree
 	echo "HIDS reference file here:"
     echo "${NANO_OBJ}/${FILENAME}.mtree.xz"
 else

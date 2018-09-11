@@ -29,8 +29,8 @@
 
 set -e
 
-nanobsd_sh=`realpath $0`
-topdir=`dirname ${nanobsd_sh}`
+nanobsd_sh=$(realpath "$0")
+topdir=$(dirname "${nanobsd_sh}")
 . "${topdir}/defaults.sh"
 
 #######################################################################
@@ -50,94 +50,79 @@ do_prep_image=true
 . "${topdir}/legacy.sh"
 
 set +e
-args=`getopt BKXWbc:fhiIknqvw $*`
 if [ $? -ne 0 ] ; then
 	usage
 	exit 2
 fi
 set -e
 
-set -- $args
-for i
-do
-	case "$i"
-	in
-	-B)
+while getopts "BKXWbc:fhiIknqvw" FLAG; do
+	echo "DEBUG FLAG: ${FLAG}"
+	case "${FLAG}" in
+	B)
 		do_installworld=false
 		do_installkernel=false
-		shift
 		;;
-	-K)
+	K)
 		do_installkernel=false
-		shift
 		;;
-	-X)
+	X)
 		do_native_xtools=true
-		shift
 		;;
-	-W)
+	W)
 		do_installworld=false
-		shift
 		;;
-	-b)
+	b)
 		do_world=false
 		do_kernel=false
-		shift
 		;;
-	-c)
+	c)
 		# Make config file path available to the config file
 		# itself so that it can access additional files relative
 		# to its own location.
-		NANO_CONFIG=$2
-		. "$2"
-		shift
-		shift
+		NANO_CONFIG="${OPTARG}"
+		. "${OPTARG}"
 		;;
-	-f)
+	f)
 		do_copyout_partition=false
-		shift
 		;;
-	-h)
+	h)
 		usage
 		;;
-	-i)
+	i)
 		do_image=false
-		shift
 		;;
-	-k)
+	k)
 		do_kernel=false
-		shift
 		;;
-	-n)
+	n)
 		do_clean=false
-		shift
 		;;
-	-q)
+	q)
 		PPLEVEL=$(($PPLEVEL - 1))
-		shift
 		;;
-	-v)
+	v)
 		PPLEVEL=$(($PPLEVEL + 1))
-		shift
 		;;
-	-w)
+	w)
 		do_world=false
-		shift
 		;;
-	-I)
+	I)
 		do_world=false
 		do_kernel=false
 		do_installworld=false
 		do_installkernel=false
 		do_prep_image=false
 		do_image=true
-		shift
 		;;
-	--)
-		shift
+	*)
 		break
+		;;
 	esac
 done
+
+# Should be useless for nanobsd usage, but cleanup arg list
+shift $((OPTIND-1))
 
 if [ $# -gt 0 ] ; then
 	echo "$0: Extraneous arguments supplied"
