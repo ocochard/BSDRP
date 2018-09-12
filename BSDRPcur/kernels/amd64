@@ -25,6 +25,7 @@ makeoptions	DEBUG=-g		# Build kernel with gdb(1) debug symbols
 makeoptions	WITH_CTF=1		# Run ctfconvert(1) for DTrace support
 
 options 	SCHED_ULE		# ULE scheduler
+options 	NUMA			# Non-Uniform Memory Architecture support
 options 	PREEMPTION		# Enable kernel thread preemption
 options 	VIMAGE			# Subsystem virtualization, e.g. VNET
 options 	INET			# InterNETworking
@@ -54,6 +55,7 @@ options 	PSEUDOFS		# Pseudo-filesystem framework
 options 	GEOM_PART_GPT		# GUID Partition Tables.
 options 	GEOM_RAID		# Soft RAID functionality.
 options 	GEOM_LABEL		# Provides labelization
+options		EFIRT			# EFI Runtime Services support
 #options 	COMPAT_FREEBSD32	# Compatible with i386 binaries
 #options 	COMPAT_FREEBSD4		# Compatible with FreeBSD4
 #options 	COMPAT_FREEBSD5		# Compatible with FreeBSD5
@@ -380,8 +382,6 @@ device		netmap			# netmap(4) support
 device		crypto			# Required by IPSEC
 
 ####### BSDRP section #####
-
-options		NUMA	# Enables use of Non-Uniform Memory Access policies
 
 # BSDRP added NICs.
 device		bnxt	# Broadcom NetXtreme-C/NetXtreme-E Family Ethernet driver

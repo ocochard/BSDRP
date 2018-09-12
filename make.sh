@@ -368,7 +368,7 @@ if [ -n "${MASTER_PROJECT}" ]; then
 fi
 
 # project version
-for dir in "${NANO_DIRS_INSTALL}"; do
+for dir in ${NANO_DIRS_INSTALL}; do
 	[ -z "${dir}" ] && die "Bug: Empty NANO_DIRS_INSTALL variable"
 	if [ -f "${dir}"/etc/version ]; then
 		VERSION=$(cat "${dir}"/etc/version)

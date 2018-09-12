@@ -117,6 +117,7 @@ WITH_IDEA=
 WITH_OFED=
 WITH_DEBUG_FILES=
 WITH_REPRODUCIBLE_BUILD=
+WITH_DIRDEPS_BUILD=
 '
 
 # Customize commands.
@@ -471,6 +472,7 @@ add_port "net/exabgp"
   add_port "misc/pciids"
  add_port "devel/libpci"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
+add_port "sysutils/x86info"
 
 # Permit Intel Firmware upgrade
 # Disabled: oversized!

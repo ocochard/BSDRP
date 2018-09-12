@@ -1,5 +1,8 @@
 # Release 1.92 (not released)
 
+## New packages
+* x86info 1.31
+
 ## Packages list
 * arping 2.19: ARP level "ping" utility
 * bgpq3 0.1.33: Lightweight prefix-list generator for Cisco and Juniper routers
@@ -7,7 +10,7 @@
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.39: Root certificate bundle from the Mozilla Project
-* curl 7.61.0_1: Command line tool and library for transferring data with URLs
+* curl 7.61.1: Command line tool and library for transferring data with URLs
 * devcpu-data 1.20: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.4: Small RSA key management package based on openssl
@@ -24,7 +27,7 @@
 * ipsec-tools 0.8.2_5: KAME racoon IKE daemon, ipsec-tools version
 * isc-dhcp44-server 4.4.1_3: ISC Dynamic Host Configuration Protocol server
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
-* json-c 0.13: JSON (JavaScript Object Notation) implementation in C
+* json-c 0.13.1: JSON (JavaScript Object Notation) implementation in C
 * libev 4.24,1: Full-featured and high-performance event loop library
 * libevent 2.1.8_2: API for executing callback functions on events or timeouts
 * libffi 3.2.1_2: Foreign Function Interface
@@ -49,7 +52,7 @@
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
 * pimd 2.3.2: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-* pkg 1.10.5_2: Package manager
+* pkg 1.10.5_3: Package manager
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.7.0: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py36-exabgp 4.0.8: BGP engine and route injector
@@ -62,10 +65,11 @@
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.6.3: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.24: Allow others to run commands as root
+* sudo 1.8.25: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.7: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
+* x86info 1.31.s03: x86 CPU identification and feature display utility
 
 -----------------------------------------------------
 # Release 1.91 (19/08/2018)

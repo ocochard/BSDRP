@@ -59,7 +59,6 @@ usage() {
 	echo " -l X         Number of LAN common to all VM (default ${LAN})"
 	echo " -m X         RAM size (default ${RAM})"
 	echo " -n X         Number of VM full meshed (default ${NUMBER_VM})"
-	echo " -p           Patch FreeBSD disk-image for serial output (useless with BSDRP images or FreBSD >= 10.1)"
 	echo " -q           Quiet"
 	echo " -s           Stop all VM"
 	echo " -V           Use vale (netmap) switch in place of bridge+tap"
@@ -135,27 +134,6 @@ uncompress_image () {
 
 }
 
-adapt_image_console () {
-	# No more needed
-
-	mkdir -p ${WRK_DIR}/mnt || die "Can't create ${WRK_DIR}/mnt"
-
-	mount | grep -q "${WRK_DIR}/mnt"  && umount -f ${WRK_DIR}/mnt
-
-	MD=$(mdconfig -a ${VM_TEMPLATE})
-	fsck_ufs -y /dev/$MD"s1a" > /dev/null 2>&1 || die "Error regarding the FreeBSD image given"
-	mount /dev/$MD"s1a" ${WRK_DIR}/mnt  || die "Can't mount the image"
-
-	if ! grep -q 'console "/usr/libexec/getty std.9600"' ${WRK_DIR}/mnt/etc/ttys; then
-		( ${VERBOSE} ) && echo "Patching image file with a console bhyve compliant"
-		cat >> ${WRK_DIR}/mnt/etc/ttys << EOF
-console "/usr/libexec/getty std.9600"   vt100   on   secure
-EOF
-	fi
-	umount ${WRK_DIR}/mnt || "die can't unmount the disk image"
-	mdconfig -du $MD || "die can't destroy md image"
-}
-
 erase_all_vm() {
 	# We can display vm by looking in /dev/vmm
 	# Search for VM disk image
@@ -218,7 +196,6 @@ get_free_nmdm () {
 	done
 	rm $TMPFILE
 	echo $i
-	
 }
 
 run_vm() {
@@ -255,6 +232,7 @@ run_vm() {
 		# PCI 0:1 lpc (serial)
 		# PCI 1:0 Hard drive
 		# PCI 2:0 and next: Network NIC
+		# PCI last:0 ptnetnetmap-memdev (if PTNET&VALE enabled)
 		#   Note: It's not possible to have "hole" in PCI assignement
 		VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
 		eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\${NMDM_ID}A\"
@@ -306,85 +284,63 @@ create_interface() {
 [ $# -lt 1 ] && ! [ -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ $(id -u) -ne 0 ] && usage "ERROR: not executed as root"
 
-args=$(getopt ac:dhD:ei:l:m:n:qsVw: $*)
-
-set -- $args
-for i; do
-	case "$i"
-	in
-	-a)
+while getopts "ac:dhD:ei:l:m:n:qsVw:" FLAG; do
+    case "${FLAG}" in
+	a)
 		MESHED=false
-		shift
 		;;
-	-c)
-		CORE=$2
-		shift
-		shift
+	c)
+		CORE="$OPTARG"
 		;;
-	-d)
+	d)
 		erase_all_vm
 		destroy_all_if
 		return 0
-		shift
 		;;
-	-D)
-		DISK_CTRL=$2
-		shift
-		shift
+	D)
+		DISK_CTRL="$OPTARG"
 		;;
-	-e)
+	e)
 		vnic="e1000"
-		shift
 		;;
-	-h)
+	h)
 		usage
-		shift
 		;;
-	-i)
-		FILE=$2
-        shift
-        shift
+	i)
+		FILE="$OPTARG"
         ;;
-	-l)
-		LAN=$2
-		shift
-		shift
+	l)
+		LAN="$OPTARG"
 		;;
-	-m)
-		RAM=$2
-		shift
-		shift
+	m)
+		RAM="$OPTARG"
 		;;
-	-n)
-		NUMBER_VM=$2
-		shift
-		shift
+	n)
+		NUMBER_VM="$OPTARG"
 		;;
-	-q)
+	q)
 		VERBOSE=false
-		shift
 		;;
-	-s)
+	s)
 		stop_all_vm
 		return 0
-		shift
 		;;
-	-V)
+	V)
 		VALE=true
-		shift
 		;;
-	-w)
-		WRK_DIR=$2
-		[ -d ${WRK_DIR} ] || usage "ERROR: Working directory not found"
-		VM_TEMPLATE=${WRK_DIR}/vm_template
-		shift
-		shift
+	w)
+		WRK_DIR="$OPTARG"
+		[ -d "${WRK_DIR} ]" || usage "ERROR: Working directory not found"
+		VM_TEMPLATE="${WRK_DIR}/vm_template"
 		;;
-	--)
-		shift
+	*)
 		break
         esac
-done #for
+done #while
+
+shift $((OPTIND-1))
+
+#( ${VALE} ) && vnic="ptnet"
 
 # Check user input
 [ ! -f "${VM_TEMPLATE}" ] && [ -z "${FILE}" ] && usage "ERROR: No previous template \
@@ -450,7 +406,17 @@ while [ $i -le $NUMBER_VM ]; do
 		while [ $j -le $NUMBER_VM ]; do
 			# Skip if i = j
 			if [ $i -ne $j ]; then
-				[ ${vnic} = "virtio-net" ] && echo -n "- vtnet" || echo -n "- em"
+				case ${vnic} in
+				virtio-net)
+					echo -n "- vtnet"
+					;;
+				e1000)
+					echo -n "- em"
+					;;
+				ptnet)
+					echo -n "- ptnet?"
+					;;
+				esac
 				( ${VERBOSE} ) && echo "${NIC_NUMBER} connected to VM ${j}"
 				# PCI_SLOT must be between 0 and 7
 				# Need to increase PCI_BUS number if slot is more than 7
@@ -501,7 +467,17 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 		# Need to manage correct mac address
 		[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
 		[ $j -le 9 ] && MAC_J="0$i" || MAC_J="$i"
-		[ ${vnic} = "virtio-net" ] && echo -n "- vtnet" || echo -n "- em"
+		case ${vnic} in
+		virtio-net)
+			echo -n "- vtnet"
+			;;
+		e1000)
+			echo -n "- em"
+			;;
+		ptnet)
+			echo -n "- ptnet?"
+			;;
+		esac
 		( ${VERBOSE} ) && echo "${NIC_NUMBER} connected to LAN number ${j}"
 		# PCI_SLOT must be between 0 and 7
 		# Need to increase PCI_BUS number if slot is more than 7
@@ -522,6 +498,15 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
         j=$(( j + 1 ))
 	done # while [ $j -le $LAN ]
 
+	#if (${VALE} ); then
+		# PCI_SLOT must be between 0 and 7
+		# Need to increase PCI_BUS number if slot is more than 7
+	#	PCI_BUS=$(( NIC_NUMBER / 8 ))
+	#	PCI_SLOT=$(( NIC_NUMBER - 8 * PCI_BUS ))
+		# All PCI_BUS before 2 are already used
+	#	PCI_BUS=$(( PCI_BUS + 2 ))
+	#	eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},ptnetmap-memdev\"
+	#fi
 	# Start VM
 	run_vm $i &
 	i=$(( i + 1 ))

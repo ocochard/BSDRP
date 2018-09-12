@@ -57,7 +57,6 @@ fi
 set -e
 
 while getopts "BKXWbc:fhiIknqvw" FLAG; do
-	echo "DEBUG FLAG: ${FLAG}"
 	case "${FLAG}" in
 	B)
 		do_installworld=false
