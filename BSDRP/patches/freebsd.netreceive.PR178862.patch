@@ -24,7 +24,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  	int buflen;
  };
  
-@@ -101,19 +101,66 @@
+@@ -101,19 +101,71 @@
  rx_body(void *data)
  {
  	struct td_desc *t = data;
@@ -55,8 +55,13 @@ Index: tools/tools/netrate/netreceive/netreceive.c
 +			continue;
 +		}
 +
++#if __FreeBSD_version <= 1200069
++		if (setsockopt(s, SOL_SOCKET, SO_REUSEPORT, &v, sizeof v) < 0) {
++			cause = "SO_REUSEPORT";
++#else
 +		if (setsockopt(s, SOL_SOCKET, SO_REUSEPORT_LB, &v, sizeof v) < 0) {
-+			cause = "SO_REUSEPORT_LB";
++            cause = "SO_REUSEPORT_LB";
++#endif
 +			close(s);
 +			continue;
 +		}
@@ -95,7 +100,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  			if (y < 0)
  				break;
  			t->count++;
-@@ -124,12 +171,11 @@
+@@ -124,12 +176,11 @@
  }
  
  static struct td_desc **
@@ -111,7 +116,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  	struct td_desc **tp;
  
  	printf("td len %d -> %d\n", (int)sizeof(struct td_desc) , td_len);
-@@ -140,13 +186,11 @@
+@@ -140,13 +191,11 @@
  	}
  	tp = (struct td_desc **)m;
  	m += lb;	/* skip the pointers */
@@ -127,7 +132,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  		if (pthread_create(&tp[i]->td_id, NULL, rx_body, tp[i])) {
  			perror("unable to create thread");
  			exit(1);
-@@ -156,26 +200,29 @@
+@@ -156,26 +205,29 @@
  }
  
  static void
@@ -158,11 +163,11 @@ Index: tools/tools/netrate/netreceive/netreceive.c
 +			/* printf("thread %d: recv %lu ", i, tp[i]->count - old[i]); */
 +			old[i] = tp[i]->count;
  		}
-+		printf("\n");
++		/* printf("\n"); */
  		dn = c0 - c1;
  		clock_gettime(CLOCK_REALTIME, &now);
  		delta = now;
-@@ -185,8 +232,8 @@
+@@ -185,8 +237,8 @@
  		pps = (pps * 1000000000) / (delta.tv_sec*1000000000 + delta.tv_nsec + 1);
  		bps = ((bc0 - bc1) * 8000000000) / (delta.tv_sec*1000000000 + delta.tv_nsec + 1);
  		fprintf(stderr, " %9ld pps %8.3f Mbps", (long)pps, .000001*bps);
@@ -173,7 +178,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  		c1 = c0;
  		bc1 = bc0;
  	}
-@@ -195,23 +242,14 @@
+@@ -195,23 +247,14 @@
  int
  main(int argc, char *argv[])
  {
@@ -198,7 +203,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  	port = strtoul(argv[1], &dummy, 10);
  	if (port < 1 || port > 65535 || *dummy != '\0')
  		usage();
-@@ -227,48 +265,9 @@
+@@ -227,48 +270,9 @@
  	}
  	bzero(packet, 65536);
  

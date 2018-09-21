@@ -13,7 +13,7 @@
 * curl 7.61.1: Command line tool and library for transferring data with URLs
 * devcpu-data 1.20: Intel and AMD CPUs microcode updates
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
-* easy-rsa 3.0.4: Small RSA key management package based on openssl
+* easy-rsa 3.0.5_1: Small RSA key management package based on openssl
 * flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
 * frr5 5.0.1_2: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
@@ -31,7 +31,7 @@
 * libev 4.24,1: Full-featured and high-performance event loop library
 * libevent 2.1.8_2: API for executing callback functions on events or timeouts
 * libffi 3.2.1_2: Foreign Function Interface
-* liblz4 1.8.2,1: LZ4 compression library, lossless and very fast
+* liblz4 1.8.3,1: LZ4 compression library, lossless and very fast
 * libnet 1.1.6_5,1: C library for creating IP packets
 * libpci 3.6.2: PCI configuration space I/O made easy
 * libsodium 1.0.16: Library to build higher-level cryptographic tools
@@ -45,7 +45,7 @@
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.46: Open source LDAP client implementation
-* openvpn 2.4.6_2: Secure IP/Ethernet tunnel daemon
+* openvpn 2.4.6_3: Secure IP/Ethernet tunnel daemon
 * pciids 20180812: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
@@ -65,7 +65,7 @@
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.6.3: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.25: Allow others to run commands as root
+* sudo 1.8.25p1: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.7: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
