@@ -15,15 +15,18 @@ Index: tools/tools/netrate/netblast/netblast.c
 ===================================================================
 --- tools/tools/netrate/netblast/netblast.c	(revision 338607)
 +++ tools/tools/netrate/netblast/netblast.c	(working copy)
-@@ -28,6 +28,7 @@
+@@ -28,8 +28,10 @@
  
  #include <sys/endian.h>
  #include <sys/types.h>
 +#include <stdbool.h>
  #include <sys/socket.h>
  #include <sys/time.h>
++#include <sys/sysctl.h> 	/* sysctl */
  
-@@ -36,70 +37,109 @@
+ #include <netinet/in.h>
+ #include <netdb.h>			/* getaddrinfo */
+@@ -36,70 +38,142 @@
  
  #include <signal.h>
  #include <stdio.h>
@@ -31,10 +34,43 @@ Index: tools/tools/netrate/netblast/netblast.c
  #include <stdlib.h>
  #include <string.h>
  #include <unistd.h>			/* close */
- 
++#include <sys/cpuset.h>
 +#include <pthread.h>
++#include <pthread_np.h>
 +#include <fcntl.h>
 +#include <time.h>   /* clock_getres() */
+ 
++/* sysctl wrapper to return the number of active CPUs
++   function from netmap/pkt-gen.c */
++static int
++system_ncpus(void)
++{
++    int ncpus;
++    int mib[2] = { CTL_HW, HW_NCPU };
++    size_t len = sizeof(mib);
++    sysctl(mib, 2, &ncpus, &len, NULL, 0);
++    return (ncpus);
++}
++
++/* set the thread affinity
++   function from netmap/pkt-gen.c */
++static int
++setaffinity(pthread_t me, int i)
++{
++    cpuset_t cpumask;
++
++    if (i == -1)
++        return 0;
++
++    /* Set thread affinity affinity.*/
++    CPU_ZERO(&cpumask);
++    CPU_SET(i, &cpumask);
++	if (pthread_setaffinity_np(me, sizeof(cpuset_t), &cpumask) != 0) {
++        perror("Unable to set affinity");
++        return 1;
++    }
++    return 0;
++}
 +
 +static int round_to(int n, int l)
 +{
@@ -168,7 +204,7 @@ Index: tools/tools/netrate/netblast/netblast.c
  		/*
  		 * We maintain and, if there's room, send a counter.  Note
  		 * that even if the error is purely local, we still increment
-@@ -110,32 +150,83 @@
+@@ -110,32 +184,87 @@
  		 * operation, causing the current sequence number also to be
  		 * skipped.
  		 */
@@ -205,6 +241,7 @@ Index: tools/tools/netrate/netblast/netblast.c
 +    }
 +    tp = (struct td_desc **)m;
 +    m += lb;    /* skip the pointers */
++	int ncpu = system_ncpus();
 +    for (i = 0; i < nthreads; i++, m += td_len) {
 +        tp[i] = (struct td_desc *)m;
 +        tp[i]->address = address;
@@ -214,6 +251,9 @@ Index: tools/tools/netrate/netblast/netblast.c
 +        if (pthread_create(&tp[i]->td_id, NULL, blast, tp[i])) {
 +            perror("unable to create thread");
 +            exit(1);
++		}
++		if (setaffinity(tp[i]->td_id, i % ncpu)) {
++			perror("unable to set thread affinity");
 +        }
 +    }
 +    return tp;
@@ -262,12 +302,12 @@ Index: tools/tools/netrate/netblast/netblast.c
 +		printf("%" PRIu64 " Mib/s\n", ((send_calls - send_errors) / duration ) *
 +		(payloadsize + 8 + 40 + 14 ) * 8 / 1000 / 1000);
 +	else printf("CAN 'T DETERMINE family type %i\n",tp[0]->family);
-+	printf("approx payload throughput:  %" PRIu64 " Mib/s\n", ((send_calls - send_errors) / 
++	printf("approx payload throughput:  %" PRIu64 " Mib/s\n", ((send_calls - send_errors) /
 +		duration ) * payloadsize * 8 / 1000 / 1000);
  }
  
  int
-@@ -142,18 +233,16 @@
+@@ -142,18 +271,18 @@
  main(int argc, char *argv[])
  {
  	long payloadsize, duration;
@@ -283,6 +323,8 @@ Index: tools/tools/netrate/netblast/netblast.c
 +	struct itimerval it;
  
 -	if (argc != 5)
++
++
 +	if (argc < 5)
  		usage();
  
@@ -293,19 +335,23 @@ Index: tools/tools/netrate/netblast/netblast.c
  	port = strtoul(argv[2], &dummy, 10);
  	if (port < 1 || port > 65535 || *dummy != '\0') {
  		fprintf(stderr, "Invalid port number: %s\n", argv[2]);
-@@ -177,6 +266,11 @@
+@@ -177,6 +306,15 @@
  		/*NOTREACHED*/
  	}
  
 +	if (argc > 5)
 +        nthreads = strtoul(argv[5], &dummy, 10);
-+    if (nthreads < 1 || nthreads > 64)
++    if (nthreads < 1)
 +        usage();
++	int ncpu = system_ncpus();
++	if (nthreads > ncpu) {
++		printf("WARNING: %d threads but only %d core(s) available\n", nthreads, ncpu);
++	}
 +
  	packet = malloc(payloadsize);
  	if (packet == NULL) {
  		perror("malloc");
-@@ -185,37 +279,44 @@
+@@ -185,37 +323,44 @@
  	}
  
  	bzero(packet, payloadsize);
