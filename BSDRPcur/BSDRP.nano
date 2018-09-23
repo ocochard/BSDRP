@@ -589,8 +589,8 @@ customize_cmd cleanup_ports
 
 # BSDRP custom function
 bsdrp_custom () {
-	# Replace BSDRP_VERSION in /boot/brand.4th with the version number in etc/version
-	sed -i "" -e /BSDRP_VERSION/s//$(cat ${NANO_WORLDDIR}/etc/version)/ ${NANO_WORLDDIR}/boot/brand.4th
+	# Replace BSDRP_VERSION in /boot/lua/brand-bsdrp.lua with the version number in etc/version
+	sed -i "" -e /BSDRP_VERSION/s//$(cat ${NANO_WORLDDIR}/etc/version)/ ${NANO_WORLDDIR}/boot/lua/brand-bsdrp.lua
 	# Disable reverse DNS in sshd:
 	echo "UseDNS no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
 	# Update login.conf db
