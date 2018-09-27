@@ -1,5 +1,8 @@
 # Release 1.92 (not released)
 
+## New features
+* AESNI module loaded by default
+
 ## New packages
 * x86info 1.31
 

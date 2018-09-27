@@ -55,3 +55,6 @@ net.link.ifqmaxlen="16384"
 
 # Avoid message netisr_register: epair requested queue limit 688128 capped to net.isr.maxqlimit 1024
 net.isr.maxqlimit=1000000
+
+# Loading AESNI
+aesni_load="YES"

@@ -208,15 +208,22 @@ EOF
 			rcnicname=epair${id}${bid}b
 			# Convert id into hexa
 			host=""
-			host=$(sysctl -n kern.hostid)
-			if [ ${host} -eq 0 ]; then
+			# Use the 128 byte host identifier
+			host=$(sysctl -n kern.hostuuid)
+			if [ -z "${host}" ]; then
 				host=$(od -txC -A n -N2 /dev/urandom | tr -s ' ')
+				hostfirst=$(echo ${host} | cut -d ' ' -f 1)
+				hostsecond=$(echo ${host} | cut -d ' ' -f 2)
 			else
-				host=$(echo $host | od -txC -A n -N2 | tr -s ' ')
+				# Need to use the 2 last values of kern.hostuuid, and not the first
+				# because they can be the same on 2 servers bought together
+				# So on this hostuuid (bhyve VM): 2d193cc8-c28b-11e8-a751-589cfc010505
+				# 1. extract the last value of the first block (c8 here)
+				# 2. extract the last value of the last block (05 here)
+        		hostfirst=$(echo $host | cut -c 7,8)
+				hostsecond=$(echo $host | cut -c $((${#host}-1))-$((${#host})))
 			fi
-			hostfirst=$(echo ${host} | cut -d ' ' -f 1)
 			[ -z "${hostfirst}" ] && echo "WARNING bad MAC addresse generated: hostfirst is empty"
-			hostsecond=$(echo ${host} | cut -d ' ' -f 2)
 			[ -z "${hostsecond}" ] && echo "WARNING bad MAC addresse generated: hostsecond is empty"
 
 			#need to convert jail id and bid into hexa

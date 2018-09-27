@@ -359,8 +359,8 @@ device		virtio_blk		# VirtIO Block device
 device		virtio_scsi		# VirtIO SCSI device
 device		virtio_balloon		# VirtIO Memory Balloon device
 
-# HyperV drivers and enchancement support
-device		hyperv			# HyperV drivers 
+# HyperV drivers and enhancement support
+device		hyperv			# HyperV drivers
 
 # Xen HVM Guest Optimizations
 # NOTE: XENHVM depends on xenpci.  They must be added or removed together.
@@ -397,6 +397,7 @@ device		cryptodev
 options 	TCP_SIGNATURE		#include support for RFC 2385
 
 # Add device Polling
+# This force net.isr.bindthreads=0 and net.isr.maxthreads=1
 options		DEVICE_POLLING
 
 # Add multiple route table support
