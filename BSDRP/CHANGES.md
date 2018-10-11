@@ -3,8 +3,15 @@
 ## New features
 * AESNI module loaded by default
 
+## Bug fixes
+* frr rc script
+
 ## New packages
-* x86info 1.31
+* dhcp6 (KAME DHCP6 client, server, and relay)
+* x86info (x86 CPU identification and feature display utility)
+
+## Upgraded packages
+* strongswan to 5.7.1
 
 ## Packages list
 * arping 2.19: ARP level "ping" utility
@@ -15,6 +22,7 @@
 * ca_root_nss 3.39: Root certificate bundle from the Mozilla Project
 * curl 7.61.1: Command line tool and library for transferring data with URLs
 * devcpu-data 1.20: Intel and AMD CPUs microcode updates
+* dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.5_1: Small RSA key management package based on openssl
 * flashrom 1.0: Utility for reading, writing, verifying, and erasing flash ROM chips
@@ -27,7 +35,7 @@
 * iperf 2.0.12: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.6: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
-* ipsec-tools 0.8.2_5: KAME racoon IKE daemon, ipsec-tools version
+* ipsec-tools 0.8.2_6: KAME racoon IKE daemon, ipsec-tools version
 * isc-dhcp44-server 4.4.1_3: ISC Dynamic Host Configuration Protocol server
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.13.1: JSON (JavaScript Object Notation) implementation in C
@@ -43,13 +51,13 @@
 * lzo2 2.10_1: Portable speedy, lossless data compression library
 * mlvpn 2.3.1_2: Multi-link VPN
 * monit 5.25.2: Unix system management and proactive monitoring
-* mpd5 5.8_7: Multi-link PPP daemon based on netgraph(4)
+* mpd5 5.8_8: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.46: Open source LDAP client implementation
 * openvpn 2.4.6_3: Secure IP/Ethernet tunnel daemon
-* pciids 20180812: Database of all known IDs used in PCI devices
+* pciids 20180921: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
@@ -59,7 +67,7 @@
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.7.0: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py36-exabgp 4.0.8: BGP engine and route injector
-* py36-setuptools 40.0.0: Python packages installer
+* py36-setuptools 40.4.3: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
 * python36 3.6.6_1: Interpreted object-oriented programming language
@@ -67,7 +75,7 @@
 * readline 7.0.3_1: Library for editing command lines as they are typed
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
-* strongswan 5.6.3: Open Source IKEv2 IPsec-based VPN solution
+* strongswan 5.7.1: Open Source IKEv2 IPsec-based VPN solution
 * sudo 1.8.25p1: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.7: Terminal Multiplexer

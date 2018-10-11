@@ -1,0 +1,536 @@
+# This is a shell archive.  Save it in a file, remove anything before
+# this line, and then unpack it by entering "sh file".  Note, it may
+# create directories; files and directories will be owned by you and
+# have default permissions.
+#
+# This archive contains:
+#
+#	net/frr6
+#	net/frr6/files
+#	net/frr6/files/patch-Makefile.am
+#	net/frr6/files/frr.in
+#	net/frr6/files/watchfrr.in
+#	net/frr6/files/patch-configure.ac
+#	net/frr6/pkg-descr
+#	net/frr6/distinfo
+#	net/frr6/Makefile
+#	net/frr6/pkg-message
+#	net/frr6/pkg-plist
+#
+echo c - net/frr6
+mkdir -p net/frr6 > /dev/null 2>&1
+echo c - net/frr6/files
+mkdir -p net/frr6/files > /dev/null 2>&1
+echo x - net/frr6/files/patch-Makefile.am
+sed 's/^X//' >net/frr6/files/patch-Makefile.am << '8bb8a7c4fd870e850a48ee9f623ea282'
+X--- Makefile.am.orig	2018-06-08 01:39:07 UTC
+X+++ Makefile.am
+X@@ -42,7 +42,7 @@ include zebra/subdir.am
+X include watchfrr/subdir.am
+X include qpb/subdir.am
+X include fpm/subdir.am
+X-include tools/subdir.am
+X+#include tools/subdir.am
+X 
+X include ripd/subdir.am
+X include ripngd/subdir.am
+8bb8a7c4fd870e850a48ee9f623ea282
+echo x - net/frr6/files/frr.in
+sed 's/^X//' >net/frr6/files/frr.in << 'd68f389836683bfe0231edd7b55534a0'
+X#!/bin/sh
+X#
+X# $FreeBSD: head/net/frr5/files/frr.in 465501 2018-03-25 07:44:59Z olivier $
+X#
+X
+X# PROVIDE: frr
+X# REQUIRE: netif routing
+X# KEYWORD: nojailvnet shutdown
+X
+X# Add the following line to /etc/rc.conf to enable frr:
+X#  frr_enable="YES"
+X#
+X# You may also wish to use the following variables to fine-tune startup:
+X#  frr_flags=""
+X#  frr_daemons="zebra ripd ripngd ospfd ospf6d bgpd isisd eigrpd babeld bfdd staticd"
+X#  frr_vysh_boot="YES"
+X# Per daemon tuning may be done with daemon_name_flags
+X#  zebra_flags="-P 0"
+X#  bgpd_flags="-nrP 0" and so on
+X# If you want to give the routing deamons a chance to catchup before
+X# continueing, set frr_wait_for to a "default" or certain prefix.
+X#  frr_wait_for="default"
+X# Set the time limit for the wait.
+X#  frr_wait_seconds="90"
+X#
+X# If the frr daemons require additional shared libraries to start,
+X# use the following variable to run ldconfig(8) in advance:
+X#  frr_extralibs_path="/usr/local/lib ..."
+X#
+X# This RC script was adapted from the net/quagga port
+X
+X. /etc/rc.subr
+X
+Xname=frr
+Xrcvar=$name_enable
+X
+Xstart_postcmd=start_postcmd
+Xstop_postcmd="rm -f $pidfile"
+Xconfigtest_cmd=check_config
+Xextra_commands=configtest
+Xcommand_args="-d"
+X
+Xload_rc_config $name
+X: ${frr_enable:="NO"}
+X: ${frr_flags:=""}
+X: ${frr_daemons:="zebra ripd ripngd ospfd ospf6d bgpd isisd eigrpd babeld bfdd staticd"}
+X: ${frr_vtysh_boot:="NO"}
+X: ${frr_wait_for:=""}
+X: ${frr_wait_seconds:="90"}
+X
+Xcheck_config()
+X{
+X    echo "Checking $daemon.conf"
+X	# pimd doesn't support -C
+X	if [ "$daemon" = "pimd" ]; then
+X		echo "Ignored"
+X	else
+X    	$command $daemon_flags -C
+X    	result=$?
+X    	if [ "$result" -eq "0" ]; then
+X			echo "OK"
+X    	else
+X			echo "FAILED"
+X			exit
+X    	fi
+X	fi
+X}
+X
+Xstart_postcmd()
+X{
+X	local waited_for
+X	waited_for=0
+X	# Wait only when last daemon has started.
+X	if [ "${frr_daemons}" = "${frr_daemons% ${name}}" ]; then
+X		return;
+X	fi
+X        if [ -n "${frr_wait_for}" ]; then
+X		echo Waiting for ${frr_wait_for} route...
+X		while [ ${waited_for} -lt ${frr_wait_seconds} ]; do
+X			/sbin/route -n get ${frr_wait_for} >/dev/null 2>&1 && break;
+X			waited_for=$((waited_for+1))
+X			sleep 1;
+X		done
+X		[ ${waited_for} -lt ${frr_wait_seconds} ] || echo Giving up...
+X	fi
+X}
+X
+Xdo_cmd()
+X{
+X	local ret
+X	ret=0
+X	frr_cmd=$1
+X	for daemon in ${frr_daemons}; do
+X	    command=%%PREFIX%%/sbin/${daemon}
+X	    required_files=%%ETCDIR%%/${daemon}.conf
+X	    pidfile=/var/run/frr/${daemon}.pid
+X	    if [ ${frr_cmd} = "restart" ] || [ ${frr_cmd} = "start" ]; then
+X		check_config
+X	    fi
+X	    if [ ${frr_cmd} = "start" ] && ! [ -f ${required_files} ]; then
+X			continue
+X	    fi
+X	    if [ ${frr_cmd} = "stop" ] && [ -z $(check_process ${command}) ]; then
+X			continue
+X	    fi
+X	    eval flags=\$\{${daemon}_flags:-\"${frr_flags}\"\}
+X	    name=${daemon}
+X	    _rc_restart_done=false
+X	    run_rc_command "$1" || ret=1
+X	done
+X	if checkyesno frr_vtysh_boot; then
+X	    echo "Booting for integrated-vtysh-config..."
+X	    %%PREFIX%%/bin/vtysh -b
+X	fi
+X	return ${ret}
+X}
+X
+Xfrr_cmd=$1
+X
+Xcase "$1" in
+X    force*)
+X		frr_cmd=${frr_cmd#force}
+X		;;
+X    fast*)
+X		frr_cmd=${frr_cmd#fast}
+X		;;
+Xesac
+Xshift
+X
+Xif [ $# -ge 1 ]; then
+X	frr_daemons="$*"
+Xfi
+X
+Xcase "${frr_cmd}" in
+X    start|quietstart)
+X		if [ -n "${frr_extralibs_path}" ]; then
+X	    	/sbin/ldconfig -m ${frr_extralibs_path}
+X		fi
+X		# Why should I need to add this check ?
+X		checkyesno frr_enable && do_cmd "start"
+X		;;
+X    stop)
+X		frr_daemons=$(reverse_list ${frr_daemons})
+X		do_cmd "stop"
+X		;;
+X    restart)
+X		frr_daemons=$(reverse_list ${frr_daemons})
+X		do_cmd "stop"
+X		frr_daemons=$(reverse_list ${frr_daemons})
+X		checkyesno frr_enable && do_cmd "start"
+X		;;
+X    *)
+X		do_cmd "${frr_cmd}"
+X		;;
+Xesac
+d68f389836683bfe0231edd7b55534a0
+echo x - net/frr6/files/watchfrr.in
+sed 's/^X//' >net/frr6/files/watchfrr.in << '0601fa22945a83ec1549060d118f3ae9'
+X#!/bin/sh
+X#
+X# $FreeBSD: head/net/frr5/files/watchfrr.in 467384 2018-04-15 11:23:41Z olivier $
+X#
+X
+X# PROVIDE: watchfrr
+X# REQUIRE: NETWORKING frr
+X# KEYWORD: nojailvtnet shutdown
+X
+X# Add the following line to /etc/rc.conf to enable watchfrr:
+X# watchfrr_enable="YES"
+X#
+X# You may also wish to use the following variables to fine-tune startup:
+X# watchfrr_flags
+X# Example of flags usage:
+X# watchfrr_flags=" -d -r /usr/sbin/servicebBfrrbBrestartbB%s -s /usr/sbin/servicebBfrrbBstartbB%s -k /usr/sbin/servicebBfrrbBstopbB%s -b bB -t 30 zebra ripd ripngd ospfd ospf6d bgpd isisd eigrpd babeld"
+X
+X. /etc/rc.subr
+X
+Xname=watchfrr
+Xrcvar=${name}_enable
+X
+Xload_rc_config $name
+X
+Xstop_postcmd="rm -f $pidfile"
+X
+Xwatchfrr_enable=${watchfrr_enable:-"NO"}
+Xwatchfrr_flags=${watchfrr_flags:-"-d -r /usr/sbin/servicebBfrrbBrestartbB%s -s /usr/sbin/servicebBfrrbBstartbB%s -k /usr/sbin/servicebBfrrbBstopbB%s -b bB -t 30 zebra ripd ripngd ospfd ospf6d bgpd isisd eigrpd babeld"}
+X
+Xcommand=%%PREFIX%%/sbin/watchfrr
+Xpidfile=/var/run/frr/watchfrr.pid
+X
+Xrun_rc_command "$1"
+0601fa22945a83ec1549060d118f3ae9
+echo x - net/frr6/files/patch-configure.ac
+sed 's/^X//' >net/frr6/files/patch-configure.ac << 'abf68a09fb5af17eb9ecfe2d8850aebb'
+X--- configure.ac.orig	2018-06-08 01:39:07 UTC
+X+++ configure.ac
+X@@ -322,7 +322,7 @@ AC_ARG_WITH(pkg-git-version,
+X 	[ test "x$withval" != "xno" && with_pkg_git_version="yes" ])
+X AC_ARG_WITH(vtysh_pager,
+X 	AS_HELP_STRING([--with-vtysh-pager=PAGER], [control what pager is compiled in as default]),
+X-	VTYSH_PAGER=$withval, VTYSH_PAGER="more")
+X+	VTYSH_PAGER=$withval, VTYSH_PAGER="cat")
+X AC_ARG_ENABLE(vtysh,
+X   AS_HELP_STRING([--disable-vtysh], [do not build integrated vty shell for FRR]))
+X AC_ARG_ENABLE(doc,
+abf68a09fb5af17eb9ecfe2d8850aebb
+echo x - net/frr6/pkg-descr
+sed 's/^X//' >net/frr6/pkg-descr << 'b43cb8d39bdf61cfc0fb3e6fc66f7f14'
+XFRRouting (FRR) is an IP routing protocol suite for Linux and Unix platforms
+Xwhich includes protocol daemons for BGP, IS-IS, OSPF and RIP. FRR has its roots
+Xin the Quagga project.
+X
+XWWW: https://frrouting.org/
+b43cb8d39bdf61cfc0fb3e6fc66f7f14
+echo x - net/frr6/distinfo
+sed 's/^X//' >net/frr6/distinfo << 'b609a15612c741eb959ed925ffdf2ad4'
+XTIMESTAMP = 1539258252
+XSHA256 (FRRouting-frr-frr-6.0_GH0.tar.gz) = 3835d87e2329c1c08d1b2657312c0ba0155d8f442c338d60f0ddb51090f2f182
+XSIZE (FRRouting-frr-frr-6.0_GH0.tar.gz) = 4547807
+b609a15612c741eb959ed925ffdf2ad4
+echo x - net/frr6/Makefile
+sed 's/^X//' >net/frr6/Makefile << '6ad41161484beb5130bb1aeaf8f9e080'
+X# $FreeBSD: head/net/frr5/Makefile 481322 2018-10-06 07:25:21Z olivier $
+X
+XPORTNAME=	frr
+XPORTVERSION=	6.0
+XDISTVERSIONPREFIX=	frr-
+XCATEGORIES=	net ipv6
+XPKGNAMESUFFIX=	6
+X
+XMAINTAINER=	olivier@FreeBSD.org
+XCOMMENT=	IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+X
+XLICENSE=	GPLv2
+XLICENSE_FILE=	${WRKSRC}/COPYING
+X
+XBUILD_DEPENDS=	gawk:lang/gawk
+XLIB_DEPENDS=	libjson-c.so:devel/json-c
+X
+XCONFLICTS=	openbgpd openospfd zebra quagga frr3 frr4 frr5
+X
+XUSES=		autoreconf bison compiler:c++11-lang gmake pkgconfig libtool \
+X		makeinfo python:2.7,build readline
+XGNU_CONFIGURE=	yes
+XINSTALL_TARGET=	install-strip
+XUSE_LDCONFIG=	yes
+X
+XUSE_GITHUB=	yes
+XGH_ACCOUNT=	FRRouting
+X
+XINFO=		frr
+X
+XOPTIONS_DEFINE=		FPM LDPD PAM SHELLACCESS TCPSOCKETS VTYSH MANPAGES \
+X					MULTIPATH TCMALLOC RPKI SNMP
+XOPTIONS_DEFAULT=	VTYSH RPKI FPM MANPAGES
+XOPTIONS_SUB=	yes
+X
+XFPM_DESC=		Enable Forwarding Plane Manager support
+XLDPD_DESC=		Build ldpd
+XMULTIPATH_DESC=		Enable multipath function
+XPAM_DESC=		Use libpam for PAM support in vtysh
+XRPKI_DESC=		Add BGP RPKI (RFC 6810) support
+XSHELLACCESS_DESC=	Allow users to access shell/telnet/ssh
+XSNMP_DESC=		SNMP support
+XTCMALLOC_DESC=		Use tcmalloc
+XTCPSOCKETS_DESC=	Use TCP/IP sockets for protocol daemons
+XVTYSH_DESC=		Build integrated vty shell
+X
+XUSERS=	frr
+XGROUPS=	frr frrvty
+X
+XCPPFLAGS+=	-I${LOCALBASE}/include
+XLDFLAGS+=	-L${LOCALBASE}/lib
+XINSTALL_TARGET=	install-strip
+X
+X# PIM compile but didn't work on FreeBSD
+XCONFIGURE_ARGS=	--enable-user=frr \
+X		--enable-group=frr \
+X		--enable-vty-group=frrvty \
+X		--sysconfdir=${ETCDIR} \
+X		--localstatedir=/var/run/frr \
+X		--disable-nhrpd \
+X		--disable-pimd
+X
+XMANPAGES_BUILD_DEPENDS=	sphinx-build:textproc/py-sphinx
+XMANPAGES_CONFIGURE_OFF=	--disable-doc
+XSHELLACCESS_CONFIGURE_ENABLE=	shell-access
+XFPM_CONFIGURE_ENABLE=		fpm
+XPAM_CONFIGURE_WITH=		libpam
+XLDPD_CONFIGURE_ENABLE=		ldpd
+XMULTIPATH_CONFIGURE_ON=		--enable-multipath=64
+XRPKI_CONFIGURE_ENABLE=	rpki
+XRPKI_LIB_DEPENDS=		librtr.so:net-mgmt/rtrlib \
+X						libssh.so:security/libssh
+XTCMALLOC_CONFIGURE_ENABLE=	tcmalloc
+XTCMALLOC_LIB_DEPENDS=		libtcmalloc.so:devel/google-perftools
+XSNMP_CONFIGURE_ENABLE=		snmp
+XSNMP_CFLAGS=	"-std=gnu99"
+XSNMP_LIB_DEPENDS=		libnetsnmp.so:net-mgmt/net-snmp
+XTCPSOCKETS_CONFIGURE_ENABLE=	tcp-zebra
+XVTYSH_CONFIGURE_ENABLE=		vtysh
+X
+XUSE_RC_SUBR=	frr watchfrr
+X
+Xpost-install:
+X	${MKDIR} ${STAGEDIR}/var/run/frr
+X
+X.include <bsd.port.mk>
+6ad41161484beb5130bb1aeaf8f9e080
+echo x - net/frr6/pkg-message
+sed 's/^X//' >net/frr6/pkg-message << '0c747a1b9383fa349893d3bb911b5ae4'
+XFRR's OSPF daemons tries to allocate big socket buffer, so generate warning
+Xmessages like:
+X"setsockopt_so_sendbuf: fd 6: SO_SNDBUF set to 1048576 (requested 8388608)"
+XTo prevent such message kern.ipc.maxsockbuf can be increased:
+Xsysctl kern.ipc.maxsockbuf=16777216
+X
+XError message "ifam_read() doesn't read all socket data" is under investigation
+0c747a1b9383fa349893d3bb911b5ae4
+echo x - net/frr6/pkg-plist
+sed 's/^X//' >net/frr6/pkg-plist << '961a2bf353e608cff35284c78f7deddc'
+Xbin/bgp_btoa
+X%%VTYSH%%bin/vtysh
+Xinclude/frr/bfd.h
+Xinclude/frr/bitfield.h
+Xinclude/frr/buffer.h
+Xinclude/frr/checksum.h
+Xinclude/frr/command.h
+Xinclude/frr/command_graph.h
+Xinclude/frr/command_match.h
+Xinclude/frr/compiler.h
+Xinclude/frr/csv.h
+Xinclude/frr/debug.h
+Xinclude/frr/distribute.h
+Xinclude/frr/eigrpd/eigrp_dump.h
+Xinclude/frr/eigrpd/eigrp_topology.h
+Xinclude/frr/eigrpd/eigrpd.h
+Xinclude/frr/event_counter.h
+Xinclude/frr/ferr.h
+Xinclude/frr/fifo.h
+Xinclude/frr/filter.h
+Xinclude/frr/freebsd-queue.h
+Xinclude/frr/frr_pthread.h
+Xinclude/frr/frratomic.h
+Xinclude/frr/frrstr.h
+Xinclude/frr/getopt.h
+Xinclude/frr/graph.h
+Xinclude/frr/hash.h
+Xinclude/frr/hook.h
+Xinclude/frr/if.h
+Xinclude/frr/if_rmap.h
+Xinclude/frr/imsg.h
+Xinclude/frr/ipaddr.h
+Xinclude/frr/jhash.h
+Xinclude/frr/json.h
+Xinclude/frr/keychain.h
+Xinclude/frr/lib_errors.h
+Xinclude/frr/libfrr.h
+Xinclude/frr/libospf.h
+Xinclude/frr/linklist.h
+Xinclude/frr/log.h
+Xinclude/frr/logicalrouter.h
+Xinclude/frr/md5.h
+Xinclude/frr/memory.h
+Xinclude/frr/memory_vty.h
+Xinclude/frr/module.h
+Xinclude/frr/monotime.h
+Xinclude/frr/mpls.h
+Xinclude/frr/network.h
+Xinclude/frr/nexthop.h
+Xinclude/frr/nexthop_group.h
+Xinclude/frr/ns.h
+Xinclude/frr/openbsd-queue.h
+Xinclude/frr/openbsd-tree.h
+Xinclude/frr/ospfapi/ospf_apiclient.h
+Xinclude/frr/ospfd/ospf_api.h
+Xinclude/frr/ospfd/ospf_asbr.h
+Xinclude/frr/ospfd/ospf_dump.h
+Xinclude/frr/ospfd/ospf_dump_api.h
+Xinclude/frr/ospfd/ospf_ism.h
+Xinclude/frr/ospfd/ospf_lsa.h
+Xinclude/frr/ospfd/ospf_lsdb.h
+Xinclude/frr/ospfd/ospf_nsm.h
+Xinclude/frr/ospfd/ospf_opaque.h
+Xinclude/frr/ospfd/ospfd.h
+Xinclude/frr/pbr.h
+Xinclude/frr/plist.h
+Xinclude/frr/pqueue.h
+Xinclude/frr/prefix.h
+Xinclude/frr/privs.h
+Xinclude/frr/ptm_lib.h
+Xinclude/frr/pw.h
+Xinclude/frr/queue.h
+Xinclude/frr/qobj.h
+Xinclude/frr/ringbuf.h
+Xinclude/frr/route_types.h
+Xinclude/frr/routemap.h
+Xinclude/frr/sbuf.h
+Xinclude/frr/sha256.h
+Xinclude/frr/sigevent.h
+Xinclude/frr/spf_backoff.h
+Xinclude/frr/skiplist.h
+Xinclude/frr/sockopt.h
+Xinclude/frr/sockunion.h
+Xinclude/frr/srcdest_table.h
+Xinclude/frr/stream.h
+Xinclude/frr/systemd.h
+Xinclude/frr/table.h
+Xinclude/frr/termtable.h
+Xinclude/frr/thread.h
+Xinclude/frr/vector.h
+Xinclude/frr/version.h
+Xinclude/frr/vlan.h
+Xinclude/frr/vrf_int.h
+Xinclude/frr/vrf.h
+Xinclude/frr/vty.h
+Xinclude/frr/vxlan.h
+Xinclude/frr/wheel.h
+Xinclude/frr/workqueue.h
+Xinclude/frr/zassert.h
+Xinclude/frr/zclient.h
+Xinclude/frr/zebra.h
+Xlib/libfrr.a
+Xlib/libfrr.so
+Xlib/libfrr.so.0
+Xlib/libfrr.so.0.0.0
+Xlib/libfrrospfapiclient.a
+Xlib/libfrrospfapiclient.so
+Xlib/libfrrospfapiclient.so.0
+Xlib/libfrrospfapiclient.so.0.0.0
+X%%SNMP%%lib/frr/modules/bgpd_snmp.so
+X%%SNMP%%lib/frr/modules/ospf6d_snmp.so
+X%%SNMP%%lib/frr/modules/ospfd_snmp.so
+X%%SNMP%%lib/frr/modules/ripd_snmp.so
+X%%SNMP%%lib/frr/modules/zebra_snmp.so
+X%%FPM%%lib/frr/modules/zebra_fpm.so
+X%%FPM%%lib/libfrrfpm_pb.a
+X%%FPM%%lib/libfrrfpm_pb.so
+X%%FPM%%lib/libfrrfpm_pb.so.0
+X%%FPM%%lib/libfrrfpm_pb.so.0.0.0
+X%%SNMP%%lib/libfrrsnmp.a
+X%%SNMP%%lib/libfrrsnmp.so
+X%%SNMP%%lib/libfrrsnmp.so.0
+X%%SNMP%%lib/libfrrsnmp.so.0.0.0
+X%%RPKI%%lib/frr/modules/bgpd_rpki.so
+X%%MANPAGES%%man/man1/frr.1.gz
+X%%MANPAGES%%man/man8/bfdd.8.gz
+X%%MANPAGES%%man/man8/eigrpd.8.gz
+X%%MANPAGES%%man/man8/isisd.8.gz
+X%%MANPAGES%%man/man8/staticd.8.gz
+X%%MANPAGES%%man/man8/watchfrr.8.gz
+X%%MANPAGES%%%%VTYSH%%man/man1/vtysh.1.gz
+X%%MANPAGES%%man/man8/bgpd.8.gz
+X%%MANPAGES%%%%LDPD%%man/man8/ldpd.8.gz
+X%%MANPAGES%%man/man8/ospf6d.8.gz
+X%%MANPAGES%%man/man8/ospfclient.8.gz
+X%%MANPAGES%%man/man8/ospfd.8.gz
+X%%MANPAGES%%man/man8/pbrd.8.gz
+X%%MANPAGES%%man/man8/ripd.8.gz
+X%%MANPAGES%%man/man8/ripngd.8.gz
+X%%MANPAGES%%man/man8/zebra.8.gz
+Xsbin/babeld
+Xsbin/bfdd
+Xsbin/bgpd
+X%%LDPD%%sbin/ldpd
+Xsbin/eigrpd
+Xsbin/ospf6d
+Xsbin/ospfclient
+Xsbin/ospfd
+Xsbin/pbrd
+Xsbin/ripd
+Xsbin/ripngd
+Xsbin/staticd
+Xsbin/zebra
+Xsbin/isisd
+Xsbin/rfptest
+Xsbin/watchfrr
+X%%ETCDIR%%/babeld.conf.sample
+X%%ETCDIR%%/bfdd.conf.sample
+X%%ETCDIR%%/bgpd.conf.sample
+X%%ETCDIR%%/bgpd.conf.sample2
+X%%ETCDIR%%/bgpd.conf.vnc.sample
+X%%ETCDIR%%/eigrpd.conf.sample
+X%%ETCDIR%%/isisd.conf.sample
+X%%LDPD%%%%ETCDIR%%/ldpd.conf.sample
+X%%ETCDIR%%/ospf6d.conf.sample
+X%%ETCDIR%%/ospfd.conf.sample
+X%%ETCDIR%%/pbrd.conf.sample
+X%%ETCDIR%%/ripd.conf.sample
+X%%ETCDIR%%/ripngd.conf.sample
+X%%ETCDIR%%/staticd.conf.sample
+X%%VTYSH%%%%ETCDIR%%/vtysh.conf.sample
+X%%ETCDIR%%/zebra.conf.sample
+X@dir(frr,frr,750) /var/run/frr
+961a2bf353e608cff35284c78f7deddc
+exit
+

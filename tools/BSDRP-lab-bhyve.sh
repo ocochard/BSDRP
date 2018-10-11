@@ -44,6 +44,7 @@ DISK_CTRL="virtio-blk"
 VALE=false
 vnic="virtio-net"
 VERBOSE=true
+DEBUG=false
 
 usage() {
 	# $1: Cause of displaying usage
@@ -53,6 +54,7 @@ usage() {
 	echo " -c           Number of core per VM (default ${CORE})"
 	echo " -d           Delete All VMs, including the template"
 	echo " -D           Disk controller (default ${DISK_CTRL}, can be ahci-hd)"
+    echo " -g           Enable remote kgdb (host need be compiled with 'device bvmdebug'"
 	echo " -h           Display this help"
 	echo " -e           Emulate Intel e82545 (e1000) in place of virtIO NIC"
 	echo " -i filename  FreeBSD file image"
@@ -213,8 +215,7 @@ run_vm() {
 			VM_FIRSTBOOT_$1=false
 		fi
 		"
-		eval VM_LOAD_$1=\"bhyveload -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm\${NMDM_ID}A \${VM_NAME}_$1\"
-		#eval echo DEBUG \${VM_LOAD_$1}
+		eval VM_LOAD_$1=\"bhyveload -S -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm\${NMDM_ID}A \${VM_NAME}_$1\"
 		eval \${VM_LOAD_$1}
 		# c: Number of guest virtual CPUs
 		# m: RAM
@@ -234,15 +235,20 @@ run_vm() {
 		# PCI 2:0 and next: Network NIC
 		# PCI last:0 ptnetnetmap-memdev (if PTNET&VALE enabled)
 		#   Note: It's not possible to have "hole" in PCI assignement
-		VM_COMMON="bhyve -c ${CORE} -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
+		VM_COMMON="bhyve -c ${CORE} -S -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
 		eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\${NMDM_ID}A\"
 		eval VM_DISK_$1=\"-s 1:0,\${DISK_CTRL},\${WRK_DIR}/\${VM_NAME}_$1\"
 
+		if(${DEBUG}); then
+			eval VM_DEBUG_$1=\"-g 900$1\"
+		else
+			eval VM_DEBUG_$1=\"\"
+		fi
 		# Store VM_$1_VMDM data for displaying it later
 		echo "- VM $1 : cu -l /dev/nmdm${NMDM_ID}B" >> ${TMPCONSOLE}
 
 		# Check bhyve exit code, and if error: exit the infinite loop
-		eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} ${VM_NAME}_$1
+		eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_DEBUG_$1} ${VM_NAME}_$1
 		if [ $? -ne 0 ]; then
 			break
 		fi
@@ -284,7 +290,7 @@ create_interface() {
 [ $# -lt 1 ] && ! [ -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ $(id -u) -ne 0 ] && usage "ERROR: not executed as root"
 
-while getopts "ac:dhD:ei:l:m:n:qsVw:" FLAG; do
+while getopts "ac:dghD:ei:l:m:n:qsVw:" FLAG; do
     case "${FLAG}" in
 	a)
 		MESHED=false
@@ -302,6 +308,9 @@ while getopts "ac:dhD:ei:l:m:n:qsVw:" FLAG; do
 		;;
 	e)
 		vnic="e1000"
+		;;
+	g)
+		DEBUG=true
 		;;
 	h)
 		usage
@@ -386,7 +395,13 @@ while [ $i -le $NUMBER_VM ]; do
 	[ ! -f ${WRK_DIR}/${VM_NAME}_$i -o -n "${FILE}" ] && cp ${VM_TEMPLATE} ${WRK_DIR}/${VM_NAME}_$i
 	# Network_config
 	NIC_NUMBER=0
-    ( ${VERBOSE} ) && echo "VM $i have the following NIC:"
+    if ( ${VERBOSE} ); then
+		if ( ${DEBUG} ); then
+			echo "VM $i (debugger port: 900$i) have the following NIC:"
+		else
+			echo "VM $i have the following NIC:"
+		fi
+	fi
 
 	# Entering the Meshed NIC loop NIC loop
 	# Now generate X (X-1)/2 full meshed link

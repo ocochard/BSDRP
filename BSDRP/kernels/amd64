@@ -372,6 +372,7 @@ device      cryptodev
 options     TCP_SIGNATURE       #include support for RFC 2385
 
 # Add device Polling
+# This force net.isr.bindthreads=0 and net.isr.maxthreads=1
 options     DEVICE_POLLING
 
 # Add multiple route table support
