@@ -200,19 +200,23 @@ EOF
 
 cat > /usr/local/etc/frr/bgpd.conf <<EOF
 router bgp 100
- bgp router-id 0.0.0.0
- network 10.0.0.2/32
  neighbor 10.0.23.3 remote-as 100
- neighbor 10.0.23.3 soft-reconfiguration inbound
  neighbor 10.0.23.3 password abigpassword
  neighbor 2001:db8:23::3 remote-as 100
- no neighbor 2001:db8:23::3 activate
-!
- address-family ipv6
- network 2001:db8::2/128
- neighbor 2001:db8:23::3 activate
- neighbor 2001:db8:23::3 soft-reconfiguration inbound
  neighbor 2001:db8:23::3 password abigpassword
+ !
+ address-family ipv4 unicast
+  network 10.0.0.2/32
+  neighbor 10.0.23.3 activate
+  neighbor 10.0.23.3 soft-reconfiguration inbound
+  no neighbor 2001:db8:23::3 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 2001:db8::2/128
+  neighbor 2001:db8:23::3 activate
+  neighbor 2001:db8:23::3 soft-reconfiguration inbound
+ exit-address-family
 EOF
 
 cat > /usr/local/etc/frr/ospfd.conf <<EOF
