@@ -17,9 +17,9 @@ usage () {
 	echo "-vpn: https://bsdrp.net/documentation/examples/gre_ipsec_and_openvpn"
 	echo "-bgp: https://bsdrp.net/documentation/examples/bgp_route_reflector_and_confederation_using_quagga_and_bird"
 	echo "-jailpf: https://bsdrp.net/documentation/examples/multi-tenant_ha_pf_firewalls"
+	echo "-graphpath: https://bsdrp.net/documentation/examples/graphpath"
 	exit 1
 }
-
 
 ### Full (maximum) features labs ###
 
@@ -774,8 +774,10 @@ cat > /usr/local/etc/frr/bgpd.conf <<EOF
 router bgp 12
  bgp router-id 192.168.10.1
  neighbor 192.168.12.2 remote-as 12
+ neighbor 192.168.12.2 bfd
  neighbor 192.168.12.2 password abigpassword
  neighbor 2001:db8:12::2 remote-as 12
+ neighbor 2001:db8:12::2 bfd
  neighbor 2001:db8:12::2 password abigpassword
  !
  address-family ipv4 unicast
@@ -789,6 +791,15 @@ router bgp 12
   neighbor 2001:db8:12::2 activate
   neighbor 2001:db8:12::2 soft-reconfiguration inbound
  exit-address-family
+EOF
+cat > /usr/local/etc/frr/bfdd.conf <<EOF
+bfd
+ peer 2001:db8:12::2 local-address 2001:db8:12::1
+  label router2-6
+  no shutdown
+ peer 192.168.12.2
+  label router2-4
+  no shutdown
 EOF
 hostname router1
 service netif restart
@@ -857,8 +868,10 @@ cat > /usr/local/etc/frr/bgpd.conf <<EOF
 router bgp 12
  bgp router-id 192.168.10.2
  neighbor 192.168.12.1 remote-as 12
+ neighbor 192.168.12.1 bfd
  neighbor 192.168.12.1 password abigpassword
  neighbor 2001:db8:12::1 remote-as 12
+ neighbor 2001:db8:12::1 bfd
  neighbor 2001:db8:12::1 password abigpassword
  !
  address-family ipv4 unicast
@@ -876,6 +889,17 @@ router bgp 12
   neighbor 2001:db8:12::1 soft-reconfiguration inbound
  exit-address-family
 EOF
+
+cat > /usr/local/etc/frr/bfdd.conf <<EOF
+bfd
+ peer 2001:db8:12::1 local-address 2001:db8:12::2
+  label router1-6
+  no shutdown
+ peer 192.168.12.1
+  label router1-4
+  no shutdown
+EOF
+
 hostname router2
 service ipsec start
 service frr start
@@ -904,8 +928,10 @@ EOF
 cat > /usr/local/etc/frr/ospfd.conf <<EOF
 interface em2
  ip ospf message-digest-key 1 md5 superpass
+ ip ospf bfd
 interface vtnet2
  ip ospf message-digest-key 1 md5 superpass
+ ip ospf bfd
 router ospf
  ospf router-id 3.3.3.3
  redistribute rip
@@ -914,6 +940,10 @@ router ospf
  area 0.0.0.0 authentication message-digest
 EOF
 cat > /usr/local/etc/frr/ospf6d.conf <<EOF
+interface em2
+ ipv6 ospf6 bfd
+interface vtnet2
+ ipv6 ospf6 bfd
 router ospf6
  router-id 2.2.2.2
  redistribute ripng
@@ -948,6 +978,15 @@ router ripng
  redistribute connected
  redistribute ospf6
 EOF
+cat > /usr/local/etc/frr/bfdd.conf <<EOF
+bfd
+ peer 2001:db8:34::4 local-address 2001:db8:34::3
+  label router4-6
+  no shutdown
+ peer 192.168.34.4
+  label router4-4
+  no shutdown
+EOF
 hostname router3
 service frr start
 echo "VM3 configured"
@@ -974,8 +1013,10 @@ EOF
 cat > /usr/local/etc/frr/ospfd.conf <<EOF
 interface em2
  ip ospf message-digest-key 1 md5 superpass
+ ip ospf bfd
 interface vtnet2
  ip ospf message-digest-key 1 md5 superpass
+ ip ospf bfd
 router ospf
  ospf router-id 4.4.4.4
  redistribute isis
@@ -984,6 +1025,10 @@ router ospf
  area 0.0.0.0 authentication message-digest
 EOF
 cat > /usr/local/etc/frr/ospf6d.conf <<EOF
+interface em2
+ ipv6 ospf6 bfd
+interface vtnet2
+ ipv6 ospf6 bfd
 router ospf6
  router-id 4.4.4.4
  redistribute isis
@@ -1008,6 +1053,16 @@ router isis BSDRP
  redistribute ipv4 connected level-2
  redistribute ipv6 connected level-2
 EOF
+cat > /usr/local/etc/frr/bfdd.conf <<EOF
+bfd
+ peer 2001:db8:34::3 local-address 2001:db8:34::4
+  label router3-6
+  no shutdown
+ peer 192.168.34.3
+  label router3-4
+  no shutdown
+EOF
+
 hostname router4
 service frr start
 echo "VM4 configured"
@@ -1073,7 +1128,6 @@ echo "VM5 configured"
 
 frr_vm6 () {
 sysrc hostname=router6
-sysrc cloned_interfaces=lo1
 sysrc frr_enable=YES
 cat > /usr/local/etc/frr/zebra.conf <<EOF
 log syslog
@@ -1083,21 +1137,56 @@ interface em4
 interface vtnet4
  ip address 192.168.56.6/24
  ipv6 address 2001:db8:56::6/64
-interface lo1
- ip address 192.168.60.6/24
- ipv6 address 2001:db8:60::6/64
+interface em5
+ ip address 192.168.67.6/24
+ ipv6 address 2001:db8:67::6/64
+interface vtnet5
+ ip address 192.168.67.6/24
+ ipv6 address 2001:db8:67::6/64
 EOF
 cat > /usr/local/etc/frr/babeld.conf <<EOF
 router babel
  network em4
  network vtnet4
  redistribute ipv4 connected
+ redistribute ipv4 static
  redistribute ipv6 connected
+ redistribute ipv6 static
+EOF
+cat > /usr/local/etc/frr/staticd.conf <<EOF
+ip route 192.168.70.0/24 192.168.67.7
+ipv6 route 2001:db8:70::/64 2001:db8:67::7
 EOF
 hostname router6
 service netif restart
 service frr start
 echo "VM6 configured"
+}
+
+frr_vm7 () {
+sysrc hostname=router7
+sysrc cloned_interfaces=lo1
+sysrc frr_enable=YES
+cat > /usr/local/etc/frr/zebra.conf <<EOF
+log syslog
+interface em5
+ ip address 192.168.67.7/24
+ ipv6 address 2001:db8:57::7/64
+interface vtnet5
+ ip address 192.168.67.7/24
+ ipv6 address 2001:db8:67::7/64
+interface lo1
+ ip address 192.168.70.7/24
+ ipv6 address 2001:db8:70::7/64
+EOF
+cat > /usr/local/etc/frr/staticd.conf <<EOF
+ip route 0.0.0.0/0 192.168.67.6
+ipv6 route ::/0 2001:db8:67::6
+EOF
+hostname router7
+service netif restart
+service frr start
+echo "VM7 configured"
 }
 
 vpn_vm1 () {
@@ -1927,6 +2016,98 @@ sysrc -x ipv6_gateway_enable
 service netif restart
 service routing restart
 config save
+}
+
+### graphpath
+
+graphpath () {
+sysrc hostname="me"
+sysrc cloned_interfaces="bridge1 bridge2 bridge11 bridge12 bridge21"
+sysrc ifconfig_bridge1="inet 10.0.1.1/24"
+sysrc ifconfig_bridge1_ipv6="inet6 2001:db8:1::1 prefixlen 64"
+sysrc ifconfig_bridge2="inet 10.0.2.1/24"
+sysrc ifconfig_bridge2_ipv6="inet6 2001:db8:2::1 prefixlen 64"
+sysrc ifconfig_bridge11="up"
+sysrc ifconfig_bridge12="up"
+sysrc ifconfig_bridge21="up"
+sysrc static_routes="host11 host12 host21"
+sysrc route_host11="-net 10.0.11.0/24 10.0.1.11"
+sysrc route_host12="-net 10.0.12.0/24 10.0.1.12"
+sysrc route_host21="-net 10.0.21.0/24 10.0.2.21"
+sysrc ipv6_static_routes="host11 host12 host21"
+sysrc ipv6_route_host11="2001:db8:11:: -prefixlen 64 2001:db8:1::11"
+sysrc ipv6_route_host12="2001:db8:12:: -prefixlen 64 2001:db8:1::12"
+sysrc ipv6_route_host21="2001:db8:21:: -prefixlen 64 2001:db8:2::21"
+hostname me
+service netif restart
+service routing restart
+tenant -c -j host11 -i bridge11
+cat > /etc/jails/host11/rc.conf <<EOF
+hostname="host11"
+ifconfig_epair111b="inet 10.0.11.11/24"
+ifconfig_epair111b_ipv6="inet6 2001:db8:11::11 prefixlen 64"
+defaultrouter="10.0.11.254"
+ipv6_defaultrouter="2001:db8:11::254"
+EOF
+
+tenant -c -j host12 -i bridge12
+cat > /etc/jails/host12/rc.conf <<EOF
+hostname="host12"
+ifconfig_epair212b="inet 10.0.12.12/24"
+ifconfig_epair212b_ipv6="inet6 2001:db8:12::12 prefixlen 64"
+defaultrouter="10.0.12.254"
+ipv6_defaultrouter="2001:db8:12::254"
+EOF
+
+tenant -c -j router11 -i bridge1,bridge11
+cat > /etc/jails/router11/rc.conf <<EOF
+hostname="router11"
+gateway_enable=YES
+ipv6_gateway_enable=YES
+ifconfig_epair31b="inet 10.0.1.11/24"
+ifconfig_epair31b_ipv6="inet6 2001:db8:1::11 prefixlen 64"
+ifconfig_epair311b="inet 10.0.11.254/24"
+ifconfig_epair311b_ipv6="inet6 2001:db8:11::254 prefixlen 64"
+defaultrouter="10.0.1.1"
+ipv6_defaultrouter="2001:db8:1::1"
+EOF
+
+tenant -c -j router12 -i bridge1,bridge12
+cat > /etc/jails/router12/rc.conf <<EOF
+hostname=router12
+gateway_enable=YES
+ipv6_gateway_enable=YES
+ifconfig_epair41b="inet 10.0.1.12/24"
+ifconfig_epair41b_ipv6="inet6 2001:db8:1::12 prefixlen 64"
+ifconfig_epair412b="inet 10.0.12.254/24"
+ifconfig_epair412b_ipv6="inet6 2001:db8:12::254 prefixlen 64"
+defaultrouter="10.0.1.1"
+ipv6_defaultrouter="2001:db8:1::1"
+EOF
+
+tenant -c -j router21 -i bridge2,bridge21
+cat > /etc/jails/router21/rc.conf <<EOF
+hostname="router21"
+gateway_enable=YES
+ipv6_gateway_enable=YES
+ifconfig_epair52b="inet 10.0.2.21/24"
+ifconfig_epair52b_ipv6="inet6 2001:db8:2::21 prefixlen 64"
+ifconfig_epair521b="inet 10.0.21.254/24"
+ifconfig_epair521b_ipv6="inet6 2001:db8:21::254 prefixlen 64"
+defaultrouter="10.0.2.1"
+ipv6_defaultrouter="2001:db8:2::1"
+EOF
+
+tenant -c -j host21 -i bridge21
+cat > /etc/jails/host21/rc.conf <<EOF
+hostname="host21"
+ifconfig_epair621b="inet 10.0.21.21/24"
+ifconfig_epair621b_ipv6="inet6 2001:db8:21::21 prefixlen 64"
+defaultrouter="10.0.21.254"
+ipv6_defaultrouter="2001:db8:21::254"
+EOF
+
+service jail start
 }
 ### Main
 

@@ -1,8 +1,8 @@
 #
 # VirtualBox 5 PowerShell lab script for BSD Router Project
-# http://bsdrp.net
+# https://bsdrp.net
 #
-# Copyright (c) 2011-2015, The BSDRP Development Team
+# Copyright (c) 2011-2018, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@ function set_API_enums() {
             StorageBus_SCSI = 3;
             StorageBus_Floppy = 4;
             StorageBus_SAS = 5;
-            
+
             StorageControllerType_LsiLogic = 1;
             StorageControllerType_BusLogic = 2;
             StorageControllerType_IntelAhci = 3;
@@ -60,7 +60,7 @@ function set_API_enums() {
             StorageControllerType_ICH6 = 6;
             StorageControllerType_I82078 = 7;
             StorageControllerType_LsiLogicSas = 8;
-            
+
             DeviceType_Null = 0;
             DeviceType_Floppy = 1;
             DeviceType_DVD = 2;
@@ -72,7 +72,7 @@ function set_API_enums() {
 
             AccessMode_ReadOnly = 1;
             AccessMode_ReadWrite = 2;
-             
+
             LockType_Write = 2;
             LockType_Shared = 1;
 
@@ -89,10 +89,10 @@ function set_API_enums() {
             CloneOptions_KeepAllMACs = 2;
             CloneOptions_KeepNATMACs = 3;
             CloneOptions_KeepDiskNames = 4;
-            
+
             ChipsetType_PIIX3 = 1;
             ChipsetType_ICH9 = 2;
-			
+
 			MachineState_Null = 0;
 			MachineState_PoweredOff = 1;
 			MachineState_Saved = 2;
@@ -121,7 +121,7 @@ function set_API_enums() {
 			MachineState_LastOnline = 19;
             MachineState_FirstTransient = 8;
             MachineState_LastTransient = 23;
-            
+
             NetworkAdapterType_Null = 0;
             NetworkAdapterType_Am79C970A = 1;
             NetworkAdapterType_Am79C973 = 2;
@@ -129,7 +129,7 @@ function set_API_enums() {
             NetworkAdapterType_I82543GC = 4;
             NetworkAdapterType_I82545EM = 5;
             NetworkAdapterType_Virtio = 6;
-            
+
             NetworkAttachmentType_Null = 0;
             NetworkAttachmentType_NAT = 1;
             NetworkAttachmentType_Bridged = 2;
@@ -137,16 +137,16 @@ function set_API_enums() {
             NetworkAttachmentType_HostOnly = 4;
             NetworkAttachmentType_Generic = 5;
             NetworkAttachmentType_NATNetwork = 6;
-            
+
 			NetworkAdapterPromiscModePolicy_Deny = 1;
 			NetworkAdapterPromiscModePolicy_AllowNetwork = 2;
-			NetworkAdapterPromiscModePolicy_AllowAll = 3; 
-            
+			NetworkAdapterPromiscModePolicy_AllowAll = 3;
+
 			ProcessorFeature_HWVirtEx = 0;
             ProcessorFeature_PAE = 1;
             ProcessorFeature_LongMode = 2;
             ProcessorFeature_NestedPaging = 3;
-       
+
         } #Virtualbox_API_Enums
 
         $Virtualbox_API_Enums.GetEnumerator() | Foreach-Object {
@@ -162,15 +162,15 @@ Function create_template () {
 	param ([string]$FILENAME)
     $error.clear()
     Write-Host "Generate BSDRP Lab Template VM..."
-	
+
 	# Define $VM_ARCH and $SERIAL from the filename
     $null = parse_filename $FILENAME
 
     # check if there already exist folder, and delete it
-    # Case where there already a folder: Script break between converting RAW to VDI and registering the VDI, 
+    # Case where there already a folder: Script break between converting RAW to VDI and registering the VDI,
     # then deleting the template from the manager
     $VM_DIR=$VIRTUALBOX.SystemProperties.DefaultMachineFolder + "\$VM_TPL_NAME"
-    
+
     if (test-path $VM_DIR -PathType container) {
     	Write-Host "[WARNING]: Existing old VM folder found, delete it"
         Remove-Item -path $VM_DIR -force -recurse
@@ -182,13 +182,13 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     #Configure the VM
-    
+
     # Chipset PIIX3 support a maximum of 8 NIC
     # Chipset ICH9 support a maximum of 36 NIC... But need VirtualBox 4.2 minimum
     $MACHINE.ChipsetType=$ChipsetType_ICH9
-    $MACHINE.MemorySize=256
+    $MACHINE.MemorySize=512
     $MACHINE.VRAMSize=8
     $MACHINE.Description="BSD Router Project Template VM"
     $MACHINE.setBootOrder(1,$DeviceType_HardDisk)
@@ -197,19 +197,19 @@ Function create_template () {
     $MACHINE.setBootOrder(4,$DeviceType_Null)
 	# Serial port
 	# Link the VM serial port to a pipe into the host
-	# You can connect, from the host, to the serial port of the VM 
+	# You can connect, from the host, to the serial port of the VM
 	$MACHINE_SERIAL=$MACHINE.getSerialPort(0)
 	$MACHINE_SERIAL.path="\\.\pipe\$VM_TPL_NAME"
 	$MACHINE_SERIAL.hostMode=$PortMode_HostPipe
 	$MACHINE_SERIAL.server=$true
 	$MACHINE_SERIAL.enabled=$true
-    
+
     #Enable Page Fusion if 64bit
     #Because we will start lot's of identical VM, it can be usefull
     if ( $VM_ARCH = "FreeBSD_64") {
         $MACHINE.pageFusionEnabled=$true
     }
-    
+
     # Adding a disk controller to the machine
 	# Seems to have a problem with SATA controller (Intel AHCI that can't boot BSDRP based on FreeBSD 9.1-RC1)
     try { $MACHINE_STORAGECONTROLLER = $MACHINE.addStorageController("ATA Controller",$StorageBus_IDE) }
@@ -218,7 +218,7 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-  
+
 	$MACHINE_STORAGECONTROLLER.controllerType=$StorageControllerType_PIIX4
     #PortCount can be modified for SATA controller only
     #$MACHINE_STORAGECONTROLLER.portCount=1
@@ -230,7 +230,7 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     # Need to register the VM (mandatory before attaching disk to it)
     try { $VIRTUALBOX.registerMachine($MACHINE) }
     catch {
@@ -238,35 +238,35 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     #Convert the BSDRP raw image disk to VDI using VIRTUALBOXManage.exe
     #Still need to use VIRTUALBOXManage because COM API didn't support all features (like converting RAW)
     #Need to put quote, because there is space in name file
-    
+
     $VDI_FILE=$VIRTUALBOX.SystemProperties.DefaultMachineFolder + "\$VM_TPL_NAME\$VM_TPL_NAME.vdi"
-    
+
     #Call VBoxManage.exe for converting the given .img to VDI.
     #Previous to VirtualBox 4.3.12, the install path was VBOX_INSTALL_PATH
     #But since 4.3.12 it's VBOX_MSI_INSTALL_PATH
     if ($env:VBOX_INSTALL_PATH) { $VB_MANAGE ='"' + $env:VBOX_INSTALL_PATH + "VBoxManage.exe" + '"' }
     if ($env:VBOX_MSI_INSTALL_PATH) { $VB_MANAGE ='"' + $env:VBOX_MSI_INSTALL_PATH + "VBoxManage.exe" + '"' }
     #$VB_MANAGE ='"' + $env:VBOX_INSTALL_PATH + "VBoxManage.exe" + '"'
-    
+
     $CMD="convertfromraw " + '"' + $FILENAME +'" "' + $VDI_FILE + '"'
 
     try { invoke-expression "& $VB_MANAGE $CMD" }
     catch {
         Write-Verbose "[BUG] invoke-expression Return $?, even if command successfull."
     }
-   
+
     $error.clear()
-    
+
      # Another if $VDI_FILE exist, because I didn't understand the error code of invoke-expression
     if (!(test-path $VDI_FILE -PathType leaf)) {
     	Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": RAW to VDI converstion error, no VDI file found"
         clean_exit
     }
-    
+
     # Register the VDI (Mandatory before attaching it to a VM)
     try {
         $MEDIUM=$VIRTUALBOX.openMedium($VDI_FILE,$DeviceType_HardDisk,$AccessMode_ReadWrite,$true)
@@ -275,7 +275,7 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     # Compact the VDI (and create a process object)
     try { $PROGRESS=$MEDIUM.compact() }
     catch {
@@ -283,7 +283,7 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     # Wait for end of compacting the VDI...
     try { $PROGRESS.waitForCompletion(-1) }
     catch {
@@ -291,17 +291,17 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     # Need to lock the VM (put it in "mutable" state) before modifying it
     #  === More I'm using VirtualBox, more I like bhyve ! ====
-    
+
     try { $MACHINE.lockMachine($SESSION,$LockType_Write) }
     catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't lock $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     # At last ! Attach the disk to unlocked-copy-object of the VM
     # But need to use the $SESSION.machine and not the $MACHINE object
     try {
@@ -311,7 +311,7 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     # Save new settings
     # Should be useless because next takesnapshot already save settings
     try { $SESSION.machine.saveSettings() }
@@ -320,7 +320,7 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     # Create a snapshot (will be mandatory for creating linked type clone)
     $snapshotid = ""
     try { $PROGRESS=$SESSION.machine.takeSnapshot("SNAPSHOT","Initial snapshot used for clone",$false,[ref] $snapshotid) }
@@ -329,7 +329,7 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     # Wait for end of taking the snapshot...
     try { $PROGRESS.waitForCompletion(-1) }
     catch {
@@ -337,7 +337,7 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     # Unlock the machine
     try { $SESSION.unlockMachine() }
     catch {
@@ -345,7 +345,7 @@ Function create_template () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
 } # End function create_template
 
 # Parse the BSDRP file-name given (is a i386 or amd64, is a vga or serial)
@@ -370,7 +370,7 @@ Function parse_filename () {
     }
     if ($FILENAME.Contains("serial")) {
         $global:SERIAL=$true
-        Write-Host "- CONSOLE: serial" 
+        Write-Host "- CONSOLE: serial"
     } elseif ($FILENAME.Contains("vga")) {
         $global:SERIAL=$false
         Write-Host "- CONSOLE: vga"
@@ -394,16 +394,16 @@ Function clone_vm () {
         clean_exit
 	}
     $error.clear()
-    
+
     # Get the first snapshot of this machine:
-    
+
     try {$MACHINE_TEMPLATE_SNAPSHOT=$MACHINE_TEMPLATE.findSnapshot($null) }
     catch {
 		Write-Host "[BUG] " (Get-PSCallStack)[0].Command ": clone_vm didn't found the snapshot of $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
 	}
-    
+
 	$error.clear()
 	try {$MACHINE_CLONE=$VIRTUALBOX.createMachine("",$CLONE_NAME,[string[]]@(),$OS_TYPE,"")}
     catch {
@@ -411,7 +411,7 @@ Function clone_vm () {
         Write-Host "Detail: " $($error)
         clean_exit
     }
-    
+
     # MACHINE.cloneTo need:
     #   To be start from a SNAPSHOT object
     #   an array for CloneOptions

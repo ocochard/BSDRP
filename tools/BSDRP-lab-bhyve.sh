@@ -397,9 +397,9 @@ while [ $i -le $NUMBER_VM ]; do
 	NIC_NUMBER=0
     if ( ${VERBOSE} ); then
 		if ( ${DEBUG} ); then
-			echo "VM $i (debugger port: 900$i) have the following NIC:"
+			echo "VM $i (debugger port: 900$i) has the following NIC:"
 		else
-			echo "VM $i have the following NIC:"
+			echo "VM $i has the following NIC:"
 		fi
 	fi
 

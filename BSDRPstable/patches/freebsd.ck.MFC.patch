@@ -1,7 +1,202 @@
+Index: sys/contrib/ck/include/ck_epoch.h
+===================================================================
+--- sys/contrib/ck/include/ck_epoch.h	(revision 339406)
++++ sys/contrib/ck/include/ck_epoch.h	(working copy)
+@@ -266,6 +266,7 @@
+ void ck_epoch_unregister(ck_epoch_record_t *);
+ 
+ bool ck_epoch_poll(ck_epoch_record_t *);
++bool ck_epoch_poll_deferred(struct ck_epoch_record *record, ck_stack_t *deferred);
+ void ck_epoch_synchronize(ck_epoch_record_t *);
+ void ck_epoch_synchronize_wait(ck_epoch_t *, ck_epoch_wait_cb_t *, void *);
+ void ck_epoch_barrier(ck_epoch_record_t *);
+Index: sys/contrib/ck/include/ck_pr.h
+===================================================================
+--- sys/contrib/ck/include/ck_pr.h	(revision 339406)
++++ sys/contrib/ck/include/ck_pr.h	(working copy)
+@@ -619,8 +619,8 @@
+ 	}
+ 
+ #define CK_PR_UNARY_Z(K, S, M, T, P, C, Z)				\
+-	CK_CC_INLINE static void					\
+-	ck_pr_##K##_##S##_zero(M *target, bool *zero)			\
++	CK_CC_INLINE static bool					\
++	ck_pr_##K##_##S##_is_zero(M *target)				\
+ 	{								\
+ 		T previous;						\
+ 		C punt;							\
+@@ -631,12 +631,21 @@
+ 					     (C)(previous P 1),		\
+ 					     &previous) == false)	\
+ 			ck_pr_stall();					\
+-		*zero = previous == (T)Z;				\
++		return previous == (T)Z;				\
++        }
++
++#define CK_PR_UNARY_Z_STUB(K, S, M)					\
++	CK_CC_INLINE static void					\
++	ck_pr_##K##_##S##_zero(M *target, bool *zero)			\
++	{								\
++		*zero = ck_pr_##K##_##S##_is_zero(target);		\
+ 		return;							\
+ 	}
+ 
+ #define CK_PR_UNARY_S(K, X, S, M) CK_PR_UNARY(K, X, S, M, M)
+-#define CK_PR_UNARY_Z_S(K, S, M, P, Z) CK_PR_UNARY_Z(K, S, M, M, P, M, Z)
++#define CK_PR_UNARY_Z_S(K, S, M, P, Z)          \
++        CK_PR_UNARY_Z(K, S, M, M, P, M, Z)      \
++        CK_PR_UNARY_Z_STUB(K, S, M)
+ 
+ #if defined(CK_F_PR_LOAD_CHAR) && defined(CK_F_PR_CAS_CHAR_VALUE)
+ 
+@@ -648,6 +657,8 @@
+ #ifndef CK_F_PR_INC_CHAR_ZERO
+ #define CK_F_PR_INC_CHAR_ZERO
+ CK_PR_UNARY_Z_S(inc, char, char, +, -1)
++#else
++CK_PR_UNARY_Z_STUB(inc, char, char)
+ #endif /* CK_F_PR_INC_CHAR_ZERO */
+ 
+ #ifndef CK_F_PR_DEC_CHAR
+@@ -658,6 +669,8 @@
+ #ifndef CK_F_PR_DEC_CHAR_ZERO
+ #define CK_F_PR_DEC_CHAR_ZERO
+ CK_PR_UNARY_Z_S(dec, char, char, -, 1)
++#else
++CK_PR_UNARY_Z_STUB(dec, char, char)
+ #endif /* CK_F_PR_DEC_CHAR_ZERO */
+ 
+ #endif /* CK_F_PR_LOAD_CHAR && CK_F_PR_CAS_CHAR_VALUE */
+@@ -672,6 +685,8 @@
+ #ifndef CK_F_PR_INC_INT_ZERO
+ #define CK_F_PR_INC_INT_ZERO
+ CK_PR_UNARY_Z_S(inc, int, int, +, -1)
++#else
++CK_PR_UNARY_Z_STUB(inc, int, int)
+ #endif /* CK_F_PR_INC_INT_ZERO */
+ 
+ #ifndef CK_F_PR_DEC_INT
+@@ -682,6 +697,8 @@
+ #ifndef CK_F_PR_DEC_INT_ZERO
+ #define CK_F_PR_DEC_INT_ZERO
+ CK_PR_UNARY_Z_S(dec, int, int, -, 1)
++#else
++CK_PR_UNARY_Z_STUB(dec, int, int)
+ #endif /* CK_F_PR_DEC_INT_ZERO */
+ 
+ #endif /* CK_F_PR_LOAD_INT && CK_F_PR_CAS_INT_VALUE */
+@@ -711,6 +728,8 @@
+ #ifndef CK_F_PR_INC_UINT_ZERO
+ #define CK_F_PR_INC_UINT_ZERO
+ CK_PR_UNARY_Z_S(inc, uint, unsigned int, +, UINT_MAX)
++#else
++CK_PR_UNARY_Z_STUB(inc, uint, unsigned int)
+ #endif /* CK_F_PR_INC_UINT_ZERO */
+ 
+ #ifndef CK_F_PR_DEC_UINT
+@@ -721,6 +740,8 @@
+ #ifndef CK_F_PR_DEC_UINT_ZERO
+ #define CK_F_PR_DEC_UINT_ZERO
+ CK_PR_UNARY_Z_S(dec, uint, unsigned int, -, 1)
++#else
++CK_PR_UNARY_Z_STUB(dec, uint, unsigned int)
+ #endif /* CK_F_PR_DEC_UINT_ZERO */
+ 
+ #endif /* CK_F_PR_LOAD_UINT && CK_F_PR_CAS_UINT_VALUE */
+@@ -735,6 +756,8 @@
+ #ifndef CK_F_PR_INC_PTR_ZERO
+ #define CK_F_PR_INC_PTR_ZERO
+ CK_PR_UNARY_Z(inc, ptr, void, uintptr_t, +, void *, UINT_MAX)
++#else
++CK_PR_UNARY_Z_STUB(inc, ptr, void)
+ #endif /* CK_F_PR_INC_PTR_ZERO */
+ 
+ #ifndef CK_F_PR_DEC_PTR
+@@ -745,6 +768,8 @@
+ #ifndef CK_F_PR_DEC_PTR_ZERO
+ #define CK_F_PR_DEC_PTR_ZERO
+ CK_PR_UNARY_Z(dec, ptr, void, uintptr_t, -, void *, 1)
++#else
++CK_PR_UNARY_Z_STUB(dec, ptr, void)
+ #endif /* CK_F_PR_DEC_PTR_ZERO */
+ 
+ #endif /* CK_F_PR_LOAD_PTR && CK_F_PR_CAS_PTR_VALUE */
+@@ -759,6 +784,8 @@
+ #ifndef CK_F_PR_INC_64_ZERO
+ #define CK_F_PR_INC_64_ZERO
+ CK_PR_UNARY_Z_S(inc, 64, uint64_t, +, UINT64_MAX)
++#else
++CK_PR_UNARY_Z_STUB(inc, 64, uint64_t)
+ #endif /* CK_F_PR_INC_64_ZERO */
+ 
+ #ifndef CK_F_PR_DEC_64
+@@ -769,6 +796,8 @@
+ #ifndef CK_F_PR_DEC_64_ZERO
+ #define CK_F_PR_DEC_64_ZERO
+ CK_PR_UNARY_Z_S(dec, 64, uint64_t, -, 1)
++#else
++CK_PR_UNARY_Z_STUB(dec, 64, uint64_t)
+ #endif /* CK_F_PR_DEC_64_ZERO */
+ 
+ #endif /* CK_F_PR_LOAD_64 && CK_F_PR_CAS_64_VALUE */
+@@ -783,6 +812,8 @@
+ #ifndef CK_F_PR_INC_32_ZERO
+ #define CK_F_PR_INC_32_ZERO
+ CK_PR_UNARY_Z_S(inc, 32, uint32_t, +, UINT32_MAX)
++#else
++CK_PR_UNARY_Z_STUB(inc, 32, uint32_t)
+ #endif /* CK_F_PR_INC_32_ZERO */
+ 
+ #ifndef CK_F_PR_DEC_32
+@@ -793,6 +824,8 @@
+ #ifndef CK_F_PR_DEC_32_ZERO
+ #define CK_F_PR_DEC_32_ZERO
+ CK_PR_UNARY_Z_S(dec, 32, uint32_t, -, 1)
++#else
++CK_PR_UNARY_Z_STUB(dec, 32, uint32_t)
+ #endif /* CK_F_PR_DEC_32_ZERO */
+ 
+ #endif /* CK_F_PR_LOAD_32 && CK_F_PR_CAS_32_VALUE */
+@@ -807,6 +840,8 @@
+ #ifndef CK_F_PR_INC_16_ZERO
+ #define CK_F_PR_INC_16_ZERO
+ CK_PR_UNARY_Z_S(inc, 16, uint16_t, +, UINT16_MAX)
++#else
++CK_PR_UNARY_Z_STUB(inc, 16, uint16_t)
+ #endif /* CK_F_PR_INC_16_ZERO */
+ 
+ #ifndef CK_F_PR_DEC_16
+@@ -817,6 +852,8 @@
+ #ifndef CK_F_PR_DEC_16_ZERO
+ #define CK_F_PR_DEC_16_ZERO
+ CK_PR_UNARY_Z_S(dec, 16, uint16_t, -, 1)
++#else
++CK_PR_UNARY_Z_STUB(dec, 16, uint16_t)
+ #endif /* CK_F_PR_DEC_16_ZERO */
+ 
+ #endif /* CK_F_PR_LOAD_16 && CK_F_PR_CAS_16_VALUE */
+@@ -831,6 +868,8 @@
+ #ifndef CK_F_PR_INC_8_ZERO
+ #define CK_F_PR_INC_8_ZERO
+ CK_PR_UNARY_Z_S(inc, 8, uint8_t, +, UINT8_MAX)
++#else
++CK_PR_UNARY_Z_STUB(inc, 8, uint8_t)
+ #endif /* CK_F_PR_INC_8_ZERO */
+ 
+ #ifndef CK_F_PR_DEC_8
+@@ -841,6 +880,8 @@
+ #ifndef CK_F_PR_DEC_8_ZERO
+ #define CK_F_PR_DEC_8_ZERO
+ CK_PR_UNARY_Z_S(dec, 8, uint8_t, -, 1)
++#else
++CK_PR_UNARY_Z_STUB(dec, 8, uint8_t)
+ #endif /* CK_F_PR_DEC_8_ZERO */
+ 
+ #endif /* CK_F_PR_LOAD_8 && CK_F_PR_CAS_8_VALUE */
 Index: sys/contrib/ck/include/ck_queue.h
 ===================================================================
---- sys/contrib/ck/include/ck_queue.h	(revision 334188)
-+++ sys/contrib/ck/include/ck_queue.h	(revision 334189)
+--- sys/contrib/ck/include/ck_queue.h	(revision 339406)
++++ sys/contrib/ck/include/ck_queue.h	(working copy)
 @@ -125,7 +125,7 @@
   */
  #define	CK_SLIST_HEAD(name, type)						\
@@ -37,7 +232,7 @@ Index: sys/contrib/ck/include/ck_queue.h
  
  #define	CK_SLIST_FOREACH(var, head, field)					\
  	for ((var) = CK_SLIST_FIRST((head));					\
-@@ -159,50 +159,50 @@
+@@ -159,50 +159,60 @@
  	    (var) = (tvar))
  
  #define	CK_SLIST_FOREACH_PREVPTR(var, varp, head, field)			\
@@ -69,10 +264,16 @@ Index: sys/contrib/ck/include/ck_queue.h
 +	ck_pr_store_ptr(&(head)->cslh_first, elm);				\
  } while (0)
  
++#define	CK_SLIST_INSERT_PREVPTR(prevp, slistelm, elm, field) do {		\
++	(elm)->field.csle_next = (slistelm);					\
++	ck_pr_fence_store();							\
++	ck_pr_store_ptr(prevp, elm);						\
++} while (0)
++
  #define CK_SLIST_REMOVE_AFTER(elm, field) do {					\
 -	ck_pr_store_ptr(&(elm)->field.sle_next,					\
 -	    (elm)->field.sle_next->field.sle_next);				\
-+	ck_pr_store_ptr(&(elm)->field.csle_next,					\
++	ck_pr_store_ptr(&(elm)->field.csle_next,				\
 +	    (elm)->field.csle_next->field.csle_next);				\
  } while (0)
  
@@ -85,7 +286,7 @@ Index: sys/contrib/ck/include/ck_queue.h
 -		while (curelm->field.sle_next != (elm))				\
 -			curelm = curelm->field.sle_next;			\
 +		struct type *curelm = (head)->cslh_first;			\
-+		while (curelm->field.csle_next != (elm))				\
++		while (curelm->field.csle_next != (elm))			\
 +			curelm = curelm->field.csle_next;			\
  		CK_SLIST_REMOVE_AFTER(curelm, field);				\
  	}									\
@@ -98,13 +299,17 @@ Index: sys/contrib/ck/include/ck_queue.h
 +		(head)->cslh_first->field.csle_next);				\
  } while (0)
  
++#define CK_SLIST_REMOVE_PREVPTR(prevp, elm, field) do {				\
++	ck_pr_store_ptr(prevptr, (elm)->field.csle_next);			\
++} while (0)
++
  #define CK_SLIST_MOVE(head1, head2, field) do {					\
 -	ck_pr_store_ptr(&(head1)->slh_first, (head2)->slh_first);		\
 +	ck_pr_store_ptr(&(head1)->cslh_first, (head2)->cslh_first);		\
  } while (0)
  
  /*
-@@ -209,9 +209,9 @@
+@@ -209,9 +219,9 @@
   * This operation is not applied atomically.
   */
  #define CK_SLIST_SWAP(a, b, type) do {						\
@@ -117,7 +322,7 @@ Index: sys/contrib/ck/include/ck_queue.h
  } while (0)
  
  /*
-@@ -219,16 +219,16 @@
+@@ -219,16 +229,16 @@
   */
  #define	CK_STAILQ_HEAD(name, type)					\
  struct name {								\
@@ -138,7 +343,7 @@ Index: sys/contrib/ck/include/ck_queue.h
  }
  
  /*
-@@ -235,17 +235,17 @@
+@@ -235,17 +245,17 @@
   * Singly-linked Tail queue functions.
   */
  #define	CK_STAILQ_CONCAT(head1, head2) do {					\
@@ -161,7 +366,7 @@ Index: sys/contrib/ck/include/ck_queue.h
  
  #define	CK_STAILQ_FOREACH(var, head, field)				\
  	for((var) = CK_STAILQ_FIRST((head));				\
-@@ -259,67 +259,67 @@
+@@ -259,67 +269,67 @@
  	    (var) = (tvar))
  
  #define	CK_STAILQ_INIT(head) do {					\
@@ -259,7 +464,7 @@ Index: sys/contrib/ck/include/ck_queue.h
  } while (0)
  
  /*
-@@ -327,15 +327,15 @@
+@@ -327,15 +337,15 @@
   */
  #define CK_STAILQ_SWAP(head1, head2, type) do {				\
  	struct type *swap_first = CK_STAILQ_FIRST(head1);		\
@@ -280,7 +485,7 @@ Index: sys/contrib/ck/include/ck_queue.h
  } while (0)
  
  /*
-@@ -343,7 +343,7 @@
+@@ -343,7 +353,7 @@
   */
  #define	CK_LIST_HEAD(name, type)						\
  struct name {									\
@@ -289,7 +494,7 @@ Index: sys/contrib/ck/include/ck_queue.h
  }
  
  #define	CK_LIST_HEAD_INITIALIZER(head)						\
-@@ -351,13 +351,13 @@
+@@ -351,13 +361,13 @@
  
  #define	CK_LIST_ENTRY(type)							\
  struct {									\
@@ -307,7 +512,7 @@ Index: sys/contrib/ck/include/ck_queue.h
  
  #define	CK_LIST_FOREACH(var, head, field)					\
  	for ((var) = CK_LIST_FIRST((head));					\
-@@ -370,46 +370,46 @@
+@@ -370,46 +380,46 @@
  	    (var) = (tvar))
  
  #define	CK_LIST_INIT(head) do {							\
@@ -375,7 +580,7 @@ Index: sys/contrib/ck/include/ck_queue.h
  } while (0)
  
  /*
-@@ -416,13 +416,13 @@
+@@ -416,13 +426,13 @@
   * This operation is not applied atomically.
   */
  #define CK_LIST_SWAP(head1, head2, type, field) do {			\
@@ -396,13 +601,313 @@ Index: sys/contrib/ck/include/ck_queue.h
  } while (0)
  
  #endif /* CK_QUEUE_H */
-Index: sys/contrib/ck
+Index: sys/contrib/ck/include/gcc/ppc/ck_pr.h
 ===================================================================
---- sys/contrib/ck	(revision 334188)
-+++ sys/contrib/ck	(revision 334189)
-
-Property changes on: sys/contrib/ck
-___________________________________________________________________
-Modified: svn:mergeinfo
-## -0,0 +0,1 ##
-   Merged /vendor-sys/ck/dist:r333764-334188
+--- sys/contrib/ck/include/gcc/ppc/ck_pr.h	(revision 339406)
++++ sys/contrib/ck/include/gcc/ppc/ck_pr.h	(working copy)
+@@ -67,22 +67,30 @@
+ 		__asm__ __volatile__(I ::: "memory");   \
+ 	}
+ 
+-CK_PR_FENCE(atomic, "lwsync")
+-CK_PR_FENCE(atomic_store, "lwsync")
++#ifdef CK_MD_PPC32_LWSYNC
++#define CK_PR_LWSYNCOP "lwsync"
++#else /* CK_MD_PPC32_LWSYNC_DISABLE */
++#define CK_PR_LWSYNCOP "sync"
++#endif
++
++CK_PR_FENCE(atomic, CK_PR_LWSYNCOP)
++CK_PR_FENCE(atomic_store, CK_PR_LWSYNCOP)
+ CK_PR_FENCE(atomic_load, "sync")
+-CK_PR_FENCE(store_atomic, "lwsync")
+-CK_PR_FENCE(load_atomic, "lwsync")
+-CK_PR_FENCE(store, "lwsync")
++CK_PR_FENCE(store_atomic, CK_PR_LWSYNCOP)
++CK_PR_FENCE(load_atomic, CK_PR_LWSYNCOP)
++CK_PR_FENCE(store, CK_PR_LWSYNCOP)
+ CK_PR_FENCE(store_load, "sync")
+-CK_PR_FENCE(load, "lwsync")
+-CK_PR_FENCE(load_store, "lwsync")
++CK_PR_FENCE(load, CK_PR_LWSYNCOP)
++CK_PR_FENCE(load_store, CK_PR_LWSYNCOP)
+ CK_PR_FENCE(memory, "sync")
+-CK_PR_FENCE(acquire, "lwsync")
+-CK_PR_FENCE(release, "lwsync")
+-CK_PR_FENCE(acqrel, "lwsync")
+-CK_PR_FENCE(lock, "lwsync")
+-CK_PR_FENCE(unlock, "lwsync")
++CK_PR_FENCE(acquire, CK_PR_LWSYNCOP)
++CK_PR_FENCE(release, CK_PR_LWSYNCOP)
++CK_PR_FENCE(acqrel, CK_PR_LWSYNCOP)
++CK_PR_FENCE(lock, CK_PR_LWSYNCOP)
++CK_PR_FENCE(unlock, CK_PR_LWSYNCOP)
+ 
++#undef CK_PR_LWSYNCOP
++
+ #undef CK_PR_FENCE
+ 
+ #define CK_PR_LOAD(S, M, T, C, I)					\
+Index: sys/contrib/ck/include/gcc/x86/ck_pr.h
+===================================================================
+--- sys/contrib/ck/include/gcc/x86/ck_pr.h	(revision 339406)
++++ sys/contrib/ck/include/gcc/x86/ck_pr.h	(working copy)
+@@ -233,18 +233,18 @@
+ 	}
+ 
+ #define CK_PR_UNARY_V(K, S, T, C, I)					\
+-	CK_CC_INLINE static void					\
+-	ck_pr_##K##_##S##_zero(T *target, bool *r)			\
++	CK_CC_INLINE static bool					\
++	ck_pr_##K##_##S##_is_zero(T *target)				\
+ 	{								\
++		bool ret;						\
+ 		__asm__ __volatile__(CK_PR_LOCK_PREFIX I " %0; setz %1"	\
+ 					: "+m" (*(C *)target),		\
+-					  "=m" (*r)			\
++					  "=rm" (ret)			\
+ 					:				\
+ 					: "memory", "cc");		\
+-		return;							\
++		return ret;						\
+ 	}
+ 
+-
+ #define CK_PR_UNARY_S(K, S, T, I) CK_PR_UNARY(K, S, T, T, I)
+ 
+ #define CK_PR_GENERATE(K)				\
+Index: sys/contrib/ck/include/gcc/x86_64/ck_pr.h
+===================================================================
+--- sys/contrib/ck/include/gcc/x86_64/ck_pr.h	(revision 339406)
++++ sys/contrib/ck/include/gcc/x86_64/ck_pr.h	(working copy)
+@@ -332,18 +332,18 @@
+ 	}
+ 
+ #define CK_PR_UNARY_V(K, S, T, C, I)					\
+-	CK_CC_INLINE static void					\
+-	ck_pr_##K##_##S##_zero(T *target, bool *r)			\
++	CK_CC_INLINE static bool					\
++	ck_pr_##K##_##S##_is_zero(T *target)				\
+ 	{								\
++		bool ret;						\
+ 		__asm__ __volatile__(CK_PR_LOCK_PREFIX I " %0; setz %1"	\
+ 					: "+m" (*(C *)target),		\
+-					  "=m" (*r)			\
++					  "=rm" (ret)			\
+ 					:				\
+ 					: "memory", "cc");		\
+-		return;							\
++		return ret;						\
+ 	}
+ 
+-
+ #define CK_PR_UNARY_S(K, S, T, I) CK_PR_UNARY(K, S, T, T, I)
+ 
+ #define CK_PR_GENERATE(K)				\
+Index: sys/contrib/ck/include/spinlock/hclh.h
+===================================================================
+--- sys/contrib/ck/include/spinlock/hclh.h	(revision 339406)
++++ sys/contrib/ck/include/spinlock/hclh.h	(working copy)
+@@ -81,6 +81,8 @@
+ 	thread->wait = true;
+ 	thread->splice = false;
+ 	thread->cluster_id = (*local_queue)->cluster_id;
++	/* Make sure previous->previous doesn't appear to be NULL */
++	thread->previous = *local_queue;
+ 
+ 	/* Serialize with respect to update of local queue. */
+ 	ck_pr_fence_store_atomic();
+@@ -91,13 +93,15 @@
+ 
+ 	/* Wait until previous thread from the local queue is done with lock. */
+ 	ck_pr_fence_load();
+-	if (previous->previous != NULL &&
+-	    previous->cluster_id == thread->cluster_id) {
+-		while (ck_pr_load_uint(&previous->wait) == true)
++	if (previous->previous != NULL) {
++		while (ck_pr_load_uint(&previous->wait) == true &&
++			ck_pr_load_int(&previous->cluster_id) == thread->cluster_id &&
++			ck_pr_load_uint(&previous->splice) == false)
+ 			ck_pr_stall();
+ 
+ 		/* We're head of the global queue, we're done */
+-		if (ck_pr_load_uint(&previous->splice) == false)
++		if (ck_pr_load_int(&previous->cluster_id) == thread->cluster_id &&
++				ck_pr_load_uint(&previous->splice) == false)
+ 			return;
+ 	}
+ 
+Index: sys/contrib/ck/src/ck_barrier_combining.c
+===================================================================
+--- sys/contrib/ck/src/ck_barrier_combining.c	(revision 339406)
++++ sys/contrib/ck/src/ck_barrier_combining.c	(working copy)
+@@ -35,7 +35,7 @@
+ 	struct ck_barrier_combining_group *tail;
+ };
+ 
+-CK_CC_INLINE static struct ck_barrier_combining_group *
++static struct ck_barrier_combining_group *
+ ck_barrier_combining_queue_dequeue(struct ck_barrier_combining_queue *queue)
+ {
+ 	struct ck_barrier_combining_group *front = NULL;
+@@ -48,7 +48,7 @@
+ 	return front;
+ }
+ 
+-CK_CC_INLINE static void
++static void
+ ck_barrier_combining_insert(struct ck_barrier_combining_group *parent,
+     struct ck_barrier_combining_group *tnode,
+     struct ck_barrier_combining_group **child)
+@@ -72,7 +72,7 @@
+  * into the barrier's tree. We use a queue to implement this
+  * traversal.
+  */
+-CK_CC_INLINE static void
++static void
+ ck_barrier_combining_queue_enqueue(struct ck_barrier_combining_queue *queue,
+     struct ck_barrier_combining_group *node_value)
+ {
+@@ -185,10 +185,10 @@
+ 		ck_pr_fence_store();
+ 		ck_pr_store_uint(&tnode->sense, ~tnode->sense);
+ 	} else {
+-		ck_pr_fence_memory();
+ 		while (sense != ck_pr_load_uint(&tnode->sense))
+ 			ck_pr_stall();
+ 	}
++	ck_pr_fence_memory();
+ 
+ 	return;
+ }
+Index: sys/contrib/ck/src/ck_epoch.c
+===================================================================
+--- sys/contrib/ck/src/ck_epoch.c	(revision 339406)
++++ sys/contrib/ck/src/ck_epoch.c	(working copy)
+@@ -127,6 +127,14 @@
+  */
+ #define CK_EPOCH_GRACE 3U
+ 
++/*
++ * CK_EPOCH_LENGTH must be a power-of-2 (because (CK_EPOCH_LENGTH - 1) is used
++ * as a mask, and it must be at least 3 (see comments above).
++ */
++#if (CK_EPOCH_LENGTH < 3 || (CK_EPOCH_LENGTH & (CK_EPOCH_LENGTH - 1)) != 0)
++#error "CK_EPOCH_LENGTH must be a power of 2 and >= 3"
++#endif
++
+ enum {
+ 	CK_EPOCH_STATE_USED = 0,
+ 	CK_EPOCH_STATE_FREE = 1
+@@ -348,8 +356,8 @@
+ 	return NULL;
+ }
+ 
+-static void
+-ck_epoch_dispatch(struct ck_epoch_record *record, unsigned int e)
++static unsigned int
++ck_epoch_dispatch(struct ck_epoch_record *record, unsigned int e, ck_stack_t *deferred)
+ {
+ 	unsigned int epoch = e & (CK_EPOCH_LENGTH - 1);
+ 	ck_stack_entry_t *head, *next, *cursor;
+@@ -362,7 +370,11 @@
+ 		    ck_epoch_entry_container(cursor);
+ 
+ 		next = CK_STACK_NEXT(cursor);
+-		entry->function(entry);
++		if (deferred != NULL)
++			ck_stack_push_spnc(deferred, &entry->stack_entry);
++		else
++			entry->function(entry);
++
+ 		i++;
+ 	}
+ 
+@@ -378,7 +390,7 @@
+ 		ck_pr_sub_uint(&record->n_pending, i);
+ 	}
+ 
+-	return;
++	return i;
+ }
+ 
+ /*
+@@ -390,7 +402,7 @@
+ 	unsigned int epoch;
+ 
+ 	for (epoch = 0; epoch < CK_EPOCH_LENGTH; epoch++)
+-		ck_epoch_dispatch(record, epoch);
++		ck_epoch_dispatch(record, epoch, NULL);
+ 
+ 	return;
+ }
+@@ -551,35 +563,61 @@
+  * is far from ideal too.
+  */
+ bool
+-ck_epoch_poll(struct ck_epoch_record *record)
++ck_epoch_poll_deferred(struct ck_epoch_record *record, ck_stack_t *deferred)
+ {
+ 	bool active;
+ 	unsigned int epoch;
+ 	struct ck_epoch_record *cr = NULL;
+ 	struct ck_epoch *global = record->global;
++	unsigned int n_dispatch;
+ 
+ 	epoch = ck_pr_load_uint(&global->epoch);
+ 
+ 	/* Serialize epoch snapshots with respect to global epoch. */
+ 	ck_pr_fence_memory();
++
++	/*
++	 * At this point, epoch is the current global epoch value.
++	 * There may or may not be active threads which observed epoch - 1.
++	 * (ck_epoch_scan() will tell us that). However, there should be
++	 * no active threads which observed epoch - 2.
++	 *
++	 * Note that checking epoch - 2 is necessary, as race conditions can
++	 * allow another thread to increment the global epoch before this
++	 * thread runs.
++	 */
++	n_dispatch = ck_epoch_dispatch(record, epoch - 2, deferred);
++
+ 	cr = ck_epoch_scan(global, cr, epoch, &active);
+-	if (cr != NULL) {
+-		record->epoch = epoch;
+-		return false;
+-	}
++	if (cr != NULL)
++		return (n_dispatch > 0);
+ 
+ 	/* We are at a grace period if all threads are inactive. */
+ 	if (active == false) {
+ 		record->epoch = epoch;
+ 		for (epoch = 0; epoch < CK_EPOCH_LENGTH; epoch++)
+-			ck_epoch_dispatch(record, epoch);
++			ck_epoch_dispatch(record, epoch, deferred);
+ 
+ 		return true;
+ 	}
+ 
+-	/* If an active thread exists, rely on epoch observation. */
++	/*
++	 * If an active thread exists, rely on epoch observation.
++	 *
++	 * All the active threads entered the epoch section during
++	 * the current epoch. Therefore, we can now run the handlers
++	 * for the immediately preceding epoch and attempt to
++	 * advance the epoch if it hasn't been already.
++	 */
+ 	(void)ck_pr_cas_uint(&global->epoch, epoch, epoch + 1);
+ 
+-	ck_epoch_dispatch(record, epoch + 1);
++	ck_epoch_dispatch(record, epoch - 1, deferred);
+ 	return true;
+ }
++
++bool
++ck_epoch_poll(struct ck_epoch_record *record)
++{
++
++	return ck_epoch_poll_deferred(record, NULL);
++}

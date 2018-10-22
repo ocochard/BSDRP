@@ -1,9 +1,9 @@
 #!/bin/sh
 #
 # VirtualBox lab script for BSD Router Project
-# http://bsdrp.net
+# https://bsdrp.net
 #
-# Copyright (c) 2009-2017, The BSDRP Development Team
+# Copyright (c) 2009-2018, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@ set -eu
 # Global variable
 VM_TPL_NAME="BSDRP_lab_template"
 LOG_FILE="${HOME}/BSDRP_lab.log"
-DEFAULT_RAM="256"
+DEFAULT_RAM="512"
 
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
@@ -480,9 +480,9 @@ RAM=""
 SERIAL=""
 VM_ARCH=""
 
-echo "BSD Router Project (http://bsdrp.net) - VirtualBox lab script"
+echo "BSD Router Project (https://bsdrp.net) - VirtualBox lab script"
 
-echo "BSD Router Project (http://bsdrp.net) - Virtualbox lab script, log file" > ${LOG_FILE}
+echo "BSD Router Project (https://bsdrp.net) - Virtualbox lab script, log file" > ${LOG_FILE}
 
 OS_DETECTED=`uname -s`
 MACHINE_TYPE=`uname -m`
