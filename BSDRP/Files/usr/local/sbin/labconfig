@@ -1651,6 +1651,8 @@ router bgp 64512
  !
  address-family ipv4 unicast
   network 10.0.3.0/24
+  neighbor 10.0.2.3 activate
+  neighbor 10.0.3.5 activate
   neighbor 10.0.3.5 next-hop-self
   no neighbor 2001:db8:2::3 activate
   no neighbor 2001:db8:3::5 activate
@@ -1696,7 +1698,9 @@ router bgp 64512
  address-family ipv4 unicast
   network 10.0.3.0/24
   network 10.0.4.0/24
+  neighbor 10.0.3.4 activate
   neighbor 10.0.3.4 next-hop-self
+  neighbor 10.0.4.6 activate
   neighbor 10.0.4.6 next-hop-self
   no neighbor 2001:db8:3::4 activate
   no neighbor 2001:db8:4::6 activate
@@ -1755,7 +1759,9 @@ router bgp 65535
  !
  address-family ipv4 unicast
   network 10.0.5.0/24
+  neighbor 10.0.4.5 activate
   neighbor 10.0.4.5 next-hop-self
+  neighbor 10.0.5.7 activate
   neighbor 10.0.5.7 next-hop-self
   no neighbor 2001:db8:4::5 activate
   no neighbor 2001:db8:5::7 activate
@@ -1811,6 +1817,7 @@ router bgp 65535
  address-family ipv4 unicast
   network 10.0.5.0/24
   network 10.0.7.0/24
+  neighbor 10.0.5.6 activate
   no neighbor 2001:db8:5::6 activate
  exit-address-family
  !
