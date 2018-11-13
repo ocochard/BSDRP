@@ -2,15 +2,15 @@ Index: sys/modules/Makefile
 ===================================================================
 --- sys/modules/Makefile	(revision 319569)
 +++ sys/modules/Makefile	(working copy)
-@@ -41,6 +41,7 @@
+@@ -40,6 +40,7 @@
  	${_an} \
  	${_aout} \
  	${_apm} \
 +	${_apuled} \
  	${_arcmsr} \
  	${_arcnet} \
- 	${_asmc} \
-@@ -562,6 +563,7 @@
+ 	${_armv8crypto} \
+@@ -563,6 +564,7 @@
  _agp=		agp
  _an=		an
  _aout=		aout
@@ -22,11 +22,12 @@ Index: sys/modules/apuled/Makefile
 ===================================================================
 --- sys/modules/apuled/Makefile	(nonexistent)
 +++ sys/modules/apuled/Makefile	(working copy)
-@@ -0,0 +1,4 @@
+@@ -0,0 +1,5 @@
 +KMOD=	apuled
 +SRCS=	apuled.c device_if.h bus_if.h isa_if.h pci_if.h
 +
 +.include <bsd.kmod.mk>
++
 
 Property changes on: sys/modules/apuled/Makefile
 ___________________________________________________________________

@@ -1,0 +1,36 @@
+Index: net/bird2/Makefile
+===================================================================
+--- net/bird2/Makefile	(revision 484856)
++++ net/bird2/Makefile	(working copy)
+@@ -3,7 +3,7 @@
+ 
+ PORTNAME=	bird
+ DISTVERSION=	2.0.2
+-PORTREVISION=	3
++PORTREVISION=	4
+ CATEGORIES=	net
+ MASTER_SITES=	ftp://bird.network.cz/pub/bird/
+ PKGNAMESUFFIX=	2
+@@ -24,6 +24,8 @@
+ USE_RC_SUBR=	bird
+ SUB_FILES=	pkg-message
+ 
++GROUPS=		birdvty
++
+ MAKE_JOBS_UNSAFE=	yes
+ 
+ OPTIONS_MULTI=	RP
+Index: net/bird2/files/bird.in
+===================================================================
+--- net/bird2/files/bird.in	(revision 484856)
++++ net/bird2/files/bird.in	(working copy)
+@@ -26,7 +26,8 @@
+ 
+ : ${bird_enable="NO"}
+ : ${bird_config="%%PREFIX%%/etc/bird.conf"}
++: ${bird_group="birdvty"}
+ 
+-command_args="-c $bird_config"
++command_args="-c $bird_config -g $bird_group"
+ 
+ run_rc_command "$1"

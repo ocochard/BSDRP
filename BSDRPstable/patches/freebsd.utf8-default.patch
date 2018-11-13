@@ -1,7 +1,7 @@
-Index: etc/login.conf
+Index: usr.bin/login/login.conf
 ===================================================================
---- etc/login.conf	(revision 304003)
-+++ etc/login.conf	(working copy)
+--- usr.bin/login/login.conf	(revision 304003)
++++ usr.bin/login/login.conf	(working copy)
 @@ -44,7 +44,9 @@
  	:pseudoterminals=unlimited:\
  	:priority=0:\

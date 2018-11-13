@@ -1,7 +1,7 @@
-Index: etc/rc.initdiskless
+Index: libexec/rc/rc.initdiskless
 ===================================================================
---- etc/rc.initdiskless	(revision 255918)
-+++ etc/rc.initdiskless	(working copy)
+--- libexec/rc/rc.initdiskless	(revision 255918)
++++ libexec/rc/rc.initdiskless	(working copy)
 @@ -354,7 +354,7 @@
  	subdir=${j##*/}
  	if [ -d $j -a ! -f $j.cpio.gz  ]; then

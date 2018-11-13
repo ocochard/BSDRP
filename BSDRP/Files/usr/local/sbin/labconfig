@@ -18,6 +18,7 @@ usage () {
 	echo "-bgp: https://bsdrp.net/documentation/examples/bgp_route_reflector_and_confederation_using_quagga_and_bird"
 	echo "-jailpf: https://bsdrp.net/documentation/examples/multi-tenant_ha_pf_firewalls"
 	echo "-graphpath: https://bsdrp.net/documentation/examples/graphpath"
+	echo "-mlppp: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links"
 	exit 1
 }
 
@@ -2120,6 +2121,238 @@ EOF
 
 service jail start
 }
+
+mlppp_vm1 () {
+sysrc hostname=R1
+sysrc ifconfig_vtnet0="inet 10.0.12.1/24"
+sysrc ifconfig_vtnet1="inet 10.0.13.1/24"
+sysrc ifconfig_vtnet2="inet 10.0.14.1/24"
+sysrc static_routes="ISP1 ISP2 ISP3"
+sysrc route_ISP1="-host 10.0.56.62 10.0.12.2"
+sysrc route_ISP2="-host 10.0.56.63 10.0.13.3"
+sysrc route_ISP3="-host 10.0.56.64 10.0.14.4"
+sysrc mpd_enable=YES
+sysrc mpd_flags="-b -s ppp"
+cat > /usr/local/etc/mpd5/mpd.conf <<EOF
+default:
+        load l2tp_client
+l2tp_client:
+        # Create the bundle
+        create bundle template B
+        # Enable IPv6
+        set bundle enable ipv6cp
+        # Enable TCP MSS fix
+        set iface enable tcpmssfix
+        # Use this interface as default route
+        set iface route default
+        # Disable IPCP configuration for the iperf test
+        #set ipcp yes vjcomp
+        # Create clonable template link ADSL1
+        create link template L l2tp
+        set link action bundle B
+        set link enable multilink
+        set link keep-alive 10 30
+        set link mtu 1460
+        set l2tp secret blah
+        # Retry indefinitly to redial
+        set link max-redial 0
+        # SDSL1
+        create link static sdsl1 L
+        set l2tp peer 10.0.56.62
+        # Configure the UPLOAD bandwidth
+        set link bandwidth 1000000
+        open link
+        # SDSL2
+        create link static sdsl2 L
+        set l2tp peer 10.0.56.63
+        # Configure the UPLOAD bandwidth
+        set link bandwidth 2000000
+        open link
+        # SDSL3
+        create link static sdsl3 L
+        set l2tp peer 10.0.56.64
+        # Configure the UPLOAD bandwidth
+        set link bandwidth 3000000
+        open link
+EOF
+
+service netif restart
+service routing restart
+service mpd5 start
+hostname R1
+config save
+}
+
+mlppp_vm2 () {
+sysrc hostname=R2
+sysrc ifconfig_vtnet0="inet 10.0.12.2/24"
+sysrc ifconfig_vtnet3="inet 10.0.25.2/24"
+sysrc defaultrouter="10.0.25.5"
+sysrc firewall_enable=YES
+sysrc firewall_script="/etc/ipfw.rules"
+
+cat > /etc/ipfw.rules <<EOF
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+kldstat -q -m dummynet || kldload dummynet
+# Flush out the list before we begin.
+\${fwcmd} -f flush
+\${fwcmd} pipe 10 config bw 1Mbit/s
+\${fwcmd} pipe 20 config bw 1Mbit/s
+#Traffic getting out vtnet0 is limited to 1Mbit/s
+\${fwcmd} add 1000 pipe 10 all from any to any out via vtnet0
+#Traffic getting int vtnet0 is limited to 1Mbit/s
+\${fwcmd} add 2000 pipe 20 all from any to any in via vtnet0
+#We don't want to block traffic, only shape some
+\${fwcmd} add 3000 allow ip from any to any
+EOF
+
+service netif restart
+service routing restart
+service ipfw start
+hostname R2
+config save
+}
+
+mlppp_vm3 () {
+sysrc hostname=R3
+sysrc ifconfig_vtnet0="inet 10.0.13.3/24"
+sysrc ifconfig_vtnet3="inet 10.0.35.3/24"
+sysrc defaultrouter="10.0.35.5"
+sysrc firewall_enable=YES
+sysrc firewall_script="/etc/ipfw.rules"
+
+cat > /etc/ipfw.rules <<EOF
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+kldstat -q -m dummynet || kldload dummynet
+# Flush out the list before we begin.
+\${fwcmd} -f flush
+\${fwcmd} pipe 10 config bw 2Mbit/s
+\${fwcmd} pipe 20 config bw 2Mbit/s
+#Traffic getting out vtnet0 is limited to 2Mbit/s
+\${fwcmd} add 1000 pipe 10 all from any to any out via vtnet0
+#Traffic getting int vtnet0 is limited to 2Mbit/s
+\${fwcmd} add 2000 pipe 20 all from any to any in via vtnet0
+#We don't want to block traffic, only shape some
+\${fwcmd} add 3000 allow ip from any to any
+EOF
+
+service netif restart
+service routing restart
+service ipfw start
+hostname R3
+config save
+}
+
+mlppp_vm4 () {
+sysrc hostname=R4
+sysrc ifconfig_vtnet0="inet 10.0.14.4/24"
+sysrc ifconfig_vtnet3="inet 10.0.45.4/24"
+sysrc defaultrouter="10.0.45.5"
+sysrc firewall_enable=YES
+sysrc firewall_script="/etc/ipfw.rules"
+
+cat > /etc/ipfw.rules <<EOF
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+kldstat -q -m dummynet || kldload dummynet
+# Flush out the list before we begin.
+\${fwcmd} -f flush
+\${fwcmd} pipe 10 config bw 3Mbit/s
+\${fwcmd} pipe 20 config bw 3Mbit/s
+#Traffic getting out vtnet0 is limited to 3Mbit/s
+\${fwcmd} add 1000 pipe 10 all from any to any out via vtnet0
+#Traffic getting int vten0 is limited to 3Mbit/s
+\${fwcmd} add 2000 pipe 20 all from any to any in via vtnet0
+#We don't want to block traffic, only shape some
+\${fwcmd} add 3000 allow ip from any to any
+EOF
+
+service netif restart
+service routing restart
+service ipfw start
+hostname R4
+config save
+}
+
+mlppp_vm5 () {
+sysrc hostname=R5
+sysrc ifconfig_vtnet1="inet 10.0.25.5/24"
+sysrc ifconfig_vtnet2="inet 10.0.35.5/24"
+sysrc ifconfig_vtnet3="inet 10.0.45.5/24"
+sysrc ifconfig_vtnet4="inet 10.0.56.5/24"
+sysrc static_routes="ISP1 ISP2 ISP3"
+sysrc route_ISP1="-host 10.0.12.1 10.0.25.2"
+sysrc route_ISP2="-host 10.0.13.1 10.0.35.3"
+sysrc route_ISP3="-host 10.0.14.1 10.0.45.4"
+service netif restart
+service routing restart
+hostname R5
+config save
+}
+
+
+mlppp_vm6 () {
+sysrc hostname=R6
+sysrc cloned_interfaces="lo1"
+sysrc ifconfig_lo1="inet 10.6.6.6/32"
+sysrc ifconfig_vtnet4="inet 10.0.56.62/24"
+sysrc ifconfig_vtnet4_alias1="inet 10.0.56.63/32"
+sysrc ifconfig_vtnet4_alias2="inet 10.0.56.64/32"
+sysrc defaultrouter="10.0.56.5"
+sysrc mpd_enable=YES
+sysrc mpd_flags="-b -s ppp"
+cat > /usr/local/etc/mpd5/mpd.conf <<EOF
+default:
+        load l2tp_server
+l2tp_server:
+        # IP Pool
+        set ippool add pool1 10.0.16.10 10.0.16.100
+        # Create bundle template named B
+        create bundle template B
+        # Enable IPv6
+        set bundle enable ipv6cp
+        # Configure interface
+        set iface enable tcpmssfix
+        # Handle IPCP configuration
+        set ipcp yes vjcomp
+        # Handle the IPCP configuration
+        set ipcp ranges 10.0.16.1/24 ippool pool1
+        # Create clonable link template named adsl1
+        create link template L l2tp
+        set link action bundle B
+        set link enable multilink
+        set link keep-alive 10 30
+        set link mtu 1460
+        set l2tp secret blah
+        # SDSL1
+        create link static sdsl1 L
+        set l2tp self 10.0.56.62
+		# set DOWNLOAD bandwidth of ISP1
+        set link bandwidth 1000000
+        set link enable incoming
+        # SDSL2
+        create link static sdsl2 L
+        set l2tp self 10.0.56.63
+		# set DOWNLOAD bandwidth of ISP2
+        set link bandwidth 2000000
+        set link enable incoming
+        # SDSL3
+        create link static sdsl3 L
+        set l2tp self 10.0.56.64
+		# set DOWNLOAD bandwidth of ISP3
+        set link bandwidth 3000000
+        set link enable incoming
+EOF
+
+service netif restart
+service routing restart
+service mpd5 start
+hostname R6
+config save
+}
+
 ### Main
 
 [ $# -lt 1 ] && usage

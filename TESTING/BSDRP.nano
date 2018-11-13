@@ -201,9 +201,6 @@ add_netrate () {
 	umount ${NANO_WORLDDIR}/dev
 }
 
-
-#### Ports list section #####
-
 # BSDRP custom function
 bsdrp_custom () {
 	# Replace BSDRP_VERSION in /boot/brand.4th with the version number in etc/version

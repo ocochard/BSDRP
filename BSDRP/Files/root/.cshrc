@@ -34,6 +34,7 @@ setenv  EDITOR  vi
 setenv  PAGER   less
 setenv  BLOCKSIZE       K
 setenv	XZ_DEFAULTS	'--threads=0'
+#setenv IFCONFIG_FORMAT inet:cidr,inet6:cidr
 
 if ($?prompt) then
 	# An interactive shell -- set some stuff up
