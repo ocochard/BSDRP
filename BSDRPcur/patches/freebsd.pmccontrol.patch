@@ -1,0 +1,30 @@
+Index: usr.sbin/pmccontrol/pmccontrol.c
+===================================================================
+--- usr.sbin/pmccontrol/pmccontrol.c	(revision 338899)
++++ usr.sbin/pmccontrol/pmccontrol.c	(working copy)
+@@ -282,9 +282,17 @@
+ 	return 0;
+ }
+ 
++#if defined(__i386__) || defined(__amd64__)
+ static int
+ pmcc_do_list_events(void)
+ {
++	pmc_pmu_print_counters(NULL);
++	return (0);
++}
++#else
++static int
++pmcc_do_list_events(void)
++{
+ 	enum pmc_class c;
+ 	unsigned int i, j, nevents;
+ 	const char **eventnamelist;
+@@ -311,6 +319,7 @@
+ 	}
+ 	return 0;
+ }
++#endif
+ 
+ static int
+ pmcc_show_statistics(void)
