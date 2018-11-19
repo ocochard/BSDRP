@@ -42,8 +42,8 @@ PPS_MODE=false
 SOFT_UDP_CHK=false
 UNIT="Mb/s"
 AF=4
-SRC_NET="198.18.10.1:2000-198.18.10.20"
-DST_NET="198.19.10.1:2000-198.19.10.100"
+SRC_NET="198.18.10.1:2001-198.18.10.71"
+DST_NET="198.19.10.1:2001-198.19.10.70"
 
 ### Functions
 # A usefull function (from: http://code.google.com/p/sh-die/)
