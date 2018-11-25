@@ -460,18 +460,23 @@ add_port "benchmarks/iperf3"
 # ExaBGP: having fun with BGP
 add_port "net/exabgp"
 
-# VM tools
+# VM tools (about 10MB)
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
-#add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
+# Into cleanup_ports(), remove libiconv from the list too or it will delete all port that depends from it
+#  add_port "converters/libiconv"
+# add_port "sysutils/fusefs-libs"
+#  add_port "devel/gettext-runtime"
+#  add_port "textproc/libxml2"
+#  add_port "devel/pcre"
+# add_port "devel/glib20"
+# add_port "net/libdnet"
+# add_port "archivers/libmspack"
+#add_port "emulators/open-vm-tools-nox11"
+
 #add_port "emulators/virtualbox-ose-additions/" "-DWITHOUT_X11 -DWITHOUT_HAL"
 
 # Permit BIOS upgrade
 #add_port "sysutils/dmidecode"
- # Curl is just a build-deps of cmake (needed by libftdi)
- # But curl need base kerberos, then we remove this deps
- # And we de-install curl on the custom script
- #add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE\""
-#add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
   add_port "misc/pciids"
  add_port "devel/libpci"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""

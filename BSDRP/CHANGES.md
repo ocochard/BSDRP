@@ -30,7 +30,7 @@
 * flashrom 1.0_1: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
 * frr6 6.0: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
-* fswatch-mon 1.11.2_2: Cross-platform file change monitor
+* fswatch-mon 1.13.0: Cross-platform file change monitor
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 201710: Process Count Monitor (PCM) for Intel processors
@@ -59,7 +59,7 @@
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.46: Open source LDAP client implementation
 * openvpn 2.4.6_3: Secure IP/Ethernet tunnel daemon
-* pciids 20181027: Database of all known IDs used in PCI devices
+* pciids 20181113: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
@@ -69,7 +69,7 @@
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.7.0: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py36-exabgp 4.0.8: BGP engine and route injector
-* py36-setuptools 40.4.3: Python packages installer
+* py36-setuptools 40.6.2: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
 * python36 3.6.7: Interpreted object-oriented programming language
@@ -78,7 +78,7 @@
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.7.1: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.25p1: Allow others to run commands as root
+* sudo 1.8.26: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.8: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol

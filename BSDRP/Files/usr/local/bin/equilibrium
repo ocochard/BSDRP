@@ -3,7 +3,7 @@
 # Tool for measuring "equilibrium throughput" of a device
 #
 # BSD Router Project
-# http://bsdrp.net
+# https://bsdrp.net
 # Method based on this paper:
 #  Methodology for Benchmarking IPsec Gateways
 #  http://www.mecs-press.org/ijcnis/ijcnis-v4-n9/IJCNIS-V4-N9-1.pdf
