@@ -464,8 +464,8 @@ add_port "net/exabgp"
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 # Into cleanup_ports(), remove libiconv from the list too or it will delete all port that depends from it
 #  add_port "converters/libiconv"
-# add_port "sysutils/fusefs-libs"
 #  add_port "devel/gettext-runtime"
+# add_port "sysutils/fusefs-libs"
 #  add_port "textproc/libxml2"
 #  add_port "devel/pcre"
 # add_port "devel/glib20"
