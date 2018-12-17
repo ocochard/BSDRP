@@ -1,0 +1,29 @@
+Index: sys/netinet/ip_output.c
+===================================================================
+--- sys/netinet/ip_output.c	(revision 305356)
++++ sys/netinet/ip_output.c	(working copy)
+@@ -270,6 +270,9 @@
+ 	} else {
+ 		/* Header already set, fetch hlen from there */
+ 		hlen = ip->ip_hl << 2;
++		/* Use actual data length for RAW output */
++		if (flags & IP_RAWOUTPUT)
++			ip_len = m->m_pkthdr.len;
+ 	}
+ 
+ 	/*
+@@ -663,8 +666,12 @@
+ 		goto done;
+ 	}
+ 
+-	/* Balk when DF bit is set or the interface didn't support TSO. */
+-	if ((ip_off & IP_DF) || (m->m_pkthdr.csum_flags & CSUM_TSO)) {
++	/*
++	 * Balk when DF bit is set or the interface didn't support TSO.
++	 * For RAW output user must do IP fragmentation by self.
++	 */
++	if ((ip_off & IP_DF) || (m->m_pkthdr.csum_flags & CSUM_TSO) ||
++	    (flags & IP_RAWOUTPUT)) {
+ 		error = EMSGSIZE;
+ 		IPSTAT_INC(ips_cantfrag);
+ 		goto bad;

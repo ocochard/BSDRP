@@ -1,6 +1,7 @@
 # Release 1.92 (not released)
 
 ## New features
+* FreeBSD upgraded to 12.0-RELEASE
 * AESNI module loaded by default
 
 ## Bug fixes

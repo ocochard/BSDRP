@@ -1,0 +1,12 @@
+Index: lang/luajit/Makefile
+===================================================================
+--- lang/luajit/Makefile	(revision 486722)
++++ lang/luajit/Makefile	(working copy)
+@@ -22,6 +22,7 @@
+ USES=		gmake
+ USE_LDCONFIG=	yes
+ MAKE_ARGS=	CC=${CC}
++MAKE_ENV+=	TARGET_ARCH=
+ 
+ PLIST_SUB+=	VERSION=${DISTVERSION}
+ 

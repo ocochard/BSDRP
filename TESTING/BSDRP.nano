@@ -49,7 +49,6 @@ WITHOUT_ATM=
 WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
 WITHOUT_AUTOFS=
-WITHOUT_BHYVE=
 WITHOUT_BLUETOOTH=
 WITHOUT_BOOTPARAMD=
 WITHOUT_BOOTPD=
@@ -278,9 +277,6 @@ boot/boot1.efifat
 boot/loader.efi
 sbin/hastd
 sbin/hastctl
-usr/sbin/bhyve
-usr/sbin/bhyvectl
-usr/sbin/bhyveload
 usr/sbin/ctladm
 usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample

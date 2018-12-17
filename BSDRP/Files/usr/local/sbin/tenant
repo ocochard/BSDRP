@@ -78,7 +78,7 @@ create () {
 		while [ "$nicslist" ] ;do
 			iter=${nicslist%%,*}
 			nicname=${iter%%/*}
-			egrep -q "vnet\.interface.*${nicname}" /etc/jail.conf && die "Interface ${nicname} already declared into /etc/jail"
+			grep -E -q "vnet\.interface.*${nicname}" /etc/jail.conf && die "Interface ${nicname} already declared into /etc/jail"
 			[ "$nicslist" = "$iter" ] && nicslist='' || nicslist="${nicslist#*,}"
 		done
 	fi
@@ -208,20 +208,22 @@ EOF
 			rcnicname=epair${id}${bid}b
 			# Convert id into hexa
 			host=""
-			# Use the 128 byte host identifier
+			# Use theorically unique 128 byte host identifier
+			# Warning: VMware clone is buggy and clone this number too
 			host=$(sysctl -n kern.hostuuid)
 			if [ -z "${host}" ]; then
 				host=$(od -txC -A n -N2 /dev/urandom | tr -s ' ')
 				hostfirst=$(echo ${host} | cut -d ' ' -f 1)
 				hostsecond=$(echo ${host} | cut -d ' ' -f 2)
 			else
-				# Need to use the 2 last values of kern.hostuuid, and not the first
-				# because they can be the same on 2 servers bought together
-				# So on this hostuuid (bhyve VM): 2d193cc8-c28b-11e8-a751-589cfc010505
-				# 1. extract the last value of the first block (c8 here)
-				# 2. extract the last value of the last block (05 here)
-        		hostfirst=$(echo $host | cut -c 7,8)
-				hostsecond=$(echo $host | cut -c $((${#host}-1))-$((${#host})))
+				# can't use kern.hostuuid as it because too identicaly on 2 same servers bought together
+				# Example for 2 Dell servers: 4c4c4544-0053-4a10-805a-c2c04f424d32
+				#                           : 4c4c4544-0053-4b10-8030-c2c04f434d32
+				# Example for 2 bhyve VMs: 81ddf8f3-f350-11e8-ab36-589cfc010001
+				#                        : 7b074cce-f489-11e8-ab36-589cfc010202
+				# Using a md5 derivate to scrable uuid
+        		hostfirst=$(echo $host | md5 | cut -c 1-2)
+				hostsecond=$(echo $host | md5 | cut -c 3-4)
 			fi
 			[ -z "${hostfirst}" ] && echo "WARNING bad MAC addresse generated: hostfirst is empty"
 			[ -z "${hostsecond}" ] && echo "WARNING bad MAC addresse generated: hostsecond is empty"

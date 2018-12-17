@@ -40,7 +40,6 @@ CONF_INSTALL='
 # WITHOUT_FORTH= mandatory for the boot-loader
 # WITHOUT_KERBEROS= prevents to build ftp/curl
 CONF_WORLD='
-LINT=/usr/bin/false
 WITHOUT_ACCT=
 WITHOUT_AMD=
 WITHOUT_APM=
@@ -80,6 +79,8 @@ WITHOUT_IPX_SUPPORT=
 WITHOUT_ISCSI=
 WITHOUT_LIB32=
 WITHOUT_LINT=
+WITHOUT_LOADER_FIREWIRE=
+WITHOUT_LOADER_GELI=
 WITHOUT_LOCATE=
 WITHOUT_LPR=
 WITHOUT_NCP=
@@ -99,6 +100,7 @@ WITHOUT_RCS=
 WITHOUT_RESCUE=
 WITHOUT_ROUTED=
 WITHOUT_SENDMAIL=
+WITHOUT_SERVICESDB=
 WITHOUT_SHAREDOCS=
 WITHOUT_SVNLITE=
 WITHOUT_SYSCONS=
@@ -118,6 +120,7 @@ WITH_OFED=
 WITH_DEBUG_FILES=
 WITH_REPRODUCIBLE_BUILD=
 WITH_DIRDEPS_BUILD=
+WITH_RETPOLINE=
 '
 
 # Customize commands.
@@ -598,8 +601,8 @@ customize_cmd cleanup_ports
 
 # BSDRP custom function
 bsdrp_custom () {
-	# Replace BSDRP_VERSION in /boot/brand-bsdrp.4th with the version number in etc/version
-	sed -i "" -e /BSDRP_VERSION/s//$(cat ${NANO_WORLDDIR}/etc/version)/ ${NANO_WORLDDIR}/boot/brand-bsdrp.4th
+	# Replace BSDRP_VERSION in /boot/lua/brand-bsdrp.lua with the version number in etc/version
+	sed -i "" -e /BSDRP_VERSION/s//$(cat ${NANO_WORLDDIR}/etc/version)/ ${NANO_WORLDDIR}/boot/lua/brand-bsdrp.lua
 	# Disable reverse DNS in sshd:
 	echo "UseDNS no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
 	# Update login.conf db
@@ -836,14 +839,12 @@ usr/share/tmac/tmac.vgrind
 
 # Enable only serial system only
 bsdrp_console_serial () {
-	# Force first 2 serial console into "on" in case (IPMI SoL used often 2nd)
+	# Force first 2 serial console into "on" (IPMI SoL often use 2nd port)
 	# Forcing 2 and 3 generates too lot's of getty open /dev/ttyu No such file or directory
 	sed -i "" -e '/^ttyu[0-1]/s/onifconsole/on/' ${NANO_WORLDDIR}/etc/ttys
-	# Disable local video devices: They should not exist on a serial image
-	#  and preventing to overload console with theses message:
-	#  getty[7]: open /dev/ttyv1: No such file or directory
-	#  init: getty repeating too quickly on port /dev/ttyv1, sleeping 30 secs
-	sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
+	# local video devices are in onifexists mode
+	# Disable some syscons devices: No need for 8 on a router
+	sed -i "" -e '/^ttyv[4-8]/s/onifexists /off /' ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use serial console early.
 	echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
 }

@@ -1,0 +1,12 @@
+Index: archivers/liblz4/Makefile
+===================================================================
+--- archivers/liblz4/Makefile	(revision 480171)
++++ archivers/liblz4/Makefile	(working copy)
+@@ -20,6 +20,7 @@
+ MAKE_ARGS=	PREFIX="${PREFIX}" \
+ 		INSTALL_PROGRAM="${INSTALL_PROGRAM}" \
+ 		MANDIR="${MAN1PREFIX}/man"
++MAKE_ENV+=	TARGET_ARCH=
+ PLIST_SUB=	PORTVERSION=${PORTVERSION}
+ 
+ .include <bsd.port.mk>

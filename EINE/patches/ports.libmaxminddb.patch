@@ -1,0 +1,12 @@
+Index: net/libmaxminddb/Makefile
+===================================================================
+--- net/libmaxminddb/Makefile	(revision 487179)
++++ net/libmaxminddb/Makefile	(working copy)
+@@ -13,6 +13,7 @@
+ 
+ GNU_CONFIGURE=	yes
+ CONFIGURE_ARGS=	--with-pkgconfigdir=${PREFIX}/libdata/pkgconfig
++MAKE_ENV+=	TARGET_ARCH=
+ INSTALL_TARGET=	install-strip
+ USE_LDCONFIG=	yes
+ USES=		gmake libtool
