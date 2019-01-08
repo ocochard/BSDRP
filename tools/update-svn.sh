@@ -40,15 +40,28 @@ update () {
 	sed -i "" -e "s/^$2.*/$2=\"$3\"/" $1 || die "sed error for $1 $2 $3"
 	# sed 's/^SRC_REV.*/This line is removed by the admin./'
 }
+
+### Main function ###
+
 SVN_CMD=$(which svn) || SVN_CMD=$(which svnlite)
 
-for i in BSDRP BSDRPstable BSDRPcur RELEASE STABLE HEAD TESTING; do
-	if [ -d $i/FreeBSD/src ]; then
-		get_last_rev $i/FreeBSD/src
-		update $i/make.conf SRC_REV $rev
+# Optional argument to update only one branch
+if [ $# -eq 1 ]; then
+	if [ -d $1/FreeBSD/src ]; then
+		get_last_rev $1/FreeBSD/src
+		update $1/make.conf SRC_REV $rev
+	else
+		die "No source in $1/FreeBSD/src"
 	fi
-done
+else
+	for i in BSDRP BSDRPstable BSDRPcur RELEASE STABLE HEAD TESTING; do
+		if [ -d $i/FreeBSD/src ]; then
+			get_last_rev $i/FreeBSD/src
+			update $i/make.conf SRC_REV $rev
+		fi
+	get_last_rev BSDRP/FreeBSD/ports
+	update BSDRP/make.conf PORTS_REV $rev
+	done
+fi
 
-get_last_rev BSDRP/FreeBSD/ports
-update BSDRP/make.conf PORTS_REV $rev
 
