@@ -1,7 +1,7 @@
 # Release 1.92 (not released)
 
 ## New features
-* FreeBSD upgraded to 12.0-RELEASE
+* FreeBSD upgraded to 12.0-RELEASE-p2
 * AESNI module loaded by default
 
 ## Bug fixes
@@ -12,26 +12,28 @@
 * x86info (x86 CPU identification and feature display utility)
 
 ## Upgraded packages
+* bird to 2.0.3
+* frr to 6.0.2
 * strongswan to 5.7.1
 * graphpath to 1.2
 * tmux to 2.8
 
 ## Packages list
 * arping 2.19: ARP level "ping" utility
-* bgpq3 0.1.33: Lightweight prefix-list generator for Cisco and Juniper routers
-* bird2 2.0.2_4: Dynamic IP routing daemon
+* bgpq3 0.1.35: Lightweight prefix-list generator for various routers
+* bird2 2.0.3: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.40: Root certificate bundle from the Mozilla Project
-* curl 7.62.0: Command line tool and library for transferring data with URLs
+* ca_root_nss 3.41: Root certificate bundle from the Mozilla Project
+* curl 7.63.0_1: Command line tool and library for transferring data with URLs
 * devcpu-data 1.20: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.5_1: Small RSA key management package based on openssl
 * flashrom 1.0_1: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr6 6.0: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
-* fswatch-mon 1.13.0: Cross-platform file change monitor
+* frr6 6.0.2: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* fswatch-mon 1.13.0_1: Cross-platform file change monitor
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 201710: Process Count Monitor (PCM) for Intel processors
@@ -54,13 +56,13 @@
 * lzo2 2.10_1: Portable speedy, lossless data compression library
 * mlvpn 2.3.1_2: Multi-link VPN
 * monit 5.25.2: Unix system management and proactive monitoring
-* mpd5 5.8_9: Multi-link PPP daemon based on netgraph(4)
+* mpd5 5.8_10: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
-* openldap-client 2.4.46: Open source LDAP client implementation
+* openldap-client 2.4.47: Open source LDAP client implementation
 * openvpn 2.4.6_3: Secure IP/Ethernet tunnel daemon
-* pciids 20181113: Database of all known IDs used in PCI devices
+* pciids 20181228: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
@@ -73,9 +75,9 @@
 * py36-setuptools 40.6.2: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
-* python36 3.6.7: Interpreted object-oriented programming language
+* python36 3.6.8: Interpreted object-oriented programming language
 * quagga-bgp-netgen 0.1: Generates Quagga/FRR bgp configuration file with lot's of routes
-* readline 7.0.3_2: Library for editing command lines as they are typed
+* readline 7.0.5: Library for editing command lines as they are typed
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.7.1: Open Source IKEv2 IPsec-based VPN solution
