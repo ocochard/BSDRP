@@ -59,9 +59,9 @@ else
 			get_last_rev $i/FreeBSD/src
 			update $i/make.conf SRC_REV $rev
 		fi
+	done
 	get_last_rev BSDRP/FreeBSD/ports
 	update BSDRP/make.conf PORTS_REV $rev
-	done
 fi
 
 
