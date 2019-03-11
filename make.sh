@@ -1,9 +1,9 @@
 #!/bin/sh
 #
 # Make script for BSD Router Project
-# http://bsdrp.net
+# https://bsdrp.net
 #
-# Copyright (c) 2009-2018, The BSDRP Development Team
+# Copyright (c) 2009-2019, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -126,6 +126,8 @@ patch_src() {
 			echo $patch >> "${PROJECT_DIR}"/FreeBSD/src-patches
 		fi
 	done
+	# SVN modify files permission to 600, and this create problem if source tree is used by poudriere
+	find "${FREEBSD_SRC}" -perm u=rw | xargs chmod 644
 }
 
 #patch the port tree
@@ -139,6 +141,8 @@ patch_port() {
 			echo $patch >> "${PROJECT_DIR}"/FreeBSD/ports-patches
 		fi
 	done
+	# SVN modify files permission to 600, and this create problem if source tree is used by poudriere
+	find "${PORTS_SRC}" -perm u=rw | xargs chmod 644
 }
 
 #Add new ports (in shar format)
@@ -184,6 +188,7 @@ usage () {
 		echo " -p   project name to build"
 		echo " -s   size in MB of the target disk (default: 1000)"
 		echo " -u   update all src (freebsd and ports)"
+		echo " -U   update all src ONLY (no build)"
 		echo " -r   use a memory disk as destination dir"
 		echo " -y   Answer yes to all confirmation"
 		echo " -w   suppress buildworld"
@@ -226,13 +231,15 @@ FAST=false
 # Boolean for updating or not the source tree (FreeBSD and port tree)
 UPDATE_SRC=false
 UPDATE_PORT=false
+# Boolean for update only
+UPDATE_ONLY=false
 # Boolean for using TMPFS
 TMPFS=false
 # Boolean for forcing a cleanup
 NOCLEAN="-n"
 
 #Get argument
-args=$(getopt a:bCc:dfhkp:s:uryw $*)
+args=$(getopt a:bCc:dfhkp:s:uUryw $*)
 
 set -- $args
 for i
@@ -286,6 +293,13 @@ do
 			UPDATE_PORT=true
 			shift
 			;;
+		-U)
+			UPDATE_SRC=true
+			UPDATE_PORT=true
+			UPDATE_ONLY=true
+			shift
+			;;
+
 		-r)
 			TMPFS=true
 			shift
@@ -643,6 +657,11 @@ case ${NANO_KERNEL} in
 		cp "${KERNELS_DIR}"/i386 "${FREEBSD_SRC}"/sys/${TARGET_ARCH}/conf/
         ;;
 esac
+
+if ($UPDATE_ONLY); then
+	echo "Update ONLY done!"
+	exit 0
+fi
 
 # Overwrite the nanobsd script with our own improved nanobsd
 # Mandatory for supporting multiple folders to be installed

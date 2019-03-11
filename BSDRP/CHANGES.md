@@ -15,8 +15,11 @@
 * bird to 2.0.3
 * exabgp to 4.0.10
 * frr to 6.0.2
+* iperf to 2.0.13
 * strongswan to 5.7.2
 * graphpath to 1.2
+* monit 5.25.3
+* openvpn 2.4.7
 * tmux to 2.8
 
 ## Packages list
@@ -25,8 +28,8 @@
 * bird2 2.0.3: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.41: Root certificate bundle from the Mozilla Project
-* curl 7.63.0_1: Command line tool and library for transferring data with URLs
+* ca_root_nss 3.42.1: Root certificate bundle from the Mozilla Project
+* curl 7.64.0_1: Command line tool and library for transferring data with URLs
 * devcpu-data 1.21: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
@@ -38,7 +41,7 @@
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 201710: Process Count Monitor (PCM) for Intel processors
-* iperf 2.0.12: Tool to measure maximum TCP and UDP bandwidth
+* iperf 2.0.13: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.6: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_1: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_7: KAME racoon IKE daemon, ipsec-tools version
@@ -52,18 +55,18 @@
 * libnet 1.1.6_5,1: C library for creating IP packets
 * libpci 3.6.2: PCI configuration space I/O made easy
 * libsodium 1.0.16: Library to build higher-level cryptographic tools
-* libssh 0.8.4: Library implementing the SSH1 and SSH2 protocol
+* libssh 0.8.6: Library implementing the SSH2 protocol
 * libucl 0.8.0: Universal configuration library parser
 * lzo2 2.10_1: Portable speedy, lossless data compression library
 * mlvpn 2.3.1_2: Multi-link VPN
-* monit 5.25.2: Unix system management and proactive monitoring
+* monit 5.25.3: Unix system management and proactive monitoring
 * mpd5 5.8_10: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.47: Open source LDAP client implementation
-* openvpn 2.4.6_3: Secure IP/Ethernet tunnel daemon
-* pciids 20181228: Database of all known IDs used in PCI devices
+* openvpn 2.4.7: Secure IP/Ethernet tunnel daemon
+* pciids 20190213: Database of all known IDs used in PCI devices
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
@@ -72,8 +75,9 @@
 * pkg 1.10.5_5: Package manager
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.7.0_1: Accounting and aggregation tool for IPv4 and IPv6 traffic
+* py36-cython 0.29: Compiler for Writing C Extensions for the Python Language
 * py36-exabgp 4.0.10: BGP engine and route injector
-* py36-setuptools 40.6.2: Python packages installer
+* py36-setuptools 40.8.0: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
 * python36 3.6.8: Interpreted object-oriented programming language
@@ -81,13 +85,12 @@
 * readline 7.0.5: Library for editing command lines as they are typed
 * rtrlib 0.5.0: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
-* strongswan 5.7.1: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.26: Allow others to run commands as root
+* strongswan 5.7.2_2: Open Source IKEv2 IPsec-based VPN solution
+* sudo 1.8.27_1: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.8: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 * x86info 1.31.s03: x86 CPU identification and feature display utility
-
 -----------------------------------------------------
 # Release 1.91 (19/08/2018)
 

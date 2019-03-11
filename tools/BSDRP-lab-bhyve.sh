@@ -1,9 +1,9 @@
 #!/bin/sh
 #
 # Bhyve lab script for BSD Router Project
-# http://bsdrp.net
+# https://bsdrp.net
 #
-# Copyright (c) 2013-2018, The BSDRP Development Team
+# Copyright (c) 2013-2019, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -40,31 +40,40 @@ FILE=""
 LAN=0
 MESHED=true
 RAM="512M"
+ADD_DISKS_NUMBER=0
+# Additionnal disks size in GB
+ADD_DISKS_SIZE="8G"
 DISK_CTRL="virtio-blk"
 VALE=false
 vnic="virtio-net"
 VERBOSE=true
 DEBUG=false
+UEFI=false
+VNC=false
 
 usage() {
 	# $1: Cause of displaying usage
 	[ $# -eq 1 ] && echo $1
-	echo "Usage: $0 [-adhps] -i FreeBSD-disk-image.img [-n vm-number] [-l LAN-number] -c [core]"
+	echo "Usage: $0 [-adeEhqsvV] -i FreeBSD-disk-image.img [-n vm-number] [-l LAN-number] [-c core] [-A number of additionnal disks] "
 	echo " -a           Disable full-meshing"
-	echo " -c           Number of core per VM (default ${CORE})"
+	echo " -A           Number of additionnal disks"
+	echo " -c           Number of core per VM (default: ${CORE})"
 	echo " -d           Delete All VMs, including the template"
-	echo " -D           Disk controller (default ${DISK_CTRL}, can be ahci-hd)"
-    echo " -g           Enable remote kgdb (host need be compiled with 'device bvmdebug'"
+	echo " -D           Disk controller (default: ${DISK_CTRL}, can be ahci-hd|virtio-scsi|nvme)"
+	echo " -g           Enable remote kgdb (host needs to be compiled with 'device bvmdebug')"
 	echo " -h           Display this help"
 	echo " -e           Emulate Intel e82545 (e1000) in place of virtIO NIC"
+	echo " -E           Enable UEFI boot mode (needs bhyve-firmware installed)"
 	echo " -i filename  FreeBSD file image"
-	echo " -l X         Number of LAN common to all VM (default ${LAN})"
-	echo " -m X         RAM size (default ${RAM})"
-	echo " -n X         Number of VM full meshed (default ${NUMBER_VM})"
+	echo " -l X         Number of LAN common to all VM (default: ${LAN})"
+	echo " -m X         RAM size (default: ${RAM})"
+	echo " -n X         Number of VM full meshed (default: ${NUMBER_VM})"
 	echo " -q           Quiet"
 	echo " -s           Stop all VM"
+	echo " -S           Additionnal disks size (default: ${ADD_DISKS_SIZE})"
+	echo " -v           Add a graphic card and enable VNC"
 	echo " -V           Use vale (netmap) switch in place of bridge+tap"
-	echo " -w dirname   Working directory (default ${WRK_DIR})"
+	echo " -w dirname   Working directory (default: ${WRK_DIR})"
 	echo " This script needs to be executed with superuser privileges"
 	echo ""
 	exit 1
@@ -189,15 +198,15 @@ get_free_nmdm () {
 	# WARNING: /dev/nmdm are automatically created when direct access to them
 	#          So need to avoid direct test like [ -c /dev/nmdm${1}A ]
         TMPFILE=$(mktemp /tmp/nmdmlist.XXXXXX) || die "Can not create tmp file"
-	find /dev/ -name 'nmdm*A' > $TMPFILE
+	find /dev/ -name 'nmdm-BSDRP.*A' > $TMPFILE
 	# $1: VM number
 	local i=$1
-	while grep -q /dev/nmdm${i}A $TMPFILE; do
-		# This /dev/nmdm$1A already exist, need to use another
+	while grep -q "/dev/nmdm-BSDRP.${i}A" $TMPFILE; do
+		# This /dev/nmdm-BSDRP.$1A already exist, need to use another
 		i=$(( i + 1 ))
 	done
 	rm $TMPFILE
-	echo $i
+	echo "-BSDRP.$i"
 }
 
 run_vm() {
@@ -219,6 +228,7 @@ run_vm() {
 		eval \${VM_LOAD_$1}
 		# c: Number of guest virtual CPUs
 		# m: RAM
+		# l: bootrom
 		# A: Generate ACPI tables.  Required for FreeBSD/amd64 guests
 		# I: Allow devices behind the LPC PCI-ISA bridge to be configured.
 		#     The only supported devices are the TTY-class devices, com1
@@ -236,8 +246,22 @@ run_vm() {
 		# PCI last:0 ptnetnetmap-memdev (if PTNET&VALE enabled)
 		#   Note: It's not possible to have "hole" in PCI assignement
 		VM_COMMON="bhyve -c ${CORE} -S -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
+		VM_BOOT=""
+		( $UEFI ) && VM_BOOT="-l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
+		VM_VNC=""
+		# XXX Need to check if TCP port available
+		( $VNC ) && VM_VNC="-s 29,fbuf,tcp=0.0.0.0:590$1,w=800,h=600"
 		eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\${NMDM_ID}A\"
 		eval VM_DISK_$1=\"-s 1:0,\${DISK_CTRL},\${WRK_DIR}/\${VM_NAME}_$1\"
+		if [ ${ADD_DISKS_NUMBER} -gt 0 ]; then
+			for i in $(jot ${ADD_DISKS_NUMBER}); do
+				if ! [ -f ${WRK_DIR}/${VM_NAME}_$1_add_$i ]; then
+					truncate -S ${ADD_DISKS_SIZE} ${WRK_DIR}/${VM_NAME}_$1_add_$i
+					#dd if=/dev/zero bs=1G count=${ADD_DISKS_SIZE} conv=sparse of=${WRK_DIR}/${VM_NAME}_$1_add_$i
+				fi
+				eval VM_DISK_$1=\"\${VM_DISK_$1} -s 1:$i,ahci-hd,\${WRK_DIR}/\${VM_NAME}_$1_add_$i\"
+			done
+		fi
 
 		if(${DEBUG}); then
 			eval VM_DEBUG_$1=\"-g 900$1\"
@@ -248,7 +272,7 @@ run_vm() {
 		echo "- VM $1 : cu -l /dev/nmdm${NMDM_ID}B" >> ${TMPCONSOLE}
 
 		# Check bhyve exit code, and if error: exit the infinite loop
-		eval \${VM_COMMON} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_DEBUG_$1} ${VM_NAME}_$1
+		eval \${VM_COMMON} \${VM_BOOT} \${VM_VNC} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_DEBUG_$1} ${VM_NAME}_$1
 		if [ $? -ne 0 ]; then
 			break
 		fi
@@ -290,10 +314,13 @@ create_interface() {
 [ $# -lt 1 ] && ! [ -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ $(id -u) -ne 0 ] && usage "ERROR: not executed as root"
 
-while getopts "ac:dghD:ei:l:m:n:qsVw:" FLAG; do
+while getopts "ac:dghD:eEi:l:m:n:qsvVw:A:S:" FLAG; do
     case "${FLAG}" in
 	a)
 		MESHED=false
+		;;
+	A)
+		ADD_DISKS_NUMBER="$OPTARG"
 		;;
 	c)
 		CORE="$OPTARG"
@@ -308,6 +335,9 @@ while getopts "ac:dghD:ei:l:m:n:qsVw:" FLAG; do
 		;;
 	e)
 		vnic="e1000"
+		;;
+	E)
+		UEFI=true
 		;;
 	g)
 		DEBUG=true
@@ -333,6 +363,12 @@ while getopts "ac:dghD:ei:l:m:n:qsVw:" FLAG; do
 	s)
 		stop_all_vm
 		return 0
+		;;
+	S)
+		ADD_DISKS_SIZE="$OPTARG"
+		;;
+	v)
+		VNC=true
 		;;
 	V)
 		VALE=true
@@ -366,6 +402,10 @@ if [ -n "${FILE}" ]; then
 	uncompress_image
 fi
 
+if ( $UEFI ); then
+	[ -f /usr/local/share/uefi-firmware/BHYVE_UEFI.fd ] || die "Need to installl bhyve-firmware to enable UEFI"
+fi
+
 # Clean-up previous interfaces if existing
 destroy_all_if
 
@@ -373,8 +413,12 @@ if ( ${VERBOSE} ); then
 	echo "BSD Router Project (http://bsdrp.net) - bhyve full-meshed lab script"
 	echo "Setting-up a virtual lab with $NUMBER_VM VM(s):"
 	echo "- Working directory: ${WRK_DIR}"
-	echo "- Each VM has ${CORE} core(s) and ${RAM} RAM"
+	echo -n "- Each VM has ${CORE} core"
+	[ "${CORE}" gt 1 ] && echo -n "s"
+	echo " and ${RAM} RAM"
 	echo "- Emulated NIC: ${vnic}"
+	( $UEFI ) && echo "- UEFI enabled"
+	( $VNC ) && echo "- Graphical/VNC enabled"
 	echo -n "- Switch mode: "
 	( ${VALE} ) && echo "vale (netmap)" || echo "bridge + tap"
 	echo "- $LAN LAN(s) between all VM"
@@ -530,7 +574,8 @@ done # Main loop: while [ $i -le $NUMBER_VM ]
 i=1
 # Enter tips main loop for each VM
 if ( ${VERBOSE} ); then
-	echo "For connecting to VM'serial console, you can use:"
+	( $VNC ) && echo "VM's VNC server TCP port: 590$i"
+	echo "To connect VM'serial console, you can use:"
 	# run_vm was started in background
 	# Then need to wait ${TMPCONSOLE} is full
 	while [ $(wc -l < ${TMPCONSOLE}) -ne ${NUMBER_VM} ]; do

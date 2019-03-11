@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: head/sys/i386/conf/GENERIC 340387 2018-11-12 21:01:28Z zeising $
+# $FreeBSD: head/sys/i386/conf/GENERIC 343617 2019-01-31 19:05:56Z kib $
 
 cpu		I486_CPU
 cpu		I586_CPU
@@ -210,10 +210,14 @@ device		uart			# Generic UART driver
 
 device		puc			# Multi I/O cards and multi-channel UARTs
 
+# PCI/PCI-X/PCIe Ethernet NICs that use iflib infrastructure
+device		iflib
+device		em			# Intel PRO/1000 Gigabit Ethernet Family
+device		vmx			# VMware VMXNET3 Ethernet
+
 # PCI Ethernet NICs.
 device		bxe			# Broadcom NetXtreme II BCM5771X/BCM578XX 10GbE
 device		de			# DEC/Intel DC21x4x (``Tulip'')
-device		em			# Intel PRO/1000 Gigabit Ethernet Family
 device		le			# AMD Am7900 LANCE and Am79C9xx PCnet
 device		ti			# Alteon Networks Tigon I/II gigabit Ethernet
 device		txp			# 3Com 3cR990 (``Typhoon'')
@@ -280,7 +284,6 @@ device		xe			# Xircom pccard Ethernet
 #device		ath			# Atheros NICs
 #device		ath_pci			# Atheros pci/cardbus glue
 #device		ath_hal			# pci/cardbus chip support
-#options 	AH_SUPPORT_AR5416	# enable AR5416 tx/rx descriptors
 #options 	AH_AR5416_INTERRUPT_MITIGATION # AR5416 interrupt mitigation
 #options 	ATH_ENABLE_11N		# Enable 802.11n support for AR5416 and later
 #device		ath_rate_sample		# SampleRate tx rate control for ath
@@ -353,9 +356,6 @@ device		hyperv			# HyperV drivers
 # NOTE: XENHVM depends on xenpci.  They must be added or removed together.
 options 	XENHVM			# Xen HVM kernel infrastructure
 device		xenpci			# Xen HVM Hypervisor services driver
-
-# VMware support
-device		vmx			# VMware VMXNET3 Ethernet
 
 ####### BSDRP section #####
 

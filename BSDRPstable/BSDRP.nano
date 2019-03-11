@@ -24,6 +24,8 @@ NANO_ARCH=${TARGET_ARCH}
 #  then we let the speed already configured by the BIOS by setting it to 0
 CONF_BUILD='
 WITH_META_MODE=
+WITH_DIRDEPS_BUILD=
+WITH_DIRDEPS_CACHE=
 MALLOC_PRODUCTION=
 BOOT_BOOT0_COMCONSOLE_SPEED=0
 '
@@ -78,6 +80,7 @@ WITHOUT_IPX=
 WITHOUT_IPX_SUPPORT=
 WITHOUT_ISCSI=
 WITHOUT_LIB32=
+WITHOUT_LINT=
 WITHOUT_LOADER_FIREWIRE=
 WITHOUT_LOADER_GELI=
 WITHOUT_LOCATE=
@@ -462,18 +465,23 @@ add_port "benchmarks/iperf3"
 # ExaBGP: having fun with BGP
 add_port "net/exabgp"
 
-# VM tools
+# VM tools (about 10MB)
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
-#add_port "emulators/open-vm-tools" "-DWITHOUT_X11 -DWITHOUT_LIBNOTIFY -DWITHOUT_FUSE -DWITHOUT_ICU"
+# Into cleanup_ports(), remove libiconv from the list too or it will delete all port that depends from it
+#  add_port "converters/libiconv"
+#  add_port "devel/gettext-runtime"
+# add_port "sysutils/fusefs-libs"
+#  add_port "textproc/libxml2"
+#  add_port "devel/pcre"
+# add_port "devel/glib20"
+# add_port "net/libdnet"
+# add_port "archivers/libmspack"
+#add_port "emulators/open-vm-tools-nox11"
+
 #add_port "emulators/virtualbox-ose-additions/" "-DWITHOUT_X11 -DWITHOUT_HAL"
 
 # Permit BIOS upgrade
 #add_port "sysutils/dmidecode"
- # Curl is just a build-deps of cmake (needed by libftdi)
- # But curl need base kerberos, then we remove this deps
- # And we de-install curl on the custom script
- #add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE\""
-#add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
   add_port "misc/pciids"
  add_port "devel/libpci"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
@@ -815,16 +823,12 @@ usr/share/tmac/tmac.vgrind
 
 # Enable only serial system only
 bsdrp_console_serial () {
-	# Force first 2 serial console into "onifexists" in case (IPMI SoL often use 2nd port)
+	# Force first 2 serial console into "on" (IPMI SoL often use 2nd port)
 	# Forcing 2 and 3 generates too lot's of getty open /dev/ttyu No such file or directory
 	sed -i "" -e '/^ttyu[0-1]/s/onifconsole/on/' ${NANO_WORLDDIR}/etc/ttys
-	# Disable local video devices: They should not exist on a serial image
-	#  and preventing to overload console with theses message:
-	#  getty[7]: open /dev/ttyv1: No such file or directory
-	#  init: getty repeating too quickly on port /dev/ttyv1, sleeping 30 secs
-	sed -i "" -e '/^ttyv[0-4]/s/on /onifexists /' ${NANO_WORLDDIR}/etc/ttys
+	# local video devices are in onifexists mode
 	# Disable some syscons devices: No need for 8 on a router
-	sed -i "" -e '/^ttyv[4-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e '/^ttyv[4-8]/s/onifexists /off /' ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use serial console early.
 	echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
 }
