@@ -28,7 +28,7 @@
 * bird2 2.0.3: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.2: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.42.1: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.43: Root certificate bundle from the Mozilla Project
 * curl 7.64.0_1: Command line tool and library for transferring data with URLs
 * devcpu-data 1.21: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
@@ -36,7 +36,7 @@
 * easy-rsa 3.0.5_1: Small RSA key management package based on openssl
 * flashrom 1.0_1: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr6 6.0.2: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr6 6.0.2_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.13.0_1: Cross-platform file change monitor
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
@@ -75,7 +75,6 @@
 * pkg 1.10.5_5: Package manager
 * pkt-gen g2017.12.12: Packet sink/source using the netmap API
 * pmacct 1.7.0_1: Accounting and aggregation tool for IPv4 and IPv6 traffic
-* py36-cython 0.29: Compiler for Writing C Extensions for the Python Language
 * py36-exabgp 4.0.10: BGP engine and route injector
 * py36-setuptools 40.8.0: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter

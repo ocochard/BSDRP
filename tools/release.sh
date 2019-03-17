@@ -19,7 +19,8 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 DRY=""
 SRC_DIR="/usr/local/BSDRP"
 : ${PROJECT:=BSDRP}
-OBJ_BASE_DIR="/usr/obj"
+#OBJ_BASE_DIR="/usr/obj"
+OBJ_BASE_DIR="$(pwd)"/workdir
 VERSION=""
 FAST_MODE=false
 if [ `uname -m` = "sparc64" ]; then

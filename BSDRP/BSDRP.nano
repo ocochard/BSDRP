@@ -554,6 +554,7 @@ perl5
 pkgconf
 python27
 py36-Babel
+py36-cython
 py36-Jinja2
 py36-MarkupSafe
 py36-alabaster
