@@ -24,6 +24,8 @@ NANO_ARCH=${TARGET_ARCH}
 #  then we let the speed already configured by the BIOS by setting it to 0
 CONF_BUILD='
 WITH_META_MODE=
+WITH_DIRDEPS_BUILD=
+WITH_DIRDEPS_CACHE=
 MALLOC_PRODUCTION=
 BOOT_BOOT0_COMCONSOLE_SPEED=0
 '

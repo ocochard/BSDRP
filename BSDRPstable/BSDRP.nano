@@ -637,6 +637,10 @@ bsdrp_custom () {
 	# Add /etc/rc.conf.misc into the /etc/default/rc.conf
 	sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
 
+	# Dirty fix bsnmpget tc.def error
+	# https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=236664
+	[ -d ${NANO_WORLDDIR}/usr/share/snmp/defs/ ] && cp ${NANO_SRC}/contrib/bsnmp/lib/tc.def ${NANO_WORLDDIR}/usr/share/snmp/defs/
+
 	# configure bsnmp
 	cat <<EOF >>${NANO_WORLDDIR}/etc/snmpd.config
 

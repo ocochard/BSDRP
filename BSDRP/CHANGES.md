@@ -1,7 +1,8 @@
-# Release 1.92 (not released)
+# Release 1.92 (2019/03/20)
 
 ## New features
-* FreeBSD upgraded to 12.0-RELEASE-p2
+* FreeBSD upgraded to 12-STALBE r345325 (too lot's of regression with iflib
+  based drivers on 12.0)
 * AESNI module loaded by default
 
 ## Bug fixes
@@ -49,7 +50,7 @@
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.13.1: JSON (JavaScript Object Notation) implementation in C
 * libev 4.24,1: Full-featured and high-performance event loop library
-* libevent 2.1.8_2: API for executing callback functions on events or timeouts
+* libevent 2.1.8_3: API for executing callback functions on events or timeouts
 * libffi 3.2.1_3: Foreign Function Interface
 * liblz4 1.8.3,1: LZ4 compression library, lossless and very fast
 * libnet 1.1.6_5,1: C library for creating IP packets
