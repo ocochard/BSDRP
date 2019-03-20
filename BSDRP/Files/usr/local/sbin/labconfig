@@ -110,7 +110,7 @@ vpnipv4:
         create bundle static vpnipv4
         # IP of client and server, on another subnet for avoiding problems
         set ipcp ranges 10.4.24.2/32 10.4.24.4/32
-        # Remote LAN subnet: Learned by ISIS
+        # Remote LAN subnet: Learned by routing protocol
         #set iface route 10.0.45.0/24
         # Enable Microsoft Point-to-Point encryption (MPPE)
         set bundle enable compression
@@ -148,7 +148,7 @@ vpnipv6:
         set ipcp ranges 10.6.24.2/32 10.6.24.4/32
         # Enable IPv6
         set bundle enable ipv6cp
-        # Remote LAN subnet: Learned by ISIS
+        # Remote LAN subnet: Learned by routing protocol
         #set iface route 2001:db8:45::/64
         # Need to statically set inet6 address
         set iface up-script /usr/local/etc/mpd5/if-up.sh
