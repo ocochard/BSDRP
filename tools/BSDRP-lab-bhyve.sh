@@ -34,7 +34,7 @@ set -eu
 WRK_DIR="/tmp/BSDRP"
 VM_TEMPLATE=${WRK_DIR}/vm_template
 VM_NAME="BSDRP"
-CORE="1"
+CORE=1
 NUMBER_VM="1"
 FILE=""
 LAN=0
@@ -414,7 +414,7 @@ if ( ${VERBOSE} ); then
 	echo "Setting-up a virtual lab with $NUMBER_VM VM(s):"
 	echo "- Working directory: ${WRK_DIR}"
 	echo -n "- Each VM has ${CORE} core"
-	[ "${CORE}" gt 1 ] && echo -n "s"
+	[ "${CORE}" -gt 1 ] && echo -n "s"
 	echo " and ${RAM} RAM"
 	echo "- Emulated NIC: ${vnic}"
 	( $UEFI ) && echo "- UEFI enabled"
