@@ -17,7 +17,7 @@ sed 's/^X//' >net/quagga-bgp-netgen/Makefile << '371c89f90e3f2cda5c52cff6114fcea
 X# $FreeBSD$
 X
 XPORTNAME=	quagga-bgp-netgen
-XPORTVERSION=	0.1
+XPORTVERSION=	0.2
 XCATEGORIES=	net
 X
 XMAINTAINER=	olivier@FreeBSD.org
@@ -45,9 +45,9 @@ XWWW: https://github.com/ocochard/quagga-bgp-netgen
 869fc9a7e72bf796866a76c60ae38127
 echo x - net/quagga-bgp-netgen/distinfo
 sed 's/^X//' >net/quagga-bgp-netgen/distinfo << '0fb3c3f83f73881628e56c45d916475e'
-XTIMESTAMP = 1527662176
-XSHA256 (ocochard-quagga-bgp-netgen-0.1_GH0.tar.gz) = c7061f6a44d9dac1dcb8f0097ce79b63b5ec474fb57b3c6171190932940bd676
-XSIZE (ocochard-quagga-bgp-netgen-0.1_GH0.tar.gz) = 2069
+XTIMESTAMP = 1554448715
+XSHA256 (ocochard-quagga-bgp-netgen-0.2_GH0.tar.gz) = 761707691ee610b6571e9a59fc0ee9b7d95ed89c61f453483a68ad6e4d8b9d7f
+XSIZE (ocochard-quagga-bgp-netgen-0.2_GH0.tar.gz) = 2110
 0fb3c3f83f73881628e56c45d916475e
 exit
 

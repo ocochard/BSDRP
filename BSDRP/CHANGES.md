@@ -1,3 +1,10 @@
+# Release 1.93 (unreleased)
+
+## Upgraded packages
+* frr to 7.0
+* quagga-bgp-netgen to 0.2
+
+-----------------------------------------------------
 # Release 1.92 (2019/03/20)
 
 ## New features

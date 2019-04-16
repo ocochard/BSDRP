@@ -354,7 +354,9 @@ add_port "net-mgmt/rtrlib"
 
 # FRRouting: routing daemon
 add_port "devel/json-c"
-add_port "net/frr6" "WITH=\"MULTIPATH\""
+  add_port "devel/pcre"
+add_port "net/libyang"
+add_port "net/frr7" "WITH=\"MULTIPATH\""
 # FRR installs some software that we don't need anymore after install:
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
@@ -422,6 +424,7 @@ add_port "sysutils/monit"
 
 # tmux: screen equivalent, but better because BSD
 add_port "devel/libevent"
+add_port "textproc/utf8proc"
 add_port "sysutils/tmux"
 
 # ipmi tools

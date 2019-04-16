@@ -3,18 +3,18 @@ Founder:
 
 Developers and Contributors:
 Listed in order of seniority along with date of first contribution.
-    - Baptiste Chaussade (bchaussade@gmail.com): Tester and Wiki contributer about Virtualbox stufs (08/2009)
-	- Marc Gauthier (mga.gauthier@orange.com): Patch that improve a lot's the data partition growing (replacing gpart-resize/growfs with a dump/gpart-delete/gpart-create/newfs/restore" (03/2012)
+  - Baptiste Chaussade (bchaussade@gmail.com): Tester and Wiki contributer about Virtualbox stufs (08/2009)
+  - Marc Gauthier (mga.gauthier@orange.com): Patch that improve a lot's the data partition growing (replacing gpart-resize/growfs with a dump/gpart-delete/gpart-create/newfs/restore" (03/2012)
 
 Reuse of existing softwares/patches:
 
 BSD Router Project (BSDRP) is based upon/includes various free software, listed below.
 The authors of BSDRP would like to thank the authors of these software for their efforts:
-* FreeBSD: Copyright (c) 1995-2017 The FreeBSD Project. All rights reserved
+* FreeBSD: Copyright (c) 1995-2019 The FreeBSD Project. All rights reserved
 * FreeNAS 8: Lot's of idea regarding the nanobsd tunning, Copyright iXsystems
 * Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support
 * Idea of using glabel for disk type absraction: Scott Ullrich (pfSense)
-* "show memory" is a bourn shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
+* "show memory" is a bourne shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
 * PC Engines APU led drivers: Larry Baird
 * chelsio-queue-usage: Alexander V. Chernikov (melifaro@FreeBSD.org)
 * arping, license:GPLv2, http://www.habets.pp.se/synscan/programs.php?prog=arping
