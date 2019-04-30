@@ -1,5 +1,5 @@
 # BSD Router Project NanoBSD configuration file
-# http://bsdrp.net
+# https://bsdrp.net
 #
 # NanoBSD port support added from Gitoyen:
 # http://www.gitoyen.net/Howto-NanoBSD-quagga-router
@@ -20,6 +20,8 @@ NANO_ARCH=${TARGET_ARCH}
 
 # Options to put in make.conf during buildworld only
 # BOOT_COMCONSOLE_SPEED is useless because we using /boot.config with -Sspeed option
+# But for baud higher than 9600 is not supported by boot0:
+#  then we let the speed already configured by the BIOS by setting it to 0
 CONF_BUILD='
 WITH_META_MODE=
 MALLOC_PRODUCTION=
@@ -176,7 +178,7 @@ NANO_LABEL=${NANO_NAME}
 # Progress Print level
 PPLEVEL=3
 
-# Add netblast/netrecieve and netmap tools
+# Add netblast/netrecieve tools
 add_netrate () {
 	TOOLS_LIST="cxgbtool ifinfo netrate/netblast netrate/netreceive netrate/netsend"
 	# crypto didn't compile anymore but I don't understand why
@@ -202,12 +204,19 @@ add_netrate () {
 
 # BSDRP custom function
 bsdrp_custom () {
-	# Replace BSDRP_VERSION in /boot/brand.4th with the version number in etc/version
-	sed -i "" -e /BSDRP_VERSION/s//$(cat ${NANO_WORLDDIR}/etc/version)/ ${NANO_WORLDDIR}/boot/brand.4th
+	# Replace BSDRP_VERSION in /boot/lua/brand-bsdrp.lua with the version number in etc/version
+	sed -i "" -e /BSDRP_VERSION/s//$(cat ${NANO_WORLDDIR}/etc/version)/ ${NANO_WORLDDIR}/boot/lua/brand-bsdrp.lua
 	# Disable reverse DNS in sshd:
 	echo "UseDNS no" >> ${NANO_WORLDDIR}/etc/ssh/sshd_config
 	# Update login.conf db
 	CR 'cap_mkdb /etc/login.conf'
+
+	chmod 600 ${NANO_WORLDDIR}/boot/entropy
+	# Disable system beep and enable color with csh
+	{
+	echo "set nobeep"
+	echo "setenv CLICOLOR true"
+	} >> ${NANO_WORLDDIR}/etc/csh.cshrc
 
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys
@@ -247,6 +256,8 @@ usr/local/share/examples
 usr/include
 usr/share/examples
 usr/share/info
+usr/share/man/man3
+usr/share/man/man9
 usr/share/me
 usr/share/pc-sysinstall
 usr/share/openssl
@@ -383,7 +394,7 @@ usr/share/tmac/tmac.vgrind
 	fi
 
 	# Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
-    find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
+	find ${NANO_WORLDDIR} -type f -name \*.a | xargs rm
 
 	# Moving kerned & world debug symbols into debug.tar.xz file
 	if [ -d ${NANO_WORLDDIR}/usr/lib/debug ]; then

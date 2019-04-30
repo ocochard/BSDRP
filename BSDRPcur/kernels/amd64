@@ -376,9 +376,6 @@ device		xenpci			# Xen HVM Hypervisor services driver
 # Netmap provides direct access to TX/RX rings on supported NICs
 device		netmap			# netmap(4) support
 
-# The crypto framework is required by IPSEC
-device		crypto			# Required by IPSEC
-
 ####### BSDRP section #####
 
 # BSDRP added NICs.

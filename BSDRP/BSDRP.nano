@@ -614,6 +614,7 @@ bsdrp_custom () {
 	# Update login.conf db
 	CR 'cap_mkdb /etc/login.conf'
 
+	chmod 600 ${NANO_WORLDDIR}/boot/entropy
 	# Disable system beep and enable color with csh
 	{
 	echo "set nobeep"

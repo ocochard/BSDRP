@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: stable/12/sys/amd64/conf/GENERIC 340695 2018-11-20 19:37:09Z zeising $
+# $FreeBSD: stable/12/sys/amd64/conf/GENERIC 346179 2019-04-13 08:52:52Z dim $
 
 cpu		HAMMER
 ident		BSDRP-AMD64
@@ -372,9 +372,6 @@ device		xenpci			# Xen HVM Hypervisor services driver
 
 # Netmap provides direct access to TX/RX rings on supported NICs
 device		netmap			# netmap(4) support
-
-# The crypto framework is required by IPSEC
-device		crypto			# Required by IPSEC
 
 ####### BSDRP section #####
 
