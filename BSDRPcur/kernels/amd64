@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: head/sys/amd64/conf/GENERIC 343949 2019-02-10 07:54:46Z cem $
+# $FreeBSD: head/sys/amd64/conf/GENERIC 347241 2019-05-08 02:32:11Z kevans $
 
 cpu		HAMMER
 ident		BSDRP-AMD64
@@ -322,7 +322,7 @@ device		padlock_rng		# VIA Padlock RNG
 device		rdrand_rng		# Intel Bull Mountain RNG
 device		ether			# Ethernet support
 device		vlan			# 802.1Q VLAN support
-device		tun			# Packet tunnel.
+device		tuntap			# Packet tunnel.
 device		md			# Memory "disks"
 device		gif			# IPv6 and IPv4 tunneling
 device		firmware		# firmware assist module
