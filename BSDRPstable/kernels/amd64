@@ -414,7 +414,7 @@ device enc
 # RADIX_MPATH provides support for equal-cost multi-path routing.
 # It allows to install multiple routes toward the same destination
 # but didn't do flow load-balancing using ecmp :-(
-options		RADIX_MPATH
+#options		RADIX_MPATH
 
 # The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)
 
