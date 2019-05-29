@@ -30,12 +30,11 @@ The authors of BSDRP would like to thank the authors of these software for their
 * easy-rsa, license:GPLv2, https://community.openvpn.net/openvpn/wiki/GettingEasyRsa
 * flashrom, license:GPLv2, http://www.flashrom.org/
 * freevrrpd, license:BSD
-* frr6, license:GPLv2, https://frrouting.org/
+* frr7, license:GPLv2, https://frrouting.org/
 * fswatch-mon, license:GPLv3, https://github.com/emcrisostomo/fswatch
 * graphpath, license:BSD2CLAUSE, https://github.com/ocochard/graphpath
 * indexinfo, license:BSD2CLAUSE, https://github.com/bapt/indexinfo
 * intel-pcm, license:BSD3CLAUSE, https://github.com/opcm/pcm
-* iperf, license:BSD2CLAUSE, https://sourceforge.net/projects/iperf2/
 * iperf3, license:BSD3CLAUSE, MIT, https://software.es.net/iperf/
 * ipmitool, license:BSD3CLAUSE, https://sourceforge.net/projects/ipmitool/
 * ipsec-tools, license:BSD3CLAUSE, http://ipsec-tools.sourceforge.net/
@@ -51,16 +50,19 @@ The authors of BSDRP would like to thank the authors of these software for their
 * libsodium, license:ISCL, https://github.com/jedisct1/libsodium
 * libssh, license:LGPL21, http://www.libssh.org/
 * libucl, license:BSD2CLAUSE, https://github.com/vstakhov/libucl
+* libyang, license:BSD3CLAUSE, https://github.com/CESNET/libyang
 * lzo2, license:GPLv2, http://www.oberhumer.com/opensource/lzo/
 * mlvpn, license:BSD2CLAUSE, https://zehome.github.io/MLVPN/
 * monit, license:AGPLv3, http://mmonit.com/monit/
 * mpd5, license:BSD3CLAUSE, https://sourceforge.net/projects/mpd/
 * mrouted, license:MIT, http://freecode.com/projects/mrouted
 * netmap-fwd, license:BSD2CLAUSE, https://github.com/NetgateUSA/netmap-fwd
+* netperf, http://www.netperf.org/
 * ntraceroute
 * openldap-client, license:OPENLDAP, http://www.OpenLDAP.org/
 * openvpn, license:GPLv2, https://openvpn.net/index.php/open-source.html
 * pciids, license:BSD3CLAUSE, GPLv2+, http://pciids.sourceforge.net/
+* pcre, license:BSD3CLAUSE, https://www.pcre.org/
 * pim6-tools, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
 * pim6dd, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
 * pim6sd, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
@@ -71,8 +73,6 @@ The authors of BSDRP would like to thank the authors of these software for their
 * pmacct, license:GPLv2, http://www.pmacct.net/
 * py36-exabgp, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
 * py36-setuptools, license:MIT, https://pypi.org/project/setuptools/
-* python, license:, https://www.python.org/
-* python3, license:, https://www.python.org/
 * python36, license:PSFL, https://www.python.org/
 * quagga-bgp-netgen, license:BSD2CLAUSE, https://github.com/ocochard/quagga-bgp-netgen
 * readline, license:GPLv3, https://tiswww.case.edu/php/chet/readline/rltop.html
@@ -83,4 +83,5 @@ The authors of BSDRP would like to thank the authors of these software for their
 * tayga, license:GPLv2, http://www.litech.org/tayga/
 * tmux, license:ISCL, http://tmux.github.io/
 * ucarp, license:ISC, https://github.com/jedisct1/UCarp
+* utf8proc, license:MIT, https://juliastrings.github.io/utf8proc/
 * x86info, license:GPLv2, https://github.com/kernelslacker/x86info

@@ -1,7 +1,9 @@
 # Release 1.93 (unreleased)
 
 ## New features
-* New fresh installation needs 2GB disk size, upgrade still possible on 1GB disks
+* New fresh installation needs a minimun of 2GB disk size,
+  upgrade images are compliant with 1GB disk
+* Moved FRR configuration to use unique integrated config file by default
 
 ## Bug fixes
 * Disabling RADIX_MPATH (multipath) to fix a kernel panic (rt_notifydelete)
@@ -21,7 +23,7 @@
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.3: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.44: Root certificate bundle from the Mozilla Project
-* curl 7.64.1_1: Command line tool and library for transferring data with URLs
+* curl 7.65.0_1: Command line tool and library for transferring data with URLs
 * devcpu-data 1.22: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition

@@ -58,6 +58,7 @@ sysrc cloned_interfaces="lo1"
 sysrc ifconfig_lo1="inet 10.0.0.2/32"
 sysrc ifconfig_lo1_ipv6="inet6 2001:db8::2 prefixlen 128"
 sysrc frr_enable=YES
+sysrc frr_vtysh_boot=YES
 sysrc dhcprelya_enable=YES
 sysrc dhcprelya_servers="10.0.45.5"
 sysrc dhcprelya_ifaces=em0
@@ -195,11 +196,22 @@ add -6 2001:db8:23::2 2001:db8:23::3 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 
-cat > /usr/local/etc/frr/zebra.conf <<EOF
+cat > /usr/local/etc/frr/frr.conf <<EOF
+frr version 7.0
+frr defaults traditional
+hostname R2
 log syslog
-EOF
-
-cat > /usr/local/etc/frr/bgpd.conf <<EOF
+!
+interface ng0
+ ip ospf message-digest-key 1 md5 superpass
+ ip ospf network point-to-point
+ ipv6 ospf6 passive
+!
+interface ng1
+ ipv6 ospf6 network point-to-point
+!
+router-id 0.0.0.2
+!
 router bgp 100
  neighbor 10.0.23.3 remote-as 100
  neighbor 10.0.23.3 password abigpassword
@@ -208,7 +220,6 @@ router bgp 100
  !
  address-family ipv4 unicast
   network 10.0.0.2/32
-  neighbor 10.0.23.3 activate
   neighbor 10.0.23.3 soft-reconfiguration inbound
   no neighbor 2001:db8:23::3 activate
  exit-address-family
@@ -218,32 +229,23 @@ router bgp 100
   neighbor 2001:db8:23::3 activate
   neighbor 2001:db8:23::3 soft-reconfiguration inbound
  exit-address-family
-EOF
-
-cat > /usr/local/etc/frr/ospfd.conf <<EOF
-interface ng0
- ip ospf network point-to-point
- ip ospf message-digest-key 1 md5 superpass
 !
 router ospf
  ospf router-id 0.0.0.2
  network 10.0.12.0/24 area 0.0.0.0
  network 10.4.24.0/24 area 0.0.0.0
  area 0.0.0.0 authentication message-digest
-EOF
-
-cat > /usr/local/etc/frr/ospf6d.conf <<EOF
-interface ng0
- ipv6 ospf6 passive
-interface ng1
- ipv6 ospf6 network point-to-point
+!
 router ospf6
- router-id 0.0.0.2
  interface ng1 area 0.0.0.0
  interface em0 area 0.0.0.0
  interface vtnet0 area 0.0.0.0
+!
+line vty
+!
+bfd
+!
 EOF
-
 
 config save
 hostname R2
@@ -400,6 +402,7 @@ sysrc cloned_interfaces="lo1"
 sysrc ifconfig_lo1="inet 10.0.0.4/32"
 sysrc ifconfig_lo1_ipv6="inet6 2001:db8::4 prefixlen 128"
 sysrc frr_enable=YES
+sysrc frr_vtysh_boot=YES
 sysrc mpd_enable=YES
 sysrc mpd_flags="-b -s ppp"
 sysrc firewall_enable=YES
@@ -411,86 +414,71 @@ sysrc ipfw_netflow_version=9
 sysrc pimd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
-cat > /usr/local/etc/frr/zebra.conf <<EOF
+cat > /usr/local/etc/frr/frr.conf <<EOF
+frr version 7.0
+frr defaults traditional
+hostname R4
 log syslog
-EOF
-
-#cat > /usr/local/etc/frr/zebra.conf <<EOF
-#ip route 10.4.24.0/24 Null0
-#EOF
-
-cat > /usr/local/etc/frr/ripd.conf <<EOF
+!
+interface em3
+ ip router isis BSDRP
+ ipv6 ospf6 passive
+ ipv6 router isis BSDRP
+!
+interface ng0
+ ip ospf message-digest-key 1 md5 superpass
+ ip ospf network point-to-point
+ ipv6 ospf6 passive
+!
+interface ng1
+ ipv6 ospf6 network point-to-point
+!
+!
+interface vtnet3
+ ip router isis BSDRP
+ ipv6 ospf6 passive
+ ipv6 router isis BSDRP
+!
+router-id 0.0.0.4
+!
 router rip
- version 2
  network lo1
  network em2
  network vtnet2
-EOF
-
-cat > /usr/local/etc/frr/ripngd.conf <<EOF
+ version 2
+!
 router ripng
  network lo1
  network em2
  network vtnet2
-EOF
-
-cat > /usr/local/etc/frr/ospfd.conf <<EOF
-interface ng0
- ip ospf message-digest-key 1 md5 superpass
- ip ospf network point-to-point
 !
 router ospf
  ospf router-id 0.0.0.4
  redistribute isis
  passive-interface em3
  passive-interface vtnet3
- network 10.0.4.4/24 area 0.0.0.0
- network 10.4.24.0/24 area 0.0.0.0
+ network 10.0.4.0/24 area 0.0.0.0
  network 10.0.45.0/24 area 0.0.0.0
+ network 10.4.24.0/24 area 0.0.0.0
  area 0.0.0.0 authentication message-digest
-EOF
-
-cat > /usr/local/etc/frr/ospf6d.conf <<EOF
-interface ng0
- ipv6 ospf6 passive
-interface em3
- ipv6 ospf6 passive
-interface vtnet3
- ipv6 ospf6 passive
-interface ng1
- ipv6 ospf6 network point-to-point
+!
 router ospf6
- router-id 0.0.0.4
  redistribute isis
  interface ng1 area 0.0.0.0
- interface em3 area 0.0.0.0
  interface vtnet3 area 0.0.0.0
-EOF
-
-cat > /usr/local/etc/frr/isisd.conf <<EOF
-interface lo1
- ip router isis BSDRP
-!
-interface em3
- ip router isis BSDRP
- ipv6 router isis BSDRP
-!
-interface vtnet3
- ip router isis BSDRP
- ipv6 router isis BSDRP
-!
-interface ng0
- ip router isis BSDRP
-!
-interface ng1
- ipv6 router isis BSDRP
 !
 router isis BSDRP
+ is-type level-1-2
  net 49.0001.1720.1600.4004.00
- metric-style wide
- redistribute ipv4 static level-1
  redistribute ipv4 ospf level-1
+ redistribute ipv4 connected level-1
  redistribute ipv6 ospf6 level-1
+ redistribute ipv6 connected level-1
+!
+line vty
+!
+bfd
+!
 EOF
 
 cat > /usr/local/etc/mpd5/if-up.sh <<EOF
@@ -667,6 +655,7 @@ sysrc -f /etc/jails/jail5/rc.conf dhcpd_enable=YES
 sysrc -f /etc/jails/jail5/rc.conf dhcpd_flags="-q"
 sysrc -f /etc/jails/jail5/rc.conf dhcpd_conf="/usr/local/etc/dhcpd.conf"
 sysrc -f /etc/jails/jail5/rc.conf frr_enable=YES
+sysrc -f /etc/jails/jail5/rc.conf frr_vtysh_boot="YES"
 sysrc -f /etc/jails/jail5/rc.conf nfacctd_enable=YES
 sysrc -f /etc/jails/jail5/rc.conf pimd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/jails/jail5/rc.conf
@@ -692,27 +681,36 @@ subnet 10.0.56.0 netmask 255.255.255.0 {
 }
 EOF
 
-cat > /etc/jails/jail5/local/frr/zebra.conf <<EOF
+cat > /etc/jails/jail5/local/frr/frr.conf <<EOF
+frr version 7.0
+frr defaults traditional
+hostname jail5
 log syslog
-EOF
-
-cat > /etc/jails/jail5/local/frr/isisd.conf <<EOF
+!
 interface em3
  ip router isis BSDRP
  ipv6 router isis BSDRP
-interface vtnet3
- ip router isis BSDRP
- ipv6 router isis BSDRP
+!
 interface epair0a
  ip router isis BSDRP
  ipv6 router isis BSDRP
  isis passive
+!
+interface vtnet3
+ ip router isis BSDRP
+ ipv6 router isis BSDRP
+!
 router isis BSDRP
+ is-type level-1-2
  net 49.0001.1720.1600.5005.00
- metric-style wide
+!
+line vty
+!
+bfd
+!
 EOF
 
-ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/jails/jail5/local/frr/isisd.conf
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/jails/jail5/local/frr/frr.conf
 chown frr:frr /etc/jails/jail5/local/frr
 
 cat > /etc/jails/jail5/local/nfacctd.conf<<EOF

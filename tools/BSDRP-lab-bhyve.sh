@@ -94,7 +94,11 @@ check_bhyve_support () {
 	load_module nmdm
 	if ( ! ${VALE} ); then
 		# Same for if_tap
-		load_module if_tap
+		if [ -f /boot/kernel/if_tuntap.ko ]; then
+			load_module if_tuntap
+		else
+			load_module if_tap
+		fi
 		# Enable net.link.tap.up_on_open
 		sysctl net.link.tap.up_on_open=1 > /dev/null 2>&1 || echo "Warning: Can't enable net.link.tap.up_on_open"
 	fi
@@ -104,7 +108,7 @@ load_module () {
 	# $1 : Module name
 	if ! kldstat -m $1 > /dev/null 2>&1; then
 		echo "$1 module not loaded. Loading it..."
-		kldload $1|| die "can't load $1"
+		kldload $1 && return 0 || return 1
 	fi
 }
 
