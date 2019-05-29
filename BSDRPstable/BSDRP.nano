@@ -34,7 +34,12 @@ BOOT_BOOT0_COMCONSOLE_SPEED=0
 # Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
 # Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
 # We would compile symbol files, but not install them by default
+# LOCAL_ITOOLS with env and mktemp used to fix installation without build (-b)
+# when cross-compiling an i386 image from amd64
+#  env: not found
+#  src/include/mk-osreldate.sh: mktemp: not found
 CONF_INSTALL='
+LOCAL_ITOOLS="env mktemp"
 '
 
 # Options to put in make.conf during both build- & installworld.
