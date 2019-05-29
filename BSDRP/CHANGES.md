@@ -1,4 +1,12 @@
-# Release 1.93 (unreleased)
+# Release 1.94 (not released)
+
+## New features
+
+## Bug fixes
+* Prevent to start firmware upgrade
+
+-----------------------------------------------------
+# Release 1.93 (2019/05/30)
 
 ## New features
 * New fresh installation needs a minimun of 2GB disk size,

@@ -1,9 +1,9 @@
 #!/bin/sh
 #
 # Upgrade tool for BSD Router Project
-# http://bsdrp.net
+# https://bsdrp.net
 #
-# Copyright (c) 2009-2017, The BSDRP Development Team
+# Copyright (c) 2009-2019, The BSDRP Development Team
 # All rights reserved.
 # Based on the updatep1 and updatep2 script of nanoBSD
 #
@@ -44,9 +44,15 @@ set -eu
 # Variables
 ARCH=$(uname -m)
 GPT=false
+LOCK=/tmp/UPGRADE-LOCK
 
 # A usefull function (from: http://code.google.com/p/sh-die/)
-die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+die() {
+	echo -n "EXIT: " >&2
+	echo "$@" >&2
+	[ -f ${LOCK} ] && rm ${LOCK}
+	exit 1
+}
 
 #Load the NANO_DRIVE variable (ufs/BSDRP or gpt/BSDRP):
 [ -f /etc/nanobsd.conf ] || die "No /etc/nanobsd.conf found"
@@ -264,7 +270,7 @@ write_new_image() {
 
 mbr_boot_modif () {
 	# Change the default selection of the boot manager
-    boot0cfg -s ${NEXT_PART} -t 18 -v ${boot_dev} || \
+	boot0cfg -s ${NEXT_PART} -t 18 -v ${boot_dev} || \
         die "ERROR: Can't update FreeBSD bootloader"
 	# Change the active partition
 	gpart set -a active -i ${NEXT_PART} ${boot_dev} || \
@@ -315,30 +321,36 @@ vtoc_boot_modif () {
 
 #### main function
 
-# Partition type detection
-if grep -q '=gpt/' /etc/nanobsd.conf; then
-	GPT=true
+# Check lock
+
+if [ -f ${LOCK} ]; then
+	die "Another upgrade already running"
+else
+	touch ${LOCK}
 fi
 
+# Partition type detection
+grep -q '=gpt/' /etc/nanobsd.conf && GPT=true
+
 case "${ARCH}" in
-        i386|amd64)
-			get_info
-			write_new_image
-			boot_modif
-            ;;
-        arm)
-			echo "WARNING: This script was never tested on ARM"
-			get_info
-			write_new_image
-            arm_boot_modif
-            ;;
+	i386|amd64)
+		get_info
+		write_new_image
+		boot_modif
+		;;
+	arm)
+		echo "WARNING: This script was never tested on ARM"
+		get_info
+		write_new_image
+		arm_boot_modif
+		;;
         sparc64)
-			vtoc_get_info
-			write_new_image
-            vtoc_boot_modif
-            ;;
-        *)
-            die "Unsupported arch!"
+		vtoc_get_info
+		write_new_image
+		vtoc_boot_modif
+		;;
+	*)
+		die "Unsupported arch!"
 esac
 
 # Log
@@ -352,3 +364,5 @@ if [ -f /tmp/post-upgrade ]; then
 	# Execute post-upgrade script with new partition as parameter
 	/tmp/post-upgrade /dev/${NANO_DRIVE}${NEXT_LABEL_ID}
 fi
+
+[ -f ${LOCK} ] && rm ${LOCK}
