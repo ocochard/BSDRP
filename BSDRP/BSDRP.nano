@@ -231,6 +231,8 @@ add_port () {
 				mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
 				mount -t nullfs \${NANO_OBJ}/ports/packages \
 					\${NANO_WORLDDIR}/usr/ports/packages
+				# Since pkg 1.11, need devfs (because it is using /dev/null)
+				mount -t devfs devfs \${NANO_WORLDDIR}/dev
 				# Run ldconfig before
 				CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
 				# Start the pkg add
@@ -251,6 +253,7 @@ EOF
 				# Need to force assume_always_yes for avoiding bootstrap pkg confirmation too
 				CR 'env ASSUME_ALWAYS_YES=true pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
 				umount \${NANO_WORLDDIR}/usr/ports/packages
+				umount \${NANO_WORLDDIR}/dev
 				rmdir \${NANO_WORLDDIR}/usr/ports/packages
 				rmdir \${NANO_WORLDDIR}/usr/ports
 			}

@@ -31,7 +31,7 @@
 set -eu
 
 ### Global variables ###
-WRK_DIR="/tmp/BSDRP"
+WRK_DIR="${HOME}/BSDRP-VMs"
 VM_TEMPLATE=${WRK_DIR}/vm_template
 VM_NAME="BSDRP"
 CORE=1

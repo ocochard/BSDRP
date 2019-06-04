@@ -1,0 +1,24 @@
+Index: net/frr7/Makefile
+===================================================================
+--- net/frr7/Makefile	(revision 503193)
++++ net/frr7/Makefile	(working copy)
+@@ -1,7 +1,7 @@
+ # $FreeBSD$
+ 
+ PORTNAME=	frr
+-PORTVERSION=	7.0
++PORTVERSION=	7.0.1
+ DISTVERSIONPREFIX=	frr-
+ CATEGORIES=	net ipv6
+ PKGNAMESUFFIX=	7
+Index: net/frr7/distinfo
+===================================================================
+--- net/frr7/distinfo	(revision 503193)
++++ net/frr7/distinfo	(working copy)
+@@ -1,3 +1,3 @@
+-TIMESTAMP = 1552596106
+-SHA256 (FRRouting-frr-frr-7.0_GH0.tar.gz) = 15b62dc0c52531e4bcefa6b830e9b9b07d1d0f189c2110307dbc19d80b719354
+-SIZE (FRRouting-frr-frr-7.0_GH0.tar.gz) = 5234123
++TIMESTAMP = 1559341471
++SHA256 (FRRouting-frr-frr-7.0.1_GH0.tar.gz) = 5b74fc2c730e9973eab03546415f8dd7b36fa00fbf0bc856458266773dd5ae6d
++SIZE (FRRouting-frr-frr-7.0.1_GH0.tar.gz) = 5233615
