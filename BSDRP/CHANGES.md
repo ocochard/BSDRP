@@ -1,10 +1,14 @@
 # Release 1.94 (not released)
 
 ## New features
+* Added ksym module to be able to use lockstat
+* Updated tmpfs /var to 32MB
 
 ## Bug fixes
-* Prevent to start firmware upgrade
+* Add a lock during firmware upgrade
 
+## Packages upgrade
+* FRR 7.1
 -----------------------------------------------------
 # Release 1.93 (2019/05/30)
 

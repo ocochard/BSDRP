@@ -171,8 +171,8 @@ NANO_DATASIZE=20480
 NANO_RAM_ETCSIZE=20480
 
 # Size of the /tmp+/var ramdisk in 512 bytes sectors
-# 40960=20MB (usefull for log files)
-NANO_RAM_TMPVARSIZE=40960
+# 62500=32MB (usefull for log files)
+NANO_RAM_TMPVARSIZE=62500
 
 # Boot0cfg configuration mode
 NANO_BOOT0CFG="-o packet -s 1 -m 3 -t 18"

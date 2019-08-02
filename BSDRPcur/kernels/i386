@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: head/sys/i386/conf/GENERIC 347924 2019-05-17 15:24:54Z brooks $
+# $FreeBSD: head/sys/i386/conf/GENERIC 349253 2019-06-21 00:16:30Z cem $
 
 cpu		I486_CPU
 cpu		I586_CPU

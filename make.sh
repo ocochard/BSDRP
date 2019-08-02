@@ -478,7 +478,7 @@ fi
 check_clean "${NANO_OBJ}"
 
 # If no source installed, force installing them
-[ -d "${FREEBSD_SRC}"/.svn ] || UPDATE_SRC=true
+[ -d "${FREEBSD_SRC}"/.svn -o -d "${FREEBSD_SRC}"/.git ] || UPDATE_SRC=true
 
 #Check if the project uses port before installing/updating port tree
 if grep -q '^add_port[[:blank:]]\+"' "${PROJECT_DIR}"/${NAME}.nano; then
