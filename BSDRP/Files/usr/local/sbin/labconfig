@@ -761,7 +761,7 @@ add -6 2001:db8:12::1 2001:db8:12::2 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:12::2 2001:db8:12::1 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 
-cat > /usr/local/etc/frr/zebra.conf <<EOF
+cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 interface em0
  ip address 192.168.12.1/24
@@ -772,8 +772,6 @@ interface vtnet0
 interface lo1
  ip address 192.168.10.1/24
  ipv6 address 2001:db8:10::1/64
-EOF
-cat > /usr/local/etc/frr/bgpd.conf <<EOF
 router bgp 12
  bgp router-id 192.168.10.1
  neighbor 192.168.12.2 remote-as 12
@@ -794,8 +792,6 @@ router bgp 12
   neighbor 2001:db8:12::2 activate
   neighbor 2001:db8:12::2 soft-reconfiguration inbound
  exit-address-family
-EOF
-cat > /usr/local/etc/frr/bfdd.conf <<EOF
 bfd
  peer 2001:db8:12::2 local-address 2001:db8:12::1
   label router2-6
@@ -824,7 +820,7 @@ add 192.168.12.2 192.168.12.1 tcp 0x1001 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:12::1 2001:db8:12::2 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:12::2 2001:db8:12::1 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
-cat > /usr/local/etc/frr/zebra.conf <<EOF
+cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 interface em0
  ip address 192.168.12.2/24
@@ -838,8 +834,6 @@ interface em1
 interface vtnet1
  ip address 192.168.23.2/24
  ipv6 address 2001:db8:23::2/64
-EOF
-cat > /usr/local/etc/frr/ripd.conf <<EOF
 key chain rippass
  key 1
   key-string rippassword
@@ -858,16 +852,11 @@ router rip
  network vtnet1
  redistribute bgp
  redistribute connected
-EOF
-cat > /usr/local/etc/frr/ripngd.conf <<EOF
 router ripng
  network em1
  network vtnet1
  redistribute bgp
  redistribute connected
-EOF
-
-cat > /usr/local/etc/frr/bgpd.conf <<EOF
 router bgp 12
  bgp router-id 192.168.10.2
  neighbor 192.168.12.1 remote-as 12
@@ -891,9 +880,6 @@ router bgp 12
   neighbor 2001:db8:12::1 activate
   neighbor 2001:db8:12::1 soft-reconfiguration inbound
  exit-address-family
-EOF
-
-cat > /usr/local/etc/frr/bfdd.conf <<EOF
 bfd
  peer 2001:db8:12::1 local-address 2001:db8:12::2
   label router1-6
@@ -913,7 +899,7 @@ echo "VM2 configured"
 frr_vm3 () {
 sysrc hostname=router3
 sysrc frr_enable=YES
-cat > /usr/local/etc/frr/zebra.conf <<EOF
+cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 interface em1
  ip address 192.168.23.3/24
@@ -927,8 +913,6 @@ interface em2
 interface vtnet2
  ip address 192.168.34.3/24
  ipv6 address 2001:db8:34::3/64
-EOF
-cat > /usr/local/etc/frr/ospfd.conf <<EOF
 interface em2
  ip ospf message-digest-key 1 md5 superpass
  ip ospf bfd
@@ -941,8 +925,6 @@ router ospf
  redistribute connected
  network 192.168.34.0/24 area 0.0.0.0
  area 0.0.0.0 authentication message-digest
-EOF
-cat > /usr/local/etc/frr/ospf6d.conf <<EOF
 interface em2
  ipv6 ospf6 bfd
 interface vtnet2
@@ -953,8 +935,6 @@ router ospf6
  redistribute connected
  interface em2 area 0.0.0.0
  interface vtnet2 area 0.0.0.0
-EOF
-cat > /usr/local/etc/frr/ripd.conf <<EOF
 key chain rippass
  key 1
   key-string rippassword
@@ -973,15 +953,11 @@ router rip
  network vtnet1
  redistribute connected
  redistribute ospf
-EOF
-cat > /usr/local/etc/frr/ripngd.conf <<EOF
 router ripng
  network em1
  network vtnet1
  redistribute connected
  redistribute ospf6
-EOF
-cat > /usr/local/etc/frr/bfdd.conf <<EOF
 bfd
  peer 2001:db8:34::4 local-address 2001:db8:34::3
   label router4-6
@@ -998,7 +974,7 @@ echo "VM3 configured"
 frr_vm4 () {
 sysrc hostname=router4
 sysrc frr_enable=YES
-cat > /usr/local/etc/frr/zebra.conf <<EOF
+cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 interface em2
  ip address 192.168.34.4/24
@@ -1012,8 +988,6 @@ interface em3
 interface vtnet3
  ip address 192.168.45.4/24
  ipv6 address 2001:db8:45::4/64
-EOF
-cat > /usr/local/etc/frr/ospfd.conf <<EOF
 interface em2
  ip ospf message-digest-key 1 md5 superpass
  ip ospf bfd
@@ -1026,8 +1000,6 @@ router ospf
  redistribute connected
  network 192.168.34.0/24 area 0.0.0.0
  area 0.0.0.0 authentication message-digest
-EOF
-cat > /usr/local/etc/frr/ospf6d.conf <<EOF
 interface em2
  ipv6 ospf6 bfd
 interface vtnet2
@@ -1038,8 +1010,6 @@ router ospf6
  redistribute connected
  interface em2 area 0.0.0.0
  interface vtnet2 area 0.0.0.0
-EOF
-cat > /etc/local/frr/isisd.conf <<EOF
 interface em3
  ip router isis BSDRP
  ipv6 router isis BSDRP
@@ -1055,8 +1025,6 @@ router isis BSDRP
  redistribute ipv6 ospf6 level-2
  redistribute ipv4 connected level-2
  redistribute ipv6 connected level-2
-EOF
-cat > /usr/local/etc/frr/bfdd.conf <<EOF
 bfd
  peer 2001:db8:34::3 local-address 2001:db8:34::4
   label router3-6
@@ -1074,7 +1042,7 @@ echo "VM4 configured"
 frr_vm5 () {
 sysrc hostname=router5
 sysrc frr_enable=YES
-cat > /usr/local/etc/frr/zebra.conf <<EOF
+cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 interface em3
  ip address 192.168.45.5/24
@@ -1088,8 +1056,6 @@ interface em4
 interface vtnet4
  ip address 192.168.56.5/24
  ipv6 address 2001:db8:56::5/64
-EOF
-cat > /etc/local/frr/isisd.conf <<EOF
 interface em3
  ip router isis BSDRP
  ipv6 router isis BSDRP
@@ -1113,8 +1079,6 @@ router isis BSDRP
  metric-style wide
  redistribute ipv4 babel level-2
  redistribute ipv6 babel level-2
-EOF
-cat > /usr/local/etc/frr/babeld.conf <<EOF
 router babel
  network em3
  network vtnet3
@@ -1132,7 +1096,7 @@ echo "VM5 configured"
 frr_vm6 () {
 sysrc hostname=router6
 sysrc frr_enable=YES
-cat > /usr/local/etc/frr/zebra.conf <<EOF
+cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 interface em4
  ip address 192.168.56.6/24
@@ -1146,8 +1110,6 @@ interface em5
 interface vtnet5
  ip address 192.168.67.6/24
  ipv6 address 2001:db8:67::6/64
-EOF
-cat > /usr/local/etc/frr/babeld.conf <<EOF
 router babel
  network em4
  network vtnet4
@@ -1155,8 +1117,6 @@ router babel
  redistribute ipv4 static
  redistribute ipv6 connected
  redistribute ipv6 static
-EOF
-cat > /usr/local/etc/frr/staticd.conf <<EOF
 ip route 192.168.70.0/24 192.168.67.7
 ipv6 route 2001:db8:70::/64 2001:db8:67::7
 EOF
@@ -1170,7 +1130,7 @@ frr_vm7 () {
 sysrc hostname=router7
 sysrc cloned_interfaces=lo1
 sysrc frr_enable=YES
-cat > /usr/local/etc/frr/zebra.conf <<EOF
+cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 interface em5
  ip address 192.168.67.7/24
@@ -1181,8 +1141,6 @@ interface vtnet5
 interface lo1
  ip address 192.168.70.7/24
  ipv6 address 2001:db8:70::7/64
-EOF
-cat > /usr/local/etc/frr/staticd.conf <<EOF
 ip route 0.0.0.0/0 192.168.67.6
 ipv6 route ::/0 2001:db8:67::6
 EOF
