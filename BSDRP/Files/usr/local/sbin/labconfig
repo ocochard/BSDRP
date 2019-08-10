@@ -990,6 +990,7 @@ bfd
 EOF
 hostname router3
 service frr start
+config save
 echo "VM3 configured"
 }
 
@@ -1062,6 +1063,7 @@ EOF
 
 hostname router4
 service frr start
+config save
 echo "VM4 configured"
 }
 
@@ -1119,6 +1121,7 @@ EOF
 hostname router5
 service netif restart
 service frr start
+config save
 echo "VM5 configured"
 }
 
@@ -1159,6 +1162,7 @@ EOF
 hostname router6
 service netif restart
 service frr start
+config save
 echo "VM6 configured"
 }
 
@@ -1188,6 +1192,7 @@ EOF
 hostname router7
 service netif restart
 service frr start
+config save
 echo "VM7 configured"
 }
 
@@ -1371,7 +1376,7 @@ service routing restart
 config save
 }
 
-### BGP bird & quagga lab
+### BGP bird & FRR lab
 bgp_vm1 () {
 sysrc hostname=R1
 sysrc ifconfig_vtnet6="10.0.6.1/24"
@@ -1627,18 +1632,13 @@ add -6 2001:db8:2::3 2001:db8:2::4 tcp 0x1002 -A tcp-md5 "abigpassword" ;
 add -6 2001:db8:2::4 2001:db8:2::3 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 service ipsec start
-cat > /usr/local/etc/frr/zebra.conf <<EOF
-log syslog
-EOF
-cat <<EOF > /usr/local/etc/frr/zebra.conf
+cat > /usr/local/etc/frr/frr.conf <<EOF
 interface vtnet2
  ip address 10.0.2.4/24
  ipv6 address 2001:db8:2::4/64
 interface vtnet3
  ip address 10.0.3.4/24
  ipv6 address 2001:db8:3::4/64
-EOF
-cat <<EOF > /usr/local/etc/frr/bgpd.conf
 router bgp 64512
  bgp router-id 0.0.0.204
  bgp confederation identifier 200
@@ -1675,7 +1675,7 @@ config save
 bgp_vm5 () {
 sysrc hostname=R5
 sysrc frr_enable=YES
-cat <<EOF > /usr/local/etc/frr/zebra.conf
+cat <<EOF > /usr/local/etc/frr/frr.conf
 log syslog
 interface vtnet3
  ip address 10.0.3.5/24
@@ -1684,9 +1684,6 @@ interface vtnet3
 interface vtnet4
  ip address 10.0.4.5/24
  ipv6 address 2001:db8:4::5/64
-EOF
-
-cat <<EOF > /usr/local/etc/frr/bgpd.conf
 router bgp 64512
  bgp router-id 0.0.0.205
  bgp confederation identifier 200
@@ -1736,7 +1733,7 @@ add -6 2001:db8:5::6 2001:db8:5::7 tcp 0x1002 -A tcp-md5 "abcdefgh" ;
 add -6 2001:db8:5::7 2001:db8:5::6 tcp 0x1003 -A tcp-md5 "abcdefgh" ;
 EOF
 service ipsec start
-cat <<EOF > /usr/local/etc/frr/zebra.conf
+cat <<EOF > /usr/local/etc/frr/frr.conf
 log syslog
 interface vtnet4
  ip address 10.0.4.6/24
@@ -1745,8 +1742,6 @@ interface vtnet4
 interface vtnet5
  ip address 10.0.5.6/24
  ipv6 address 2001:db8:5::6/64
-EOF
-cat <<EOF > /usr/local/etc/frr/bgpd.conf
 router bgp 65535
  bgp router-id 0.0.0.206
  bgp confederation identifier 200
@@ -1795,7 +1790,7 @@ add -6 2001:db8:5::6 2001:db8:5::7 tcp 0x1002 -A tcp-md5 "abcdefgh" ;
 add -6 2001:db8:5::7 2001:db8:5::6 tcp 0x1003 -A tcp-md5 "abcdefgh" ;
 EOF
 service ipsec start
-cat <<EOF > /usr/local/etc/frr/zebra.conf
+cat <<EOF > /usr/local/etc/frr/frr.conf
 log syslog
 interface vtnet0
  ip address 10.0.7.7/24
@@ -1804,8 +1799,6 @@ interface vtnet0
 interface vtnet5
  ip address 10.0.5.7/24
  ipv6 address 2001:db8:5::7/64
-EOF
-cat <<EOF > /usr/local/etc/frr/bgpd.conf
 router bgp 65535
  bgp router-id 0.0.0.207
  bgp confederation identifier 200
