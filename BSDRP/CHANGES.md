@@ -1,5 +1,11 @@
 # Release 1.94 (not released)
 
+## Special upgrade notes (installation older than BSDRP 1.93)
+BSDRP since 1.93 needs at minimum a 2GB disk and no more a 1GB disk.
+If you've installed BSDRP on a 1GB disk: You can't upgrade it.
+But if you installed it on a 2GB disk (or larger), here is how to resize system slice:
+system resize-system-slice 1911680
+
 ## New features
 * Added ksym module to be able to use lockstat
 * Updated tmpfs /var to 32MB

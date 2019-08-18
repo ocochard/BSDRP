@@ -373,7 +373,10 @@ device		xenpci			# Xen HVM Hypervisor services driver
 # Netmap provides direct access to TX/RX rings on supported NICs
 device		netmap			# netmap(4) support
 
-####### BSDRP section #####
+# evdev interface
+#options 	EVDEV_SUPPORT		# evdev support in legacy drivers
+#device		evdev			# input event device support
+#device		uinput			# install /dev/uinput cdev####### BSDRP section #####
 
 # BSDRP added NICs.
 device		bnxt	# Broadcom NetXtreme-C/NetXtreme-E Family Ethernet driver
