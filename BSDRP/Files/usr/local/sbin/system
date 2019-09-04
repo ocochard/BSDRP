@@ -375,6 +375,9 @@ resize_system_slice () {
 	echo -n "Checking disk size..."
 	label=$(get_label)
 	boot_dev=$(glabel status | grep ${label}s1 | awk '{ print $3; }'\  | cut -d s -f 1)
+	# If user just tried to upgrade a too small sized disk, ${label}s1 could
+	#  be missing, so in this case try again but with ${label}s2
+	[ -z "${boot_dev}" ] && boot_dev=$(glabel status | grep ${label}s2 | awk '{ print $3; }'\  | cut -d s -f 1)
 	[ -z "${boot_dev}" ] && die "Can't detect the physical disk where BSDRP is installed"
 	disk_size=$(gpart show ${boot_dev} | grep ${boot_dev} | tr -s ' ' | cut -d ' ' -f 3)
 	[ -z "${disk_size}" ] && die "Can't read the disk size"

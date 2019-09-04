@@ -1,13 +1,12 @@
 Index: sys/conf/newvers.sh
 ===================================================================
---- sys/conf/newvers.sh	(revision 342900)
+--- sys/conf/newvers.sh	(revision 308878)
 +++ sys/conf/newvers.sh	(working copy)
-@@ -297,7 +297,7 @@
- 	VERSTR="${VERINFO}\\n"
- else
- 	VERINFO="${VERSION} #${v}${svn}${git}${hg}${p4version}: ${t}"
--	VERSTR="${VERINFO}\\n    ${u}@${h}:${d}\\n"
-+	VERSTR="${VERINFO}\\n"
- fi
+@@ -45,6 +45,7 @@
+ #
+ findvcs()
+ {
++	return 1
+ 	local savedir
  
- cat << EOF > vers.c
+ 	savedir=$(pwd)

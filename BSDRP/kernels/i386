@@ -1,5 +1,5 @@
 #
-# BSDRP -- BSDRP custom kernel configuration file for FreeBSD/i386
+# GENERIC -- Generic kernel configuration file for FreeBSD/i386
 #
 # For more information on this file, please read the config(5) manual page,
 # and/or the handbook section on Kernel Configuration Files:
@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: releng/12.0/sys/i386/conf/GENERIC 339704 2018-10-25 05:18:25Z imp $
+# $FreeBSD: stable/12/sys/i386/conf/GENERIC 344149 2019-02-15 09:49:09Z kib $
 
 cpu		I486_CPU
 cpu		I586_CPU
@@ -212,10 +212,14 @@ device		uart			# Generic UART driver
 
 device		puc			# Multi I/O cards and multi-channel UARTs
 
+# PCI/PCI-X/PCIe Ethernet NICs that use iflib infrastructure
+device		iflib
+device		em			# Intel PRO/1000 Gigabit Ethernet Family
+device		vmx			# VMware VMXNET3 Ethernet
+
 # PCI Ethernet NICs.
 device		bxe			# Broadcom NetXtreme II BCM5771X/BCM578XX 10GbE
 device		de			# DEC/Intel DC21x4x (``Tulip'')
-device		em			# Intel PRO/1000 Gigabit Ethernet Family
 device		le			# AMD Am7900 LANCE and Am79C9xx PCnet
 device		ti			# Alteon Networks Tigon I/II gigabit Ethernet
 device		txp			# 3Com 3cR990 (``Typhoon'')
@@ -356,10 +360,10 @@ device		hyperv			# HyperV drivers
 options 	XENHVM			# Xen HVM kernel infrastructure
 device		xenpci			# Xen HVM Hypervisor services driver
 
-# VMware support
-device		vmx			# VMware VMXNET3 Ethernet
-
-####### BSDRP section #####
+# evdev interface
+#options 	EVDEV_SUPPORT		# evdev support in legacy drivers
+#device		evdev			# input event device support
+#device		uinput			# install /dev/uinput cdev####### BSDRP section #####
 
 # BSDRP added NICs.
 device		ena		# Elastic Network Adapter (ENA) family

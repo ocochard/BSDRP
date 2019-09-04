@@ -7,4 +7,4 @@ Documentation: https://bsdrp.net
 Discover BSDRP tools with "help" command
 
 Keyboard layout can be changed with this command:
-kbdcontrol -l keymap_file (<TAB> for list available maps)
+kbdcontrol -l keymap_file (<TAB> to list available maps)

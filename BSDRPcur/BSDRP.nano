@@ -506,6 +506,9 @@ add_port "sysutils/devcpu-data"
 # processor information (usefull for checking microcode version)
 add_port "sysutils/intel-pcm"
 
+# One tool to resume them al
+add_port "net-mgmt/nstat"
+
 # NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode
 add_port "net/ntraceroute"
 
