@@ -1,6 +1,6 @@
 # Release 1.94 (not released)
 
-## Special upgrade notes (installation older than BSDRP 1.93)
+## Special upgrade notes for installation older than BSDRP 1.93
 BSDRP since 1.93 needs at minimum a 2GB disk and no more a 1GB disk.
 If you've installed BSDRP on a 1GB disk: You can't upgrade it.
 But if you installed it on a 2GB disk (or larger), here is how to resize system slice:
@@ -12,6 +12,12 @@ system resize-system-slice 1911680
 
 ## Bug fixes
 * Add a lock during firmware upgrade
+* On system with partition 2 active, and after failed an upgrade (because system slice
+  not expanded before upgrade), upgrade was failing because not able to detect
+  the correct system partition
+
+## New package
+* nstat 1.0: replacement for bw/netstat/vmstat/pcm-memory.x
 
 ## Packages upgrade
 * FRR to 7.1
@@ -28,13 +34,13 @@ system resize-system-slice 1911680
 * bird2 2.0.5: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.4: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.45: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.46: Root certificate bundle from the Mozilla Project
 * curl 7.65.3: Command line tool and library for transferring data with URLs
 * devcpu-data 1.23: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.6: Small RSA key management package based on openssl
-* flashrom 1.0_1: Utility for reading, writing, verifying, and erasing flash ROM chips
+* flashrom 1.1: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
 * frr7 7.1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.13.0_2: Cross-platform file change monitor
@@ -50,10 +56,10 @@ system resize-system-slice 1911680
 * libev 4.24,1: Full-featured and high-performance event loop library
 * libevent 2.1.11: API for executing callback functions on events or timeouts
 * libffi 3.2.1_3: Foreign Function Interface
-* liblz4 1.9.1,1: LZ4 compression library, lossless and very fast
+* liblz4 1.9.2,1: LZ4 compression library, lossless and very fast
 * libnet 1.1.6_5,1: C library for creating IP packets
 * libpci 3.6.2: PCI configuration space I/O made easy
-* libsodium 1.0.16: Library to build higher-level cryptographic tools
+* libsodium 1.0.18: Library to build higher-level cryptographic tools
 * libssh 0.8.6: Library implementing the SSH2 protocol
 * libucl 0.8.1: Universal configuration library parser
 * libyang 0.16_6: YANG data modeling language library
@@ -64,6 +70,7 @@ system resize-system-slice 1911680
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * netperf 2.7.1.p20170921_1: Network performance benchmarking package
+* nstat 1.0_2: Replacement for bw/netstat/vmstat/pcm-memory.x
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.48: Open source LDAP client implementation
 * openvpn 2.4.7: Secure IP/Ethernet tunnel daemon
@@ -78,7 +85,7 @@ system resize-system-slice 1911680
 * pkt-gen g2019.03.01: Packet sink/source using the netmap API
 * pmacct 1.7.3: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py36-exabgp 4.1.2: BGP engine and route injector
-* py36-setuptools 41.0.1: Python packages installer
+* py36-setuptools 41.2.0: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
 * python36 3.6.9: Interpreted object-oriented programming language
@@ -93,6 +100,7 @@ system resize-system-slice 1911680
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 * utf8proc 2.4.0: UTF-8 processing library
 * x86info 1.31.s03: x86 CPU identification and feature display utility
+
 -----------------------------------------------------
 # Release 1.93 (2019/05/30)
 
