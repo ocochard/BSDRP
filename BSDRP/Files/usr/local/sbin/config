@@ -1,9 +1,9 @@
 #!/bin/sh
 #
 # Configuration tool for BSD Router Project
-# http://bsdrp.net
+# https://bsdrp.net
 #
-# Copyright (c) 2009-2018, The BSDRP Development Team
+# Copyright (c) 2009-2019, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -182,7 +182,7 @@ archive_cfg () {
 
 # save configuration
 # TODO: Need to backup /boot/loader.conf.local in case of restoring
-#		configuration to other routers
+#	configuration to other routers
 save_cfg () {
 	setlock
 	mount_cfg || die "ERROR: Can't mount /cfg"
@@ -214,13 +214,13 @@ save_cfg () {
 			# If this file/symlink was previously saved, compare the saved-version (/cfg) and the running-version (/etc)
 			# Instruct cmp to not follow symbolic links, because some software (like freeradius)
 			# install symlink to /dev/random
-			if ! cmp -hs /etc/$i /cfg/$i; then
+			if ! cmp -hs /etc/$i /cfg/$i || [ $(stat -f "%p%g%u" /etc/$i) != $(stat -f "%p%g%u" /cfg/$i) ]; then
 				cp -pfv /etc/$i /cfg/$i 2>/dev/null
 			fi
 		else
 			# If this file was not previously saved, compare the running-version (/etc) and
 			# the default-version (/conf/base/etc)
-			if ! cmp -hs /conf/base/etc/$i /etc/$i; then
+			if ! cmp -hs /conf/base/etc/$i /etc/$i || [ $(stat -f "%p%g%u" /conf/base/etc/$i) != $(stat -f "%p%g%u" /etc/$i) ]; then
 				# tar can preserve full parent path owners only if list of full path is given
 				# As example for file1 in etc/dir1/dir2/file1 we need to backup
 				#  etc/dir1 etc/dir1/dir2 etc/dir1/dir2/file1

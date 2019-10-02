@@ -7,6 +7,7 @@ But if you installed it on a 2GB disk (or larger), here is how to resize system 
 system resize-system-slice 1911680
 
 ## New features
+* FreeBSD upgraded to 12.1-STABLE r353006
 * Added ksym module to be able to use lockstat
 * Updated tmpfs /var to 32MB
 
@@ -21,22 +22,22 @@ system resize-system-slice 1911680
 
 ## Packages upgrade
 * FRR to 7.1
-* bird to 2.0.5
+* bird to 2.0.6
 * exabgp to 4.1.2
 * iperf to 3.7
 * pmacct to 1.7.3
-* strongswan to 5.8.0
+* strongswan to 5.8.1
 * tmux to 2.9a_1
 
 ## Packages list
 * arping 2.19: ARP level "ping" utility
 * bgpq3 0.1.35: Lightweight prefix-list generator for various routers
-* bird2 2.0.5: Dynamic IP routing daemon
+* bird2 2.0.6: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.4: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.46: Root certificate bundle from the Mozilla Project
-* curl 7.65.3: Command line tool and library for transferring data with URLs
-* devcpu-data 1.23: Intel and AMD CPUs microcode updates
+* curl 7.66.0: Command line tool and library for transferring data with URLs
+* devcpu-data 1.24: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.6: Small RSA key management package based on openssl
@@ -46,7 +47,7 @@ system resize-system-slice 1911680
 * fswatch-mon 1.13.0_2: Cross-platform file change monitor
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
-* intel-pcm 201902: Process Count Monitor (PCM) for Intel processors
+* intel-pcm 201902_1: Process Count Monitor (PCM) for Intel processors
 * iperf3 3.7: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_2: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_10: KAME racoon IKE daemon, ipsec-tools version
@@ -81,7 +82,7 @@ system resize-system-slice 1911680
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
 * pimd 2.3.2: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-* pkg 1.11.1: Package manager
+* pkg 1.12.0: Package manager
 * pkt-gen g2019.03.01: Packet sink/source using the netmap API
 * pmacct 1.7.3: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py36-exabgp 4.1.2: BGP engine and route injector
@@ -93,7 +94,7 @@ system resize-system-slice 1911680
 * readline 8.0.0: Library for editing command lines as they are typed
 * rtrlib 0.6.3: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
-* strongswan 5.8.0: Open Source IKEv2 IPsec-based VPN solution
+* strongswan 5.8.1: Open Source IKEv2 IPsec-based VPN solution
 * sudo 1.8.27_1: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.9a_1: Terminal Multiplexer
