@@ -1,5 +1,11 @@
 # Release 1.94 (not released)
 
+## Bug to fix before releasing
+
+Full lab: OSPF crashes each time" on PPTP link
+Oct  3 14:26:41 R2 zebra[99377]: [EC 4043309117] Client 'ospf' encountered an error and is shutting down.
+Oct  3 14:26:41 R2 kernel: pid 9295 (ospfd), jid 0, uid 168: exited on signal 6
+
 ## Special upgrade notes for installation older than BSDRP 1.93
 BSDRP since 1.93 needs at minimum a 2GB disk and no more a 1GB disk.
 If you've installed BSDRP on a 1GB disk: You can't upgrade it.
