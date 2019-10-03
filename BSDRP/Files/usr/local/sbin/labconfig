@@ -49,7 +49,7 @@ sysrc hostname=R2
 sysrc rtadvd_enable=YES
 sysrc rtadvd_interfaces="em0"
 sysrc vlans_em1="23"
-sysrc ifconfig_em1="up"
+sysrc ifconfig_em1="up mtu 1528"
 sysrc ifconfig_em0="inet 10.0.12.2/24"
 sysrc ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64"
 sysrc ifconfig_em1_23="inet 10.0.23.2/24"
@@ -263,10 +263,10 @@ echo "VM2 configured"
 full_vm3 () {
 sysrc hostname=R3
 sysrc vlans_em1="23"
-sysrc ifconfig_em1="up"
+sysrc ifconfig_em1="up mtu 1528"
 sysrc ifconfig_em1_23="inet 10.0.23.3/24"
 sysrc ifconfig_em1_23_ipv6="inet6 2001:db8:23::3 prefixlen 64"
-sysrc ifconfig_em2="inet 10.0.34.3/24"
+sysrc ifconfig_em2="inet 10.0.34.3/24 mtu 1528"
 sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::3 prefixlen 64"
 sysrc bird_enable=YES
 sysrc pf_enable=YES
@@ -396,7 +396,7 @@ full_vm4 () {
 sysrc hostname=R4
 sysrc ifconfig_em3="inet 10.0.45.4/24"
 sysrc ifconfig_em3_ipv6="inet6 2001:db8:45::4 prefixlen 64"
-sysrc ifconfig_em2="10.0.34.4/24"
+sysrc ifconfig_em2="10.0.34.4/24 mtu 1528"
 sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::4 prefixlen 64"
 sysrc cloned_interfaces="lo1"
 sysrc ifconfig_lo1="inet 10.0.0.4/32"
