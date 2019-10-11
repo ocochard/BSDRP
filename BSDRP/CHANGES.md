@@ -1,11 +1,5 @@
 # Release 1.94 (not released)
 
-## Bug to fix before releasing
-
-Full lab: OSPF crashes each time" on PPTP link
-Oct  3 14:26:41 R2 zebra[99377]: [EC 4043309117] Client 'ospf' encountered an error and is shutting down.
-Oct  3 14:26:41 R2 kernel: pid 9295 (ospfd), jid 0, uid 168: exited on signal 6
-
 ## Special upgrade notes for installation older than BSDRP 1.93
 BSDRP since 1.93 needs at minimum a 2GB disk and no more a 1GB disk.
 If you've installed BSDRP on a 1GB disk: You can't upgrade it.
@@ -16,6 +10,8 @@ system resize-system-slice 1911680
 * FreeBSD upgraded to 12.1-STABLE r353006
 * Added ksym module to be able to use lockstat
 * Updated tmpfs /var to 32MB
+* Configuration script now check for modifications in file permission/owner too
+  thanks to fabrice.bruel@orange.com
 
 ## Bug fixes
 * Add a lock during firmware upgrade
@@ -41,7 +37,7 @@ system resize-system-slice 1911680
 * bird2 2.0.6: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.4: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.46: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.46.1: Root certificate bundle from the Mozilla Project
 * curl 7.66.0: Command line tool and library for transferring data with URLs
 * devcpu-data 1.24: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
@@ -56,7 +52,7 @@ system resize-system-slice 1911680
 * intel-pcm 201902_1: Process Count Monitor (PCM) for Intel processors
 * iperf3 3.7: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_2: CLI to manage IPMI systems
-* ipsec-tools 0.8.2_10: KAME racoon IKE daemon, ipsec-tools version
+* ipsec-tools 0.8.2_11: KAME racoon IKE daemon, ipsec-tools version
 * isc-dhcp44-server 4.4.1_4: ISC Dynamic Host Configuration Protocol server
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.13.1_1: JSON (JavaScript Object Notation) implementation in C

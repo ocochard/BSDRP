@@ -1178,7 +1178,7 @@ ipv6 route ::/0 2001:db8:67::6
 !
 interface em5
  ip address 192.168.67.7/24
- ipv6 address 2001:db8:57::7/64
+ ipv6 address 2001:db8:67::7/64
 !
 interface lo1
  ip address 192.168.70.7/24
