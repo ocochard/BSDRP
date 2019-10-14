@@ -1,4 +1,4 @@
-# Release 1.94 (not released)
+# Release 1.94 (14/10/2019)
 
 ## Special upgrade notes for installation older than BSDRP 1.93
 BSDRP since 1.93 needs at minimum a 2GB disk and no more a 1GB disk.
