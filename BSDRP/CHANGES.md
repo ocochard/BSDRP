@@ -7,7 +7,7 @@ But if you installed it on a 2GB disk (or larger), here is how to resize system 
 system resize-system-slice 1911680
 
 ## New features
-* FreeBSD upgraded to 12.1-STABLE r353006
+* FreeBSD upgraded to 12.1-STABLE r353478
 * Added ksym module to be able to use lockstat
 * Updated tmpfs /var to 32MB
 * Configuration script now check for modifications in file permission/owner too
