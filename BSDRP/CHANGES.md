@@ -1,5 +1,9 @@
 # Release 1.95 (not released)
 
+## Packages upgrade
+* FRR to 7.2
+* bird to 2.0.7
+
 -----------------------------------------------------
 # Release 1.94 (14/10/2019)
 

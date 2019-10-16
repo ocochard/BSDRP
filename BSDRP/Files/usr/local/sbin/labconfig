@@ -764,10 +764,6 @@ EOF
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 !
-interface em0
- ip address 192.168.12.1/24
- ipv6 address 2001:db8:12::1/64
-!
 interface lo1
  ip address 192.168.10.1/24
  ipv6 address 2001:db8:10::1/64
@@ -799,11 +795,9 @@ router bgp 12
 !
 bfd
  peer 2001:db8:12::2 local-address 2001:db8:12::1
-  label router2-6
   no shutdown
  !
  peer 192.168.12.2
-  label router2-4
   no shutdown
  !
 !
@@ -837,16 +831,6 @@ key chain rippass
  key 1
   key-string rippassword
 !
-interface em0
- ip address 192.168.12.2/24
- ipv6 address 2001:db8:12::2/64
-!
-interface em1
- ip address 192.168.23.2/24
- ip rip authentication key-chain rippass
- ip rip authentication mode md5
- ipv6 address 2001:db8:23::2/64
-!
 interface vtnet0
  ip address 192.168.12.2/24
  ipv6 address 2001:db8:12::2/64
@@ -858,14 +842,12 @@ interface vtnet1
  ipv6 address 2001:db8:23::2/64
 !
 router rip
- network em1
  network vtnet1
  redistribute bgp
  redistribute connected
  version 2
 !
 router ripng
- network em1
  network vtnet1
  redistribute bgp
  redistribute connected
@@ -896,11 +878,9 @@ router bgp 12
 !
 bfd
  peer 192.168.12.1
-  label router1-4
   no shutdown
  !
  peer 2001:db8:12::1 local-address 2001:db8:12::2
-  label router1-6
   no shutdown
  !
 !
@@ -925,19 +905,6 @@ key chain rippass
  key 1
   key-string rippassword
 !
-interface em1
- ip address 192.168.23.3/24
- ip rip authentication key-chain rippass
- ip rip authentication mode md5
- ipv6 address 2001:db8:23::3/64
-!
-interface em2
- ip address 192.168.34.3/24
- ip ospf bfd
- ip ospf message-digest-key 1 md5 superpass
- ipv6 address 2001:db8:34::3/64
- ipv6 ospf6 bfd
-!
 interface vtnet1
  ip address 192.168.23.3/24
  ip rip authentication key-chain rippass
@@ -952,14 +919,12 @@ interface vtnet2
  ipv6 ospf6 bfd
 !
 router rip
- network em1
  network vtnet1
  redistribute connected
  redistribute ospf
  version 2
 !
 router ripng
- network em1
  network vtnet1
  redistribute connected
  redistribute ospf6
@@ -975,15 +940,12 @@ router ospf6
  redistribute connected
  redistribute ripng
  interface vtnet2 area 0.0.0.0
- interface em2 area 0.0.0.0
 !
 bfd
  peer 2001:db8:34::4 local-address 2001:db8:34::3
-  label router4-6
   no shutdown
  !
  peer 192.168.34.4
-  label router4-4
   no shutdown
  !
 !
@@ -999,20 +961,6 @@ sysrc hostname=router4
 sysrc frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
-!
-interface em2
- ip address 192.168.34.4/24
- ip ospf bfd
- ip ospf message-digest-key 1 md5 superpass
- ipv6 address 2001:db8:34::4/64
- ipv6 ospf6 bfd
-!
-interface em3
- ip address 192.168.45.4/24
- ip router isis BSDRP
- ipv6 address 2001:db8:45::4/64
- ipv6 router isis BSDRP
- isis circuit-type level-2-only
 !
 interface vtnet2
  ip address 192.168.34.4/24
@@ -1038,7 +986,6 @@ router ospf
 router ospf6
  redistribute connected
  redistribute isis
- interface em2 area 0.0.0.0
  interface vtnet2 area 0.0.0.0
 !
 router isis BSDRP
@@ -1051,11 +998,9 @@ router isis BSDRP
 !
 bfd
  peer 2001:db8:34::3 local-address 2001:db8:34::4
-  label router3-6
   no shutdown
  !
  peer 192.168.34.3
-  label router3-4
   no shutdown
  !
 !
@@ -1073,21 +1018,6 @@ sysrc frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 !
-interface em3
- ip address 192.168.45.5/24
- ip router isis BSDRP
- ipv6 address 2001:db8:45::5/64
- ipv6 router isis BSDRP
- isis circuit-type level-2-only
-!
-interface em4
- ip address 192.168.56.5/24
- ip router isis BSDRP
- ipv6 address 2001:db8:56::5/64
- ipv6 router isis BSDRP
- isis circuit-type level-2-only
- isis passive
-!
 interface vtnet3
  ip address 192.168.45.5/24
  ip router isis BSDRP
@@ -1104,9 +1034,7 @@ interface vtnet4
  isis passive
 !
 router babel
- network em3
  network vtnet3
- network em4
  network vtnet4
  redistribute ipv4 isis
  redistribute ipv6 isis
@@ -1134,14 +1062,6 @@ log syslog
 ip route 192.168.70.0/24 192.168.67.7
 ipv6 route 2001:db8:70::/64 2001:db8:67::7
 !
-interface em4
- ip address 192.168.56.6/24
- ipv6 address 2001:db8:56::6/64
-!
-interface em5
- ip address 192.168.67.6/24
- ipv6 address 2001:db8:67::6/64
-!
 interface vtnet4
  ip address 192.168.56.6/24
  ipv6 address 2001:db8:56::6/64
@@ -1151,7 +1071,6 @@ interface vtnet5
  ipv6 address 2001:db8:67::6/64
 !
 router babel
- network em4
  network vtnet4
  redistribute ipv4 connected
  redistribute ipv4 static
@@ -1175,10 +1094,6 @@ log syslog
 !
 ip route 0.0.0.0/0 192.168.67.6
 ipv6 route ::/0 2001:db8:67::6
-!
-interface em5
- ip address 192.168.67.7/24
- ipv6 address 2001:db8:67::7/64
 !
 interface lo1
  ip address 192.168.70.7/24
