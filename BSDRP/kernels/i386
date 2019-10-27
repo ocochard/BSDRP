@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: stable/12/sys/i386/conf/GENERIC 344149 2019-02-15 09:49:09Z kib $
+# $FreeBSD: stable/12/sys/i386/conf/GENERIC 354060 2019-10-25 01:10:08Z kevans $
 
 cpu		I486_CPU
 cpu		I586_CPU
@@ -76,7 +76,7 @@ options 	CAPABILITIES		# Capsicum capabilities
 #options 	MAC         # TrustedBSD MAC Framework
 options		KDTRACE_HOOKS       # Kernel DTrace hooks
 options		DDB_CTF         # Kernel ELF linker loads CTF data
-options     INCLUDE_CONFIG_FILE     # Include this file in kernel
+options 	INCLUDE_CONFIG_FILE     # Include this file in kernel
 #options	RACCT			# Resource accounting framework
 #options	RACCT_DEFAULT_TO_DISABLED	# Set kern.racct.enable=0 by default
 #options	RCTL			# Resource limits
@@ -309,7 +309,7 @@ device		padlock_rng		# VIA Padlock RNG
 device		rdrand_rng		# Intel Bull Mountain RNG
 device		ether			# Ethernet support
 device		vlan			# 802.1Q VLAN support
-device		tun			# Packet tunnel.
+device		tuntap			# Packet tunnel.
 device		md			# Memory "disks"
 device		gif			# IPv6 and IPv4 tunneling
 device		firmware		# firmware assist module
