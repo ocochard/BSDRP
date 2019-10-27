@@ -1,3 +1,83 @@
+# Release 1.96 (not released)
+
+## Bug fix
+
+## Packages upgrade
+
+## Packages list
+* arping 2.19: ARP level "ping" utility
+* bgpq3 0.1.35: Lightweight prefix-list generator for various routers
+* bird2 2.0.7: Dynamic IP routing daemon
+* bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
+* bsnmp-ucd 0.4.4: bsnmpd module that implements parts of UCD-SNMP-MIB
+* ca_root_nss 3.47: Root certificate bundle from the Mozilla Project
+* curl 7.66.0: Command line tool and library for transferring data with URLs
+* devcpu-data 1.24: Intel and AMD CPUs microcode updates
+* dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
+* dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
+* easy-rsa 3.0.6: Small RSA key management package based on openssl
+* flashrom 1.1: Utility for reading, writing, verifying, and erasing flash ROM chips
+* freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
+* frr7 7.2: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* fswatch-mon 1.13.0_2: Cross-platform file change monitor
+* graphpath 1.2: Generates an ASCII network diagram from the route table
+* indexinfo 0.3.1: Utility to regenerate the GNU info page index
+* intel-pcm 201902_1: Process Count Monitor (PCM) for Intel processors
+* iperf3 3.7: Improved tool to measure TCP and UDP bandwidth
+* ipmitool 1.8.18_2: CLI to manage IPMI systems
+* ipsec-tools 0.8.2_11: KAME racoon IKE daemon, ipsec-tools version
+* isc-dhcp44-server 4.4.1_4: ISC Dynamic Host Configuration Protocol server
+* ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
+* json-c 0.13.1_1: JSON (JavaScript Object Notation) implementation in C
+* libev 4.24,1: Full-featured and high-performance event loop library
+* libevent 2.1.11: API for executing callback functions on events or timeouts
+* libffi 3.2.1_3: Foreign Function Interface
+* liblz4 1.9.2,1: LZ4 compression library, lossless and very fast
+* libnet 1.1.6_5,1: C library for creating IP packets
+* libpci 3.6.2: PCI configuration space I/O made easy
+* libsodium 1.0.18: Library to build higher-level cryptographic tools
+* libssh 0.8.6: Library implementing the SSH2 protocol
+* libucl 0.8.1: Universal configuration library parser
+* libyang 1.0: YANG data modeling language library
+* lzo2 2.10_1: Portable speedy, lossless data compression library
+* mlvpn 2.3.1_2: Multi-link VPN
+* monit 5.26.0: Unix system management and proactive monitoring
+* mpd5 5.8_10: Multi-link PPP daemon based on netgraph(4)
+* mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
+* netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
+* netperf 2.7.1.p20170921_1: Network performance benchmarking package
+* nstat 1.0_2: Replacement for bw/netstat/vmstat/pcm-memory.x
+* ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
+* openldap-client 2.4.48: Open source LDAP client implementation
+* openvpn 2.4.7: Secure IP/Ethernet tunnel daemon
+* pciids 20190725: Database of all known IDs used in PCI devices
+* pcre 8.43_2: Perl Compatible Regular Expressions library
+* pim6-tools 20061214: IPv6 multicast tools
+* pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
+* pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
+* pimd 2.3.2: Lightweight stand-alone PIM-SM v2 multicast routing daemon
+* pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
+* pkg 1.12.0: Package manager
+* pkt-gen g2019.03.01: Packet sink/source using the netmap API
+* pmacct 1.7.3: Accounting and aggregation tool for IPv4 and IPv6 traffic
+* py36-exabgp 4.1.2: BGP engine and route injector
+* py36-setuptools 41.4.0: Python packages installer
+* python 3.6_3,2: "meta-port" for the default version of Python interpreter
+* python3 3_3: The "meta-port" for version 3 of the Python interpreter
+* python36 3.6.9: Interpreted object-oriented programming language
+* quagga-bgp-netgen 0.2: Generates Quagga/FRR bgp configuration file with lot's of routes
+* readline 8.0.0: Library for editing command lines as they are typed
+* rtrlib 0.6.3: Open-source C implementation of the RPKI/Router Protocol client
+* smcroute 2.4.0: Static multicast routing tool
+* strongswan 5.8.1: Open Source IKEv2 IPsec-based VPN solution
+* sudo 1.8.28p1: Allow others to run commands as root
+* tayga 0.9.2: Userland stateless NAT64 daemon
+* tmux 2.9a_1: Terminal Multiplexer
+* ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
+* utf8proc 2.4.0: UTF-8 processing library
+* x86info 1.31.s03: x86 CPU identification and feature display utility
+
+-----------------------------------------------------
 # Release 1.95 (27/10/2019)
 
 ## Bug fix
