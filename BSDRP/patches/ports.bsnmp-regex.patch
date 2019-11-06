@@ -1,0 +1,18 @@
+Index: net-mgmt/bsnmp-regex/Makefile
+===================================================================
+--- net-mgmt/bsnmp-regex/Makefile	(revision 516909)
++++ net-mgmt/bsnmp-regex/Makefile	(working copy)
+@@ -5,12 +5,11 @@
+ PORTVERSION=	0.6
+ PORTREVISION=	2
+ CATEGORIES=	net-mgmt
+-MASTER_SITES=	http://thewalter.net/stef/software/bsnmp-regex/
++MASTER_SITES=	http://dev.bsdrp.net/FreeBSD/
+ 
+ MAINTAINER=	koobs@FreeBSD.org
+ COMMENT=	bsnmpd module allowing creation of counters from log files
+ 
+-BROKEN=		unfetchable
+ 
+ LICENSE=	BSD3CLAUSE
+ 
