@@ -462,6 +462,7 @@ add_port "security/openvpn"
 
 # some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netperf"
+add_port "benchmarks/iperf"
 add_port "benchmarks/iperf3"
 
 # LLDP daemon

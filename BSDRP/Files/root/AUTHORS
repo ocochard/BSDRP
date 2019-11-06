@@ -35,6 +35,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * graphpath, license:BSD2CLAUSE, https://github.com/ocochard/graphpath
 * indexinfo, license:BSD2CLAUSE, https://github.com/bapt/indexinfo
 * intel-pcm, license:BSD3CLAUSE, https://github.com/opcm/pcm
+* iperf, license:BSD2CLAUSE, https://sourceforge.net/projects/iperf2/
 * iperf3, license:BSD3CLAUSE, MIT, https://software.es.net/iperf/
 * ipmitool, license:BSD3CLAUSE, https://sourceforge.net/projects/ipmitool/
 * ipsec-tools, license:BSD3CLAUSE, http://ipsec-tools.sourceforge.net/

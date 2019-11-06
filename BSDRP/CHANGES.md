@@ -1,8 +1,13 @@
 # Release 1.96 (not released)
 
 ## Bug fix
+* mlx5 drivers can't forward packets
+
+## New packages
+* iperf2 is back because iperf3 doesn't support multicast
 
 ## Packages upgrade
+* openvpn to 2.4.8
 
 ## Packages list
 * arping 2.19: ARP level "ping" utility
@@ -23,6 +28,7 @@
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 201902_1: Process Count Monitor (PCM) for Intel processors
+* iperf 2.0.13: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.7: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_2: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_11: KAME racoon IKE daemon, ipsec-tools version
@@ -49,8 +55,8 @@
 * nstat 1.0_2: Replacement for bw/netstat/vmstat/pcm-memory.x
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.48: Open source LDAP client implementation
-* openvpn 2.4.7: Secure IP/Ethernet tunnel daemon
-* pciids 20190725: Database of all known IDs used in PCI devices
+* openvpn 2.4.8: Secure IP/Ethernet tunnel daemon
+* pciids 20191012: Database of all known IDs used in PCI devices
 * pcre 8.43_2: Perl Compatible Regular Expressions library
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
@@ -70,7 +76,7 @@
 * rtrlib 0.6.3: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.8.1: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.28p1: Allow others to run commands as root
+* sudo 1.8.29: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.9a_1: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol

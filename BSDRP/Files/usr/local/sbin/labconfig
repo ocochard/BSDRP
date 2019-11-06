@@ -26,15 +26,15 @@ usage () {
 ### Full (maximum) features labs ###
 
 full_vm1 () {
-sysrc hostname=R1
-sysrc gateway_enable=NO
-sysrc ipv6_gateway_enable=NO
-sysrc ifconfig_em0=up
-sysrc cloned_interfaces=lagg0
-sysrc ifconfig_lagg0="laggproto loadbalance laggport em0 SYNCDHCP"
-sysrc ifconfig_lagg0_ipv6="inet6 accept_rtadv"
-sysrc rtsold_enable=yes
-sysrc sshd_enable=yes
+sysrc hostname=R1 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em0=up \
+	cloned_interfaces=lagg0 \
+	ifconfig_lagg0="laggproto loadbalance laggport em0 SYNCDHCP" \
+	ifconfig_lagg0_ipv6="inet6 accept_rtadv" \
+	rtsold_enable=yes \
+	sshd_enable=yes
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 config save
 hostname R1
@@ -46,29 +46,29 @@ echo "VM1 configured"
 }
 
 full_vm2 () {
-sysrc hostname=R2
-sysrc rtadvd_enable=YES
-sysrc rtadvd_interfaces="em0"
-sysrc vlans_em1="23"
-sysrc ifconfig_em1="up mtu 1528"
-sysrc ifconfig_em0="inet 10.0.12.2/24"
-sysrc ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64"
-sysrc ifconfig_em1_23="inet 10.0.23.2/24"
-sysrc ifconfig_em1_23_ipv6="inet6 2001:db8:23::2 prefixlen 64"
-sysrc cloned_interfaces="lo1"
-sysrc ifconfig_lo1="inet 10.0.0.2/32"
-sysrc ifconfig_lo1_ipv6="inet6 2001:db8::2 prefixlen 128"
-sysrc frr_enable=YES
-sysrc frr_vtysh_boot=YES
-sysrc dhcprelya_enable=YES
-sysrc dhcprelya_servers="10.0.45.5"
-sysrc dhcprelya_ifaces=em0
-sysrc mpd_enable=YES
-sysrc mpd_flags="-b -s ppp"
-sysrc ipsec_enable=YES
-sysrc ipsec_file="/etc/ipsec.conf"
-sysrc pimd_enable=YES
-sysrc freevrrpd_enable=YES
+sysrc hostname=R2 \
+	rtadvd_enable=YES \
+	rtadvd_interfaces="em0" \
+	vlans_em1="23" \
+	ifconfig_em1="up mtu 1528" \
+	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64" \
+	ifconfig_em1_23="inet 10.0.23.2/24" \
+	ifconfig_em1_23_ipv6="inet6 2001:db8:23::2 prefixlen 64" \
+	cloned_interfaces="lo1" \
+	ifconfig_lo1="inet 10.0.0.2/32" \
+	ifconfig_lo1_ipv6="inet6 2001:db8::2 prefixlen 128" \
+	frr_enable=YES \
+	frr_vtysh_boot=YES \
+	dhcprelya_enable=YES \
+	dhcprelya_servers="10.0.45.5" \
+	dhcprelya_ifaces=em0 \
+	mpd_enable=YES \
+	mpd_flags="-b -s ppp" \
+	ipsec_enable=YES \
+	ipsec_file="/etc/ipsec.conf" \
+	pimd_enable=YES \
+	freevrrpd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
 cat > /usr/local/etc/freevrrpd.conf <<EOF
@@ -262,16 +262,16 @@ echo "VM2 configured"
 }
 
 full_vm3 () {
-sysrc hostname=R3
-sysrc vlans_em1="23"
-sysrc ifconfig_em1="up mtu 1528"
-sysrc ifconfig_em1_23="inet 10.0.23.3/24"
-sysrc ifconfig_em1_23_ipv6="inet6 2001:db8:23::3 prefixlen 64"
-sysrc ifconfig_em2="inet 10.0.34.3/24 mtu 1528"
-sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::3 prefixlen 64"
-sysrc bird_enable=YES
-sysrc pf_enable=YES
-sysrc pf_rules="/etc/pf.conf"
+sysrc hostname=R3 \
+	vlans_em1="23" \
+	ifconfig_em1="up mtu 1528" \
+	ifconfig_em1_23="inet 10.0.23.3/24" \
+	ifconfig_em1_23_ipv6="inet6 2001:db8:23::3 prefixlen 64" \
+	ifconfig_em2="inet 10.0.34.3/24 mtu 1528" \
+	ifconfig_em2_ipv6="inet6 2001:db8:34::3 prefixlen 64" \
+	bird_enable=YES \
+	pf_enable=YES \
+	pf_rules="/etc/pf.conf"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
 cat > /etc/pf.conf <<EOF
@@ -394,25 +394,25 @@ echo "VM3 configured"
 }
 
 full_vm4 () {
-sysrc hostname=R4
-sysrc ifconfig_em3="inet 10.0.45.4/24"
-sysrc ifconfig_em3_ipv6="inet6 2001:db8:45::4 prefixlen 64"
-sysrc ifconfig_em2="10.0.34.4/24 mtu 1528"
-sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::4 prefixlen 64"
-sysrc cloned_interfaces="lo1"
-sysrc ifconfig_lo1="inet 10.0.0.4/32"
-sysrc ifconfig_lo1_ipv6="inet6 2001:db8::4 prefixlen 128"
-sysrc frr_enable=YES
-sysrc frr_vtysh_boot=YES
-sysrc mpd_enable=YES
-sysrc mpd_flags="-b -s ppp"
-sysrc firewall_enable=YES
-sysrc firewall_script="/etc/ipfw.rules"
-sysrc ipfw_netflow_enable=YES
-sysrc ipfw_netflow_ip=10.0.45.5
-sysrc ipfw_netflow_port=2055
-sysrc ipfw_netflow_version=9
-sysrc pimd_enable=YES
+sysrc hostname=R4 \
+	ifconfig_em3="inet 10.0.45.4/24" \
+	ifconfig_em3_ipv6="inet6 2001:db8:45::4 prefixlen 64" \
+	ifconfig_em2="10.0.34.4/24 mtu 1528" \
+	ifconfig_em2_ipv6="inet6 2001:db8:34::4 prefixlen 64" \
+	cloned_interfaces="lo1" \
+	ifconfig_lo1="inet 10.0.0.4/32" \
+	ifconfig_lo1_ipv6="inet6 2001:db8::4 prefixlen 128" \
+	frr_enable=YES \
+	frr_vtysh_boot=YES \
+	mpd_enable=YES \
+	mpd_flags="-b -s ppp" \
+	firewall_enable=YES \
+	firewall_script="/etc/ipfw.rules" \
+	ipfw_netflow_enable=YES \
+	ipfw_netflow_ip=10.0.45.5 \
+	ipfw_netflow_port=2055 \
+	ipfw_netflow_version=9 \
+	pimd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
 cat > /usr/local/etc/frr/frr.conf <<EOF
@@ -585,9 +585,7 @@ echo "net.inet6.ip6.fw.deny_unknown_exthdrs=0" >> /etc/sysctl.conf
 cat > /etc/ipfw.rules <<EOF
 #!/bin/sh
 fwcmd="/sbin/ipfw"
-if ! kldstat -q -m dummynet; then
-        kldload dummynet
-fi
+kldstat -q -m dummynet || kldload dummynet
 
 # Flush out the list before we begin.
 \${fwcmd} -f flush
@@ -619,11 +617,11 @@ echo "VM4 configured"
 
 full_vm5 () {
 
-sysrc hostname=R5
-sysrc ifconfig_em3=up
-sysrc cloned_interfaces=epair0
-sysrc ifconfig_epair0a=up
-sysrc kld_list+=" if_lagg carp"
+sysrc hostname=R5 \
+	ifconfig_em3=up \
+	cloned_interfaces=epair0 \
+	ifconfig_epair0a=up \
+	kld_list+=" if_lagg carp"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 cat > /etc/devfs.rules <<EOF
 [devfsrules_jailpf=4]
@@ -643,22 +641,22 @@ else
 	tenant -c -j jail5 -i em3,epair0a
 fi
 tenant -c -j jail6 -i epair0b
-sysrc -f /etc/jails/jail5/rc.conf hostname=jail5
-sysrc -f /etc/jails/jail5/rc.conf ifconfig_em3="inet 10.0.45.5/24"
-sysrc -f /etc/jails/jail5/rc.conf ifconfig_em3_ipv6="inet6 2001:db8:45::5 prefixlen 64"
-sysrc -f /etc/jails/jail5/rc.conf ifconfig_epair0a="10.0.56.5/24"
-sysrc -f /etc/jails/jail5/rc.conf ifconfig_epair0a_ipv6="inet6 2001:db8:56::5 prefixlen 64"
-sysrc -f /etc/jails/jail5/rc.conf ifconfig_epair0a_alias0="inet 10.0.56.254/32 vhid 1 pass testpass"
-sysrc -f /etc/jails/jail5/rc.conf ifconfig_epair0a_alias1="inet6 2001:db8:56::fe prefixlen 128 vhid 1 pass testpass"
-sysrc -f /etc/jails/jail5/rc.conf rtadvd_enable=YES
-sysrc -f /etc/jails/jail5/rc.conf rtadvd_interfaces=epair0a
-sysrc -f /etc/jails/jail5/rc.conf dhcpd_enable=YES
-sysrc -f /etc/jails/jail5/rc.conf dhcpd_flags="-q"
-sysrc -f /etc/jails/jail5/rc.conf dhcpd_conf="/usr/local/etc/dhcpd.conf"
-sysrc -f /etc/jails/jail5/rc.conf frr_enable=YES
-sysrc -f /etc/jails/jail5/rc.conf frr_vtysh_boot="YES"
-sysrc -f /etc/jails/jail5/rc.conf nfacctd_enable=YES
-sysrc -f /etc/jails/jail5/rc.conf pimd_enable=YES
+sysrc -f /etc/jails/jail5/rc.conf hostname=jail5 \
+	ifconfig_em3="inet 10.0.45.5/24" \
+	ifconfig_em3_ipv6="inet6 2001:db8:45::5 prefixlen 64" \
+	ifconfig_epair0a="10.0.56.5/24" \
+	ifconfig_epair0a_ipv6="inet6 2001:db8:56::5 prefixlen 64" \
+	ifconfig_epair0a_alias0="inet 10.0.56.254/32 vhid 1 pass testpass" \
+	ifconfig_epair0a_alias1="inet6 2001:db8:56::fe prefixlen 128 vhid 1 pass testpass" \
+	rtadvd_enable=YES \
+	rtadvd_interfaces=epair0a \
+	dhcpd_enable=YES \
+	dhcpd_flags="-q" \
+	dhcpd_conf="/usr/local/etc/dhcpd.conf" \
+	frr_enable=YES \
+	frr_vtysh_boot="YES" \
+	nfacctd_enable=YES \
+	pimd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/jails/jail5/rc.conf
 mkdir -p /etc/jails/jail5/local/frr
 cat > /etc/jails/jail5/local/dhcpd.conf <<EOF
@@ -733,15 +731,15 @@ print_output_file_append: true
 files_umask: 022
 EOF
 
-sysrc -f /etc/jails/jail6/rc.conf hostname=jail6
-sysrc -f /etc/jails/jail6/rc.conf ifconfig_epair0b="up"
-sysrc -f /etc/jails/jail6/rc.conf cloned_interfaces="lagg0"
-sysrc -f /etc/jails/jail6/rc.conf ifconfig_lagg0="laggproto failover laggport epair0b SYNCDHCP"
-sysrc -f /etc/jails/jail6/rc.conf ifconfig_lagg0_ipv6="inet6 accept_rtadv"
-sysrc -f /etc/jails/jail6/rc.conf rtsold_enable=YES
-sysrc -f /etc/jails/jail6/rc.conf bsnmpd_enable=YES
-sysrc -f /etc/jails/jail6/rc.conf gateway_enable=NO
-sysrc -f /etc/jails/jail6/rc.conf ipv6_gateway_enable=NO
+sysrc -f /etc/jails/jail6/rc.conf hostname=jail6 \
+	ifconfig_epair0b="up" \
+	cloned_interfaces="lagg0" \
+	ifconfig_lagg0="laggproto failover laggport epair0b SYNCDHCP" \
+	ifconfig_lagg0_ipv6="inet6 accept_rtadv" \
+	rtsold_enable=YES \
+	bsnmpd_enable=YES \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO
 service jail start
 echo "VM5 (including jail5 and jail6) configured"
 }
@@ -749,11 +747,11 @@ echo "VM5 (including jail5 and jail6) configured"
 ### FRR lab
 
 frr_vm1 () {
-sysrc hostname=router1
-sysrc cloned_interfaces=lo1
-sysrc ipsec_enable=YES
-sysrc ipsec_file="/etc/ipsec.conf"
-sysrc frr_enable=yes
+sysrc hostname=router1 \
+	cloned_interfaces=lo1 \
+	ipsec_enable=YES \
+	ipsec_file="/etc/ipsec.conf" \
+	frr_enable=yes
 cat <<EOF > /etc/ipsec.conf
 flush ;
 add 192.168.12.1 192.168.12.2 tcp 0x1000 -A tcp-md5 "abigpassword" ;
@@ -812,10 +810,10 @@ echo "VM1 configured"
 }
 
 frr_vm2 () {
-sysrc hostname=router2
-sysrc ipsec_enable=YES
-sysrc ipsec_file="/etc/ipsec.conf"
-sysrc frr_enable=YES
+sysrc hostname=router2 \
+	ipsec_enable=YES \
+	ipsec_file="/etc/ipsec.conf" \
+	frr_enable=YES
 cat <<EOF > /etc/ipsec.conf
 flush ;
 add 192.168.12.1 192.168.12.2 tcp 0x1000 -A tcp-md5 "abigpassword" ;
@@ -895,8 +893,8 @@ echo "VM2 configured"
 }
 
 frr_vm3 () {
-sysrc hostname=router3
-sysrc frr_enable=YES
+sysrc hostname=router3 \
+	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 !
@@ -958,8 +956,8 @@ echo "VM3 configured"
 }
 
 frr_vm4 () {
-sysrc hostname=router4
-sysrc frr_enable=YES
+sysrc hostname=router4 \
+	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 !
@@ -1014,8 +1012,8 @@ echo "VM4 configured"
 }
 
 frr_vm5 () {
-sysrc hostname=router5
-sysrc frr_enable=YES
+sysrc hostname=router5 \
+	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 !
@@ -1055,8 +1053,8 @@ echo "VM5 configured"
 }
 
 frr_vm6 () {
-sysrc hostname=router6
-sysrc frr_enable=YES
+sysrc hostname=router6 \
+	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 !
@@ -1087,9 +1085,9 @@ echo "VM6 configured"
 }
 
 frr_vm7 () {
-sysrc hostname=router7
-sysrc cloned_interfaces=lo1
-sysrc frr_enable=YES
+sysrc hostname=router7 \
+	cloned_interfaces=lo1 \
+	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
 !
@@ -1113,13 +1111,13 @@ echo "VM7 configured"
 }
 
 vpn_vm1 () {
-sysrc hostname=R1
-sysrc gateway_enable=NO
-sysrc ipv6_gateway_enable=NO
-sysrc ifconfig_em0="inet 10.0.12.1/24"
-sysrc ifconfig_em0_ipv6="inet6 2001:db8:12::1 prefixlen 64"
-sysrc defaultrouter=10.0.12.2
-sysrc ipv6_defaultrouter=2001:db8:12::2
+sysrc hostname=R1 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em0="inet 10.0.12.1/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::1 prefixlen 64" \
+	defaultrouter=10.0.12.2 \
+	ipv6_defaultrouter=2001:db8:12::2
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 hostname R1
 service netif restart
@@ -1128,14 +1126,14 @@ config save
 }
 
 vpn_vm2 () {
-sysrc hostname=R2
-sysrc ifconfig_em0="inet 10.0.12.2/24"
-sysrc ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64"
-sysrc ifconfig_em1="inet 10.0.23.2/24"
-sysrc ifconfig_em1_ipv6="inet6 2001:db8:23::2 prefixlen 64"
-sysrc defaultrouter="10.0.23.3"
-sysrc ipv6_defaultrouter="2001:db8:23::3"
-sysrc sshd_enable=YES
+sysrc hostname=R2 \
+	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64" \
+	ifconfig_em1="inet 10.0.23.2/24" \
+	ifconfig_em1_ipv6="inet6 2001:db8:23::2 prefixlen 64" \
+	defaultrouter="10.0.23.3" \
+	ipv6_defaultrouter="2001:db8:23::3" \
+	sshd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 cat > /etc/ipsec.conf <<EOF
 flush;
@@ -1209,11 +1207,11 @@ config save
 }
 
 vpn_vm3 () {
-sysrc hostname=R3
-sysrc ifconfig_em1="inet 10.0.23.3/24"
-sysrc ifconfig_em1_ipv6="inet6 2001:db8:23::3 prefixlen 64"
-sysrc ifconfig_em2="inet 10.0.34.3/24"
-sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::3 prefixlen 64"
+sysrc hostname=R3 \
+	ifconfig_em1="inet 10.0.23.3/24" \
+	ifconfig_em1_ipv6="inet6 2001:db8:23::3 prefixlen 64" \
+	ifconfig_em2="inet 10.0.34.3/24" \
+	ifconfig_em2_ipv6="inet6 2001:db8:34::3 prefixlen 64"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 hostname R3
 service netif restart
@@ -1221,13 +1219,13 @@ config save
 }
 
 vpn_vm4 () {
-sysrc hostname=R4
-sysrc ifconfig_em2="inet 10.0.34.4/24"
-sysrc ifconfig_em2_ipv6="inet6 2001:db8:34::4 prefixlen 64"
-sysrc ifconfig_em3="inet 10.0.45.4/24"
-sysrc ifconfig_em3_ipv6="inet6 2001:db8:45::4 prefixlen 64"
-sysrc defaultrouter="10.0.34.3"
-sysrc ipv6_defaultrouter="2001:db8:34::3"
+sysrc hostname=R4 \
+	ifconfig_em2="inet 10.0.34.4/24" \
+	ifconfig_em2_ipv6="inet6 2001:db8:34::4 prefixlen 64" \
+	ifconfig_em3="inet 10.0.45.4/24" \
+	ifconfig_em3_ipv6="inet6 2001:db8:45::4 prefixlen 64" \
+	defaultrouter="10.0.34.3" \
+	ipv6_defaultrouter="2001:db8:34::3"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 cat > /etc/ipsec.conf <<EOF
 flush;
@@ -1278,13 +1276,13 @@ config save
 }
 
 vpn_vm5 () {
-sysrc hostname=R5
-sysrc gateway_enable=NO
-sysrc ipv6_gateway_enable=NO
-sysrc ifconfig_em3="inet 10.0.45.5/24"
-sysrc ifconfig_em3_ipv6="inet6 2001:db8:45::5 prefixlen 64"
-sysrc defaultrouter="10.0.45.4"
-sysrc ipv6_defaultrouter="2001:db8:45::4"
+sysrc hostname=R5 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em3="inet 10.0.45.5/24" \
+	ifconfig_em3_ipv6="inet6 2001:db8:45::5 prefixlen 64" \
+	defaultrouter="10.0.45.4" \
+	ipv6_defaultrouter="2001:db8:45::4"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 hostname R5
 service netif restart
@@ -1294,12 +1292,12 @@ config save
 
 ### BGP bird & FRR lab
 bgp_vm1 () {
-sysrc hostname=R1
-sysrc ifconfig_vtnet6="10.0.6.1/24"
-sysrc ifconfig_vtnet6_ipv6="inet6 2001:db8:6::1 prefixlen 64"
-sysrc ifconfig_vtnet0="10.0.1.1/24"
-sysrc ifconfig_vtnet0_ipv6="inet6 2001:db8:1::1 prefixlen 64"
-sysrc bird_enable=YES
+sysrc hostname=R1 \
+	ifconfig_vtnet6="10.0.6.1/24" \
+	ifconfig_vtnet6_ipv6="inet6 2001:db8:6::1 prefixlen 64" \
+	ifconfig_vtnet0="10.0.1.1/24" \
+	ifconfig_vtnet0_ipv6="inet6 2001:db8:1::1 prefixlen 64" \
+	bird_enable=YES
 cat > /usr/local/etc/bird.conf <<EOF
 # Configure logging
 log syslog all;
@@ -1357,10 +1355,10 @@ service bird start
 }
 
 bgp_vm2 () {
-sysrc hostname=R2
-sysrc ifconfig_vtnet6="10.0.6.2/24"
-sysrc ifconfig_vtnet6_ipv6="inet6 2001:db8:6::2 prefixlen 64"
-sysrc bird_enable=YES
+sysrc hostname=R2 \
+	ifconfig_vtnet6="10.0.6.2/24" \
+	ifconfig_vtnet6_ipv6="inet6 2001:db8:6::2 prefixlen 64" \
+	bird_enable=YES
 cat > /usr/local/etc/bird.conf <<EOF
 # Configure logging
 log syslog all;
@@ -1441,12 +1439,12 @@ service bird start
 }
 
 bgp_vm3 () {
-sysrc hostname=R3
-sysrc ifconfig_vtnet6="10.0.6.3/24"
-sysrc ifconfig_vtnet6_ipv6="inet6 2001:db8:6::3 prefixlen 64"
-sysrc ifconfig_vtnet2="10.0.2.3/24"
-sysrc ifconfig_vtnet2_ipv6="inet6 2001:db8:2::3 prefixlen 64"
-sysrc bird_enable=YES
+sysrc hostname=R3 \
+	ifconfig_vtnet6="10.0.6.3/24" \
+	ifconfig_vtnet6_ipv6="inet6 2001:db8:6::3 prefixlen 64" \
+	ifconfig_vtnet2="10.0.2.3/24" \
+	ifconfig_vtnet2_ipv6="inet6 2001:db8:2::3 prefixlen 64" \
+	bird_enable=YES
 cat > /usr/local/etc/bird.conf <<EOF
 # Configure logging
 log syslog all;
@@ -1535,11 +1533,10 @@ service bird start
 }
 
 bgp_vm4 () {
-sysrc hostname=R4
-hostname R4
-sysrc frr_enable=YES
-sysrc ipsec_enable=YES
-sysrc ipsec_file="/etc/ipsec.conf"
+sysrc hostname=R4 \
+	frr_enable=YES \
+	ipsec_enable=YES \
+	ipsec_file="/etc/ipsec.conf"
 cat <<EOF > /etc/ipsec.conf
 flush ;
 add 10.0.2.3 10.0.2.4 tcp 0x1000 -A tcp-md5 "abigpassword" ;
@@ -1584,13 +1581,14 @@ router bgp 64512
  exit-address-family
 !
 EOF
+hostname R4
 service frr start
 config save
 }
 
 bgp_vm5 () {
-sysrc hostname=R5
-sysrc frr_enable=YES
+sysrc hostname=R5 \
+	frr_enable=YES
 cat <<EOF > /usr/local/etc/frr/frr.conf
 log syslog
 interface vtnet3
@@ -1636,11 +1634,10 @@ config save
 }
 
 bgp_vm6 () {
-sysrc hostname=R6
-hostname R6
-sysrc ipsec_enable=YES
-sysrc ipsec_file="/etc/ipsec.conf"
-sysrc frr_enable=YES
+sysrc hostname=R6 \
+	ipsec_enable=YES \
+	ipsec_file="/etc/ipsec.conf" \
+	frr_enable=YES
 cat <<EOF > /etc/ipsec.conf
 flush ;
 add 10.0.5.6 10.0.5.7 tcp 0x1000 -A tcp-md5 "abcdefgh" ;
@@ -1688,16 +1685,16 @@ router bgp 65535
   neighbor 2001:db8:5::7 next-hop-self
  exit-address-family
 EOF
+hostname R6
 service frr start
 config save
 }
 
 bgp_vm7 () {
-sysrc hostname=R7
-hostname R7
-sysrc ipsec_enable=YES
-sysrc ipsec_file="/etc/ipsec.conf"
-sysrc frr_enable=YES
+sysrc hostname=R7 \
+	ipsec_enable=YES \
+	ipsec_file="/etc/ipsec.conf" \
+	frr_enable=YES
 cat <<EOF > /etc/ipsec.conf
 flush ;
 add 10.0.5.6 10.0.5.7 tcp 0x1000 -A tcp-md5 "abcdefgh" ;
@@ -1738,20 +1735,21 @@ router bgp 65535
   neighbor 2001:db8:5::6 activate
  exit-address-family
 EOF
+hostname R7
 service frr start
 config save
 }
 
 jailpf_vm1 () {
-sysrc hostname=VM1
-sysrc cloned_interfaces="bridge0"
-sysrc ifconfig_bridge0="addm vtnet4"
-sysrc ifconfig_vtnet4="up"
-sysrc ifconfig_vtnet5="up"
-sysrc vlans_vtnet5="1 2"
-sysrc ifconfig_vtnet5_1="up"
-sysrc ifconfig_vtnet5_2="up"
-sysrc kld_list+=" carp pf pflog pfsync"
+sysrc hostname=VM1 \
+	cloned_interfaces="bridge0" \
+	ifconfig_bridge0="addm vtnet4" \
+	ifconfig_vtnet4="up" \
+	ifconfig_vtnet5="up" \
+	vlans_vtnet5="1 2" \
+	ifconfig_vtnet5_1="up" \
+	ifconfig_vtnet5_2="up" \
+	kld_list+=" carp pf pflog pfsync"
 cat > /etc/devfs.rules <<EOF
 [devfsrules_jailpf=4]
 add include \$devfsrules_hide_all
@@ -1819,15 +1817,15 @@ service jail start
 }
 
 jailpf_vm2 () {
-sysrc hostname=VM2
-sysrc cloned_interfaces="bridge0"
-sysrc ifconfig_bridge0="addm vtnet4"
-sysrc ifconfig_vtnet4="up"
-sysrc ifconfig_vtnet5="up"
-sysrc vlans_vtnet5="1 2"
-sysrc ifconfig_vtnet5_1="up"
-sysrc ifconfig_vtnet5_2="up"
-sysrc kld_list+=" carp pf pflog pfsync"
+sysrc hostname=VM2 \
+	cloned_interfaces="bridge0" \
+	ifconfig_bridge0="addm vtnet4" \
+	ifconfig_vtnet4="up" \
+	ifconfig_vtnet5="up" \
+	vlans_vtnet5="1 2" \
+	ifconfig_vtnet5_1="up" \
+	ifconfig_vtnet5_2="up" \
+	kld_list+=" carp pf pflog pfsync"
 cat > /etc/devfs.rules <<EOF
 [devfsrules_jailpf=4]
 add include \$devfsrules_hide_all
@@ -1895,13 +1893,13 @@ service jail start
 }
 
 jailpf_vm3 () {
-sysrc hostname=VM3
-hostname VM3
-sysrc ifconfig_vtnet4="inet 2.2.2.3/24"
-sysrc -x gateway_enable
-sysrc -x ipv6_gateway_enable
-sysrc inetd_enable=YES
+sysrc hostname=VM3 \
+	ifconfig_vtnet4="inet 2.2.2.3/24" \
+	inetd_enable=YES \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO
 sed -i -e 's/#echo/echo/g' /etc/inetd.conf
+hostname VM3
 service netif restart
 service routing restart || true
 service inetd start
@@ -1909,28 +1907,28 @@ config save
 }
 
 jailpf_vm4 () {
-sysrc hostname=VM4
+sysrc hostname=VM4 \
+	ifconfig_vtnet5="up" \
+	vlans_vtnet5="1" \
+	ifconfig_vtnet5_1="inet 10.0.0.4/24" \
+	defaultrouter="10.0.0.254" \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO
 hostname VM4
-sysrc ifconfig_vtnet5="up"
-sysrc vlans_vtnet5="1"
-sysrc ifconfig_vtnet5_1="inet 10.0.0.4/24"
-sysrc defaultrouter="10.0.0.254"
-sysrc -x gateway_enable
-sysrc -x ipv6_gateway_enable
 service netif restart
 service routing restart
 config save
 }
 
 jailpf_vm5 () {
-sysrc hostname=VM5
+sysrc hostname=VM5 \
+	ifconfig_vtnet5="up" \
+	vlans_vtnet5="2" \
+	ifconfig_vtnet5_2="inet 10.0.0.5/24" \
+	defaultrouter="10.0.0.254" \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO
 hostname VM5
-sysrc ifconfig_vtnet5="up"
-sysrc vlans_vtnet5="2"
-sysrc ifconfig_vtnet5_2="inet 10.0.0.5/24"
-sysrc defaultrouter="10.0.0.254"
-sysrc -x gateway_enable
-sysrc -x ipv6_gateway_enable
 service netif restart
 service routing restart
 config save
@@ -1939,23 +1937,23 @@ config save
 ### graphpath
 
 graphpath () {
-sysrc hostname="me"
-sysrc cloned_interfaces="bridge1 bridge2 bridge11 bridge12 bridge21"
-sysrc ifconfig_bridge1="inet 10.0.1.1/24"
-sysrc ifconfig_bridge1_ipv6="inet6 2001:db8:1::1 prefixlen 64"
-sysrc ifconfig_bridge2="inet 10.0.2.1/24"
-sysrc ifconfig_bridge2_ipv6="inet6 2001:db8:2::1 prefixlen 64"
-sysrc ifconfig_bridge11="up"
-sysrc ifconfig_bridge12="up"
-sysrc ifconfig_bridge21="up"
-sysrc static_routes="host11 host12 host21"
-sysrc route_host11="-net 10.0.11.0/24 10.0.1.11"
-sysrc route_host12="-net 10.0.12.0/24 10.0.1.12"
-sysrc route_host21="-net 10.0.21.0/24 10.0.2.21"
-sysrc ipv6_static_routes="host11 host12 host21"
-sysrc ipv6_route_host11="2001:db8:11:: -prefixlen 64 2001:db8:1::11"
-sysrc ipv6_route_host12="2001:db8:12:: -prefixlen 64 2001:db8:1::12"
-sysrc ipv6_route_host21="2001:db8:21:: -prefixlen 64 2001:db8:2::21"
+sysrc hostname="me" \
+	cloned_interfaces="bridge1 bridge2 bridge11 bridge12 bridge21" \
+	ifconfig_bridge1="inet 10.0.1.1/24" \
+	ifconfig_bridge1_ipv6="inet6 2001:db8:1::1 prefixlen 64" \
+	ifconfig_bridge2="inet 10.0.2.1/24" \
+	ifconfig_bridge2_ipv6="inet6 2001:db8:2::1 prefixlen 64" \
+	ifconfig_bridge11="up" \
+	ifconfig_bridge12="up" \
+	ifconfig_bridge21="up" \
+	static_routes="host11 host12 host21" \
+	route_host11="-net 10.0.11.0/24 10.0.1.11" \
+	route_host12="-net 10.0.12.0/24 10.0.1.12" \
+	route_host21="-net 10.0.21.0/24 10.0.2.21" \
+	ipv6_static_routes="host11 host12 host21" \
+	ipv6_route_host11="2001:db8:11:: -prefixlen 64 2001:db8:1::11" \
+	ipv6_route_host12="2001:db8:12:: -prefixlen 64 2001:db8:1::12" \
+	ipv6_route_host21="2001:db8:21:: -prefixlen 64 2001:db8:2::21"
 hostname me
 service netif restart
 service routing restart
@@ -2029,16 +2027,16 @@ service jail start
 }
 
 mlppp_vm1 () {
-sysrc hostname=R1
-sysrc ifconfig_vtnet0="inet 10.0.12.1/24"
-sysrc ifconfig_vtnet1="inet 10.0.13.1/24"
-sysrc ifconfig_vtnet2="inet 10.0.14.1/24"
-sysrc static_routes="ISP1 ISP2 ISP3"
-sysrc route_ISP1="-host 10.0.56.62 10.0.12.2"
-sysrc route_ISP2="-host 10.0.56.63 10.0.13.3"
-sysrc route_ISP3="-host 10.0.56.64 10.0.14.4"
-sysrc mpd_enable=YES
-sysrc mpd_flags="-b -s ppp"
+sysrc hostname=R1 \
+	ifconfig_vtnet0="inet 10.0.12.1/24" \
+	ifconfig_vtnet1="inet 10.0.13.1/24" \
+	ifconfig_vtnet2="inet 10.0.14.1/24" \
+	static_routes="ISP1 ISP2 ISP3" \
+	route_ISP1="-host 10.0.56.62 10.0.12.2" \
+	route_ISP2="-host 10.0.56.63 10.0.13.3" \
+	route_ISP3="-host 10.0.56.64 10.0.14.4" \
+	mpd_enable=YES \
+	mpd_flags="-b -s ppp"
 cat > /usr/local/etc/mpd5/mpd.conf <<EOF
 default:
         load l2tp_client
@@ -2090,13 +2088,12 @@ config save
 }
 
 mlppp_vm2 () {
-sysrc hostname=R2
-sysrc ifconfig_vtnet0="inet 10.0.12.2/24"
-sysrc ifconfig_vtnet3="inet 10.0.25.2/24"
-sysrc defaultrouter="10.0.25.5"
-sysrc firewall_enable=YES
-sysrc firewall_script="/etc/ipfw.rules"
-
+sysrc hostname=R2 \
+	ifconfig_vtnet0="inet 10.0.12.2/24" \
+	ifconfig_vtnet3="inet 10.0.25.2/24" \
+	defaultrouter="10.0.25.5" \
+	firewall_enable=YES \
+	firewall_script="/etc/ipfw.rules"
 cat > /etc/ipfw.rules <<EOF
 #!/bin/sh
 fwcmd="/sbin/ipfw"
@@ -2121,12 +2118,12 @@ config save
 }
 
 mlppp_vm3 () {
-sysrc hostname=R3
-sysrc ifconfig_vtnet0="inet 10.0.13.3/24"
-sysrc ifconfig_vtnet3="inet 10.0.35.3/24"
-sysrc defaultrouter="10.0.35.5"
-sysrc firewall_enable=YES
-sysrc firewall_script="/etc/ipfw.rules"
+sysrc hostname=R3 \
+	ifconfig_vtnet0="inet 10.0.13.3/24" \
+	ifconfig_vtnet3="inet 10.0.35.3/24" \
+	defaultrouter="10.0.35.5" \
+	firewall_enable=YES \
+	firewall_script="/etc/ipfw.rules"
 
 cat > /etc/ipfw.rules <<EOF
 #!/bin/sh
@@ -2152,12 +2149,12 @@ config save
 }
 
 mlppp_vm4 () {
-sysrc hostname=R4
-sysrc ifconfig_vtnet0="inet 10.0.14.4/24"
-sysrc ifconfig_vtnet3="inet 10.0.45.4/24"
-sysrc defaultrouter="10.0.45.5"
-sysrc firewall_enable=YES
-sysrc firewall_script="/etc/ipfw.rules"
+sysrc hostname=R4 \
+	ifconfig_vtnet0="inet 10.0.14.4/24" \
+	ifconfig_vtnet3="inet 10.0.45.4/24" \
+	defaultrouter="10.0.45.5" \
+	firewall_enable=YES \
+	firewall_script="/etc/ipfw.rules"
 
 cat > /etc/ipfw.rules <<EOF
 #!/bin/sh
@@ -2183,15 +2180,15 @@ config save
 }
 
 mlppp_vm5 () {
-sysrc hostname=R5
-sysrc ifconfig_vtnet1="inet 10.0.25.5/24"
-sysrc ifconfig_vtnet2="inet 10.0.35.5/24"
-sysrc ifconfig_vtnet3="inet 10.0.45.5/24"
-sysrc ifconfig_vtnet4="inet 10.0.56.5/24"
-sysrc static_routes="ISP1 ISP2 ISP3"
-sysrc route_ISP1="-host 10.0.12.1 10.0.25.2"
-sysrc route_ISP2="-host 10.0.13.1 10.0.35.3"
-sysrc route_ISP3="-host 10.0.14.1 10.0.45.4"
+sysrc hostname=R5 \
+	ifconfig_vtnet1="inet 10.0.25.5/24" \
+	ifconfig_vtnet2="inet 10.0.35.5/24" \
+	ifconfig_vtnet3="inet 10.0.45.5/24" \
+	ifconfig_vtnet4="inet 10.0.56.5/24" \
+	static_routes="ISP1 ISP2 ISP3" \
+	route_ISP1="-host 10.0.12.1 10.0.25.2" \
+	route_ISP2="-host 10.0.13.1 10.0.35.3" \
+	route_ISP3="-host 10.0.14.1 10.0.45.4"
 service netif restart
 service routing restart
 hostname R5
@@ -2200,15 +2197,15 @@ config save
 
 
 mlppp_vm6 () {
-sysrc hostname=R6
-sysrc cloned_interfaces="lo1"
-sysrc ifconfig_lo1="inet 10.6.6.6/32"
-sysrc ifconfig_vtnet4="inet 10.0.56.62/24"
-sysrc ifconfig_vtnet4_alias1="inet 10.0.56.63/32"
-sysrc ifconfig_vtnet4_alias2="inet 10.0.56.64/32"
-sysrc defaultrouter="10.0.56.5"
-sysrc mpd_enable=YES
-sysrc mpd_flags="-b -s ppp"
+sysrc hostname=R6 \
+	cloned_interfaces="lo1" \
+	ifconfig_lo1="inet 10.6.6.6/32" \
+	ifconfig_vtnet4="inet 10.0.56.62/24" \
+	ifconfig_vtnet4_alias1="inet 10.0.56.63/32" \
+	ifconfig_vtnet4_alias2="inet 10.0.56.64/32" \
+	defaultrouter="10.0.56.5" \
+	mpd_enable=YES \
+	mpd_flags="-b -s ppp"
 cat > /usr/local/etc/mpd5/mpd.conf <<EOF
 default:
         load l2tp_server
@@ -2260,23 +2257,23 @@ config save
 }
 
 ecmp_vm1 () {
-sysrc hostname=VM1
-sysrc gateway_enable=NO
-sysrc ipv6_gateway_enable=NO
-sysrc ifconfig_vtnet0="inet 10.0.12.1/24"
-sysrc ifconfig_vtnet0_alias1="inet 10.0.12.11/32"
-sysrc ifconfig_vtnet0_alias2="inet 10.0.12.21/32"
-sysrc ifconfig_vtnet0_alias3="inet 10.0.12.31/32"
-sysrc ifconfig_vtnet0_alias4="inet 10.0.12.41/32"
-sysrc ifconfig_vtnet0_alias5="inet 10.0.12.51/32"
-sysrc ifconfig_vtnet0_ipv6="inet6 2001:db8:12::1 prefixlen 64"
-sysrc ifconfig_vtnet0_alias61="inet6 2001:db8:12::11 prefixlen 64"
-sysrc ifconfig_vtnet0_alias62="inet6 2001:db8:12::21 prefixlen 64"
-sysrc ifconfig_vtnet0_alias63="inet6 2001:db8:12::31 prefixlen 64"
-sysrc ifconfig_vtnet0_alias64="inet6 2001:db8:12::41 prefixlen 64"
-sysrc ifconfig_vtnet0_alias65="inet6 2001:db8:12::51 prefixlen 64"
-sysrc defaultrouter="10.0.12.2"
-sysrc ipv6_defaultrouter="2001:db8:12::2"
+sysrc hostname=VM1 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_vtnet0="inet 10.0.12.1/24" \
+	ifconfig_vtnet0_alias1="inet 10.0.12.11/32" \
+	ifconfig_vtnet0_alias2="inet 10.0.12.21/32" \
+	ifconfig_vtnet0_alias3="inet 10.0.12.31/32" \
+	ifconfig_vtnet0_alias4="inet 10.0.12.41/32" \
+	ifconfig_vtnet0_alias5="inet 10.0.12.51/32" \
+	ifconfig_vtnet0_ipv6="inet6 2001:db8:12::1 prefixlen 64" \
+	ifconfig_vtnet0_alias61="inet6 2001:db8:12::11 prefixlen 64" \
+	ifconfig_vtnet0_alias62="inet6 2001:db8:12::21 prefixlen 64" \
+	ifconfig_vtnet0_alias63="inet6 2001:db8:12::31 prefixlen 64" \
+	ifconfig_vtnet0_alias64="inet6 2001:db8:12::41 prefixlen 64" \
+	ifconfig_vtnet0_alias65="inet6 2001:db8:12::51 prefixlen 64" \
+	defaultrouter="10.0.12.2" \
+	ipv6_defaultrouter="2001:db8:12::2"
 service hostname restart
 service netif restart
 service routing restart
@@ -2284,23 +2281,23 @@ config save
 }
 
 ecmp_vm2 () {
-sysrc hostname=VM2
-sysrc ifconfig_vtnet0="inet 10.0.12.2/24"
-sysrc ifconfig_vtnet1="inet 10.0.23.2/24"
-sysrc ifconfig_vtnet2="inet 10.0.24.2/24"
-sysrc ifconfig_vtnet0_ipv6="inet6 2001:db8:12::2 prefixlen 64"
-sysrc ifconfig_vtnet1_ipv6="inet6 2001:db8:23::2 prefixlen 64"
-sysrc ifconfig_vtnet2_ipv6="inet6 2001:db8:24::2 prefixlen 64"
-sysrc static_routes="VM3VM6 VM3VM5 VM4VM6 VM4VM5"
-sysrc route_VM3VM6="-net 10.0.56.0/24 10.0.23.3"
-sysrc route_VM3VM5="-net 10.0.35.0/24 10.0.23.3"
-sysrc route_VM4VM6="-net 10.0.56.0/24 10.0.24.4"
-sysrc route_VM4VM5="-net 10.0.45.0/24 10.0.24.4"
-sysrc ipv6_static_routes="VM3VM6 VM3VM5 VM4VM6 VM4VM5"
-sysrc ipv6_route_VM3VM6="2001:db8:56:: -prefixlen 64 2001:db8:23::3"
-sysrc ipv6_route_VM3VM5="2001:db8:35:: -prefixlen 64 2001:db8:23::3"
-sysrc ipv6_route_VM4VM6="2001:db8:56:: -prefixlen 64 2001:db8:24::4"
-sysrc ipv6_route_VM4VM5="2001:db8:45:: -prefixlen 64 2001:db8:24::4"
+sysrc hostname=VM2 \
+	ifconfig_vtnet0="inet 10.0.12.2/24" \
+	ifconfig_vtnet1="inet 10.0.23.2/24" \
+	ifconfig_vtnet2="inet 10.0.24.2/24" \
+	ifconfig_vtnet0_ipv6="inet6 2001:db8:12::2 prefixlen 64" \
+	ifconfig_vtnet1_ipv6="inet6 2001:db8:23::2 prefixlen 64" \
+	ifconfig_vtnet2_ipv6="inet6 2001:db8:24::2 prefixlen 64" \
+	static_routes="VM3VM6 VM3VM5 VM4VM6 VM4VM5" \
+	route_VM3VM6="-net 10.0.56.0/24 10.0.23.3" \
+	route_VM3VM5="-net 10.0.35.0/24 10.0.23.3" \
+	route_VM4VM6="-net 10.0.56.0/24 10.0.24.4" \
+	route_VM4VM5="-net 10.0.45.0/24 10.0.24.4" \
+	ipv6_static_routes="VM3VM6 VM3VM5 VM4VM6 VM4VM5" \
+	ipv6_route_VM3VM6="2001:db8:56:: -prefixlen 64 2001:db8:23::3" \
+	ipv6_route_VM3VM5="2001:db8:35:: -prefixlen 64 2001:db8:23::3" \
+	ipv6_route_VM4VM6="2001:db8:56:: -prefixlen 64 2001:db8:24::4" \
+	ipv6_route_VM4VM5="2001:db8:45:: -prefixlen 64 2001:db8:24::4"
 sed -i '' -e '/net.inet.ip.redirect=0/d' /etc/sysctl.conf
 sed -i '' -e '/net.inet6.ip6.redirect=0/d' /etc/sysctl.conf
 sysctl net.inet.ip.redirect=1
@@ -2312,17 +2309,17 @@ config save
 }
 
 ecmp_vm3 () {
-sysrc hostname=VM3
-sysrc ifconfig_vtnet1="inet 10.0.23.3/24"
-sysrc ifconfig_vtnet3="inet 10.0.35.3/24"
-sysrc ifconfig_vtnet1_ipv6="inet6 2001:db8:23::3 prefixlen 64"
-sysrc ifconfig_vtnet3_ipv6="inet6 2001:db8:35::3 prefixlen 64"
-sysrc static_routes="VM6 VM1"
-sysrc route_VM1="-net 10.0.12.0/24 10.0.23.2"
-sysrc route_VM6="-net 10.0.56.0/24 10.0.35.5"
-sysrc ipv6_static_routes="VM6 VM1"
-sysrc ipv6_route_VM1="2001:db8:12:: -prefixlen 64 2001:db8:23::2"
-sysrc ipv6_route_VM6="2001:db8:56:: -prefixlen 64 2001:db8:35::5"
+sysrc hostname=VM3 \
+	ifconfig_vtnet1="inet 10.0.23.3/24" \
+	ifconfig_vtnet3="inet 10.0.35.3/24" \
+	ifconfig_vtnet1_ipv6="inet6 2001:db8:23::3 prefixlen 64" \
+	ifconfig_vtnet3_ipv6="inet6 2001:db8:35::3 prefixlen 64" \
+	static_routes="VM6 VM1" \
+	route_VM1="-net 10.0.12.0/24 10.0.23.2" \
+	route_VM6="-net 10.0.56.0/24 10.0.35.5" \
+	ipv6_static_routes="VM6 VM1" \
+	ipv6_route_VM1="2001:db8:12:: -prefixlen 64 2001:db8:23::2" \
+	ipv6_route_VM6="2001:db8:56:: -prefixlen 64 2001:db8:35::5"
 service hostname restart
 service netif restart
 service routing restart
@@ -2330,17 +2327,17 @@ config save
 }
 
 ecmp_vm4 () {
-sysrc hostname=VM4
-sysrc ifconfig_vtnet1="inet 10.0.24.4/24"
-sysrc ifconfig_vtnet3="inet 10.0.45.4/24"
-sysrc ifconfig_vtnet1_ipv6="inet6 2001:db8:24::4 prefixlen 64"
-sysrc ifconfig_vtnet3_ipv6="inet6 2001:db8:45::4 prefixlen 64"
-sysrc static_routes="VM6 VM1"
-sysrc route_VM1="-net 10.0.12.0/24 10.0.24.2"
-sysrc route_VM6="-net 10.0.56.0/24 10.0.45.5"
-sysrc ipv6_static_routes="VM6 VM1"
-sysrc ipv6_route_VM1="2001:db8:12:: -prefixlen 64 2001:db8:24::2"
-sysrc ipv6_route_VM6="2001:db8:56:: -prefixlen 64 2001:db8:45::5"
+sysrc hostname=VM4 \
+	ifconfig_vtnet1="inet 10.0.24.4/24" \
+	ifconfig_vtnet3="inet 10.0.45.4/24" \
+	ifconfig_vtnet1_ipv6="inet6 2001:db8:24::4 prefixlen 64" \
+	ifconfig_vtnet3_ipv6="inet6 2001:db8:45::4 prefixlen 64" \
+	static_routes="VM6 VM1" \
+	route_VM1="-net 10.0.12.0/24 10.0.24.2" \
+	route_VM6="-net 10.0.56.0/24 10.0.45.5" \
+	ipv6_static_routes="VM6 VM1" \
+	ipv6_route_VM1="2001:db8:12:: -prefixlen 64 2001:db8:24::2" \
+	ipv6_route_VM6="2001:db8:56:: -prefixlen 64 2001:db8:45::5"
 service hostname restart
 service netif restart
 service routing restart
@@ -2348,23 +2345,23 @@ config save
 }
 
 ecmp_vm5 () {
-sysrc hostname=VM5
-sysrc ifconfig_vtnet2="inet 10.0.35.5/24"
-sysrc ifconfig_vtnet3="inet 10.0.45.5/24"
-sysrc ifconfig_vtnet4="inet 10.0.56.5/24"
-sysrc ifconfig_vtnet2_ipv6="inet6 2001:db8:35::5 prefixlen 64"
-sysrc ifconfig_vtnet3_ipv6="inet6 2001:db8:45::5 prefixlen 64"
-sysrc ifconfig_vtnet4_ipv6="inet6 2001:db8:56::5 prefixlen 64"
-sysrc static_routes="VM3VM1 VM3VM2 VM4VM1 VM4VM2"
-sysrc route_VM3VM1="-net 10.0.12.0/24 10.0.35.3"
-sysrc route_VM3VM2="-net 10.0.23.0/24 10.0.35.3"
-sysrc route_VM4VM1="-net 10.0.12.0/24 10.0.45.4"
-sysrc route_VM4VM2="-net 10.0.24.0/24 10.0.45.4"
-sysrc ipv6_static_routes="VM3VM1 VM3VM2 VM4VM1 VM4VM2"
-sysrc ipv6_route_VM3VM1="2001:db8:12:: -prefixlen 64 2001:db8:35::3"
-sysrc ipv6_route_VM3VM2="2001:db8:23:: -prefixlen 64 2001:db8:35::3"
-sysrc ipv6_route_VM4VM1="2001:db8:12:: -prefixlen 64 2001:db8:45::4"
-sysrc ipv6_route_VM4VM2="2001:db8:24:: -prefixlen 64 2001:db8:45::4"
+sysrc hostname=VM5 \
+	ifconfig_vtnet2="inet 10.0.35.5/24" \
+	ifconfig_vtnet3="inet 10.0.45.5/24" \
+	ifconfig_vtnet4="inet 10.0.56.5/24" \
+	ifconfig_vtnet2_ipv6="inet6 2001:db8:35::5 prefixlen 64" \
+	ifconfig_vtnet3_ipv6="inet6 2001:db8:45::5 prefixlen 64" \
+	ifconfig_vtnet4_ipv6="inet6 2001:db8:56::5 prefixlen 64" \
+	static_routes="VM3VM1 VM3VM2 VM4VM1 VM4VM2" \
+	route_VM3VM1="-net 10.0.12.0/24 10.0.35.3" \
+	route_VM3VM2="-net 10.0.23.0/24 10.0.35.3" \
+	route_VM4VM1="-net 10.0.12.0/24 10.0.45.4" \
+	route_VM4VM2="-net 10.0.24.0/24 10.0.45.4" \
+	ipv6_static_routes="VM3VM1 VM3VM2 VM4VM1 VM4VM2" \
+	ipv6_route_VM3VM1="2001:db8:12:: -prefixlen 64 2001:db8:35::3" \
+	ipv6_route_VM3VM2="2001:db8:23:: -prefixlen 64 2001:db8:35::3" \
+	ipv6_route_VM4VM1="2001:db8:12:: -prefixlen 64 2001:db8:45::4" \
+	ipv6_route_VM4VM2="2001:db8:24:: -prefixlen 64 2001:db8:45::4"
 sed -i '' -e '/net.inet.ip.redirect=0/d' /etc/sysctl.conf
 sed -i '' -e '/net.inet6.ip6.redirect=0/d' /etc/sysctl.conf
 sysctl net.inet.ip.redirect=1
@@ -2376,23 +2373,23 @@ config save
 }
 
 ecmp_vm6 () {
-sysrc hostname=VM6
-sysrc gateway_enable=NO
-sysrc ipv6_gateway_enable=NO
-sysrc ifconfig_vtnet4="inet 10.0.56.6/24"
-sysrc ifconfig_vtnet4_alias1="inet 10.0.56.16/32"
-sysrc ifconfig_vtnet4_alias2="inet 10.0.56.26/32"
-sysrc ifconfig_vtnet4_alias3="inet 10.0.56.36/32"
-sysrc ifconfig_vtnet4_alias4="inet 10.0.56.46/32"
-sysrc ifconfig_vtnet4_alias5="inet 10.0.56.56/32"
-sysrc ifconfig_vtnet4_ipv6="inet6 2001:db8:56::6 prefixlen 64"
-sysrc ifconfig_vtnet4_alias61="inet6 2001:db8:56::16 prefixlen 64"
-sysrc ifconfig_vtnet4_alias62="inet6 2001:db8:56::26 prefixlen 64"
-sysrc ifconfig_vtnet4_alias63="inet6 2001:db8:56::36 prefixlen 64"
-sysrc ifconfig_vtnet4_alias64="inet6 2001:db8:56::46 prefixlen 64"
-sysrc ifconfig_vtnet4_alias65="inet6 2001:db8:56::56 prefixlen 64"
-sysrc defaultrouter="10.0.56.5"
-sysrc ipv6_defaultrouter="2001:db8:56::5"
+sysrc hostname=VM6 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_vtnet4="inet 10.0.56.6/24" \
+	ifconfig_vtnet4_alias1="inet 10.0.56.16/32" \
+	ifconfig_vtnet4_alias2="inet 10.0.56.26/32" \
+	ifconfig_vtnet4_alias3="inet 10.0.56.36/32" \
+	ifconfig_vtnet4_alias4="inet 10.0.56.46/32" \
+	ifconfig_vtnet4_alias5="inet 10.0.56.56/32" \
+	ifconfig_vtnet4_ipv6="inet6 2001:db8:56::6 prefixlen 64" \
+	ifconfig_vtnet4_alias61="inet6 2001:db8:56::16 prefixlen 64" \
+	ifconfig_vtnet4_alias62="inet6 2001:db8:56::26 prefixlen 64" \
+	ifconfig_vtnet4_alias63="inet6 2001:db8:56::36 prefixlen 64" \
+	ifconfig_vtnet4_alias64="inet6 2001:db8:56::46 prefixlen 64" \
+	ifconfig_vtnet4_alias65="inet6 2001:db8:56::56 prefixlen 64" \
+	defaultrouter="10.0.56.5" \
+	ipv6_defaultrouter="2001:db8:56::5"
 service hostname restart
 service netif restart
 service routing restart

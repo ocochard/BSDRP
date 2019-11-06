@@ -24,7 +24,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# $FreeBSD: head/tools/tools/nanobsd/defaults.sh 337931 2018-08-16 22:13:43Z imp $
+# $FreeBSD: head/tools/tools/nanobsd/defaults.sh 354251 2019-11-02 10:15:34Z phk $
 #
 
 set -e
@@ -193,6 +193,9 @@ NANO_DATADIR=""
 SRCCONF=/dev/null
 SRC_ENV_CONF=/dev/null
 
+# Comment this out if /usr/obj is a symlink
+# CPIO_SYMLINK=--insecure
+
 #######################################################################
 #
 # The functions which do the real work.
@@ -274,7 +277,7 @@ tgt_dir2symlink ( ) (
 	symlink=$2
 
 	cd "${NANO_WORLDDIR}"
-	rm -rf "$dir"
+	rm -xrf "$dir"
 	ln -s "$symlink" "$dir"
 	if [ -n "$NANO_METALOG" ]; then
 		echo "./${dir} type=link mode=0777 link=${symlink}" >> ${NANO_METALOG}
@@ -356,9 +359,9 @@ clean_world ( ) (
 		printenv > "${NANO_LOG}/_.env"
 	else
 		pprint 2 "Clean and create world directory (${NANO_WORLDDIR})"
-		if ! rm -rf "${NANO_WORLDDIR}/" > /dev/null 2>&1 ; then
+		if ! rm -xrf "${NANO_WORLDDIR}/" > /dev/null 2>&1 ; then
 			chflags -R noschg "${NANO_WORLDDIR}"
-			rm -rf "${NANO_WORLDDIR}/"
+			rm -xrf "${NANO_WORLDDIR}/"
 		fi
 		mkdir -p "${NANO_WORLDDIR}"
 	fi
@@ -455,7 +458,11 @@ run_early_customize ( ) {
 		pprint 2 "early customize \"$c\""
 		pprint 3 "log: ${NANO_LOG}/_.early_cust.$c"
 		pprint 4 "`type $c`"
-		{ set -x ; $c ; set +x ; } >"${NANO_LOG}/_.early_cust.$c" 2>&1
+		{ t=$(set -o | awk '$1 == "xtrace" && $2 == "off" { print "set +o xtrace"}');
+		  set -o xtrace ;
+		  $c ;
+		  eval $t
+		} >${NANO_LOG}/_.early_cust.$c 2>&1
 	done
 }
 
@@ -487,7 +494,7 @@ run_late_customize ( ) (
 		pprint 2 "late customize \"$c\""
 		pprint 3 "log: ${NANO_LOG}/_.late_cust.$c"
 		pprint 4 "`type $c`"
-		( set -x ; $c ) > "${NANO_LOG}/_.late_cust.$c" 2>&1
+		( set -o xtrace ; $c ) > ${NANO_LOG}/_.late_cust.$c 2>&1
 	done
 )
 
@@ -529,9 +536,9 @@ setup_nanobsd ( ) (
 	if [ -d usr/local/etc ] ; then
 		(
 		cd usr/local/etc
-		find . -print | cpio -dumpl ../../../etc/local
+		find . -print | cpio ${CPIO_SYMLINK} -dumpl ../../../etc/local
 		cd ..
-		rm -rf etc
+		rm -xrf etc
 		)
 	fi
 
@@ -548,7 +555,7 @@ setup_nanobsd ( ) (
 		# we use hard links so we have them both places.
 		# the files in /$d will be hidden by the mount.
 		mkdir -p conf/base/$d conf/default/$d
-		find $d -print | cpio -dumpl conf/base/
+		find $d -print | cpio ${CPIO_SYMLINK} -dumpl conf/base/
 	done
 
 	echo "$NANO_RAM_ETCSIZE" > conf/base/etc/md_size
@@ -629,7 +636,7 @@ populate_slice ( ) (
 	if [ -n "${dir}" -a -d "${dir}" ]; then
 		echo "Populating ${lbl} from ${dir}"
 		cd "${dir}"
-		find . -print | grep -Ev '/(CVS|\.svn|\.hg|\.git)/' | cpio -dumpv ${mnt}
+		find . -print | grep -Ev '/(CVS|\.svn|\.hg|\.git)/' | cpio ${CPIO_SYMLINK} -dumpv ${mnt}
 	fi
 	df -i ${mnt}
 	nano_umount ${mnt}
@@ -739,7 +746,7 @@ cust_install_files ( ) (
 	echo "BSDRP customized install_files supporting multiples dirs"
 	for dir in ${NANO_DIRS_INSTALL}; do
 		cd ${dir}
-		find . -print | grep -Ev '/(CVS|\.svn|\.hg|\.git)' | cpio -Ldumpv ${NANO_WORLDDIR}
+		find . -print | grep -Ev '/(CVS|\.svn|\.hg|\.git)' | cpio ${CPIO_SYMLINK} -Ldumpv ${NANO_WORLDDIR}
 	done
 
 	if [ -n "${NANO_CUST_FILES_MTREE}" -a -f ${NANO_CUST_FILES_MTREE} ]; then
@@ -781,8 +788,9 @@ cust_pkgng ( ) (
 	# Mount packages into chroot
 	mkdir -p ${NANO_WORLDDIR}/_.p
 	mount -t nullfs -o noatime -o ro ${NANO_PACKAGE_DIR} ${NANO_WORLDDIR}/_.p
+	mount -t devfs devfs ${NANO_WORLDDIR}/dev
 
-	trap "umount ${NANO_WORLDDIR}/_.p ; rm -rf ${NANO_WORLDDIR}/_.p" 1 2 15 EXIT
+	trap "umount ${NANO_WORLDDIR}/dev; umount ${NANO_WORLDDIR}/_.p ; rm -xrf ${NANO_WORLDDIR}/_.p" 1 2 15 EXIT
 
 	# Install pkg-* package
 	CR "${PKGCMD} add /_.p/${_NANO_PKG_PACKAGE}"
@@ -807,8 +815,9 @@ cust_pkgng ( ) (
 	CR0 "${PKGCMD} info"
 
 	trap - 1 2 15 EXIT
+	umount ${NANO_WORLDDIR}/dev
 	umount ${NANO_WORLDDIR}/_.p
-	rm -rf ${NANO_WORLDDIR}/_.p
+	rm -xrf ${NANO_WORLDDIR}/_.p
 )
 
 #######################################################################
