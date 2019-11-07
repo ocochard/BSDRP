@@ -3,8 +3,8 @@
 " don't use vi compatible mode
 set nocompatible
 
-"Syntax color
-syntax on
+" Disable mouse
+set mouse=
 
 " allow backspacing over everything in insert mode
 set backspace=indent,eol,start
@@ -18,8 +18,9 @@ set history=50
 " show the cursor position all the time
 set ruler
 
-" max size of a line
+" max size of a line with a red line
 set textwidth=80
+set colorcolumn=80
 
 " display incomplete commands
 set showcmd
@@ -32,9 +33,6 @@ set softtabstop=4
 
 set nowrapscan
 set paste
-
-" Disable mouse
-set mouse-=a
 
 " always show ^M in DOS files
 set fileformats=unix
