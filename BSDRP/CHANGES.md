@@ -1,4 +1,4 @@
-# Release 1.96 (not released)
+# Release 1.96 (7/11/2019)
 
 ## Bug fix
 * mlx5 drivers can't forward packets
