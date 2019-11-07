@@ -1,0 +1,22 @@
+Index: net/ntraceroute/Makefile
+===================================================================
+--- net/ntraceroute/Makefile	(revision 516926)
++++ net/ntraceroute/Makefile	(working copy)
+@@ -5,7 +5,7 @@
+ PORTVERSION=	6.4.2
+ PORTREVISION=	3
+ CATEGORIES=	net
+-MASTER_SITES=	ZI/ntraceroute
++MASTER_SITES=	http://dev.bsdrp.net/FreeBSD/
+ DISTNAME=	traceroute.c
+ EXTRACT_SUFX=
+ DIST_SUBDIR=	${PORTNAME}
+@@ -13,8 +13,6 @@
+ MAINTAINER=	zi@FreeBSD.org
+ COMMENT=	Ubiquitous network routing analysis tool
+ 
+-BROKEN=		unfetchable
+-
+ EXTRACT_CMD=		${CP}
+ EXTRACT_BEFORE_ARGS=
+ EXTRACT_AFTER_ARGS=	.

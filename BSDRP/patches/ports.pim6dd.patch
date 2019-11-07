@@ -1,0 +1,22 @@
+Index: net/pim6dd/Makefile
+===================================================================
+--- net/pim6dd/Makefile	(revision 516926)
++++ net/pim6dd/Makefile	(working copy)
+@@ -3,7 +3,7 @@
+ PORTNAME=	pim6
+ PORTVERSION=	0.2.1.0.a.15
+ CATEGORIES=	net
+-MASTER_SITES=	SF/mcast-tools
++MASTER_SITES=	http://dev.bsdrp.net/FreeBSD/
+ PKGNAMESUFFIX=	dd
+ DISTNAME=	mcast-tools-20061214
+ 
+@@ -10,8 +10,6 @@
+ MAINTAINER=	hrs@FreeBSD.org
+ COMMENT=	IPv6 PIM-DM multicast routing daemon
+ 
+-BROKEN=		unfetchable
+-
+ LICENSE=	BSD3CLAUSE
+ LICENSE_FILE=	${WRKSRC}/COPYING
+ 
