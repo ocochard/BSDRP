@@ -327,6 +327,9 @@ add_port "ports-mgmt/pkg"
 
 # TO DO: Need to sort them by build dependencies
 
+# Perl
+add_port "lang/perl5.30"
+
 # Allow fetching from SSL site
 add_port "security/ca_root_nss"
 
@@ -348,7 +351,8 @@ add_port "lang/python"
 add_port "devel/py-setuptools"
 
 # RPKI RTR client library
-# libssh build needs cmake and perl
+# libssh build needs cmake, perl and libiconv
+ add_port "converters/libiconv"
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
 add_port "ftp/curl" "WITHOUT=\"IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
@@ -424,6 +428,11 @@ add_port "sysutils/fswatch-mon"
 
 # monit: managing and monitoring processes tool
 add_port "sysutils/monit"
+ add_port "net-mgmt/nagios-plugins"
+add_port "net-mgmt/nrpe3"
+# Already needed to build libssh
+# add_port "converters/libiconv"
+add_port "editors/vim-tiny"
 
 # tmux: screen equivalent, but better because BSD
 add_port "devel/libevent"
@@ -484,24 +493,11 @@ add_port "net/exabgp"
 # add_port "archivers/libmspack"
 #add_port "emulators/open-vm-tools-nox11"
 
-#add_port "emulators/virtualbox-ose-additions/" "-DWITHOUT_X11 -DWITHOUT_HAL"
-
 # Permit BIOS upgrade
-#add_port "sysutils/dmidecode"
- # Curl is just a build-deps of cmake (needed by libftdi)
- # But curl need base kerberos, then we remove this deps
- # And we de-install curl on the custom script
- #add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE\""
-#add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
   add_port "misc/pciids"
  add_port "devel/libpci"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 add_port "sysutils/x86info"
-
-# Permit Intel Firmware upgrade
-# Disabled: oversized!
-#add_port "sysutils/intel-nvmupdate"
-#add_port "sysutils/intel-qcu"
 
 # Permit microcode upgrade
 add_port "sysutils/devcpu-data"
@@ -514,6 +510,9 @@ add_port "net-mgmt/nstat"
 
 # NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode
 add_port "net/ntraceroute"
+
+# MTR combines traceroute and ping
+add_port "net/mtr-nox11"
 
 # BGPQ3: Lightweight prefix-list generator for Cisco and Juniper routers
 add_port "net-mgmt/bgpq3"
@@ -556,7 +555,6 @@ gmake
 help2man
 jsoncpp
 libarchive
-libiconv
 libnghttp2
 libsigsegv
 libtool
@@ -566,7 +564,6 @@ mpfr
 mpc
 ninja
 p5-gettext
-perl5
 pkgconf
 python27
 py36-Babel
@@ -632,10 +629,14 @@ bsdrp_custom () {
 	echo "setenv CLICOLOR true"
 	} >> ${NANO_WORLDDIR}/etc/csh.cshrc
 
+	# cpio (cust_install_file) doesn't support symlink
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys
 	mkdir -p ${NANO_WORLDDIR}/etc/dot.ssh.root
 	ln -s ../etc/dot.ssh.root ${NANO_WORLDDIR}/root/.ssh
+
+	# relocate /root/.vimrc to /etc/dot.vimrc
+	ln -s ../etc/dot.vimrc ${NANO_WORLDDIR}/root/.vimrc
 
 	# turn on noatime for /cfg
 	sed -i "" -e "/cfg/s/rw/rw,noatime/" ${NANO_WORLDDIR}/etc/fstab

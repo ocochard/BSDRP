@@ -5,6 +5,9 @@
 * nrpe3: nagios client (including nagios-plugins)
 * perl 5: Mandatory deps for nrpe3
 
+## Upgraded packages
+* devcpu-data to 1.26 (update Intel microcode to 20191112)
+
 ## Packages list
 * arping 2.19: ARP level "ping" utility
 * bgpq3 0.1.35: Lightweight prefix-list generator for various routers
@@ -12,8 +15,8 @@
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.4: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.47: Root certificate bundle from the Mozilla Project
-* curl 7.66.0: Command line tool and library for transferring data with URLs
-* devcpu-data 1.24: Intel and AMD CPUs microcode updates
+* curl 7.67.0: Command line tool and library for transferring data with URLs
+* devcpu-data 1.26: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.6: Small RSA key management package based on openssl
@@ -47,21 +50,25 @@
 * monit 5.26.0: Unix system management and proactive monitoring
 * mpd5 5.8_10: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
+* mtr-nox11 0.92_1: Traceroute and ping in a single network diagnostic tool
 * nagios-plugins 2.2.1_8,1: Plugins for Nagios
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * netperf 2.7.1.p20170921_1: Network performance benchmarking package
 * nrpe3 3.2.1: Nagios Remote Plugin Executor
-* nstat 1.0_2: Replacement for bw/netstat/vmstat/pcm-memory.x
+* nstat 1.0_3: Replacement for bw/netstat/vmstat/pcm-memory.x
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.48: Open source LDAP client implementation
 * openvpn 2.4.8: Secure IP/Ethernet tunnel daemon
+* p5-Locale-libintl 1.31: Internationalization library for Perl
+* p5-Text-Unidecode 1.30: Text::Unidecode -- US-ASCII transliterations of Unicode text
+* p5-Unicode-EastAsianWidth 12.0: East Asian Width properties
 * pciids 20191012: Database of all known IDs used in PCI devices
 * pcre 8.43_2: Perl Compatible Regular Expressions library
-* perl5 5.30.0: Practical Extraction and Report Language
+* perl5 5.30.1: Practical Extraction and Report Language
 * pim6-tools 20061214: IPv6 multicast tools
 * pim6dd 0.2.1.0.a.15: IPv6 PIM-DM multicast routing daemon
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
-* pimd 2.3.2: Lightweight stand-alone PIM-SM v2 multicast routing daemon
+* pimd 2.3.2_1: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
 * pkg 1.12.0: Package manager
 * pkt-gen g2019.03.01: Packet sink/source using the netmap API

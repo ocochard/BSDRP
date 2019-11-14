@@ -64,6 +64,3 @@ set noswapfile
 
 "disable the use of viminfo file
 set viminfo=""
-
-" Display insecable space
-set listchars=nbsp:·

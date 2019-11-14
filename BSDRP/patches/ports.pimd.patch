@@ -1,6 +1,27 @@
+Index: net/pimd/Makefile
+===================================================================
+--- net/pimd/Makefile	(revision 516926)
++++ net/pimd/Makefile	(working copy)
+@@ -3,6 +3,7 @@
+ PORTNAME=	pimd
+ PORTVERSION=	2.3.2
+ CATEGORIES=	net
++PORTREVISION=	1
+ 
+ MAINTAINER=	olivier@FreeBSD.org
+ COMMENT=	Lightweight stand-alone PIM-SM v2 multicast routing daemon
+@@ -19,7 +20,7 @@
+ USE_RC_SUBR=	${PORTNAME}
+ 
+ HAS_CONFIGURE=	yes
+-MAKE_ARGS=	prefix="${PREFIX}" sysconfdir="${PREFIX}/etc/"
++MAKE_ARGS=	prefix="${PREFIX}" sysconfdir="${PREFIX}/etc"
+ 
+ do-install:
+ 	${INSTALL_PROGRAM} ${WRKSRC}/pimd ${STAGEDIR}${PREFIX}/sbin/
 Index: net/pimd/files/pimd.in
 ===================================================================
---- net/pimd/files/pimd.in	(revision 444772)
+--- net/pimd/files/pimd.in	(revision 516926)
 +++ net/pimd/files/pimd.in	(working copy)
 @@ -2,7 +2,7 @@
  #
