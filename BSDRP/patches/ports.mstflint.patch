@@ -1,0 +1,271 @@
+Index: sysutils/mstflint/Makefile
+===================================================================
+--- sysutils/mstflint/Makefile	(revision 517611)
++++ sysutils/mstflint/Makefile	(working copy)
+@@ -2,7 +2,7 @@
+ 
+ PORTNAME=	mstflint
+ DISTVERSIONPREFIX=	v
+-DISTVERSION=	4.12.0-1
++DISTVERSION=	4.13.1-1
+ CATEGORIES=	sysutils
+ 
+ MAINTAINER=	slavash@FreeBSD.org
+@@ -11,11 +11,33 @@
+ LICENSE=	GPLv2
+ LICENSE_FILE=	${WRKSRC}/LICENSE
+ 
+-USES=		autoreconf libtool
++USES=		autoreconf libtool gmake ssl
+ 
++OPTIONS_DEFINE=	FWMANAGER ADAB
++OPTIONS_SUB=	yes
++
++FWMANAGER_DESC=	Enable mstfwmanager and mstarchive (depend on boost-libs and curl)
++ADAB_DESC=	Enable mstreg and mstlink (depend on boost-libs)
++
++ADAB_LIB_DEPENDS=	libexpat.so:textproc/expat2 \
++			libboost_regex.so:devel/boost-libs
++ADAB_CONFIGURE_ENABLE=	adb-generic-tools
++FWMANAGER_CONFIGURE_ENABLE=	fw-mgr
++FWMANAGER_LIB_DEPENDS=	libxml2.so:textproc/libxml2 \
++			libboost_regex.so:devel/boost-libs \
++			libcurl.so:ftp/curl
++
++CONFIGURE_ENV+=	LDFLAGS=-L${LOCALBASE}/lib CPPFLAGS=-I${LOCALBASE}/include
++
+ GNU_CONFIGURE=	yes
+ 
+ USE_GITHUB=	yes
+ GH_ACCOUNT=	Mellanox
+ 
++post-install:
++	@${STRIP_CMD} ${STAGEDIR}${PREFIX}/lib/mstflint/python_tools/rreg_access.so
++	@${STRIP_CMD} ${STAGEDIR}${PREFIX}/lib/mstflint/python_tools/ccmdif.so
++	@${STRIP_CMD} ${STAGEDIR}${PREFIX}/lib/mstflint/python_tools/cmtcr.so
++	@${STRIP_CMD} ${STAGEDIR}${PREFIX}/lib/mstflint/python_tools/c_dev_mgt.so
++
+ .include <bsd.port.mk>
+Index: sysutils/mstflint/distinfo
+===================================================================
+--- sysutils/mstflint/distinfo	(revision 517611)
++++ sysutils/mstflint/distinfo	(working copy)
+@@ -1,3 +1,3 @@
+-TIMESTAMP = 1562536530
+-SHA256 (Mellanox-mstflint-v4.12.0-1_GH0.tar.gz) = 5cbf8924f33f813dd636bc25681b07d8940aa7803ff1f995266ac86ff30cbf35
+-SIZE (Mellanox-mstflint-v4.12.0-1_GH0.tar.gz) = 3716706
++TIMESTAMP = 1573802950
++SHA256 (Mellanox-mstflint-v4.13.1-1_GH0.tar.gz) = b643a94eef770b9c05782d5b5851ebc7e92dcd0c1212185aefa5e7543a2cd471
++SIZE (Mellanox-mstflint-v4.13.1-1_GH0.tar.gz) = 3785966
+Index: sysutils/mstflint/files/patch-configure.ac
+===================================================================
+--- sysutils/mstflint/files/patch-configure.ac	(nonexistent)
++++ sysutils/mstflint/files/patch-configure.ac	(working copy)
+@@ -0,0 +1,56 @@
++--- configure.ac.orig	2019-10-10 09:33:43 UTC
+++++ configure.ac
++@@ -100,7 +100,7 @@ fi
++ AC_MSG_CHECKING(--enable-fw-mgr argument)
++ AC_ARG_ENABLE(fw-mgr,
++              [  --enable-fw-mgr        Enable compiling mstfwmanager tool and features],
++-             [enable_fw_mgr="yes"],
+++             [enable_fw_mgr=$enableval],
++              [enable_fw_mgr="no"])
++ AC_MSG_RESULT($enable_fw_mgr)
++ if test "x$enable_fw_mgr" = "xyes"; then
++@@ -116,7 +116,7 @@ fi
++ AC_MSG_CHECKING(--enable-adb-generic-tools argument)
++ AC_ARG_ENABLE(adb-generic-tools,
++              [  --enable-adb-generic-tools        Enable compiling the following tools which depends on ADABE: mstreg and mstlink],
++-             [enable_adb_generic_tools="yes"],
+++             [enable_adb_generic_tools=$enableval],
++              [enable_adb_generic_tools="no"])
++ AC_MSG_RESULT($enable_adb_generic_tools)
++ if test "x$enable_adb_generic_tools" = "xyes"; then
++@@ -143,7 +143,7 @@ AC_SUBST(ENABLE_FWMGR)
++ AC_MSG_CHECKING(--enable-xml2 argument)
++ AC_ARG_ENABLE(xml2,
++             [  --enable-xml2           Enable mstflint libxml2 dependent features],
++-            [enable_xml2="yes"],
+++            [enable_xml2=$enableval],
++             [enable_xml2="no"])
++ AC_MSG_RESULT($enable_xml2)
++ if test [ "x$enable_xml2" = "xyes" ] || [ test "x$enable_fw_mgr" = "xyes" ]; then
++@@ -185,7 +185,7 @@ AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband"
++ AC_MSG_CHECKING(--enable-cs argument)
++ AC_ARG_ENABLE(cs,
++             [  --enable-cs             Enable mstflint "checksum" command, dependant of openssl library],
++-            [enable_cs="yes"],
+++            [enable_cs=$enableval],
++             [enable_cs="no"])
++ AC_MSG_RESULT($enable_cs)
++ if test "x$enable_cs" = "xyes"; then
++@@ -211,7 +211,7 @@ fi
++ AC_MSG_CHECKING(--enable-all-static argument)
++ AC_ARG_ENABLE([all_static],
++     AS_HELP_STRING([--enable-all-static], [Enable creating none dynamic executables]),
++-    [enable_all_static="yes"],
+++    [enable_all_static=$enableval],
++     [enable_all_static="no"])
++ AC_MSG_RESULT($enable_all_static)
++ 
++@@ -267,7 +267,7 @@ AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ],
++     CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"
++ ])
++ 
++-AC_SEARCH_LIBS([json_object_get], [json-c jason], [JSON_SYSTEM_AVAILABLE="yes"],[
+++AC_SEARCH_LIBS([json_object_get], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
++     JSON_SYSTEM_AVAILABLE="no"
++     JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
++     AC_SUBST(JSON_CFLAGS)
+
+Property changes on: sysutils/mstflint/files/patch-configure.ac
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/mstflint/files/patch-mlxfwupdate_Makefile.am
+===================================================================
+--- sysutils/mstflint/files/patch-mlxfwupdate_Makefile.am	(nonexistent)
++++ sysutils/mstflint/files/patch-mlxfwupdate_Makefile.am	(working copy)
+@@ -0,0 +1,11 @@
++--- mlxfwupdate/Makefile.am.orig	2019-11-15 19:39:03 UTC
+++++ mlxfwupdate/Makefile.am
++@@ -37,7 +37,7 @@ MTCR_DIR = $(USER_DIR)/${MTCR_CONFIG_DIR}
++ bin_PROGRAMS = mstfwmanager
++ 
++ docdir=$(INSTALL_BASEDIR)/etc/mstflint
++-dist_doc_DATA=certificate/ca-bundle.crt
+++#dist_doc_DATA=certificate/ca-bundle.crt
++ 
++ MTCR_UL_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
++ MTCR_UL_LIB = $(MTCR_UL_DIR)/libmtcr_ul.a
+
+Property changes on: sysutils/mstflint/files/patch-mlxfwupdate_Makefile.am
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/mstflint/files/patch-mlxfwupdate_cmd__line__params.cpp
+===================================================================
+--- sysutils/mstflint/files/patch-mlxfwupdate_cmd__line__params.cpp	(nonexistent)
++++ sysutils/mstflint/files/patch-mlxfwupdate_cmd__line__params.cpp	(working copy)
+@@ -0,0 +1,14 @@
++--- mlxfwupdate/cmd_line_params.cpp.orig	2019-11-16 07:49:07 UTC
+++++ mlxfwupdate/cmd_line_params.cpp
++@@ -97,9 +97,9 @@ CmdLineParams::CmdLineParams()
++ 
++ #else
++     #ifdef MSTFLINT
++-    certificate = (string)ROOT_PATH + "etc/mstflint/ca-bundle.crt";
+++    certificate = (string)ROOT_PATH + "/etc/ssl/cert.pem";
++     #else
++-    certificate = (string)ROOT_PATH + "etc/mft/ca-bundle.crt";
+++    certificate = (string)ROOT_PATH + "/etc/ssl/cert.pem";
++     #endif
++ #endif
++ }
+
+Property changes on: sysutils/mstflint/files/patch-mlxfwupdate_cmd__line__params.cpp
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/mstflint/pkg-plist
+===================================================================
+--- sysutils/mstflint/pkg-plist	(revision 517611)
++++ sysutils/mstflint/pkg-plist	(working copy)
+@@ -1,13 +1,17 @@
++%%FWMANAGER%%bin/mstarchive
+ bin/mstconfig
+ bin/mstcongestion
+ bin/mstflint
++%%FWMANAGER%%bin/mstfwmanager
+ bin/mstfwreset
+ bin/mstfwtrace
++%%ADAB%%bin/mstlink
+ bin/mstmcra
+ bin/mstmread
+ bin/mstmtserver
+ bin/mstmwrite
+ bin/mstprivhost
++%%ADAB%%bin/mstreg
+ bin/mstregdump
+ bin/mstvpd
+ include/mstflint/cmdif/icmd_cif_common.h
+@@ -17,8 +21,13 @@
+ include/mstflint/mtcr_com_defs.h
+ include/mstflint/tools_layouts/adb_to_c_utils.h
+ include/mstflint/tools_layouts/icmd_layouts.h
++%%ADAB%%lib/libadb_parser.a
+ lib/libcmdif.a
+ lib/libdev_mgt.a
++%%ADAB%%lib/libmodules_lib.a
++%%FWMANAGER%%lib/libmstarchive.a
++%%ADAB%%lib/libmstreg_lib.a
++%%ADAB%%lib/libprint_util_lib.a
+ lib/libreg_access.a
+ lib/libtools_layouts.a
+ lib/mstflint/libmtcr_ul.a
+@@ -31,6 +40,8 @@
+ lib/mstflint/python_tools/mlxpci/binary_file.py
+ lib/mstflint/python_tools/mlxpci/mlxpci_lib.py
+ lib/mstflint/python_tools/mstfwreset/mlxfwresetlib/__init__.py
++lib/mstflint/python_tools/mstfwreset/mlxfwresetlib/cmd_reg_mfrl.py
++lib/mstflint/python_tools/mstfwreset/mlxfwresetlib/cmd_reg_mpcir.py
+ lib/mstflint/python_tools/mstfwreset/mlxfwresetlib/logger.py
+ lib/mstflint/python_tools/mstfwreset/mlxfwresetlib/mcra.py
+ lib/mstflint/python_tools/mstfwreset/mlxfwresetlib/mlnx_peripheral_components.py
+@@ -48,8 +59,11 @@
+ lib/mstflint/python_tools/rreg_access.so
+ lib/mstflint/python_tools/tools_version.py
+ man/man1/mstarchive.1.gz
++man/man1/mstcongestion.1.gz
+ man/man1/mstconfig.1.gz
+ man/man1/mstflint.1.gz
++man/man1/mstfwmanager.1.gz
++man/man1/mstfwreset.1.gz
+ man/man1/mstfwtrace.1.gz
+ man/man1/mstlink.1.gz
+ man/man1/mstmcra.1.gz
+@@ -69,6 +83,7 @@
+ %%DATADIR%%/ConnectX4LX.csv
+ %%DATADIR%%/ConnectX5.csv
+ %%DATADIR%%/ConnectX6.csv
++%%DATADIR%%/ConnectX6DX.csv
+ %%DATADIR%%/InfiniScaleIV.csv
+ %%DATADIR%%/Quantum.csv
+ %%DATADIR%%/Spectrum.csv
+@@ -77,3 +92,5 @@
+ %%DATADIR%%/SwitchX.csv
+ %%DATADIR%%/mlxconfig_dbs/mlxconfig_host.db
+ %%DATADIR%%/mlxconfig_dbs/mlxconfig_switch.db
++%%ADAB%%%%DATADIR%%/prm_dbs/hca/ext/register_access_table.adb
++%%ADAB%%%%DATADIR%%/prm_dbs/switch/ext/register_access_table.adb

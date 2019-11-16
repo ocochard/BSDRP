@@ -520,6 +520,11 @@ add_port "net-mgmt/bgpq3"
 # ixl_unlock: Allow to remove SFP restriction to ixl(4)
 add_port "net/ixl_unlock"
 
+# Mellanox Firmware Burning and Diagnostics Tools
+ add_port "textproc/libxml2"
+ add_port "devel/boost-libs" "WITHOUT=\"ICU\""
+add_port "sysutils/mstflint" "WITH=\"FWMANAGER ADAB\""
+
 # Add my ASCII network diagram tool
 add_port "net/graphpath"
 
@@ -547,7 +552,6 @@ automake-wrapper
 binutils
 bison
 cmake
-expat
 gcc
 gawk
 gettext
