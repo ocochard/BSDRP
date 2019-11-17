@@ -521,9 +521,7 @@ add_port "net-mgmt/bgpq3"
 add_port "net/ixl_unlock"
 
 # Mellanox Firmware Burning and Diagnostics Tools
- add_port "textproc/libxml2"
- add_port "devel/boost-libs" "WITHOUT=\"ICU\""
-add_port "sysutils/mstflint" "WITH=\"FWMANAGER ADAB\""
+add_port "sysutils/mstflint" "WITH=\"ADAB STATIC\""
 
 # Add my ASCII network diagram tool
 add_port "net/graphpath"
