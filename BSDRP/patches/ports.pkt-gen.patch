@@ -1,6 +1,6 @@
 Index: net/pkt-gen/Makefile
 ===================================================================
---- net/pkt-gen/Makefile	(revision 500480)
+--- net/pkt-gen/Makefile	(revision 518057)
 +++ net/pkt-gen/Makefile	(working copy)
 @@ -1,8 +1,7 @@
  # $FreeBSD$
@@ -8,37 +8,297 @@ Index: net/pkt-gen/Makefile
  PORTNAME=	pkt-gen
 -PORTVERSION=	g2017.08.06
 -PORTREVISION=	1
-+PORTVERSION=	g2019.03.01
++PORTVERSION=	g2019.11.07
  CATEGORIES=	net
  
  MAINTAINER=	shurd@FreeBSD.org
-@@ -14,10 +13,11 @@
+@@ -14,20 +13,27 @@
  USE_GITHUB=	yes
  GH_ACCOUNT=	luigirizzo
  GH_PROJECT=	netmap
 -GH_TAGNAME=	3c3ab5faa2ab9c89db09cd8339d0e96a1a78c41a
-+GH_TAGNAME=	a675eb3677337331e7fdd462aaaad299c67075be
++GH_TAGNAME=	95ef45d
  MAKEFILE=	GNUmakefile
- WRKSRC_SUBDIR=	apps/pkt-gen
- PATCH_WRKSRC=	${WRKSRC}/..
+-WRKSRC_SUBDIR=	apps/pkt-gen
+-PATCH_WRKSRC=	${WRKSRC}/..
 +MAKE_ENV+=	TARGET_ARCH=
  
  OPTIONS_DEFINE=	PCAP
- PCAP_DESC=	Support loading packets from pcap file
+-PCAP_DESC=	Support loading packets from pcap file
++PCAP_DESC=	Support loading packet from pcap file
+ OPTIONS_DEFAULT=PCAP
+ PCAP_MAKE_ARGS=	WITH_PCAP=1
+ 
+-PLIST_FILES=	bin/pkt-gen
++PLIST_FILES=	bin/pkt-gen \
++		bin/nmreplay
+ 
++do-build:
++	cd ${WRKSRC}/libnetmap && ${SETENV} ${MAKE_ENV} ${GMAKE} ${MAKE_ARGS} ${MAKE_FLAGS} ${MAKEFILE}
++	cd ${WRKSRC}/apps/pkt-gen && ${SETENV} ${MAKE_ENV} ${GMAKE} ${MAKE_ARGS} ${MAKE_FLAGS} ${MAKEFILE}
++	cd ${WRKSRC}/apps/nmreplay && ${SETENV} ${MAKE_ENV} ${GMAKE} ${MAKE_ARGS} ${MAKE_FLAGS} ${MAKEFILE}
++
+ do-install:
+-	${INSTALL_PROGRAM} ${WRKSRC}/pkt-gen \
++	${INSTALL_PROGRAM} ${WRKSRC}/apps/pkt-gen/pkt-gen \
+ 		${STAGEDIR}${PREFIX}/bin
++	${INSTALL_PROGRAM} ${WRKSRC}/apps/nmreplay/nmreplay \
++		${STAGEDIR}${PREFIX}/bin
+ 
+ .include <bsd.port.mk>
 Index: net/pkt-gen/distinfo
 ===================================================================
---- net/pkt-gen/distinfo	(revision 500480)
+--- net/pkt-gen/distinfo	(revision 518057)
 +++ net/pkt-gen/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1503651090
 -SHA256 (luigirizzo-netmap-g2017.08.06-3c3ab5faa2ab9c89db09cd8339d0e96a1a78c41a_GH0.tar.gz) = 755f0b7d195cfdd7148591ef01ae4da569cae3e323ffded74dfbaa571dc267f3
 -SIZE (luigirizzo-netmap-g2017.08.06-3c3ab5faa2ab9c89db09cd8339d0e96a1a78c41a_GH0.tar.gz) = 544000
-+TIMESTAMP = 1556644918
-+SHA256 (luigirizzo-netmap-g2019.03.01-a675eb3677337331e7fdd462aaaad299c67075be_GH0.tar.gz) = 6bea5b40933ee04d8d7fda2bbb8331574f8ae12ea09881fc8ae3b50d6bc038c3
-+SIZE (luigirizzo-netmap-g2019.03.01-a675eb3677337331e7fdd462aaaad299c67075be_GH0.tar.gz) = 697718
++TIMESTAMP = 1574296686
++SHA256 (luigirizzo-netmap-g2019.11.07-95ef45d_GH0.tar.gz) = 5cf4e11f8d3f991404d6d4942dcbe801c5d9c172a81872b46e7d6e02ca5552b4
++SIZE (luigirizzo-netmap-g2019.11.07-95ef45d_GH0.tar.gz) = 710389
+Index: net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile
+===================================================================
+--- net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile	(nonexistent)
++++ net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile	(working copy)
+@@ -0,0 +1,11 @@
++--- apps/nmreplay/GNUmakefile.orig	2019-11-21 06:26:42 UTC
+++++ apps/nmreplay/GNUmakefile
++@@ -14,7 +14,7 @@ CFLAGS += -Werror -Wall -Wunused-function
++ CFLAGS += -I $(SRCDIR)/sys -I $(SRCDIR)/apps/include -I $(SRCDIR)/libnetmap
++ CFLAGS += -Wextra
++ 
++-LDFLAGS += -L $(BUILDDIR)/build-libnetmap
+++LDFLAGS += -L ../../libnetmap
++ LDLIBS += -lnetmap -lpthread
++ ifeq ($(shell uname),Linux)
++ 	LDLIBS += -lrt	# on linux
+
+Property changes on: net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile
+===================================================================
+--- net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile	(nonexistent)
++++ net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile	(working copy)
+@@ -0,0 +1,11 @@
++--- apps/pkt-gen/GNUmakefile.orig	2019-11-21 06:24:22 UTC
+++++ apps/pkt-gen/GNUmakefile
++@@ -14,7 +14,7 @@ CFLAGS += -Werror -Wall -Wunused-function
++ CFLAGS += -I $(SRCDIR)/sys -I $(SRCDIR)/apps/include -I $(SRCDIR)/libnetmap
++ CFLAGS += -Wextra -Wno-address-of-packed-member
++ 
++-LDFLAGS = -L $(BUILDDIR)/build-libnetmap
+++LDFLAGS = -L ../../libnetmap
++ LDLIBS += -lpthread -lm -lnetmap
++ ifeq ($(shell uname),Linux)
++ 	LDLIBS += -lrt	# on linux
+
+Property changes on: net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
+===================================================================
+--- net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c	(nonexistent)
++++ net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c	(working copy)
+@@ -0,0 +1,157 @@
++--- apps/pkt-gen/pkt-gen.c.orig	2019-11-06 09:59:27 UTC
+++++ apps/pkt-gen/pkt-gen.c
++@@ -272,6 +272,7 @@ struct glob_arg {
++ 	int nthreads;
++ 	int cpus;	/* cpus used for running */
++ 	int system_cpus;	/* cpus on the system */
+++	int softchecksum;   /* Software UDP checksum calculation */
++ 
++ 	int options;	/* testing */
++ #define OPT_PREFETCH	1
++@@ -843,16 +844,22 @@ update_ip(struct pkt *pkt, struct targ *t)
++ 		ip.ip_src.s_addr = htonl(naddr);
++ 	} while (0);
++ 	/* update checksums if needed */
++-	if (oaddr != naddr) {
++-		ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
++-		ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
++-		ip_sum = cksum_add(ip_sum, naddr >> 16);
++-		ip_sum = cksum_add(ip_sum, naddr & 0xffff);
+++	/* Some NIC drivers, like Intel,  disable hardware CRC checksum in */
+++	/* netmap mode and don't allow to re-enable it. */
+++	/* But other drivers (like Chelsio) are still able to do checksum */
+++	/* So optionnaly enable this, because impact can be huge */
+++	if (g->softchecksum) {
+++		if (oaddr != naddr) {
+++			ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
+++			ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
+++			ip_sum = cksum_add(ip_sum, naddr >> 16);
+++			ip_sum = cksum_add(ip_sum, naddr & 0xffff);
+++		}
+++		if (oport != nport) {
+++			udp_sum = cksum_add(udp_sum, ~oport);
+++			udp_sum = cksum_add(udp_sum, nport);
+++		}
++ 	}
++-	if (oport != nport) {
++-		udp_sum = cksum_add(udp_sum, ~oport);
++-		udp_sum = cksum_add(udp_sum, nport);
++-	}
++ 	do {
++ 		naddr = oaddr = ntohl(ip.ip_dst.s_addr);
++ 		nport = oport = ntohs(udp.uh_dport);
++@@ -879,22 +886,24 @@ update_ip(struct pkt *pkt, struct targ *t)
++ 		ip.ip_dst.s_addr = htonl(naddr);
++ 	} while (0);
++ 	/* update checksums */
++-	if (oaddr != naddr) {
++-		ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
++-		ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
++-		ip_sum = cksum_add(ip_sum, naddr >> 16);
++-		ip_sum = cksum_add(ip_sum, naddr & 0xffff);
+++	if (g->softchecksum) {
+++		if (oaddr != naddr) {
+++			ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
+++			ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
+++			ip_sum = cksum_add(ip_sum, naddr >> 16);
+++			ip_sum = cksum_add(ip_sum, naddr & 0xffff);
+++		}
+++		if (oport != nport) {
+++			udp_sum = cksum_add(udp_sum, ~oport);
+++			udp_sum = cksum_add(udp_sum, nport);
+++		}
+++		if (udp_sum != 0)
+++			udp.uh_sum = ~cksum_add(~udp.uh_sum, htons(udp_sum));
+++		if (ip_sum != 0) {
+++			ip.ip_sum = ~cksum_add(~ip.ip_sum, htons(ip_sum));
+++			udp.uh_sum = ~cksum_add(~udp.uh_sum, htons(ip_sum));
+++		}
++ 	}
++-	if (oport != nport) {
++-		udp_sum = cksum_add(udp_sum, ~oport);
++-		udp_sum = cksum_add(udp_sum, nport);
++-	}
++-	if (udp_sum != 0)
++-		udp.uh_sum = ~cksum_add(~udp.uh_sum, htons(udp_sum));
++-	if (ip_sum != 0) {
++-		ip.ip_sum = ~cksum_add(~ip.ip_sum, htons(ip_sum));
++-		udp.uh_sum = ~cksum_add(~udp.uh_sum, htons(ip_sum));
++-	}
++ 	memcpy(&pkt->ipv4.ip, &ip, sizeof(ip));
++ 	memcpy(&pkt->ipv4.udp, &udp, sizeof(udp));
++ }
++@@ -943,11 +952,13 @@ update_ip6(struct pkt *pkt, struct targ *t)
++ 		ip6.ip6_src.s6_addr16[group] = htons(naddr);
++ 	} while (0);
++ 	/* update checksums if needed */
++-	if (oaddr != naddr)
++-		udp_sum = cksum_add(~oaddr, naddr);
++-	if (oport != nport)
++-		udp_sum = cksum_add(udp_sum,
++-		    cksum_add(~oport, nport));
+++	if (g->softchecksum) {
+++		if (oaddr != naddr)
+++			udp_sum = cksum_add(~oaddr, naddr);
+++		if (oport != nport)
+++			udp_sum = cksum_add(udp_sum,
+++			    cksum_add(~oport, nport));
+++	}
++ 	do {
++ 		group = g->dst_ip.ipv6.egroup;
++ 		naddr = oaddr = ntohs(ip6.ip6_dst.s6_addr16[group]);
++@@ -975,14 +986,16 @@ update_ip6(struct pkt *pkt, struct targ *t)
++ 		ip6.ip6_dst.s6_addr16[group] = htons(naddr);
++ 	} while (0);
++ 	/* update checksums */
++-	if (oaddr != naddr)
++-		udp_sum = cksum_add(udp_sum,
++-		    cksum_add(~oaddr, naddr));
++-	if (oport != nport)
++-		udp_sum = cksum_add(udp_sum,
++-		    cksum_add(~oport, nport));
++-	if (udp_sum != 0)
++-		udp.uh_sum = ~cksum_add(~udp.uh_sum, udp_sum);
+++	if (g->softchecksum) {
+++		if (oaddr != naddr)
+++			udp_sum = cksum_add(udp_sum,
+++			    cksum_add(~oaddr, naddr));
+++		if (oport != nport)
+++			udp_sum = cksum_add(udp_sum,
+++			    cksum_add(~oport, nport));
+++		if (udp_sum != 0)
+++			udp.uh_sum = ~cksum_add(~udp.uh_sum, udp_sum);
+++	}
++ 	memcpy(&pkt->ipv6.ip, &ip6, sizeof(ip6));
++ 	memcpy(&pkt->ipv6.udp, &udp, sizeof(udp));
++ }
++@@ -2417,6 +2430,10 @@ usage(int errcode)
++ "     -T report_ms\n"
++ "             Number of milliseconds between reports.\n"
++ "\n"
+++"     -U      Enable software checksum calculation\n"
+++"             (mandatory for NIC drivers that didn' support\n"
+++"             hardwarde checksum calc in netmap mode)\n"
+++"\n"
++ "     -w wait_for_link_time\n"
++ "             Number of seconds to wait before starting the pkt-gen function, useuful to make sure that the\n"
++ "             network link is up.  A network device driver may take some time to enter netmap mode, or to\n"
++@@ -2847,7 +2864,7 @@ main(int arc, char **argv)
++ 	g.wait_link = 2;	/* wait 2 seconds for physical ports */
++ 
++ 	while ((ch = getopt(arc, argv, "46a:f:F:Nn:i:Il:d:s:D:S:b:c:o:p:"
++-	    "T:w:WvR:XC:H:rP:zZAhBM:")) != -1) {
+++	    "T:Uw:WvR:XC:H:rP:zZAhBM:")) != -1) {
++ 
++ 		switch(ch) {
++ 		default:
++@@ -2962,6 +2979,10 @@ main(int arc, char **argv)
++ 
++ 		case 'T':	/* report interval */
++ 			g.report_interval = atoi(optarg);
+++			break;
+++
+++		case 'U':   /* Enable software checksum calculation */
+++			g.softchecksum = 1;
++ 			break;
++ 
++ 		case 'w':
+
+Property changes on: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
+___________________________________________________________________
+Added: fbsd:nokeywords
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
 Index: net/pkt-gen/files/patch-include_ctrs.h
 ===================================================================
---- net/pkt-gen/files/patch-include_ctrs.h	(revision 500480)
+--- net/pkt-gen/files/patch-include_ctrs.h	(revision 518057)
 +++ net/pkt-gen/files/patch-include_ctrs.h	(nonexistent)
 @@ -1,36 +0,0 @@
 ---- include/ctrs.h.orig	2017-08-06 18:26:36 UTC
@@ -92,25 +352,52 @@ Deleted: svn:mime-type
 ## -1 +0,0 ##
 -text/plain
 \ No newline at end of property
+Index: net/pkt-gen/files/patch-pkt-gen_GNUmakefile
+===================================================================
+--- net/pkt-gen/files/patch-pkt-gen_GNUmakefile	(revision 518057)
++++ net/pkt-gen/files/patch-pkt-gen_GNUmakefile	(nonexistent)
+@@ -1,13 +0,0 @@
+---- pkt-gen/GNUmakefile.orig	2018-08-15 02:22:27 UTC
+-+++ pkt-gen/GNUmakefile
+-@@ -10,9 +10,8 @@ VPATH = $(SRCDIR)/apps/pkt-gen
+- 
+- NO_MAN=
+- CFLAGS = -O2 -pipe
+--CFLAGS += -Werror -Wall -Wunused-function
+-+CFLAGS += -Wunused-function
+- CFLAGS += -I $(SRCDIR)/sys -I $(SRCDIR)/apps/include
+--CFLAGS += -Wextra
+- 
+- LDLIBS += -lpthread -lm
+- ifeq ($(shell uname),Linux)
+
+Property changes on: net/pkt-gen/files/patch-pkt-gen_GNUmakefile
+___________________________________________________________________
+Deleted: fbsd:nokeywords
+## -1 +0,0 ##
+-yes
+\ No newline at end of property
+Deleted: svn:eol-style
+## -1 +0,0 ##
+-native
+\ No newline at end of property
+Deleted: svn:mime-type
+## -1 +0,0 ##
+-text/plain
+\ No newline at end of property
 Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
 ===================================================================
---- net/pkt-gen/files/patch-pkt-gen_pkt-gen.c	(revision 500480)
-+++ net/pkt-gen/files/patch-pkt-gen_pkt-gen.c	(working copy)
-@@ -1,599 +1,156 @@
+--- net/pkt-gen/files/patch-pkt-gen_pkt-gen.c	(revision 518057)
++++ net/pkt-gen/files/patch-pkt-gen_pkt-gen.c	(nonexistent)
+@@ -1,599 +0,0 @@
 ---- pkt-gen/pkt-gen.c.orig	2017-08-06 18:26:36 UTC
-+--- pkt-gen/pkt-gen.c.orig	2019-04-30 17:23:41 UTC
- +++ pkt-gen/pkt-gen.c
+-+++ pkt-gen/pkt-gen.c
 -@@ -62,6 +62,7 @@
 - #endif
 - #include <assert.h>
 - #include <math.h>
 -+#include <inttypes.h>
-+@@ -266,6 +266,7 @@ struct glob_arg {
-+ 	int nthreads;
-+ 	int cpus;	/* cpus used for running */
-+ 	int system_cpus;	/* cpus on the system */
-++	int softchecksum;   /* Software UDP checksum calculation */
-  
+- 
 - #include <pthread.h>
 - 
 -@@ -186,6 +187,7 @@ const char *indirect_payload="netmap pkt
@@ -187,41 +474,13 @@ Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
 - 		naddr = g->src_ip.ipv4.start;
 --		ip->ip_src.s_addr = htonl(naddr);
 -+		ip.ip_src.s_addr = htonl(naddr);
-+ 	int options;	/* testing */
-+ #define OPT_PREFETCH	1
-+@@ -832,16 +833,22 @@ update_ip(struct pkt *pkt, struct targ *t)
-+ 		ip.ip_src.s_addr = htonl(naddr);
-  	} while (0);
-  	/* update checksums if needed */
+- 	} while (0);
+- 	/* update checksums if needed */
 - 	if (oaddr != naddr) {
 -@@ -798,29 +800,29 @@ update_ip(struct pkt *pkt, struct glob_a
 - 		udp_sum = cksum_add(udp_sum, nport);
-+-	if (oaddr != naddr) {
-+-		ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
-+-		ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
-+-		ip_sum = cksum_add(ip_sum, naddr >> 16);
-+-		ip_sum = cksum_add(ip_sum, naddr & 0xffff);
-++	/* Some NIC drivers, like Intel,  disable hardware CRC checksum in */
-++	/* netmap mode and don't allow to re-enable it. */
-++	/* But other drivers (like Chelsio) are still able to do checksum */
-++	/* So optionnaly enable this, because impact can be huge */
-++	if (g->softchecksum) {
-++		if (oaddr != naddr) {
-++			ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
-++			ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
-++			ip_sum = cksum_add(ip_sum, naddr >> 16);
-++			ip_sum = cksum_add(ip_sum, naddr & 0xffff);
-++		}
-++		if (oport != nport) {
-++			udp_sum = cksum_add(udp_sum, ~oport);
-++			udp_sum = cksum_add(udp_sum, nport);
-++		}
-  	}
-+-	if (oport != nport) {
-+-		udp_sum = cksum_add(udp_sum, ~oport);
-+-		udp_sum = cksum_add(udp_sum, nport);
-+-	}
-  	do {
+- 	}
+- 	do {
 --		naddr = oaddr = ntohl(ip->ip_dst.s_addr);
 --		nport = oport = ntohs(udp->uh_dport);
 -+		naddr = oaddr = ntohl(ip.ip_dst.s_addr);
@@ -255,38 +514,12 @@ Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
 - 		naddr = g->dst_ip.ipv4.start;
 --		ip->ip_dst.s_addr = htonl(naddr);
 -+		ip.ip_dst.s_addr = htonl(naddr);
-+ 		naddr = oaddr = ntohl(ip.ip_dst.s_addr);
-+ 		nport = oport = ntohs(udp.uh_dport);
-+@@ -868,22 +875,24 @@ update_ip(struct pkt *pkt, struct targ *t)
-+ 		ip.ip_dst.s_addr = htonl(naddr);
-  	} while (0);
-  	/* update checksums */
+- 	} while (0);
+- 	/* update checksums */
 - 	if (oaddr != naddr) {
 -@@ -834,11 +836,13 @@ update_ip(struct pkt *pkt, struct glob_a
 - 		udp_sum = cksum_add(udp_sum, nport);
-+-	if (oaddr != naddr) {
-+-		ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
-+-		ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
-+-		ip_sum = cksum_add(ip_sum, naddr >> 16);
-+-		ip_sum = cksum_add(ip_sum, naddr & 0xffff);
-++	if (g->softchecksum) {
-++		if (oaddr != naddr) {
-++			ip_sum = cksum_add(ip_sum, ~oaddr >> 16);
-++			ip_sum = cksum_add(ip_sum, ~oaddr & 0xffff);
-++			ip_sum = cksum_add(ip_sum, naddr >> 16);
-++			ip_sum = cksum_add(ip_sum, naddr & 0xffff);
-++		}
-++		if (oport != nport) {
-++			udp_sum = cksum_add(udp_sum, ~oport);
-++			udp_sum = cksum_add(udp_sum, nport);
-++		}
-++		if (udp_sum != 0)
-++			udp.uh_sum = ~cksum_add(~udp.uh_sum, htons(udp_sum));
-++		if (ip_sum != 0) {
-++			ip.ip_sum = ~cksum_add(~ip.ip_sum, htons(ip_sum));
-++			udp.uh_sum = ~cksum_add(~udp.uh_sum, htons(ip_sum));
-++		}
-  	}
+- 	}
 - 	if (udp_sum != 0)
 --		udp->uh_sum = ~cksum_add(~udp->uh_sum, htons(udp_sum));
 -+		udp.uh_sum = ~cksum_add(~udp.uh_sum, htons(udp_sum));
@@ -298,19 +531,7 @@ Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
 - 	}
 -+	memcpy(&pkt->ipv4.ip, &ip, sizeof(ip));
 -+	memcpy(&pkt->ipv4.udp, &udp, sizeof(udp));
-+-	if (oport != nport) {
-+-		udp_sum = cksum_add(udp_sum, ~oport);
-+-		udp_sum = cksum_add(udp_sum, nport);
-+-	}
-+-	if (udp_sum != 0)
-+-		udp.uh_sum = ~cksum_add(~udp.uh_sum, htons(udp_sum));
-+-	if (ip_sum != 0) {
-+-		ip.ip_sum = ~cksum_add(~ip.ip_sum, htons(ip_sum));
-+-		udp.uh_sum = ~cksum_add(~udp.uh_sum, htons(ip_sum));
-+-	}
-+ 	memcpy(&pkt->ipv4.ip, &ip, sizeof(ip));
-+ 	memcpy(&pkt->ipv4.udp, &udp, sizeof(udp));
-  }
+- }
 - 
 - #ifndef s6_addr16
 -@@ -847,41 +851,41 @@ update_ip(struct pkt *pkt, struct glob_a
@@ -366,27 +587,13 @@ Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
 - 		naddr = ntohs(g->src_ip.ipv6.start.s6_addr16[group]);
 --		ip6->ip6_src.s6_addr16[group] = htons(naddr);
 -+		ip6.ip6_src.s6_addr16[group] = htons(naddr);
-+@@ -932,11 +941,13 @@ update_ip6(struct pkt *pkt, struct targ *t)
-+ 		ip6.ip6_src.s6_addr16[group] = htons(naddr);
-  	} while (0);
-  	/* update checksums if needed */
+- 	} while (0);
+- 	/* update checksums if needed */
 - 	if (oaddr != naddr)
 -@@ -891,29 +895,29 @@ update_ip6(struct pkt *pkt, struct glob_
 - 		    cksum_add(~oport, nport));
-+-	if (oaddr != naddr)
-+-		udp_sum = cksum_add(~oaddr, naddr);
-+-	if (oport != nport)
-+-		udp_sum = cksum_add(udp_sum,
-+-		    cksum_add(~oport, nport));
-++	if (g->softchecksum) {
-++		if (oaddr != naddr)
-++			udp_sum = cksum_add(~oaddr, naddr);
-++		if (oport != nport)
-++			udp_sum = cksum_add(udp_sum,
-++			    cksum_add(~oport, nport));
-++	}
-  	do {
-  		group = g->dst_ip.ipv6.egroup;
+- 	do {
+- 		group = g->dst_ip.ipv6.egroup;
 --		naddr = oaddr = ntohs(ip6->ip6_dst.s6_addr16[group]);
 --		nport = oport = ntohs(udp->uh_dport);
 -+		naddr = oaddr = ntohs(ip6.ip6_dst.s6_addr16[group]);
@@ -420,11 +627,8 @@ Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
 - 		naddr = ntohs(g->dst_ip.ipv6.start.s6_addr16[group]);
 --		ip6->ip6_dst.s6_addr16[group] = htons(naddr);
 -+		ip6.ip6_dst.s6_addr16[group] = htons(naddr);
-+ 		naddr = oaddr = ntohs(ip6.ip6_dst.s6_addr16[group]);
-+@@ -964,14 +975,16 @@ update_ip6(struct pkt *pkt, struct targ *t)
-+ 		ip6.ip6_dst.s6_addr16[group] = htons(naddr);
-  	} while (0);
-  	/* update checksums */
+- 	} while (0);
+- 	/* update checksums */
 - 	if (oaddr != naddr)
 -@@ -923,7 +927,9 @@ update_ip6(struct pkt *pkt, struct glob_
 - 		udp_sum = cksum_add(udp_sum,
@@ -434,40 +638,8 @@ Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
 -+		udp.uh_sum = ~cksum_add(~udp.uh_sum, udp_sum);
 -+	memcpy(&pkt->ipv6.ip, &ip6, sizeof(ip6));
 -+	memcpy(&pkt->ipv6.udp, &udp, sizeof(udp));
-+-	if (oaddr != naddr)
-+-		udp_sum = cksum_add(udp_sum,
-+-		    cksum_add(~oaddr, naddr));
-+-	if (oport != nport)
-+-		udp_sum = cksum_add(udp_sum,
-+-		    cksum_add(~oport, nport));
-+-	if (udp_sum != 0)
-+-		udp.uh_sum = ~cksum_add(~udp.uh_sum, udp_sum);
-++	if (g->softchecksum) {
-++		if (oaddr != naddr)
-++			udp_sum = cksum_add(udp_sum,
-++			    cksum_add(~oaddr, naddr));
-++		if (oport != nport)
-++			udp_sum = cksum_add(udp_sum,
-++			    cksum_add(~oport, nport));
-++		if (udp_sum != 0)
-++			udp.uh_sum = ~cksum_add(~udp.uh_sum, udp_sum);
-++	}
-+ 	memcpy(&pkt->ipv6.ip, &ip6, sizeof(ip6));
-+ 	memcpy(&pkt->ipv6.udp, &udp, sizeof(udp));
-  }
-+@@ -2402,6 +2415,9 @@ usage(int errcode)
-+ "\n"
-+ "     -T report_ms\n"
-+ "             Number of milliseconds between reports.\n"
-++"     -U      Enable software checksum calculation\n"
-++"             (mandatory for NIC drivers that didn' support\n"
-++"             hardwarde checksum calc in netmap mode)\n"
-+ "\n"
-+ "     -w wait_for_link_time\n"
-+ "             Number of seconds to wait before starting the pkt-gen function, useuful to make sure that the\n"
-+@@ -2820,7 +2836,7 @@ main(int arc, char **argv)
-+ 	g.wait_link = 2;	/* wait 2 seconds for physical ports */
-  
+- }
+- 
 - static void
 -@@ -944,9 +950,10 @@ initialize_packet(struct targ *targ)
 - {
@@ -485,10 +657,7 @@ Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
 - 	const char *payload = targ->g->options & OPT_INDIRECT ?
 -@@ -978,7 +985,7 @@ initialize_packet(struct targ *targ)
 - #endif
-+ 	while ((ch = getopt(arc, argv, "46a:f:F:Nn:i:Il:d:s:D:S:b:c:o:p:"
-+-	    "T:w:WvR:XC:H:rP:zZAhBM:")) != -1) {
-++	    "T:Uw:WvR:XC:H:rP:zZAhBM:")) != -1) {
-  
+- 
 - 	paylen = targ->g->pkt_size - sizeof(*eh) -
 --	    (targ->g->af == AF_INET ? sizeof(*ip): sizeof(*ip6));
 -+	    (targ->g->af == AF_INET ? sizeof(ip): sizeof(ip6));
@@ -788,27 +957,21 @@ Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
 -+	while ((ch = getopt(arc, argv, "46a:f:F:Nn:i:Il:d:s:D:S:b:c:o:p:"
 - 	    "T:w:WvR:XC:H:e:E:m:rP:zZA")) != -1) {
 - 
-  		switch(ch) {
+- 		switch(ch) {
 -@@ -2606,6 +2654,10 @@ main(int arc, char **argv)
 - 			g.af = AF_INET6;
 - 			break;
-+ 		default:
-+@@ -2935,6 +2951,10 @@ main(int arc, char **argv)
-  
+- 
 -+		case 'N':
 -+			normalize = 0;
-+ 		case 'T':	/* report interval */
-+ 			g.report_interval = atoi(optarg);
- +			break;
- +
+-+			break;
+-+
 - 		case 'n':
 - 			g.npackets = strtoull(optarg, NULL, 10);
-++		case 'U':   /* Enable software checksum calculation */
-++			g.softchecksum = 1;
-  			break;
+- 			break;
 -@@ -2633,7 +2685,7 @@ main(int arc, char **argv)
 - 			break;
-  
+- 
 - 		case 'o':	/* data generation options */
 --			g.options = atoi(optarg);
 -+			g.options |= atoi(optarg);
@@ -826,4 +989,18 @@ Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
 - 	/* Install ^C handler. */
 - 	global_nthreads = g.nthreads;
 - 	sigemptyset(&ss);
-+ 		case 'w':
+
+Property changes on: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
+___________________________________________________________________
+Deleted: fbsd:nokeywords
+## -1 +0,0 ##
+-on
+\ No newline at end of property
+Deleted: svn:eol-style
+## -1 +0,0 ##
+-native
+\ No newline at end of property
+Deleted: svn:mime-type
+## -1 +0,0 ##
+-text/plain
+\ No newline at end of property

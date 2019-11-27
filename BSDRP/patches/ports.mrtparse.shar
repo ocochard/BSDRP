@@ -1,0 +1,109 @@
+# This is a shell archive.  Save it in a file, remove anything before
+# this line, and then unpack it by entering "sh file".  Note, it may
+# create directories; files and directories will be owned by you and
+# have default permissions.
+#
+# This archive contains:
+#
+#	net/mrtparse
+#	net/mrtparse/files
+#	net/mrtparse/files/patch-setup.py
+#	net/mrtparse/pkg-descr
+#	net/mrtparse/Makefile
+#	net/mrtparse/distinfo
+#
+echo c - net/mrtparse
+mkdir -p net/mrtparse > /dev/null 2>&1
+echo c - net/mrtparse/files
+mkdir -p net/mrtparse/files > /dev/null 2>&1
+echo x - net/mrtparse/files/patch-setup.py
+sed 's/^X//' >net/mrtparse/files/patch-setup.py << 'fd879bba07b547a822c46cf6cf216f59'
+X--- setup.py.orig	2019-01-08 09:46:20 UTC
+X+++ setup.py
+X@@ -29,6 +29,7 @@ except ImportError:
+X import os
+X import sys
+X from codecs import open
+X+from glob import glob
+X import mrtparse
+X 
+X here = os.path.abspath(os.path.dirname(__file__))
+X@@ -67,14 +68,7 @@ try:
+X         ],
+X         keywords='mrt bgp',
+X         packages = ['mrtparse'],
+X-        package_data={
+X-            'mrtparse': [
+X-                'examples/*.py',
+X-                'samples/bird*',
+X-                'samples/openbgpd*',
+X-                'samples/quagga*'
+X-            ]
+X-        },
+X+        scripts=glob('examples/*'),
+X         zip_safe=False,
+X     )
+X finally:
+fd879bba07b547a822c46cf6cf216f59
+echo x - net/mrtparse/pkg-descr
+sed 's/^X//' >net/mrtparse/pkg-descr << 'eabd2c11705ea5f97d329d71d65f6e26'
+XTool to read and analyze the MRT format data. The MRT format can be used to
+Xexport routing protocol messages, state changes, and routing information base
+X contents, and is defined in RFC6396.
+X
+XWWW: https://github.com/t2mune/mrtparse
+eabd2c11705ea5f97d329d71d65f6e26
+echo x - net/mrtparse/Makefile
+sed 's/^X//' >net/mrtparse/Makefile << '2c7bc0808c3d2a24cc9b1beae4f57494'
+X# $FreeBSD$
+X
+XPORTNAME=	mrtparse
+XPORTVERSION=	1.7
+XDISTVERSIONPREFIX=	v
+XCATEGORIES=	net python
+XPKGNAMEPREFIX=	${PYTHON_PKGNAMEPREFIX}
+X
+XMAINTAINER=	olivier@FreeBSD.org
+XCOMMENT=	MRT format data parser
+X
+XLICENSE=	APACHE20
+XLICENSE_FILE=	${WRKSRC}/LICENSE
+X
+XUSES=		python shebangfix
+X
+XGH_ACCOUNT=	t2mune
+XGH_PROJECT=	${PORTNAME}
+X
+XNO_ARCH=	yes
+XUSE_GITHUB=	yes
+XUSE_PYTHON=	autoplist distutils
+X
+XSHEBANG_FILES=	examples/print_all.py \
+X		examples/mrt2bgpdump.py \
+X		examples/mrt2exabgp.py \
+X		examples/slice.py \
+X		examples/summary.py
+X
+Xpost-patch:
+X#	@${REINPLACE_CMD} -e 's|mrtparse/examples|${EXAMPLESDIR}|' ${WRKSRC}/setup.py
+X#	@${REINPLACE_CMD} -e 's|mrtparse/samples|${EXAMPLESDIR}/samples|' ${WRKSRC}/setup.py
+X#	@${REINPLACE_CMD} -e 's|examples/|${EXAMPLESDIR}|' ${WRKSRC}/setup.py
+X#	@${REINPLACE_CMD} -e 's|samples/|${EXAMPLESDIR}/samples/|' ${WRKSRC}/setup.py
+X#	@${REINPLACE_CMD} 's|%%PREFIX%%|${PREFIX}|g' ${WRKSRC}/setup.py
+X	@${MV} ${WRKSRC}/examples/print_all.py ${WRKSRC}/examples/mrt_print_all
+X	@${MV} ${WRKSRC}/examples/mrt2bgpdump.py ${WRKSRC}/examples/mrt2bgpdump
+X	@${MV} ${WRKSRC}/examples/mrt2exabgp.py ${WRKSRC}/examples/mrt2exabgp
+X	@${MV} ${WRKSRC}/examples/slice.py ${WRKSRC}/examples/mrt_slice
+X	@${MV} ${WRKSRC}/examples/summary.py ${WRKSRC}/examples/mrt_summary
+X	@${RM} ${WRKSRC}/examples/README.rst
+X
+X.include <bsd.port.mk>
+2c7bc0808c3d2a24cc9b1beae4f57494
+echo x - net/mrtparse/distinfo
+sed 's/^X//' >net/mrtparse/distinfo << 'dccf16ed84bd419b155464cb5de17c4c'
+XTIMESTAMP = 1574355874
+XSHA256 (t2mune-mrtparse-v1.7_GH0.tar.gz) = 623188ed5fec504ae9e8af214b3d67073deb9e0d7fec474cbe6b4291e74afa78
+XSIZE (t2mune-mrtparse-v1.7_GH0.tar.gz) = 38322
+dccf16ed84bd419b155464cb5de17c4c
+exit
+

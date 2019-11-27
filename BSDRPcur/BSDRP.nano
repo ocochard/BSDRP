@@ -448,7 +448,7 @@ add_port "security/sudo"
 # mpd5: multi-link PPP protocol server (netgraph dependent)
 add_port "net/mpd5"
 
-# high-performance (bridge only) netmap-ipfw and netmap-fwd
+# high-performance (bridge only) netmap tools
 if [ ${NANO_ARCH} = "amd64" ]; then
 	# Netmap's pkt-gen
 	add_port "net/pkt-gen"
@@ -479,6 +479,7 @@ add_port "benchmarks/iperf3"
 
 # ExaBGP: having fun with BGP
 add_port "net/exabgp"
+add_port "net/mrtparse"
 
 # VM tools (about 10MB)
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
