@@ -380,13 +380,14 @@ device		netmap			# netmap(4) support
 
 # BSDRP added NICs.
 device		bnxt	# Broadcom NetXtreme-C/NetXtreme-E Family Ethernet driver
-device		ena		# Elastic Network Adapter (ENA) family
-device      cxgb    # Chelsio T3 10 Gigabit Ethernet adapter driver
-device      cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
-device      my      # Myson Technology Ethernet PCI driver
-device      mxge    # Myricom Myri10GE 10 Gigabit Ethernet adapter driver
+device		ena	# Elastic Network Adapter (ENA) family
+device		cxgb    # Chelsio T3 10 Gigabit Ethernet adapter driver
+device		cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
+device		cxgbev  # Chelsio T4, T5 and T6 Ethernet VF driver
+device		my      # Myson Technology Ethernet PCI driver
+device		mxge    # Myricom Myri10GE 10 Gigabit Ethernet adapter driver
 device		qlxge	# QLogic 8100 Series 10 Gigabit Ethernet
-device      oce     # Device driver for Emulex OneConnect 10Gb network adapters
+device		oce     # Device driver for Emulex OneConnect 10Gb network adapters
 device		sfxge	# Solarflare 10Gb Ethernet adapter driver
 
 # MROUTING enables the kernel multicast packet forwarder

@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: head/sys/amd64/conf/GENERIC-NODEBUG 354826 2019-11-18 20:03:28Z markj $
+# $FreeBSD: head/sys/amd64/conf/GENERIC 355164 2019-11-28 02:32:17Z scottl $
 
 cpu		HAMMER
 ident		BSDRP-AMD64
@@ -111,7 +111,9 @@ options 	VERBOSE_SYSINIT=0	# Support debug.verbose_sysinit, off by default
 options 	EKCD			# Support for encrypted kernel dumps
 options 	GZIO			# gzip-compressed kernel and user dumps
 options 	ZSTDIO			# zstd-compressed kernel and user dumps
+options 	DEBUGNET		# debugnet networking
 options 	NETDUMP			# netdump(4) client support
+options 	NETGDB			# netgdb(4) client support
 
 # Make an SMP-capable kernel by default
 options 	SMP			# Symmetric MultiProcessor Kernel
@@ -147,9 +149,9 @@ device		mpt			# LSI-Logic MPT-Fusion
 device		mps			# LSI-Logic MPT-Fusion 2
 device		mpr			# LSI-Logic MPT-Fusion 3
 device		sym			# NCR/Symbios Logic
-device		trm			# Tekram DC395U/UW/F DC315U adapters
 device		isci			# Intel C600 SAS controller
-#device		ocs_fc			# Emulex FC adapters
+device		ocs_fc			# Emulex FC adapters
+device		pvscsi			# VMware PVSCSI
 
 # ATA/SCSI peripherals
 device		scbus			# SCSI bus (required for ATA/SCSI)
@@ -192,6 +194,10 @@ device		twe			# 3ware ATA RAID
 # NVM Express (NVMe) support
 device		nvme			# base NVMe driver
 device		nvd			# expose NVMe namespaces as disks, depends on nvme
+
+# Intel Volume Management Device (VMD) support
+device		vmd			# base VMD device
+device		vmd_bus			# bus for VMD children
 
 # atkbdc0 controls both the keyboard and the PS/2 mouse
 device		atkbdc			# AT keyboard controller
@@ -357,7 +363,7 @@ device		virtio_scsi		# VirtIO SCSI device
 device		virtio_balloon		# VirtIO Memory Balloon device
 
 # HyperV drivers and enhancement support
-device		hyperv			# HyperV drivers
+device		hyperv			# HyperV drivers 
 
 # Xen HVM Guest Optimizations
 # NOTE: XENHVM depends on xenpci.  They must be added or removed together.
@@ -374,12 +380,13 @@ device		netmap			# netmap(4) support
 
 # BSDRP added NICs.
 device		bnxt	# Broadcom NetXtreme-C/NetXtreme-E Family Ethernet driver
-device      cxgb    # Chelsio T3 10 Gigabit Ethernet adapter driver
-device      cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
-device      my      # Myson Technology Ethernet PCI driver
-device      mxge    # Myricom Myri10GE 10 Gigabit Ethernet adapter driver
+device		cxgb    # Chelsio T3 10 Gigabit Ethernet adapter driver
+device		cxgbe   # Chelsio T4 10Gb and 1Gb Ethernet adapter driver
+device		cxgbev  # Chelsio T4, T5 and T6 Ethernet VF driver
+device		my      # Myson Technology Ethernet PCI driver
+device		mxge    # Myricom Myri10GE 10 Gigabit Ethernet adapter driver
 device		qlxge	# QLogic 8100 Series 10 Gigabit Ethernet
-device      oce     # Device driver for Emulex OneConnect 10Gb network adapters
+device		oce     # Device driver for Emulex OneConnect 10Gb network adapters
 device		sfxge	# Solarflare 10Gb Ethernet adapter driver
 
 # MROUTING enables the kernel multicast packet forwarder
@@ -413,4 +420,3 @@ device enc
 #options		RADIX_MPATH
 
 # The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)
-

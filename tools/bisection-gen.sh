@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # Bisection script for BSD Router Project
-# http://bsdrp.net
+# https://bsdrp.net
 #
 # Purpose:
 #  This script permit to build multiple image regarding a given list of svn revision number.

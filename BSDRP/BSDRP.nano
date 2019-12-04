@@ -572,6 +572,9 @@ mpfr
 mpc
 ninja
 p5-gettext
+p5-Locale-libintl
+p5-Text-Unidecode
+p5-Unicode-EastAsianWidth
 pkgconf
 python27
 py36-Babel

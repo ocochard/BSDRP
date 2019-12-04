@@ -20,18 +20,6 @@ Index: tools/tools/mctest/Makefile
 +BINDIR=	/usr/local/bin
  
  .include <bsd.prog.mk>
-Index: tools/tools/netrate/netreceive/Makefile
-===================================================================
---- tools/tools/netrate/netreceive/Makefile	(revision 315217)
-+++ tools/tools/netrate/netreceive/Makefile	(working copy)
-@@ -5,6 +5,7 @@
- PROG=	netreceive
- MAN=
- LDFLAGS += -lpthread
-+BINDIR=	/usr/local/bin
- 
- WARNS?=	3
- 
 Index: tools/tools/netrate/netsend/Makefile
 ===================================================================
 --- tools/tools/netrate/netsend/Makefile	(revision 315217)

@@ -16,15 +16,15 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: head/sys/i386/conf/GENERIC 349253 2019-06-21 00:16:30Z cem $
+# $FreeBSD: head/sys/i386/conf/GENERIC 355164 2019-11-28 02:32:17Z scottl $
 
 cpu		I486_CPU
 cpu		I586_CPU
 cpu		I686_CPU
 ident	BSDRP-I386
 
-makeoptions DEBUG=-g        # Build kernel with gdb(1) debug symbols
-makeoptions WITH_CTF=1      # Run ctfconvert(1) for DTrace support
+makeoptions	DEBUG=-g		# Build kernel with gdb(1) debug symbols
+makeoptions	WITH_CTF=1		# Run ctfconvert(1) for DTrace support
 
 options 	SCHED_ULE		# ULE scheduler
 options 	PREEMPTION		# Enable kernel thread preemption
@@ -89,7 +89,9 @@ options		KDB_TRACE	# Print a stack trace for a panic.
 options 	EKCD			# Support for encrypted kernel dumps
 options 	GZIO			# gzip-compressed kernel and user dumps
 options 	ZSTDIO			# zstd-compressed kernel and user dumps
+options 	DEBUGNET		# debugnet networking
 options 	NETDUMP			# netdump(4) client support
+options 	NETGDB			# netgdb(4) client support
 
 # To make an SMP kernel, the next two lines are needed
 options 	SMP			# Symmetric MultiProcessor Kernel
@@ -124,8 +126,8 @@ device		mpt			# LSI-Logic MPT-Fusion
 device		mps			# LSI-Logic MPT-Fusion 2
 device		mpr			# LSI-Logic MPT-Fusion 3
 device		sym			# NCR/Symbios Logic
-device		trm			# Tekram DC395U/UW/F DC315U adapters
 device		isci			# Intel C600 SAS controller
+device		pvscsi			# VMware PVSCSI
 
 # ATA/SCSI peripherals
 device		scbus			# SCSI bus (required for ATA/SCSI)

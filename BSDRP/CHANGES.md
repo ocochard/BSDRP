@@ -1,12 +1,17 @@
 # Release 1.97 (not released)
 
+## Bug fixes
+* Fix netstat -rn using during large routing table loading (BGP full table) by including D15488
+* Add Chelsio Ethernet VF driver (if_cxgbev)
+
 ## New packages
 * vim-tiny
+* mrtparse: MRT format data parser
 * nrpe3: nagios client (including nagios-plugins)
 * perl 5: Mandatory deps for nrpe3
 
 ## Upgraded packages
-* devcpu-data to 1.26 (update Intel microcode to 20191112)
+* devcpu-data to 1.27 (update Intel microcode to 20191112)
 
 ## Packages list
 * arping 2.19: ARP level "ping" utility
@@ -14,9 +19,9 @@
 * bird2 2.0.7: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.4: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.47: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.47.1: Root certificate bundle from the Mozilla Project
 * curl 7.67.0: Command line tool and library for transferring data with URLs
-* devcpu-data 1.26: Intel and AMD CPUs microcode updates
+* devcpu-data 1.27: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
 * easy-rsa 3.0.6: Small RSA key management package based on openssl
@@ -59,9 +64,6 @@
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.48: Open source LDAP client implementation
 * openvpn 2.4.8: Secure IP/Ethernet tunnel daemon
-* p5-Locale-libintl 1.31: Internationalization library for Perl
-* p5-Text-Unidecode 1.30: Text::Unidecode -- US-ASCII transliterations of Unicode text
-* p5-Unicode-EastAsianWidth 12.0: East Asian Width properties
 * pciids 20191012: Database of all known IDs used in PCI devices
 * pcre 8.43_2: Perl Compatible Regular Expressions library
 * perl5 5.30.1: Practical Extraction and Report Language
@@ -71,13 +73,14 @@
 * pimd 2.3.2_1: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
 * pkg 1.12.0: Package manager
-* pkt-gen g2019.03.01: Packet sink/source using the netmap API
+* pkt-gen g2019.11.07: Packet sink/source using the netmap API
 * pmacct 1.7.3: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py36-exabgp 4.1.2: BGP engine and route injector
+* py36-mrtparse 1.7: MRT format data parser
 * py36-setuptools 41.4.0: Python packages installer
 * python 3.6_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
-* python36 3.6.9: Interpreted object-oriented programming language
+* python36 3.6.9_1: Interpreted object-oriented programming language
 * quagga-bgp-netgen 0.2: Generates Quagga/FRR bgp configuration file with lot's of routes
 * readline 8.0.0: Library for editing command lines as they are typed
 * rtrlib 0.6.3: Open-source C implementation of the RPKI/Router Protocol client
@@ -88,7 +91,7 @@
 * tmux 2.9a_1: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 * utf8proc 2.4.0: UTF-8 processing library
-* vim-tiny 8.1.2237: Improved version of the vi editor (vim binary only)
+* vim-tiny 8.1.2372: Improved version of the vi editor (vim binary only)
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
 -----------------------------------------------------

@@ -1,0 +1,14 @@
+Index: usr.bin/netstat/main.c
+===================================================================
+--- usr.bin/netstat/main.c
++++ usr.bin/netstat/main.c
+@@ -484,6 +484,9 @@
+ 	if (rflag) {
+ 		xo_open_container("statistics");
+ 		if (sflag) {
++			if (live) {
++				kresolve_list(nl);
++			}
+ 			rt_stats();
+ 		} else
+ 			routepr(fib, af);
