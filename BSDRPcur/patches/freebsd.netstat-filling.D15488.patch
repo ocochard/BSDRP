@@ -1,0 +1,39 @@
+Index: usr.bin/netstat/route.c
+===================================================================
+--- usr.bin/netstat/route.c
++++ usr.bin/netstat/route.c
+@@ -252,7 +252,8 @@
+ 	char *buf, *next, *lim;
+ 	struct rt_msghdr *rtm;
+ 	struct sockaddr *sa;
+-	int fam = AF_UNSPEC, ifindex = 0, size;
++	int count = 0, fam = AF_UNSPEC, ifindex = 0;
++	int size;
+ 	int need_table_close = false;
+ 
+ 	struct ifaddrs *ifap, *ifa;
+@@ -303,10 +304,21 @@
+ 	if (sysctl(mib, nitems(mib), NULL, &needed, NULL, 0) < 0)
+ 		err(EX_OSERR, "sysctl: net.route.0.%d.dump.%d estimate", af,
+ 		    fibnum);
+-	if ((buf = malloc(needed)) == NULL)
++retry:
++	if ((buf = malloc(roundup2(needed, PAGE_SIZE))) == NULL)
+ 		errx(2, "malloc(%lu)", (unsigned long)needed);
+-	if (sysctl(mib, nitems(mib), buf, &needed, NULL, 0) < 0)
+-		err(1, "sysctl: net.route.0.%d.dump.%d", af, fibnum);
++	if (sysctl(mib, nitems(mib), buf, &needed, NULL, 0) < 0) {
++		if (count > 3)
++			err(1, "sysctl: net.route.0.%d.dump.%d", af, fibnum);
++		warnx("sysctl: net.route.0.%d.dump.%d: routing table grew "
++		      "beyond estimated buffer size (%zu), retrying with "
++		      "larger buffer...", af, fibnum, needed);
++		free(buf);
++		needed += needed;
++		usleep(100000 * count);
++		count++;
++		goto retry;
++	}
+ 	lim  = buf + needed;
+ 	xo_open_container("route-table");
+ 	xo_open_list("rt-family");

@@ -1,6 +1,6 @@
 Index: tools/tools/ifinfo/Makefile
 ===================================================================
---- tools/tools/ifinfo/Makefile	(revision 315217)
+--- tools/tools/ifinfo/Makefile	(revision 356193)
 +++ tools/tools/ifinfo/Makefile	(working copy)
 @@ -3,5 +3,6 @@
  PROG=	ifinfo
@@ -11,7 +11,7 @@ Index: tools/tools/ifinfo/Makefile
  .include <bsd.prog.mk>
 Index: tools/tools/mctest/Makefile
 ===================================================================
---- tools/tools/mctest/Makefile	(revision 315217)
+--- tools/tools/mctest/Makefile	(revision 356193)
 +++ tools/tools/mctest/Makefile	(working copy)
 @@ -2,5 +2,6 @@
  
@@ -20,20 +20,9 @@ Index: tools/tools/mctest/Makefile
 +BINDIR=	/usr/local/bin
  
  .include <bsd.prog.mk>
-===================================================================
---- tools/tools/netrate/netreceive/Makefile	(revision 315217)
-+++ tools/tools/netrate/netreceive/Makefile	(working copy)
-@@ -5,6 +5,7 @@
- PROG=	netreceive
- MAN=
- LDFLAGS += -lpthread
-+BINDIR=	/usr/local/bin
- 
- WARNS?=	3
- 
 Index: tools/tools/netrate/netsend/Makefile
 ===================================================================
---- tools/tools/netrate/netsend/Makefile	(revision 315217)
+--- tools/tools/netrate/netsend/Makefile	(revision 356193)
 +++ tools/tools/netrate/netsend/Makefile	(working copy)
 @@ -5,5 +5,6 @@
  CFLAGS+=	-Wall

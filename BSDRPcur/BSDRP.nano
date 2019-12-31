@@ -345,7 +345,7 @@ add_port "net-mgmt/bsnmp-ucd"
 add_port "print/indexinfo"
 add_port "devel/libffi"
 add_port "devel/readline"
-add_port "lang/python36"
+add_port "lang/python37"
 add_port "lang/python3"
 add_port "lang/python"
 add_port "devel/py-setuptools"
@@ -522,13 +522,16 @@ add_port "net-mgmt/bgpq3"
 add_port "net/ixl_unlock"
 
 # Mellanox Firmware Burning and Diagnostics Tools
-add_port "sysutils/mstflint" "WITH=\"ADAB STATIC\""
+#add_port "sysutils/mstflint" "WITH=\"ADAB STATIC\""
 
-# Add my ASCII network diagram tool
+# my ASCII network diagram tool
 add_port "net/graphpath"
 
-# Add my Quagga/FRR BGP route generator
+# Quagga/FRR BGP route generator
 add_port "net/quagga-bgp-netgen"
+
+# sysutils/DTraceToolkit
+add_port "sysutils/DTraceToolkit"
 
 #### End of port list section ####
 
