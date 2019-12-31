@@ -1,0 +1,13 @@
+Index: sysutils/DTraceToolkit/Makefile
+===================================================================
+--- sysutils/DTraceToolkit/Makefile	(revision 521622)
++++ sysutils/DTraceToolkit/Makefile	(working copy)
+@@ -17,7 +17,7 @@
+ GH_ACCOUNT=	opendtrace
+ GH_PROJECT=	toolkit
+ GH_TAGNAME=	f36d00b
+-USE_RUBY=	yes
++#USE_RUBY=	yes
+ SHEBANG_LANG=	sh
+ sh_OLD_CMD=	/usr/bin/sh ./sh
+ sh_CMD=		${SH}
