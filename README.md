@@ -1,7 +1,7 @@
 BSD Router Project
 ==================
 
-Copyright (c) 2009-2019, The BSDRP Development Team
+Copyright (c) 2009-2020, The BSDRP Development Team
 
 Homepage: https://bsdrp.net
 
