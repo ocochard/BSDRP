@@ -122,7 +122,7 @@ patch_src() {
 	for patch in $(cd "${SRC_PATCH_DIR}" && ls freebsd.*.patch); do
 		if ! grep -q $patch "${PROJECT_DIR}/FreeBSD/src-patches"; then
 			echo "Applying patch $patch..."
-			patch -NE -d "${FREEBSD_SRC}" -i "${SRC_PATCH_DIR}"/$patch || die "Source tree patch failed"
+			patch -p0 -NE -d "${FREEBSD_SRC}" -i "${SRC_PATCH_DIR}"/$patch || die "Source tree patch failed"
 			echo $patch >> "${PROJECT_DIR}"/FreeBSD/src-patches
 		fi
 	done
@@ -137,7 +137,7 @@ patch_port() {
 	for patch in $(cd "${PORT_PATCH_DIR}" && ls ports.*.patch); do
 		if ! grep -q $patch "${PROJECT_DIR}/FreeBSD/ports-patches"; then
 			echo "Applying patch $patch..."
-			patch -NE -d "${PORTS_SRC}" -i "${PORT_PATCH_DIR}"/$patch || die "Port tree patch failed"
+			patch -p0 -NE -d "${PORTS_SRC}" -i "${PORT_PATCH_DIR}"/$patch || die "Port tree patch failed"
 			echo $patch >> "${PROJECT_DIR}"/FreeBSD/ports-patches
 		fi
 	done
