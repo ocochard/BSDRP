@@ -25,9 +25,9 @@ hw.mfi.mrsas_enable="1"
 net.fibs="16"		# Numbers of FIB
 hw.usb.no_pf="1"	# Disable USB packet filtering
 
-# Disable HyperThreading (no benefit on a router)
-# https://bsdrp.net/documentation/technical_docs/performance#disabling_hyper_threading
-machdep.hyperthreading_allowed="0"
+# Loading newest Intel microcode
+cpu_microcode_load="YES"
+cpu_microcode_name="/boot/firmware/intel-ucode.bin"
 
 ### Intel NIC tuning ###
 # https://bsdrp.net/documentation/technical_docs/performance#nic_drivers_tuning

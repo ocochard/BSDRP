@@ -57,7 +57,7 @@
 * monit 5.26.0: Unix system management and proactive monitoring
 * mpd5 5.8_10: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
-* mstflint 4.13.3.2: Firmware Burning and Diagnostics Tools for Mellanox devices
+* mstflint-lite 4.13.3.2: Firmware Burning and Diagnostics Tools for Mellanox devices
 * mtr-nox11 0.93_1: Traceroute and ping in a single network diagnostic tool
 * nagios-plugins 2.3.1,1: Plugins for Nagios
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD

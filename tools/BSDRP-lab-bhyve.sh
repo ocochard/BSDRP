@@ -188,6 +188,8 @@ destroy_vm() {
 	# Check if this VM exist by small query
 	if is_running $1; then
 		bhyvectl --vm=$1 --destroy || echo "Can't destroy VM $1"
+		# BSDRP_1, extract all char after _
+		#pkill -f "cu -l /dev/nmdm-BSDRP.1B"
 	fi
 	return 0
 }

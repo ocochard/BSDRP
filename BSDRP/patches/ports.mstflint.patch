@@ -11,7 +11,7 @@ Index: sysutils/mstflint/Makefile
  CATEGORIES=	sysutils
  
  MAINTAINER=	slavash@FreeBSD.org
-@@ -11,11 +11,65 @@
+@@ -11,11 +11,91 @@
  LICENSE=	GPLv2
  LICENSE_FILE=	${WRKSRC}/LICENSE
  
@@ -20,6 +20,10 @@ Index: sysutils/mstflint/Makefile
  
 +OPTIONS_DEFINE=	FWMANAGER ADAB STATIC
 +OPTIONS_SUB=	yes
++
++.if defined(LITE)
++OPTIONS_SLAVE=	FWMANAGER ADAB STATIC
++.endif
 +
 +FWMANAGER_DESC=	Build with mstfwmanager and mstarchive
 +ADAB_DESC=	Build with mstreg and mstlink
@@ -71,12 +75,34 @@ Index: sysutils/mstflint/Makefile
 +.endif
 +.endif
 +
++.if defined(LITE)
++EXTRA_PATCHES+=	${PATCHDIR}/extrat-LITE-patch-Makefile.am \
++		${PATCHDIR}/extrat-LITE-patch-mlxconfig_Makefile.am \
++		${PATCHDIR}/extrat-LITE-patch-mlxreg_Makefile.am \
++		${PATCHDIR}/extrat-LITE-patch-cmdif_Makefile.am \
++		${PATCHDIR}/extrat-LITE-patch-mtcr_freebsd_Makefile.am \
++		${PATCHDIR}/extrat-LITE-patch-tools_layouts_Makefile.am \
++		${PATCHDIR}/extrat-LITE-patch-common_Makefile.am \
++		${PATCHDIR}/extrat-LITE-patch-dev_mgt_Makefile.am \
++		${PATCHDIR}/extrat-LITE-patch-reg_access_Makefile.am
++post-install:
++	${RM} ${STAGEDIR}${PREFIX}/lib/libadb_parser.a \
++	${STAGEDIR}${PREFIX}/lib/libcmdif.a \
++	${STAGEDIR}${PREFIX}/lib/libdev_mgt.a \
++	${STAGEDIR}${PREFIX}/lib/libmodules_lib.a \
++	${STAGEDIR}${PREFIX}/lib/libmstreg_lib.a \
++	${STAGEDIR}${PREFIX}/lib/libprint_util_lib.a \
++	${STAGEDIR}${PREFIX}/lib/libreg_access.a \
++	${STAGEDIR}${PREFIX}/lib/libtools_layouts.a \
++	${STAGEDIR}${PREFIX}/lib/mstflint/libmtcr_ul.a
++	${RMDIR} ${STAGEDIR}${PREFIX}/lib/mstflint
++.else
 +post-install:
 +	@${STRIP_CMD} ${STAGEDIR}${PREFIX}/lib/mstflint/python_tools/rreg_access.so
 +	@${STRIP_CMD} ${STAGEDIR}${PREFIX}/lib/mstflint/python_tools/ccmdif.so
 +	@${STRIP_CMD} ${STAGEDIR}${PREFIX}/lib/mstflint/python_tools/cmtcr.so
 +	@${STRIP_CMD} ${STAGEDIR}${PREFIX}/lib/mstflint/python_tools/c_dev_mgt.so
-+
++.endif
  .include <bsd.port.mk>
 Index: sysutils/mstflint/distinfo
 ===================================================================
@@ -89,6 +115,274 @@ Index: sysutils/mstflint/distinfo
 +TIMESTAMP = 1578500867
 +SHA256 (Mellanox-mstflint-v4.13.3-2_GH0.tar.gz) = 8bed4f44f857d7e5acce7100f6a402c2571e47778a8f66ab419a77bc12788ae6
 +SIZE (Mellanox-mstflint-v4.13.3-2_GH0.tar.gz) = 3809937
+Index: sysutils/mstflint/files/extrat-LITE-patch-Makefile.am
+===================================================================
+--- sysutils/mstflint/files/extrat-LITE-patch-Makefile.am	(nonexistent)
++++ sysutils/mstflint/files/extrat-LITE-patch-Makefile.am	(working copy)
+@@ -0,0 +1,16 @@
++--- Makefile.am.orig	2020-01-05 16:50:06.000000000 +0100
+++++ Makefile.am	2020-01-10 20:11:11.228348000 +0100
++@@ -30,11 +30,11 @@
++ # SOFTWARE.
++ #--
++ 
++-SUBDIRS = common mft_utils ext_libs $(TOOLS_CRYPTO) tools_layouts ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) reg_access cmdif $(XZ_UTILS_DIR) dev_mgt tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib mlxconfig mlxfwops cmdparser $(FW_MGR_TOOLS) flint small_utils mstdump ${ADABE_TOOLS} tracers resourcedump
+++SUBDIRS = mft_utils ext_libs $(TOOLS_CRYPTO) tools_layouts ${MTCR_CONF_DIR} $(MAD_IFC) reg_access cmdif $(XZ_UTILS_DIR) dev_mgt tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib mlxconfig mlxfwops cmdparser mlxfwupdate ${ADABE_TOOLS}
++ 
++ DIST_SUBDIRS = tracers
++ 
++-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1
+++man_MANS = man/mstconfig.1 man/mstlink.1 man/mstfwmanager.1
++ 
++ EXTRA_DIST = \
++ 	mstflint.spec \
+
+Property changes on: sysutils/mstflint/files/extrat-LITE-patch-Makefile.am
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/mstflint/files/extrat-LITE-patch-cmdif_Makefile.am
+===================================================================
+--- sysutils/mstflint/files/extrat-LITE-patch-cmdif_Makefile.am	(nonexistent)
++++ sysutils/mstflint/files/extrat-LITE-patch-cmdif_Makefile.am	(working copy)
+@@ -0,0 +1,23 @@
++--- cmdif/Makefile.am.orig	2020-01-10 21:59:19.228661000 +0100
+++++ cmdif/Makefile.am	2020-01-10 22:51:51.467764000 +0100
++@@ -35,7 +35,6 @@ USER_DIR = $(top_srcdir)
++ MTCR_DIR = $(USER_DIR)/include/mtcr_ul
++ TOOLS_LAYOUTS_DIR = $(USER_DIR)/tools_layouts
++ AM_CPPFLAGS = -I. -I../common -I../tools_layouts  -I${MTCR_DIR} -I.. -I$(USER_DIR)/${MTCR_CONF_DIR}
++-CCMDIF_SO = ccmdif.so
++ 
++ AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC) -DCMDIF_EXPORTS
++ CMDIF_VERSION = 1
++@@ -43,12 +42,8 @@ lib_LTLIBRARIES = libcmdif.a
++ 
++ cmdifincludedir = $(includedir)/mstflint/cmdif/
++ 
++-cmdifinclude_HEADERS = icmd_cif_common.h icmd_cif_open.h
++-
++ libcmdif_a_SOURCES = tools_cif.c tools_cif.h icmd_cif_common.c icmd_cif_common.h icmd_cif_open.c icmd_cif_open.h
++ 
++-cmdif_pylibdir = $(libdir)/mstflint/python_tools/
++-cmdif_pylib_DATA = ${CCMDIF_SO} cmdif.py
++ ${CCMDIF_SO}: libcmdif.a
++ 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${CCMDIF_SO} \
++ 	-L$(USER_DIR)/tools_layouts -ltools_layouts -L$(USER_DIR)/${MTCR_CONF_DIR} -lmtcr_ul
+
+Property changes on: sysutils/mstflint/files/extrat-LITE-patch-cmdif_Makefile.am
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/mstflint/files/extrat-LITE-patch-common_Makefile.am
+===================================================================
+--- sysutils/mstflint/files/extrat-LITE-patch-common_Makefile.am	(nonexistent)
++++ sysutils/mstflint/files/extrat-LITE-patch-common_Makefile.am	(working copy)
+@@ -0,0 +1,11 @@
++--- common/Makefile.am.orig	2020-01-10 22:31:52.576485000 +0100
+++++ common/Makefile.am	2020-01-10 22:32:24.068225000 +0100
++@@ -36,8 +36,6 @@ noinst_HEADERS=compatibility.h bit_slice.h tools_utils
++ 
++ commonincludedir = $(includedir)/mstflint/common/
++ 
++-commoninclude_HEADERS = compatibility.h
++-
++ update_prefix = sed -e 's,[@]MST_LIB_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(libdir),g'\
++                     -e 's,[@]MST_BIN_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(bindir),g'\
++                     -e 's,[@]MFTCONF_PREFIX[@],$(prefix),g'
+
+Property changes on: sysutils/mstflint/files/extrat-LITE-patch-common_Makefile.am
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/mstflint/files/extrat-LITE-patch-dev_mgt_Makefile.am
+===================================================================
+--- sysutils/mstflint/files/extrat-LITE-patch-dev_mgt_Makefile.am	(nonexistent)
++++ sysutils/mstflint/files/extrat-LITE-patch-dev_mgt_Makefile.am	(working copy)
+@@ -0,0 +1,16 @@
++*** dev_mgt/Makefile.am.orig	Fri Jan 10 23:00:25 2020
++--- dev_mgt/Makefile.am	Fri Jan 10 23:18:29 2020
++*************** libdev_mgt_a_SOURCES = \
++*** 44,54 ****
++  						$(top_srcdir)/common/compatibility.h   \
++  						$(top_srcdir)/common/tools_version.h
++  
++- dev_mgt_pylibdir = $(libdir)/mstflint/python_tools/
++- 
++- dev_mgt_pylib_DATA = c_dev_mgt.so dev_mgt.py
++- dist_dev_mgt_pylib_DATA = dev_mgt.py
++- 
++  c_dev_mgt.so: libdev_mgt.a
++  	$(CC) -g -Wall -pthread -shared ${CFLAGS} tools_dev_types.o -o c_dev_mgt.so \
++  	-L$(USER_DIR)/reg_access -lreg_access \
++--- 44,49 ----
+
+Property changes on: sysutils/mstflint/files/extrat-LITE-patch-dev_mgt_Makefile.am
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/mstflint/files/extrat-LITE-patch-mlxconfig_Makefile.am
+===================================================================
+--- sysutils/mstflint/files/extrat-LITE-patch-mlxconfig_Makefile.am	(nonexistent)
++++ sysutils/mstflint/files/extrat-LITE-patch-mlxconfig_Makefile.am	(working copy)
+@@ -0,0 +1,16 @@
++--- mlxconfig/Makefile.am.orig	2020-01-10 20:19:15.456616000 +0100
+++++ mlxconfig/Makefile.am	2020-01-10 20:19:48.307817000 +0100
++@@ -55,13 +55,6 @@ AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/includ
++ 
++ AM_CXXFLAGS = -pthread -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
++ bin_PROGRAMS = mstconfig
++-MLXPRIVHOST_PYTHON_WRAPPER=mstprivhost
++-bin_SCRIPTS = ${MLXPRIVHOST_PYTHON_WRAPPER}
++-${MLXPRIVHOST_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
++-	cp $(PYTHON_WRAPPER_SCRIPT) $@
++-
++-mlxprivhostlibdir=$(libdir)/mstflint/python_tools/$(MLXPRIVHOST_PYTHON_WRAPPER)
++-mlxprivhostlib_SCRIPTS = $(MLXPRIVHOST_PYTHON_WRAPPER).py
++ 
++ noinst_LTLIBRARIES = libmlxcfg.a
++ 
+
+Property changes on: sysutils/mstflint/files/extrat-LITE-patch-mlxconfig_Makefile.am
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/mstflint/files/extrat-LITE-patch-mlxreg_Makefile.am
+===================================================================
+--- sysutils/mstflint/files/extrat-LITE-patch-mlxreg_Makefile.am	(nonexistent)
++++ sysutils/mstflint/files/extrat-LITE-patch-mlxreg_Makefile.am	(working copy)
+@@ -0,0 +1,11 @@
++--- mlxreg/Makefile.am.orig	2020-01-10 20:34:08.906577000 +0100
+++++ mlxreg/Makefile.am	2020-01-10 20:34:18.747595000 +0100
++@@ -58,8 +58,6 @@ libmstreg_lib_a_SOURCES = mlxreg_exception.h \
++ 
++ mstreg_SOURCES = mlxreg_ui.cpp mlxreg_ui.h
++ 
++-bin_PROGRAMS = mstreg
++-
++ mstreg_LDADD = libmstreg_lib.a \
++                 $(USER_DIR)/cmdparser/libcmdparser.a \
++                 $(MFT_UTILS_DIR)/libmftutils.a \
+
+Property changes on: sysutils/mstflint/files/extrat-LITE-patch-mlxreg_Makefile.am
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/mstflint/files/extrat-LITE-patch-mtcr_freebsd_Makefile.am
+===================================================================
+--- sysutils/mstflint/files/extrat-LITE-patch-mtcr_freebsd_Makefile.am	(nonexistent)
++++ sysutils/mstflint/files/extrat-LITE-patch-mtcr_freebsd_Makefile.am	(working copy)
+@@ -0,0 +1,8 @@
++--- mtcr_freebsd/Makefile.am.orig	2020-01-10 22:04:45.957050000 +0100
+++++ mtcr_freebsd/Makefile.am	2020-01-10 22:04:59.716184000 +0100
++@@ -50,5 +50,3 @@ libmtcr_ul_a_SOURCES += ../mtcr_ul/mtcr_ib_ofed.c
++ endif
++ 
++ libraryincludedir=$(includedir)/mstflint
++-libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h
++-
+
+Property changes on: sysutils/mstflint/files/extrat-LITE-patch-mtcr_freebsd_Makefile.am
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/mstflint/files/extrat-LITE-patch-reg_access_Makefile.am
+===================================================================
+--- sysutils/mstflint/files/extrat-LITE-patch-reg_access_Makefile.am	(nonexistent)
++++ sysutils/mstflint/files/extrat-LITE-patch-reg_access_Makefile.am	(working copy)
+@@ -0,0 +1,12 @@
++--- reg_access/Makefile.am.orig	2020-01-05 16:50:06.000000000 +0100
+++++ reg_access/Makefile.am	2020-01-10 23:33:56.588295000 +0100
++@@ -49,9 +49,6 @@ libreg_access_a_LIBADD = $(libreg_access_a_DEPENDENCIE
++ RREG_ACCESS_SO = rreg_access.so
++ reg_access_pylibdir = $(libdir)/mstflint/python_tools/
++ 
++-reg_access_pylib_DATA = ${RREG_ACCESS_SO} regaccess.py
++-dist_reg_access_pylib_DATA = regaccess.py
++-
++ ${RREG_ACCESS_SO}: libreg_access.a
++ 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${RREG_ACCESS_SO} \
++ 	-L$(USER_DIR)/tools_layouts -ltools_layouts -L$(MTCR_DIR) -lmtcr_ul
+
+Property changes on: sysutils/mstflint/files/extrat-LITE-patch-reg_access_Makefile.am
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sysutils/mstflint/files/extrat-LITE-patch-tools_layouts_Makefile.am
+===================================================================
+--- sysutils/mstflint/files/extrat-LITE-patch-tools_layouts_Makefile.am	(nonexistent)
++++ sysutils/mstflint/files/extrat-LITE-patch-tools_layouts_Makefile.am	(working copy)
+@@ -0,0 +1,11 @@
++--- tools_layouts/Makefile.am.orig	2020-01-10 22:06:24.040554000 +0100
+++++ tools_layouts/Makefile.am	2020-01-10 22:06:44.128071000 +0100
++@@ -41,8 +41,6 @@ lib_LTLIBRARIES = libtools_layouts.a
++ 
++ toolslayoutsincludedir = $(includedir)/mstflint/tools_layouts/
++ 
++-toolslayoutsinclude_HEADERS = icmd_layouts.h adb_to_c_utils.h
++-
++ libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
++ 				adb_to_c_utils.c adb_to_c_utils.h\
++ 				cibfw_layouts.c cibfw_layouts.h \
+
+Property changes on: sysutils/mstflint/files/extrat-LITE-patch-tools_layouts_Makefile.am
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
 Index: sysutils/mstflint/files/extrat-patch-configure.ac
 ===================================================================
 --- sysutils/mstflint/files/extrat-patch-configure.ac	(nonexistent)
