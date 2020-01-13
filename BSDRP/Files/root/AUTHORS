@@ -18,6 +18,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * PC Engines APU led drivers: Larry Baird
 * chelsio-queue-usage: Alexander V. Chernikov (melifaro@FreeBSD.org)
 * arping, license:GPLv2, http://www.habets.pp.se/synscan/programs.php?prog=arping
+* bash, license:GPLv3+, https://www.gnu.org/software/bash/
 * bgpq3, license:BSD2CLAUSE, https://github.com/snar/bgpq3
 * bird2, license:GPLv2, http://bird.network.cz/
 * bsnmp-regex, license:BSD3CLAUSE, http://thewalter.net/stef/software/bsnmp-regex/
@@ -27,6 +28,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * devcpu-data, license:EULA
 * dhcp6, license:BSD3CLAUSE, http://wide-dhcpv6.sourceforge.net/
 * dhcprelya, license:BSD3CLAUSE
+* dtrace-toolkit, license:CDDL, https://github.com/opendtrace/toolkit
 * easy-rsa, license:GPLv2, https://community.openvpn.net/openvpn/wiki/GettingEasyRsa
 * flashrom, license:GPLv2, http://www.flashrom.org/
 * freevrrpd, license:BSD
@@ -45,6 +47,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * libev, license:BSD2CLAUSE, http://software.schmorp.de/pkg/libev.html
 * libevent, license:BSD3CLAUSE, http://libevent.org/
 * libffi, license:MIT, http://sources.redhat.com/libffi/
+* libiconv, license:GPLv3, http://www.gnu.org/software/libiconv/
 * liblz4, license:BSD2CLAUSE, GPLv2, http://www.lz4.org/
 * libnet, license:BSD2CLAUSE, https://sourceforge.net/projects/libnet-dev/
 * libpci, license:GPLv2, https://mj.ucw.cz/sw/pciutils/
@@ -57,14 +60,19 @@ The authors of BSDRP would like to thank the authors of these software for their
 * monit, license:AGPLv3, http://mmonit.com/monit/
 * mpd5, license:BSD3CLAUSE, https://sourceforge.net/projects/mpd/
 * mrouted, license:MIT, http://freecode.com/projects/mrouted
+* mstflint-lite, license:GPLv2, https://github.com/Mellanox/mstflint
+* mtr-nox11, license:GPLv2, https://www.bitwizard.nl/mtr/
+* nagios-plugins, license:GPLv3, https://www.nagios-plugins.org/
 * netmap-fwd, license:BSD2CLAUSE, https://github.com/NetgateUSA/netmap-fwd
-* netperf, http://www.netperf.org/
+* netperf, license:, http://www.netperf.org/
+* nrpe3, license:GPLv2, http://www.nagios.org/
 * nstat, license:BSD2CLAUSE, https://github.com/gallatin/nstat
 * ntraceroute
 * openldap-client, license:OPENLDAP, http://www.OpenLDAP.org/
 * openvpn, license:GPLv2, https://openvpn.net/index.php/open-source.html
 * pciids, license:BSD3CLAUSE, GPLv2+, http://pciids.sourceforge.net/
 * pcre, license:BSD3CLAUSE, https://www.pcre.org/
+* perl5, license:GPLv1+, ART10, http://www.perl.org/
 * pim6-tools, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
 * pim6dd, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
 * pim6sd, license:BSD3CLAUSE, http://mcast-tools.sourceforge.net/
@@ -73,11 +81,10 @@ The authors of BSDRP would like to thank the authors of these software for their
 * pkg, license:BSD2CLAUSE, https://wiki.freebsd.org/pkgng
 * pkt-gen, license:BSD2CLAUSE, https://github.com/luigirizzo/netmap
 * pmacct, license:GPLv2, http://www.pmacct.net/
-* py36-exabgp, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
-* py36-setuptools, license:MIT, https://pypi.org/project/setuptools/
-* python, https://www.python.org/
-* python3, https://www.python.org/
-* python36, license:PSFL, https://www.python.org/
+* py37-exabgp, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
+* py37-mrtparse, license:APACHE20, https://github.com/t2mune/mrtparse
+* py37-setuptools, license:MIT, https://pypi.org/project/setuptools/
+* python37, license:PSFL, https://www.python.org/
 * quagga-bgp-netgen, license:BSD2CLAUSE, https://github.com/ocochard/quagga-bgp-netgen
 * readline, license:GPLv3, https://tiswww.case.edu/php/chet/readline/rltop.html
 * rtrlib, license:MIT, http://rtrlib.realmv6.org/
@@ -88,4 +95,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * tmux, license:ISCL, http://tmux.github.io/
 * ucarp, license:ISC, https://github.com/jedisct1/UCarp
 * utf8proc, license:MIT, https://juliastrings.github.io/utf8proc/
+* vim-tiny, license:VIM, http://www.vim.org/
+* wireguard, license:GPLv2, https://www.wireguard.com
+* wireguard-go, license:MIT, https://www.wireguard.com
 * x86info, license:GPLv2, https://github.com/kernelslacker/x86info

@@ -1,14 +1,20 @@
 # Release 1.97 (not released)
 
+## New feature
+* Enable loading of Intel microcodes by default
+
 ## Bug fixes
 * Fix netstat -rn using during large routing table loading (BGP full table) by including D15488
 * Add Chelsio Ethernet VF driver (if_cxgbev)
 
 ## New packages
+* Mellanox Firmware tools (lite version)
+* wireguard
 * vim-tiny
 * mrtparse: MRT format data parser
 * nrpe3: nagios client (including nagios-plugins)
-* perl 5: Mandatory deps for nrpe3
+* perl 5: Mandatory dependency for nrpe3
+* bash: Mandatory dependency for wireguard
 
 ## Upgraded packages
 * devcpu-data to 1.28 (update Intel microcode to 20191115)
@@ -16,6 +22,7 @@
 
 ## Packages list
 * arping 2.19: ARP level "ping" utility
+* bash 5.0.11: GNU Project's Bourne Again SHell
 * bgpq3 0.1.35: Lightweight prefix-list generator for various routers
 * bird2 2.0.7: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
@@ -81,20 +88,20 @@
 * py37-exabgp 4.1.2: BGP engine and route injector
 * py37-mrtparse 1.7: MRT format data parser
 * py37-setuptools 41.4.0_1: Python packages installer
-* python 3.7_3,2: "meta-port" for the default version of Python interpreter
-* python3 3_3: The "meta-port" for version 3 of the Python interpreter
 * python37 3.7.6: Interpreted object-oriented programming language
 * quagga-bgp-netgen 0.2: Generates Quagga/FRR bgp configuration file with lot's of routes
 * readline 8.0.1: Library for editing command lines as they are typed
 * rtrlib 0.6.3: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
-* strongswan 5.8.2: Open Source IKEv2 IPsec-based VPN solution
+* strongswan 5.8.2_1: Open Source IKEv2 IPsec-based VPN solution
 * sudo 1.8.30: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 3.0a: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 * utf8proc 2.4.0: UTF-8 processing library
 * vim-tiny 8.2.0076: Improved version of the vi editor (vim binary only)
+* wireguard 1.0.20200102: Fast, modern and secure VPN Tunnel
+* wireguard-go 0.0.20191012_1: WireGuard implementation in Go
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
 -----------------------------------------------------

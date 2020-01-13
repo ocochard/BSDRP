@@ -1111,7 +1111,7 @@ echo "VM7 configured"
 }
 
 vpn_vm1 () {
-sysrc hostname=R1 \
+sysrc hostname=VM1 \
 	gateway_enable=NO \
 	ipv6_gateway_enable=NO \
 	ifconfig_em0="inet 10.0.12.1/24" \
@@ -1119,14 +1119,14 @@ sysrc hostname=R1 \
 	defaultrouter=10.0.12.2 \
 	ipv6_defaultrouter=2001:db8:12::2
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
-hostname R1
+hostname VM1
 service netif restart
 service routing restart
 config save
 }
 
 vpn_vm2 () {
-sysrc hostname=R2 \
+sysrc hostname=VM2 \
 	ifconfig_em0="inet 10.0.12.2/24" \
 	ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64" \
 	ifconfig_em1="inet 10.0.23.2/24" \
@@ -1157,33 +1157,35 @@ conn %default
      dpdaction=restart
      dpddelay=5
 
-conn R4
+conn VM4
     left=10.0.23.2
     leftsubnet=10.0.12.0/24
-    leftid=R2
+    leftid=VM2
     right=10.0.34.4
     rightsubnet=10.0.45.0/24
-    rightid=R4
+    rightid=VM4
     auto=start
 EOF
 cat > /usr/local/etc/ipsec.secrets <<EOF
-R4 R2 : PSK "This is a strong password"
+VM4 VM2 : PSK "This is a strong password"
 EOF
 cp -r /usr/local/share/easy-rsa /usr/local/etc/
 EASYRSA="/usr/local/etc/easy-rsa"
+EASYRSA_PKI="$EASYRSA/pki"
 export EASYRSA
+export EASYRSA_PKI
 easyrsa init-pki
 easyrsa gen-dh
 echo | easyrsa build-ca nopass
-easyrsa build-server-full R2 nopass
-easyrsa build-client-full R4 nopass
+easyrsa build-server-full VM2 nopass
+easyrsa build-client-full VM4 nopass
 mkdir -p /usr/local/etc/openvpn
 cat > /usr/local/etc/openvpn/openvpn.conf <<EOF
 dev tun
 tun-ipv6
 ca /usr/local/etc/easy-rsa/pki/ca.crt
-cert /usr/local/etc/easy-rsa/pki/issued/R2.crt
-key /usr/local/etc/easy-rsa/pki/private/R2.key
+cert /usr/local/etc/easy-rsa/pki/issued/VM2.crt
+key /usr/local/etc/easy-rsa/pki/private/VM2.key
 dh /usr/local/etc/easy-rsa/pki/dh.pem
 server 10.0.24.0 255.255.255.0
 server-ipv6 2001:db8:24::/64
@@ -1195,11 +1197,11 @@ route 10.0.45.0 255.255.255.0
 route-ipv6 2001:db8:45::/64
 EOF
 mkdir -p /usr/local/etc/openvpn/ccd
-cat > /usr/local/etc/openvpn/ccd/R4 <<EOF
+cat > /usr/local/etc/openvpn/ccd/VM4 <<EOF
 iroute 10.0.45.0 255.255.255.0
 iroute-ipv6 2001:db8:45::/64
 EOF
-hostname R2
+hostname VM2
 service netif restart
 service routing restart
 service sshd start
@@ -1207,19 +1209,19 @@ config save
 }
 
 vpn_vm3 () {
-sysrc hostname=R3 \
+sysrc hostname=VM3 \
 	ifconfig_em1="inet 10.0.23.3/24" \
 	ifconfig_em1_ipv6="inet6 2001:db8:23::3 prefixlen 64" \
 	ifconfig_em2="inet 10.0.34.3/24" \
 	ifconfig_em2_ipv6="inet6 2001:db8:34::3 prefixlen 64"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
-hostname R3
+hostname VM3
 service netif restart
 config save
 }
 
 vpn_vm4 () {
-sysrc hostname=R4 \
+sysrc hostname=VM4 \
 	ifconfig_em2="inet 10.0.34.4/24" \
 	ifconfig_em2_ipv6="inet6 2001:db8:34::4 prefixlen 64" \
 	ifconfig_em3="inet 10.0.45.4/24" \
@@ -1248,17 +1250,17 @@ conn %default
     mobike=no
     dpdaction=restart
     dpddelay=5
-conn R2
+conn VM2
     left=10.0.34.4
     leftsubnet=10.0.45.0/24
-    leftid=R4
+    leftid=VM4
     right=10.0.23.2
     rightsubnet=10.0.12.0/24
-    rightid=R2
+    rightid=VM2
     auto=route
 EOF
 cat > /usr/local/etc/ipsec.secrets <<EOF
-R4 R2 : PSK "This is a strong password"
+VM4 VM2 : PSK "This is a strong password"
 EOF
 mkdir -p /usr/local/etc/openvpn
 cat > /usr/local/etc/openvpn/openvpn.conf <<EOF
@@ -1266,17 +1268,17 @@ client
 dev tun
 remote 10.0.23.2
 ca ca.crt
-cert R4.crt
-key R4.key
+cert VM4.crt
+key VM4.key
 EOF
-hostname R4
+hostname VM4
 service netif restart
 service routing restart
 config save
 }
 
 vpn_vm5 () {
-sysrc hostname=R5 \
+sysrc hostname=VM5 \
 	gateway_enable=NO \
 	ipv6_gateway_enable=NO \
 	ifconfig_em3="inet 10.0.45.5/24" \
@@ -1284,7 +1286,7 @@ sysrc hostname=R5 \
 	defaultrouter="10.0.45.4" \
 	ipv6_defaultrouter="2001:db8:45::4"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
-hostname R5
+hostname VM5
 service netif restart
 service routing restart
 config save

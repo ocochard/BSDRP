@@ -473,6 +473,11 @@ add_port "security/openvpn"
 # add_port "security/libgcrypt"
 #add_port "security/openvpn-auth-radius"
 
+# wireguard
+add_port "shells/bash"
+add_port "net/wireguard-go"
+add_port "net/wireguard"
+
 # some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netperf"
 add_port "benchmarks/iperf"
@@ -562,6 +567,8 @@ gcc
 gawk
 gettext
 gmake
+go
+go14
 help2man
 jsoncpp
 libarchive
@@ -612,16 +619,9 @@ rhash
 scons
 texinfo
 '
-		#CR "env ASSUME_ALWAYS_YES=true pkg delete -g ${BUILD_DEP}" || true
 		for pkg in ${BUILD_DEP}; do
 			CR "env ASSUME_ALWAYS_YES=true pkg delete -iy $pkg" || true
 		done
-	# usr/local/lib/perl5 : Dirty hack
-	#	pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
-	#	pkg didn't delete all MAN1 page related to perl too
-	#[ -d ${NANO_WORLDDIR}/usr/local/lib/perl5 ] && rm -rf ${NANO_WORLDDIR}/usr/local/lib/perl5
-	#[ -f ${NANO_WORLDDIR}/usr/local/man/man1/perl.1 ] && rm ${NANO_WORLDDIR}/usr/local/man/man1/perl*
-	#[ -f ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT ] && rm ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT
 }
 
 customize_cmd cleanup_ports
@@ -656,6 +656,11 @@ bsdrp_custom () {
 	# Add /data partition to fstab (config script use it for archiving old configurations)
 	echo "/dev/ufs/${NANO_LABEL}s4 /data ufs rw,noauto,failok 0 0" >> ${NANO_WORLDDIR}/etc/fstab
 	[ -d ${NANO_WORLDDIR}/data ] || mkdir -p ${NANO_WORLDDIR}/data
+	# Add fdesc (mandatory to use bash) and procfs to fstab
+	(
+	echo "fdesc   /dev/fd         fdescfs         rw      0       0"
+	echo "proc    /proc           procfs          rw      0       0"
+	) >> ${NANO_WORLDDIR}/etc/fstab
 
 	# relocate /var/cron to /etc/cron
 	# This permit to save crontab (only /etc and /usr/local/etc are saved)
@@ -869,7 +874,6 @@ usr/share/tmac/tmac.vgrind
 	fi
 }
 
-
 # Enable only serial system only
 bsdrp_console_serial () {
 	# Force first 2 serial console into "on" (IPMI SoL often use 2nd port)
@@ -880,6 +884,7 @@ bsdrp_console_serial () {
 	sed -i "" -e '/^ttyv[4-8]/s/onifexists /off /' ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use serial console early.
 	echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
+
 }
 
 # Enable use of keyboard/vga and serial
