@@ -7,6 +7,7 @@
 #
 #	sysutils/mstflint-lite
 #	sysutils/mstflint-lite/Makefile
+#	sysutils/mstflint-lite/pkg-descr
 #	sysutils/mstflint-lite/pkg-plist
 #
 echo c - sysutils/mstflint-lite
@@ -28,12 +29,25 @@ XPLIST=		${.CURDIR}/pkg-plist
 X
 X.include "${MASTERDIR}/Makefile"
 868d8ace420e6feb22742e7bbd6a6641
+echo x - sysutils/mstflint-lite/pkg-descr
+sed 's/^X//' >sysutils/mstflint-lite/pkg-descr << '255d3d3926551685f9ba4a1dd638c498'
+XMSTFLINT Package - Firmware Burning and Diagnostics Tools
+XThis package contains a burning tool and diagnostic tools for Mellanox
+Xmanufactured HCA/NIC cards.
+X
+XThis package is the lite version (static compiled with essential tools only).
+X
+XWWW: https://github.com/Mellanox/mstflint
+XWWW: http://www.mellanox.com/page/management_tools
+255d3d3926551685f9ba4a1dd638c498
 echo x - sysutils/mstflint-lite/pkg-plist
 sed 's/^X//' >sysutils/mstflint-lite/pkg-plist << 'b002bb1eefa391e6fc7818ca67f646d4'
 Xbin/mstconfig
+Xbin/mstflint
 Xbin/mstfwmanager
 Xbin/mstlink
 Xman/man1/mstconfig.1.gz
+Xman/man1/mstflint.1.gz
 Xman/man1/mstfwmanager.1.gz
 Xman/man1/mstlink.1.gz
 X%%DATADIR%%/mlxconfig_dbs/mlxconfig_host.db

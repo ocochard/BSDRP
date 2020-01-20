@@ -3,7 +3,7 @@
 # Configuration tool for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2009-2019, The BSDRP Development Team
+# Copyright (c) 2009-2020, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -474,7 +474,7 @@ factory () {
 setlock () {
 	# We need a method for checking AND creating lock file in same step
 	if ! mkdir $lock 2>/dev/null; then
-		echo "This script is already running (file $lock detected)"
+		echo "This script is already running (file $lock detected or /var full)"
 		usage
 	fi
 }

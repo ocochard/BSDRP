@@ -1,6 +1,6 @@
 Index: sysutils/mstflint/Makefile
 ===================================================================
---- sysutils/mstflint/Makefile	(revision 522458)
+--- sysutils/mstflint/Makefile	(revision 523220)
 +++ sysutils/mstflint/Makefile	(working copy)
 @@ -2,7 +2,7 @@
  
@@ -11,7 +11,7 @@ Index: sysutils/mstflint/Makefile
  CATEGORIES=	sysutils
  
  MAINTAINER=	slavash@FreeBSD.org
-@@ -11,11 +11,91 @@
+@@ -11,11 +11,93 @@
  LICENSE=	GPLv2
  LICENSE_FILE=	${WRKSRC}/LICENSE
  
@@ -94,7 +94,9 @@ Index: sysutils/mstflint/Makefile
 +	${STAGEDIR}${PREFIX}/lib/libprint_util_lib.a \
 +	${STAGEDIR}${PREFIX}/lib/libreg_access.a \
 +	${STAGEDIR}${PREFIX}/lib/libtools_layouts.a \
-+	${STAGEDIR}${PREFIX}/lib/mstflint/libmtcr_ul.a
++	${STAGEDIR}${PREFIX}/lib/libmstarchive.a \
++	${STAGEDIR}${PREFIX}/lib/mstflint/libmtcr_ul.a \
++	${STAGEDIR}${PREFIX}/bin/mstarchive
 +	${RMDIR} ${STAGEDIR}${PREFIX}/lib/mstflint
 +.else
 +post-install:
@@ -106,7 +108,7 @@ Index: sysutils/mstflint/Makefile
  .include <bsd.port.mk>
 Index: sysutils/mstflint/distinfo
 ===================================================================
---- sysutils/mstflint/distinfo	(revision 522458)
+--- sysutils/mstflint/distinfo	(revision 523220)
 +++ sysutils/mstflint/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1562536530
@@ -127,12 +129,12 @@ Index: sysutils/mstflint/files/extrat-LITE-patch-Makefile.am
 + #--
 + 
 +-SUBDIRS = common mft_utils ext_libs $(TOOLS_CRYPTO) tools_layouts ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) reg_access cmdif $(XZ_UTILS_DIR) dev_mgt tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib mlxconfig mlxfwops cmdparser $(FW_MGR_TOOLS) flint small_utils mstdump ${ADABE_TOOLS} tracers resourcedump
-++SUBDIRS = mft_utils ext_libs $(TOOLS_CRYPTO) tools_layouts ${MTCR_CONF_DIR} $(MAD_IFC) reg_access cmdif $(XZ_UTILS_DIR) dev_mgt tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib mlxconfig mlxfwops cmdparser mlxfwupdate ${ADABE_TOOLS}
+++SUBDIRS = mft_utils ext_libs $(TOOLS_CRYPTO) tools_layouts ${MTCR_CONF_DIR} $(MAD_IFC) reg_access cmdif $(XZ_UTILS_DIR) dev_mgt tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib mlxconfig mlxfwops cmdparser $(FW_MGR_TOOLS) flint ${ADABE_TOOLS}
 + 
 + DIST_SUBDIRS = tracers
 + 
 +-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1
-++man_MANS = man/mstconfig.1 man/mstlink.1 man/mstfwmanager.1
+++man_MANS = man/mstflint.1 man/mstconfig.1 man/mstlink.1 man/mstfwmanager.1
 + 
 + EXTRA_DIST = \
 + 	mstflint.spec \
@@ -767,7 +769,7 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: sysutils/mstflint/pkg-plist
 ===================================================================
---- sysutils/mstflint/pkg-plist	(revision 522458)
+--- sysutils/mstflint/pkg-plist	(revision 523220)
 +++ sysutils/mstflint/pkg-plist	(working copy)
 @@ -1,14 +1,19 @@
 +%%FWMANAGER%%bin/mstarchive

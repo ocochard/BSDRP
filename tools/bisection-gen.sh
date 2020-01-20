@@ -27,10 +27,10 @@ TMPFS=true
 
 if (${TMPFS}); then
 	TMPOPT="-r"
-	OBJDIR="/tmp/obj"
+	OBJDIR="$(pwd)"/workdir/tmpfs
 else
 	TMPOPT=""
-	OBJDIR="/usr/obj"
+	OBJDIR="$(pwd)"/workdir
 fi
 
 ### Functions ###

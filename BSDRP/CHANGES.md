@@ -18,6 +18,7 @@
 
 ## Upgraded packages
 * devcpu-data to 1.28 (update Intel microcode to 20191115)
+* FRR to 7.2.1
 * strongswan to 5.8.2
 
 ## Packages list
@@ -27,7 +28,7 @@
 * bird2 2.0.7: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.4: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.49: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.49.1: Root certificate bundle from the Mozilla Project
 * curl 7.68.0: Command line tool and library for transferring data with URLs
 * devcpu-data 1.28: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
@@ -36,7 +37,7 @@
 * easy-rsa 3.0.6: Small RSA key management package based on openssl
 * flashrom 1.1: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr7 7.2: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr7 7.2.1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.13.0_2: Cross-platform file change monitor
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
@@ -52,7 +53,7 @@
 * libevent 2.1.11: API for executing callback functions on events or timeouts
 * libffi 3.2.1_3: Foreign Function Interface
 * libiconv 1.14_11: Character set conversion library
-* liblz4 1.9.2,1: LZ4 compression library, lossless and very fast
+* liblz4 1.9.2_1,1: LZ4 compression library, lossless and very fast
 * libnet 1.1.6_5,1: C library for creating IP packets
 * libpci 3.6.2: PCI configuration space I/O made easy
 * libsodium 1.0.18: Library to build higher-level cryptographic tools
@@ -85,9 +86,11 @@
 * pkg 1.12.0: Package manager
 * pkt-gen g2019.11.07: Packet sink/source using the netmap API
 * pmacct 1.7.3: Accounting and aggregation tool for IPv4 and IPv6 traffic
-* py37-exabgp 4.1.2: BGP engine and route injector
+* py37-exabgp 4.2.0: BGP engine and route injector
 * py37-mrtparse 1.7: MRT format data parser
-* py37-setuptools 41.4.0_1: Python packages installer
+* py37-setuptools 44.0.0: Python packages installer
+* python 3.7_3,2: "meta-port" for the default version of Python interpreter
+* python3 3_3: The "meta-port" for version 3 of the Python interpreter
 * python37 3.7.6: Interpreted object-oriented programming language
 * quagga-bgp-netgen 0.2: Generates Quagga/FRR bgp configuration file with lot's of routes
 * readline 8.0.1: Library for editing command lines as they are typed

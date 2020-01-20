@@ -17,9 +17,6 @@ moused_ums0_enable="NO"
 #Disable sendmail
 sendmail_enable="NONE"
 
-#Disable dump device
-dumpdev="NO"
-
 # Operate in secure mode: Do not log messages from remote machines
 syslogd_flags="-s"
 

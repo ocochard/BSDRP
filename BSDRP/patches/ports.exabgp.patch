@@ -1,6 +1,6 @@
 Index: net/exabgp/Makefile
 ===================================================================
---- net/exabgp/Makefile	(revision 518433)
+--- net/exabgp/Makefile	(revision 522978)
 +++ net/exabgp/Makefile	(working copy)
 @@ -2,45 +2,53 @@
  # $FreeBSD$
@@ -8,7 +8,7 @@ Index: net/exabgp/Makefile
  PORTNAME=	exabgp
 -PORTVERSION=	3.4.25
 -PORTREVISION=	1
-+PORTVERSION=	4.1.2
++PORTVERSION=	4.2.0
  CATEGORIES=	net
  MASTER_SITES=	GH \
  		ZI
@@ -17,20 +17,20 @@ Index: net/exabgp/Makefile
  MAINTAINER=	zi@FreeBSD.org
  COMMENT=	BGP engine and route injector
  
--RUN_DEPENDS=	${PY_IPADDRESS}
--
- LICENSE=	BSD3CLAUSE
- LICENSE_FILE=	${WRKSRC}/COPYRIGHT
++LICENSE=	BSD3CLAUSE
++LICENSE_FILE=	${WRKSRC}/LICENCE.txt
++
+ RUN_DEPENDS=	${PY_IPADDRESS}
+ 
+-LICENSE=	BSD3CLAUSE
+-LICENSE_FILE=	${WRKSRC}/COPYRIGHT
++USES=		python shebangfix
++USE_PYTHON=	distutils autoplist
  
 -USE_GITHUB=	yes
 -GH_ACCOUNT=	Exa-Networks
 -USES=		python:2.7
 -SUB_FILES=	pkg-message exabgp.sh
-+RUN_DEPENDS=	${PY_IPADDRESS}
-+
-+USES=		python shebangfix
-+USE_PYTHON=	distutils autoplist
-+
 +SUB_FILES=	pkg-message
  SUB_LIST=	PYTHON_LIBDIR=${PYTHON_LIBDIR} PYTHON_CMD=${PYTHON_CMD} \
  		PYTHON_SITELIBDIR=${PYTHON_SITELIBDIR}
@@ -75,18 +75,18 @@ Index: net/exabgp/Makefile
  do-install-EXAMPLES-on:
 Index: net/exabgp/distinfo
 ===================================================================
---- net/exabgp/distinfo	(revision 518433)
+--- net/exabgp/distinfo	(revision 522978)
 +++ net/exabgp/distinfo	(working copy)
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1531317755
 -SHA256 (Exa-Networks-exabgp-3.4.25_GH0.tar.gz) = ea09c2ba0babda836887665e2de2973263f5f06cb6dc80d253fbc0e94f729984
 -SIZE (Exa-Networks-exabgp-3.4.25_GH0.tar.gz) = 544345
-+TIMESTAMP = 1565637826
-+SHA256 (Exa-Networks-exabgp-4.1.2_GH0.tar.gz) = 5921e002f196e814d02349a15c250b1fc8bf45c7299b6b652d2fed04eebb529a
-+SIZE (Exa-Networks-exabgp-4.1.2_GH0.tar.gz) = 2912897
++TIMESTAMP = 1578955738
++SHA256 (Exa-Networks-exabgp-4.2.0_GH0.tar.gz) = 4e32f0f4469205354ca371c8b5af9df12ec3381e7ccd54feb45350a1ef12ffa1
++SIZE (Exa-Networks-exabgp-4.2.0_GH0.tar.gz) = 2920812
 Index: net/exabgp/files/exabgp.in
 ===================================================================
---- net/exabgp/files/exabgp.in	(revision 518433)
+--- net/exabgp/files/exabgp.in	(revision 522978)
 +++ net/exabgp/files/exabgp.in	(working copy)
 @@ -25,7 +25,7 @@
  required_files=${exabgp_conf}
@@ -123,23 +123,60 @@ Index: net/exabgp/files/exabgp.in
  	rm -f ${pidfile}
  }
  
-Index: net/exabgp/files/patch-setup.py
+Index: net/exabgp/files/patch-setup.cfg
 ===================================================================
---- net/exabgp/files/patch-setup.py	(nonexistent)
-+++ net/exabgp/files/patch-setup.py	(working copy)
-@@ -0,0 +1,10 @@
-+--- setup.py.orig	2018-03-30 08:54:47 UTC
-++++ setup.py
-+@@ -348,7 +348,6 @@ os_name = platform.system()
-+ 
-+ files_definition = [
-+ 	('share/exabgp/processes',filesOf('etc/exabgp')),
-+-	('share/exabgp/etc',testFilesOf('qa/conf')),
-+ ]
-+ 
-+ if os_name != 'NetBSD':
+--- net/exabgp/files/patch-setup.cfg	(nonexistent)
++++ net/exabgp/files/patch-setup.cfg	(working copy)
+@@ -0,0 +1,47 @@
++--- setup.cfg.orig	2020-01-14 16:13:56 UTC
+++++ setup.cfg
++@@ -0,0 +1,44 @@
+++[metadata]
+++name = exabgp
+++author = Thomas Mangin
+++author_email = thomas.mangin@exa-networks.co.uk
+++url = https://github.com/Exa-Networks/exabgp
+++version = attr: exabgp.version.version
+++description = BGP swiss army knife
+++long_description = file: README.rst, CHANGELOG.rst
+++keywords = BGP, ipv4, ipv6, mpls, vpls, flowspec, bgp-ls, SDN, HA, DDOS
+++license = BSD 3-Clause License
+++classifiers =
+++	Development Status :: 5 - Production/Stable
+++	Environment :: Console
+++	Intended Audience :: System Administrators
+++	Intended Audience :: Telecommunications Industry
+++	License :: OSI Approved :: BSD License
+++	Operating System :: POSIX
+++	Operating System :: MacOS :: MacOS X
+++	Programming Language :: Python
+++	Programming Language :: Python :: 3.7
+++	Topic :: Internet
+++
+++[options]
+++zip_safe = False
+++include_package_data = True
+++packages = find:
+++package_dir=
+++    =lib
+++install_requires =
+++	setuptools
+++
+++[options.packages.find]
+++where = lib
+++exclude =
+++
+++[options.entry_points]
+++console_scripts =
+++    exabgp = exabgp.application:run_exabgp
+++    exabgpcli = exabgp.application:run_cli
+++    exabgp-cli = exabgp.application:run_cli
+++    exabgp-healthcheck = exabgp.application:run_healthcheck
+++
+++[options.package_data]
+++* = *.txt, *.rst
 
-Property changes on: net/exabgp/files/patch-setup.py
+Property changes on: net/exabgp/files/patch-setup.cfg
 ___________________________________________________________________
 Added: fbsd:nokeywords
 ## -0,0 +1 ##
@@ -155,9 +192,9 @@ Added: svn:mime-type
 \ No newline at end of property
 Index: net/exabgp/pkg-plist
 ===================================================================
---- net/exabgp/pkg-plist	(revision 518433)
+--- net/exabgp/pkg-plist	(revision 522978)
 +++ net/exabgp/pkg-plist	(working copy)
-@@ -1,391 +1,97 @@
+@@ -1,391 +1,99 @@
  @sample etc/exabgp/exabgp.env.sample
 -man/man1/exabgp.1.gz
 -sbin/exabgp
@@ -593,6 +630,7 @@ Index: net/exabgp/pkg-plist
 +%%PORTEXAMPLES%%%%EXAMPLESDIR%%/conf-parity.conf
 +%%PORTEXAMPLES%%%%EXAMPLESDIR%%/conf-path-information.conf
 +%%PORTEXAMPLES%%%%EXAMPLESDIR%%/conf-prefix-sid.conf
++%%PORTEXAMPLES%%%%EXAMPLESDIR%%/conf-prefix-sid-srv6.conf
 +%%PORTEXAMPLES%%%%EXAMPLESDIR%%/conf-split.conf
 +%%PORTEXAMPLES%%%%EXAMPLESDIR%%/conf-template.conf
 +%%PORTEXAMPLES%%%%EXAMPLESDIR%%/conf-unknowncap.conf
@@ -641,6 +679,7 @@ Index: net/exabgp/pkg-plist
 +%%PORTEXAMPLES%%%%EXAMPLESDIR%%/run/watchdog-1.pl
 +%%PORTEXAMPLES%%%%EXAMPLESDIR%%/run/watchdog-1.sh
 +%%PORTEXAMPLES%%%%EXAMPLESDIR%%/run/watchdog.run
++@dir %%PYTHON_SITELIBDIR%%/exabgp
  @dir etc/exabgp
 -@unexec if [ -d %D/%%ETCDIR%% ]; then echo "==> If you are permanently removing this port, you should do a ``rm -rf ${PKG_PREFIX}/etc/exabgp`` to remove any configuration files left."; fi
 +@postunexec if [ -d %D/%%ETCDIR%% ]; then echo "==> If you are permanently removing this port, you should do a ``rm -rf ${PKG_PREFIX}/etc/exabgp`` to remove any configuration files left."; fi
