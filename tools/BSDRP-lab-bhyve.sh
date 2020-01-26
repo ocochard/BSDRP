@@ -3,7 +3,7 @@
 # Bhyve lab script for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2013-2019, The BSDRP Development Team
+# Copyright (c) 2013-2020, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,25 +31,26 @@
 set -eu
 
 ### Global variables ###
-WRK_DIR="${HOME}/BSDRP-VMs"
-VM_TEMPLATE=${WRK_DIR}/vm_template
-VM_NAME="BSDRP"
-CORE=1
-NUMBER_VM="1"
+ADD_DISKS_NUMBER=0
+ADD_DISKS_SIZE="8G"	# Additionnal disks size in GB
+CORES=1
+DEBUG=false
+DISK_CTRL="virtio-blk"
 FILE=""
 LAN=0
 MESHED=true
+NCPUS=1
+NUMBER_VM="1"
 RAM="512M"
-ADD_DISKS_NUMBER=0
-# Additionnal disks size in GB
-ADD_DISKS_SIZE="8G"
-DISK_CTRL="virtio-blk"
-VALE=false
-vnic="virtio-net"
-VERBOSE=true
-DEBUG=false
+THREADS=1
 UEFI=false
+VALE=false
+VERBOSE=true
+VNIC="virtio-net"
+VM_NAME="BSDRP"
 VNC=false
+WRK_DIR="${HOME}/BSDRP-VMs"
+VM_TEMPLATE=${WRK_DIR}/vm_template
 
 usage() {
 	# $1: Cause of displaying usage
@@ -57,7 +58,7 @@ usage() {
 	echo "Usage: $0 [-adeEhqsvV] -i FreeBSD-disk-image.img [-n vm-number] [-l LAN-number] [-c core] [-A number of additionnal disks] "
 	echo " -a           Disable full-meshing"
 	echo " -A           Number of additionnal disks"
-	echo " -c           Number of core per VM (default: ${CORE})"
+	echo " -c           Number of core per VM (default: ${CORES})"
 	echo " -d           Delete All VMs, including the template"
 	echo " -D           Disk controller (default: ${DISK_CTRL}, can be ahci-hd|virtio-scsi|nvme)"
 	echo " -g           Enable remote kgdb (host needs to be compiled with 'device bvmdebug')"
@@ -70,6 +71,7 @@ usage() {
 	echo " -n X         Number of VM full meshed (default: ${NUMBER_VM})"
 	echo " -q           Quiet"
 	echo " -s           Stop all VM"
+	echo " -t           Number of threads per core (default: ${THREADS})"
 	echo " -S           Additionnal disks size (default: ${ADD_DISKS_SIZE})"
 	echo " -v           Add a graphic card and enable VNC"
 	echo " -V           Use vale (netmap) switch in place of bridge+tap"
@@ -251,7 +253,7 @@ run_vm() {
 		# PCI 2:0 and next: Network NIC
 		# PCI last:0 ptnetnetmap-memdev (if PTNET&VALE enabled)
 		#   Note: It's not possible to have "hole" in PCI assignement
-		VM_COMMON="bhyve -c ${CORE} -S -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
+		VM_COMMON="bhyve -c cpus=${NCPUS},cores=${CORES},threads=${THREADS} -S -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
 		VM_BOOT=""
 		( $UEFI ) && VM_BOOT="-l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
 		VM_VNC=""
@@ -320,7 +322,7 @@ create_interface() {
 [ $# -lt 1 ] && ! [ -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ $(id -u) -ne 0 ] && usage "ERROR: not executed as root"
 
-while getopts "ac:dghD:eEi:l:m:n:qsvVw:A:S:" FLAG; do
+while getopts "ac:dghD:eEi:l:m:n:qt:svVw:A:S:" FLAG; do
     case "${FLAG}" in
 	a)
 		MESHED=false
@@ -329,7 +331,7 @@ while getopts "ac:dghD:eEi:l:m:n:qsvVw:A:S:" FLAG; do
 		ADD_DISKS_NUMBER="$OPTARG"
 		;;
 	c)
-		CORE="$OPTARG"
+		CORES="$OPTARG"
 		;;
 	d)
 		erase_all_vm
@@ -340,7 +342,7 @@ while getopts "ac:dghD:eEi:l:m:n:qsvVw:A:S:" FLAG; do
 		DISK_CTRL="$OPTARG"
 		;;
 	e)
-		vnic="e1000"
+		VNIC="e1000"
 		;;
 	E)
 		UEFI=true
@@ -373,6 +375,9 @@ while getopts "ac:dghD:eEi:l:m:n:qsvVw:A:S:" FLAG; do
 	S)
 		ADD_DISKS_SIZE="$OPTARG"
 		;;
+	t)
+		THREADS="$OPTARG"
+		;;
 	v)
 		VNC=true
 		;;
@@ -391,7 +396,7 @@ done #while
 
 shift $((OPTIND-1))
 
-#( ${VALE} ) && vnic="ptnet"
+#( ${VALE} ) && VNIC="ptnet"
 
 # Check user input
 [ ! -f "${VM_TEMPLATE}" ] && [ -z "${FILE}" ] && usage "ERROR: No previous template \
@@ -415,14 +420,15 @@ fi
 # Clean-up previous interfaces if existing
 destroy_all_if
 
+NCPUS=$(( CORES * THREADS ))
+
 if ( ${VERBOSE} ); then
 	echo "BSD Router Project (http://bsdrp.net) - bhyve full-meshed lab script"
 	echo "Setting-up a virtual lab with $NUMBER_VM VM(s):"
 	echo "- Working directory: ${WRK_DIR}"
-	echo -n "- Each VM has ${CORE} core"
-	[ "${CORE}" -gt 1 ] && echo -n "s"
+	echo -n "- Each VM has a total of ${NCPUS} (${CORES} cores and ${THREADS} threads)"
 	echo " and ${RAM} RAM"
-	echo "- Emulated NIC: ${vnic}"
+	echo "- Emulated NIC: ${VNIC}"
 	( $UEFI ) && echo "- UEFI enabled"
 	( $VNC ) && echo "- Graphical/VNC enabled"
 	echo -n "- Switch mode: "
@@ -471,7 +477,7 @@ while [ $i -le $NUMBER_VM ]; do
 		while [ $j -le $NUMBER_VM ]; do
 			# Skip if i = j
 			if [ $i -ne $j ]; then
-				case ${vnic} in
+				case ${VNIC} in
 				virtio-net)
 					echo -n "- vtnet"
 					;;
@@ -502,7 +508,7 @@ while [ $i -le $NUMBER_VM ]; do
 						TAP_IF=$( create_interface MESH_${i}-${j}_${i} tap ${BRIDGE_IF} )
 						SW_CMD=${TAP_IF}
 					fi
-					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${vnic},\
+					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${VNIC},\
 ${SW_CMD},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
 
 				else
@@ -513,7 +519,7 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
 						TAP_IF=$( create_interface MESH_${j}-${i}_${i} tap ${BRIDGE_IF} )
 						SW_CMD=${TAP_IF}
 					fi
-					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${vnic},\
+					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${VNIC},\
 ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 				fi
 				NIC_NUMBER=$(( NIC_NUMBER + 1 ))
@@ -532,7 +538,7 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 		# Need to manage correct mac address
 		[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
 		[ $j -le 9 ] && MAC_J="0$i" || MAC_J="$i"
-		case ${vnic} in
+		case ${VNIC} in
 		virtio-net)
 			echo -n "- vtnet"
 			;;
@@ -557,7 +563,7 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 			TAP_IF=$( create_interface LAN_${j}_${i} tap ${BRIDGE_IF} )
 			SW_CMD=${TAP_IF}
 		fi
-		eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${vnic},\
+		eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${VNIC},\
 ${SW_CMD},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
         NIC_NUMBER=$(( NIC_NUMBER + 1 ))
         j=$(( j + 1 ))
