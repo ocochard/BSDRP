@@ -87,7 +87,7 @@ mbr_get_info() {
 	# s1 is UFS with BSD slice a: first system partition (UFS label: NAMEs1a)
 	# s2 if UFS with BSD slice a: second system partition (UFS label: NAMEs2a)
 
-	# Why not using 'kenv vfs.root.mountfrom' here ?
+	# XXX Why not using 'kenv vfs.root.mountfrom' here ?
 	if mount | grep -E -q "^/dev/${NANO_DRIVE}s1a on / "; then
 		CURRENT_SLICE="s1"
 		CURRENT_PART="1"

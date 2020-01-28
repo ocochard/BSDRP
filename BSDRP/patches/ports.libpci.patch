@@ -1,14 +1,11 @@
 Index: devel/libpci/Makefile
 ===================================================================
---- devel/libpci/Makefile	(revision 476488)
+--- devel/libpci/Makefile	(revision 524514)
 +++ devel/libpci/Makefile	(working copy)
-@@ -19,8 +19,9 @@
- 
+@@ -22,6 +22,7 @@
  ALL_TARGET=	lib/libpci.a
  CFLAGS+=	-fPIC
-+USES=		gmake tar:xz
  USE_LDCONFIG=	yes
--USES=		gmake tar:xz
 +MAKE_ENV+=	TARGET_ARCH=
  
  PLIST_FILES=	${LIBPCI_FILES} \

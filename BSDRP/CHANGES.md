@@ -28,7 +28,7 @@
 * bird2 2.0.7: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.4: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.49.1: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.49.2: Root certificate bundle from the Mozilla Project
 * curl 7.68.0: Command line tool and library for transferring data with URLs
 * devcpu-data 1.28: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
@@ -46,7 +46,7 @@
 * iperf3 3.7: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_2: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_11: KAME racoon IKE daemon, ipsec-tools version
-* isc-dhcp44-server 4.4.1_4: ISC Dynamic Host Configuration Protocol server
+* isc-dhcp44-server 4.4.2: ISC Dynamic Host Configuration Protocol server
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.13.1_1: JSON (JavaScript Object Notation) implementation in C
 * libev 4.24,1: Full-featured and high-performance event loop library
@@ -55,7 +55,7 @@
 * libiconv 1.14_11: Character set conversion library
 * liblz4 1.9.2_1,1: LZ4 compression library, lossless and very fast
 * libnet 1.1.6_5,1: C library for creating IP packets
-* libpci 3.6.2: PCI configuration space I/O made easy
+* libpci 3.6.4: PCI configuration space I/O made easy
 * libsodium 1.0.18: Library to build higher-level cryptographic tools
 * libssh 0.9.3: Library implementing the SSH2 protocol
 * libucl 0.8.1: Universal configuration library parser
@@ -74,8 +74,8 @@
 * nstat 1.0_3: Replacement for bw/netstat/vmstat/pcm-memory.x
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.48: Open source LDAP client implementation
-* openvpn 2.4.8: Secure IP/Ethernet tunnel daemon
-* pciids 20191223: Database of all known IDs used in PCI devices
+* openvpn 2.4.8_1: Secure IP/Ethernet tunnel daemon
+* pciids 20200125: Database of all known IDs used in PCI devices
 * pcre 8.43_2: Perl Compatible Regular Expressions library
 * perl5 5.30.1: Practical Extraction and Report Language
 * pim6-tools 20061214: IPv6 multicast tools
@@ -103,8 +103,8 @@
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 * utf8proc 2.4.0: UTF-8 processing library
 * vim-tiny 8.2.0076: Improved version of the vi editor (vim binary only)
-* wireguard 1.0.20200102: Fast, modern and secure VPN Tunnel
-* wireguard-go 0.0.20191012_1: WireGuard implementation in Go
+* wireguard 1.0.20200121: Fast, modern and secure VPN Tunnel
+* wireguard-go 0.0.20200121: WireGuard implementation in Go
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
 -----------------------------------------------------
