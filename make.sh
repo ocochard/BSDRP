@@ -32,7 +32,8 @@
 ############ Variables definition ###########
 #############################################
 
-# Exit if error or variable undefined
+# Exit if error (e) or variable undefined (u)
+# Didn't disable filename expansion (f) neither -o pipefail
 set -eu
 
 #############################################
@@ -250,23 +251,16 @@ TMPFS=false
 NOCLEAN="-n"
 
 #Get argument
-args=$(getopt a:bCc:dfhkp:s:uUryw $*)
-
-set -- $args
-for i
-do
-	case "$i" in
-		-a)
-			NANO_KERNEL=$2
-			shift
-			shift
+while getopts "a:bCc:dfhkp:s:uUryw" arg; do
+	case "${arg}" in
+		a)
+			NANO_KERNEL=$OPTARG
 			;;
-		-b)
+		b)
 			SKIP_REBUILD="${SKIP_REBUILD} -b"
-			shift
 			;;
-		-c)
-			case "$2" in
+		c)
+			case "$OPTARG" in
 				vga)
 					INPUT_CONSOLE="-vga"
 					;;
@@ -276,64 +270,51 @@ do
 				*)
 					die "ERROR: Bad console type"
 			esac
-			shift
-			shift
 			;;
-		-C)
+		C)
 			NOCLEAN=""
-			shift
 			;;
-		-f)
+		f)
 			FAST=true
-			shift
 			;;
-		-h)
+		h)
 			usage
 			;;
-		-k)
+		k)
 			SKIP_REBUILD="${SKIP_REBUILD} -kK"
-			shift
 			;;
-		-p)
-			PROJECT=$2
-			shift
-			shift
+		p)
+			PROJECT=$OPTARG
 			;;
-		-u)
+		u)
 			UPDATE_SRC=true
 			UPDATE_PORT=true
-			shift
 			;;
-		-U)
+		U)
 			UPDATE_SRC=true
 			UPDATE_PORT=true
 			UPDATE_ONLY=true
-			shift
 			;;
 
-		-r)
+		r)
 			TMPFS=true
-			shift
 			;;
-		-s)
-			DISK_SIZE=$2
-			shift
-			shift
+		s)
+			DISK_SIZE=$OPTARG
 			;;
-		-y)
+		y)
 			ALWAYS_YES=true
-			shift
 			;;
-		-w)
+		w)
 			SKIP_REBUILD="${SKIP_REBUILD} -w"
-			shift
 			;;
-		--)
-			shift
-			break
+		*)
+			echo "Unknown parameter: $OPTARG"
+			usage
+			;;
 		esac
 done
-
+shift $(( OPTIND - 1 ))
 
 if [ $# -gt 0 ] ; then
 	echo "$0: Extraneous arguments supplied"

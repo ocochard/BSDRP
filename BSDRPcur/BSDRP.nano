@@ -93,7 +93,6 @@ WITHOUT_NLS_CATALOGS=
 WITHOUT_NS_CACHING=
 WITHOUT_PC_SYSINSTALL=
 WITHOUT_PORTSNAP=
-WITHOUT_PROFILE=
 WITHOUT_QUOTAS=
 WITHOUT_RBOOTD=
 WITHOUT_RCMDS=
@@ -250,7 +249,7 @@ FreeBSD: {
 EOF
 				# Bug with pkg: not using the "-d" option prevent to install the package with error message "pkg fail to extract static"
 				# Need to force assume_always_yes for avoiding bootstrap pkg confirmation too
-				CR 'env ASSUME_ALWAYS_YES=true pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
+				CR 'env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
 				umount \${NANO_WORLDDIR}/usr/ports/packages
 				umount \${NANO_WORLDDIR}/dev
 				rmdir \${NANO_WORLDDIR}/usr/ports/packages
@@ -482,7 +481,7 @@ add_port "benchmarks/iperf3"
 #add_port "net-mgmt/lldpd" "WITHOUT=\"BASH JSON PROPRIETARY SNMP XML\""
 
 # ExaBGP: having fun with BGP
-add_port "net/exabgp"
+add_port "net/exabgp4"
 add_port "net/mrtparse"
 
 # VM tools (about 10MB)
@@ -615,7 +614,7 @@ scons
 texinfo
 '
 		for pkg in ${BUILD_DEP}; do
-			CR "env ASSUME_ALWAYS_YES=true pkg delete -iy $pkg" || true
+			CR "env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg delete -iy $pkg" || true
 		done
 }
 

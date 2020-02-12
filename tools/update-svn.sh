@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -eu
+set -euf -o pipefail
 
 SVN_CMD=""
 rev=""
@@ -36,9 +36,7 @@ update () {
 	[ -f $1 ] || die "No file $1 found"
 	[ -z "$2" ] && die "Bug calling update_make: no key"
 	[ -z "$3" ] && die "Bug calling update_make: no new value"
-	#echo $1 $2 $3
 	sed -i "" -e "s/^$2.*/$2=\"$3\"/" $1 || die "sed error for $1 $2 $3"
-	# sed 's/^SRC_REV.*/This line is removed by the admin./'
 }
 
 ### Main function ###
@@ -63,5 +61,3 @@ else
 	get_last_rev BSDRP/FreeBSD/ports
 	update BSDRP/make.conf PORTS_REV $rev
 fi
-
-
