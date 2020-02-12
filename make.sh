@@ -3,7 +3,7 @@
 # Make script for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2009-2019, The BSDRP Development Team
+# Copyright (c) 2009-2020, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -52,20 +52,29 @@ load_module () {
     fi
 }
 
-# Update or install src if not installed
+# Update or install sources if not already installed
 update_src () {
-	echo "Updating/Installing FreeBSD source"
+	echo "Updating/Installing FreeBSD sources"
 
 	if [ ! -d "${FREEBSD_SRC}"/.${SRC_METHOD} ]; then
 		echo "No existing FreeBSD source tree found: Checking out source..."
 		mkdir -p "${FREEBSD_SRC}" || die "Can't create ${FREEBSD_SRC}"
-		if [ ${SRC_METHOD} = "svn" ]; then
+		case ${SRC_METHOD} in
+		svn)
 			${SVN_CMD} co https://${SRC_REPO} "${FREEBSD_SRC}" -r ${SRC_REV} \
 			|| die "Can't check out sources from svn repo"
-		elif [ ${SRC_METHOD} = "git" ]; then
+			;;
+		git)
 			git clone "${SRC_REPO}" "${FREEBSD_SRC}" || die "Can't clone sources from git repo"
-			#git checkout REV?
-		fi
+			(
+			cd "${FREEBSD_SRC}"
+			git checkout ${SRC_REV}
+			)
+			;;
+		*)
+			[ -d "${FREEBSD_SRC}" ] || \
+				die "No FreeBSD source directory found and no supported SRC_METHOD configured"
+		esac
 	else
 		if [ ${SRC_METHOD} = "svn" ]; then
 			#Checking repo change
@@ -480,7 +489,7 @@ fi
 check_clean "${NANO_OBJ}"
 
 # If no source installed, force installing them
-[ -d "${FREEBSD_SRC}"/.svn -o -d "${FREEBSD_SRC}"/.git ] || UPDATE_SRC=true
+[ -d "${FREEBSD_SRC}" ] || UPDATE_SRC=true
 
 #Check if the project uses port before installing/updating port tree
 if grep -q '^add_port[[:blank:]]\+"' "${PROJECT_DIR}"/${NAME}.nano; then
@@ -623,21 +632,25 @@ if [ -z "${NOCLEAN}" ]; then
 fi
 
 #### Udpate or install source ####
-if ($UPDATE_SRC); then
-	echo "Update sources..."
-	update_src
-	echo "Patch sources..."
-	patch_src
-fi
-if ($UPDATE_PORT); then
-	echo "Update port tree..."
-    update_port
-	echo "Patch sources..."
-    patch_port
-	echo "Add ports..."
-	add_new_port
+if [ -n "${SRC_REPO}" ]; then
+	if ($UPDATE_SRC); then
+		echo "Update sources..."
+		update_src
+		echo "Patch sources..."
+		patch_src
+	fi
 fi
 
+if [ -n "${SVN_PORTS_PATH}" ]; then
+	if ($UPDATE_PORT); then
+		echo "Update port tree..."
+   		update_port
+		echo "Patch sources..."
+   		patch_port
+		echo "Add ports..."
+		add_new_port
+	fi
+fi
 # Export some variables for using them under nanobsd
 # Somes ports needs the correct uname -r output
 REV=$(grep -m 1 REVISION= "${FREEBSD_SRC}/sys/conf/newvers.sh" | cut -f2 -d '"')
