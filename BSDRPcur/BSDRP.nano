@@ -353,7 +353,7 @@ add_port "devel/py-setuptools"
  add_port "converters/libiconv"
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
-add_port "ftp/curl" "WITHOUT=\"IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
+add_port "ftp/curl" "WITHOUT+=\"IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
 add_port "security/libssh"
 add_port "net-mgmt/rtrlib"
 
@@ -376,7 +376,7 @@ add_port "net/openldap24-client"
 add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # strongswan: IKEv2 and lot's more
-add_port "security/strongswan" "WITH=\"MEDIATION GCM\" WITHOUT=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
+add_port "security/strongswan" "WITH=\"MEDIATION GCM\" WITHOUT+=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
 
 # pmacct: IP accounting tool
 add_port "net-mgmt/pmacct"
@@ -478,7 +478,7 @@ add_port "benchmarks/iperf"
 add_port "benchmarks/iperf3"
 
 # LLDP daemon
-#add_port "net-mgmt/lldpd" "WITHOUT=\"BASH JSON PROPRIETARY SNMP XML\""
+#add_port "net-mgmt/lldpd" "WITHOUT+=\"BASH JSON PROPRIETARY SNMP XML\""
 
 # ExaBGP: having fun with BGP
 add_port "net/exabgp4"
@@ -500,7 +500,7 @@ add_port "net/mrtparse"
 # Permit BIOS upgrade
   add_port "misc/pciids"
  add_port "devel/libpci"
-add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
+add_port "sysutils/flashrom" "WITHOUT+=\"DMIDECODE FTDI\""
 add_port "sysutils/x86info"
 
 # Permit microcode upgrade
