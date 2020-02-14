@@ -12,13 +12,13 @@ import time
 
 if len(sys.argv) < 2:
     print("Usage: {} interface".format(sys.argv[0]))
-    print("       with interface as bxe,cxl,ix,ixl,igb,mce,mlxen or oce")
+    print("       with interface as bxe,cc,cxl,ix,ixl,igb,mce,mlxen or oce")
     sys.exit(1)
 
 
 def read_nic(name):
     " Parse sysctl value for each queues of the NIC "
-    m = re.match('^(bxe|cxl|ix|ixl|igb|mce|mlxen|oce)(\d+)$', name)
+    m = re.match('^(bxe|cc|cxl|ix|ixl|igb|mce|mlxen|oce)(\d+)$', name)
     if not m:
         raise Exception('Invalid nic name: {}'.format(name))
     driver = m.group(1)
@@ -77,7 +77,7 @@ def read_nic(name):
 
             if driver == "bxe":
                 m = re.match('.*\.queue.(\d+)\.tx_pkts:\s+(\d+)', line)
-            elif driver == "cxl":
+            elif driver in ("cc", "cxl"):
                 m = re.match('.*\.txq\.(\d+)\.r_enqueues:\s+(\d+)', line)
             elif driver in ("ix", "igb"):
                 m = re.match('.*\.queue(\d+)\.tx_packets:\s+(\d+)', line)
@@ -91,7 +91,7 @@ def read_nic(name):
                 txq[m.group(1)] = int(m.group(2))
             if driver == "bxe":
                 m = re.match('.*\.queue.(\d+)\.rx_pkts:\s+(\d+)', line)
-            elif driver == "cxl":
+            elif driver in ("cc", "cxl"):
                 m = re.match('.*\.rxq\.(\d+)\.rxcsum:\s+(\d+)', line)
             elif driver in ("ix", "igb"):
                 m = re.match('.*\.queue(\d+)\.rx_packets:\s+(\d+)', line)
@@ -106,7 +106,7 @@ def read_nic(name):
             if driver == "bxe":
                 # To do: aggregate bcast/mcast and ucast
                 m = re.match('.*\.rx_ucast_packets:\s+(\d+)', line)
-            elif driver == "cxl":
+            elif driver in ("cc", "cxl"):
                 m = re.match('.*\.stats.rx_frames:\s+(\d+)', line)
             elif driver == "igb":
                 m = re.match('.*\.total_pkts_recvd:\s+(\d+)', line)
@@ -128,7 +128,7 @@ def read_nic(name):
                 m = re.match('.*\.total_pkts_txd:\s+(\d+)', line)
             elif driver == "ixl":
                 m = re.match('.*\.mac.ucast_pkts_txd:\s+(\d+)', line)
-            elif driver == "cxl":
+            elif driver in ("cc", "cxl"):
                 m = re.match('.*\.stats.tx_frames:\s+(\d+)', line)
             elif driver == "mce":
                 m = re.match('.*\.pstats.frames_tx:\s+(\d+)', line)
