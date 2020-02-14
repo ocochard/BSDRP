@@ -26,8 +26,9 @@ start_cmd="chelsio_affinity_start"
 chelsio_affinity_start()
 {
 	# Need a Chelsio NIC
-	NQ=$(/sbin/sysctl -ni dev.cxl.0.nrxq)
-	if [ -z "${NQ}" ]; then
+	NQcxl=$(/sbin/sysctl -ni dev.cxl.0.nrxq)
+	NQcc=$(/sbin/sysctl -ni dev.cc.0.nrxq)
+	if [ -z "${NQcc}" && -z "${NQcxl}"]; then
 		echo "No Chelsio NIC port detected"
 		exit 0;
 	fi
@@ -42,16 +43,30 @@ chelsio_affinity_start()
 	# Exclude some CPU from binding
 	NCPU=$((NCPU - ${chelsio_affinity_avoidncpu}))
 	CPU=${chelsio_affinity_firstcpu}
-	cxl=$(sysctl dev.cxl. | grep -c nrxq)
-	for i in $(seq 0 $((cxl - 1))); do
-		for IRQ in `/usr/bin/vmstat -ai |\
-			/usr/bin/sed -nE "/t5nex0:${i}a/s/irq([[:digit:]]+):.*/\1/p"`; do
-			echo "Bind t5nex0:${i}a IRQ ${IRQ} to CPU ${CPU}"
-			/usr/bin/cpuset -l ${CPU} -x ${IRQ}
-			CPU=$(((CPU + 1) % NCPU))
+    if [ ! -z "${NQcxl}" ]; then
+		cxl=$(sysctl dev.cxl. | grep -c nrxq)
+		for i in $(seq 0 $((cxl - 1))); do
+			for IRQ in `/usr/bin/vmstat -ai |\
+				/usr/bin/sed -nE "/t5nex[01234567]:${i}a/s/irq([[:digit:]]+):.*/\1/p"`; do
+				echo "Bind t5nex_:${i}a IRQ ${IRQ} to CPU ${CPU}"
+				/usr/bin/cpuset -l ${CPU} -x ${IRQ}
+				CPU=$(((CPU + 1) % NCPU))
+			done
+			CPU=${chelsio_affinity_firstcpu}
 		done
-		CPU=${chelsio_affinity_firstcpu}
-	done
+    fi
+    if [ ! -z "${NQcc}" ]; then
+		cc=$(sysctl dev.cc. | grep -c nrxq)
+		for i in $(seq 0 $((cc - 1))); do
+			for IRQ in `/usr/bin/vmstat -ai |\
+				/usr/bin/sed -nE "/t6nex[01234567]:${i}a/s/irq([[:digit:]]+):.*/\1/p"`; do
+				echo "Bind t6nex_:${i}a IRQ ${IRQ} to CPU ${CPU}"
+				/usr/bin/cpuset -l ${CPU} -x ${IRQ}
+				CPU=$(((CPU + 1) % NCPU))
+			done
+			CPU=${chelsio_affinity_firstcpu}
+		done
+    fi
 }
 
 load_rc_config $name
