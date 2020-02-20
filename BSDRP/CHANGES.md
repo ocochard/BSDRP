@@ -18,17 +18,18 @@
 
 ## Upgraded packages
 * devcpu-data to 1.28 (update Intel microcode to 20191115)
+* exabgp to 4.2.4
 * FRR to 7.2.1
 * strongswan to 5.8.2
 
 ## Packages list
 * arping 2.19: ARP level "ping" utility
-* bash 5.0.11: GNU Project's Bourne Again SHell
+* bash 5.0.16: GNU Project's Bourne Again SHell
 * bgpq3 0.1.35: Lightweight prefix-list generator for various routers
-* bird2 2.0.7: Dynamic IP routing daemon
+* bird2 2.0.7_1: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.4: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.49.2: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.50: Root certificate bundle from the Mozilla Project
 * curl 7.68.0: Command line tool and library for transferring data with URLs
 * devcpu-data 1.28: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
@@ -37,7 +38,7 @@
 * easy-rsa 3.0.6: Small RSA key management package based on openssl
 * flashrom 1.1: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr7 7.2.1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr7 7.2.1_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.13.0_2: Cross-platform file change monitor
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
@@ -73,7 +74,7 @@
 * nrpe3 3.2.1: Nagios Remote Plugin Executor
 * nstat 1.0_3: Replacement for bw/netstat/vmstat/pcm-memory.x
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
-* openldap-client 2.4.48: Open source LDAP client implementation
+* openldap-client 2.4.49: Open source LDAP client implementation
 * openvpn 2.4.8_1: Secure IP/Ethernet tunnel daemon
 * pciids 20200125: Database of all known IDs used in PCI devices
 * pcre 8.43_2: Perl Compatible Regular Expressions library
@@ -83,10 +84,10 @@
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
 * pimd 2.3.2_1: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-* pkg 1.12.0: Package manager
+* pkg 1.13.1: Package manager
 * pkt-gen g2019.11.07: Packet sink/source using the netmap API
 * pmacct 1.7.3: Accounting and aggregation tool for IPv4 and IPv6 traffic
-* py37-exabgp 4.2.0: BGP engine and route injector
+* py37-exabgp4 4.2.4: BGP engine and route injector
 * py37-mrtparse 1.7: MRT format data parser
 * py37-setuptools 44.0.0: Python packages installer
 * python 3.7_3,2: "meta-port" for the default version of Python interpreter
@@ -97,13 +98,13 @@
 * rtrlib 0.6.3: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.8.2_1: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.8.30: Allow others to run commands as root
+* sudo 1.8.31: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
-* tmux 3.0a: Terminal Multiplexer
+* tmux 3.0a_1: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 * utf8proc 2.4.0: UTF-8 processing library
-* vim-tiny 8.2.0076: Improved version of the vi editor (vim binary only)
-* wireguard 1.0.20200121: Fast, modern and secure VPN Tunnel
+* vim-tiny 8.2.0205: Improved version of the vi editor (vim binary only)
+* wireguard 1.0.20200206: Fast, modern and secure VPN Tunnel
 * wireguard-go 0.0.20200121: WireGuard implementation in Go
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
