@@ -12,11 +12,6 @@
 #
 # chelsio_affinity_enable (bool):   Set to YES by default.
 #               Set it to YES to bind interrupt threads to different cores
-# chelsio_affinity_avoidncpu (int):  0 by default.
-#       Set to number of CPU to exclude from binding
-# chelsio_affinity_firstcpu (int): 0 by default.
-#       Allow to avoid a first range of CPU (for skiping a numa-domain)
-
 
 . /etc/rc.subr
 
@@ -25,86 +20,55 @@ rcvar=${name}_enable
 
 start_cmd="chelsio_affinity_start"
 
-increment_cpu_in_domain() {
-   desired_domain=$1
-   # increment
-   CPU=$(((CPU + 1) % NCPU))
-   if [ ${CPU} -le ${chelsio_affinity_firstcpu} ]; then
-       CPU=${chelsio_affinity_firstcpu}
-   fi
-   # if we are not in the domain, just keep incrementing until we find the right domain
-   # if desired_domain is not set, then skip NUMA locking
-   if [ -n $desired_domain ]; then
-       while ! numa_compare $desired_domain ; do
-           # add one, modulus total number
-           CPU=$(((CPU + 1) % NCPU))
-           # Check for rolling back to zero
-           if [ ${CPU} -le ${chelsio_affinity_firstcpu} ]; then
-               CPU=${chelsio_affinity_firstcpu}
-           fi
-       done
-   fi
-}
-
-numa_compare() {
-    # if card doesn't have a desired domain, return true.
-    desired_domain=$1
-    if [ -z $desired_domain ]; then
-        return 0; 
-    fi
-
-    # Get CPU domain... if it doesn't exist, return 'true'
-    cpu_domain=`sysctl -n dev.cpu.${CPU}.%domain 2> /dev/null`
-    if [ -z $cpu_domain ]; then
-        return 0; 
-    fi
-    # compare, we have set values for cpu and desired domain
-    #echo "Checking NUMA cpu${CPU} on domain ${cpu_domain} desired is ${desired_domain}" >&2
-    [ $cpu_domain -eq $desired_domain ]
-}
-
-bind_ports() { 
-    # set some variables
-    card_type=$1
-    card_index=$2
-    card=${card_type}${card_index}
-    dev=dev.${card_type}.${card_index}
-    # find domain of this card
-    card_domain=`sysctl -n ${dev}.%domain 2> /dev/null`
-    if [ -n $card_domain ]; then
-        echo "$card on numa-domain ${card_domain}"
-    fi
-    # find ports
-    ports=`sysctl -n ${dev}.nports 2> /dev/null`
-    if [ -n $ports ]; then 
-        echo " $card has $ports ports"
-        # if numa_compare returns false, increment CPU
-        if ! numa_compare $card_domain ; then
-             increment_cpu_in_domain ${card_domain}
-        fi
-        # Iterate through ports on this card
-        for port in $(seq 0 $((ports - 1))); do
-            echo "  $card port $port"
-            for IRQ in `/usr/bin/vmstat -ai |\
-                /usr/bin/sed -nE "/${card}:${port}a/s/irq([[:digit:]]+):.*/\1/p"`; do
-                echo "   Bind ${card}:${port}a IRQ ${IRQ} to CPU ${CPU}"
-                /usr/bin/cpuset -l ${CPU} -x ${IRQ}
-                # increment again CPU variable, maintaining domain for this card
-                increment_cpu_in_domain ${card_domain}
-            done
-        done
-    fi
+bind_ports() {
+	# card_type example: t5nex
+	# card_index example: 0
+	card_type=$1
+	card_index=$2
+	card=${card_type}${card_index}
+	dev=dev.${card_type}.${card_index}
+	card_domain=$(/sbin/sysctl -n ${dev}.%domain 2> /dev/null)
+	if [ -z $card_domain ]; then
+		echo "No %domain found for ${dev}.%domain, setting to 0"
+		card_domain=0
+	fi
+	echo "$card on numa-domain ${card_domain}"
+	# find ports
+	ports=$(/sbin/sysctl -n ${dev}.nports 2> /dev/null)
+	if [ -n $ports ]; then
+		echo " $card has $ports ports"
+		# Iterate through ports on this card
+		for port in $(seq 0 $((ports - 1))); do
+			CPU=$(/usr/bin/cpuset -g -d $card_domain | sed 's/domain.*mask: //g;s/\,//g')
+			set $CPU
+			# cpuset output example: 0 1 2 3 4 5 6 7 8 9 10 11
+			echo "  $card port $port"
+			for IRQ in $(/usr/bin/vmstat -ai |\
+				/usr/bin/sed -nE "/${card}:${port}a/s/irq([[:digit:]]+):.*/\1/p"); do
+				if [ -z $1 ]; then
+					# case when there are less CPU than IRQ/Queue (can this be possible?)
+					set $CPU
+				fi
+				echo "   Bind ${card}:${port}a IRQ ${IRQ} to CPU $1"
+				/usr/bin/cpuset -l $1 -x ${IRQ}
+				shift
+			done
+		done
+	else
+		echo "$card has no ports!"
+		exit 0
+	fi
 }
 
 chelsio_affinity_start()
 {
-    # Need a Chelsio Card, lets look ofr T5 and T6 cards
-    Nt5=`sysctl dev.t5nex | grep -c nports`
-    Nt6=`sysctl dev.t6nex | grep -c nports`
+    # Need a Chelsio Card, lets look for T5 and T6 cards
+    Nt5=$(/sbin/sysctl -i dev.t5nex | grep -c nports)
+    Nt6=$(/sbin/sysctl -i dev.t6nex | grep -c nports)
 
     if [ $Nt5 -eq 0 ] && [ $Nt6 -eq 0 ]; then
         echo "No Chelsio card detected"
-        exit 0;
+        exit 0
     fi
     echo "T5 cards: $Nt5 and T6 cards: $Nt6"
 
@@ -114,10 +78,6 @@ chelsio_affinity_start()
         echo "Not enought CPU detected"
         exit 0
     fi
-
-    # Exclude some CPU from binding
-    NCPU=$((NCPU - ${chelsio_affinity_avoidncpu}))
-    CPU=${chelsio_affinity_firstcpu}
 
     # iterate through cards and bind queues on every card/port/queue combo to cpus
     if [ $Nt5 -gt 0 ]; then
@@ -135,7 +95,5 @@ chelsio_affinity_start()
 load_rc_config $name
 
 : ${chelsio_affinity_enable="NO"}
-: ${chelsio_affinity_avoidncpu=0}
-: ${chelsio_affinity_firstcpu=0}
 
 run_rc_command "$1"
