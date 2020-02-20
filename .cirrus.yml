@@ -9,8 +9,10 @@ env:
   CIRRUS_CLONE_DEPTH: 1
 
 task:
-  timeout_in: 90m
+  timeout_in: 240m
   install_script:
   - pkg install -y qemu-devel uefi-edk2-qemu-x86_64
   script:
   - ./make.sh -c serial -f
+  test_script:
+  - sh tools/ci-qemu-test.sh
