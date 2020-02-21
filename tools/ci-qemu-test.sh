@@ -15,7 +15,7 @@ die()
 
 # And, boot in QEMU.
 : ${BOOTLOG:=${TMPDIR:-/tmp}/ci-qemu-test-boot.log}
-IMG=$(ls workdir/${PROJECT}.${ARCH}/ | grep 'full-amd64-serial.img\$')
+IMG=$(ls workdir/${PROJECT}.${ARCH}/ | grep 'full-amd64-serial.img$')
 if [ -z ${IMG} ]; then
 	echo "DEBUG:"
 	ls workdir/${PROJECT}.${ARCH}/
