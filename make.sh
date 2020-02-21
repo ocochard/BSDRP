@@ -669,8 +669,10 @@ chmod +x "${NANOBSD_DIR}"/nanobsd.sh
 # Start nanobsd using the BSDRP configuration file
 echo "Launching NanoBSD build process..."
 cd "${NANOBSD_DIR}"
+set +e
 sh "${NANOBSD_DIR}"/nanobsd.sh ${NOCLEAN} ${SKIP_REBUILD} -c "${TMPDIR}"/${PROJECT}.nano
 ERROR_CODE=$?
+set -e
 if [ -n "${MASTER_PROJECT}" ]; then
 	# unmount previosly mounted dir (old unionfs code???)
 	check_clean "${NANO_OBJ}"
@@ -683,9 +685,11 @@ if [ ${ERROR_CODE} -eq 0 ]; then
 else
 	echo "ERROR: NanoBSD meet an error, check the log files here:"
 	echo "${NANO_OBJ}/"
-	echo "An error during the build world or kernel can be caused by"
-	echo "a bug in the FreeBSD-current code"
-	echo "try to re-sync your code"
+	LAST_LOG=$(ls -t ${NANO_OBJ}/ | head -n1)
+	if file -b ${NANO_OBJ}/${LAST_LOG} | grep -q 'ASCII text'; then
+		echo "Displaying last 400 lines of ${NANO_OBJ}/${LAST_LOG}"
+		tail -n 400 ${NANO_OBJ}/${LAST_LOG}
+	fi
 	exit 1
 fi
 

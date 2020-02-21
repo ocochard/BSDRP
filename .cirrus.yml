@@ -14,6 +14,7 @@ task:
   - pkg install -y qemu-devel
   sources_cache:
     folder: BSDRP/FreeBSD
+    populate_script: sh ./make.sh -U
   workdir_cache:
     folder: workdir/BSDRP.amd64
   script:
