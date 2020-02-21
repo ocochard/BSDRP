@@ -19,6 +19,7 @@ usage () {
 	echo "-jailpf: https://bsdrp.net/documentation/examples/multi-tenant_ha_pf_firewalls"
 	echo "-graphpath: https://bsdrp.net/documentation/examples/graphpath"
 	echo "-mlppp: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links"
+	echo "-mlvpn: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links_with_mlvpn"
 	echo "-ecmp: https://bsdrp.net/documentation/examples/ecmp"
 	exit 1
 }
@@ -2026,6 +2027,211 @@ ipv6_defaultrouter="2001:db8:21::254"
 EOF
 
 service jail start
+}
+
+mlvpn_vm1 () {
+sysrc hostname=VM1 \
+	cloned_interfaces="lo1" \
+	ifconfig_lo1="inet 10.1.1.1/32" \
+	ifconfig_vtnet0="inet 10.0.12.1/24 fib 2" \
+	ifconfig_vtnet1="inet 10.0.13.1/24 fib 3" \
+	ifconfig_vtnet2="inet 10.0.14.1/24 fib 4" \
+	static_routes="ISP1 ISP2 ISP3" \
+	route_ISP1="-fib 2 default 10.0.12.2" \
+	route_ISP2="-fib 3 default 10.0.13.3" \
+	route_ISP3="-fib 4 default 10.0.14.4"
+cat <<EOF > /usr/local/etc/mlvpn/mlvpn.conf
+[general]
+statuscommand = "/usr/local/etc/mlvpn/mlvpn_updown.sh"
+mode = "client"
+mtu = 1452
+tuntap = "tun"
+ip4 = "10.0.16.1/30"
+ip4_gateway = "10.0.16.2"
+ip4_routes = "10.6.6.6/32"
+timeout = 30
+password = "pleasechangeme!"
+#reorder_buffer_size = 64
+loss_tolerence = 10
+
+[dsl2]
+bindhost = "10.0.12.1"
+bindport = 5082
+bindfib = 2
+remotehost = "10.0.56.6"
+remoteport = 5082
+
+[dsl3]
+bindhost = "10.0.13.1"
+bindport = 5083
+bindfib = 3
+remotehost = "10.0.56.6"
+remoteport = 5083
+
+[dsl4]
+bindhost = "10.0.14.1"
+bindport = 5084
+bindfib = 4
+remotehost = "10.0.56.6"
+remoteport = 5084
+
+EOF
+service mlvpn enable
+service netif restart
+service routing restart
+service mlvpn start
+hostname VM1
+config save
+}
+
+mlvpn_vm2 () {
+sysrc hostname=VM2 \
+	ifconfig_vtnet0="inet 10.0.12.2/24" \
+	ifconfig_vtnet3="inet 10.0.25.2/24" \
+	defaultrouter="10.0.25.5" \
+	firewall_enable=YES \
+	firewall_script="/etc/ipfw.rules"
+cat > /etc/ipfw.rules <<EOF
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+kldstat -q -m dummynet || kldload dummynet
+# Flush out the list before we begin.
+\${fwcmd} -f flush
+\${fwcmd} pipe 10 config bw 10Mbit/s
+\${fwcmd} pipe 20 config bw 10Mbit/s
+#Traffic getting out vtnet0 is limited to 10Mbit/s
+\${fwcmd} add 1000 pipe 10 all from any to any out via vtnet0
+#Traffic getting int vtnet0 is limited to 10Mbit/s
+\${fwcmd} add 2000 pipe 20 all from any to any in via vtnet0
+#We don't want to block traffic, only shape some
+\${fwcmd} add 3000 allow ip from any to any
+EOF
+
+service netif restart
+service routing restart
+service ipfw start
+hostname VM2
+config save
+}
+
+mlvpn_vm3 () {
+sysrc hostname=VM3 \
+	ifconfig_vtnet0="inet 10.0.13.3/24" \
+	ifconfig_vtnet3="inet 10.0.35.3/24" \
+	defaultrouter="10.0.35.5" \
+	firewall_enable=YES \
+	firewall_script="/etc/ipfw.rules"
+
+cat > /etc/ipfw.rules <<EOF
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+kldstat -q -m dummynet || kldload dummynet
+# Flush out the list before we begin.
+\${fwcmd} -f flush
+\${fwcmd} pipe 10 config bw 10Mbit/s
+\${fwcmd} pipe 20 config bw 10Mbit/s
+#Traffic getting out vtnet0 is limited to 10Mbit/s
+\${fwcmd} add 1000 pipe 10 all from any to any out via vtnet0
+#Traffic getting int vtnet0 is limited to 10Mbit/s
+\${fwcmd} add 2000 pipe 20 all from any to any in via vtnet0
+#We don't want to block traffic, only shape some
+\${fwcmd} add 3000 allow ip from any to any
+EOF
+
+service netif restart
+service routing restart
+service ipfw start
+hostname VM3
+config save
+}
+
+mlvpn_vm4 () {
+sysrc hostname=VM4 \
+	ifconfig_vtnet0="inet 10.0.14.4/24" \
+	ifconfig_vtnet3="inet 10.0.45.4/24" \
+	defaultrouter="10.0.45.5" \
+	firewall_enable=YES \
+	firewall_script="/etc/ipfw.rules"
+
+cat > /etc/ipfw.rules <<EOF
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+kldstat -q -m dummynet || kldload dummynet
+# Flush out the list before we begin.
+\${fwcmd} -f flush
+\${fwcmd} pipe 10 config bw 10Mbit/s
+\${fwcmd} pipe 20 config bw 10Mbit/s
+#Traffic getting out vtnet0 is limited to 10Mbit/s
+\${fwcmd} add 1000 pipe 10 all from any to any out via vtnet0
+#Traffic getting int vten0 is limited to 10Mbit/s
+\${fwcmd} add 2000 pipe 20 all from any to any in via vtnet0
+#We don't want to block traffic, only shape some
+\${fwcmd} add 3000 allow ip from any to any
+EOF
+
+service netif restart
+service routing restart
+service ipfw start
+hostname VM4
+config save
+}
+
+mlvpn_vm5 () {
+sysrc hostname=R5 \
+	ifconfig_vtnet1="inet 10.0.25.5/24" \
+	ifconfig_vtnet2="inet 10.0.35.5/24" \
+	ifconfig_vtnet3="inet 10.0.45.5/24" \
+	ifconfig_vtnet4="inet 10.0.56.5/24" \
+	static_routes="ISP1 ISP2 ISP3" \
+	route_ISP1="-host 10.0.12.1 10.0.25.2" \
+	route_ISP2="-host 10.0.13.1 10.0.35.3" \
+	route_ISP3="-host 10.0.14.1 10.0.45.4"
+service netif restart
+service routing restart
+hostname VM5
+config save
+}
+
+
+mlvpn_vm6 () {
+sysrc hostname=VM6 \
+	cloned_interfaces="lo1" \
+	ifconfig_lo1="inet 10.6.6.6/32" \
+	ifconfig_vtnet4="inet 10.0.56.6/24" \
+	defaultrouter="10.0.56.5"
+cat > /usr/local/etc/mlvpn/mlvpn.conf <<EOF
+[general]
+statuscommand = "/usr/local/etc/mlvpn/mlvpn_updown.sh"
+tuntap = "tun"
+mode = "server"
+ip4 = "10.0.16.2/30"
+ip4_gateway = "10.0.16.1"
+ip4_routes = "10.1.1.1/32"
+timeout = 30
+password = "pleasechangeme!"
+#reorder_buffer_size = 64
+loss_tolerence = 10
+
+[adsl2]
+bindhost = "10.0.56.6"
+bindport = 5082
+
+[adsl3]
+bindhost = "10.0.56.6"
+bindport = 5083
+
+[adsl4]
+bindhost = "10.0.56.6"
+bindport = 5084
+
+EOF
+
+service mlvpn enable
+service netif restart
+service routing restart
+service mlvpn start
+hostname VM6
+config save
 }
 
 mlppp_vm1 () {

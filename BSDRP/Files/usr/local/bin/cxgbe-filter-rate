@@ -1,0 +1,17 @@
+#!/bin/sh
+set -euf -o pipefail
+if [ $# -eq 0 ]; then
+	echo "Need Chelsio nexus name (examble: t5nex0)"
+	echo "List of Nexus detected:"
+	grep t.nex /var/run/dmesg.boot || true
+	exit 1
+fi
+VALUE=$(cxgbetool $1 filter list  | awk '{if (NR!=1) {print $2}}')
+echo "Filter hit rate"
+while true; do
+	sleep 1
+	NEW_VALUE=$(cxgbetool $1 filter list  | awk '{if (NR!=1) {print $2}}')
+	RATE=$((NEW_VALUE - VALUE))
+	VALUE=${NEW_VALUE}
+	echo ${RATE}
+done

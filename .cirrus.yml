@@ -1,5 +1,3 @@
-# $FreeBSD: head/.cirrus.yml 356900 2020-01-19 22:29:22Z emaste $
-
 freebsd_instance:
   image: freebsd-12-1-release-amd64
   cpu: 8
@@ -14,10 +12,10 @@ task:
   - pkg install -y qemu-devel
   sources_cache:
     folder: BSDRP/FreeBSD
-    populate_script: sh ./make.sh -U
+    populate_script: sh ./make.sh -p TESTING -U
   workdir_cache:
-    folder: workdir/BSDRP.amd64
+    folder: workdir/TESTING.amd64
   script:
-  - sh ./make.sh -u -c serial -f
+  - sh ./make.sh -u -p TESTING -c serial -f
   test_script:
   - sh tools/ci-qemu-test.sh

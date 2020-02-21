@@ -191,7 +191,9 @@ destroy_vm() {
 	if is_running $1; then
 		bhyvectl --vm=$1 --destroy || echo "Can't destroy VM $1"
 		# BSDRP_1, extract all char after _
-		#pkill -f "cu -l /dev/nmdm-BSDRP.1B"
+		# VM name is in form BSDRP_1, but console in form BSDRP.1B
+		CONS=$(echo $1 | sed 's/_/./')
+		pkill -f "cu -l /dev/nmdm-${CONS}B" || true
 	fi
 	return 0
 }
