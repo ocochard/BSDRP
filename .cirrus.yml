@@ -9,10 +9,14 @@ env:
   CIRRUS_CLONE_DEPTH: 1
 
 task:
-  timeout_in: 240m
+  timeout_in: 120m
   install_script:
-  - pkg install -y qemu-devel uefi-edk2-qemu-x86_64
+  - pkg install -y qemu-devel
+  sources_cache:
+    folder: BSDRP/FreeBSD
+  workdir_cache:
+    folder: workdir/BSDRP.amd64
   script:
-  - ./make.sh -c serial -f
+  - sh ./make.sh -u -c serial -f
   test_script:
   - sh tools/ci-qemu-test.sh
