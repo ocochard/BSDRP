@@ -6,6 +6,7 @@
 ## Bug fixes
 * Fix netstat -rn using during large routing table loading (BGP full table) by including D15488
 * Add Chelsio Ethernet VF driver (if_cxgbev)
+* Correctly disabling ICMP redirect by default
 
 ## New packages
 * Mellanox Firmware tools (lite version)
@@ -20,6 +21,7 @@
 * devcpu-data to 1.28 (update Intel microcode to 20191115)
 * exabgp to 4.2.4
 * FRR to 7.2.1
+* pmacct to 1.7.4
 * strongswan to 5.8.2
 
 ## Packages list
@@ -38,7 +40,7 @@
 * easy-rsa 3.0.6: Small RSA key management package based on openssl
 * flashrom 1.1: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr7 7.2.1_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr7 7.3: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
 * fswatch-mon 1.13.0_2: Cross-platform file change monitor
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
@@ -60,7 +62,7 @@
 * libsodium 1.0.18: Library to build higher-level cryptographic tools
 * libssh 0.9.3: Library implementing the SSH2 protocol
 * libucl 0.8.1: Universal configuration library parser
-* libyang 1.0: YANG data modeling language library
+* libyang 1.0.130: YANG data modeling language library
 * lzo2 2.10_1: Portable speedy, lossless data compression library
 * mlvpn 2.3.1_2: Multi-link VPN
 * monit 5.26.0: Unix system management and proactive monitoring
@@ -68,14 +70,14 @@
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
 * mstflint-lite 4.13.3.2: Firmware Burning and Diagnostics Tools for Mellanox devices
 * mtr-nox11 0.93_1: Traceroute and ping in a single network diagnostic tool
-* nagios-plugins 2.3.1,1: Plugins for Nagios
+* nagios-plugins 2.3.2,1: Plugins for Nagios
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * netperf 2.7.1.p20170921_1: Network performance benchmarking package
 * nrpe3 3.2.1: Nagios Remote Plugin Executor
 * nstat 1.0_3: Replacement for bw/netstat/vmstat/pcm-memory.x
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.49: Open source LDAP client implementation
-* openvpn 2.4.8_1: Secure IP/Ethernet tunnel daemon
+* openvpn 2.4.8_2: Secure IP/Ethernet tunnel daemon
 * pciids 20200125: Database of all known IDs used in PCI devices
 * pcre 8.43_2: Perl Compatible Regular Expressions library
 * perl5 5.30.1: Practical Extraction and Report Language
@@ -84,9 +86,9 @@
 * pim6sd 2.1.0.a.23: IPv6 PIM-SM and PIM-SSM multicast routing daemon
 * pimd 2.3.2_1: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-* pkg 1.13.1: Package manager
+* pkg 1.13.2: Package manager
 * pkt-gen g2019.11.07: Packet sink/source using the netmap API
-* pmacct 1.7.3: Accounting and aggregation tool for IPv4 and IPv6 traffic
+* pmacct 1.7.4.p1: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py37-exabgp4 4.2.4: BGP engine and route injector
 * py37-mrtparse 1.7: MRT format data parser
 * py37-setuptools 44.0.0: Python packages installer

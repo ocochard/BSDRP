@@ -1,0 +1,62 @@
+Index: net/frr7/Makefile
+===================================================================
+--- net/frr7/Makefile	(revision 527140)
++++ net/frr7/Makefile	(working copy)
+@@ -1,9 +1,8 @@
+ # $FreeBSD$
+ 
+ PORTNAME=	frr
+-PORTVERSION=	7.2.1
++PORTVERSION=	7.3
+ DISTVERSIONPREFIX=	frr-
+-PORTREVISION=	1
+ CATEGORIES=	net
+ PKGNAMESUFFIX=	7
+ 
+Index: net/frr7/distinfo
+===================================================================
+--- net/frr7/distinfo	(revision 527140)
++++ net/frr7/distinfo	(working copy)
+@@ -1,3 +1,3 @@
+-TIMESTAMP = 1579346441
+-SHA256 (FRRouting-frr-frr-7.2.1_GH0.tar.gz) = 40fea6ff007453e27761a0372cde51fd8279f89984dff009092eebe2a7b29be3
+-SIZE (FRRouting-frr-frr-7.2.1_GH0.tar.gz) = 5639773
++TIMESTAMP = 1582712493
++SHA256 (FRRouting-frr-frr-7.3_GH0.tar.gz) = c209ed66a0331221649b8c21dc8c6704ce1696e2017ef4d48f8c2ac6b1fa01b7
++SIZE (FRRouting-frr-frr-7.3_GH0.tar.gz) = 5782842
+Index: net/frr7/pkg-plist
+===================================================================
+--- net/frr7/pkg-plist	(revision 527140)
++++ net/frr7/pkg-plist	(working copy)
+@@ -15,6 +15,7 @@
+ include/frr/csv.h
+ include/frr/db.h
+ include/frr/debug.h
++include/frr/defaults.h
+ include/frr/distribute.h
+ include/frr/eigrpd/eigrp_dump.h
+ include/frr/eigrpd/eigrp_topology.h
+@@ -41,6 +42,7 @@
+ include/frr/json.h
+ include/frr/keychain.h
+ include/frr/lib_errors.h
++include/frr/lib_vty.h
+ include/frr/libfrr.h
+ include/frr/libospf.h
+ include/frr/linklist.h
+@@ -48,7 +50,6 @@
+ include/frr/log_vty.h
+ include/frr/md5.h
+ include/frr/memory.h
+-include/frr/memory_vty.h
+ include/frr/mlag.h
+ include/frr/module.h
+ include/frr/monotime.h
+@@ -174,6 +175,7 @@
+ share/yang/frr-ripngd.yang
+ share/yang/frr-route-types.yang
+ share/yang/frr-test-module.yang
++share/yang/ietf-routing-types.yang
+ %%ETCDIR%%/babeld.conf.sample
+ %%ETCDIR%%/bfdd.conf.sample
+ %%ETCDIR%%/bgpd.conf.sample

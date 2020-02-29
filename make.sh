@@ -687,8 +687,10 @@ else
 	echo "${NANO_OBJ}/"
 	LAST_LOG=$(ls -t ${NANO_OBJ}/ | head -n1)
 	if file -b ${NANO_OBJ}/${LAST_LOG} | grep -q 'ASCII text'; then
-		echo "Displaying last 400 lines of ${NANO_OBJ}/${LAST_LOG}"
-		tail -n 400 ${NANO_OBJ}/${LAST_LOG}
+		echo "Displaying fatal error context of ${NANO_OBJ}/${LAST_LOG}"
+		# tail -n 400 ${NANO_OBJ}/${LAST_LOG}
+		grep -C 5 -m 1 -wi 'error' ${NANO_OBJ}/${LAST_LOG} || true
+		grep -C 5 -m 1 'exit code 1' ${NANO_OBJ}/${LAST_LOG} || true
 	fi
 	exit 1
 fi

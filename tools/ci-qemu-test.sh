@@ -36,7 +36,7 @@ rm -r ${TMP}
 mdconfig -du ${MD}
 set +e
 timeout 300 \
-	qemu-system-x86_64 -m 256M -nodefaults \
+	qemu-system-x86_64 -m 512M -nodefaults \
 	-serial stdio -vga none -nographic -monitor none \
 	-snapshot -hda workdir/${PROJECT}.${ARCH}/${IMG} 2>&1 | tee ${BOOTLOG}
 set -e
@@ -46,10 +46,8 @@ if grep -q 'Hello world' ${BOOTLOG}; then
 	echo "OK"
 else
 	die "Did not boot successfully, see ${BOOTLOG}"
-	if [ -r /tmp/ci-qemu-test-boot.log ]; then
+	if [ -r ${BOOTLOG} ]; then
 		echo "Displaying qemu boot log"
-		cat /tmp/ci-qemu-test-boot.log
+		cat ${BOOTLOG}
 	fi
-	echo "Displaying ${BOOTLOG}"
-	cat ${BOOTLOG}
 fi

@@ -25,6 +25,9 @@ syslogd_flags="-s"
 # - You are using BSDRP in VM.
 polling_enable="NO"
 
+# Drop ICMP redirect
+icmp_drop_redirect="YES"
+
 # Since r336560, needs to enable tx_abdicate sysctl on iflib drivers
 txabdicate_enable="YES"
 
