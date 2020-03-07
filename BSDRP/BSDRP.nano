@@ -83,6 +83,7 @@ WITHOUT_INFO=
 WITHOUT_IPX=
 WITHOUT_IPX_SUPPORT=
 WITHOUT_ISCSI=
+WITHOUT_KERBEROS=
 WITHOUT_LIB32=
 WITHOUT_LINT=
 WITHOUT_LOADER_FIREWIRE=
@@ -359,7 +360,7 @@ add_port "devel/py-setuptools"
  add_port "converters/libiconv"
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
-add_port "ftp/curl" "WITHOUT+=\"IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
+add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
 add_port "security/libssh"
 add_port "net-mgmt/rtrlib"
 
