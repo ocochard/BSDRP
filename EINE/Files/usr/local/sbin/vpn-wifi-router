@@ -33,7 +33,7 @@ import os             # Permit to call os.geteuid
 
 import netaddr        # Permit to convert IP address very easly
 #import GeoIP          # Permit to parse GeoIP datafile
-import geoip2.database # Permit to parse GeoIP2 database 
+import geoip2.database # Permit to parse GeoIP2 database
 import eine           # EINE functions modules
 
 # Variable definitions
@@ -322,7 +322,7 @@ def reinstall(args):
         print 'Done'
     else:
         sys.exit('ERROR')
- 
+
     # Remove old SSH host key
     print "Checking SSH key in know_hosts file...",
     if eine.is_in_sshkey(args.hostname.lower(), KNOWN_HOSTS):
@@ -341,7 +341,7 @@ def reinstall(args):
         print 'Done'
     else:
         sys.exit('Failed')
- 
+
     # Now we can repush the client configuration file
     print "Uploading configuration to VPN-Wifi-router...",
     status, out = eine.ansible_playbook(ANSIBLE_INV, ANSIBLE_DIR
@@ -420,7 +420,7 @@ def listing(args):
                 #   record_by_name(pubip).country_name
                 # GeoIP2 use:
                 #   city(pubip).country.name
-                #   city(pubip).city.name 
+                #   city(pubip).city.name
                 geo_result = geo.city(pubip)
                 if geo_result.city.name is not None:
                     geo_str = str(geo_result.country.name) + \

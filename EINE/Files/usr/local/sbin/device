@@ -82,7 +82,7 @@ def enroll(args):
             sys.exit('Too long or missing prefix length for Internal subnet')
     else:
         sys.exit('Type should be: mgmt-gateway, vpn-gateway or vpn-wifi-client')
-       
+
     # Check if it's a valid IP address
     for address in entries_to_validate:
         if getattr(args, address) is None:
@@ -179,12 +179,12 @@ def enroll(args):
         print 'Done'
     else:
         sys.exit('Failed')
-    
+
     if "vpn-wifi-client" in args.model.lower():
         # Generate the ccd file
         print "Generating OpenVPN CCD file...",
         # TO DO: Create folder first time
-        with open(TPL_DIR + '/' + args.model.lower() 
+        with open(TPL_DIR + '/' + args.model.lower()
             + '/files/usr/local/etc/openvpn/ccd/' + args.custome.lower() + '/'
             + args.hostname.lower(), 'w') as ccd:
             ccd.write('iroute {} 255.255.255.255\n'.format(loopback.ip))
