@@ -414,7 +414,7 @@ httpd.serve_forever()
 EOF
     sudo chown -R toutatis /usr/local/etc/www
     echo "uid=0(root) gid=0(root) groups=0(root)" > /usr/local/etc/www/index.html
-    sudo python2 /usr/local/etc/www/websrv.py &
+    sudo python /usr/local/etc/www/websrv.py &
 	echo "Done"
 }
 

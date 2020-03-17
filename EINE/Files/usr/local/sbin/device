@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # vim: sta:et:sw=4:ts=4:sts=4
 # -*- coding: utf-8 -*-
 "This script manages EINE appliance"
@@ -463,7 +463,7 @@ def listing(args):
 
 
 # pylint: enable=C0103
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 "This script register new VPN-Wifi-router"
 #

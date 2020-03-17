@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # vim: sta:et:sw=4:ts=4:sts=4
 # -*- coding: utf-8 -*-
 "EINE module for all functions"

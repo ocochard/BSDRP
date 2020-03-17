@@ -375,7 +375,6 @@ add_port "security/sudo"
 
 # Add freeradius (used on gateway as relay)
 add_port "databases/gdbm"
-add_port "lang/python27"
 add_port "devel/talloc" "WITH=\"NO_PYTHON\""
 add_port "net/freeradius3" "WITHOUT=\"PERL NOKRB\""
 
