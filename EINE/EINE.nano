@@ -422,11 +422,15 @@ add_port "comms/ser2net"
 add_port "sysutils/monit"
 
 # Ansible (used on the manager only)
+  add_port "textproc/py-MarkupSafe"
  add_port "devel/py-Jinja2" "WITHOUT=\"BABEL\""
  add_port "devel/py-jmespath"
  add_port "devel/py-yaml"
  add_port "net/py-netaddr"
    add_port "security/libsodium"
+    add_port "devel/py-pycparser"
+   add_port "devel/py-six"
+   add_port "devel/py-cffi"
   add_port "security/py-pynacl"
   add_port "security/py-bcrypt"
    add_port "devel/py-pyasn1"
@@ -462,6 +466,7 @@ add_port "www/py-bottle-cork"
  # And we de-install curl on the custom script
  #add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT=\"GSSAPI_BASE CA_BUNDLE
 #add_port "devel/libftdi" "WITHOUT=\"BOOST PYTHON\""
+  add_port "misc/pciids"
  add_port "devel/libpci"
 add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 #add_port "sysutils/intel-nvmupdate"
@@ -477,20 +482,38 @@ add_port "sysutils/flashrom" "WITHOUT=\"DMIDECODE FTDI\""
 customize_cmd add_netrate
 
 cleanup_ports () {
-		# When port are build, they install build dependency that are not usefull for running the port
-		# The list of build-only package to be delete can be found like this:
-		# Fresh generate a BSDRP image, and copy packages.info to packages.info.first
-		# Restart a BSDRP image build with the "-b" option
-		# diff packages.info.first packages.info
-		set +e
-        CR 'env ASSUME_ALWAYS_YES=true pkg delete -g auto* binutils-* cmake* curl* m4* gcc-* gmake* libtool* lua* gawk* perl* gettext* bison* help2man* mpfr-* mpc-* p5-gettext* libsigsegv* pkgconf*'
-		# usr/local/lib/perl5 : Dirty hack
-		#   pkg: rmdir(/usr/local/lib/perl5/5.14/perl/man/man3/): Directory not empty
+	# When port are build, they install build dependency that are not usefull for running the port
+	# The list of build-only package to be delete can be found like this:
+	# 1. Comment the clean-up line
+	# 2. Generate a BSDRP image with -c option (remove all previous obj tree)
+	# 3. Copy generated packages.info as packages.info.full
+	# 4. Restart a BSDRP image build with the "-b" option
+	# 5. sdiff -s package.info.full package.info.lite
+	BUILD_DEP='
+autoconf
+autoconf-wrapper
+automake
+bison
+gmake
+help2man
+libtool
+m4
+p5-Locale-libintl
+p5-Text-Unidecode
+p5-Unicode-EastAsianWidth
+perl5
+pkgconf
+texinfo
+'
+		mount -t devfs devfs ${NANO_WORLDDIR}/dev
+		for pkg in ${BUILD_DEP}; do
+			CR "env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg delete -iy $pkg" || true
+		done
+		umount ${NANO_WORLDDIR}/dev
 		#   pkg didn't delete all MAN1 page related to perl too
 		[ -d ${NANO_WORLDDIR}/usr/local/lib/perl5 ] && rm -rf ${NANO_WORLDDIR}/usr/local/lib/perl5
 		[ -f ${NANO_WORLDDIR}/usr/local/man/man1/perl.1 ] && rm ${NANO_WORLDDIR}/usr/local/man/man1/perl*
         [ -f ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT ] && rm ${NANO_WORLDDIR}/tmp/PERL5_DEFAULT
-		set -e
 }
 
 customize_cmd cleanup_ports
@@ -525,9 +548,15 @@ eine_custom () {
 
     # To DO: Check if variables are not empty/unset
     if ! [ -f ${DATA_DIR}/GeoLite2-City.mmdb ]; then
-        fetch -o ${DATA_DIR}/GeoLite2-City.mmdb.gz \
-            http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz
-        gunzip -c ${DATA_DIR}/GeoLite2-City.mmdb.gz > ${DATA_DIR}/GeoLite2-City.mmdb
+		VERSION=20200317
+        fetch -o ${DATA_DIR}/GeoLite2-City_${VERSION}.tar.gz \
+			http://gugus69.free.fr/distfiles/GeoLite2-City_${VERSION}.tar.gz
+        gunzip -c ${DATA_DIR}/GeoLite2-City_${VERSION}.tar.gz > ${DATA_DIR}/GeoLite2-City_${VERSION}.tar
+		tar xf ${DATA_DIR}/GeoLite2-City_${VERSION}.tar -C ${DATA_DIR}/ GeoLite2-City_${VERSION}/GeoLite2-City.mmdb
+		mv ${DATA_DIR}/GeoLite2-City_${VERSION}/GeoLite2-City.mmdb ${DATA_DIR}/
+		rm ${DATA_DIR}/GeoLite2-City_${VERSION}.tar.gz
+		rm ${DATA_DIR}/GeoLite2-City_${VERSION}.tar
+		rm -rf ${DATA_DIR}/GeoLite2-City_${VERSION}
     fi
     ! [ -d ${NANO_WORLDDIR}/usr/local/share/GeoIP ] && mkdir -p ${NANO_WORLDDIR}/usr/local/share/GeoIP
     cp ${DATA_DIR}/GeoLite2-City.mmdb ${NANO_WORLDDIR}/usr/local/share/GeoIP/

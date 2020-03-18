@@ -620,9 +620,11 @@ rhash
 scons
 texinfo
 '
+		mount -t devfs devfs ${NANO_WORLDDIR}/dev
 		for pkg in ${BUILD_DEP}; do
 			CR "env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg delete -iy $pkg" || true
 		done
+		umount ${NANO_WORLDDIR}/dev
 }
 
 customize_cmd cleanup_ports
