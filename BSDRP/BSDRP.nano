@@ -555,7 +555,7 @@ cleanup_ports () {
 	# 2. Generate a BSDRP image with -c option (remove all previous obj tree)
 	# 3. Copy generated packages.info as packages.info.full
 	# 4. Restart a BSDRP image build with the "-b" option
-	# 5. diff packages.info.full packages.info
+	# 5. sdiff -s package.info.full package.info.lite
 	BUILD_DEP='
 autoconf
 autoconf-wrapper
