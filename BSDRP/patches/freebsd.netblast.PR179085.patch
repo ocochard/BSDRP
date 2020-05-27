@@ -1,6 +1,6 @@
 Index: tools/tools/netrate/netblast/Makefile
 ===================================================================
---- tools/tools/netrate/netblast/Makefile	(revision 338607)
+--- tools/tools/netrate/netblast/Makefile	(revision 361538)
 +++ tools/tools/netrate/netblast/Makefile	(working copy)
 @@ -4,5 +4,8 @@
  
@@ -13,7 +13,7 @@ Index: tools/tools/netrate/netblast/Makefile
  .include <bsd.prog.mk>
 Index: tools/tools/netrate/netblast/netblast.c
 ===================================================================
---- tools/tools/netrate/netblast/netblast.c	(revision 338607)
+--- tools/tools/netrate/netblast/netblast.c	(revision 361538)
 +++ tools/tools/netrate/netblast/netblast.c	(working copy)
 @@ -28,8 +28,10 @@
  
@@ -340,9 +340,9 @@ Index: tools/tools/netrate/netblast/netblast.c
  	}
  
 +	if (argc > 5)
-+        nthreads = strtoul(argv[5], &dummy, 10);
-+    if (nthreads < 1)
-+        usage();
++        	nthreads = strtoul(argv[5], &dummy, 10);
++	if (nthreads < 1)
++		usage();
 +	int ncpu = system_ncpus();
 +	if (nthreads > ncpu) {
 +		printf("WARNING: %d threads but only %d core(s) available\n", nthreads, ncpu);
