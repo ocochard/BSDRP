@@ -5,6 +5,7 @@
 
 ## Bug fixes
 * Add Chelsio Ethernet VF driver (if_cxgbev)
+* Add missing if_qlxgb.ko for Ethernet QLogic 3200 series
 * Correctly disabling ICMP redirect by default
 
 ## New packages
