@@ -394,11 +394,6 @@ add_port "net/arping"
 # smcroute: Manipulate the multicast routes
 add_port "net/smcroute"
 
-# pim6*: IPv6 multicast routing daemons and tools
-add_port "net/pim6-tools"
-add_port "net/pim6dd"
-add_port "net/pim6sd"
-
 # mrouted: IPv4 DVMRP (multicast) routing daemon
 add_port "net/mrouted"
 
@@ -535,8 +530,8 @@ add_port "net/graphpath"
 # Quagga/FRR BGP route generator
 add_port "net/quagga-bgp-netgen"
 
-# sysutils/DTraceToolkit
-add_port "sysutils/DTraceToolkit"
+# sysutils/dtrace-toolkit
+add_port "sysutils/dtrace-toolkit"
 
 #### End of port list section ####
 
@@ -550,7 +545,7 @@ cleanup_ports () {
 	# 2. Generate a BSDRP image with -c option (remove all previous obj tree)
 	# 3. Copy generated packages.info as packages.info.full
 	# 4. Restart a BSDRP image build with the "-b" option
-	# 5. diff packages.info.full packages.info
+	# 5. sdiff -s package.info.full package.info.lite
 	BUILD_DEP='
 autoconf
 autoconf-wrapper
@@ -615,9 +610,11 @@ rhash
 scons
 texinfo
 '
+		mount -t devfs devfs ${NANO_WORLDDIR}/dev
 		for pkg in ${BUILD_DEP}; do
 			CR "env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg delete -iy $pkg" || true
 		done
+		umount ${NANO_WORLDDIR}/dev
 }
 
 customize_cmd cleanup_ports

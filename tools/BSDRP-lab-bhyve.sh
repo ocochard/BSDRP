@@ -267,7 +267,6 @@ run_vm() {
 			for i in $(jot ${ADD_DISKS_NUMBER}); do
 				if ! [ -f ${WRK_DIR}/${VM_NAME}_$1_add_$i ]; then
 					truncate -S ${ADD_DISKS_SIZE} ${WRK_DIR}/${VM_NAME}_$1_add_$i
-					#dd if=/dev/zero bs=1G count=${ADD_DISKS_SIZE} conv=sparse of=${WRK_DIR}/${VM_NAME}_$1_add_$i
 				fi
 				eval VM_DISK_$1=\"\${VM_DISK_$1} -s 1:$i,ahci-hd,\${WRK_DIR}/\${VM_NAME}_$1_add_$i\"
 			done
@@ -282,15 +281,22 @@ run_vm() {
 		echo "- VM $1 : cu -l /dev/nmdm${NMDM_ID}B" >> ${TMPCONSOLE}
 
 		# Check bhyve exit code, and if error: exit the infinite loop
+		# 0  rebooted
+		# 1  powered off
+		# 2  halted
+		# 3  triple fault
+		# 4  exited due to an error
+
+		set +e
 		eval \${VM_COMMON} \${VM_BOOT} \${VM_VNC} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_DEBUG_$1} ${VM_NAME}_$1
 		if [ $? -ne 0 ]; then
+			# Not a reboot, stop
 			break
 		fi
-
-		# Dirty fix for perventing bhyve bug that sometimes need input from console for unpausing
-		# echo >> /dev/nmdm${NMDM_ID}B
-
+		set -e
 	done
+	set -e
+	destroy_vm ${VM_NAME}_$1
 }
 
 create_interface() {

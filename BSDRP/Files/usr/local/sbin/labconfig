@@ -21,6 +21,7 @@ usage () {
 	echo "-mlppp: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links"
 	echo "-mlvpn: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links_with_mlvpn"
 	echo "-ecmp: https://bsdrp.net/documentation/examples/ecmp"
+	echo "-fairshape: https://bsdrp.net/documentation/examples/fair_traffic_shaping_per_ip_with_ipfw-dummynet"
 	exit 1
 }
 
@@ -2604,6 +2605,121 @@ service routing restart
 config save
 }
 
+fairshape_vm1 () {
+sysrc hostname=VM1 \
+  gateway_enable=no \
+  ipv6_gateway_enable=no \
+  ifconfig_vtnet4="DHCP" \
+  ifconfig_vtnet4_ipv6="inet6 accept_rtadv" \
+  rtsold_enable="YES"
+service hostname restart
+service netif restart
+service routing restart
+service rtsold start
+config save
+}
+
+fairshape_vm2 () {
+sysrc hostname=VM2 \
+   gateway_enable=no \
+   ipv6_gateway_enable=no \
+   ifconfig_vtnet4="DHCP" \
+   ifconfig_vtnet4_ipv6="inet6 accept_rtadv" \
+   rtsold_enable="YES"
+service hostname restart
+service netif restart
+service routing restart
+service rtsold start
+config save
+}
+
+fairshape_vm3 () {
+sysrc hostname=VM3 \
+  gateway_enable=no \
+  ipv6_gateway_enable=no \
+  ifconfig_vtnet4="DHCP" \
+  ifconfig_vtnet4_ipv6="inet6 accept_rtadv" \
+  rtsold_enable="YES"
+service hostname restart
+service netif restart
+service routing restart
+service rtsold start
+config save
+}
+
+fairshape_vm4 () {
+sysrc hostname=VM4 \
+  ifconfig_vtnet4="10.0.0.4/24" \
+  ifconfig_vtnet4_ipv6="inet6 2001:db8::4/64" \
+  ifconfig_vtnet3="10.0.5.4/24" \
+  ifconfig_vtnet3_ipv6="inet6 2001:db8:5::4/64" \
+  rtadvd_enable=yes \
+  rtadvd_interfaces=vtnet4 \
+  dhcpd_enable=YES \
+  dhcpd_flags="-q" \
+  dhcpd_conf="/usr/local/etc/dhcpd.conf" \
+  dhcpd_ifaces="vtnet4" \
+  firewall_enable=YES \
+  firewall_script="/etc/ipfw.rules"
+
+cat > /usr/local/etc/dhcpd.conf <<EOF
+option domain-name "bsdrp.net";
+default-lease-time 600;
+max-lease-time 7200;
+ddns-update-style none;
+subnet 10.0.5.0 netmask 255.255.255.0 {
+}
+subnet 10.0.0.0 netmask 255.255.255.0 {
+  range 10.0.0.1 10.0.0.3;
+  option routers 10.0.0.4;
+}
+EOF
+
+cat > /etc/ipfw.rules <<EOF
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+if ! kldstat -q -m dummynet; then
+        kldload dummynet
+fi
+# Flush out the list before we begin.
+\${fwcmd} -f flush
+oif=vtnet3              # Output interface
+bwu=50Mbit/s    # Maximum upload speed
+bwd=100Mbit/s   # Maximum download speed
+# Declare hard-limit of our links (2 because bidirectional)
+\${fwcmd} pipe 1 config bw \$bwu
+\${fwcmd} pipe 2 config bw \$bwd
+# per-ip fair queueing
+\${fwcmd} queue 1 config pipe 1 mask src-ip 0xffffffff
+\${fwcmd} queue 2 config pipe 2 mask dst-ip 0xffffffff
+# Assing outgoing traffic to upload queue and incoming to download queue
+\${fwcmd} add queue 1 ip from any to any xmit \$oif out
+\${fwcmd} add queue 2 ip from any to any recv \$oif in
+# We don't want to block traffic, only shape some
+\${fwcmd} add 3000 allow ip from any to any
+EOF
+
+service hostname restart
+service netif restart
+service routing restart
+service isc-dhcpd start
+service rtadvd start
+service ipfw start
+config save
+}
+
+fairshape_vm5 () {
+sysrc hostname=R5 \
+  gateway_enable=no \
+  ipv6_gateway_enable=no \
+  ifconfig_vtnet3="10.0.5.5/24" \
+  ifconfig_vtnet3_ipv6="inet6 2001:db8:5::5/64" \
+  defaultrouter="10.0.5.4" \
+  ipv6_defaultrouter="2001:db8:5::4"
+service hostname restart
+service netif restart
+service routing restart
+}
 ### Main
 
 [ $# -lt 1 ] && usage

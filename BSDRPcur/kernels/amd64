@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: head/sys/amd64/conf/GENERIC 355164 2019-11-28 02:32:17Z scottl $
+# $FreeBSD: head/sys/amd64/conf/GENERIC 359829 2020-04-12 18:04:20Z cem $
 
 cpu		HAMMER
 ident		BSDRP-AMD64
@@ -96,6 +96,7 @@ options 	GDB			# Support remote GDB.
 #options 	DEADLKRES		# Enable the deadlock resolver
 #options 	INVARIANTS		# Enable calls of extra sanity checking
 #options 	INVARIANT_SUPPORT	# Extra sanity checks of internal structures, required by INVARIANTS
+#options	QUEUE_MACRO_DEBUG_TRASH	# Trash queue(2) internal pointers on invalidation
 #options 	WITNESS			# Enable checks to detect deadlocks and cycles
 #options 	WITNESS_SKIPSPIN	# Don't run witness on spinlocks for speed
 #options 	MALLOC_DEBUG_MAXZONES=8	# Separate malloc(9) zones
@@ -168,10 +169,6 @@ device		ses			# Enclosure Services (SES and SAF-TE)
 device		amr			# AMI MegaRAID
 device		arcmsr			# Areca SATA II RAID
 device		ciss			# Compaq Smart RAID 5*
-device		hptmv			# Highpoint RocketRAID 182x
-device		hptnr			# Highpoint DC7280, R750
-device		hptrr			# Highpoint RocketRAID 17xx, 22xx, 23xx, 25xx
-device		hpt27xx			# Highpoint RocketRAID 27xx
 device		iir			# Intel Integrated RAID
 device		ips			# IBM (Adaptec) ServeRAID
 device		mly			# Mylex AcceleRAID/eXtremeRAID
