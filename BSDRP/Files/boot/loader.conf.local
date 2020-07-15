@@ -47,6 +47,15 @@ hw.cxgbe.rdmacaps_allowed="0"
 hw.cxgbe.iscsicaps_allowed="0"
 hw.cxgbe.fcoecaps_allowed="0"
 
+# Under network heavy usage, network critical traffic (mainly
+# non-RSS traffic like ARP, LACP) could be droped and flaping LACP links.
+# To mitigate this situation, Chelsio could reserves one TX queue for
+# non-RSS traffic with this tuneable:
+# hw.cxgbe.rsrv_noflowq="1"
+# But compensate the number of TX queue by increasing it by one.
+# As example, if you had 8 queues, uses now 9:
+# hw.cxgbe.ntxq="9"
+
 ### link tunning ###
 # Increase interface send queue length
 # lagg user: This value should be at minimum the sum of txd buffer of each NIC in the lagg
