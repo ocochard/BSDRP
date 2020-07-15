@@ -31,7 +31,7 @@ Index: sysutils/mstflint/Makefile
 +STATIC_CONFIGURE_ON=	--enable-all-static --disable-dc \
 +			--disable-openssl --disable-inband
 +
-+LDFLAGS+=	-L${LOCALBASE}/lib
++LDFLAGS+=	-L${LOCALBASE}/lib -lmd
 +CPPFLAGS+=	-I${LOCALBASE}/include
 +
  GNU_CONFIGURE=	yes
