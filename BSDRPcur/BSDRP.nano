@@ -553,7 +553,10 @@ automake
 automake-wrapper
 binutils
 bison
+boost-jam
+boost-libs
 cmake
+expat
 gcc
 gawk
 gettext

@@ -32,13 +32,13 @@
 
 ## Packages list
 * arping 2.19: ARP level "ping" utility
-* bash 5.0.17: GNU Project's Bourne Again SHell
+* bash 5.0.18_2: GNU Project's Bourne Again SHell
 * bgpq3 0.1.35: Lightweight prefix-list generator for various routers
 * bird2 2.0.7_1: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.5: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.54: Root certificate bundle from the Mozilla Project
-* curl 7.71.0: Command line tool and library for transferring data with URLs
+* curl 7.71.1: Command line tool and library for transferring data with URLs
 * devcpu-data 1.34: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1: Lightweight DHCP relay agent. Yandex edition
@@ -59,7 +59,7 @@
 * ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
 * json-c 0.14: JSON (JavaScript Object Notation) implementation in C
 * libev 4.33,1: Full-featured and high-performance event loop library
-* libevent 2.1.11_1: API for executing callback functions on events or timeouts
+* libevent 2.1.12: API for executing callback functions on events or timeouts
 * libffi 3.3: Foreign Function Interface
 * libiconv 1.16: Character set conversion library
 * liblz4 1.9.2_1,1: LZ4 compression library, lossless and very fast
@@ -74,7 +74,7 @@
 * monit 5.27.0: Unix system management and proactive monitoring
 * mpd5 5.8_10: Multi-link PPP daemon based on netgraph(4)
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
-* mstflint-lite 4.13.3.2: Firmware Burning and Diagnostics Tools for Mellanox devices
+* mstflint-lite 4.14.0.3: Firmware Burning and Diagnostics Tools for Mellanox devices
 * mtr-nox11 0.93_1: Traceroute and ping in a single network diagnostic tool
 * nagios-plugins 2.3.3,1: Plugins for Nagios
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
@@ -83,8 +83,8 @@
 * nstat 1.0_3: Replacement for bw/netstat/vmstat/pcm-memory.x
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.50: Open source LDAP client implementation
-* openvpn 2.4.9_2: Secure IP/Ethernet tunnel daemon
-* pciids 20200529: Database of all known IDs used in PCI devices
+* openvpn 2.4.9_3: Secure IP/Ethernet tunnel daemon
+* pciids 20200624: Database of all known IDs used in PCI devices
 * pcre 8.44: Perl Compatible Regular Expressions library
 * perl5 5.30.3: Practical Extraction and Report Language
 * pimd 2.3.2_1: Lightweight stand-alone PIM-SM v2 multicast routing daemon
