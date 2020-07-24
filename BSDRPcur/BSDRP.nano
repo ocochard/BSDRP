@@ -364,6 +364,8 @@ add_port "devel/json-c"
   add_port "devel/pcre"
 add_port "net/libyang"
 add_port "net/frr7" "WITH=\"MULTIPATH\""
+add_port "net/frr7-pythontools"
+
 # FRR installs some software that we don't need anymore after install:
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 

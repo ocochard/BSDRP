@@ -16,12 +16,13 @@
 * nrpe3: nagios client (including nagios-plugins)
 * perl 5: nrpe3's dependency
 * bash: wireguard's dependency
+* frr7-pythontools: Helper script to help reload frr
 
 ## Upgraded packages
-* devcpu-data to 1.30 (update Intel microcode to 2019/12/28)
+* devcpu-data to 1.34 (update Intel microcode to 2019/12/28)
 * easy-rsa to 3.0.7
 * exabgp to 4.2.4
-* FRR to 7.3.1
+* FRR to 7.4
 * pmacct to 1.7.4
 * openvpn to 2.4.9
 * strongswan to 5.8.4
@@ -46,7 +47,8 @@
 * easy-rsa 3.0.7: Small RSA key management package based on openssl
 * flashrom 1.2: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr7 7.3.1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr7 7.4_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr7-pythontool 7.4_1: Provide configuration reload functionality for FRR
 * fswatch-mon 1.13.0_2: Cross-platform file change monitor
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
@@ -68,7 +70,7 @@
 * libsodium 1.0.18: Library to build higher-level cryptographic tools
 * libssh 0.9.4: Library implementing the SSH2 protocol
 * libucl 0.8.1: Universal configuration library parser
-* libyang 1.0.130: YANG data modeling language library
+* libyang 1.0.184: YANG data modeling language library
 * lzo2 2.10_1: Portable speedy, lossless data compression library
 * mlvpn 2.3.1_2: Multi-link VPN
 * monit 5.27.0: Unix system management and proactive monitoring
@@ -103,7 +105,7 @@
 * rtrlib 0.6.3: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.8.4_1: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.9.1: Allow others to run commands as root
+* sudo 1.9.2: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 3.1b: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol

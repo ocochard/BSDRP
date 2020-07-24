@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: head/sys/i386/conf/GENERIC 355164 2019-11-28 02:32:17Z scottl $
+# $FreeBSD: head/sys/i386/conf/GENERIC 363471 2020-07-24 08:40:04Z arichardson $
 
 cpu		I486_CPU
 cpu		I586_CPU
@@ -34,7 +34,7 @@ options 	INET6			# IPv6 communications protocols
 options 	IPSEC_SUPPORT		# Allow kldload of ipsec and tcpmd5
 options 	TCP_HHOOK		# hhook(9) framework for TCP
 options 	TCP_OFFLOAD		# TCP offload
-options 	SCTP			# Stream Control Transmission Protocol
+options 	SCTP_SUPPORT		# Allow kldload of SCTP
 options 	FFS			# Berkeley Fast Filesystem
 #options 	SOFTUPDATES		# Enable FFS soft updates support
 #options 	UFS_ACL			# Support for access control lists
@@ -50,6 +50,7 @@ options 	MSDOSFS			# MSDOS Filesystem
 #options 	CD9660			# ISO 9660 Filesystem
 options 	PROCFS			# Process filesystem (requires PSEUDOFS)
 options 	PSEUDOFS		# Pseudo-filesystem framework
+options 	TMPFS			# Efficient memory filesystem
 options 	GEOM_RAID		# Soft RAID functionality.
 options 	GEOM_LABEL		# Provides labelization
 #options 	COMPAT_FREEBSD4		# Compatible with FreeBSD4

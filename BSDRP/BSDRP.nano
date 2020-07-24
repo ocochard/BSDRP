@@ -369,6 +369,8 @@ add_port "devel/json-c"
   add_port "devel/pcre"
 add_port "net/libyang"
 add_port "net/frr7" "WITH=\"MULTIPATH\""
+add_port "net/frr7-pythontools"
+
 # FRR installs some software that we don't need anymore after install:
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
@@ -569,12 +571,14 @@ gmake
 go
 go14
 help2man
+icu
 jsoncpp
 libarchive
 libnghttp2
 libsigsegv
 libtool
 libuv
+libxml2
 m4
 mpfr
 mpc
@@ -602,6 +606,7 @@ py37-imagesize
 py37-openssl
 py37-pycparser
 py37-pygments
+py37-pyparsing
 py37-pystemmer
 py37-pysocks
 py37-pytest-runner
@@ -609,9 +614,7 @@ py37-pytz
 py37-setuptools_scm
 py37-six
 py37-snowballstemmer
-py37-sphinx
-py37-sphinxcontrib-websupport
-py37-sphinx_rtd_theme
+py37-sphinx*
 py37-typing
 py37-urllib3
 rhash
