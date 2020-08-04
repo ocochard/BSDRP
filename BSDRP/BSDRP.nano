@@ -333,7 +333,7 @@ add_port "ports-mgmt/pkg"
 # TO DO: Need to sort them by build dependencies
 
 # Perl
-add_port "lang/perl5.30"
+add_port "lang/perl5.32"
 
 # Allow fetching from SSL site
 add_port "security/ca_root_nss"

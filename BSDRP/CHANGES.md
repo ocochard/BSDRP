@@ -1,7 +1,8 @@
-# Release 1.97 (not released)
+# Release 1.97 (04/08/2020)
 
 ## New feature
-* Enable loading of Intel microcodes by default
+* Load of Intel microcodes by default
+* Update to 12.1-STABLE r363822
 
 ## Bug fixes
 * Add Chelsio Ethernet VF driver (if_cxgbev)
@@ -14,14 +15,14 @@
 * vim-tiny
 * mrtparse: MRT format data parser
 * nrpe3: nagios client (including nagios-plugins)
-* perl 5: nrpe3's dependency
+* perl: nrpe3's dependency
 * bash: wireguard's dependency
 * frr7-pythontools: Helper script to help reload frr
 
 ## Upgraded packages
 * devcpu-data to 1.34 (update Intel microcode to 2019/12/28)
 * easy-rsa to 3.0.7
-* exabgp to 4.2.4
+* exabgp to 4.2.7
 * FRR to 7.4
 * pmacct to 1.7.4
 * openvpn to 2.4.9
@@ -38,7 +39,7 @@
 * bird2 2.0.7_1: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.5: bsnmpd module that implements parts of UCD-SNMP-MIB
-* ca_root_nss 3.54: Root certificate bundle from the Mozilla Project
+* ca_root_nss 3.55: Root certificate bundle from the Mozilla Project
 * curl 7.71.1: Command line tool and library for transferring data with URLs
 * devcpu-data 1.34: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_2: KAME DHCP6 client, server, and relay
@@ -88,13 +89,13 @@
 * openvpn 2.4.9_3: Secure IP/Ethernet tunnel daemon
 * pciids 20200624: Database of all known IDs used in PCI devices
 * pcre 8.44: Perl Compatible Regular Expressions library
-* perl5 5.30.3: Practical Extraction and Report Language
+* perl5 5.32.0: Practical Extraction and Report Language
 * pimd 2.3.2_1: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
 * pkg 1.14.6: Package manager
 * pkt-gen g2019.11.07: Packet sink/source using the netmap API
 * pmacct 1.7.4.p1: Accounting and aggregation tool for IPv4 and IPv6 traffic
-* py37-exabgp4 4.2.4: BGP engine and route injector
+* py37-exabgp4 4.2.7: BGP engine and route injector
 * py37-mrtparse 1.7: MRT format data parser
 * py37-setuptools 44.0.0: Python packages installer
 * python 3.7_3,2: "meta-port" for the default version of Python interpreter
@@ -110,7 +111,7 @@
 * tmux 3.1b: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 * utf8proc 2.5.0: UTF-8 processing library
-* vim-tiny 8.2.1110: Improved version of the vi editor (vim binary only)
+* vim-tiny 8.2.1334: Improved version of the vi editor (vim binary only)
 * wireguard 1.0.20200513: Fast, modern and secure VPN Tunnel
 * wireguard-go 0.0.20200320: WireGuard implementation in Go
 * x86info 1.31.s03: x86 CPU identification and feature display utility
