@@ -409,5 +409,8 @@ device enc
 # but didn't do flow load-balancing using ecmp :-(
 #options		RADIX_MPATH
 
+# Don't enter the debugger for a panic
+options		KDB_UNATTENDED
+
 # The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)
 

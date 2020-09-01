@@ -90,10 +90,10 @@ options 	INCLUDE_CONFIG_FILE	# Include this file in kernel
 options 	KDB			# Enable kernel debugger support.
 options 	KDB_TRACE		# Print a stack trace for a panic.
 # For full debugger support use (turn off in stable branch):
-options 	BUF_TRACKING		# Track buffer history
-options 	DDB			# Support DDB.
-options 	FULL_BUF_TRACKING	# Track more buffer history
-options 	GDB			# Support remote GDB.
+#options 	BUF_TRACKING		# Track buffer history
+#options 	DDB			# Support DDB.
+#options 	FULL_BUF_TRACKING	# Track more buffer history
+#options 	GDB			# Support remote GDB.
 #options 	DEADLKRES		# Enable the deadlock resolver
 #options 	INVARIANTS		# Enable calls of extra sanity checking
 #options 	INVARIANT_SUPPORT	# Extra sanity checks of internal structures, required by INVARIANTS
@@ -417,6 +417,9 @@ device enc
 # RADIX_MPATH provides support for equal-cost multi-path routing.
 # It allows to install multiple routes toward the same destination
 # but didn't do flow load-balancing using ecmp :-(
-#options		RADIX_MPATH
+#options	RADIX_MPATH
+
+# Don't enter the debugger for a panic
+options		KDB_UNATTENDED
 
 # The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)

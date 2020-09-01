@@ -19,11 +19,10 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 DRY=""
 SRC_DIR="/usr/local/BSDRP"
 : ${PROJECT:=BSDRP}
-#OBJ_BASE_DIR="/usr/obj"
 OBJ_BASE_DIR="$(pwd)"/workdir
 VERSION=""
 FAST_MODE=false
-if [ `uname -m` = "sparc64" ]; then
+if [ $(uname -m) = "sparc64" ]; then
 	ARCH_LIST="sparc64"
 else
 	ARCH_LIST='
@@ -51,7 +50,7 @@ usage () {
 # exit with 2 if problem detected and can't clean it
 check_clean() {
     # Patch from Warner Losh (imp@)
-	__a=`mount | grep $1 | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}'`
+	__a=$(mount | grep $1 | awk '{print length($3), $3;}' | sort -rn | awk '{$1=""; print;}')
 	if [ -n "$__a" ]; then
         echo "unmounting $__a"
 		umount $__a
@@ -102,7 +101,7 @@ upload(){
 	fi
 	for arch in ${ARCH_LIST}; do
 		if [ -f ${OBJ_BASE_DIR}/${PROJECT}.${arch}/release.done ]; then
-			FILE_LIST=`ls ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-*`
+			FILE_LIST=$(ls ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-*)
 			${DRY} scp ${FILE_LIST} cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/$1/${arch}
 		fi
 	done
@@ -112,10 +111,10 @@ upload(){
 dokuwiki(){
 	URL="https://sourceforge.net/projects/bsdrp/files/BSD_Router_Project/$1"
 	FILE_TYPE='
-	full
-	upgrade
-	mtree
-	debug
+full
+upgrade
+mtree
+debug
 	'
 	[ -d ${OBJ_BASE_DIR}/${PROJECT}.sparc64 ] && ARCH_LIST="${ARCH_LIST}sparc64"
 	for type in ${FILE_TYPE}; do
@@ -126,7 +125,7 @@ dokuwiki(){
 		echo ""
 		FILE_LIST=""
  		for arch in ${ARCH_LIST}; do
-			FILE_LIST="${FILE_LIST} `ls ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-* | cut -d '/' -f 5 | grep ${type} | grep ".xz"`"
+			FILE_LIST="${FILE_LIST} $(ls ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-* | cut -d '/' -f 5 | grep ${type} | grep ".xz")"
     	done
 
 		for file in ${FILE_LIST}; do
@@ -135,15 +134,15 @@ dokuwiki(){
 					echo "^ Arch ^ Console ^ File ^"
 					TITLE_SET=true
                 fi
-				ARCH=`basename ${file} | cut -d '-' -f 3 | cut -d '.' -f 1`
+				ARCH=$(basename ${file} | cut -d '-' -f 3 | cut -d '.' -f 1)
 				echo -n "| ${ARCH}"
-				echo -n " | `echo ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`"
+				echo -n " | $(echo ${file} | cut -d '-' -f 4 | cut -d '.' -f 1)"
 			elif [ "${type}" == "debug" ]; then
 				if ! ($TITLE_SET); then
 					echo "^ Arch ^ File ^"
 					TITLE_SET=true
 				fi
-				ARCH=`basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`
+				ARCH=$(basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1)
 				echo -n "| ${ARCH}"
 			else
 				if ! ( $TITLE_SET ) && [ "${type}" != "${OLD_TYPE}" ]; then
@@ -154,10 +153,10 @@ dokuwiki(){
 				else
 					TITLE_SET=false
 				fi
-				ARCH=`basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1`
-				#echo -n "| `echo ${file} | cut -d '-' -f 3`"
+				ARCH=$(basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1)
+				#echo -n "| $(echo ${file} | cut -d '-' -f 3)"
 				echo -n "| ${ARCH}"
-				echo -n " | `echo ${file} | cut -d '-' -f 5 | cut -d '.' -f 1`"
+				echo -n " | $(echo ${file} | cut -d '-' -f 5 | cut -d '.' -f 1)"
 			fi
 			echo -n " | [[$URL/${ARCH}/${file}/download|${file}]]"
 			case ${type} in
@@ -165,8 +164,8 @@ dokuwiki(){
 				echo -n " |"
 				;;
 			*)
-				echo -n " | [[$URL/${ARCH}/`echo ${file} | sed -e 's/xz/sha256/g'` |"
-				echo -n "`echo ${file} | sed -e 's/xz/sha256/g'`]] |"
+				echo -n " | [[$URL/${ARCH}/$(echo ${file} | sed -e 's/xz/sha256/g') |"
+				echo -n "$(echo ${file} | sed -e 's/xz/sha256/g')]] |"
 				;;
 			esac
 			echo ""

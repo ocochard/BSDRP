@@ -104,15 +104,8 @@ if [ -z "${PHABRID}" ]; then
 	# take the last tusday commit
 	#
 	SVN_REV_LIST='
-356104
-356173
-356079
-356059
-356026
-356002
-355997
-356080
-356081
+364730
+364729
 	'
 	for SVN_REV in ${SVN_REV_LIST}; do
 		build_project ${SVN_REV}

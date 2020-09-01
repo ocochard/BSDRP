@@ -215,7 +215,7 @@ save_cfg () {
 			# Instruct cmp to not follow symbolic links, because some software (like freeradius)
 			# install symlink to /dev/random
 			if ! cmp -hs /etc/$i /cfg/$i || [ $(stat -f "%p%g%u" /etc/$i) != $(stat -f "%p%g%u" /cfg/$i) ]; then
-				cp -pfv /etc/$i /cfg/$i 2>/dev/null
+				cp -pfv /etc/$i /cfg/$i 2>/dev/null || echo "ERROR: failed to backup /etc/$i"
 			fi
 		else
 			# If this file was not previously saved, compare the running-version (/etc) and
