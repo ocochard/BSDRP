@@ -18,7 +18,9 @@ if len(sys.argv) < 2:
 
 def read_nic(name):
     " Parse sysctl value for each queues of the NIC "
-    m = re.match('^(bxe|cc|cxl|ix|ixl|igb|mce|mlxen|oce)(\d+)$', name)
+    " rx and tx for each queue "
+    " rx and tx for each NIC (to compare with the sum of rx|tx of each queue) "
+    m = re.match(r'^(bxe|cc|cxl|ix|ixl|igb|mce|mlxen|oce)(\d+)$', name)
     if not m:
         raise Exception('Invalid nic name: {}'.format(name))
     driver = m.group(1)
@@ -31,24 +33,25 @@ def read_nic(name):
             # hw.mlxen0.stat.tx_ring4.packets
             # hw.mlxen0.stat.tx_packets
             # hw.mlxen0.stat.rx_packets:
-            m = re.match('.*\.stat.tx_ring(\d+)\.packets:\s+(\d+)', line)
+            m = re.match(r'.*\.stat.tx_ring(\d+)\.packets:\s+(\d+)', line)
             if m:
                 txq[m.group(1)] = int(m.group(2))
-            m = re.match('.*\.stat.rx_ring(\d+)\.packets:\s+(\d+)', line)
+            m = re.match(r'.*\.stat.rx_ring(\d+)\.packets:\s+(\d+)', line)
             if m:
                 rxq[m.group(1)] = int(m.group(2))
-            m = re.match('.*\.stat.rx_packets:\s+(\d+)', line)
+            m = re.match(r'.*\.stat.rx_packets:\s+(\d+)', line)
             if m:
                 agg['rx_sum'] = int(m.group(1))
-            m = re.match('.*\.stat.tx_packets:\s+(\d+)', line)
+            m = re.match(r'.*\.stat.tx_packets:\s+(\d+)', line)
             if m:
                 agg['tx_sum'] = int(m.group(1))
     else:
         for line in subprocess.check_output("/sbin/sysctl dev.{}.{}".format(m.group(1), m.group(2)).split(), universal_newlines=True).split("\n"):
-            # Bug: number of RXQ can be different than TXQ
+            # XXX: number of RXQ can be different than TXQ
             # dev.cxl.0.rxq.1.rxcsum
-            # dev.cxl.0.txq.1.r_enqueues: 359615473
+            # dev.cxl.0.txq.1.txcsum: 359615473
             # dev.cxl.0.stats.rx_frames
+            # dev.cxl.0.stats.tx_frames
             # dev.ix.0.queue0.rx_packets: 45256216
             # dev.ix.0.queue0.tx_packets: 5
             # dev.ix.0.total_pkts_rcvd
@@ -76,64 +79,64 @@ def read_nic(name):
             # dev.mce.0.pstats.frames_rx
 
             if driver == "bxe":
-                m = re.match('.*\.queue.(\d+)\.tx_pkts:\s+(\d+)', line)
+                m = re.match(r'.*\.queue.(\d+)\.tx_pkts:\s+(\d+)', line)
             elif driver in ("cc", "cxl"):
-                m = re.match('.*\.txq\.(\d+)\.r_enqueues:\s+(\d+)', line)
+                m = re.match(r'.*\.txq\.(\d+)\.txcsum:\s+(\d+)', line)
             elif driver in ("ix", "igb"):
-                m = re.match('.*\.queue(\d+)\.tx_packets:\s+(\d+)', line)
+                m = re.match(r'.*\.queue(\d+)\.tx_packets:\s+(\d+)', line)
             elif driver == "ixl":
-                m = re.match('.*\.pf.que(\d+)\.tx_packets:\s+(\d+)', line)
+                m = re.match(r'.*\.pf.que(\d+)\.tx_packets:\s+(\d+)', line)
             elif driver == "mce":
-                m = re.match('.*\.txstat(\d+)tc0\.packets:\s+(\d+)', line)
+                m = re.match(r'.*\.txstat(\d+)tc0\.packets:\s+(\d+)', line)
             elif driver == "oce":
-                m = re.match('.*\.stats.tx.queue(\d+)\.tx_pkts:\s+(\d+)', line)
+                m = re.match(r'.*\.stats.tx.queue(\d+)\.tx_pkts:\s+(\d+)', line)
             if m:
                 txq[m.group(1)] = int(m.group(2))
             if driver == "bxe":
-                m = re.match('.*\.queue.(\d+)\.rx_pkts:\s+(\d+)', line)
+                m = re.match(r'.*\.queue.(\d+)\.rx_pkts:\s+(\d+)', line)
             elif driver in ("cc", "cxl"):
-                m = re.match('.*\.rxq\.(\d+)\.rxcsum:\s+(\d+)', line)
+                m = re.match(r'.*\.rxq\.(\d+)\.rxcsum:\s+(\d+)', line)
             elif driver in ("ix", "igb"):
-                m = re.match('.*\.queue(\d+)\.rx_packets:\s+(\d+)', line)
+                m = re.match(r'.*\.queue(\d+)\.rx_packets:\s+(\d+)', line)
             elif driver == "ixl":
-                m = re.match('.*\.pf.que(\d+)\.rx_packets:\s+(\d+)', line)
+                m = re.match(r'.*\.pf.que(\d+)\.rx_packets:\s+(\d+)', line)
             elif driver == "mce":
-                m = re.match('.*\.rxstat(\d+)\.packets:\s+(\d+)', line)
+                m = re.match(r'.*\.rxstat(\d+)\.packets:\s+(\d+)', line)
             elif driver == "oce":
-                m = re.match('.*\.stats.rx.queue(\d+)\.rx_pkts:\s+(\d+)', line)
+                m = re.match(r'.*\.stats.rx.queue(\d+)\.rx_pkts:\s+(\d+)', line)
             if m:
                 rxq[m.group(1)] = int(m.group(2))
             if driver == "bxe":
                 # To do: aggregate bcast/mcast and ucast
-                m = re.match('.*\.rx_ucast_packets:\s+(\d+)', line)
+                m = re.match(r'.*\.rx_ucast_packets:\s+(\d+)', line)
             elif driver in ("cc", "cxl"):
-                m = re.match('.*\.stats.rx_frames:\s+(\d+)', line)
+                m = re.match(r'.*\.stats.rx_frames:\s+(\d+)', line)
             elif driver == "igb":
-                m = re.match('.*\.total_pkts_recvd:\s+(\d+)', line)
+                m = re.match(r'.*\.total_pkts_recvd:\s+(\d+)', line)
             elif driver == "ix":
-                m = re.match('.*\.total_pkts_rcvd:\s+(\d+)', line)
+                m = re.match(r'.*\.total_pkts_rcvd:\s+(\d+)', line)
             elif driver == "ixl":
                 # To do: aggregate bcas/mcast and ucast
-                m = re.match('.*\.mac.ucast_pkts_rcvd:\s+(\d+)', line)
+                m = re.match(r'.*\.mac.ucast_pkts_rcvd:\s+(\d+)', line)
             elif driver == "mce":
-                m = re.match('.*\.pstats.frames_rx:\s+(\d+)', line)
+                m = re.match(r'.*\.pstats.frames_rx:\s+(\d+)', line)
             elif driver == "oce":
-                m = re.match('.*\.stats.rx.total_pkts:\s+(\d+)', line)
+                m = re.match(r'.*\.stats.rx.total_pkts:\s+(\d+)', line)
             if m:
                 agg['rx_sum'] = int(m.group(1))
             if driver == "bxe":
                 # To do: aggregate bcast/mcast and ucast
-                m = re.match('.*\.tx_ucast_packets:\s+(\d+)', line)
+                m = re.match(r'.*\.tx_ucast_packets:\s+(\d+)', line)
             if driver in ("ix", "igb"):
-                m = re.match('.*\.total_pkts_txd:\s+(\d+)', line)
+                m = re.match(r'.*\.total_pkts_txd:\s+(\d+)', line)
             elif driver == "ixl":
-                m = re.match('.*\.mac.ucast_pkts_txd:\s+(\d+)', line)
+                m = re.match(r'.*\.mac.ucast_pkts_txd:\s+(\d+)', line)
             elif driver in ("cc", "cxl"):
-                m = re.match('.*\.stats.tx_frames:\s+(\d+)', line)
+                m = re.match(r'.*\.stats.tx_frames:\s+(\d+)', line)
             elif driver == "mce":
-                m = re.match('.*\.pstats.frames_tx:\s+(\d+)', line)
+                m = re.match(r'.*\.pstats.frames_tx:\s+(\d+)', line)
             elif driver == "oce":
-                m = re.match('.*\.stats.tx.total_tx_pkts:\s+(\d+)', line)
+                m = re.match(r'.*\.stats.tx.total_tx_pkts:\s+(\d+)', line)
             if m:
                 agg['tx_sum'] = int(m.group(1))
     return [rxq, txq, agg]
@@ -156,7 +159,8 @@ def make_diff(old_ret, new_ret):
 
 def print_diff(diff):
     " Displaying the diff between previous value and new one "
-    line = ""
+    rxline = ""
+    txline = ""
     rx_sum = 0
     tx_sum = 0
     for i in range(len(diff[0])):
@@ -165,11 +169,16 @@ def print_diff(diff):
         tx_val = int(diff[1][val])
         rx_sum += rx_val
         tx_sum += tx_val
-        line += "[Q{0} {1:5d}K/s] ".format(val, rx_val // 1000)
-    line += "[Q{0} {1:5d}K/s {2:5d}K/s -> {3:5d}K/s]".format("T", rx_sum // 1000,
-            diff[2]['rx_sum'] // 1000, diff[2]['tx_sum'] // 1000)
+        rxline += "r{0} {1:5d}K/s ".format(val, rx_val // 1000)
+        txline += "t{0} {1:5d}K/s ".format(val, tx_val // 1000)
+    rxline += "r{0} {1:5d}K/s [{2:5d}K/s]".format("T", rx_sum // 1000,
+                                                  diff[2]['rx_sum'] // 1000)
+    txline += "t{0} {1:5d}K/s [{2:5d}K/s]".format("T", tx_sum // 1000,
+                                                  diff[2]['tx_sum'] // 1000)
 
-    print(line)
+    print(rxline)
+    print(txline)
+    print("")
 
 
 def run_nic(name):

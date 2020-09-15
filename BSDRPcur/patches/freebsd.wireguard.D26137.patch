@@ -22,7 +22,7 @@ Index: sbin/ifconfig/ifwg.c
 ===================================================================
 --- /dev/null
 +++ sbin/ifconfig/ifwg.c
-@@ -0,0 +1,713 @@
+@@ -0,0 +1,626 @@
 +/*-
 + * SPDX-License-Identifier: BSD-2-Clause
 + *
@@ -82,6 +82,7 @@ Index: sbin/ifconfig/ifwg.c
 +#include <stddef.h>		/* NB: for offsetof */
 +#include <locale.h>
 +#include <langinfo.h>
++#include <resolv.h>
 +
 +#include "ifconfig.h"
 +
@@ -89,8 +90,9 @@ Index: sbin/ifconfig/ifwg.c
 +	WGC_PEER_ADD = 0x1,
 +	WGC_PEER_DEL = 0x2,
 +	WGC_PEER_UPDATE = 0x3,
-+	WGC_PEER_LIST = 0x4,
-+	WGC_LOCAL_SHOW = 0x5,
++	/* WGC_PEER_LIST */
++	WGC_GET = 0x5,
++	WGC_SET = 0x6,
 +} wg_cmd_t;
 +
 +static nvlist_t *nvl_params;
@@ -98,8 +100,8 @@ Index: sbin/ifconfig/ifwg.c
 +static int allowed_ips_count;
 +static int allowed_ips_max;
 +struct allowedip {
-+	struct sockaddr a_addr;
-+	struct sockaddr a_mask;
++	struct sockaddr_storage a_addr;
++	struct sockaddr_storage a_mask;
 +};
 +struct allowedip *allowed_ips;
 +
@@ -108,103 +110,6 @@ Index: sbin/ifconfig/ifwg.c
 +#define	WG_KEY_LEN_BASE64 ((((WG_KEY_LEN) + 2) / 3) * 4 + 1)
 +#define	WG_KEY_LEN_HEX (WG_KEY_LEN * 2 + 1)
 +#define	WG_MAX_STRLEN 64
-+
-+//CTASSERT(WG_MAX_STRLEN > WG_KEY_LEN_BASE64);
-+//CTASSERT(WG_MAX_STRLEN > INET6_ADDRSTRLEN);
-+
-+static void encode_base64(u_int8_t *, const u_int8_t *, u_int16_t);
-+static bool decode_base64(u_int8_t *, u_int16_t, const u_int8_t *);
-+
-+const static u_int8_t Base64Code[] =
-+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-+
-+const static u_int8_t index_64[128] = {
-+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-+        255, 255, 255, 62, 255, 255, 255, 63, 52, 53,
-+        54, 55, 56, 57, 58, 59, 60, 61, 255, 255,
-+        255, 255, 255, 255, 255, 0, 1, 2, 3, 4,
-+        5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-+        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-+        255, 255, 255, 255, 255, 255, 26, 27, 28,
-+        29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
-+        39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
-+        49, 50, 51, 255, 255, 255, 255, 255
-+};
-+#define CHAR64(c)  ( (c) > 127 ? 255 : index_64[(c)])
-+static bool
-+decode_base64(u_int8_t *buffer, u_int16_t len, const u_int8_t *data)
-+{
-+	const uint8_t *p = data;
-+	uint8_t *bp = buffer;
-+	uint8_t c1, c2, c3, c4;
-+
-+	while (bp < buffer + len) {
-+		c1 = CHAR64(*p);
-+		c2 = CHAR64(*(p + 1));
-+
-+		/* Invalid data */
-+		if (c1 == 255 || c2 == 255)
-+			break;
-+
-+		*bp++ = (c1 << 2) | ((c2 & 0x30) >> 4);
-+		if (bp >= buffer + len)
-+			break;
-+
-+		c3 = CHAR64(*(p + 2));
-+		if (c3 == 255)
-+			break;
-+
-+		*bp++ = ((c2 & 0x0f) << 4) | ((c3 & 0x3c) >> 2);
-+		if (bp >= buffer + len)
-+			break;
-+
-+		c4 = CHAR64(*(p + 3));
-+		if (c4 == 255)
-+			break;
-+
-+		*bp++ = ((c3 & 0x03) << 6) | c4;
-+
-+		p += 4;
-+	}
-+	if (bp < buffer + len)
-+		printf("len: %d filled: %d\n", len,
-+			   (int)(((uintptr_t)bp) - ((uintptr_t)buffer)));
-+
-+	return (bp >= buffer + len);
-+}
-+
-+static void
-+encode_base64(u_int8_t *buffer, const uint8_t *data, u_int16_t len)
-+{
-+	u_int8_t *bp = buffer;
-+	const u_int8_t *p = data;
-+	u_int8_t c1, c2;
-+	while (p < data + len) {
-+		c1 = *p++;
-+		*bp++ = Base64Code[(c1 >> 2)];
-+		c1 = (c1 & 0x03) << 4;
-+		if (p >= data + len) {
-+			*bp++ = Base64Code[c1];
-+			break;
-+		}
-+		c2 = *p++;
-+		c1 |= (c2 >> 4) & 0x0f;
-+		*bp++ = Base64Code[c1];
-+		c1 = (c2 & 0x0f) << 2;
-+		if (p >= data + len) {
-+			*bp++ = Base64Code[c1];
-+			break;
-+		}
-+		c2 = *p++;
-+		c1 |= (c2 >> 6) & 0x03;
-+		*bp++ = Base64Code[c1];
-+		*bp++ = Base64Code[c2 & 0x3f];
-+	}
-+	*bp = '\0';
-+}
 +
 +static bool
 +key_from_base64(uint8_t key[static WG_KEY_LEN], const char *base64)
@@ -218,7 +123,7 @@ Index: sbin/ifconfig/ifwg.c
 +		warnx("bad key terminator, expected '=' got '%c'", base64[WG_KEY_LEN_BASE64 - 2]);
 +		return false;
 +	}
-+	return (decode_base64(key, WG_KEY_LEN, base64));
++	return (b64_pton(base64, key, WG_KEY_LEN));
 +}
 +
 +static void
@@ -245,10 +150,9 @@ Index: sbin/ifconfig/ifwg.c
 +	}
 +	bzero(&hints, sizeof(hints));
 +	hints.ai_family = AF_UNSPEC;
-+	hints.ai_flags = AI_NUMERICHOST;
 +	err = getaddrinfo(endpoint, port, &hints, &res);
 +	if (err)
-+		errx(err, "address resolution for endpoint %s:%s failed\n", endpoint, port);
++		errx(1, "%s", gai_strerror(err));
 +	nvlist_add_binary(nvl_params, "endpoint", res->ai_addr, res->ai_addrlen);
 +	freeaddrinfo(res);
 +	free(base);
@@ -350,54 +254,45 @@ Index: sbin/ifconfig/ifwg.c
 +static bool
 +parse_ip(struct allowedip *aip, const char *value)
 +{
-+	struct sockaddr *sa = __DECONST(void *, &aip->a_addr);
++	struct addrinfo hints, *res;
++	int err;
 +
 +	bzero(&aip->a_addr, sizeof(aip->a_addr));
-+	aip->a_addr.sa_family = AF_UNSPEC;
++	bzero(&hints, sizeof(hints));
++	hints.ai_family = AF_UNSPEC;
++	hints.ai_flags = AI_NUMERICHOST;
++	err = getaddrinfo(value, NULL, &hints, &res);
++	if (err)
++		errx(1, "%s", gai_strerror(err));
 +
-+	if (strchr(value, ':')) {
-+		struct sockaddr_in6 *sin6 = (void *)sa;
-+		if (inet_pton(AF_INET6, value, &sin6->sin6_addr) == 1)
-+			aip->a_addr.sa_family = AF_INET6;
-+		aip->a_addr.sa_len = sizeof(struct sockaddr_in6);
-+	} else {
-+		struct sockaddr_in *sin = (void *)sa;
-+		if (inet_pton(AF_INET, value, &sin->sin_addr) == 1)
-+			aip->a_addr.sa_family = AF_INET;
-+		aip->a_addr.sa_len = sizeof(struct sockaddr_in);
-+	}
-+	if (aip->a_addr.sa_family == AF_UNSPEC)
-+		return (false);
++	memcpy(&aip->a_addr, res->ai_addr, res->ai_addrlen);
++
++	freeaddrinfo(res);
 +	return (true);
 +}
 +
-+static const char *
++static void
 +sa_ntop(const struct sockaddr *sa, char *buf, int *port)
 +{
 +	const struct sockaddr_in *sin;
 +	const struct sockaddr_in6 *sin6;
-+	const char *bufp;
++	int err;
++
++	err = getnameinfo(sa, sa->sa_len, buf, INET6_ADDRSTRLEN, NULL,
++	    0, NI_NUMERICHOST);
 +
 +	if (sa->sa_family == AF_INET) {
 +		sin = (const struct sockaddr_in *)sa;
-+		bufp = inet_ntop(AF_INET, &sin->sin_addr, buf,
-+						 INET6_ADDRSTRLEN);
 +		if (port)
 +			*port = sin->sin_port;
 +	} else if (sa->sa_family == AF_INET6) {
 +		sin6 = (const struct sockaddr_in6 *)sa;
-+		bufp = inet_ntop(AF_INET6, &sin6->sin6_addr, buf,
-+						 INET6_ADDRSTRLEN);
 +		if (port)
 +			*port = sin6->sin6_port;
-+	}  else {
-+		errx(1, "%s got invalid sockaddr family %d\n", __func__, sa->sa_family);
 +	}
-+	if (bufp == NULL) {
-+		perror("failed to convert address for peer\n");
-+		errx(1, "peer list failure");
-+	}
-+	return (bufp);
++
++	if (err)
++		errx(1, "%s", gai_strerror(err));
 +}
 +
 +static void
@@ -408,20 +303,19 @@ Index: sbin/ifconfig/ifwg.c
 +	const struct sockaddr *endpoint;
 +	char outbuf[WG_MAX_STRLEN];
 +	char addr_buf[INET6_ADDRSTRLEN];
-+	const char *bufp;
 +	size_t size;
 +	int count, port;
 +
 +	printf("[Peer]\n");
 +	if (nvlist_exists_binary(nvl_peer, "public-key")) {
 +		key = nvlist_get_binary(nvl_peer, "public-key", &size);
-+		encode_base64(outbuf, (const uint8_t *)key, size);
++		b64_ntop((const uint8_t *)key, size, outbuf, WG_MAX_STRLEN);
 +		printf("PublicKey = %s\n", outbuf);
 +	}
 +	if (nvlist_exists_binary(nvl_peer, "endpoint")) {
 +		endpoint = nvlist_get_binary(nvl_peer, "endpoint", &size);
-+		bufp = sa_ntop(endpoint, addr_buf, &port);
-+		printf("Endpoint = %s:%d\n", bufp, ntohs(port));
++		sa_ntop(endpoint, addr_buf, &port);
++		printf("Endpoint = %s:%d\n", addr_buf, ntohs(port));
 +	}
 +
 +	if (!nvlist_exists_binary(nvl_peer, "allowed-ips"))
@@ -439,9 +333,11 @@ Index: sbin/ifconfig/ifwg.c
 +		struct sockaddr *sa;
 +
 +		sa = __DECONST(void *, &aips->a_addr);
-+		bitmask = __DECONST(void *, &aips->a_mask.sa_data);
-+		family = aips[i].a_addr.sa_family;
-+		inet_ntop(family, sa->sa_data, addr_buf, INET6_ADDRSTRLEN);
++		bitmask = __DECONST(void *,
++		    ((const struct sockaddr *)&aips->a_mask)->sa_data);
++		family = aips[i].a_addr.ss_family;
++		getnameinfo(sa, sa->sa_len, addr_buf, INET6_ADDRSTRLEN, NULL,
++		    0, NI_NUMERICHOST);
 +		if (family == AF_INET)
 +			mask = in_mask2len(bitmask);
 +		else if (family == AF_INET6)
@@ -498,11 +394,11 @@ Index: sbin/ifconfig/ifwg.c
 +	const nvlist_t *nvl, *nvl_peer;
 +	const nvlist_t *const *nvl_peerlist;
 +
-+	if (get_nvl_out_size(s, WGC_PEER_LIST, &size))
++	if (get_nvl_out_size(s, WGC_GET, &size))
 +		errx(1, "can't get peer list size");
 +	if ((packed = malloc(size)) == NULL)
 +		errx(1, "malloc failed for peer list");
-+	if (do_cmd(s, WGC_PEER_LIST, packed, size, 0))
++	if (do_cmd(s, WGC_GET, packed, size, 0))
 +		errx(1, "failed to obtain peer list");
 +
 +	nvl = nvlist_unpack(packed, size, 0);
@@ -548,13 +444,30 @@ Index: sbin/ifconfig/ifwg.c
 +static
 +DECL_CMD_FUNC(setwglistenport, val, d)
 +{
-+	char *endp;
++	struct addrinfo hints, *res;
++	const struct sockaddr_in *sin;
++	const struct sockaddr_in6 *sin6;
++
 +	u_long ul;
++	int err;
 +
-+	ul = strtoul(val, &endp, 0);
-+	if (*endp != '\0')
-+		errx(1, "invalid value for listen-port");
++	bzero(&hints, sizeof(hints));
++	hints.ai_family = AF_UNSPEC;
++	hints.ai_flags = AI_NUMERICHOST;
++	err = getaddrinfo(NULL, val, &hints, &res);
++	if (err)
++		errx(1, "%s", gai_strerror(err));
 +
++	if (res->ai_family == AF_INET) {
++		sin = (struct sockaddr_in *)res->ai_addr;
++		ul = sin->sin_port;
++	} else if (res->ai_family == AF_INET6) {
++		sin6 = (struct sockaddr_in6 *)res->ai_addr;
++		ul = sin6->sin6_port;
++	} else {
++		errx(1, "unknown family");
++	}
++	ul = ntohs((u_short)ul);
 +	nvlist_add_number(nvl_params, "listen-port", ul);
 +}
 +
@@ -606,12 +519,12 @@ Index: sbin/ifconfig/ifwg.c
 +	if (*endp != '\0')
 +		errx(1, "invalid value for allowedip mask");
 +	bzero(&aip->a_mask, sizeof(aip->a_mask));
-+	if (aip->a_addr.sa_family == AF_INET)
-+		in_len2mask((struct in_addr *)&aip->a_mask.sa_data, ul);
-+	else if (aip->a_addr.sa_family == AF_INET6)
-+		in6_prefixlen2mask((struct in6_addr *)&aip->a_mask.sa_data, ul);
++	if (aip->a_addr.ss_family == AF_INET)
++		in_len2mask((struct in_addr *)&((struct sockaddr *)&aip->a_mask)->sa_data, ul);
++	else if (aip->a_addr.ss_family == AF_INET6)
++		in6_prefixlen2mask((struct in6_addr *)&((struct sockaddr *)&aip->a_mask)->sa_data, ul);
 +	else
-+		errx(1, "invalid address family %d\n", aip->a_addr.sa_family);
++		errx(1, "invalid address family %d\n", aip->a_addr.ss_family);
 +	allowed_ips_count++;
 +	if (allowed_ips_count > 1)
 +		nvlist_free_binary(nvl_params, "allowed-ips");
@@ -656,11 +569,11 @@ Index: sbin/ifconfig/ifwg.c
 +		/* If it's not a wg interface just return */
 +		return;
 +	}
-+	if (get_nvl_out_size(s, WGC_LOCAL_SHOW, &size))
++	if (get_nvl_out_size(s, WGC_GET, &size))
 +		return;
 +	if ((packed = malloc(size)) == NULL)
 +		return;
-+	if (do_cmd(s, WGC_LOCAL_SHOW, packed, size, 0))
++	if (do_cmd(s, WGC_GET, packed, size, 0))
 +		return;
 +	nvl = nvlist_unpack(packed, size, 0);
 +	if (nvlist_exists_number(nvl, "listen-port")) {
@@ -669,12 +582,12 @@ Index: sbin/ifconfig/ifwg.c
 +	}
 +	if (nvlist_exists_binary(nvl, "private-key")) {
 +		key = nvlist_get_binary(nvl, "private-key", &size);
-+		encode_base64(buf, (const uint8_t *)key, size);
++		b64_ntop((const uint8_t *)key, size, buf, WG_MAX_STRLEN);
 +		printf("\tprivate-key: %s\n", buf);
 +	}
 +	if (nvlist_exists_binary(nvl, "public-key")) {
 +		key = nvlist_get_binary(nvl, "public-key", &size);
-+		encode_base64(buf, (const uint8_t *)key, size);
++		b64_ntop((const uint8_t *)key, size, buf, WG_MAX_STRLEN);
 +		printf("\tpublic-key:  %s\n", buf);
 +	}
 +}
@@ -931,8 +844,8 @@ Index: sys/dev/if_wg/include/sys/if_wg_session.h
 +	for (c = (p)->p_cidrs; c < (p)->p_cidrs + (p)->p_num_cidrs; c++)
 +
 +struct wg_allowedip {
-+	struct sockaddr a_addr;
-+	struct sockaddr a_mask;
++	struct sockaddr_storage a_addr;
++	struct sockaddr_storage a_mask;
 +};
 +
 +enum {
@@ -962,7 +875,7 @@ Index: sys/dev/if_wg/include/sys/if_wg_session.h
 +	WGC_PEER_ADD = 0x1,
 +	WGC_PEER_DEL = 0x2,
 +	WGC_PEER_UPDATE = 0x3,
-+	WGC_PEER_LIST = 0x4,
++	/* WGC_PEER_LIST */
 +	WGC_GET = 0x5,
 +	WGC_SET = 0x6,
 +} wg_cmd_t;
@@ -1988,7 +1901,7 @@ Index: sys/dev/if_wg/include/sys/wg_noise.h
 ===================================================================
 --- /dev/null
 +++ sys/dev/if_wg/include/sys/wg_noise.h
-@@ -0,0 +1,284 @@
+@@ -0,0 +1,285 @@
 +/*
 + * Copyright (C) 2015-2020 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
 + * Copyright (C) 2019-2020 Matt Dunwoodie <ncon@noconroy.net>
@@ -2092,6 +2005,7 @@ Index: sys/dev/if_wg/include/sys/wg_noise.h
 +#include <sys/types.h>
 +#include <sys/time.h>
 +#include <sys/rwlock.h>
++#include <sys/support.h>
 +
 +#include <crypto/blake2s.h>
 +#include <zinc/chacha20poly1305.h>
@@ -9124,7 +9038,7 @@ Index: sys/dev/if_wg/module/crypto/zinc/chacha20/chacha20-x86_64-glue.c
 ===================================================================
 --- /dev/null
 +++ sys/dev/if_wg/module/crypto/zinc/chacha20/chacha20-x86_64-glue.c
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,132 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
 + * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -9194,7 +9108,8 @@ Index: sys/dev/if_wg/module/crypto/zinc/chacha20/chacha20-x86_64-glue.c
 +		!!(cpu_stdext_feature & CPUID_STDEXT_AVX512F)  &&
 +		!!(cpu_stdext_feature & CPUID_STDEXT_AVX512VL);
 +#endif
-+	printf("ssse3: %d  avx2: %d avx512: %d avx512vl: %d\n",
++	if (bootverbose)
++		printf("ssse3: %d  avx2: %d avx512: %d avx512vl: %d\n",
 +		   chacha20_use_ssse3,
 +		   chacha20_use_avx2,
 +		   chacha20_use_avx512,
@@ -13615,7 +13530,7 @@ Index: sys/dev/if_wg/module/crypto/zinc/chacha20poly1305.c
 ===================================================================
 --- /dev/null
 +++ sys/dev/if_wg/module/crypto/zinc/chacha20poly1305.c
-@@ -0,0 +1,400 @@
+@@ -0,0 +1,402 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
 + * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -13625,10 +13540,12 @@ Index: sys/dev/if_wg/module/crypto/zinc/chacha20poly1305.c
 + * Information: https://tools.ietf.org/html/rfc8439
 + */
 +
++#include <sys/support.h>
 +#include <zinc/chacha20poly1305.h>
 +#include <zinc/chacha20.h>
 +#include <zinc/poly1305.h>
 +#include "selftest/run.h"
++
 +#if 0
 +
 +#include <asm/unaligned.h>
@@ -22195,7 +22112,7 @@ Index: sys/dev/if_wg/module/crypto/zinc/poly1305/poly1305.c
 ===================================================================
 --- /dev/null
 +++ sys/dev/if_wg/module/crypto/zinc/poly1305/poly1305.c
-@@ -0,0 +1,169 @@
+@@ -0,0 +1,170 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
 + * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -22205,6 +22122,7 @@ Index: sys/dev/if_wg/module/crypto/zinc/poly1305/poly1305.c
 + * Information: https://cr.yp.to/mac.html
 + */
 +
++#include <sys/support.h>
 +#include <zinc/poly1305.h>
 +#include "../selftest/run.h"
 +
@@ -38198,7 +38116,7 @@ Index: sys/dev/if_wg/module/crypto/zinc/selftest/run.h
 +	for (i = 0; i < nobs_len; ++i)
 +		*nobs[i] = BIT(i) & largest_subset;
 +
-+	if (largest_subset == set && !failed)
++	if (largest_subset == set && !failed && bootverbose)
 +		pr_info("%s self-tests: pass\n", name);
 +
 +	return !WARN_ON(largest_subset != set);
@@ -38208,7 +38126,7 @@ Index: sys/dev/if_wg/module/curve25519.c
 ===================================================================
 --- /dev/null
 +++ sys/dev/if_wg/module/curve25519.c
-@@ -0,0 +1,865 @@
+@@ -0,0 +1,866 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
 + * Copyright (C) 2015-2016 The fiat-crypto Authors.
@@ -38225,6 +38143,7 @@ Index: sys/dev/if_wg/module/curve25519.c
 +/* Added for compatibility */
 +#include <sys/types.h>
 +#include <sys/systm.h>
++#include <sys/support.h>
 +#include <crypto/curve25519.h>
 +
 +/* fe means field element. Here the field is \Z/(2^255-19). An element t,
@@ -39078,7 +38997,7 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 ===================================================================
 --- /dev/null
 +++ sys/dev/if_wg/module/if_wg_session.c
-@@ -0,0 +1,2111 @@
+@@ -0,0 +1,2121 @@
 +/*
 + * Copyright (C) 2015-2020 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
 + * Copyright (C) 2019-2020 Matt Dunwoodie <ncon@noconroy.net>
@@ -39097,9 +39016,12 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 + * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 + */
 +
++#include "opt_inet.h"
++#include "opt_inet6.h"
++
++#include <sys/param.h>
 +#include <sys/types.h>
 +#include <sys/systm.h>
-+#include <sys/param.h>
 +#include <vm/uma.h>
 +
 +#include <sys/mbuf.h>
@@ -39115,10 +39037,12 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 +#include <sys/protosw.h>
 +#include <sys/endian.h>
 +#include <sys/kdb.h>
++#include <sys/sysctl.h>
 +
 +#include <net/bpf.h>
 +
 +
++#include <sys/support.h>
 +#include <sys/if_wg_session.h>
 +#include <sys/if_wg_session_vars.h>
 +//#include <sys/wg_module.h>
@@ -39177,8 +39101,13 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 +#define MTAG_WIREGUARD 0xBEAD
 +#define WG_PKT_WITH_PADDING(n)	(((n) + (16-1)) & (~(16-1)))
 +
++SYSCTL_NODE(_net, OID_AUTO, wg, CTLFLAG_RW, 0, "Wireguard");
++static int wireguard_debug;
++SYSCTL_INT(_net_wg, OID_AUTO, debug, CTLFLAG_RWTUN, &wireguard_debug, 0,
++	"enable debug logging");
 +
-+#define DPRINTF(sc,  ...) if_printf(sc->sc_ifp, ##__VA_ARGS__)
++
++#define DPRINTF(sc,  ...) if (wireguard_debug) if_printf(sc->sc_ifp, ##__VA_ARGS__)
 +
 +/* Socket */
 +int	wg_socket_close(struct wg_socket *);
@@ -40127,13 +40056,13 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 +	struct wg_allowedip *cidr;
 +	bool needfree = false;
 +
-+	family = cidr_->a_addr.sa_family;
++	family = cidr_->a_addr.ss_family;
 +	if (family == AF_INET) {
 +		root = tbl->t_ip;
 +	} else if (family == AF_INET6) {
 +		root = tbl->t_ip6;
 +	} else {
-+		printf("bad sa_family %d\n", cidr_->a_addr.sa_family);
++		printf("bad sa_family %d\n", cidr_->a_addr.ss_family);
 +		return (EINVAL);
 +	}
 +	route = malloc(sizeof(*route), M_WG, M_WAITOK|M_ZERO);
@@ -40920,7 +40849,7 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 +
 +	res = noise_remote_decrypt(&peer->p_remote, &data->data, plaintext_len);
 +	if (__predict_false(res)) {
-+		printf("noise_remote_decrypt fail %d \n", res);
++		DPRINTF(sc, "noise_remote_decrypt fail %d \n", res);
 +		if (res == EINVAL) {
 +			goto error;
 +		} else if (res == ECONNRESET) {
@@ -41194,7 +41123,7 @@ Index: sys/dev/if_wg/module/module.c
 ===================================================================
 --- /dev/null
 +++ sys/dev/if_wg/module/module.c
-@@ -0,0 +1,932 @@
+@@ -0,0 +1,903 @@
 +/*
 + * Copyright (c) 2019-2020 Netgate, Inc.
 + *
@@ -41227,6 +41156,7 @@ Index: sys/dev/if_wg/module/module.c
 +#include "opt_inet6.h"
 +#include <sys/param.h>
 +#include <sys/types.h>
++#include <sys/systm.h>
 +#include <sys/kernel.h>
 +#include <sys/lock.h>
 +#include <sys/priv.h>
@@ -41238,7 +41168,6 @@ Index: sys/dev/if_wg/module/module.c
 +#include <sys/sockio.h>
 +#include <sys/queue.h>
 +#include <sys/smp.h>
-+
 +
 +#include <net/if.h>
 +#include <net/ethernet.h>
@@ -41256,7 +41185,6 @@ Index: sys/dev/if_wg/module/module.c
 +#include <sys/wg_noise.h>
 +#include <sys/if_wg_session_vars.h>
 +#include <sys/if_wg_session.h>
-+
 +
 +MALLOC_DEFINE(M_WG, "WG", "wireguard");
 +
@@ -41430,6 +41358,14 @@ Index: sys/dev/if_wg/module/module.c
 +	struct wg_tag *t;
 +	int rc;
 +
++
++	/*
++	 * Work around the raw, unbridled, steaming
++	 * brokenness of the ipv6 mld code.
++	 */
++	if (__predict_false(ifp->if_flags & IFF_DYING))
++		return (ENXIO);
++
 +	rc = 0;
 +	sc = iflib_get_softc(ifp->if_softc);
 +
@@ -41504,6 +41440,13 @@ Index: sys/dev/if_wg/module/module.c
 +
 +static int
 +wg_mtu_set(if_ctx_t ctx, uint32_t mtu)
++{
++
++	return (0);
++}
++
++static int
++wg_set_promisc(if_ctx_t ctx, int flags)
 +{
 +
 +	return (0);
@@ -41957,47 +41900,6 @@ Index: sys/dev/if_wg/module/module.c
 +}
 +
 +static int
-+wg_peer_list(struct wg_softc *sc, struct ifdrv *ifd)
-+{
-+	size_t size;
-+	void *packed;
-+	nvlist_t *nvl, **nvl_array;
-+	int err, peer_count;;
-+
-+	nvl = NULL;
-+	peer_count = 0;
-+	err = wg_marshal_peers(sc, &nvl, &nvl_array, &peer_count);
-+	if (err)
-+		return (err);
-+	packed = nvlist_pack(nvl, &size);
-+	if (packed == NULL) {
-+		err = nvlist_error(nvl);
-+		printf("failed to pack peer-list nvlist %d\n", err);
-+		goto out;
-+	}
-+	if (ifd->ifd_len == 0) {
-+		ifd->ifd_len = size;
-+		goto out;
-+	}
-+	if (ifd->ifd_data == NULL) {
-+		err = EFAULT;
-+		goto out;
-+	}
-+	if (ifd->ifd_len && ifd->ifd_len < size) {
-+		err = ENOSPC;
-+		goto out;
-+	}
-+	if (ifd->ifd_len >= size)
-+		err = copyout(packed, ifd->ifd_data, size);
-+	ifd->ifd_len = size;
-+ out:
-+	//wg_marshalled_peers_free(nvl, nvl_array, peer_count);
-+	nvlist_destroy(nvl);
-+	free(packed, M_NVLIST);
-+	return (err);
-+}
-+
-+static int
 +wg_priv_ioctl(if_ctx_t ctx, u_long command, caddr_t data)
 +{
 +	struct wg_softc *sc = iflib_get_softc(ctx);
@@ -42022,9 +41924,6 @@ Index: sys/dev/if_wg/module/module.c
 +		case WGC_PEER_ADD:
 +			return (wgc_peer_add(sc, ifd));
 +			break;
-+		case WGC_PEER_LIST:
-+			return (wg_peer_list(sc, ifd));
-+			break;
 +	}
 +	return (ENOTSUP);
 +}
@@ -42037,6 +41936,7 @@ Index: sys/dev/if_wg/module/module.c
 +	DEVMETHOD(ifdi_stop, wg_stop),
 +	DEVMETHOD(ifdi_priv_ioctl, wg_priv_ioctl),
 +	DEVMETHOD(ifdi_mtu_set, wg_mtu_set),
++	DEVMETHOD(ifdi_promisc_set, wg_set_promisc),
 +	DEVMETHOD_END
 +};
 +
@@ -46530,7 +46430,7 @@ Index: sys/modules/if_wg/Makefile
 ===================================================================
 --- /dev/null
 +++ sys/modules/if_wg/Makefile
-@@ -0,0 +1,43 @@
+@@ -0,0 +1,42 @@
 +# $FreeBSD$
 +
 +
@@ -46546,16 +46446,16 @@ Index: sys/modules/if_wg/Makefile
 +
 +CFLAGS+= -I${INCDIR}
 +
-+CFLAGS+= -D__KERNEL__ -D__BSD_VISIBLE=1 -DINET6=1 -DINET=1
++CFLAGS+= -D__KERNEL__
 +CFLAGS+= -ferror-limit=7
-+CFLAGS+= -include ${INCDIR}/sys/support.h
 +
 +DEBUG_FLAGS=-g
 +
 +SRCS= opt_inet.h opt_inet6.h device_if.h bus_if.h ifdi_if.h
 +
++SRCS+= if_wg_session.c module.c
 +SRCS+= wg_noise.c wg_cookie.c
-+SRCS+= if_wg_session.c module.c curve25519.c blake2s.c
++SRCS+= curve25519.c blake2s.c
 +SRCS+= chacha20poly1305.c chacha20.c poly1305.c
 +
 +.if ${MACHINE_ARCH} == "amd64"
@@ -46565,10 +46465,9 @@ Index: sys/modules/if_wg/Makefile
 +.endif
 +.include <bsd.kmod.mk>
 +
-+
 +.if ${MACHINE_ARCH} == "amd64"
-+CFLAGS.poly1305-x86_64.S = -D__LOCORE -gdwarf-4 ${SIMD_FLAGS}
-+CFLAGS.chacha20-x86_64.S = -D__LOCORE -gdwarf-4 ${SIMD_FLAGS}
++CFLAGS.poly1305-x86_64.S = -D__LOCORE -gdwarf-4 ${SIMD_FLAGS}  -include ${INCDIR}/sys/support.h
++CFLAGS.chacha20-x86_64.S = -D__LOCORE -gdwarf-4 ${SIMD_FLAGS} -include ${INCDIR}/sys/support.h
 +CFLAGS.chacha20poly1305.c = -DCONFIG_ZINC_ARCH_X86_64
 +CFLAGS.chacha20.c = -DCONFIG_ZINC_ARCH_X86_64
 +CFLAGS.poly1305.c = -DCONFIG_ZINC_ARCH_X86_64
