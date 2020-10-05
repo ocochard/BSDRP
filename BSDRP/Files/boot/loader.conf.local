@@ -25,6 +25,9 @@ hw.mfi.mrsas_enable="1"
 net.fibs="16"		# Numbers of FIB
 hw.usb.no_pf="1"	# Disable USB packet filtering
 
+# Loading AES-NI module sooner to be sure it is loaded before IPsec keys
+aesni_load="YES"
+
 # Loading newest Intel microcode
 cpu_microcode_load="YES"
 cpu_microcode_name="/boot/firmware/intel-ucode.bin"
@@ -64,6 +67,3 @@ net.link.ifqmaxlen="16384"
 
 # Avoid message netisr_register: epair requested queue limit 688128 capped to net.isr.maxqlimit 1024
 net.isr.maxqlimit=1000000
-
-# Loading AESNI
-aesni_load="YES"

@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: head/sys/amd64/conf/GENERIC 363471 2020-07-24 08:40:04Z arichardson $
+# $FreeBSD: head/sys/amd64/conf/GENERIC 366267 2020-09-29 20:29:07Z br $
 
 cpu		HAMMER
 ident		BSDRP-AMD64
@@ -102,6 +102,7 @@ options 	KDB_TRACE		# Print a stack trace for a panic.
 #options 	WITNESS_SKIPSPIN	# Don't run witness on spinlocks for speed
 #options 	MALLOC_DEBUG_MAXZONES=8	# Separate malloc(9) zones
 options 	VERBOSE_SYSINIT=0	# Support debug.verbose_sysinit, off by default
+options 	IOMMU
 
 # Kernel Sanitizers
 #options 	COVERAGE		# Generic kernel coverage. Used by KCOV
@@ -127,7 +128,6 @@ device		cpufreq
 
 # Bus support.
 device		acpi
-options 	ACPI_DMAR
 device		pci
 options 	PCI_HP			# PCI-Express native HotPlug
 options		PCI_IOV			# PCI SR-IOV support
@@ -414,10 +414,10 @@ device enc
 #options           PCBGROUP                # Protocol control-block groups
 #options           RSS                             # Receive-side scaling support
 
-# RADIX_MPATH provides support for equal-cost multi-path routing.
+# ROUTE_MPATH provides support for equal-cost multi-path routing.
 # It allows to install multiple routes toward the same destination
 # but didn't do flow load-balancing using ecmp :-(
-#options	RADIX_MPATH
+options		ROUTE_MPATH
 
 # Don't enter the debugger for a panic
 options		KDB_UNATTENDED

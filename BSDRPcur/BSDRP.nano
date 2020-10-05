@@ -473,6 +473,9 @@ add_port "shells/bash"
 add_port "net/wireguard-go"
 add_port "net/wireguard"
 
+# tinc
+add_port "security/tinc"
+
 # some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
 add_port "benchmarks/netperf" "WITHOUT+=\"OMNI\""
 add_port "benchmarks/iperf"
@@ -601,6 +604,7 @@ py37-imagesize
 py37-openssl
 py37-pycparser
 py37-pygments
+py37-pyparsing
 py37-pystemmer
 py37-pysocks
 py37-pytest-runner
@@ -608,9 +612,7 @@ py37-pytz
 py37-setuptools_scm
 py37-six
 py37-snowballstemmer
-py37-sphinx
-py37-sphinxcontrib-websupport
-py37-sphinx_rtd_theme
+py37-sphinx*
 py37-typing
 py37-urllib3
 rhash

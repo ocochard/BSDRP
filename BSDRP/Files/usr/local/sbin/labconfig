@@ -748,6 +748,362 @@ echo "VM5 (including jail5 and jail6) configured"
 
 ### FRR lab
 
+frr_jails () {
+sysrc hostname=host \
+  cloned_interfaces="epair0 epair1 epair2 epair3 epair4 epair5" \
+  kld_list="ipsec"
+service netif restart
+service hostname restart
+service kld start
+tenant -c -j jail1 -i epair0a
+tenant -c -j jail2 -i epair0b,epair1a
+tenant -c -j jail3 -i epair1b,epair2a
+tenant -c -j jail4 -i epair2b,epair3a
+tenant -c -j jail5 -i epair3b,epair4a
+tenant -c -j jail6 -i epair4b,epair5a
+tenant -c -j jail7 -i epair5b
+
+for i in $(jot 7); do
+	mkdir -p /etc/jails/jail$i/local/frr
+done
+
+sysrc -f /etc/jails/jail1/rc.conf hostname=jail1 \
+  cloned_interfaces=lo1 \
+  ipsec_enable=YES \
+  ipsec_file="/etc/ipsec.conf" \
+  frr_vtysh_boot="YES" \
+  frr_enable=yes
+
+cat <<EOF > /etc/jails/jail1/ipsec.conf
+flush ;
+add 192.168.12.1 192.168.12.2 tcp 0x1000 -A tcp-md5 "abigpassword" ;
+add 192.168.12.2 192.168.12.1 tcp 0x1001 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:12::1 2001:db8:12::2 tcp 0x1002 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:12::2 2001:db8:12::1 tcp 0x1003 -A tcp-md5 "abigpassword" ;
+EOF
+
+cat > /etc/jails/jail1/local/frr/frr.conf <<EOF
+log syslog
+!
+interface lo1
+ ip address 192.168.10.1/24
+ ipv6 address 2001:db8:10::1/64
+!
+interface epair0a
+ ip address 192.168.12.1/24
+ ipv6 address 2001:db8:12::1/64
+!
+router bgp 12
+ bgp router-id 192.168.10.1
+ neighbor 192.168.12.2 remote-as 12
+ neighbor 192.168.12.2 bfd
+ neighbor 192.168.12.2 password abigpassword
+ neighbor 2001:db8:12::2 remote-as 12
+ neighbor 2001:db8:12::2 bfd
+ neighbor 2001:db8:12::2 password abigpassword
+ !
+ address-family ipv4 unicast
+  network 192.168.10.0/24
+  neighbor 192.168.12.2 soft-reconfiguration inbound
+  no neighbor 2001:db8:12::2 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 2001:db8:10::/64
+  neighbor 2001:db8:12::2 activate
+  neighbor 2001:db8:12::2 soft-reconfiguration inbound
+ exit-address-family
+!
+bfd
+ peer 2001:db8:12::2 local-address 2001:db8:12::1
+  no shutdown
+ !
+ peer 192.168.12.2
+  no shutdown
+ !
+!
+EOF
+
+sysrc -f /etc/jails/jail2/rc.conf hostname=jail2 \
+  ipsec_enable=YES \
+  ipsec_file="/etc/ipsec.conf" \
+  frr_vtysh_boot="YES" \
+  frr_enable=yes
+
+cat <<EOF > /etc/jails/jail2/ipsec.conf
+flush ;
+add 192.168.12.1 192.168.12.2 tcp 0x1000 -A tcp-md5 "abigpassword" ;
+add 192.168.12.2 192.168.12.1 tcp 0x1001 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:12::1 2001:db8:12::2 tcp 0x1002 -A tcp-md5 "abigpassword" ;
+add -6 2001:db8:12::2 2001:db8:12::1 tcp 0x1003 -A tcp-md5 "abigpassword" ;
+EOF
+
+cat > /etc/jails/jail2/local/frr/frr.conf <<EOF
+log syslog
+!
+key chain rippass
+ key 1
+  key-string rippassword
+ key 1
+  key-string rippassword
+!
+interface epair0b
+ ip address 192.168.12.2/24
+ ipv6 address 2001:db8:12::2/64
+!
+interface epair1a
+ ip address 192.168.23.2/24
+ ip rip authentication key-chain rippass
+ ip rip authentication mode md5
+ ipv6 address 2001:db8:23::2/64
+!
+router rip
+ network epair1a
+ redistribute bgp
+ redistribute connected
+ version 2
+!
+router ripng
+ network epair1a
+ redistribute bgp
+ redistribute connected
+!
+router bgp 12
+ bgp router-id 192.168.10.2
+ neighbor 192.168.12.1 remote-as 12
+ neighbor 192.168.12.1 bfd
+ neighbor 192.168.12.1 password abigpassword
+ neighbor 2001:db8:12::1 remote-as 12
+ neighbor 2001:db8:12::1 bfd
+ neighbor 2001:db8:12::1 password abigpassword
+ !
+ address-family ipv4 unicast
+  network 192.168.12.0/24
+  redistribute rip
+  neighbor 192.168.12.1 next-hop-self
+  neighbor 192.168.12.1 soft-reconfiguration inbound
+  no neighbor 2001:db8:12::1 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 2001:db8:12::/64
+  redistribute ripng
+  neighbor 2001:db8:12::1 activate
+  neighbor 2001:db8:12::1 soft-reconfiguration inbound
+ exit-address-family
+!
+bfd
+ peer 192.168.12.1
+  no shutdown
+ !
+ peer 2001:db8:12::1 local-address 2001:db8:12::2
+  no shutdown
+ !
+!
+EOF
+
+sysrc -f /etc/jails/jail3/rc.conf hostname=jail3 \
+  frr_vtysh_boot="YES" \
+  frr_enable=yes
+
+cat > /etc/jails/jail3/local/frr/frr.conf <<EOF
+log syslog
+!
+key chain rippass
+ key 1
+  key-string rippassword
+ key 1
+  key-string rippassword
+!
+interface epair1b
+ ip address 192.168.23.3/24
+ ip rip authentication key-chain rippass
+ ip rip authentication mode md5
+ ipv6 address 2001:db8:23::3/64
+!
+interface epair2a
+ ip address 192.168.34.3/24
+ ip ospf bfd
+ ip ospf message-digest-key 1 md5 superpass
+ ipv6 address 2001:db8:34::3/64
+ ipv6 ospf6 bfd
+!
+router rip
+ network epair1b
+ redistribute connected
+ redistribute ospf
+ version 2
+!
+router ripng
+ network epair1b
+ redistribute connected
+ redistribute ospf6
+!
+router ospf
+ ospf router-id 3.3.3.3
+ redistribute connected
+ redistribute rip
+ network 192.168.34.0/24 area 0.0.0.0
+ area 0.0.0.0 authentication message-digest
+!
+router ospf6
+ redistribute connected
+ redistribute ripng
+ interface epair2a area 0.0.0.0
+!
+bfd
+ peer 2001:db8:34::4 local-address 2001:db8:34::3
+  no shutdown
+ !
+ peer 192.168.34.4
+  no shutdown
+ !
+!
+EOF
+
+sysrc -f /etc/jails/jail4/rc.conf hostname=jail4 \
+  frr_vtysh_boot="YES" \
+  frr_enable=yes
+
+cat > /etc/jails/jail4/local/frr/frr.conf <<EOF
+log syslog
+!
+interface epair2b
+ ip address 192.168.34.4/24
+ ip ospf bfd
+ ip ospf message-digest-key 1 md5 superpass
+ ipv6 address 2001:db8:34::4/64
+ ipv6 ospf6 bfd
+!
+interface epair3a
+ ip address 192.168.45.4/24
+ ip router isis BSDRP
+ ipv6 address 2001:db8:45::4/64
+ ipv6 router isis BSDRP
+ isis circuit-type level-2-only
+!
+router ospf
+ ospf router-id 4.4.4.4
+ redistribute connected
+ redistribute isis
+ network 192.168.34.0/24 area 0.0.0.0
+ area 0.0.0.0 authentication message-digest
+!
+router ospf6
+ redistribute connected
+ redistribute isis
+ interface epair2b area 0.0.0.0
+!
+router isis BSDRP
+ is-type level-1-2
+ net 49.0000.0000.0004.00
+ redistribute ipv4 ospf level-2
+ redistribute ipv4 connected level-2
+ redistribute ipv6 ospf6 level-2
+ redistribute ipv6 connected level-2
+!
+bfd
+ peer 2001:db8:34::3 local-address 2001:db8:34::4
+  no shutdown
+ !
+ peer 192.168.34.3
+  no shutdown
+ !
+!
+EOF
+
+sysrc -f /etc/jails/jail5/rc.conf hostname=jail5 \
+  frr_vtysh_boot="YES" \
+  frr_enable=yes
+
+cat > /etc/jails/jail5/local/frr/frr.conf <<EOF
+log syslog
+!
+interface epair3b
+ ip address 192.168.45.5/24
+ ip router isis BSDRP
+ ipv6 address 2001:db8:45::5/64
+ ipv6 router isis BSDRP
+ isis circuit-type level-2-only
+!
+interface epair4a
+ ip address 192.168.56.5/24
+ ip router isis BSDRP
+ ipv6 address 2001:db8:56::5/64
+ ipv6 router isis BSDRP
+ isis circuit-type level-2-only
+ isis passive
+!
+router babel
+ network epair3b
+ network epair4a
+ redistribute ipv4 isis
+ redistribute ipv6 isis
+!
+router isis BSDRP
+ is-type level-1-2
+ net 49.0000.0000.0005.00
+ redistribute ipv4 babel level-2
+ redistribute ipv6 babel level-2
+!
+EOF
+
+sysrc -f /etc/jails/jail6/rc.conf hostname=jail6 \
+  frr_vtysh_boot="YES" \
+  frr_enable=yes
+
+cat > /etc/jails/jail6/local/frr/frr.conf <<EOF
+log syslog
+!
+ip route 192.168.70.0/24 192.168.67.7
+ipv6 route 2001:db8:70::/64 2001:db8:67::7
+!
+interface epair4b
+ ip address 192.168.56.6/24
+ ipv6 address 2001:db8:56::6/64
+!
+interface epair5a
+ ip address 192.168.67.6/24
+ ipv6 address 2001:db8:67::6/64
+!
+router babel
+ network epair4b
+ redistribute ipv4 connected
+ redistribute ipv4 static
+ redistribute ipv6 connected
+ redistribute ipv6 static
+!
+EOF
+
+sysrc -f /etc/jails/jail7/rc.conf hostname=jail7 \
+  loned_interfaces=lo1 \
+  frr_vtysh_boot="YES" \
+  frr_enable=yes
+
+cat > /etc/jails/jail7/local/frr/frr.conf <<EOF
+log syslog
+!
+ip route 0.0.0.0/0 192.168.67.6
+ipv6 route ::/0 2001:db8:67::6
+!
+interface lo1
+ ip address 192.168.70.7/24
+ ipv6 address 2001:db8:70::7/64
+!
+interface epair5b
+ ip address 192.168.67.7/24
+ ipv6 address 2001:db8:67::7/64
+!
+EOF
+
+for i in $(jot 7); do
+	chown -R frr:frr /etc/jails/jail$i/local/frr
+done
+
+service jail start
+echo "7 jails are configured and started"
+}
+
 frr_vm1 () {
 sysrc hostname=router1 \
 	cloned_interfaces=lo1 \

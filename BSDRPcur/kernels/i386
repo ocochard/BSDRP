@@ -378,10 +378,10 @@ device enc
 #options           PCBGROUP                # Protocol control-block groups
 #options           RSS                             # Receive-side scaling support
 
-# RADIX_MPATH provides support for equal-cost multi-path routing.
+# ROUTE_MPATH provides support for equal-cost multi-path routing.
 # It allows to install multiple routes toward the same destination
 # but didn't do flow load-balancing using ecmp :-(
-#options	RADIX_MPATH
+options	ROUTE_MPATH
 
 # Don't enter the debugger for a panic
 options		KDB_UNATTENDED

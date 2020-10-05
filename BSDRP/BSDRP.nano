@@ -477,8 +477,11 @@ add_port "shells/bash"
 add_port "net/wireguard-go"
 add_port "net/wireguard"
 
+# tinc
+add_port "security/tinc"
+
 # some benchmark tools: iperf ant netpipe, These tools will help us to tune BSDRP for better perf
-add_port "benchmarks/netperf"
+add_port "benchmarks/netperf" "WITHOUT+=\"OMNI\""
 add_port "benchmarks/iperf"
 add_port "benchmarks/iperf3"
 
