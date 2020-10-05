@@ -1,3 +1,25 @@
+Index: security/openvpn/Makefile
+===================================================================
+--- security/openvpn/Makefile	(revision 551493)
++++ security/openvpn/Makefile	(working copy)
+@@ -3,7 +3,7 @@
+ 
+ PORTNAME=		openvpn
+ DISTVERSION=		2.4.9
+-PORTREVISION?=		3
++PORTREVISION?=		4
+ CATEGORIES=		security net net-vpn
+ MASTER_SITES=		https://swupdate.openvpn.org/community/releases/ \
+ 			https://build.openvpn.net/downloads/releases/ \
+@@ -15,7 +15,7 @@
+ LICENSE=		GPLv2
+ LICENSE_FILE=		${WRKSRC}/COPYRIGHT.GPL
+ 
+-USES=			cpe libtool pkgconfig shebangfix tar:xz
++USES=			cpe libtool pkgconfig shebangfix tar:xz autoreconf
+ 
+ CONFLICTS_INSTALL?=	openvpn-2.[!4].* openvpn-[!2].* openvpn-beta-[0-9]* openvpn-devel-[0-9]* openvpn-mbedtls-[0-9]*
+ 
 Index: security/openvpn/files/patch-remote_best_latency
 ===================================================================
 --- security/openvpn/files/patch-remote_best_latency	(nonexistent)
@@ -22,7 +44,7 @@ Index: security/openvpn/files/patch-remote_best_latency
 + 	lladdr.c lladdr.h \
 + 	init.c init.h \
 + 	integer.h \
-+--- src/openvpn/latency.c.orig	2020-10-05 14:58:55 UTC
++--- src/openvpn/latency.c.orig	2020-10-05 21:48:37 UTC
 ++++ src/openvpn/latency.c
 +@@ -0,0 +1,242 @@
 ++/*
@@ -267,7 +289,7 @@ Index: security/openvpn/files/patch-remote_best_latency
 ++  }
 ++}
 ++
-+--- src/openvpn/latency.h.orig	2020-10-05 14:58:55 UTC
++--- src/openvpn/latency.h.orig	2020-10-05 21:48:37 UTC
 ++++ src/openvpn/latency.h
 +@@ -0,0 +1,35 @@
 ++/*
@@ -313,7 +335,7 @@ Index: security/openvpn/files/patch-remote_best_latency
 +     "--local host    : Local host name or ip address. Implies --bind.\n"
 +     "--remote host [port] : Remote host name or ip address.\n"
 ++    "--remote-best-latency : If multiple --remote options specified, choose the\n"
-++                       one with the lowest latency client/server.\n"
+++    "                  one with the lowest latency client/server.\n"
 +     "--remote-random : If multiple --remote options specified, choose one randomly.\n"
 +     "--remote-random-hostname : Add a random string to remote DNS name.\n"
 +     "--mode m        : Major mode, m = 'p2p' (default, point-to-point) or 'server'.\n"
