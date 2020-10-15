@@ -3,9 +3,9 @@ Index: sys/modules/Makefile
 --- sys/modules/Makefile	(revision 364305)
 +++ sys/modules/Makefile	(working copy)
 @@ -42,6 +42,7 @@
+	amr \
  	${_an} \
  	${_aout} \
- 	${_apm} \
 +	${_apuled} \
  	${_arcmsr} \
  	${_allwinner} \

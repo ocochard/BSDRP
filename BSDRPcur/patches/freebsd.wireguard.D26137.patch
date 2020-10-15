@@ -328,7 +328,7 @@ Index: sbin/ifconfig/ifwg.c
 +		void *bitmask;
 +		struct sockaddr *sa;
 +
-+		sa = __DECONST(void *, &aips->a_addr);
++		sa = __DECONST(void *, &aips[i].a_addr);
 +		bitmask = __DECONST(void *,
 +		    ((const struct sockaddr *)&aips->a_mask)->sa_data);
 +		family = aips[i].a_addr.ss_family;
@@ -39787,7 +39787,7 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 +		t->t_need_another_keepalive = 0;
 +		callout_reset(&t->t_send_keepalive,
 +		    KEEPALIVE_TIMEOUT*hz,
-+		     (timeout_t *)wg_timers_run_send_keepalive, peer);
++		     (timeout_t *)wg_timers_run_send_keepalive, t);
 +	}
 +}
 +
@@ -41107,7 +41107,7 @@ Index: sys/dev/if_wg/module/module.c
 ===================================================================
 --- /dev/null
 +++ sys/dev/if_wg/module/module.c
-@@ -0,0 +1,874 @@
+@@ -0,0 +1,875 @@
 +/*
 + * Copyright (c) 2019-2020 Netgate, Inc.
 + *
@@ -41172,9 +41172,7 @@ Index: sys/dev/if_wg/module/module.c
 +
 +MALLOC_DEFINE(M_WG, "WG", "wireguard");
 +
-+#define WG_CAPS														\
-+	IFCAP_HWCSUM | IFCAP_VLAN_HWFILTER | IFCAP_VLAN_HWTAGGING | IFCAP_VLAN_HWCSUM |	\
-+	IFCAP_VLAN_MTU | IFCAP_TXCSUM_IPV6 | IFCAP_HWCSUM_IPV6 | IFCAP_JUMBO_MTU | IFCAP_LINKSTATE
++#define WG_CAPS		IFCAP_LINKSTATE
 +TASKQGROUP_DECLARE(if_io_tqg);
 +
 +static int clone_count;
@@ -41633,7 +41631,8 @@ Index: sys/dev/if_wg/module/module.c
 +		nvlist_add_number(nvl, "listen-port", sc->sc_socket.so_port);
 +	if (sc->sc_local.l_has_identity) {
 +		nvlist_add_binary(nvl, "public-key", sc->sc_local.l_public, WG_KEY_SIZE);
-+		nvlist_add_binary(nvl, "private-key", sc->sc_local.l_private, WG_KEY_SIZE);
++		if (curthread->td_ucred->cr_uid == 0)
++			nvlist_add_binary(nvl, "private-key", sc->sc_local.l_private, WG_KEY_SIZE);
 +	}
 +	if (sc->sc_hashtable.h_num_peers > 0) {
 +		err = wg_marshal_peers(sc, NULL, &nvl_array, &peer_count);
@@ -41877,6 +41876,8 @@ Index: sys/dev/if_wg/module/module.c
 +			return (wgc_get(sc, ifd));
 +			break;
 +		case WGC_SET:
++			if (priv_check(curthread, PRIV_DRIVER))
++				return (EPERM);
 +			return (wgc_set(sc, ifd));
 +			break;
 +	}
@@ -46373,7 +46374,7 @@ Index: sys/modules/Makefile
 ===================================================================
 --- sys/modules/Makefile
 +++ sys/modules/Makefile
-@@ -159,6 +159,7 @@
+@@ -160,6 +160,7 @@
  	if_tuntap \
  	if_vlan \
  	if_vxlan \

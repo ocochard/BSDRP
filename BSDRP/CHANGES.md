@@ -1,12 +1,14 @@
 # Release 2.0 (not released)
 
-## New feature (plan)
+## New feature (planned)
 * Migrated from nanobsd to poudriere-image
 
 ## New feature
-* OpenVPN: Allows to select server with lower latency
+* OpenVPN: Allows to select server with lower latency (still broken)
 
 ## Bug fixes
+* FRR7: Fix https://github.com/FRRouting/frr/issues/6378
+* bird2: Fix multi-FIB usage by reverting bird commit 318acb0f6cb77a32aad5d7f79e06f3c5065ac702
 
 ## New packages
 * tinc 1.0.36

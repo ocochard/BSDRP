@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: head/sys/i386/conf/GENERIC 363471 2020-07-24 08:40:04Z arichardson $
+# $FreeBSD: head/sys/i386/conf/GENERIC 366546 2020-10-08 20:56:06Z imp $
 
 cpu		I486_CPU
 cpu		I586_CPU
@@ -187,9 +187,6 @@ device 		vt
 device		vt_vga
 
 #device		agp			# support several AGP chipsets
-
-# Power management support (see NOTES for more options)
-#device		apm
 
 # PCCARD (PCMCIA) support
 # PCMCIA and cardbus bridge support

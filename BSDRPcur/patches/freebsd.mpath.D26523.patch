@@ -2,7 +2,7 @@ Index: sys/conf/files
 ===================================================================
 --- sys/conf/files
 +++ sys/conf/files
-@@ -4158,7 +4158,7 @@
+@@ -4161,7 +4161,7 @@
  net/rtsock.c			standard
  net/slcompress.c		optional netgraph_vjc | sppp | \
  					 netgraph_sppp
@@ -67,7 +67,7 @@ Index: sys/net/route/mpath_ctl.c
 ===================================================================
 --- sys/net/route/mpath_ctl.c
 +++ sys/net/route/mpath_ctl.c
-@@ -64,6 +64,20 @@
+@@ -64,7 +64,21 @@
   */
  
  SYSCTL_DECL(_net_route);
@@ -75,7 +75,7 @@ Index: sys/net/route/mpath_ctl.c
 +SYSCTL_UINT(_net_route, OID_AUTO, hash_outbound, CTLFLAG_RD | CTLFLAG_VNET,
 +    &VNET_NAME(fib_hash_outbound), 0,
 +    "Compute flowid for locally-originated packets");
-+
+ 
 +/* Default entropy to add to the hash calculation for the outbound connections*/
 +uint8_t mpath_entropy_key[MPATH_ENTROPY_KEY_LEN] = {
 +	0x6d, 0x5a, 0x56, 0xda, 0x25, 0x5b, 0x0e, 0xc2,
@@ -85,13 +85,16 @@ Index: sys/net/route/mpath_ctl.c
 +	0x6a, 0x42, 0xb7, 0x3b, 0xbe, 0xac, 0x01, 0xfa,
 +};
 +
- 
++
  /*
   * Tries to add @rnd_add nhop to the existing set of nhops (@nh_orig) for the
-@@ -115,6 +129,17 @@
+  * prefix specified by @rt.
+@@ -113,6 +127,17 @@
+ 		if (error != EAGAIN)
+ 			break;
  		RTSTAT_INC(rts_add_retry);
- 	}
- 
++	}
++
 +	if (V_fib_hash_outbound == 0 && error == 0 &&
 +	    NH_IS_NHGRP(rc->rc_nh_new)) {
 +		/*
@@ -101,11 +104,9 @@ Index: sys/net/route/mpath_ctl.c
 +		if (bootverbose)
 +			printf("FIB: enabled flowid calculation for locally-originated packets\n");
 +		V_fib_hash_outbound = 1;
-+	}
-+
- 	return (error);
- }
+ 	}
  
+ 	return (error);
 Index: sys/net/route/route_var.h
 ===================================================================
 --- sys/net/route/route_var.h
@@ -143,10 +144,11 @@ Index: sys/netinet/in_fib.c
  #include <net/vnet.h>
  
  #include <netinet/in.h>
-@@ -62,6 +63,40 @@
+@@ -61,6 +62,40 @@
+ /* Verify struct route compatiblity */
  /* Assert 'struct route_in' is compatible with 'struct route' */
  CHK_STRUCT_ROUTE_COMPAT(struct route_in, ro_dst4);
- 
++
 +#ifdef ROUTE_MPATH
 +struct _hash_5tuple_ipv4 {
 +	struct in_addr src;
@@ -180,10 +182,9 @@ Index: sys/netinet/in_fib.c
 +	  sizeof(data), (uint8_t *)&data));
 +}
 +#endif
-+
+ 
  /*
   * Looks up path in fib @fibnum specified by @dst.
-  * Returns path nexthop on success. Nexthop is safe to use
 Index: sys/netinet/in_pcb.c
 ===================================================================
 --- sys/netinet/in_pcb.c
@@ -256,11 +257,10 @@ Index: sys/netinet/raw_ip.c
  				return (EINVAL);
  			ip = mtod(m, struct ip *);
  		}
--
 +#ifdef ROUTE_MPATH
 +		if (V_fib_hash_outbound) {
 +			uint32_t hash_type, hash_val;
-+
+ 
 +			hash_val = fib4_calc_software_hash(ip->ip_dst,
 +			    ip->ip_src, 0, 0, ip->ip_p, &hash_type);
 +			m->m_pkthdr.flowid = hash_val;
@@ -271,6 +271,27 @@ Index: sys/netinet/raw_ip.c
  		INP_RLOCK(inp);
  		/*
  		 * Don't allow both user specified and setsockopt options,
+Index: sys/netinet/udp_usrreq.c
+===================================================================
+--- sys/netinet/udp_usrreq.c
++++ sys/netinet/udp_usrreq.c
+@@ -1473,6 +1473,16 @@
+ 	((struct ip *)ui)->ip_tos = tos;		/* XXX */
+ 	UDPSTAT_INC(udps_opackets);
+ 
++#ifdef ROUTE_MPATH
++	if (V_fib_hash_outbound) {
++		uint32_t hash_type;
++
++		flowid = fib4_calc_software_hash(laddr, faddr,
++		    lport, fport, &hash_type);
++		m->m_pkthdr.flowid = hash_val;
++		M_HASHTYPE_SET(m, hash_type);
++	}
++#endif
+ 	/*
+ 	 * Setup flowid / RSS information for outbound socket.
+ 	 *
 Index: sys/netinet6/in6_fib.h
 ===================================================================
 --- sys/netinet6/in6_fib.h
@@ -295,10 +316,11 @@ Index: sys/netinet6/in6_fib.c
  #include <net/vnet.h>
  
  #include <netinet/in.h>
-@@ -68,6 +69,39 @@
+@@ -67,6 +68,39 @@
+ #ifdef INET6
  
  CHK_STRUCT_ROUTE_COMPAT(struct route_in6, ro_dst);
- 
++
 +#ifdef ROUTE_MPATH
 +struct _hash_5tuple_ipv6 {
 +	struct in6_addr src;
@@ -331,10 +353,9 @@ Index: sys/netinet6/in6_fib.c
 +	  sizeof(data), (uint8_t *)&data));
 +}
 +#endif
-+
+ 
  /*
   * Looks up path in fib @fibnum specified by @dst.
-  * Assumes scope is deembedded and provided in @scopeid.
 Index: sys/netinet6/in6_pcb.c
 ===================================================================
 --- sys/netinet6/in6_pcb.c
@@ -365,6 +386,30 @@ Index: sys/netinet6/in6_pcb.c
  	/*
  	 * Call inner routine, to assign local interface address.
  	 * in6_pcbladdr() may automatically fill in sin6_scope_id.
+Index: sys/netinet6/ip6_output.c
+===================================================================
+--- sys/netinet6/ip6_output.c
++++ sys/netinet6/ip6_output.c
+@@ -417,9 +417,6 @@
+  *
+  * ifpp - XXX: just for statistics
+  */
+-/*
+- * XXX TODO: no flowid is assigned for outbound flows?
+- */
+ int
+ ip6_output(struct mbuf *m0, struct ip6_pktopts *opt,
+     struct route_in6 *ro, int flags, struct ip6_moptions *im6o,
+@@ -769,7 +766,8 @@
+ 			}
+ 		}
+ 
+-		nh = fib6_lookup(fibnum, &kdst, scopeid, NHR_NONE, 0);
++		nh = fib6_lookup(fibnum, &kdst, scopeid, NHR_NONE,
++		    m->m_pkthdr.flowid);
+ 		if (nh == NULL) {
+ 			IP6STAT_INC(ip6s_noroute);
+ 			/* No ifp in6_ifstat_inc(ifp, ifs6_out_discard); */
 Index: sys/netinet6/raw_ip6.c
 ===================================================================
 --- sys/netinet6/raw_ip6.c
@@ -403,3 +448,133 @@ Index: sys/netinet6/raw_ip6.c
  	/*
  	 * Source address selection.
  	 */
+Index: sys/netinet6/udp6_usrreq.c
+===================================================================
+--- sys/netinet6/udp6_usrreq.c
++++ sys/netinet6/udp6_usrreq.c
+@@ -954,6 +954,16 @@
+ 	}
+ 
+ 	flags = 0;
++#ifdef ROUTE_MPATH
++	if (V_fib_hash_outbound) {
++		uint32_t hash_type, hash_val;
++
++		hash_val = fib6_calc_software_hash(laddr, faddr, lport,
++		    inp->inp_lport, &hash_type);
++		m->m_pkthdr.flowid = hash_val;
++		M_HASHTYPE_SET(m, hash_type);
++	}
++#endif
+ #ifdef	RSS
+ 	{
+ 		uint32_t hash_val, hash_type;
+Index: tests/sys/netinet/output.sh
+===================================================================
+--- tests/sys/netinet/output.sh
++++ tests/sys/netinet/output.sh
+@@ -223,11 +223,19 @@
+ 
+ mpath_check()
+ {
+-	if [ "`sysctl -i -n net.route.multipath`" != 1 ]; then
++	if [ `sysctl -iW net.route.multipath | wc -l` != "1" ]; then
+ 		atf_skip "This test requires ROUTE_MPATH enabled"
+ 	fi
+ }
+ 
++mpath_enable()
++{
++	jexec $1 sysctl net.route.multipath=1
++	if [ $? != 0 ]; then
++		atf_fail "Setting multipath in jail $1 failed".
++	fi
++}
++
+ atf_test_case "output_tcp_flowid_mpath_success" "cleanup"
+ output_tcp_flowid_mpath_success_head()
+ {
+@@ -258,6 +266,7 @@
+ 	lo_dst=$(vnet_mkloopback)
+ 
+ 	vnet_mkjail ${jname}a ${epair0}a ${epair1}a ${lo_src}
++	mpath_enable ${jname}a
+ 	# Setup transit IPv4 networks
+ 	jexec ${jname}a ifconfig ${epair0}a up
+ 	jexec ${jname}a ifconfig ${epair0}a inet 203.0.113.1/30
+@@ -386,6 +395,7 @@
+ 	lo_dst=$(vnet_mkloopback)
+ 
+ 	vnet_mkjail ${jname}a ${epair0}a ${epair1}a ${lo_src}
++	mpath_enable ${jname}a
+ 	# Setup transit IPv4 networks
+ 	jexec ${jname}a ifconfig ${epair0}a up
+ 	jexec ${jname}a ifconfig ${epair0}a inet 203.0.113.1/30
+@@ -509,6 +519,7 @@
+ 	lo_dst=$(vnet_mkloopback)
+ 
+ 	vnet_mkjail ${jname}a ${epair0}a ${epair1}a ${lo_src}
++	mpath_enable ${jname}a
+ 	# Setup transit IPv4 networks
+ 	jexec ${jname}a ifconfig ${epair0}a up
+ 	jexec ${jname}a ifconfig ${epair0}a inet 203.0.113.1/30
+Index: tests/sys/netinet6/output6.sh
+===================================================================
+--- tests/sys/netinet6/output6.sh
++++ tests/sys/netinet6/output6.sh
+@@ -247,11 +247,20 @@
+ 
+ mpath_check()
+ {
+-	if [ "`sysctl -i -n net.route.multipath`" != 1 ]; then
++	if [ `sysctl -iW net.route.multipath | wc -l` != "1" ]; then
+ 		atf_skip "This test requires ROUTE_MPATH enabled"
+ 	fi
+ }
+ 
++mpath_enable()
++{
++	jexec $1 sysctl net.route.multipath=1
++	if [ $? != 0 ]; then
++		atf_fail "Setting multipath in jail $1 failed".
++	fi
++}
++
++
+ atf_test_case "output6_tcp_flowid_mpath_success" "cleanup"
+ output6_tcp_flowid_mpath_success_head()
+ {
+@@ -282,6 +291,7 @@
+ 	lo_dst=$(vnet_mkloopback)
+ 
+ 	vnet_mkjail ${jname}a ${epair0}a ${epair1}a ${lo_src}
++	mpath_enable ${jname}a
+ 	jls -N
+ 	# enable link-local IPv6
+ 	jexec ${jname}a ndp -i ${epair0}a -- -disabled
+@@ -422,6 +432,7 @@
+ 	lo_dst=$(vnet_mkloopback)
+ 
+ 	vnet_mkjail ${jname}a ${epair0}a ${epair1}a ${lo_src}
++	mpath_enable ${jname}a
+ 	jls -N
+ 	# enable link-local IPv6
+ 	jexec ${jname}a ndp -i ${epair0}a -- -disabled
+@@ -559,6 +570,7 @@
+ 	lo_dst=$(vnet_mkloopback)
+ 
+ 	vnet_mkjail ${jname}a ${epair0}a ${epair1}a ${lo_src}
++	mpath_enable ${jname}a
+ 	jls -N
+ 	# enable link-local IPv6
+ 	jexec ${jname}a ndp -i ${epair0}a -- -disabled
+@@ -603,6 +615,9 @@
+ 	# A -> towards B via epair1a LL
+ 	ll=`jexec ${jname}b ifconfig ${epair1}b inet6 | awk '$2~/^fe80:/{print$2}' | awk -F% '{print$1}'`
+ 	jexec ${jname}a route add -6 -net ${net_dst}::/${plen} ${ll}%${epair1}a
++
++	jexec ${jname}a netstat -6rnW
++	jexec ${jname}a netstat -6OnW
+ 
+ 	# B towards A via epair0b LL
+ 	ll=`jexec ${jname}a ifconfig ${epair1}a inet6 | awk '$2~/^fe80:/{print$2}' | awk -F% '{print$1}'`
