@@ -633,7 +633,7 @@ Index: sbin/ifconfig/ifwg.c
 +	for (i = 0; i < nitems(wireguard_cmds);  i++)
 +		cmd_register(&wireguard_cmds[i]);
 +	af_register(&af_wireguard);
-+	clone_setdefcallback("wg", wg_create);
++	clone_setdefcallback_prefix("wg", wg_create);
 +}
 +
 +#endif
@@ -38981,7 +38981,7 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 ===================================================================
 --- /dev/null
 +++ sys/dev/if_wg/module/if_wg_session.c
-@@ -0,0 +1,2121 @@
+@@ -0,0 +1,2135 @@
 +/*
 + * Copyright (C) 2015-2020 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
 + * Copyright (C) 2019-2020 Matt Dunwoodie <ncon@noconroy.net>
@@ -39742,13 +39742,20 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 +}
 +
 +static void
++wg_grouptask_enqueue(struct wg_peer *peer, struct grouptask *task)
++{
++	if (peer->p_sc->sc_ifp->if_link_state == LINK_STATE_UP)
++		GROUPTASK_ENQUEUE(task);
++}
++
++static void
 +wg_timers_run_send_initiation(struct wg_timers *t, int is_retry)
 +{
 +	struct wg_peer	 *peer = CONTAINER_OF(t, struct wg_peer, p_timers);
 +	if (!is_retry)
 +		t->t_handshake_retries = 0;
 +	if (wg_timers_expired_handshake_last_sent(t) == ETIMEDOUT)
-+		GROUPTASK_ENQUEUE(&peer->p_send_initiation);
++		wg_grouptask_enqueue(peer, &peer->p_send_initiation);
 +}
 +
 +static void
@@ -39782,7 +39789,7 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 +{
 +	struct wg_peer	*peer = CONTAINER_OF(t, struct wg_peer, p_timers);
 +
-+	GROUPTASK_ENQUEUE(&peer->p_send_keepalive);
++	wg_grouptask_enqueue(peer, &peer->p_send_keepalive);
 +	if (t->t_need_another_keepalive) {
 +		t->t_need_another_keepalive = 0;
 +		callout_reset(&t->t_send_keepalive,
@@ -39821,7 +39828,7 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 +	struct wg_peer	 *peer = CONTAINER_OF(t, struct wg_peer, p_timers);
 +
 +	if (t->t_persistent_keepalive_interval != 0)
-+		GROUPTASK_ENQUEUE(&peer->p_send_keepalive);
++		wg_grouptask_enqueue(peer, &peer->p_send_keepalive);
 +}
 +
 +static void
@@ -40762,6 +40769,11 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 +	struct wg_tag *t;
 +	int res;
 +
++	if (sc->sc_ifp->if_link_state == LINK_STATE_DOWN) {
++		m_freem(m);
++		return;
++	}
++
 +	NET_EPOCH_ASSERT();
 +	t = wg_tag_get(m);
 +	peer = t->t_peer;
@@ -40823,6 +40835,11 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 +	size_t plaintext_len;
 +	uint8_t version;
 +	int res;
++
++	if (sc->sc_ifp->if_link_state == LINK_STATE_DOWN) {
++		m_freem(m);
++		return;
++	}
 +
 +	NET_EPOCH_ASSERT();
 +	data = mtod(m, struct wg_pkt_data *);
@@ -41092,22 +41109,19 @@ Index: sys/dev/if_wg/module/if_wg_session.c
 +wg_peer_remove_all(struct wg_softc *sc)
 +{
 +	struct wg_peer *peer, *tpeer;
-+	struct epoch_tracker et;
 +
-+	NET_EPOCH_ENTER(et);
 +	CK_LIST_FOREACH_SAFE(peer, &sc->sc_hashtable.h_peers_list,
 +	    p_entry, tpeer) {
 +		wg_hashtable_peer_remove(&peer->p_sc->sc_hashtable, peer);
 +		/* FIXME -- needs to be deferred */
 +		wg_peer_destroy(peer);
 +	}
-+	NET_EPOCH_EXIT(et);
 +}
 Index: sys/dev/if_wg/module/module.c
 ===================================================================
 --- /dev/null
 +++ sys/dev/if_wg/module/module.c
-@@ -0,0 +1,875 @@
+@@ -0,0 +1,876 @@
 +/*
 + * Copyright (c) 2019-2020 Netgate, Inc.
 + *
@@ -41350,7 +41364,6 @@ Index: sys/dev/if_wg/module/module.c
 +
 +	rc = 0;
 +	sc = iflib_get_softc(ifp->if_softc);
-+
 +	if ((t = wg_tag_get(m)) == NULL) {
 +		rc = ENOBUFS;
 +		goto early_out;
@@ -41440,7 +41453,9 @@ Index: sys/dev/if_wg/module/module.c
 +	struct wg_softc *sc;
 +
 +	sc = iflib_get_softc(ctx);
-+	//sc->wg_accept_port = 0;
++	if_link_state_change(sc->sc_ifp, LINK_STATE_DOWN);
++	taskqgroup_drain_all(qgroup_if_io_tqg);
++	pause("link_down", hz/4);
 +	wg_socket_reinit(sc, NULL, NULL);
 +	wg_peer_remove_all(sc);
 +	mtx_destroy(&sc->sc_mtx);
@@ -41876,7 +41891,7 @@ Index: sys/dev/if_wg/module/module.c
 +			return (wgc_get(sc, ifd));
 +			break;
 +		case WGC_SET:
-+			if (priv_check(curthread, PRIV_DRIVER))
++			if (priv_check(curthread, PRIV_NET_HWIOCTL))
 +				return (EPERM);
 +			return (wgc_set(sc, ifd));
 +			break;
@@ -46370,11 +46385,32 @@ Index: sys/dev/if_wg/module/wg_noise.c
 +	timespecadd(birthdate, &expire, &expire);
 +	return timespeccmp(&uptime, &expire, >) ? ETIMEDOUT : 0;
 +}
+Index: sys/kern/subr_gtaskqueue.c
+===================================================================
+--- sys/kern/subr_gtaskqueue.c
++++ sys/kern/subr_gtaskqueue.c
+@@ -817,3 +817,16 @@
+ taskqgroup_destroy(struct taskqgroup *qgroup)
+ {
+ }
++
++void
++taskqgroup_drain_all(struct taskqgroup *tqg)
++{
++	struct gtaskqueue *q;
++
++	for (int i = 0; i < mp_ncpus; i++) {
++		q = tqg->tqg_queue[i].tgc_taskq;
++		if (q == NULL)
++			continue;
++		gtaskqueue_drain_all(q);
++	}
++}
 Index: sys/modules/Makefile
 ===================================================================
 --- sys/modules/Makefile
 +++ sys/modules/Makefile
-@@ -160,6 +160,7 @@
+@@ -161,6 +161,7 @@
  	if_tuntap \
  	if_vlan \
  	if_vxlan \
@@ -46441,3 +46477,15 @@ Index: sys/net/iflib_clone.c
  	ip->ip_lladdr_tag = EVENTHANDLER_REGISTER(iflladdr_event,
  											 iflib_iflladdr, NULL, EVENTHANDLER_PRI_ANY);
  	if (ip->ip_lladdr_tag == NULL)
+Index: sys/sys/gtaskqueue.h
+===================================================================
+--- sys/sys/gtaskqueue.h
++++ sys/sys/gtaskqueue.h
+@@ -80,6 +80,7 @@
+ struct taskqgroup *taskqgroup_create(const char *name, int cnt, int stride);
+ void	taskqgroup_destroy(struct taskqgroup *qgroup);
+ void	taskqgroup_bind(struct taskqgroup *qgroup);
++void	taskqgroup_drain_all(struct taskqgroup *qgroup);
+ 
+ #define	GTASK_INIT(gtask, flags, priority, func, context) do {	\
+ 	(gtask)->ta_flags = flags;				\

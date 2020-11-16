@@ -516,6 +516,9 @@ add_port "sysutils/intel-pcm"
 # One tool to resume them al
 add_port "net-mgmt/nstat"
 
+# Continuously displays information regarding the packet traffic
+add_port "net/trafshow"
+
 # NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode
 add_port "net/ntraceroute"
 
@@ -523,7 +526,7 @@ add_port "net/ntraceroute"
 add_port "net/mtr-nox11"
 
 # BGPQ3: Lightweight prefix-list generator for Cisco and Juniper routers
-add_port "net-mgmt/bgpq3"
+add_port "net-mgmt/bgpq4"
 
 # ixl_unlock: Allow to remove SFP restriction to ixl(4)
 add_port "net/ixl_unlock"

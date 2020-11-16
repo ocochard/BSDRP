@@ -772,6 +772,7 @@ sysrc -f /etc/jails/jail1/rc.conf hostname=jail1 \
   ipsec_enable=YES \
   ipsec_file="/etc/ipsec.conf" \
   frr_vtysh_boot="YES" \
+  frr_daemons="zebra bgpd bfdd" \
   frr_enable=yes
 
 cat <<EOF > /etc/jails/jail1/ipsec.conf
@@ -828,6 +829,7 @@ sysrc -f /etc/jails/jail2/rc.conf hostname=jail2 \
   ipsec_enable=YES \
   ipsec_file="/etc/ipsec.conf" \
   frr_vtysh_boot="YES" \
+  frr_daemons="zebra bgpd bfdd ripd ripngd" \
   frr_enable=yes
 
 cat <<EOF > /etc/jails/jail2/ipsec.conf
@@ -904,6 +906,7 @@ EOF
 
 sysrc -f /etc/jails/jail3/rc.conf hostname=jail3 \
   frr_vtysh_boot="YES" \
+  frr_daemons="zebra ospfd ospf6d ripd ripngd bfdd" \
   frr_enable=yes
 
 cat > /etc/jails/jail3/local/frr/frr.conf <<EOF
@@ -963,6 +966,7 @@ EOF
 
 sysrc -f /etc/jails/jail4/rc.conf hostname=jail4 \
   frr_vtysh_boot="YES" \
+  frr_daemons="zebra ospfd ospf6d isisd bfdd" \
   frr_enable=yes
 
 cat > /etc/jails/jail4/local/frr/frr.conf <<EOF
@@ -1014,6 +1018,7 @@ EOF
 
 sysrc -f /etc/jails/jail5/rc.conf hostname=jail5 \
   frr_vtysh_boot="YES" \
+  frr_daemons="zebra babeld isisd" \
   frr_enable=yes
 
 cat > /etc/jails/jail5/local/frr/frr.conf <<EOF
@@ -1050,6 +1055,7 @@ EOF
 
 sysrc -f /etc/jails/jail6/rc.conf hostname=jail6 \
   frr_vtysh_boot="YES" \
+  frr_daemons="zebra babeld staticd" \
   frr_enable=yes
 
 cat > /etc/jails/jail6/local/frr/frr.conf <<EOF
@@ -1078,6 +1084,7 @@ EOF
 sysrc -f /etc/jails/jail7/rc.conf hostname=jail7 \
   loned_interfaces=lo1 \
   frr_vtysh_boot="YES" \
+  frr_daemons="zebra staticd" \
   frr_enable=yes
 
 cat > /etc/jails/jail7/local/frr/frr.conf <<EOF
@@ -1109,6 +1116,8 @@ sysrc hostname=router1 \
 	cloned_interfaces=lo1 \
 	ipsec_enable=YES \
 	ipsec_file="/etc/ipsec.conf" \
+	frr_vtysh_boot="YES" \
+	frr_daemons="zebra bgpd bfdd" \
 	frr_enable=yes
 cat <<EOF > /etc/ipsec.conf
 flush ;
@@ -1171,6 +1180,8 @@ frr_vm2 () {
 sysrc hostname=router2 \
 	ipsec_enable=YES \
 	ipsec_file="/etc/ipsec.conf" \
+	frr_vtysh_boot="YES" \
+	frr_daemons="zebra bgpd bfdd ripd ripngd" \
 	frr_enable=YES
 cat <<EOF > /etc/ipsec.conf
 flush ;
@@ -1252,6 +1263,8 @@ echo "VM2 configured"
 
 frr_vm3 () {
 sysrc hostname=router3 \
+	frr_vtysh_boot="YES" \
+	frr_daemons="zebra ospfd ospf6d ripd ripngd bfdd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
@@ -1315,6 +1328,8 @@ echo "VM3 configured"
 
 frr_vm4 () {
 sysrc hostname=router4 \
+	frr_vtysh_boot="YES" \
+	frr_daemons="zebra ospfd ospf6d isisd bfdd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
@@ -1371,6 +1386,8 @@ echo "VM4 configured"
 
 frr_vm5 () {
 sysrc hostname=router5 \
+	frr_vtysh_boot="YES" \
+	frr_daemons="zebra babeld isisd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
@@ -1412,6 +1429,8 @@ echo "VM5 configured"
 
 frr_vm6 () {
 sysrc hostname=router6 \
+	frr_vtysh_boot="YES" \
+	frr_daemons="zebra babeld staticd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
@@ -1445,6 +1464,8 @@ echo "VM6 configured"
 frr_vm7 () {
 sysrc hostname=router7 \
 	cloned_interfaces=lo1 \
+	frr_vtysh_boot="YES" \
+	frr_daemons="zebra staticd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
