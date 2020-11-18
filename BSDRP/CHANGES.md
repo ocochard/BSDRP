@@ -14,7 +14,9 @@
 * bird2: Fix multi-FIB usage by reverting bird commit 318acb0f6cb77a32aad5d7f79e06f3c5065ac702
 
 ## New packages
-* tinc 1.0.36
+* nc
+* trafshow
+* tinc
 
 ## Upgraded packages
 * bgpq4

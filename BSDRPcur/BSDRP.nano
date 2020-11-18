@@ -519,6 +519,9 @@ add_port "net-mgmt/nstat"
 # Continuously displays information regarding the packet traffic
 add_port "net/trafshow"
 
+# Network aware cat
+add_port "net/nc"
+
 # NANOG traceroute : MPLS label decode, Path MTU discovery, AS lookup, spray mode
 add_port "net/ntraceroute"
 
