@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: head/sys/amd64/conf/GENERIC 366628 2020-10-11 16:01:16Z manu $
+# $FreeBSD: head/sys/amd64/conf/GENERIC 368113 2020-11-27 21:37:48Z br $
 
 cpu		HAMMER
 ident		BSDRP-AMD64
@@ -102,7 +102,6 @@ options 	KDB_TRACE		# Print a stack trace for a panic.
 #options 	WITNESS_SKIPSPIN	# Don't run witness on spinlocks for speed
 #options 	MALLOC_DEBUG_MAXZONES=8	# Separate malloc(9) zones
 options 	VERBOSE_SYSINIT=0	# Support debug.verbose_sysinit, off by default
-options 	IOMMU
 
 # Kernel Sanitizers
 #options 	COVERAGE		# Generic kernel coverage. Used by KCOV
@@ -128,6 +127,7 @@ device		cpufreq
 
 # Bus support.
 device		acpi
+options 	IOMMU
 device		pci
 options 	PCI_HP			# PCI-Express native HotPlug
 options		PCI_IOV			# PCI SR-IOV support
@@ -354,6 +354,7 @@ device		umass			# Disks/Mass storage - Requires scbus and da
 device		mmc			# MMC/SD bus
 device		mmcsd			# MMC/SD memory card
 device		sdhci			# Generic PCI SD Host Controller
+device		rtsx			# Realtek SD card reader
 
 # VirtIO support
 device		virtio			# Generic VirtIO bus (required)

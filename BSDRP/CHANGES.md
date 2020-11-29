@@ -4,9 +4,9 @@
 * Migrated from nanobsd to poudriere-image
 
 ## New features
-* Switched from FreeBSD-stable to FreeBSD-head (r367714)
+* Switched from FreeBSD-stable to FreeBSD-head (r368164)
+* Ports tree updated to r556597
 * Experimentals:
-  * wireguard kernel module (https://reviews.freebsd.org/D26137)
   * Enable multipath for outbound connections (https://reviews.freebsd.org/D26523)
 
 ## Bug fixes
