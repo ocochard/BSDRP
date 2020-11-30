@@ -4,10 +4,12 @@
 * Migrated from nanobsd to poudriere-image
 
 ## New features
-* Switched from FreeBSD-stable to FreeBSD-head (r368164)
+* Switched from FreeBSD-stable to FreeBSD-head r368164 that brings a lot of cool stufs:
+  * Performance improvement
+  * Multipath-routing re-introduced
+  * Wireguard kernel module
+  * etc.
 * Ports tree updated to r556597
-* Experimentals:
-  * Enable multipath for outbound connections (https://reviews.freebsd.org/D26523)
 
 ## Bug fixes
 * FRR7: Fix https://github.com/FRRouting/frr/issues/6378

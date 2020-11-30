@@ -16,26 +16,25 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: stable/12/sys/i386/conf/GENERIC 354060 2019-10-25 01:10:08Z kevans $
+# $FreeBSD: head/sys/i386/conf/GENERIC 366546 2020-10-08 20:56:06Z imp $
 
 cpu		I486_CPU
 cpu		I586_CPU
 cpu		I686_CPU
 ident	BSDRP-I386
 
-makeoptions DEBUG=-g        # Build kernel with gdb(1) debug symbols
-makeoptions WITH_CTF=1      # Run ctfconvert(1) for DTrace support
+makeoptions	DEBUG=-g		# Build kernel with gdb(1) debug symbols
+makeoptions	WITH_CTF=1		# Run ctfconvert(1) for DTrace support
 
 options 	SCHED_ULE		# ULE scheduler
 options 	PREEMPTION		# Enable kernel thread preemption
 options 	VIMAGE			# Subsystem virtualization, e.g. VNET
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
-options 	IPSEC			# IP (v4/v6) security
 options 	IPSEC_SUPPORT		# Allow kldload of ipsec and tcpmd5
 options 	TCP_HHOOK		# hhook(9) framework for TCP
 options 	TCP_OFFLOAD		# TCP offload
-options 	SCTP			# Stream Control Transmission Protocol
+options 	SCTP_SUPPORT		# Allow kldload of SCTP
 options 	FFS			# Berkeley Fast Filesystem
 #options 	SOFTUPDATES		# Enable FFS soft updates support
 #options 	UFS_ACL			# Support for access control lists
@@ -51,15 +50,17 @@ options 	MSDOSFS			# MSDOS Filesystem
 #options 	CD9660			# ISO 9660 Filesystem
 options 	PROCFS			# Process filesystem (requires PSEUDOFS)
 options 	PSEUDOFS		# Pseudo-filesystem framework
+options 	TMPFS			# Efficient memory filesystem
 options 	GEOM_RAID		# Soft RAID functionality.
 options 	GEOM_LABEL		# Provides labelization
 #options 	COMPAT_FREEBSD4		# Compatible with FreeBSD4
 #options 	COMPAT_FREEBSD5		# Compatible with FreeBSD5
 #options 	COMPAT_FREEBSD6		# Compatible with FreeBSD6
 #options 	COMPAT_FREEBSD7		# Compatible with FreeBSD7
-#options		COMPAT_FREEBSD9		# Compatible with FreeBSD9
-#options		COMPAT_FREEBSD10	# Compatible with FreeBSD10
+#options	COMPAT_FREEBSD9		# Compatible with FreeBSD9
+#options	COMPAT_FREEBSD10	# Compatible with FreeBSD10
 options		COMPAT_FREEBSD11	# Compatible with FreeBSD11
+options 	COMPAT_FREEBSD12	# Compatible with FreeBSD12
 options 	SCSI_DELAY=5000		# Delay (in ms) before probing SCSI
 options 	KTRACE			# ktrace(1) support
 options 	STACK			# stack(9) support
@@ -76,7 +77,7 @@ options 	CAPABILITIES		# Capsicum capabilities
 #options 	MAC         # TrustedBSD MAC Framework
 options		KDTRACE_HOOKS       # Kernel DTrace hooks
 options		DDB_CTF         # Kernel ELF linker loads CTF data
-options 	INCLUDE_CONFIG_FILE     # Include this file in kernel
+options     	INCLUDE_CONFIG_FILE     # Include this file in kernel
 #options	RACCT			# Resource accounting framework
 #options	RACCT_DEFAULT_TO_DISABLED	# Set kern.racct.enable=0 by default
 #options	RCTL			# Resource limits
@@ -89,7 +90,9 @@ options		KDB_TRACE	# Print a stack trace for a panic.
 options 	EKCD			# Support for encrypted kernel dumps
 options 	GZIO			# gzip-compressed kernel and user dumps
 options 	ZSTDIO			# zstd-compressed kernel and user dumps
+options 	DEBUGNET		# debugnet networking
 options 	NETDUMP			# netdump(4) client support
+options 	NETGDB			# netgdb(4) client support
 
 # To make an SMP kernel, the next two lines are needed
 options 	SMP			# Symmetric MultiProcessor Kernel
@@ -123,10 +126,9 @@ device		isp			# Qlogic family
 device		mpt			# LSI-Logic MPT-Fusion
 device		mps			# LSI-Logic MPT-Fusion 2
 device		mpr			# LSI-Logic MPT-Fusion 3
-#device		ncr			# NCR/Symbios Logic
-device		sym			# NCR/Symbios Logic (newer chipsets + those of `ncr')
-device		trm			# Tekram DC395U/UW/F DC315U adapters
+device		sym			# NCR/Symbios Logic
 device		isci			# Intel C600 SAS controller
+device		pvscsi			# VMware PVSCSI
 
 # ATA/SCSI peripherals
 device		scbus			# SCSI bus (required for ATA/SCSI)
@@ -142,11 +144,6 @@ device		ses			# Enclosure Services (SES and SAF-TE)
 device		amr			# AMI MegaRAID
 device		arcmsr			# Areca SATA II RAID
 device		ciss			# Compaq Smart RAID 5*
-device		dpt			# DPT Smartcache III, IV - See NOTES for options
-device		hptmv			# Highpoint RocketRAID 182x
-device		hptnr			# Highpoint DC7280, R750
-device		hptrr			# Highpoint RocketRAID 17xx, 22xx, 23xx, 25xx
-device		hpt27xx			# Highpoint RocketRAID 27xx
 device		iir			# Intel Integrated RAID
 device		ips			# IBM (Adaptec) ServeRAID
 device		mly			# Mylex AcceleRAID/eXtremeRAID
@@ -191,9 +188,6 @@ device		vt_vga
 
 #device		agp			# support several AGP chipsets
 
-# Power management support (see NOTES for more options)
-#device		apm
-
 # PCCARD (PCMCIA) support
 # PCMCIA and cardbus bridge support
 #device		cbb			# cardbus (yenta) bridge
@@ -219,11 +213,8 @@ device		vmx			# VMware VMXNET3 Ethernet
 
 # PCI Ethernet NICs.
 device		bxe			# Broadcom NetXtreme II BCM5771X/BCM578XX 10GbE
-device		de			# DEC/Intel DC21x4x (``Tulip'')
 device		le			# AMD Am7900 LANCE and Am79C9xx PCnet
 device		ti			# Alteon Networks Tigon I/II gigabit Ethernet
-device		txp			# 3Com 3cR990 (``Typhoon'')
-device		vx			# 3Com 3c590, 3c595 (``Vortex'')
 
 # PCI Ethernet NICs that use the common MII bus controller code.
 # NOTE: Be sure to keep the 'device miibus' line in order to use these NICs!
@@ -246,37 +237,21 @@ device		lge			# Level 1 LXT1001 gigabit Ethernet
 device		msk			# Marvell/SysKonnect Yukon II Gigabit Ethernet
 device		nfe			# nVidia nForce MCP on-board Ethernet
 device		nge			# NatSemi DP83820 gigabit Ethernet
-device		pcn			# AMD Am79C97x PCI 10/100 (precedence over 'le')
 device		re			# RealTek 8139C+/8169/8169S/8110S
 device		rl			# RealTek 8129/8139
-device		sf			# Adaptec AIC-6915 (``Starfire'')
 device		sge			# Silicon Integrated Systems SiS190/191
 device		sis			# Silicon Integrated Systems SiS 900/SiS 7016
 device		sk			# SysKonnect SK-984x & SK-982x gigabit Ethernet
 device		ste			# Sundance ST201 (D-Link DFE-550TX)
 device		stge			# Sundance/Tamarack TC9021 gigabit Ethernet
-device		tl			# Texas Instruments ThunderLAN
-device		tx			# SMC EtherPower II (83c170 ``EPIC'')
 device		vge			# VIA VT612x gigabit Ethernet
 device		vr			# VIA Rhine, Rhine II
 device		vte			# DM&P Vortex86 RDC R6040 Fast Ethernet
-device		wb			# Winbond W89C840F
 device		xl			# 3Com 3c90x (``Boomerang'', ``Cyclone'')
-
-# ISA Ethernet NICs.  pccard NICs included.
-device		cs			# Crystal Semiconductor CS89x0 NIC
-# 'device ed' requires 'device miibus'
-device		ed			# NE[12]000, SMC Ultra, 3c503, DS8390 cards
-device		ex			# Intel EtherExpress Pro/10 and Pro/10+
-device		ep			# Etherlink III based cards
-device		fe			# Fujitsu MB8696x based cards
-device		sn			# SMC's 9000 series of Ethernet chips
-device		xe			# Xircom pccard Ethernet
 
 # Wireless NIC cards
 #device		wlan			# 802.11 support
 #options 	IEEE80211_DEBUG		# enable debug msgs
-#options 	IEEE80211_AMPDU_AGE	# age frames in AMPDU reorder q's
 #options 	IEEE80211_SUPPORT_MESH	# enable 802.11s draft support
 #device		wlan_wep		# 802.11 WEP support
 #device		wlan_ccmp		# 802.11 CCMP support
@@ -286,7 +261,6 @@ device		xe			# Xircom pccard Ethernet
 #device		ath			# Atheros NICs
 #device		ath_pci			# Atheros pci/cardbus glue
 #device		ath_hal			# pci/cardbus chip support
-#options 	AH_SUPPORT_AR5416	# enable AR5416 tx/rx descriptors
 #options 	AH_AR5416_INTERRUPT_MITIGATION # AR5416 interrupt mitigation
 #options 	ATH_ENABLE_11N		# Enable 802.11n support for AR5416 and later
 #device		ath_rate_sample		# SampleRate tx rate control for ath
@@ -304,7 +278,6 @@ device		xe			# Xircom pccard Ethernet
 # Pseudo devices.
 device		crypto			# core crypto support
 device		loop			# Network loopback
-device		random			# Entropy device
 device		padlock_rng		# VIA Padlock RNG
 device		rdrand_rng		# Intel Bull Mountain RNG
 device		ether			# Ethernet support
@@ -352,8 +325,8 @@ device		virtio_blk		# VirtIO Block device
 device		virtio_scsi		# VirtIO SCSI device
 device		virtio_balloon		# VirtIO Memory Balloon device
 
-# HyperV drivers and enhancement support
-device		hyperv			# HyperV drivers
+# HyperV drivers and enchancement support
+device		hyperv			# HyperV drivers 
 
 # Xen HVM Guest Optimizations
 # NOTE: XENHVM depends on xenpci.  They must be added or removed together.
@@ -402,10 +375,10 @@ device enc
 #options           PCBGROUP                # Protocol control-block groups
 #options           RSS                             # Receive-side scaling support
 
-# RADIX_MPATH provides support for equal-cost multi-path routing.
+# ROUTE_MPATH provides support for equal-cost multi-path routing.
 # It allows to install multiple routes toward the same destination
 # but didn't do flow load-balancing using ecmp :-(
-#options		RADIX_MPATH
+options	ROUTE_MPATH
 
 # Don't enter the debugger for a panic
 options		KDB_UNATTENDED

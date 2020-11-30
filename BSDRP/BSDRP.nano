@@ -34,12 +34,7 @@ BOOT_BOOT0_COMCONSOLE_SPEED=0
 # Do not use: WITHOUT_TOOLCHAIN=, because installing port need it
 # Do not use: WITHOUT_INSTALLLIB=, because perl can't compile
 # We would compile symbol files, but not install them by default
-# LOCAL_ITOOLS with env and mktemp used to fix installation without build (-b)
-# when cross-compiling an i386 image from amd64
-#  env: not found
-#  src/include/mk-osreldate.sh: mktemp: not found
 CONF_INSTALL='
-LOCAL_ITOOLS="env mktemp"
 '
 
 # Options to put in make.conf during both build- & installworld.
@@ -129,6 +124,7 @@ WITH_DEBUG_FILES=
 WITH_REPRODUCIBLE_BUILD=
 WITH_DIRDEPS_BUILD=
 WITH_RETPOLINE=
+WITH_MALLOC_PRODUCTION=
 '
 
 # Customize commands.
@@ -581,14 +577,12 @@ gmake
 go
 go14
 help2man
-icu
 jsoncpp
 libarchive
 libnghttp2
 libsigsegv
 libtool
 libuv
-libxml2
 m4
 mpfr
 mpc
@@ -684,10 +678,6 @@ bsdrp_custom () {
 
 	# Add /etc/rc.conf.misc into the /etc/default/rc.conf
 	sed -i "" -e "s/rc.conf.local/rc.conf.local \/etc\/rc.conf.misc/g" ${NANO_WORLDDIR}/etc/defaults/rc.conf
-
-	# Dirty fix bsnmpget tc.def error
-	# https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=236664
-	[ -d ${NANO_WORLDDIR}/usr/share/snmp/defs/ ] && cp ${NANO_SRC}/contrib/bsnmp/lib/tc.def ${NANO_WORLDDIR}/usr/share/snmp/defs/
 
 	# configure bsnmp
 	cat <<EOF >>${NANO_WORLDDIR}/etc/snmpd.config
@@ -812,11 +802,6 @@ usr/lib/libl.a
 usr/lib/libln.a
 usr/sbin/btxld
 usr/sbin/config
-usr/share/misc/gprof.flat
-usr/share/misc/gprof.callg
-usr/share/misc/vgrindefs
-usr/share/misc/vgrindefs.db
-usr/share/tmac/tmac.vgrind
 '
 	for c in $FILES_TO_REMOVE; do
 		if [ -f ${NANO_WORLDDIR}/$c ]; then
@@ -858,23 +843,6 @@ usr/share/tmac/tmac.vgrind
 		# relocate /usr/lib/debug to /data/debug (debug archive files needs more than 1Gb for being extracted)
 		ln -s /data/debug ${NANO_WORLDDIR}/usr/lib/debug
 	fi
-
-	# Generate a geom compressed image disk (Disabled)
-	#if [ -f ${NANO_OBJ}/debug.tar.xz ]; then
-	#	dd if=/dev/zero of=/tmp/debug.img seek=4050000 count=0
-	#	MDYOYO=$(mdconfig -a -t vnode -f /tmp/debug.img)
-	#	newfs -o space -m 1 /dev/${MDYOYO}
-	#	[ -d /tmp/mdyoyo ] || mkdir /tmp/mdyoyo
-	#	mount /dev/${MDYOYO} /tmp/mdyoyo
-	#	tar -C /tmp/mdyoyo -xvf ${NANO_OBJ}/debug.tar.xz
-	#	mkdir /tmp/mdyoyo/src
-	#	tar -C ${NANO_SRC} --exclude=.svn -cf - . | tar -xf - -C /tmp/mdyoyo/src
-	#	umount /tmp/mdyoyo
-	#	mdconfig -d -u ${MDYOYO}
-	#	#mkuzip -L -d /tmp/debug.img
-	#	mkuzip /tmp/debug.img
-	#	rm /tmp/debug.img
-	#fi
 	# strip binaries for ports (tips from FreeNAS 8)
 	pprint 4 "Stripping binaries and libraries"
 	for dir in $(find ${NANO_WORLDDIR}/ -name '*bin' -or -name 'lib' -maxdepth 3); do
@@ -890,12 +858,16 @@ usr/share/tmac/tmac.vgrind
 
 # Enable only serial system only
 bsdrp_console_serial () {
-	# Force first 2 serial console into "on" (IPMI SoL often use 2nd port)
+	# Force first 2 serial console into "onifexists" in case (IPMI SoL often use 2nd port)
 	# Forcing 2 and 3 generates too lot's of getty open /dev/ttyu No such file or directory
 	sed -i "" -e '/^ttyu[0-1]/s/onifconsole/on/' ${NANO_WORLDDIR}/etc/ttys
-	# local video devices are in onifexists mode
+	# Enable local video devices only if they exists
+	#  this prevent to overload console with theses message:
+	#  getty[7]: open /dev/ttyv1: No such file or directory
+	#  init: getty repeating too quickly on port /dev/ttyv1, sleeping 30 secs
+	sed -i "" -e '/^ttyv[0-4]/s/on /onifexists /' ${NANO_WORLDDIR}/etc/ttys
 	# Disable some syscons devices: No need for 8 on a router
-	sed -i "" -e '/^ttyv[4-8]/s/onifexists /off /' ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e '/^ttyv[4-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use serial console early.
 	echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
 
