@@ -16,7 +16,7 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: head/sys/amd64/conf/GENERIC 368113 2020-11-27 21:37:48Z br $
+# $FreeBSD: head/sys/amd64/conf/GENERIC 368559 2020-12-11 21:40:38Z brooks $
 
 cpu		HAMMER
 ident		BSDRP-AMD64
@@ -218,6 +218,7 @@ device		kbdmux			# keyboard multiplexer
 device		vt
 device		vt_vga
 device		vt_efifb
+device		vt_vbefb
 
 #device		agp		# support several AGP chipsets
 
@@ -270,7 +271,6 @@ device		dc			# DEC/Intel 21143 and various workalikes
 device		et			# Agere ET1310 10/100/Gigabit Ethernet
 device		fxp			# Intel EtherExpress PRO/100B (82557, 82558)
 device		gem			# Sun GEM/Sun ERI/Apple GMAC
-device		hme			# Sun HME (Happy Meal Ethernet)
 device		jme			# JMicron JMC250 Gigabit/JMC260 Fast Ethernet
 device		lge			# Level 1 LXT1001 gigabit Ethernet
 device		msk			# Marvell/SysKonnect Yukon II Gigabit Ethernet
@@ -363,6 +363,8 @@ device		vtnet			# VirtIO Ethernet device
 device		virtio_blk		# VirtIO Block device
 device		virtio_scsi		# VirtIO SCSI device
 device		virtio_balloon		# VirtIO Memory Balloon device
+device		virtio_console	# VirtIO Console driver
+device		virtio_random	# VirtIO Entropy driver
 
 # HyperV drivers and enhancement support
 device		hyperv			# HyperV drivers 

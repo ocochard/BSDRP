@@ -22,7 +22,6 @@ hw.usb.no_shutdown_wait="1"
 hw.mfi.mrsas_enable="1"
 
 ### Tune some global values ###
-net.fibs="16"		# Numbers of FIB
 hw.usb.no_pf="1"	# Disable USB packet filtering
 
 # Loading AES-NI module sooner to be sure it is loaded before IPsec keys

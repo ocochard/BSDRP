@@ -14,6 +14,7 @@ usage () {
 	echo "Lab list:"
 	echo "-full: https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab"
 	echo "-frr: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab "
+	echo "-bird_jails: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab_with_bird "
 	echo "-vpn: https://bsdrp.net/documentation/examples/gre_ipsec_and_openvpn"
 	echo "-bgp: https://bsdrp.net/documentation/examples/bgp_route_reflector_and_confederation_using_quagga_and_bird"
 	echo "-jailpf: https://bsdrp.net/documentation/examples/multi-tenant_ha_pf_firewalls"
@@ -746,6 +747,384 @@ service jail start
 echo "VM5 (including jail5 and jail6) configured"
 }
 
+### Bird lab
+
+bird_jails() {
+sysrc hostname=host \
+  cloned_interfaces="epair0 epair1 epair2 epair3" \
+  kld_list="ipsec"
+cat > /etc/devfs.rules <<'EOF'
+[devfsrules_jailbpf=4]
+add include \$devfsrules_hide_all
+add include \$devfsrules_unhide_basic
+add include \$devfsrules_unhide_login
+add path 'bpf*' unhide
+'EOF'
+service devfs restart
+service netif restart
+service hostname restart
+service kld start
+tenant -c -j jail1 -i epair0a
+tenant -c -j jail2 -i epair0b,epair1a
+tenant -c -j jail3 -i epair1b,epair2a
+tenant -c -j jail4 -i epair2b,epair3a
+tenant -c -j jail5 -i epair3b
+
+for i in $(jot 5); do
+	mkdir -p /etc/jails/jail$i/local
+done
+
+cat > /etc/jails/jail1/rc.conf <<EOF
+hostname="jail1"
+gateway_enable=YES
+ipv6_gateway_enable=YES
+cloned_interfaces=lo1
+ifconfig_lo1="inet 192.168.10.1/24"
+ifconfig_lo1_ipv6="inet6 2001:db8:10::1/64"
+ifconfig_epair0a="inet 192.168.12.1/24"
+ifconfig_epair0a_ipv6="inet6 2001:db8:12::1/64"
+bird_enable=yes
+EOF
+
+cat > /etc/jails/jail2/rc.conf <<EOF
+hostname="jail2"
+gateway_enable=YES
+ipv6_gateway_enable=YES
+ifconfig_epair0b="inet 192.168.12.2/24"
+ifconfig_epair0b_ipv6="inet6 2001:db8:12::2/64"
+ifconfig_epair1a="inet 192.168.23.2/24"
+ifconfig_epair1a_ipv6="inet6 2001:db8:23::2/64"
+bird_enable=yes
+EOF
+
+cat > /etc/jails/jail3/rc.conf <<EOF
+hostname="jail3"
+gateway_enable=YES
+ipv6_gateway_enable=YES
+ifconfig_epair1b="inet 192.168.23.3/24"
+ifconfig_epair1b_ipv6="inet6 2001:db8:23::3/64"
+ifconfig_epair2a="inet 192.168.34.3/24"
+ifconfig_epair2a_ipv6="inet6 2001:db8:34::3/64"
+bird_enable=yes
+EOF
+
+cat > /etc/jails/jail4/rc.conf <<EOF
+hostname="jail4"
+gateway_enable=YES
+ipv6_gateway_enable=YES
+ifconfig_epair2b="inet 192.168.34.4/24"
+ifconfig_epair2b_ipv6="inet6 2001:db8:34::4/64"
+ifconfig_epair3a="inet 192.168.45.4/24"
+ifconfig_epair3a_ipv6="inet6 2001:db8:45::4/64"
+bird_enable=yes
+EOF
+
+cat > /etc/jails/jail5/rc.conf <<EOF
+hostname="jail5"
+gateway_enable=YES
+ipv6_gateway_enable=YES
+cloned_interfaces=lo1
+ifconfig_epair3b="inet 192.168.45.5/24"
+ifconfig_epair3b_ipv6="inet6 2001:db8:45::5/64"
+ifconfig_lo1="inet 192.168.50.5/24"
+ifconfig_lo1_ipv6="inet6 2001:db8:50::5/64"
+bird_enable=yes
+EOF
+
+cat > /etc/jails/jail1/local/bird.conf <<EOF
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+log stderr all;
+
+# Override router ID
+router id 192.168.10.1;
+
+# Sync bird routing table with kernel
+protocol kernel kernel4 {
+	ipv4 {
+		export all;
+    };
+}
+protocol kernel kernel6 {
+    ipv6 {
+        export all;
+    };
+}
+
+protocol device {
+        scan time 10;
+}
+
+# Include directly connected networks
+protocol direct {
+        ipv4;
+        ipv6;
+}
+
+protocol bgp bgp4 {
+        local as 12;
+        # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
+        # Otherwise it will use the wrong 0.0.0.0 IP as source
+        source address 192.168.12.1;
+        neighbor 192.168.12.2 as 12;
+        password "abigpassword";
+        ipv4 {
+            import all;
+            export all;
+        };
+}
+
+protocol bgp bgp6 {
+        local as 12;
+        # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
+        # Otherwise it will use the wrong :: IP as source
+        source address 2001:db8:12::1;
+        neighbor 2001:db8:12::2 as 12;
+        password "abigpassword";
+        ipv6 {
+            import all;
+            export all;
+        };
+}
+
+protocol bfd {}
+EOF
+
+cat > /etc/jails/jail2/local/bird.conf <<EOF
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+log stderr all;
+
+# Override router ID
+router id 192.168.10.2;
+
+# Sync bird routing table with kernel
+protocol kernel kernel4 {
+	ipv4 {
+		export all;
+    };
+}
+protocol kernel kernel6 {
+    ipv6 {
+        export all;
+    };
+}
+
+protocol device {
+        scan time 10;
+}
+
+# Include directly connected networks
+protocol direct {
+        ipv4;
+        ipv6;
+}
+
+protocol bgp bgp4 {
+        local as 12;
+        # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
+        # Otherwise it will use the wrong 0.0.0.0 IP as source
+        source address 192.168.12.2;
+        neighbor 192.168.12.1 as 12;
+        password "abigpassword";
+        ipv4 {
+            import all;
+            export all;
+			next hop self;
+        };
+}
+
+protocol bgp bgp6 {
+        local as 12;
+        # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
+        # Otherwise it will use the wrong :: IP as source
+        source address 2001:db8:12::2;
+        neighbor 2001:db8:12::1 as 12;
+        password "abigpassword";
+        ipv6 {
+            import all;
+            export all;
+			next hop self;
+        };
+}
+
+protocol bfd {}
+
+protocol rip rip4 {
+  ipv4 { import all; export all;};
+  interface "epair1a" {};
+}
+
+protocol rip ng rip6 {
+  ipv6 { import all; export all;};
+  interface "epair1a" {};
+}
+EOF
+
+cat > /etc/jails/jail3/local/bird.conf <<EOF
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+log stderr all;
+
+# Override router ID
+router id 192.168.10.3;
+
+# Sync bird routing table with kernel
+protocol kernel kernel4 {
+	ipv4 {
+		export all;
+    };
+}
+protocol kernel kernel6 {
+    ipv6 {
+        export all;
+    };
+}
+
+protocol device {
+        scan time 10;
+}
+
+# Include directly connected networks
+protocol direct {
+        ipv4;
+        ipv6;
+}
+
+protocol bfd {}
+
+protocol rip rip4 {
+  ipv4 { import all; export all;};
+  interface "epair1b" {};
+}
+
+protocol rip ng rip6 {
+  ipv6 { import all; export all;};
+  interface "epair1b" {};
+}
+
+protocol ospf v2 opsf4 {
+  ipv4 { import all; export all;};
+  area 0 {
+    interface "epair2a" {};
+    };
+}
+
+protocol ospf v3 ospf6 {
+  ipv6 { import all; export all;};
+  area 0 {
+    interface "epair2a" {};
+    };
+}
+EOF
+
+cat > /etc/jails/jail4/local/bird.conf <<EOF
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+log stderr all;
+
+# Override router ID
+router id 192.168.10.4;
+
+# Sync bird routing table with kernel
+protocol kernel kernel4 {
+	ipv4 {
+		export all;
+    };
+}
+protocol kernel kernel6 {
+    ipv6 {
+        export all;
+    };
+}
+
+protocol device {
+        scan time 10;
+}
+
+# Include directly connected networks
+protocol direct {
+        ipv4;
+        ipv6;
+}
+
+protocol bfd {}
+
+protocol ospf v2 ospf4 {
+  ipv4 { import all; export all;};
+  area 0 {
+    interface "epair2b" {};
+    };
+}
+
+protocol ospf v3 ospf6 {
+  ipv6 { import all; export all;};
+  area 0 {
+    interface "epair2b" {};
+    };
+}
+
+protocol static static4 {
+    ipv4;
+    route 192.168.50.0/24 via 192.168.45.5;
+}
+
+protocol static static6 {
+    ipv6;
+    route 2001:db8:50::/64 via 2001:db8:45::5;
+}
+EOF
+
+cat > /etc/jails/jail5/local/bird.conf <<EOF
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+log stderr all;
+
+# Override router ID
+router id 192.168.10.5;
+
+# Sync bird routing table with kernel
+protocol kernel kernel4 {
+	ipv4 {
+		export all;
+    };
+}
+protocol kernel kernel6 {
+    ipv6 {
+        export all;
+    };
+}
+
+protocol device {
+        scan time 10;
+}
+
+# Include directly connected networks
+protocol direct {
+        ipv4;
+        ipv6;
+}
+
+protocol static static4 {
+		ipv4;
+        route 0.0.0.0/0 via 192.168.45.4;
+}
+protocol static static6 {
+		ipv6;
+        route ::/0 via 2001:db8:45::4;
+}
+
+EOF
+
+service jail start
+echo "All jails are configured and started"
+
+}
 ### FRR lab
 
 frr_jails () {
