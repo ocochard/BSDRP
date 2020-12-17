@@ -4,16 +4,17 @@
 * Migrated from nanobsd to poudriere-image
 
 ## New features
-* Switched from FreeBSD-stable to FreeBSD-head r368164 that brings a lot of cool stufs:
+* Switched from FreeBSD-stable to FreeBSD-head r368710 that brings a lot of cool stufs:
   * Performance improvement
   * Multipath-routing re-introduced
   * Wireguard kernel module
   * etc.
-* Ports tree updated to r556597
+* Ports tree updated to r558250
 
 ## Bug fixes
 * FRR7: Fix https://github.com/FRRouting/frr/issues/6378
 * bird2: Fix multi-FIB usage by reverting bird commit 318acb0f6cb77a32aad5d7f79e06f3c5065ac702
+* pkt-gen: Fix traffic generation using source and destination range
 
 ## New packages
 * nc
@@ -21,6 +22,7 @@
 * tinc
 
 ## Upgraded packages
+* arping 2.21
 * bgpq4
 * devcpu-data 1.36
 * exabgp4 4.2.11
