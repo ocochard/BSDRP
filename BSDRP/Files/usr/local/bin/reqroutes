@@ -1,0 +1,7 @@
+#!/bin/sh
+# return true if the number of routes entrie is bigger or egal as the argument
+set -eu
+expected=$1
+routes=$(netstat -rn | wc -l)
+routes=$(echo $routes)
+[ $routes -ge $expected ] && exit 0 || exit 1

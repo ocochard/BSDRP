@@ -1,0 +1,77 @@
+#!/bin/sh
+# Convert Cisco 'show ip bgp' into a bird static routes configuration file
+# https://bgp.potaroo.net/as2.0/bgptable.txt &&
+# https://bgp.potaroo.net/v6/as2.0/bgptable.txt
+set -eu
+if ! [ -f bgp4table.txt ]; then
+	echo "Downloading bgp inet table..."
+	fetch -o bgp4table.txt https://bgp.potaroo.net/as2.0/bgptable.txt
+	sed -i "" -e 's/\r//' bgp4table.txt
+fi
+if ! [ -f bgp6table.txt ]; then
+	echo "Downloading bgp inet6 table..."
+	fetch -o bgp6table.txt https://bgp.potaroo.net/v6/as2.0/bgptable.txt
+	sed -i "" -e 's/\r//' bgp6table.txt
+fi
+
+cat > bird.conf <<EOF
+# High risk of generating a lot of syslog with the default 'all'
+# so reducing to log only info messages
+log syslog {info};
+protocol kernel kernel4 {
+    ipv4 { export all; };
+}
+protocol kernel kernel6 {
+    ipv6 { export all; };
+}
+protocol device { scan time 10; }
+protocol direct {
+        ipv4;
+        ipv6;
+}
+define nexthop4 = 198.18.0.205;
+define nexthop6 = 2001:2::8;
+include "bgp4table.conf";
+include "bgp6table.conf";
+EOF
+for i in 4 6; do
+	cat > bgp${i}table.conf << EOF
+protocol static fullview${i} {
+  ipv${i};
+EOF
+done
+echo "Converting bgp inet table to bird configuration file..."
+#
+#*  1.0.128.0/19     203.119.104.1                          0 4608 24115 38040 23969 i
+#*>                  202.12.28.1                            0 4777 6939 38040 23969 i
+#*                   203.119.104.2                          0 4608 24115 38040 23969 i
+#*> 1.0.128.0/24     203.119.104.1                          0 4608 24115 58453 38040 23969 ?
+#*                   202.12.28.1                            0 4777 4713 2914 58453 38040 23969 ?
+#*  4.0.0.0          203.119.104.1                          0 4608 1221 3356 i
+#*>                  202.12.28.1                            0 4777 2516 3356 i
+#*                   203.119.104.2                          0 4608 7575 3356 i
+#*  2001:250:101e::/48
+#                    2001:dd8:8::1                          0 4608 7575 4134 4538 4538 23910 24353 i
+#*                   2001:dd8:8::2                          0 4608 7575 4134 4538 4538 23910 24353 i
+#*>                  ::ffff:202.12.28.1
+#                                                           0 4777 2497 4837 4538 4538 4538 4538 i
+#*> 2001:250:101f::/48
+#                    ::ffff:202.12.28.1
+#
+# 1. need to start by *: ^\*
+# 2. need to be followed by > or a space: (>|[[:space:]])
+# 3: then need a space: [[:space:]]
+# 4: And a digit: [[:digit:]]
+# 5: Must having a '/' somewhere after (example of bad 4.0.0.0): .*\/
+awk '/^\*(>|[[:space:]])[[:space:]][[:digit:]].*\// {printf "  route %s via nexthop4;\n",$2}' bgp4table.txt >> bgp4table.conf
+echo "Converting bgp inet6 table to bird configuration file..."
+awk '/^\*(>|[[:space:]])[[:space:]][[:digit:]].*\// {printf "  route %s via nexthop6;\n",$2}' bgp6table.txt >> bgp6table.conf
+echo "*** Verification step ***"
+for i in 4 6; do
+	echo '}' >> bgp${i}table.conf
+	echo "Number of inet$i prefixes in bgp${i}table.txt:"
+	tail -n 2 bgp${i}table.txt | awk '/Displayed/ {print $2}'
+	echo "Number of inet$i static routes in bgp${i}table.conf:"
+	grep via bgp${i}table.conf -c
+done
+echo "Done"
