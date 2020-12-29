@@ -29,7 +29,7 @@
 include GENERIC
 
 ident   GENERIC-NODEBUG
-
+options	FIB_ALGO
 nooptions       INVARIANTS
 nooptions       INVARIANT_SUPPORT
 nooptions       WITNESS

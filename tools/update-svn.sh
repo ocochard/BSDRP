@@ -4,6 +4,7 @@ set -euf -o pipefail
 
 SVN_CMD=""
 rev=""
+dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 # We need to use standard SVN language
 export LANG=C
@@ -15,7 +16,7 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # Get last svn rev
 # $1: Folder to sync
 # return (echo) revision number
-get_last_rev () {
+get_last_svn_rev () {
 	[ -d $1 ] || die "No folder $1 found"
 	${SVN_CMD} up $1 || die "Error during ${SVN_CMD} of $1"
 	rev=$(${SVN_CMD} info $1 | grep "Last Changed Rev" | cut -w -f 4)
@@ -26,6 +27,17 @@ get_last_rev () {
 	return 0
 }
 
+get_last_git_rev() {
+	[ -d $1 ] || die "No folder $1 found"
+	cd $dir/../$1
+	git stash || true
+	git pull
+	git stash pop || true
+	rev=$(git log --pretty=format:'%h' -n 1)
+	[ -z "${rev}" ] && die "No hash found"
+	cd $dir/../
+	return 0
+}
 # Update make.conf
 # $1 File to update
 # $2 key to replace
@@ -46,7 +58,7 @@ SVN_CMD=$(which svn) || SVN_CMD=$(which svnlite)
 # Optional argument to update only one branch
 if [ $# -eq 1 ]; then
 	if [ -d $1/FreeBSD/src ]; then
-		get_last_rev $1/FreeBSD/src
+		get_last_git_rev $1/FreeBSD/src
 		update $1/make.conf SRC_REV $rev
 	else
 		die "No source in $1/FreeBSD/src"
@@ -54,10 +66,10 @@ if [ $# -eq 1 ]; then
 else
 	for i in BSDRP BSDRPstable BSDRPcur RELEASE STABLE HEAD TESTING; do
 		if [ -d $i/FreeBSD/src ]; then
-			get_last_rev $i/FreeBSD/src
+			get_last_git_rev $i/FreeBSD/src
 			update $i/make.conf SRC_REV $rev
 		fi
 	done
-	get_last_rev BSDRP/FreeBSD/ports
+	get_last_svn_rev BSDRP/FreeBSD/ports
 	update BSDRP/make.conf PORTS_REV $rev
 fi

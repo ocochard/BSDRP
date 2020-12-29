@@ -81,6 +81,9 @@ WITHOUT_ISCSI=
 WITHOUT_KERBEROS=
 WITHOUT_KERBEROS_SUPPORT=
 WITHOUT_LIB32=
+WITHOUT_LINT=
+WITHOUT_LLVM_ASSERTIONS=
+WITHOUT_LLVM_TARGET_ALL=
 WITHOUT_LOADER_FIREWIRE=
 WITHOUT_LOADER_GELI=
 WITHOUT_LOCATE=
@@ -112,7 +115,6 @@ WITHOUT_TESTS=
 WITHOUT_TESTS_SUPPORT=
 WITHOUT_TFTP=
 WITHOUT_TIMED=
-WITHOUT_TOOLCHAIN=
 WITHOUT_UNBOUND=
 WITHOUT_USB_GADGET_EXAMPLES=
 WITHOUT_WIRELESS=
@@ -124,6 +126,7 @@ WITH_DEBUG_FILES=
 WITH_REPRODUCIBLE_BUILD=
 WITH_DIRDEPS_BUILD=
 WITH_RETPOLINE=
+WITH_MALLOC_PRODUCTION=
 '
 
 # Customize commands.
@@ -208,6 +211,129 @@ add_netrate () {
 	umount ${NANO_WORLDDIR}/dev
 }
 
+# Recursive complex fonction: Generate one function for each ports
+add_port () {
+	port=$(echo $1 | sed -e 's/\//_/')
+	# Check if package allready exist
+	cd "${PORTS_SRC}/$1"
+	# Warning: a package name can change regarding the build option
+	if [ $# -gt 1 ]; then
+		PKG_NAME=$(env PORTSDIR="${PORTS_SRC}" make package-name "$2")
+	else
+		PKG_NAME=$(env PORTSDIR="${PORTS_SRC}" make package-name)
+	fi
+	if [ -f "${NANO_OBJ}"/ports/packages/All/${PKG_NAME}.txz ]; then
+	# Pkg file found: Generate add_pkg_NAME function
+		#Don't try to install pkg, the boot strap will install it
+		if [ "$1" != "ports-mgmt/pkg" ]; then
+			eval "
+			add_pkg_${port} () {
+				#Need to create ${NANO_OBJ}/ports in this add_pkg_${port} function
+				if [ ! -d \${NANO_OBJ}/ports ]; then
+					mkdir -p \${NANO_OBJ}/ports/packages
+				fi
+				mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
+				mount -t nullfs \${NANO_OBJ}/ports/packages \
+					\${NANO_WORLDDIR}/usr/ports/packages
+				# Since pkg 1.11, need devfs (because it is using /dev/null)
+				mount -t devfs devfs \${NANO_WORLDDIR}/dev
+				# Run ldconfig before
+				CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
+				# Start the pkg add
+				# Create the repo configuration file
+				mkdir -p \${NANO_WORLDDIR}/usr/local/etc/pkg/repos
+				cat <<EOF > \${NANO_WORLDDIR}/usr/local/etc/pkg/repos/myrepo.conf
+myrepo: {
+ url: "file:///usr/ports/packages",
+ enabled: true,
+ signature_type: 'none',
+ assume_always_yes: true
+}
+FreeBSD: {
+ enabled: false
+}
+EOF
+				# Bug with pkg: not using the "-d" option prevent to install the package with error message "pkg fail to extract static"
+				# Need to force assume_always_yes for avoiding bootstrap pkg confirmation too
+				CR 'env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
+				umount \${NANO_WORLDDIR}/usr/ports/packages
+				umount \${NANO_WORLDDIR}/dev
+				rmdir \${NANO_WORLDDIR}/usr/ports/packages
+				rmdir \${NANO_WORLDDIR}/usr/ports
+			}
+			customize_cmd add_pkg_${port}
+			"
+		fi
+	else
+	# No pkg file: Generate add_port_NAME function
+		eval "
+		add_port_${port} () {
+			#Need to create ${NANO_OBJ}/ports in this add_port_${port} function
+			[ -d \${NANO_OBJ}/ports ] || mkdir -p \${NANO_OBJ}/ports/packages
+			mount -t nullfs \${NANO_SRC} \${NANO_WORLDDIR}/usr/src
+			mkdir -p \${NANO_WORLDDIR}/usr/ports
+			mount -t nullfs \${PORTS_SRC} \${NANO_WORLDDIR}/usr/ports
+			mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
+			mount -t nullfs \${NANO_OBJ}/ports/packages \
+				\${NANO_WORLDDIR}/usr/ports/packages
+			mkdir -p \${NANO_WORLDDIR}/dev
+			mount -t devfs devfs \${NANO_WORLDDIR}/dev
+			mkdir -p \${NANO_WORLDDIR}/usr/pobj
+			mkdir -p \${NANO_WORLDDIR}/usr/workdir
+			cp /etc/resolv.conf \${NANO_WORLDDIR}/etc/resolv.conf
+			# If a port have NO_PACKAGE, comment-it
+			if grep -q NO_PACKAGE \${NANO_WORLDDIR}/usr/ports/$1/Makefile; then
+				mv \${NANO_WORLDDIR}/usr/ports/$1/Makefile \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd
+				sed 's/NO_PACKAGE/\#NO_PACKAGE/g' \${NANO_WORLDDIR}/usr/ports/$1/Makefile.nanobsd > \${NANO_WORLDDIR}/usr/ports/$1/Makefile
+			fi
+			# Run ldconfig before
+			CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
+			# Start the build
+			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
+				MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
+				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
+				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
+				package install BATCH=yes \
+				WITHOUT=\"NLS X11 DOCS EXAMPLES\" "$2" clean'
+			# add a -DWITH_DEBUG before the $2 for building port with debug
+			# and comment the strip command
+
+			rm \${NANO_WORLDDIR}/etc/resolv.conf
+			rm -rf \${NANO_WORLDDIR}/usr/obj
+			rm -rf \${NANO_WORLDDIR}/usr/pobj
+			rm -rf \${NANO_WORLDDIR}/usr/workdir
+			umount \${NANO_WORLDDIR}/dev
+			umount \${NANO_WORLDDIR}/usr/ports/packages
+			rmdir \${NANO_WORLDDIR}/usr/ports/packages
+			umount \${NANO_WORLDDIR}/usr/ports
+			rmdir \${NANO_WORLDDIR}/usr/ports
+			umount \${NANO_WORLDDIR}/usr/src
+		}
+		customize_cmd add_port_${port}
+		"
+	fi
+}
+
+#### Ports list section #####
+
+# bapt@ broke the "make package-recurisve" and he doesn't want to fix it using
+#  the fallacious argument of "it's dirty"
+# => Need to manually list all the package to install
+# Meanwhile, you can use "make package-depends-list | cut -d ' ' -f3" on a port
+# for getting all its unordered running dependency.
+# And you can use a grep "depends on .* - not found" /usr/obj/project/_.cust.add_port_port-name
+# for getting the ordered list
+
+#add_port "ports-mgmt/pkg"
+#add_port "security/ca_root_nss"
+# add_port "print/indexinfo"
+# add_port "devel/readline"
+
+#add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
+#add_port "security/libssh"
+#add_port "net/bird2"
+
 # BSDRP custom function
 bsdrp_custom () {
 	# Replace BSDRP_VERSION in /boot/lua/brand-bsdrp.lua with the version number in etc/version
@@ -224,6 +350,7 @@ bsdrp_custom () {
 	echo "setenv CLICOLOR true"
 	} >> ${NANO_WORLDDIR}/etc/csh.cshrc
 
+	# cpio (cust_install_file) doesn't support symlink
 	# relocate /root/.ssh to /etc/dot.root.ssh
 	# This permit to save ssh keys
 	mkdir -p ${NANO_WORLDDIR}/etc/dot.ssh.root

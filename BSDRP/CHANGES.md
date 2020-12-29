@@ -4,12 +4,12 @@
 * Migrated from nanobsd to poudriere-image
 
 ## New features
-* Switched from FreeBSD-stable to FreeBSD-head r368710 that brings a lot of cool stufs:
+* Switched from FreeBSD-stable to FreeBSD-head c255412 that brings a lot of cool stufs:
   * Performance improvement
   * Multipath-routing re-introduced
   * Wireguard kernel module
   * etc.
-* Ports tree updated to r558250
+* Ports tree updated to r559550
 
 ## Bug fixes
 * FRR7: Fix https://github.com/FRRouting/frr/issues/6378
@@ -20,11 +20,12 @@
 * nc
 * trafshow
 * tinc
+* bgptabledump2bird
 
 ## Upgraded packages
 * arping 2.21
 * bgpq4
-* devcpu-data 1.36
+* devcpu-data 1.37
 * exabgp4 4.2.11
 * frr7 7.5
 * iperf 2.0.14
@@ -34,33 +35,33 @@
 * mtr 0.94
 * openvpn 2.5.0
 * strongswan 5.9.0
-* wireguard 1.0.20200827
+* wireguard 20201118
 
 ## Removed packages
 
 ## Packages list
-* arping 2.19: ARP level "ping" utility
-* bash 5.0.18_3: GNU Project's Bourne Again SHell
+* arping 2.21: ARP level "ping" utility
+* bash 5.1.4: GNU Project's Bourne Again SHell
 * bgpq4 0.0.6: Lightweight prefix-list generator for various routers v4
 * bird2 2.0.7_2: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.5: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.58: Root certificate bundle from the Mozilla Project
-* curl 7.73.0: Command line tool and library for transferring data with URLs
-* devcpu-data 1.36: Intel and AMD CPUs microcode updates
+* curl 7.74.0: Command line tool and library for transferring data with URLs
+* devcpu-data 1.37: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_3: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1_1: Lightweight DHCP relay agent. Yandex edition
 * dtrace-toolkit 1.0_5: Collection of useful scripts for DTrace
 * easy-rsa 3.0.8: Small RSA key management package based on openssl
 * flashrom 1.2: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
-* frr7 7.5: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
-* frr7-pythontools 7.5: Provide configuration reload functionality for FRR
+* frr7 7.5_1: IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+* frr7-pythontools 7.5_1: Provide configuration reload functionality for FRR
 * fswatch-mon 1.13.0_2: Cross-platform file change monitor
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
-* intel-pcm 202010: Process Count Monitor (PCM) for Intel processors
-* iperf 2.0.14a_1: Tool to measure maximum TCP and UDP bandwidth
+* intel-pcm 202011: Process Count Monitor (PCM) for Intel processors
+* iperf 2.0.14a_3: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.9: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_3: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_11: KAME racoon IKE daemon, ipsec-tools version
@@ -71,7 +72,7 @@
 * libevent 2.1.12: API for executing callback functions on events or timeouts
 * libffi 3.3_1: Foreign Function Interface
 * libiconv 1.16: Character set conversion library
-* liblz4 1.9.2_1,1: LZ4 compression library, lossless and very fast
+* liblz4 1.9.3,1: LZ4 compression library, lossless and very fast
 * libnet 1.1.6_5,1: C library for creating IP packets
 * libpci 3.7.0_1: PCI configuration space I/O made easy
 * libsodium 1.0.18: Library to build higher-level cryptographic tools
@@ -86,6 +87,7 @@
 * mstflint-lite 4.15.0.1: Firmware Burning and Diagnostics Tools for Mellanox devices
 * mtr-nox11 0.94: Traceroute and ping in a single network diagnostic tool
 * nagios-plugins 2.3.3_2,1: Plugins for Nagios
+* nc 1.0.1_1: Network aware cat
 * netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
 * netperf 2.7.1.p20170921_1: Network performance benchmarking package
 * nrpe3 3.2.1: Nagios Remote Plugin Executor
@@ -93,12 +95,12 @@
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.56: Open source LDAP client implementation
 * openvpn 2.5.0: Secure IP/Ethernet tunnel daemon
-* pciids 20201025: Database of all known IDs used in PCI devices
+* pciids 20201127: Database of all known IDs used in PCI devices
 * pcre 8.44: Perl Compatible Regular Expressions library
-* perl5 5.32.0: Practical Extraction and Report Language
+* perl5 5.32.0_1: Practical Extraction and Report Language
 * pimd 2.3.2_1: Lightweight stand-alone PIM-SM v2 multicast routing daemon
 * pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
-* pkg 1.15.10: Package manager
+* pkg 1.16.1: Package manager
 * pkt-gen g2019.11.07: Packet sink/source using the netmap API
 * pmacct 1.7.5: Accounting and aggregation tool for IPv4 and IPv6 traffic
 * py37-exabgp4 4.2.11: BGP engine and route injector
@@ -112,16 +114,16 @@
 * rtrlib 0.6.3: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
 * strongswan 5.9.0: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.9.3p1: Allow others to run commands as root
+* sudo 1.9.4p2: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tinc 1.0.36_2: Virtual Private Network (VPN) daemon
 * tmux 3.1c: Terminal Multiplexer
 * trafshow 5.2.3_3,1: Full screen visualization of network traffic
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 * utf8proc 2.5.0: UTF-8 processing library
-* vim-tiny 8.2.1943: Improved version of the vi editor (vim binary only)
+* vim-tiny 8.2.2072: Improved version of the vi editor (vim binary only)
 * wireguard 1.0.20200827: Fast, modern and secure VPN Tunnel
-* wireguard-go 0.0.20200320: WireGuard implementation in Go
+* wireguard-go 0.0.20201118: WireGuard implementation in Go
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
 -----------------------------------------------------

@@ -36,6 +36,8 @@
 # Didn't disable filename expansion (f) neither -o pipefail
 set -eu
 
+curdir=$(pwd)
+
 #############################################
 ########### Function definition #############
 #############################################
@@ -66,38 +68,56 @@ update_src () {
 			|| die "Can't check out sources from svn repo"
 			;;
 		git)
-			git clone "${SRC_REPO}" "${FREEBSD_SRC}" || die "Can't clone sources from git repo"
-			(
+			# cloning
+			git clone -b ${GIT_BRANCH} --single-branch "${SRC_REPO}".git "${FREEBSD_SRC}" || die "Can't clone sources from git repo"
+			# revert back to previous revision
 			cd "${FREEBSD_SRC}"
 			git checkout ${SRC_REV}
-			)
 			;;
 		*)
 			[ -d "${FREEBSD_SRC}" ] || \
 				die "No FreeBSD source directory found and no supported SRC_METHOD configured"
 		esac
 	else
-		if [ ${SRC_METHOD} = "svn" ]; then
+		echo "Reverting all local changes..."
+		case ${SRC_METHOD} in
+		svn)
 			#Checking repo change
 			if ! ${SVN_CMD} info "${FREEBSD_SRC}" | grep -q "${SRC_REPO}"; then
 				die "svn repo changed: delete your source tree with rm -rf ${FREEBSD_SRC}"
 				die "or relocate it: cd {FREEBSD_SRC}; svn relocate svn://svn.freebsd.org https://svn.freebsd.org"
 			fi
-		fi
-		echo "Cleaning local FreeBSD patches..."
-		#cleaning local patced source
-		if [ ${SRC_METHOD} = "svn" ]; then
-			${SVN_CMD} revert -R "${FREEBSD_SRC}"
-			${SVN_CMD} cleanup "${FREEBSD_SRC}" --remove-unversioned
-		elif [ ${SRC_METHOD} = "git" ]; then
-			(cd "${FREEBSD_SRC}"; git checkout . )
-		fi
+			echo "Cleaning local FreeBSD patches..."
+			#cleaning local patced source
+			if [ ${SRC_METHOD} = "svn" ]; then
+				${SVN_CMD} revert -R "${FREEBSD_SRC}"
+				${SVN_CMD} cleanup "${FREEBSD_SRC}" --remove-unversioned
+			fi
+			;;
+		git)
+			(
+				cd "${FREEBSD_SRC}"
+				git checkout .
+				git clean -f
+			)
+			# git restore :/
+			;;
+		*)
+			die "Unknown method"
+		esac
+
 		echo "Updating FreeBSD sources..."
-		if [ ${SRC_METHOD} = "svn" ]; then
+		case ${SRC_METHOD} in
+		svn)
 			${SVN_CMD} update "${FREEBSD_SRC}" -r ${SRC_REV} || die "Can't update FreeBSD src"
-		elif [ ${SRC_METHOD} = "git" ]; then
-			(cd "${FREEBSD_SRC}"; git pull )
-		fi
+			;;
+		git)
+			cd "${FREEBSD_SRC}"
+			git checkout ${SRC_REV}
+			;;
+		*)
+			die "Unknown method: ${SRC_METHOD}"
+		esac
 	fi
 }
 
@@ -132,7 +152,12 @@ patch_src() {
 	for patch in $(cd "${SRC_PATCH_DIR}" && ls freebsd.*.patch); do
 		if ! grep -q $patch "${PROJECT_DIR}/FreeBSD/src-patches"; then
 			echo "Applying patch $patch..."
-			patch -p0 -NE -d "${FREEBSD_SRC}" -i "${SRC_PATCH_DIR}"/$patch || die "Source tree patch failed"
+			if grep -q 'diff --git a/' "${SRC_PATCH_DIR}"/$patch; then
+				p="-p1"
+			else
+				p="-p0"
+			fi
+			patch $p -NE -d "${FREEBSD_SRC}" -i "${SRC_PATCH_DIR}"/$patch || die "Source tree patch failed"
 			echo $patch >> "${PROJECT_DIR}"/FreeBSD/src-patches
 		fi
 	done
@@ -661,6 +686,7 @@ fi
 
 # Overwrite the nanobsd script with our own improved nanobsd
 # Mandatory for supporting multiple folders to be installed
+cd ${curdir}
 cp tools/defaults.sh "${NANOBSD_DIR}"/
 cp tools/legacy.sh "${NANOBSD_DIR}"/
 cp tools/nanobsd.sh "${NANOBSD_DIR}"/
