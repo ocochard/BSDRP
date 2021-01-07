@@ -4,12 +4,12 @@
 * Migrated from nanobsd to poudriere-image
 
 ## New features
-* Switched from FreeBSD-stable to FreeBSD-head c255412 that brings a lot of cool stufs:
+* Switched from FreeBSD 12-stable to FreeBSD 13-head c255632 that brings a lot of cool stufs:
   * Performance improvement
   * Multipath-routing re-introduced
   * Wireguard kernel module
   * etc.
-* Ports tree updated to r559550
+* Ports tree updated to r560522
 
 ## Bug fixes
 * FRR7: Fix https://github.com/FRRouting/frr/issues/6378

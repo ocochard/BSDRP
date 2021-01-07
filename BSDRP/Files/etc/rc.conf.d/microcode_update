@@ -1,0 +1,2 @@
+# Update CPU microcode (fixing Meltdown and Spectre bugs)
+microcode_update_enable="YES"

@@ -3,7 +3,7 @@
 # Make script for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2009-2020, The BSDRP Development Team
+# Copyright (c) 2009-2021, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -114,6 +114,8 @@ update_src () {
 		git)
 			cd "${FREEBSD_SRC}"
 			git checkout ${SRC_REV}
+			# Or:
+			# git reset --hard ${SRC_REV}
 			;;
 		*)
 			die "Unknown method: ${SRC_METHOD}"

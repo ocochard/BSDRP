@@ -1,0 +1,2 @@
+# Enable IPv6 on all interfaces
+ipv6_activate_all_interfaces="YES"
