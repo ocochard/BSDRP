@@ -1,2 +1,0 @@
-# Reduce 30s default timeoute for a default route to 5s
-defaultroute_delay="5"

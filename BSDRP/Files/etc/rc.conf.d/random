@@ -1,3 +1,0 @@
-# Disable INTERRUPT and ETHERNET from for entropy sources
-# This value is VERY important for 8 cores or more and allways improve performance
-harvest_mask="351"

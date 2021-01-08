@@ -1,2 +1,0 @@
-# In case FRR is used, use one config file (frr.conf)
-frr_vtysh_boot="YES"

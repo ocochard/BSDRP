@@ -1,2 +1,0 @@
-# Since r336560, needs to enable tx_abdicate sysctl on iflib drivers
-txabdicate_enable="YES"

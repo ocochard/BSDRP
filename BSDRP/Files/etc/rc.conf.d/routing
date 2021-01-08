@@ -1,5 +1,0 @@
-# Enable routing
-gateway_enable="YES"
-ipv6_gateway_enable="YES"
-# Drop ICMP redirect
-icmp_drop_redirect="YES"

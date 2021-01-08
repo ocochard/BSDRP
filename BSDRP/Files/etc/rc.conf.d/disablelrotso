@@ -1,3 +1,0 @@
-# Disable LRO and TSO on all NIC
-# This feature should not be enabled on a router
-disablelrotso_enable="YES"

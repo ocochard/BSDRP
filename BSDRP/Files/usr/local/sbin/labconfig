@@ -647,7 +647,7 @@ tenant -c -j jail6 -i epair0b
 sysrc -f /etc/jails/jail5/rc.conf hostname=jail5 \
 	ifconfig_em3="inet 10.0.45.5/24" \
 	ifconfig_em3_ipv6="inet6 2001:db8:45::5 prefixlen 64" \
-	ifconfig_epair0a="10.0.56.5/24" \
+	ifconfig_epair0a="inet 10.0.56.5/24" \
 	ifconfig_epair0a_ipv6="inet6 2001:db8:56::5 prefixlen 64" \
 	ifconfig_epair0a_alias0="inet 10.0.56.254/32 vhid 1 pass testpass" \
 	ifconfig_epair0a_alias1="inet6 2001:db8:56::fe prefixlen 128 vhid 1 pass testpass" \

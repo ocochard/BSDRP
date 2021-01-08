@@ -1,3 +1,0 @@
-#Disable moused
-moused_enable="NO"
-moused_ums0_enable="NO"

@@ -1,2 +1,0 @@
-# Operate in secure mode: Do not log messages from remote machines
-syslogd_flags="-s"

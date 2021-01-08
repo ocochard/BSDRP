@@ -1,2 +1,0 @@
-#Disable sendmail
-sendmail_enable="NONE"
