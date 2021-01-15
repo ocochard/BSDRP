@@ -24,8 +24,7 @@ hw.mfi.mrsas_enable="1"
 ### Tune some global values ###
 hw.usb.no_pf="1"	# Disable USB packet filtering
 
-# Loading AES-NI module sooner to be sure it is loaded before IPsec keys
-aesni_load="YES"
+# Load The DPDK Longest Prefix Match (LPM) module
 
 # Loading newest Intel microcode
 cpu_microcode_load="YES"

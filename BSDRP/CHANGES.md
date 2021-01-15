@@ -9,6 +9,7 @@
   * Multipath-routing re-introduced
   * Wireguard kernel module
   * etc.
+* Add Intel QuickAssist Technology (QAT) drivers
 * Ports tree updated to r560522
 
 ## Bug fixes

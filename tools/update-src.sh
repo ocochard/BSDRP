@@ -4,6 +4,7 @@ set -euf -o pipefail
 
 SVN_CMD=""
 rev=""
+git_count=""
 dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 # We need to use standard SVN language
@@ -34,6 +35,7 @@ get_last_git_rev() {
 	git pull
 	git stash pop || true
 	rev=$(git log --pretty=format:'%h' -n 1)
+	git_count=$(git rev-list HEAD --count)
 	[ -z "${rev}" ] && die "No hash found"
 	cd $dir/../
 	return 0
@@ -68,6 +70,7 @@ else
 		if [ -d $i/FreeBSD/src ]; then
 			get_last_git_rev $i/FreeBSD/src
 			update $i/make.conf SRC_REV $rev
+			echo "$i updated to c$git_count"
 		fi
 	done
 	get_last_svn_rev BSDRP/FreeBSD/ports

@@ -73,6 +73,8 @@ update_src () {
 			# revert back to previous revision
 			cd "${FREEBSD_SRC}"
 			git checkout ${SRC_REV}
+			echo "Git commit count:"
+			git rev-list HEAD --count
 			;;
 		*)
 			[ -d "${FREEBSD_SRC}" ] || \
