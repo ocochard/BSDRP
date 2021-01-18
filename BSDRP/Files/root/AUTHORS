@@ -19,12 +19,12 @@ The authors of BSDRP would like to thank the authors of these software for their
 * chelsio-queue-usage: Alexander V. Chernikov (melifaro@FreeBSD.org)
 * arping, license:GPLv2, http://www.habets.pp.se/synscan/programs.php?prog=arping
 * bash, license:GPLv3+, https://www.gnu.org/software/bash/
-* bgpq3, license:BSD2CLAUSE, https://github.com/snar/bgpq3
+* bgpq4, license:BSD2CLAUSE, https://github.com/bgp/bgpq4
 * bird2, license:GPLv2, http://bird.network.cz/
 * bsnmp-regex, license:BSD3CLAUSE, http://thewalter.net/stef/software/bsnmp-regex/
 * bsnmp-ucd, license:BSD2CLAUSE, http://bsnmp-ucd.googlecode.com/
 * ca_root_nss, license:MPL20
-* curl, license:MIT, https://curl.haxx.se/
+* curl, license:MIT, https://curl.se/
 * devcpu-data, license:EULA
 * dhcp6, license:BSD3CLAUSE, http://wide-dhcpv6.sourceforge.net/
 * dhcprelya, license:BSD3CLAUSE
@@ -33,7 +33,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * flashrom, license:GPLv2, http://www.flashrom.org/
 * freevrrpd, license:BSD
 * frr7, license:GPLv2, https://frrouting.org/
-* frr7-pythontool, license:GPLv2, https://frrouting.org/
+* frr7-pythontools, license:GPLv2, https://frrouting.org/
 * fswatch-mon, license:GPLv3, https://github.com/emcrisostomo/fswatch
 * graphpath, license:BSD2CLAUSE, https://github.com/ocochard/graphpath
 * indexinfo, license:BSD2CLAUSE, https://github.com/bapt/indexinfo
@@ -53,17 +53,18 @@ The authors of BSDRP would like to thank the authors of these software for their
 * libnet, license:BSD2CLAUSE, https://sourceforge.net/projects/libnet-dev/
 * libpci, license:GPLv2, https://mj.ucw.cz/sw/pciutils/
 * libsodium, license:ISCL, https://github.com/jedisct1/libsodium
-* libssh, license:LGPL21, http://www.libssh.org/
+* libssh, license:LGPL21, https://www.libssh.org/
 * libucl, license:BSD2CLAUSE, https://github.com/vstakhov/libucl
 * libyang, license:BSD3CLAUSE, https://github.com/CESNET/libyang
 * lzo2, license:GPLv2, http://www.oberhumer.com/opensource/lzo/
 * mlvpn, license:BSD2CLAUSE, https://zehome.github.io/MLVPN/
-* monit, license:AGPLv3, http://mmonit.com/monit/
+* monit, license:AGPLv3, https://mmonit.com/monit/
 * mpd5, license:BSD3CLAUSE, https://sourceforge.net/projects/mpd/
 * mrouted, license:MIT, http://freecode.com/projects/mrouted
-* mstflint-lite, license:GPLv2, https://github.com/Mellanox/mstflint
+* mstflint-lite, license:BSD2CLAUSE, GPLv2, https://github.com/Mellanox/mstflint
 * mtr-nox11, license:GPLv2, https://www.bitwizard.nl/mtr/
 * nagios-plugins, license:GPLv3, https://www.nagios-plugins.org/
+* nc, license:, http://www.kyne.com.au/~mark/software/ncat.php
 * netmap-fwd, license:BSD2CLAUSE, https://github.com/NetgateUSA/netmap-fwd
 * netperf, license:, http://www.netperf.org/
 * nrpe3, license:GPLv2+, https://www.nagios.org/
@@ -75,13 +76,13 @@ The authors of BSDRP would like to thank the authors of these software for their
 * perl5, license:GPLv1+, ART10, https://www.perl.org/
 * pimd, license:BSD3CLAUSE, http://troglobit.com/pimd.html
 * pimdd, license:MIT, http://antc.uoregon.edu/PIMDM/pimd-dense.html
-* pkg, license:BSD2CLAUSE, https://wiki.freebsd.org/pkgng
+* pkg, license:BSD2CLAUSE, https://github.com/freebsd/pkg
 * pkt-gen, license:BSD2CLAUSE, https://github.com/luigirizzo/netmap
 * pmacct, license:GPLv2, http://www.pmacct.net/
 * py37-exabgp4, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
 * py37-mrtparse, license:APACHE20, https://github.com/t2mune/mrtparse
 * py37-setuptools, license:MIT, https://pypi.org/project/setuptools/
-* python, license:, https://www.python.org/
+* python37, license:PSFL, https://www.python.org/
 * quagga-bgp-netgen, license:BSD2CLAUSE, https://github.com/ocochard/quagga-bgp-netgen
 * readline, license:GPLv3, https://tiswww.case.edu/php/chet/readline/rltop.html
 * rtrlib, license:MIT, http://rtrlib.realmv6.org/
@@ -89,7 +90,9 @@ The authors of BSDRP would like to thank the authors of these software for their
 * strongswan, license:GPLv2, http://www.strongswan.org
 * sudo, license:sudo, https://www.sudo.ws/
 * tayga, license:GPLv2, http://www.litech.org/tayga/
+* tinc, license:GPLv3, http://www.tinc-vpn.org/
 * tmux, license:ISCL, http://tmux.github.io/
+* trafshow, license:BSD2CLAUSE, https://BSDforge.com/projects/net/trafshow
 * ucarp, license:ISC, https://github.com/jedisct1/UCarp
 * utf8proc, license:MIT, https://juliastrings.github.io/utf8proc/
 * vim-tiny, license:VIM, http://www.vim.org/

@@ -35,8 +35,6 @@
 * strongswan 5.9.1
 * wireguard 20201118
 
-## Removed packages
-
 ## Packages list
 * arping 2.21: ARP level "ping" utility
 * bash 5.1.4_1: GNU Project's Bourne Again SHell
