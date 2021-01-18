@@ -1,16 +1,13 @@
-# Release 2.0 (not released)
-
-## New feature (planned)
-* Migrated from nanobsd to poudriere-image
+# Release 1.98 (18/01/2021)
 
 ## New features
-* Switched from FreeBSD 12-stable to FreeBSD 13-head c255632 that brings a lot of cool stufs:
+* Switched from FreeBSD 12-stable to FreeBSD 13-head c256048 that brings a lot of cool stufs:
   * Performance improvement
   * Multipath-routing re-introduced
   * Wireguard kernel module
   * etc.
 * Add Intel QuickAssist Technology (QAT) drivers
-* Ports tree updated to r560522
+* Ports tree updated to r561897
 
 ## Bug fixes
 * FRR7: Fix https://github.com/FRRouting/frr/issues/6378
@@ -29,20 +26,20 @@
 * devcpu-data 1.37
 * exabgp4 4.2.11
 * frr7 7.5
-* iperf 2.0.14
+* iperf 2.1.0.r
 * iperf3 3.9
 * mpd5 5.9
 * mrtparse 2.0.0
 * mtr 0.94
 * openvpn 2.5.0
-* strongswan 5.9.0
+* strongswan 5.9.1
 * wireguard 20201118
 
 ## Removed packages
 
 ## Packages list
 * arping 2.21: ARP level "ping" utility
-* bash 5.1.4: GNU Project's Bourne Again SHell
+* bash 5.1.4_1: GNU Project's Bourne Again SHell
 * bgpq4 0.0.6: Lightweight prefix-list generator for various routers v4
 * bird2 2.0.7_2: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
@@ -62,7 +59,7 @@
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 202011: Process Count Monitor (PCM) for Intel processors
-* iperf 2.0.14a_3: Tool to measure maximum TCP and UDP bandwidth
+* iperf 2.1.0.r: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.9: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_3: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_11: KAME racoon IKE daemon, ipsec-tools version
@@ -111,18 +108,18 @@
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
 * python37 3.7.9_1: Interpreted object-oriented programming language
 * quagga-bgp-netgen 0.2: Generates Quagga/FRR bgp configuration file with lot's of routes
-* readline 8.0.4: Library for editing command lines as they are typed
+* readline 8.0.4_1: Library for editing command lines as they are typed
 * rtrlib 0.6.3: Open-source C implementation of the RPKI/Router Protocol client
 * smcroute 2.4.0: Static multicast routing tool
-* strongswan 5.9.0: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.9.4p2: Allow others to run commands as root
+* strongswan 5.9.1: Open Source IKEv2 IPsec-based VPN solution
+* sudo 1.9.5p1: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tinc 1.0.36_2: Virtual Private Network (VPN) daemon
 * tmux 3.1c: Terminal Multiplexer
 * trafshow 5.2.3_3,1: Full screen visualization of network traffic
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
-* utf8proc 2.5.0: UTF-8 processing library
-* vim-tiny 8.2.2072: Improved version of the vi editor (vim binary only)
+* utf8proc 2.6.1: UTF-8 processing library
+* vim-tiny 8.2.2263_1: Improved version of the vi editor (vim binary only)
 * wireguard 1.0.20200827: Fast, modern and secure VPN Tunnel
 * wireguard-go 0.0.20201118: WireGuard implementation in Go
 * x86info 1.31.s03: x86 CPU identification and feature display utility
