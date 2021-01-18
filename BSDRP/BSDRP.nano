@@ -546,7 +546,9 @@ add_port "sysutils/dtrace-toolkit"
 #### End of port list section ####
 
 # Add netrate tools
-customize_cmd add_netrate
+if [ "${NANO_ARCH}" != "i386" ]; then
+	customize_cmd add_netrate
+fi
 
 cleanup_ports () {
 	# When port are build, they install build dependency that are not usefull for running the port
