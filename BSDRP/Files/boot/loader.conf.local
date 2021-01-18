@@ -24,7 +24,9 @@ hw.mfi.mrsas_enable="1"
 ### Tune some global values ###
 hw.usb.no_pf="1"	# Disable USB packet filtering
 
-# Load The DPDK Longest Prefix Match (LPM) module
+# Load The DPDK Longest Prefix Match (LPM) modules
+dpdk_lpm4_load="YES"
+dpdk_lpm6_load="YES"
 
 # Loading newest Intel microcode
 cpu_microcode_load="YES"

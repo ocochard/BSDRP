@@ -4,6 +4,7 @@
 * Switched from FreeBSD 12-stable to FreeBSD 13-head c256048 that brings a lot of cool stufs:
   * Performance improvement
   * Multipath-routing re-introduced
+  * DPDK Longest Prefix Match (LPM) modules
   * Wireguard kernel module
   * etc.
 * Add Intel QuickAssist Technology (QAT) drivers
