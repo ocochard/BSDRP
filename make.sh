@@ -69,7 +69,7 @@ update_src () {
 			;;
 		git)
 			# cloning
-			git clone -b ${GIT_BRANCH} --single-branch "${SRC_REPO}".git "${FREEBSD_SRC}" || die "Can't clone sources from git repo"
+			git clone -b ${GIT_BRANCH} --depth 1 --single-branch "${SRC_REPO}".git "${FREEBSD_SRC}" || die "Can't clone sources from git repo"
 			# revert back to previous revision
 			cd "${FREEBSD_SRC}"
 			git checkout ${SRC_REV}

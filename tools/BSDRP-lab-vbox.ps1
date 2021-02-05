@@ -1,8 +1,8 @@
 #
-# VirtualBox 5 PowerShell lab script for BSD Router Project
+# VirtualBox 6 PowerShell lab script for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2011-2018, The BSDRP Development Team
+# Copyright (c) 2011-2021, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -44,13 +44,17 @@ $erroractionpreference = "Stop"
 function set_API_enums() {
     # As "Global" variable, there are not release in the debugger
     # avoid to generate an error
-    if (!(Test-Path Variable:Virtualbox_API_Enums)) {
+    #if (!(Test-Path Variable:Virtualbox_API_Enums)) {
         $Global:Virtualbox_API_Enums=@{
+            StorageBus_Null = 0;
             StorageBus_IDE = 1;
             StorageBus_SATA = 2;
             StorageBus_SCSI = 3;
             StorageBus_Floppy = 4;
             StorageBus_SAS = 5;
+            StorageBus_USB = 6;
+            StorageBus_PCIe = 7;
+            StorageBus_VirtioSCSI = 8;
 
             StorageControllerType_LsiLogic = 1;
             StorageControllerType_BusLogic = 2;
@@ -60,6 +64,9 @@ function set_API_enums() {
             StorageControllerType_ICH6 = 6;
             StorageControllerType_I82078 = 7;
             StorageControllerType_LsiLogicSas = 8;
+            StorageControllerType_USB = 9;
+            StorageControllerType_NVM = 10;
+            StorageControllerType_VirtioSCSI = 11;
 
             DeviceType_Null = 0;
             DeviceType_Floppy = 1;
@@ -90,6 +97,7 @@ function set_API_enums() {
             CloneOptions_KeepNATMACs = 3;
             CloneOptions_KeepDiskNames = 4;
 
+            ChipsetType_Null = 0;
             ChipsetType_PIIX3 = 1;
             ChipsetType_ICH9 = 2;
 
@@ -129,6 +137,8 @@ function set_API_enums() {
             NetworkAdapterType_I82543GC = 4;
             NetworkAdapterType_I82545EM = 5;
             NetworkAdapterType_Virtio = 6;
+            NetworkAdapterType_Am79C960 = 7;
+            NetworkAdapterType_Virtio_1_0 = 8;
 
             NetworkAttachmentType_Null = 0;
             NetworkAttachmentType_NAT = 1;
@@ -146,13 +156,14 @@ function set_API_enums() {
             ProcessorFeature_PAE = 1;
             ProcessorFeature_LongMode = 2;
             ProcessorFeature_NestedPaging = 3;
+            ProcessorFeature_UnrestrictedGuest = 4;
+            ProcessorFeature_NestedHWVirt = 5;
 
         } #Virtualbox_API_Enums
-
         $Virtualbox_API_Enums.GetEnumerator() | Foreach-Object {
-            Set-Variable $($_.Key) -value $([int32] $_.Value) -option constant -scope Global
+            Set-Variable -name $($_.Key) -value $([int32] $_.Value) -option Constant -scope Script
         }
-    } # endif
+    #} # endif
 } # function set_API_enum
 
 #### Functions definition
@@ -185,11 +196,10 @@ Function create_template () {
 
     #Configure the VM
 
-    # Chipset PIIX3 support a maximum of 8 NIC
-    # Chipset ICH9 support a maximum of 36 NIC... But need VirtualBox 4.2 minimum
+    # Chipset ICH9 support a maximum of 36 NIC
     $MACHINE.ChipsetType=$ChipsetType_ICH9
     $MACHINE.MemorySize=512
-    $MACHINE.VRAMSize=8
+    $MACHINE.GraphicsAdapter.VRAMSize=8
     $MACHINE.Description="BSD Router Project Template VM"
     $MACHINE.setBootOrder(1,$DeviceType_HardDisk)
     $MACHINE.setBootOrder(2,$DeviceType_Null)
@@ -211,15 +221,14 @@ Function create_template () {
     }
 
     # Adding a disk controller to the machine
-	# Seems to have a problem with SATA controller (Intel AHCI that can't boot BSDRP based on FreeBSD 9.1-RC1)
-    try { $MACHINE_STORAGECONTROLLER = $MACHINE.addStorageController("ATA Controller",$StorageBus_IDE) }
+    try { $MACHINE_STORAGECONTROLLER = $MACHINE.addStorageController("AHCI",$StorageBus_SATA) }
 	catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't Add a Storage Controller to $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
         clean_exit
     }
 
-	$MACHINE_STORAGECONTROLLER.controllerType=$StorageControllerType_PIIX4
+	$MACHINE_STORAGECONTROLLER.controllerType=$StorageControllerType_IntelAhci
     #PortCount can be modified for SATA controller only
     #$MACHINE_STORAGECONTROLLER.portCount=1
 
@@ -246,8 +255,6 @@ Function create_template () {
     $VDI_FILE=$VIRTUALBOX.SystemProperties.DefaultMachineFolder + "\$VM_TPL_NAME\$VM_TPL_NAME.vdi"
 
     #Call VBoxManage.exe for converting the given .img to VDI.
-    #Previous to VirtualBox 4.3.12, the install path was VBOX_INSTALL_PATH
-    #But since 4.3.12 it's VBOX_MSI_INSTALL_PATH
     if ($env:VBOX_INSTALL_PATH) { $VB_MANAGE ='"' + $env:VBOX_INSTALL_PATH + "VBoxManage.exe" + '"' }
     if ($env:VBOX_MSI_INSTALL_PATH) { $VB_MANAGE ='"' + $env:VBOX_MSI_INSTALL_PATH + "VBoxManage.exe" + '"' }
     #$VB_MANAGE ='"' + $env:VBOX_INSTALL_PATH + "VBoxManage.exe" + '"'
@@ -305,7 +312,7 @@ Function create_template () {
     # At last ! Attach the disk to unlocked-copy-object of the VM
     # But need to use the $SESSION.machine and not the $MACHINE object
     try {
-        $SESSION.machine.attachDevice("ATA Controller",0,0,$DeviceType_HardDisk,$MEDIUM)
+        $SESSION.machine.attachDevice("AHCI",0,0,$DeviceType_HardDisk,$MEDIUM)
     } catch {
         Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't attach $DST_VDI_FILE to $VM_TPL_NAME"
         Write-Host "Detail: " $($error)
@@ -321,7 +328,7 @@ Function create_template () {
         clean_exit
     }
 
-    # Create a snapshot (will be mandatory for creating linked type clone)
+    # Create a snapshot (mandatory to create linked type clone)
     $snapshotid = ""
     try { $PROGRESS=$SESSION.machine.takeSnapshot("SNAPSHOT","Initial snapshot used for clone",$false,[ref] $snapshotid) }
     catch {
@@ -465,9 +472,7 @@ Function clone_vm () {
 # parameter: [string], VM name
 Function delete_all_nic () {
     param([string]$VM_NAME)
-    #$MAX_NIC=$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_ICH9)
-    #Need to disable ICH9 based count max value (will enable it for Virtualbox 4.2)
-    $MAX_NIC=$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_PIIX3)
+    $MAX_NIC=$VIRTUALBOX.SystemProperties.getMaxNetworkAdapters($ChipsetType_ICH9)
     
     try {$MACHINE=$VIRTUALBOX.findMachine($VM_NAME)}
 	catch {
@@ -728,7 +733,7 @@ Function start_lab () {
     	}
                
         # Start the VM
-        try { $PROGRESS=$MACHINE.launchVMProcess($SESSION,"headless","") }
+        try { $PROGRESS=$MACHINE.launchVMProcess($SESSION,"headless",[string[]]@()) }
         catch {
             Write-Host "[ERROR] " (Get-PSCallStack)[0].Command ": Can't start BSDRP_lab_R$i"
             Write-Host "Detail: " $($error)

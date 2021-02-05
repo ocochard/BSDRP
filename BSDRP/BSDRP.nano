@@ -854,10 +854,11 @@ usr/sbin/config
 
 # Enable only serial system only
 bsdrp_console_serial () {
-	# Force first 2 serial console into "onifexists" in case (IPMI SoL often use 2nd port)
-	# Forcing 2 and 3 generates too lot's of getty open /dev/ttyu No such file or directory
-	sed -i "" -e '/^ttyu[0-1]/s/onifconsole/on/' ${NANO_WORLDDIR}/etc/ttys
-	# Enable local video devices only if they exists
+	# Force first 4 serial console into "onifexists" to be sure to enable them
+	# but preventing polluting console with "getty ... No such file or directory"
+	sed -i "" -e '/^ttyu[0]/s/onifconsole/on/' ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e '/^ttyu[1-3]/s/onifconsole/onifexists/' ${NANO_WORLDDIR}/etc/ttys
+	# Enable local video devices only if they exists too
 	#  this prevent to overload console with theses message:
 	#  getty[7]: open /dev/ttyv1: No such file or directory
 	#  init: getty repeating too quickly on port /dev/ttyv1, sleeping 30 secs
@@ -871,8 +872,10 @@ bsdrp_console_serial () {
 
 # Enable use of keyboard/vga and serial
 bsdrp_console_dual () {
-	# Set serial speed (3wire is available since 11 only)
-	sed -i "" -e /ttyu[0-1]/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
+	# Force first 4 serial console into "onifexists" to be sure to enable them
+	# but preventing polluting console with "getty ... No such file or directory"
+	sed -i "" -e '/^ttyu[0-1]/s/on/onifexists/' ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e '/^ttyu[2-3]/s/onifconsole/onifexists/' ${NANO_WORLDDIR}/etc/ttys
 	# Tell loader to use serial and vga console, set baud speed
 	echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 }

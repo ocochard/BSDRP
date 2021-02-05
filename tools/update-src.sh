@@ -32,7 +32,7 @@ get_last_git_rev() {
 	[ -d $1 ] || die "No folder $1 found"
 	cd $dir/../$1
 	git stash || true
-	git pull
+	git pull --ff-only
 	git stash pop || true
 	rev=$(git log --pretty=format:'%h' -n 1)
 	git_count=$(git rev-list HEAD --count)
@@ -70,7 +70,7 @@ else
 		if [ -d $i/FreeBSD/src ]; then
 			get_last_git_rev $i/FreeBSD/src
 			update $i/make.conf SRC_REV $rev
-			echo "$i updated to c$git_count"
+			echo "$i updated to n$git_count"
 		fi
 	done
 	get_last_svn_rev BSDRP/FreeBSD/ports

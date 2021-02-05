@@ -18,7 +18,7 @@ The make.sh script is the build tool for generating BSDRP image:
 ./make.sh -h for displaying the help
 
 More details on the website:
-http://bsdrp.net/documentation/technical_docs
+https://bsdrp.net/documentation/technical_docs
 
 ## Child projects
  * TESTING: Generate a small nanobsd image (without packages), used for following network performance evolution in time

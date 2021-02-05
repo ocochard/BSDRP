@@ -1,3 +1,12 @@
+# Release 1.99 (not released)
+
+## To do
+* poudriere migration
+
+## Bug fixes
+* Fix public key derivation if WireGuard implementation (PR 252894)
+
+-----------------------------------------------------
 # Release 1.98 (18/01/2021)
 
 ## New features
