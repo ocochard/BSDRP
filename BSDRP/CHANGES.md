@@ -3,8 +3,11 @@
 ## To do
 * poudriere migration
 
+## New features
+* added netcat back
+* Using wireguard-kernel module
+
 ## Bug fixes
-* Fix public key derivation if WireGuard implementation (PR 252894)
 
 -----------------------------------------------------
 # Release 1.98 (18/01/2021)

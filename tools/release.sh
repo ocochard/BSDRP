@@ -26,7 +26,6 @@ if [ $(uname -m) = "sparc64" ]; then
 	ARCH_LIST="sparc64"
 else
 	ARCH_LIST='
-i386
 amd64
 '
 fi

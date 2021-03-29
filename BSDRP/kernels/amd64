@@ -129,6 +129,7 @@ device		cpufreq
 
 # Bus support.
 device		acpi
+device		smbios
 options 	IOMMU
 device		pci
 options 	PCI_HP			# PCI-Express native HotPlug
@@ -378,7 +379,7 @@ device		virtio_console	# VirtIO Console driver
 device		virtio_random	# VirtIO Entropy driver
 
 # HyperV drivers and enhancement support
-device		hyperv			# HyperV drivers 
+device		hyperv			# HyperV drivers
 
 # Xen HVM Guest Optimizations
 # NOTE: XENHVM depends on xenpci.  They must be added or removed together.
@@ -397,9 +398,6 @@ device		netmap			# netmap(4) support
 options 	HID_DEBUG		# enable debug msgs
 device		hid			# Generic HID support
 options 	IICHID_SAMPLING		# Workaround missing GPIO INTR support
-#device		usbhid			# USB transport support.
-#device		hidbus			# HID bus (required by usbhid/iichid)
-#options 	USBHID_ENABLED		# Prefer usbhid to other USB drivers
 
 # BSDRP added NICs
 device		bnxt	# Broadcom NetXtreme-C/NetXtreme-E Family Ethernet driver

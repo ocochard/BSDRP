@@ -40,6 +40,7 @@ CONF_INSTALL='
 # See the file /usr/src/tools/build/options or man src.conf for details
 # WITHOUT_FORTH= mandatory for the boot-loader
 # WITHOUT_KERBEROS= prevents to build ftp/curl
+# WITHOUT_AUDIT= broken since https://cgit.freebsd.org/src/commit/?id=8c3eaf244a417a4ee105834410a52144206102e5
 CONF_WORLD='
 WITHOUT_ACCT=
 WITHOUT_AMD=
@@ -47,7 +48,6 @@ WITHOUT_APM=
 WITHOUT_ASSERT_DEBUG=
 WITHOUT_ATF=
 WITHOUT_ATM=
-WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
 WITHOUT_AUTOFS=
 WITHOUT_BHYVE=
@@ -88,7 +88,6 @@ WITHOUT_LOCATE=
 WITHOUT_LPR=
 WITHOUT_NCP=
 WITHOUT_NDIS=
-WITHOUT_NETCAT=
 WITHOUT_NIS=
 WITHOUT_NLS=
 WITHOUT_NLS_CATALOGS=
@@ -125,6 +124,7 @@ WITH_REPRODUCIBLE_BUILD=
 WITH_DIRDEPS_BUILD=
 WITH_RETPOLINE=
 WITH_MALLOC_PRODUCTION=
+WITH_OPENSSL_KTLS=
 '
 
 # Customize commands.
@@ -453,6 +453,10 @@ if [ ${NANO_ARCH} = "amd64" ]; then
 	add_port "net/netmap-fwd"
 fi
 
+# Wiregurad kernel module port, waiting the embedded version
+add_port "net/wireguard-tools"
+add_port "net/wireguard-kmod"
+
 # mlvpn: Link aggregator
  add_port "devel/libev"
  add_port "security/libsodium"
@@ -466,9 +470,9 @@ add_port "security/openvpn"
 #add_port "security/openvpn-auth-radius"
 
 # wireguard
-add_port "shells/bash"
-add_port "net/wireguard-go"
-add_port "net/wireguard"
+#add_port "shells/bash"
+#add_port "net/wireguard-go"
+#add_port "net/wireguard"
 
 # tinc
 add_port "security/tinc"
@@ -523,7 +527,7 @@ add_port "net/nc"
 add_port "net/ntraceroute"
 
 # MTR combines traceroute and ping
-add_port "net/mtr-nox11"
+add_port "net/mtr" "WITHOUT+=\"JSON\""
 
 # BGPQ3: Lightweight prefix-list generator for Cisco and Juniper routers
 add_port "net-mgmt/bgpq4"

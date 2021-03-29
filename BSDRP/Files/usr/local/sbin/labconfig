@@ -753,13 +753,13 @@ bird_jails() {
 sysrc hostname=host \
   cloned_interfaces="epair0 epair1 epair2 epair3" \
   kld_list="ipsec"
-cat > /etc/devfs.rules <<'EOF'
+cat > /etc/devfs.rules <<EOF
 [devfsrules_jailbpf=4]
 add include \$devfsrules_hide_all
 add include \$devfsrules_unhide_basic
 add include \$devfsrules_unhide_login
 add path 'bpf*' unhide
-'EOF'
+EOF
 service devfs restart
 service netif restart
 service hostname restart
@@ -2316,6 +2316,7 @@ router bgp 64512
  bgp router-id 0.0.0.204
  bgp confederation identifier 200
  bgp confederation peers 65535
+ no bgp ebgp-requires-policy
  no bgp default ipv4-unicast
  neighbor 10.0.2.3 remote-as 100
  neighbor 10.0.2.3 password abigpassword
@@ -2362,6 +2363,7 @@ router bgp 64512
  bgp router-id 0.0.0.205
  bgp confederation identifier 200
  bgp confederation peers 65535
+ no bgp ebgp-requires-policy
  no bgp default ipv4-unicast
  neighbor 10.0.3.4 remote-as 64512
  neighbor 10.0.4.6 remote-as 65535
@@ -2419,6 +2421,7 @@ router bgp 65535
  bgp router-id 0.0.0.206
  bgp confederation identifier 200
  bgp confederation peers 64512
+ no bgp ebgp-requires-policy
  no bgp default ipv4-unicast
  neighbor 10.0.4.5 remote-as 64512
  neighbor 10.0.5.7 remote-as 65535
@@ -2476,6 +2479,7 @@ router bgp 65535
  bgp router-id 0.0.0.207
  bgp confederation identifier 200
  bgp confederation peers 64512
+ no bgp ebgp-requires-policy
  no bgp default ipv4-unicast
  neighbor 10.0.5.6 remote-as 65535
  neighbor 10.0.5.6 password abcdefgh
