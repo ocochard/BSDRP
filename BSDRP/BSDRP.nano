@@ -454,6 +454,7 @@ if [ ${NANO_ARCH} = "amd64" ]; then
 fi
 
 # Wiregurad kernel module port, waiting the embedded version
+add_port "shells/bash"
 add_port "net/wireguard-tools"
 add_port "net/wireguard-kmod"
 
@@ -470,7 +471,6 @@ add_port "security/openvpn"
 #add_port "security/openvpn-auth-radius"
 
 # wireguard
-#add_port "shells/bash"
 #add_port "net/wireguard-go"
 #add_port "net/wireguard"
 
