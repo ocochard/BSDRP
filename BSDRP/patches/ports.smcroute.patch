@@ -2,9 +2,7 @@ Index: net/smcroute/Makefile
 ===================================================================
 --- net/smcroute/Makefile	(revision 461373)
 +++ net/smcroute/Makefile	(working copy)
-@@ -1,7 +1,7 @@
- # $FreeBSD$
- 
+@@ -1,5 +1,5 @@
  PORTNAME=	smcroute
 -PORTVERSION=	2.1.0
 +PORTVERSION=	2.4.0

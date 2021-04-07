@@ -69,7 +69,7 @@ update_src () {
 			;;
 		git)
 			# cloning
-			git clone -b ${GIT_BRANCH} --depth 1 --single-branch "${SRC_REPO}".git "${FREEBSD_SRC}" || die "Can't clone sources from git repo"
+			git clone -b ${SRC_BRANCH} --depth 1 --single-branch "${SRC_REPO}".git "${FREEBSD_SRC}" || die "Can't clone sources from git repo"
 			# revert back to previous revision
 			cd "${FREEBSD_SRC}"
 			git checkout ${SRC_REV}
@@ -127,24 +127,24 @@ update_src () {
 
 update_port () {
 	echo "Updating/Installing ports tree"
-	if [ ! -d "${PORTS_SRC}"/.svn ]; then
+	if [ ! -d "${PORTS_SRC}"/.git ]; then
 		echo "No existing source port tree found: Checking out ports source..."
-		mkdir -p "${PORTS_SRC}" || die "Can't create ${PORTS_SRC}"
-		${SVN_CMD} co https://${SVN_PORTS_PATH} "${PORTS_SRC}" -r ${PORTS_REV} \
-		|| die "Can't check out ports sources"
+		# cloning
+		git clone -b ${PORTS_BRANCH} --depth 1 --single-branch "${PORTS_REPO}".git "${PORTS_SRC}" || die "Can't clone sources from git repo"
+			# revert back to previous revision
+			cd "${PORTS_SRC}"
+			git checkout ${PORTS_REV}
+			echo "Git commit count:"
+			git rev-list HEAD --count
 	else
-		#Checking repo change
-		if ! ${SVN_CMD} info "${PORTS_SRC}" | grep -q "${SVN_PORTS_PATH}"; then
-			die "svn repo changed, delete your source tree with rm -rf ${PORTS_SRC}"
-		fi
 		#cleaning local patched ports sources
-		echo "Cleaning local port tree patches..."
-		${SVN_CMD} revert -R "${PORTS_SRC}"
-		echo "Removing unrevisionned files..."
-		${SVN_CMD} cleanup "${PORTS_SRC}" --remove-unversioned
-		echo "Updating ports tree sources..."
-		${SVN_CMD} update "${PORTS_SRC}" -r ${PORTS_REV} \
-		|| die "Can't update ports sources"
+		echo "Reverting local changes and updating..."
+		(
+			cd "${PORTS_SRC}"
+			git checkout .
+			git clean -f
+			git checkout ${PORTS_REV}
+		)
 		[ -f "${PROJECT_DIR}"/FreeBSD/ports-added ] && rm "${PROJECT_DIR}"/FreeBSD/ports-added || true
 	fi
 }
@@ -364,8 +364,13 @@ NANO_DIRS_INSTALL="${PROJECT_DIR}/Files"
 # Once loaded, all these variables will be available:
 # -NAME: Name of the Project
 # -MASTER_PROJECT: For a child projet, name of the father project
-# -SVN_SRC_PATH: SVN path for the source tree
-# -SVN_PORTS_PATH: SVN path for the port source tree
+# -SRC_REV="13b3862ee87"
+# -PORTS_REV="d73721414d8d"
+# -SRC_METHOD="git"
+# -SRC_REPO: FreeBSD base source tree repository
+# -SRC_BRANCH: Branch to use
+# -PORTS_REPO: FreeBSD port source tree repository
+# -PORTS_BRANCH: Branch to use
 # -FREEBSD_SRC: directory for localy stored FreeBSD source tree
 # -SRC_PATCH_DIR: Directory for FreeBSD patches
 # -PORTS_SRC: Directory for localy stored ports source tree
@@ -651,7 +656,7 @@ if [ -n "${SRC_REPO}" ]; then
 	fi
 fi
 
-if [ -n "${SVN_PORTS_PATH}" ]; then
+if [ -n "${PORTS_REPO}" ]; then
 	if ($UPDATE_PORT); then
 		echo "Update port tree..."
    		update_port

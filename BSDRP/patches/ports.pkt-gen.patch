@@ -2,9 +2,7 @@ Index: net/pkt-gen/Makefile
 ===================================================================
 --- net/pkt-gen/Makefile	(revision 557996)
 +++ net/pkt-gen/Makefile	(working copy)
-@@ -1,8 +1,7 @@
- # $FreeBSD$
- 
+@@ -1,6 +1,5 @@
  PORTNAME=	pkt-gen
 -PORTVERSION=	g2017.08.06
 -PORTREVISION=	1

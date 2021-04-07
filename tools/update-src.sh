@@ -73,6 +73,7 @@ else
 			echo "$i updated to n$git_count"
 		fi
 	done
-	get_last_svn_rev BSDRP/FreeBSD/ports
+	get_last_git_rev BSDRP/FreeBSD/ports
 	update BSDRP/make.conf PORTS_REV $rev
+	echo "ports updated to n$git_count"
 fi
