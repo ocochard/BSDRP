@@ -320,7 +320,6 @@ diff () {
 
 # Rollback to previous configuration
 rollback () {
-	setlock
 	echo "Rollback the archived configuration"
 	mount_data || die "ERROR: Can't mount data, then can't retreive archive file"
 	# Check if archive exist
