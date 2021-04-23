@@ -70,6 +70,7 @@ else
 		if [ -d $i/FreeBSD/src ]; then
 			get_last_git_rev $i/FreeBSD/src
 			update $i/make.conf SRC_REV $rev
+			echo n$git_count > $i/Files/etc/version
 			echo "$i updated to n$git_count"
 		fi
 	done

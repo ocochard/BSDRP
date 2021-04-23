@@ -13,18 +13,19 @@
 ## Upgraded packages
 * bird to 2.0.8
 * devcpu-data (Intel microcode updates) to 1.38
+* iperf to 2.1.1.d
 * monit to 5.28
-* openvpn to 2.5.1
+* openvpn to 2.5.2
 
 ## Packages list
 * arping 2.21: ARP level "ping" utility
-* bash 5.1.4_1: GNU Project's Bourne Again SHell
+* bash 5.1.4_2: GNU Project's Bourne Again SHell
 * bgpq4 0.0.6: Lightweight prefix-list generator for various routers v4
-* bird2 2.0.8: Dynamic IP routing daemon
+* bird2 2.0.8_1: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.5: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.63: Root certificate bundle from the Mozilla Project
-* curl 7.75.0: Command line tool and library for transferring data with URLs
+* curl 7.76.0: Command line tool and library for transferring data with URLs
 * devcpu-data 1.38: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_3: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1_1: Lightweight DHCP relay agent (Yandex edition)
@@ -38,7 +39,7 @@
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 202011: Process Count Monitor (PCM) for Intel processors
-* iperf 2.1.0.r2: Tool to measure maximum TCP and UDP bandwidth
+* iperf 2.1.1.d: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.9: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_3: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_11: KAME racoon IKE daemon, ipsec-tools version
@@ -71,8 +72,8 @@
 * nstat 1.0_4: Replacement for bw/netstat/vmstat/pcm-memory.x
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.58: Open source LDAP client implementation
-* openvpn 2.5.1: Secure IP/Ethernet tunnel daemon
-* pciids 20210223: Database of all known IDs used in PCI devices
+* openvpn 2.5.2: Secure IP/Ethernet tunnel daemon
+* pciids 20210322: Database of all known IDs used in PCI devices
 * pcre 8.44: Perl Compatible Regular Expressions library
 * perl5 5.32.1_1: Practical Extraction and Report Language
 * pimd 2.3.2_1: Lightweight stand-alone PIM-SM v2 multicast routing daemon
@@ -94,13 +95,13 @@
 * sudo 1.9.6p1: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tinc 1.0.36_2: Virtual Private Network (VPN) daemon
-* tmux 3.1c: Terminal Multiplexer
+* tmux 3.2: Terminal Multiplexer
 * trafshow 5.2.3_3,1: Full screen visualization of network traffic
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 * utf8proc 2.6.1: UTF-8 processing library
-* vim-tiny 8.2.2569: Improved version of the vi editor (vim binary only)
-* wireguard-kmod 0.0.20210323: WireGuard implementation for the FreeBSD kernel
-* wireguard-tools 1.0.20210315_3: Fast, modern and secure VPN Tunnel
+* vim-tiny 8.2.2725: Improved version of the vi editor (vim binary only)
+* wireguard-kmod 0.0.20210415: WireGuard implementation for the FreeBSD kernel
+* wireguard-tools 1.0.20210315_4: Fast, modern and secure VPN Tunnel
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
 -----------------------------------------------------

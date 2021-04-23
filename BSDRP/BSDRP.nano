@@ -355,6 +355,8 @@ add_port "devel/py-setuptools"
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
 add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
+# Build dep that will be removed after, but need to force STATIC mode for mstflint
+add_port "textproc/expat2" "WITH=\"STATIC\""
 add_port "security/libssh"
 add_port "net-mgmt/rtrlib"
 

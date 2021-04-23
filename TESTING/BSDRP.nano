@@ -334,6 +334,9 @@ EOF
 #add_port "security/libssh"
 #add_port "net/bird2"
 
+# One tool to resume them all
+#add_port "net-mgmt/nstat"
+
 # BSDRP custom function
 bsdrp_custom () {
 	# Replace BSDRP_VERSION in /boot/lua/brand-bsdrp.lua with the version number in etc/version

@@ -62,13 +62,14 @@ The authors of BSDRP would like to thank the authors of these software for their
 * mpd5, license:BSD3CLAUSE, https://sourceforge.net/projects/mpd/
 * mrouted, license:MIT, http://freecode.com/projects/mrouted
 * mstflint-lite, license:BSD2CLAUSE, GPLv2, https://github.com/Mellanox/mstflint
-* mtr-nox11, license:GPLv2, https://www.bitwizard.nl/mtr/
+* mtr, license:GPLv2, https://www.bitwizard.nl/mtr/
 * nagios-plugins, license:GPLv3, https://www.nagios-plugins.org/
 * nc, license:, http://www.kyne.com.au/~mark/software/ncat.php
 * netmap-fwd, license:BSD2CLAUSE, https://github.com/NetgateUSA/netmap-fwd
 * netperf, license:, http://www.netperf.org/
 * nrpe3, license:GPLv2+, https://www.nagios.org/
 * nstat, license:BSD2CLAUSE, https://github.com/gallatin/nstat
+* ntraceroute
 * openldap-client, license:OPENLDAP, https://www.OpenLDAP.org/
 * openvpn, license:GPLv2, https://openvpn.net/index.php/open-source.html
 * pciids, license:BSD3CLAUSE, GPLv2+, http://pciids.sourceforge.net/
@@ -82,7 +83,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * py37-exabgp4, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
 * py37-mrtparse, license:APACHE20, https://github.com/t2mune/mrtparse
 * py37-setuptools, license:MIT, https://pypi.org/project/setuptools/
-* python37, license:PSFL, https://www.python.org/
+* python, license:, https://www.python.org/
 * quagga-bgp-netgen, license:BSD2CLAUSE, https://github.com/ocochard/quagga-bgp-netgen
 * readline, license:GPLv3, https://tiswww.case.edu/php/chet/readline/rltop.html
 * rtrlib, license:MIT, http://rtrlib.realmv6.org/
@@ -96,6 +97,6 @@ The authors of BSDRP would like to thank the authors of these software for their
 * ucarp, license:ISC, https://github.com/jedisct1/UCarp
 * utf8proc, license:MIT, https://juliastrings.github.io/utf8proc/
 * vim-tiny, license:VIM, http://www.vim.org/
-* wireguard, license:GPLv2, https://www.wireguard.com
-* wireguard-go, license:MIT, https://www.wireguard.com
+* wireguard-kmod, license:MIT, https://git.zx2c4.com/wireguard-freebsd/
+* wireguard-tools, license:GPLv2, https://git.zx2c4.com/wireguard-tools/about/
 * x86info, license:GPLv2, https://github.com/kernelslacker/x86info
