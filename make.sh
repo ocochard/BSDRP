@@ -69,7 +69,7 @@ update_src () {
 			;;
 		git)
 			# cloning
-			git clone -b ${SRC_BRANCH} --depth 1 --single-branch "${SRC_REPO}".git "${FREEBSD_SRC}" || die "Can't clone sources from git repo"
+			git clone -b ${SRC_BRANCH} --single-branch "${SRC_REPO}".git "${FREEBSD_SRC}" || die "Can't clone sources from git repo"
 			# revert back to previous revision
 			cd "${FREEBSD_SRC}"
 			git checkout ${SRC_REV}
@@ -130,7 +130,7 @@ update_port () {
 	if [ ! -d "${PORTS_SRC}"/.git ]; then
 		echo "No existing source port tree found: Checking out ports source..."
 		# cloning
-		git clone -b ${PORTS_BRANCH} --depth 1 --single-branch "${PORTS_REPO}".git "${PORTS_SRC}" || die "Can't clone sources from git repo"
+		git clone -b ${PORTS_BRANCH} --single-branch "${PORTS_REPO}".git "${PORTS_SRC}" || die "Can't clone sources from git repo"
 			# revert back to previous revision
 			cd "${PORTS_SRC}"
 			git checkout ${PORTS_REV}
