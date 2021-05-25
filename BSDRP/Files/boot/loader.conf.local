@@ -28,6 +28,9 @@ hw.usb.no_pf="1"	# Disable USB packet filtering
 dpdk_lpm4_load="YES"
 dpdk_lpm6_load="YES"
 
+# Load DXR: IPv4 lookup algo
+fib_dxr_load="YES"
+
 # Loading newest Intel microcode
 cpu_microcode_load="YES"
 cpu_microcode_name="/boot/firmware/intel-ucode.bin"
