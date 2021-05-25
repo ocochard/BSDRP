@@ -1,16 +1,16 @@
-Index: net/pimd/Makefile
-===================================================================
---- net/pimd/Makefile	(revision 516926)
-+++ net/pimd/Makefile	(working copy)
-@@ -3,6 +3,7 @@
+diff --git net/pimd/Makefile net/pimd/Makefile
+index 7b6a4da7c..413fe1b59 100644
+--- net/pimd/Makefile
++++ net/pimd/Makefile
+@@ -1,6 +1,7 @@
  PORTNAME=	pimd
  PORTVERSION=	2.3.2
  CATEGORIES=	net
-+PORTREVISION=	1
++PORTREVISION=  1
  
  MAINTAINER=	olivier@FreeBSD.org
  COMMENT=	Lightweight stand-alone PIM-SM v2 multicast routing daemon
-@@ -19,7 +20,7 @@
+@@ -17,7 +18,7 @@ GH_SUBDIR=	libite:libite
  USE_RC_SUBR=	${PORTNAME}
  
  HAS_CONFIGURE=	yes
@@ -19,10 +19,10 @@ Index: net/pimd/Makefile
  
  do-install:
  	${INSTALL_PROGRAM} ${WRKSRC}/pimd ${STAGEDIR}${PREFIX}/sbin/
-Index: net/pimd/files/pimd.in
-===================================================================
---- net/pimd/files/pimd.in	(revision 516926)
-+++ net/pimd/files/pimd.in	(working copy)
+diff --git net/pimd/files/pimd.in net/pimd/files/pimd.in
+index d3339b5e9..505ecccb6 100644
+--- net/pimd/files/pimd.in
++++ net/pimd/files/pimd.in
 @@ -2,7 +2,7 @@
  #
  # PROVIDE: pimd
@@ -32,7 +32,7 @@ Index: net/pimd/files/pimd.in
  
  #
  # Add the following to /etc/rc.conf[.local] to enable this service
-@@ -17,6 +17,7 @@
+@@ -17,6 +17,7 @@ rcvar="${name}_enable"
  command="%%PREFIX%%/sbin/${name}"
  required_files="%%PREFIX%%/etc/${name}.conf"
  extra_commands=reload

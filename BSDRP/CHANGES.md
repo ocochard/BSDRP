@@ -1,35 +1,38 @@
-# Release 1.99 (not released)
-
-## To do
-* poudriere migration
+# Release 1.99 (soon)
 
 ## New features
-* Based on FreeBSD 14-head n257724 (6f646494e1a) and ports r569609
+* Based on FreeBSD 14-head 7b8696bf128 and ports tree 98b2a4841162
+  * Add DXR routing lookup (IPv4 only)
 * added netcat back
 * Replaced wireguard-in-kernel by port wireguard-kernel module
 
 ## Bug fixes
+* Mellanox performance with small packets forwarding
+* sudo security
 
 ## Upgraded packages
 * bird to 2.0.8
+* bgpq4 to 0.0.7
 * devcpu-data (Intel microcode updates) to 1.38
 * iperf to 2.1.1.d
 * monit to 5.28
 * openvpn to 2.5.2
+* python to 3.8
+* sudo to 1.9.7
 
 ## Packages list
 * arping 2.21: ARP level "ping" utility
-* bash 5.1.4_2: GNU Project's Bourne Again SHell
-* bgpq4 0.0.6: Lightweight prefix-list generator for various routers v4
+* bash 5.1.8: GNU Project's Bourne Again SHell
+* bgpq4 0.0.7: Lightweight prefix-list generator for various routers v4
 * bird2 2.0.8_1: Dynamic IP routing daemon
 * bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
 * bsnmp-ucd 0.4.5: bsnmpd module that implements parts of UCD-SNMP-MIB
 * ca_root_nss 3.63: Root certificate bundle from the Mozilla Project
-* curl 7.76.0: Command line tool and library for transferring data with URLs
+* curl 7.76.1: Command line tool and library for transferring data with URLs
 * devcpu-data 1.38: Intel and AMD CPUs microcode updates
 * dhcp6 20080615.2_3: KAME DHCP6 client, server, and relay
 * dhcprelya 6.1_1: Lightweight DHCP relay agent (Yandex edition)
-* dtrace-toolkit 1.0_5: Collection of useful scripts for DTrace
+* dtrace-toolkit 1.0_6: Collection of useful scripts for DTrace
 * easy-rsa 3.0.8: Small RSA key management package based on openssl
 * flashrom 1.2: Utility for reading, writing, verifying, and erasing flash ROM chips
 * freevrrpd 1.1_1: RFC 2338 compliant VRRP implementation
@@ -39,7 +42,7 @@
 * graphpath 1.2: Generates an ASCII network diagram from the route table
 * indexinfo 0.3.1: Utility to regenerate the GNU info page index
 * intel-pcm 202011: Process Count Monitor (PCM) for Intel processors
-* iperf 2.1.1.d: Tool to measure maximum TCP and UDP bandwidth
+* iperf 2.1.1.d_1: Tool to measure maximum TCP and UDP bandwidth
 * iperf3 3.9: Improved tool to measure TCP and UDP bandwidth
 * ipmitool 1.8.18_3: CLI to manage IPMI systems
 * ipsec-tools 0.8.2_11: KAME racoon IKE daemon, ipsec-tools version
@@ -61,6 +64,7 @@
 * mlvpn 2.3.1_2: Multi-link VPN
 * monit 5.28.0: Unix system management and proactive monitoring
 * mpd5 5.9: Multi-link PPP daemon based on netgraph(4)
+* mpdecimal 2.5.1: C/C++ arbitrary precision decimal floating point libraries
 * mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
 * mstflint-lite 4.16.0.1: Firmware Burning and Diagnostics Tools for Mellanox devices
 * mtr 0.94_1: Traceroute and ping in a single network diagnostic tool
@@ -72,8 +76,8 @@
 * nstat 1.0_4: Replacement for bw/netstat/vmstat/pcm-memory.x
 * ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
 * openldap-client 2.4.58: Open source LDAP client implementation
-* openvpn 2.5.2: Secure IP/Ethernet tunnel daemon
-* pciids 20210322: Database of all known IDs used in PCI devices
+* openvpn 2.5.2_1: Secure IP/Ethernet tunnel daemon
+* pciids 20210426: Database of all known IDs used in PCI devices
 * pcre 8.44: Perl Compatible Regular Expressions library
 * perl5 5.32.1_1: Practical Extraction and Report Language
 * pimd 2.3.2_1: Lightweight stand-alone PIM-SM v2 multicast routing daemon
@@ -81,27 +85,26 @@
 * pkg 1.16.3: Package manager
 * pkt-gen g2019.11.07: Packet sink/source using the netmap API
 * pmacct 1.7.5: Accounting and aggregation tool for IPv4 and IPv6 traffic
-* py37-exabgp4 4.2.11: BGP engine and route injector
-* py37-mrtparse 2.0.0: MRT format data parser
-* py37-setuptools 44.0.0: Python packages installer
-* python 3.7_3,2: "meta-port" for the default version of Python interpreter
+* py38-exabgp4 4.2.11: BGP engine and route injector
+* py38-mrtparse 2.0.0: MRT format data parser
+* py38-setuptools 44.0.0_1: Python packages installer
+* python 3.8_3,2: "meta-port" for the default version of Python interpreter
 * python3 3_3: The "meta-port" for version 3 of the Python interpreter
-* python37 3.7.10: Interpreted object-oriented programming language
+* python38 3.8.10: Interpreted object-oriented programming language
 * quagga-bgp-netgen 0.2: Generates Quagga/FRR bgp configuration file with lot's of routes
-* readline 8.1.0: Library for editing command lines as they are typed
+* readline 8.1.1: Library for editing command lines as they are typed
 * rtrlib 0.6.3: Open-source C implementation of the RPKI/Router Protocol client
-* smcroute 2.4.0: Static multicast routing tool
-* strongswan 5.9.2_1: Open Source IKEv2 IPsec-based VPN solution
-* sudo 1.9.6p1: Allow others to run commands as root
+* strongswan 5.9.2_2: Open Source IKEv2 IPsec-based VPN solution
+* sudo 1.9.7: Allow others to run commands as root
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tinc 1.0.36_2: Virtual Private Network (VPN) daemon
 * tmux 3.2: Terminal Multiplexer
 * trafshow 5.2.3_3,1: Full screen visualization of network traffic
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 * utf8proc 2.6.1: UTF-8 processing library
-* vim-tiny 8.2.2725: Improved version of the vi editor (vim binary only)
-* wireguard-kmod 0.0.20210415: WireGuard implementation for the FreeBSD kernel
-* wireguard-tools 1.0.20210315_4: Fast, modern and secure VPN Tunnel
+* vim-tiny 8.2.2820: Improved version of the vi editor (vim binary only)
+* wireguard-kmod 0.0.20210503: WireGuard implementation for the FreeBSD kernel
+* wireguard-tools 1.0.20210424: Fast, modern and secure VPN Tunnel
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
 -----------------------------------------------------

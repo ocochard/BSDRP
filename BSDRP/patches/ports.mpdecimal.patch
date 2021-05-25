@@ -1,0 +1,26 @@
+diff --git math/mpdecimal/files/patch-configure math/mpdecimal/files/patch-configure
+new file mode 100644
+index 000000000..68f42824b
+--- /dev/null
++++ math/mpdecimal/files/patch-configure
+@@ -0,0 +1,20 @@
++--- configure.orig	2021-05-25 14:53:17 UTC
+++++ configure
++@@ -2644,7 +2644,7 @@ if test -n "$MACHINE"; then
++     esac
++ 
++     case "$MACHINE" in
++-        x64|uint128|ansi64)
+++        x64|uint128|ansi64|amd64)
++             CFLAGS="$CFLAGS $M64"
++             CXXFLAGS="$CXXFLAGS $M64"
++             LDFLAGS="$LDFLAGS $M64"
++@@ -5080,7 +5080,7 @@ MPD_ABI=
++ MPD_PREC=9
++ MPD_DPREC=18
++ case "$MACHINE" in
++-    x64)
+++    x64|amd64)
++         MPD_HEADER_CONFIG=$CONFIG_64
++         MPD_ABI=$M64
++         MPD_CONFIG="-DCONFIG_64 -DASM"

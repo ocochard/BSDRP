@@ -60,6 +60,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * mlvpn, license:BSD2CLAUSE, https://zehome.github.io/MLVPN/
 * monit, license:AGPLv3, https://mmonit.com/monit/
 * mpd5, license:BSD3CLAUSE, https://sourceforge.net/projects/mpd/
+* mpdecimal, license:BSD2CLAUSE, https://www.bytereef.org/mpdecimal/index.html
 * mrouted, license:MIT, http://freecode.com/projects/mrouted
 * mstflint-lite, license:BSD2CLAUSE, GPLv2, https://github.com/Mellanox/mstflint
 * mtr, license:GPLv2, https://www.bitwizard.nl/mtr/
@@ -80,19 +81,18 @@ The authors of BSDRP would like to thank the authors of these software for their
 * pkg, license:BSD2CLAUSE, https://github.com/freebsd/pkg
 * pkt-gen, license:BSD2CLAUSE, https://github.com/luigirizzo/netmap
 * pmacct, license:GPLv2, http://www.pmacct.net/
-* py37-exabgp4, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
-* py37-mrtparse, license:APACHE20, https://github.com/t2mune/mrtparse
-* py37-setuptools, license:MIT, https://pypi.org/project/setuptools/
+* py38-exabgp4, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
+* py38-mrtparse, license:APACHE20, https://github.com/t2mune/mrtparse
+* py38-setuptools, license:MIT, https://pypi.org/project/setuptools/
 * python, license:, https://www.python.org/
 * quagga-bgp-netgen, license:BSD2CLAUSE, https://github.com/ocochard/quagga-bgp-netgen
 * readline, license:GPLv3, https://tiswww.case.edu/php/chet/readline/rltop.html
 * rtrlib, license:MIT, http://rtrlib.realmv6.org/
-* smcroute, license:GPLv2+, https://github.com/troglobit/smcroute/
 * strongswan, license:GPLv2, http://www.strongswan.org
 * sudo, license:sudo, https://www.sudo.ws/
 * tayga, license:GPLv2, http://www.litech.org/tayga/
 * tinc, license:GPLv3, http://www.tinc-vpn.org/
-* tmux, license:ISCL, http://tmux.github.io/
+* tmux, license:GPLv2, ISCL, http://tmux.github.io/
 * trafshow, license:BSD2CLAUSE, https://BSDforge.com/projects/net/trafshow
 * ucarp, license:ISC, https://github.com/jedisct1/UCarp
 * utf8proc, license:MIT, https://juliastrings.github.io/utf8proc/

@@ -1,10 +1,7 @@
-ports-mgmt/pkg
 lang/perl5.32
 security/ca_root_nss
 net-mgmt/bsnmp-regex
 net-mgmt/bsnmp-ucd
-lang/python37
-lang/python3
 lang/python
 net-mgmt/rtrlib
 net/frr7
@@ -35,9 +32,7 @@ net/mpd5
 net/mlvpn
 security/easy-rsa
 security/openvpn
-shells/bash
-net/wireguard-go
-net/wireguard
+net/wireguard-kmod
 security/tinc
 benchmarks/netperf
 benchmarks/iperf

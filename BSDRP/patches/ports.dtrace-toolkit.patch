@@ -1,13 +1,13 @@
-Index: sysutils/dtrace-toolkit/Makefile
-===================================================================
---- sysutils/dtrace-toolkit/Makefile	(revision 521622)
-+++ sysutils/dtrace-toolkit/Makefile	(working copy)
-@@ -17,7 +17,7 @@
+diff --git sysutils/dtrace-toolkit/Makefile sysutils/dtrace-toolkit/Makefile
+index 66751bf1d..280eeeb5f 100644
+--- sysutils/dtrace-toolkit/Makefile
++++ sysutils/dtrace-toolkit/Makefile
+@@ -16,7 +16,7 @@ USE_GITHUB=	yes
  GH_ACCOUNT=	opendtrace
  GH_PROJECT=	toolkit
- GH_TAGNAME=	f36d00b
+ GH_TAGNAME=	ec23e25c8995bfa50cd7c0058129f1f489fdabb4
 -USE_RUBY=	yes
 +#USE_RUBY=	yes
- SHEBANG_LANG=	sh
- sh_OLD_CMD=	/usr/bin/sh ./sh
- sh_CMD=		${SH}
+ SHEBANG_FILES=	Apps/shellsnoop \
+ 		Code/Perl/func_abc.pl \
+ 		Code/Perl/func_malloc.pl \

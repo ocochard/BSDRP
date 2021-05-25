@@ -48,6 +48,7 @@ WITHOUT_APM=
 WITHOUT_ASSERT_DEBUG=
 WITHOUT_ATF=
 WITHOUT_ATM=
+WITHOUT_AUDIT=
 WITHOUT_AUTHPF=
 WITHOUT_AUTOFS=
 WITHOUT_BHYVE=
@@ -120,7 +121,6 @@ WITHOUT_ZFS=
 WITH_IDEA=
 WITH_OFED=
 WITH_DEBUG_FILES=
-WITH_REPRODUCIBLE_BUILD=
 WITH_DIRDEPS_BUILD=
 WITH_RETPOLINE=
 WITH_MALLOC_PRODUCTION=
@@ -344,7 +344,8 @@ add_port "net-mgmt/bsnmp-ucd"
 add_port "print/indexinfo"
 add_port "devel/libffi"
 add_port "devel/readline"
-add_port "lang/python37"
+add_port "math/mpdecimal"
+add_port "lang/python38"
 add_port "lang/python3"
 add_port "lang/python"
 add_port "devel/py-setuptools"
@@ -395,7 +396,9 @@ add_port "net/libnet"
 add_port "net/arping"
 
 # smcroute: Manipulate the multicast routes
-add_port "net/smcroute"
+# Fail to build with error:
+# /usr/include/netinet/ip_mroute.h:350:17: error: field has incomplete type 'struct callout'
+#add_port "net/smcroute"
 
 # mrouted: IPv4 DVMRP (multicast) routing daemon
 add_port "net/mrouted"

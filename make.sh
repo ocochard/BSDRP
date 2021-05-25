@@ -115,6 +115,7 @@ update_src () {
 			;;
 		git)
 			cd "${FREEBSD_SRC}"
+			git pull --ff-only
 			git checkout ${SRC_REV}
 			# Or:
 			# git reset --hard ${SRC_REV}
@@ -143,6 +144,7 @@ update_port () {
 			cd "${PORTS_SRC}"
 			git checkout .
 			git clean -f
+			git pull --ff-only
 			git checkout ${PORTS_REV}
 		)
 		[ -f "${PROJECT_DIR}"/FreeBSD/ports-added ] && rm "${PROJECT_DIR}"/FreeBSD/ports-added || true
@@ -508,7 +510,7 @@ check_clean "${NANO_OBJ}"
 
 #Check if the project uses port before installing/updating port tree
 if grep -q '^add_port[[:blank:]]\+"' "${PROJECT_DIR}"/${NAME}.nano; then
-	[ -d "${PORTS_SRC}"/.svn ] || UPDATE_PORT=true
+	[ -d "${PORTS_SRC}"/.${SRC_METHOD} ] || UPDATE_PORT=true
 	PROJECT_WITH_PORT=true
 else
 	PROJECT_WITH_PORT=false
@@ -671,7 +673,7 @@ fi
 REV=$(grep -m 1 REVISION= "${FREEBSD_SRC}/sys/conf/newvers.sh" | cut -f2 -d '"')
 BRA=$(grep -m 1 BRANCH=	"${FREEBSD_SRC}/sys/conf/newvers.sh" | cut -f2 -d '"')
 export FBSD_DST_RELEASE="${REV}-${BRA}"
-export FBSD_DST_OSVERSION=$(awk '/\#define.*__FreeBSD_version/ { print $3 }' \
+export FBSD_DST_OSVERSION=$(awk '/^\#define[[:blank:]]__FreeBSD_version/ {print $3}' \
     "${FREEBSD_SRC}/sys/sys/param.h")
 export TARGET_ARCH
 

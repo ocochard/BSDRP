@@ -123,7 +123,6 @@ WITHOUT_ZFS=
 WITH_IDEA=
 WITH_OFED=
 WITH_DEBUG_FILES=
-WITH_REPRODUCIBLE_BUILD=
 WITH_DIRDEPS_BUILD=
 WITH_RETPOLINE=
 WITH_MALLOC_PRODUCTION=
@@ -224,25 +223,23 @@ add_port () {
 	fi
 	if [ -f "${NANO_OBJ}"/ports/packages/All/${PKG_NAME}.txz ]; then
 	# Pkg file found: Generate add_pkg_NAME function
-		#Don't try to install pkg, the boot strap will install it
-		if [ "$1" != "ports-mgmt/pkg" ]; then
-			eval "
-			add_pkg_${port} () {
-				#Need to create ${NANO_OBJ}/ports in this add_pkg_${port} function
-				if [ ! -d \${NANO_OBJ}/ports ]; then
-					mkdir -p \${NANO_OBJ}/ports/packages
-				fi
-				mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
-				mount -t nullfs \${NANO_OBJ}/ports/packages \
-					\${NANO_WORLDDIR}/usr/ports/packages
-				# Since pkg 1.11, need devfs (because it is using /dev/null)
-				mount -t devfs devfs \${NANO_WORLDDIR}/dev
-				# Run ldconfig before
-				CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
-				# Start the pkg add
-				# Create the repo configuration file
-				mkdir -p \${NANO_WORLDDIR}/usr/local/etc/pkg/repos
-				cat <<EOF > \${NANO_WORLDDIR}/usr/local/etc/pkg/repos/myrepo.conf
+		eval "
+		add_pkg_${port} () {
+			#Need to create ${NANO_OBJ}/ports in this add_pkg_${port} function
+			if [ ! -d \${NANO_OBJ}/ports ]; then
+				mkdir -p \${NANO_OBJ}/ports/packages
+			fi
+			mkdir -p \${NANO_WORLDDIR}/usr/ports/packages
+			mount -t nullfs \${NANO_OBJ}/ports/packages \
+				\${NANO_WORLDDIR}/usr/ports/packages
+			# Since pkg 1.11, need devfs (because it is using /dev/null)
+			mount -t devfs devfs \${NANO_WORLDDIR}/dev
+			# Run ldconfig before
+			CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
+			# Start the pkg add
+			# Create the repo configuration file
+			mkdir -p \${NANO_WORLDDIR}/usr/local/etc/pkg/repos
+			cat <<EOF > \${NANO_WORLDDIR}/usr/local/etc/pkg/repos/myrepo.conf
 myrepo: {
  url: "file:///usr/ports/packages",
  enabled: true,
@@ -253,17 +250,16 @@ FreeBSD: {
  enabled: false
 }
 EOF
-				# Bug with pkg: not using the "-d" option prevent to install the package with error message "pkg fail to extract static"
-				# Need to force assume_always_yes for avoiding bootstrap pkg confirmation too
-				CR 'env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
-				umount \${NANO_WORLDDIR}/usr/ports/packages
-				umount \${NANO_WORLDDIR}/dev
-				rmdir \${NANO_WORLDDIR}/usr/ports/packages
-				rmdir \${NANO_WORLDDIR}/usr/ports
-			}
-			customize_cmd add_pkg_${port}
-			"
-		fi
+			# Bug with pkg: not using the "-d" option prevent to install the package with error message "pkg fail to extract static"
+			# Need to force assume_always_yes for avoiding bootstrap pkg confirmation too
+			CR 'env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
+			umount \${NANO_WORLDDIR}/usr/ports/packages
+			umount \${NANO_WORLDDIR}/dev
+			rmdir \${NANO_WORLDDIR}/usr/ports/packages
+			rmdir \${NANO_WORLDDIR}/usr/ports
+		}
+		customize_cmd add_pkg_${port}
+		"
 	else
 	# No pkg file: Generate add_port_NAME function
 		eval "
@@ -295,7 +291,7 @@ EOF
 				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 				package install BATCH=yes \
-				WITHOUT=\"NLS X11 DOCS EXAMPLES\" "$2" clean'
+				WITHOUT=\"NLS X11 DOCS EXAMPLES\" \"$2\" clean'
 			# add a -DWITH_DEBUG before the $2 for building port with debug
 			# and comment the strip command
 
@@ -521,8 +517,8 @@ usr/share/tmac/tmac.vgrind
 			fi
 		else
 			echo "Missing file to delete: $c"
-        fi
-    done
+		fi
+	done
 
 	# Move termcap.small file
 	if [ -f ${NANO_WORLDDIR}/etc/termcap.small ]; then
@@ -596,7 +592,7 @@ bsdrp_console_xen () {
 	#Remove all default virtual terminal (in pv mode, need to check in hvm)
 	sed -i '' '/^ttyv/d' ${NANO_WORLDDIR}/etc/ttys
 	#Add a new xc0 console
-	echo 'xc0     "/usr/libexec/getty Pc"         vt100   on  secure' >> ${NANO_WORLDDIR}/etc/ttys
+	echo 'xc0  "/usr/libexec/getty Pc" vt100  on  secure' >> ${NANO_WORLDDIR}/etc/ttys
 	#Replace the default em0 by xn0 in rc.conf
 	sed -i "" -e /ifconfig_/s/em0/xn0/ ${NANO_WORLDDIR}/etc/rc.conf
 }
