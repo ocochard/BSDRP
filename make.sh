@@ -100,7 +100,7 @@ update_src () {
 			(
 				cd "${FREEBSD_SRC}"
 				git checkout .
-				git clean -f
+				git clean -fd
 			)
 			# git restore :/
 			;;
@@ -143,7 +143,7 @@ update_port () {
 		(
 			cd "${PORTS_SRC}"
 			git checkout .
-			git clean -f
+			git clean -fd
 			git pull --ff-only
 			git checkout ${PORTS_REV}
 		)
