@@ -1,4 +1,4 @@
-# Release 1.99 (soon)
+# Release 1.99 (25/05/2021)
 
 ## New features
 * Based on FreeBSD 14-head 7b8696bf128 and ports tree 98b2a4841162
