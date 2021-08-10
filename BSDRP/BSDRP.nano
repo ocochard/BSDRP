@@ -127,6 +127,7 @@ WITH_REPRODUCIBLE_BUILD=
 WITH_MALLOC_PRODUCTION=
 WITH_OPENSSL_KTLS=
 '
+#CFLAGS.clang+=-flto
 
 # Customize commands.
 NANO_CUSTOMIZE=""
@@ -356,7 +357,7 @@ add_port "devel/py-setuptools"
  add_port "converters/libiconv"
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
-add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 POP3 RTSP SMTP TELNET\""
+add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 LIBSSH2 POP3 RTSP SMTP TELNET\""
 # Build dep that will be removed after, but need to force STATIC mode for mstflint
 add_port "textproc/expat2" "WITH=\"STATIC\""
 add_port "security/libssh"
@@ -379,7 +380,7 @@ add_port "net/bird2"
 add_port "net/freevrrpd"
 
 # ipsec-tools: IKEv1
-add_port "net/openldap24-client"
+add_port "net/openldap24-client" "WITHOUT+=\"GSSAPI\""
 add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # strongswan: IKEv2 and lot's more

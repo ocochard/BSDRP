@@ -1,8 +1,8 @@
-Index: sbin/dhclient/bpf.c
-===================================================================
---- sbin/dhclient/bpf.c	(revision 335629)
-+++ sbin/dhclient/bpf.c	(working copy)
-@@ -175,6 +175,8 @@
+diff --git a/sbin/dhclient/bpf.c b/sbin/dhclient/bpf.c
+index a50abca62fd..ac46626b5a9 100644
+--- a/sbin/dhclient/bpf.c
++++ b/sbin/dhclient/bpf.c
+@@ -185,6 +185,8 @@ if_register_send(struct interface_info *info)
  	if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &on,
  	    sizeof(on)) == -1)
  		error("setsockopt(IP_HDRINCL): %m");
@@ -11,11 +11,11 @@ Index: sbin/dhclient/bpf.c
  	info->ufdesc = sock;
  }
  
-Index: sbin/dhclient/dhclient.c
-===================================================================
---- sbin/dhclient/dhclient.c	(revision 335629)
-+++ sbin/dhclient/dhclient.c	(working copy)
-@@ -374,6 +374,7 @@
+diff --git a/sbin/dhclient/dhclient.c b/sbin/dhclient/dhclient.c
+index 8c2615e4c3d..83c18b70172 100644
+--- a/sbin/dhclient/dhclient.c
++++ b/sbin/dhclient/dhclient.c
+@@ -375,6 +375,7 @@ main(int argc, char *argv[])
  	int			 ch, fd, quiet = 0, i = 0;
  	int			 pipe_fd[2];
  	int			 immediate_daemon = 0;
@@ -23,7 +23,7 @@ Index: sbin/dhclient/dhclient.c
  	struct passwd		*pw;
  	pid_t			 otherpid;
  	cap_rights_t		 rights;
-@@ -395,6 +396,9 @@
+@@ -396,6 +397,9 @@ main(int argc, char *argv[])
  		case 'd':
  			no_daemon = 1;
  			break;
@@ -33,7 +33,7 @@ Index: sbin/dhclient/dhclient.c
  		case 'l':
  			path_dhclient_db = optarg;
  			break;
-@@ -443,6 +447,7 @@
+@@ -444,6 +448,7 @@ main(int argc, char *argv[])
  	if (quiet)
  		log_perror = 0;
  
@@ -41,22 +41,20 @@ Index: sbin/dhclient/dhclient.c
  	tzset();
  	time(&cur_time);
  
-@@ -563,8 +568,8 @@
- usage(void)
+@@ -575,7 +580,7 @@ usage(void)
  {
  
--	fprintf(stderr, "usage: %s [-bdqu] ", getprogname());
+ 	fprintf(stderr, "usage: %s [-bdqu] ", getprogname());
 -	fprintf(stderr, "[-c conffile] [-l leasefile] interface\n");
-+	fprintf(stderr, "usage: %s [-bdqu] ", getprogname());
 +	fprintf(stderr, "[-c conffile] [-l leasefile] [-f fib] interface\n");
  	exit(1);
  }
  
-Index: sbin/dhclient/dhcpd.h
-===================================================================
---- sbin/dhclient/dhcpd.h	(revision 335629)
-+++ sbin/dhclient/dhcpd.h	(working copy)
-@@ -215,6 +215,7 @@
+diff --git a/sbin/dhclient/dhcpd.h b/sbin/dhclient/dhcpd.h
+index b151daa90a1..48690c80778 100644
+--- a/sbin/dhclient/dhcpd.h
++++ b/sbin/dhclient/dhcpd.h
+@@ -216,6 +216,7 @@ struct interface_info {
  	int			 dead;
  	u_int16_t		 index;
  	int			 linkstat;

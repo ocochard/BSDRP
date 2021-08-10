@@ -32,6 +32,7 @@ options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
 options 	IPSEC_SUPPORT		# Allow kldload of ipsec and tcpmd5
 options		ROUTE_MPATH		# Multipath routing support
+options		FIB_ALGO		# Modular fib lookups
 options 	TCP_OFFLOAD		# TCP offload
 #options 	TCP_BLACKBOX		# Enhanced TCP event logging
 options 	TCP_HHOOK		# hhook(9) framework for TCP
@@ -230,7 +231,6 @@ device		vt_vbefb
 # PCCARD (PCMCIA) support
 # PCMCIA and cardbus bridge support
 #device		cbb			# cardbus (yenta) bridge
-#device		pccard			# PC Card (16-bit) bus
 #device		cardbus			# CardBus (32-bit) bus
 
 # Serial (COM) ports
@@ -248,6 +248,7 @@ device		puc			# Multi I/O cards and multi-channel UARTs
 # PCI/PCI-X/PCIe Ethernet NICs that use iflib infrastructure
 device		iflib
 device		em			# Intel PRO/1000 Gigabit Ethernet Family
+device		igc			# Intel I225 2.5G Ethernet
 device		ix			# Intel PRO/10GbE PCIE PF Ethernet
 device		ixv			# Intel PRO/10GbE PCIE VF Ethernet
 device		ixl			# Intel 700 Series Physical Function
@@ -306,7 +307,6 @@ device		xl			# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 #device		wlan_ccmp		# 802.11 CCMP support
 #device		wlan_tkip		# 802.11 TKIP support
 #device		wlan_amrr		# AMRR transmit rate control algorithm
-#device		an			# Aironet 4500/4800 802.11 wireless NICs.
 #device		ath			# Atheros NICs
 #device		ath_pci			# Atheros pci/cardbus glue
 #device		ath_hal			# pci/cardbus chip support
@@ -385,6 +385,7 @@ device		hyperv			# HyperV drivers
 # NOTE: XENHVM depends on xenpci.  They must be added or removed together.
 options 	XENHVM			# Xen HVM kernel infrastructure
 device		xenpci			# Xen HVM Hypervisor services driver
+device		xentimer		# Xen x86 PV timer device
 
 # Netmap provides direct access to TX/RX rings on supported NICs
 device		netmap			# netmap(4) support
@@ -434,9 +435,6 @@ device enc
 
 #options           PCBGROUP                # Protocol control-block groups
 #options           RSS                             # Receive-side scaling support
-
-# FIB_ALGO provides modular routing lookup
-options		FIB_ALGO
 
 # Fenestras X" alternative /dev/random implementation
 options		RANDOM_FENESTRASX
