@@ -1,0 +1,88 @@
+# This is a shell archive.  Save it in a file, remove anything before
+# this line, and then unpack it by entering "sh file".  Note, it may
+# create directories; files and directories will be owned by you and
+# have default permissions.
+#
+# This archive contains:
+#
+#	net/libyang2
+#	net/libyang2/pkg-plist
+#	net/libyang2/pkg-descr
+#	net/libyang2/Makefile
+#	net/libyang2/distinfo
+#
+echo c - net/libyang2
+mkdir -p net/libyang2 > /dev/null 2>&1
+echo x - net/libyang2/pkg-plist
+sed 's/^X//' >net/libyang2/pkg-plist << '8723e815afcc8f60477ab758236d5124'
+Xbin/yanglint
+Xbin/yangre
+Xinclude/libyang/config.h
+Xinclude/libyang/context.h
+Xinclude/libyang/dict.h
+Xinclude/libyang/in.h
+Xinclude/libyang/libyang.h
+Xinclude/libyang/log.h
+Xinclude/libyang/out.h
+Xinclude/libyang/parser_data.h
+Xinclude/libyang/parser_schema.h
+Xinclude/libyang/plugins.h
+Xinclude/libyang/plugins_exts.h
+Xinclude/libyang/plugins_exts_compile.h
+Xinclude/libyang/plugins_exts_print.h
+Xinclude/libyang/plugins_types.h
+Xinclude/libyang/printer_data.h
+Xinclude/libyang/printer_schema.h
+Xinclude/libyang/set.h
+Xinclude/libyang/tree.h
+Xinclude/libyang/tree_edit.h
+Xinclude/libyang/version.h
+Xinclude/libyang/tree_data.h
+Xinclude/libyang/tree_schema.h
+Xlib/libyang.so
+Xlib/libyang.so.2
+Xlib/libyang.so.2.1.4
+Xlibdata/pkgconfig/libyang.pc
+Xman/man1/yanglint.1.gz
+8723e815afcc8f60477ab758236d5124
+echo x - net/libyang2/pkg-descr
+sed 's/^X//' >net/libyang2/pkg-descr << '3cda3747c7d29fbfdc36f8feab64d3e4'
+Xlibyang is a YANG data modelling language parser and toolkit written
+X(and providing API) in C.
+X
+XWWW: https://github.com/CESNET/libyang
+3cda3747c7d29fbfdc36f8feab64d3e4
+echo x - net/libyang2/Makefile
+sed 's/^X//' >net/libyang2/Makefile << '4a7c0a4c9bc602ab6dbf64f5fad30721'
+XPORTNAME=	libyang
+XPORTVERSION=	2.0.7
+XDISTVERSIONPREFIX=	v
+XCATEGORIES=	net
+XPKGNAMESUFFIX=  2
+X
+XMAINTAINER=	olivier@FreeBSD.org
+XCOMMENT=	YANG data modeling language library, version 2
+X
+XLICENSE=	BSD3CLAUSE
+XLICENSE_FILE=	${WRKSRC}/LICENSE
+X
+XLIB_DEPENDS=	libpcre2-32.so:devel/pcre2
+X
+XUSES=	cmake compiler:c++11-lang pkgconfig
+XUSE_LDCONFIG=	yes
+X
+XUSE_GITHUB=	yes
+XGH_ACCOUNT=	CESNET
+X
+XCMAKE_ARGS+=	-DENABLE_LYD_PRIV=ON
+X
+X.include <bsd.port.mk>
+4a7c0a4c9bc602ab6dbf64f5fad30721
+echo x - net/libyang2/distinfo
+sed 's/^X//' >net/libyang2/distinfo << 'f66851b3033398769b159804cf7bce0d'
+XTIMESTAMP = 1628781055
+XSHA256 (CESNET-libyang-v2.0.7_GH0.tar.gz) = b3b74ce39406db7c1e440b675fb4c2d87b042667ed17bcd77c70f77230afb41c
+XSIZE (CESNET-libyang-v2.0.7_GH0.tar.gz) = 1031818
+f66851b3033398769b159804cf7bce0d
+exit
+
