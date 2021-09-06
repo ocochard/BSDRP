@@ -1,0 +1,25 @@
+Index: usr.sbin/pkg/pkg.c
+===================================================================
+--- usr.sbin/pkg/pkg.c	(revision 287900)
++++ usr.sbin/pkg/pkg.c	(working copy)
+@@ -901,9 +901,9 @@
+ 			if (verify_pubsignature(fd_pkg, fd_sig) == false)
+ 				goto cleanup;
+ 		} else {
+-			warnx("Signature type %s is not supported for "
++			warnx("Signature type %s is officially not supported for "
+ 			    "bootstrapping.", signature_type);
+-			goto cleanup;
++			/* goto cleanup; */
+ 		}
+ 	}
+ 
+@@ -1010,7 +1010,7 @@
+ 		} else {
+ 			warnx("Signature type %s is not supported for "
+ 			    "bootstrapping.", signature_type);
+-			goto cleanup;
++			/* goto cleanup; */
+ 		}
+ 	}
+ 

@@ -1,9 +1,9 @@
 # ignore downloaded FreeBSD source and port tree
 workdir/
 BSDRP/FreeBSD
-BSDRPcur/FreeBSD
-BSDRPstable/FreeBSD
-TESTING/FreeBSD
+MAIN/FreeBSD
+STABLE-12/FreeBSD
+STABLE-13/FreeBSD
 BSDMC/FreeBSD
 EINE/FreeBSD
 EINE/local.data
