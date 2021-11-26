@@ -1,7 +1,7 @@
-Index: net/pkt-gen/Makefile
-===================================================================
---- net/pkt-gen/Makefile	(revision 557996)
-+++ net/pkt-gen/Makefile	(working copy)
+diff --git a/net/pkt-gen/Makefile b/net/pkt-gen/Makefile
+index cf32dc895d50..c08bcea4ab04 100644
+--- a/net/pkt-gen/Makefile
++++ b/net/pkt-gen/Makefile
 @@ -1,6 +1,5 @@
  PORTNAME=	pkt-gen
 -PORTVERSION=	g2017.08.06
@@ -9,8 +9,8 @@ Index: net/pkt-gen/Makefile
 +PORTVERSION=	g2019.11.07
  CATEGORIES=	net
  
- MAINTAINER=	shurd@FreeBSD.org
-@@ -14,20 +13,27 @@
+ MAINTAINER=	ports@FreeBSD.org
+@@ -12,20 +11,27 @@ USES=		gmake
  USE_GITHUB=	yes
  GH_ACCOUNT=	luigirizzo
  GH_PROJECT=	netmap
@@ -30,24 +30,24 @@ Index: net/pkt-gen/Makefile
 -PLIST_FILES=	bin/pkt-gen
 +PLIST_FILES=	bin/pkt-gen \
 +		bin/nmreplay
- 
++
 +do-build:
 +	cd ${WRKSRC}/libnetmap && ${SETENV} ${MAKE_ENV} ${GMAKE} ${MAKE_ARGS} ${MAKE_FLAGS} ${MAKEFILE}
 +	cd ${WRKSRC}/apps/pkt-gen && ${SETENV} ${MAKE_ENV} ${GMAKE} ${MAKE_ARGS} ${MAKE_FLAGS} ${MAKEFILE}
 +	cd ${WRKSRC}/apps/nmreplay && ${SETENV} ${MAKE_ENV} ${GMAKE} ${MAKE_ARGS} ${MAKE_FLAGS} ${MAKEFILE}
-+
+ 
  do-install:
 -	${INSTALL_PROGRAM} ${WRKSRC}/pkt-gen \
 +	${INSTALL_PROGRAM} ${WRKSRC}/apps/pkt-gen/pkt-gen \
- 		${STAGEDIR}${PREFIX}/bin
-+	${INSTALL_PROGRAM} ${WRKSRC}/apps/nmreplay/nmreplay \
 +		${STAGEDIR}${PREFIX}/bin
++	${INSTALL_PROGRAM} ${WRKSRC}/apps/nmreplay/nmreplay \
+ 		${STAGEDIR}${PREFIX}/bin
  
  .include <bsd.port.mk>
-Index: net/pkt-gen/distinfo
-===================================================================
---- net/pkt-gen/distinfo	(revision 557996)
-+++ net/pkt-gen/distinfo	(working copy)
+diff --git a/net/pkt-gen/distinfo b/net/pkt-gen/distinfo
+index 8f640522cb56..f2b39f95b818 100644
+--- a/net/pkt-gen/distinfo
++++ b/net/pkt-gen/distinfo
 @@ -1,3 +1,3 @@
 -TIMESTAMP = 1503651090
 -SHA256 (luigirizzo-netmap-g2017.08.06-3c3ab5faa2ab9c89db09cd8339d0e96a1a78c41a_GH0.tar.gz) = 755f0b7d195cfdd7148591ef01ae4da569cae3e323ffded74dfbaa571dc267f3
@@ -55,10 +55,11 @@ Index: net/pkt-gen/distinfo
 +TIMESTAMP = 1574296686
 +SHA256 (luigirizzo-netmap-g2019.11.07-95ef45d_GH0.tar.gz) = 5cf4e11f8d3f991404d6d4942dcbe801c5d9c172a81872b46e7d6e02ca5552b4
 +SIZE (luigirizzo-netmap-g2019.11.07-95ef45d_GH0.tar.gz) = 710389
-Index: net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile
-===================================================================
---- net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile	(nonexistent)
-+++ net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile	(working copy)
+diff --git a/net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile b/net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile
+new file mode 100644
+index 000000000000..96263868d33a
+--- /dev/null
++++ b/net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile
 @@ -0,0 +1,11 @@
 +--- apps/nmreplay/GNUmakefile.orig	2019-11-21 06:26:42 UTC
 ++++ apps/nmreplay/GNUmakefile
@@ -71,25 +72,28 @@ Index: net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile
 + LDLIBS += -lnetmap -lpthread
 + ifeq ($(shell uname),Linux)
 + 	LDLIBS += -lrt	# on linux
-
-Property changes on: net/pkt-gen/files/patch-apps_nmreplay_GNUmakefile
-___________________________________________________________________
-Added: fbsd:nokeywords
-## -0,0 +1 ##
-+yes
-\ No newline at end of property
-Added: svn:eol-style
-## -0,0 +1 ##
-+native
-\ No newline at end of property
-Added: svn:mime-type
-## -0,0 +1 ##
-+text/plain
-\ No newline at end of property
-Index: net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile
-===================================================================
---- net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile	(nonexistent)
-+++ net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile	(working copy)
+diff --git a/net/pkt-gen/files/patch-apps_nmreplay_nmreplay.c b/net/pkt-gen/files/patch-apps_nmreplay_nmreplay.c
+new file mode 100644
+index 000000000000..435de25f65a6
+--- /dev/null
++++ b/net/pkt-gen/files/patch-apps_nmreplay_nmreplay.c
+@@ -0,0 +1,11 @@
++--- apps/nmreplay/nmreplay.c.orig	2021-11-25 23:16:06 UTC
+++++ apps/nmreplay/nmreplay.c
++@@ -1280,7 +1280,7 @@ main(int argc, char **argv)
++ 	D("exiting on abort");
++ 	sleep(1);
++ 
++-	return (0);
+++	return (err);
++ }
++ 
++ /* conversion factor for numbers.
+diff --git a/net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile b/net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile
+new file mode 100644
+index 000000000000..e081bb0196c2
+--- /dev/null
++++ b/net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile
 @@ -0,0 +1,11 @@
 +--- apps/pkt-gen/GNUmakefile.orig	2019-11-21 06:24:22 UTC
 ++++ apps/pkt-gen/GNUmakefile
@@ -102,26 +106,12 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile
 + LDLIBS += -lpthread -lm -lnetmap
 + ifeq ($(shell uname),Linux)
 + 	LDLIBS += -lrt	# on linux
-
-Property changes on: net/pkt-gen/files/patch-apps_pkt-gen_GNUmakefile
-___________________________________________________________________
-Added: fbsd:nokeywords
-## -0,0 +1 ##
-+yes
-\ No newline at end of property
-Added: svn:eol-style
-## -0,0 +1 ##
-+native
-\ No newline at end of property
-Added: svn:mime-type
-## -0,0 +1 ##
-+text/plain
-\ No newline at end of property
-Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
-===================================================================
---- net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c	(nonexistent)
-+++ net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c	(working copy)
-@@ -0,0 +1,553 @@
+diff --git a/net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c b/net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
+new file mode 100644
+index 000000000000..c01902a6182b
+--- /dev/null
++++ b/net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
+@@ -0,0 +1,550 @@
 +--- apps/pkt-gen/pkt-gen.c.orig	2019-11-06 09:59:27 UTC
 ++++ apps/pkt-gen/pkt-gen.c
 +@@ -38,42 +38,40 @@
@@ -423,15 +413,13 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + 	memcpy(&pkt->ipv4.ip, &ip, sizeof(ip));
 + 	memcpy(&pkt->ipv4.udp, &udp, sizeof(udp));
 + }
-+@@ -908,81 +915,91 @@ update_ip6(struct pkt *pkt, struct targ *t)
-+ 	struct glob_arg *g = t->g;
++@@ -909,80 +916,89 @@ update_ip6(struct pkt *pkt, struct targ *t)
 + 	struct ip6_hdr ip6;
 + 	struct udphdr udp;
-+-	uint16_t udp_sum;
++ 	uint16_t udp_sum;
 +-	uint16_t oaddr, naddr;
 +-	uint16_t oport, nport;
 +-	uint8_t group;
-++	uint16_t udp_sum, ip_sum;
 ++	uint16_t soaddr, snaddr;
 ++	uint16_t soport, snport;
 ++	uint16_t doaddr, dnaddr;
@@ -447,7 +435,6 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 +-		group = g->src_ip.ipv6.sgroup;
 +-		naddr = oaddr = ntohs(ip6.ip6_src.s6_addr16[group]);
 +-		nport = oport = ntohs(udp.uh_sport);
-++		ip_sum = 0;
 ++		sgroup = g->src_ip.ipv6.sgroup;
 ++		snaddr = soaddr = ntohs(ip6.ip6_src.s6_addr16[sgroup]);
 ++		snport = soport = ntohs(udp.uh_sport);
@@ -564,7 +551,7 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + 	memcpy(&pkt->ipv6.ip, &ip6, sizeof(ip6));
 + 	memcpy(&pkt->ipv6.udp, &udp, sizeof(udp));
 + }
-+@@ -1255,7 +1272,7 @@ send_packets(struct netmap_ring *ring, struct pkt *pkt
++@@ -1255,7 +1271,7 @@ send_packets(struct netmap_ring *ring, struct pkt *pkt
 + /*
 +  * Index of the highest bit set
 +  */
@@ -573,7 +560,7 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + msb64(uint64_t x)
 + {
 + 	uint64_t m = 1ULL << 63;
-+@@ -2374,7 +2391,7 @@ usage(int errcode)
++@@ -2374,7 +2390,7 @@ usage(int errcode)
 + "             for client-side ping-pong operation, and pong for server-side ping-pong operation.\n"
 + "\n"
 + "     -n count\n"
@@ -582,7 +569,7 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + "             count is the number of packets to receive or transmit.  In case of ping or pong, count is the\n"
 + "             number of ping-pong transactions.\n"
 + "\n"
-+@@ -2411,20 +2428,24 @@ usage(int errcode)
++@@ -2411,20 +2427,24 @@ usage(int errcode)
 + "     -p threads\n"
 + "             Number of threads to use.  By default, only a single thread is used to handle all the netmap\n"
 + "             rings.  If threads is larger than one, each thread handles a single TX ring (in tx mode), a\n"
@@ -611,7 +598,7 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + "             pletely use all of the bandwidth of a 10 or 40Gbps link, so this option should be used unless\n"
 + "             your intention is to saturate the link.\n"
 + "\n"
-+@@ -2470,7 +2491,7 @@ usage(int errcode)
++@@ -2470,7 +2490,7 @@ usage(int errcode)
 + "\n"
 + "     -C tx_slots[,rx_slots[,tx_rings[,rx_rings]]]\n"
 + "             Configuration in terms of number of rings and slots to be used when opening the netmap port.\n"
@@ -620,7 +607,7 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + "             netmap pipes.  The configuration may consist of 1 to 4 numbers separated by commas: tx_slots,\n"
 + "             rx_slots, tx_rings, rx_rings.  Missing numbers or zeroes stand for default values.  As an\n"
 + "             additional convenience, if exactly one number is specified, then this is assigned to both\n"
-+@@ -2486,7 +2507,7 @@ usage(int errcode)
++@@ -2486,7 +2506,7 @@ usage(int errcode)
 + "				OPT_INDIRECT	32 (use indirect buffers)\n"
 + "				OPT_DUMP	64 (dump rx/tx traffic)\n"
 + "				OPT_RUBBISH	256\n"
@@ -629,7 +616,7 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + "				OPT_RANDOM_SRC  512\n"
 + "				OPT_RANDOM_DST  1024\n"
 + "				OPT_PPS_STATS   2048\n"
-+@@ -2722,7 +2743,7 @@ main_thread(struct glob_arg *g)
++@@ -2722,7 +2742,7 @@ main_thread(struct glob_arg *g)
 + 
 + struct td_desc {
 + 	int ty;
@@ -638,7 +625,7 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + 	void *f;
 + 	int default_burst;
 + };
-+@@ -2742,7 +2763,7 @@ tap_alloc(char *dev)
++@@ -2742,7 +2762,7 @@ tap_alloc(char *dev)
 + {
 + 	struct ifreq ifr;
 + 	int fd, err;
@@ -647,7 +634,7 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + 
 + 	(void)err;
 + 	(void)dev;
-+@@ -2834,6 +2855,7 @@ main(int arc, char **argv)
++@@ -2834,6 +2854,7 @@ main(int arc, char **argv)
 + 	g.dst_ip.name = "10.1.0.1";
 + 	g.dst_mac.name = "ff:ff:ff:ff:ff:ff";
 + 	g.src_mac.name = NULL;
@@ -655,7 +642,7 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + 	g.pkt_size = 60;
 + 	g.pkt_min_size = 0;
 + 	g.nthreads = 1;
-+@@ -2847,7 +2869,7 @@ main(int arc, char **argv)
++@@ -2847,7 +2868,7 @@ main(int arc, char **argv)
 + 	g.wait_link = 2;	/* wait 2 seconds for physical ports */
 + 
 + 	while ((ch = getopt(arc, argv, "46a:f:F:Nn:i:Il:d:s:D:S:b:c:o:p:"
@@ -664,7 +651,7 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + 
 + 		switch(ch) {
 + 		default:
-+@@ -2962,6 +2984,10 @@ main(int arc, char **argv)
++@@ -2962,6 +2983,10 @@ main(int arc, char **argv)
 + 
 + 		case 'T':	/* report interval */
 + 			g.report_interval = atoi(optarg);
@@ -675,25 +662,11 @@ Index: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
 + 			break;
 + 
 + 		case 'w':
-
-Property changes on: net/pkt-gen/files/patch-apps_pkt-gen_pkt-gen.c
-___________________________________________________________________
-Added: fbsd:nokeywords
-## -0,0 +1 ##
-+yes
-\ No newline at end of property
-Added: svn:eol-style
-## -0,0 +1 ##
-+native
-\ No newline at end of property
-Added: svn:mime-type
-## -0,0 +1 ##
-+text/plain
-\ No newline at end of property
-Index: net/pkt-gen/files/patch-include_ctrs.h
-===================================================================
---- net/pkt-gen/files/patch-include_ctrs.h	(revision 557996)
-+++ net/pkt-gen/files/patch-include_ctrs.h	(nonexistent)
+diff --git a/net/pkt-gen/files/patch-include_ctrs.h b/net/pkt-gen/files/patch-include_ctrs.h
+deleted file mode 100644
+index c5e3e3f90194..000000000000
+--- a/net/pkt-gen/files/patch-include_ctrs.h
++++ /dev/null
 @@ -1,36 +0,0 @@
 ---- include/ctrs.h.orig	2017-08-06 18:26:36 UTC
 -+++ include/ctrs.h
@@ -731,25 +704,11 @@ Index: net/pkt-gen/files/patch-include_ctrs.h
 - }
 - 
 - static __inline int
-
-Property changes on: net/pkt-gen/files/patch-include_ctrs.h
-___________________________________________________________________
-Deleted: fbsd:nokeywords
-## -1 +0,0 ##
--on
-\ No newline at end of property
-Deleted: svn:eol-style
-## -1 +0,0 ##
--native
-\ No newline at end of property
-Deleted: svn:mime-type
-## -1 +0,0 ##
--text/plain
-\ No newline at end of property
-Index: net/pkt-gen/files/patch-pkt-gen_GNUmakefile
-===================================================================
---- net/pkt-gen/files/patch-pkt-gen_GNUmakefile	(revision 557996)
-+++ net/pkt-gen/files/patch-pkt-gen_GNUmakefile	(nonexistent)
+diff --git a/net/pkt-gen/files/patch-pkt-gen_GNUmakefile b/net/pkt-gen/files/patch-pkt-gen_GNUmakefile
+deleted file mode 100644
+index 5237c3d4d3c7..000000000000
+--- a/net/pkt-gen/files/patch-pkt-gen_GNUmakefile
++++ /dev/null
 @@ -1,13 +0,0 @@
 ---- pkt-gen/GNUmakefile.orig	2018-08-15 02:22:27 UTC
 -+++ pkt-gen/GNUmakefile
@@ -764,25 +723,11 @@ Index: net/pkt-gen/files/patch-pkt-gen_GNUmakefile
 - 
 - LDLIBS += -lpthread -lm
 - ifeq ($(shell uname),Linux)
-
-Property changes on: net/pkt-gen/files/patch-pkt-gen_GNUmakefile
-___________________________________________________________________
-Deleted: fbsd:nokeywords
-## -1 +0,0 ##
--yes
-\ No newline at end of property
-Deleted: svn:eol-style
-## -1 +0,0 ##
--native
-\ No newline at end of property
-Deleted: svn:mime-type
-## -1 +0,0 ##
--text/plain
-\ No newline at end of property
-Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
-===================================================================
---- net/pkt-gen/files/patch-pkt-gen_pkt-gen.c	(revision 557996)
-+++ net/pkt-gen/files/patch-pkt-gen_pkt-gen.c	(nonexistent)
+diff --git a/net/pkt-gen/files/patch-pkt-gen_pkt-gen.c b/net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
+deleted file mode 100644
+index 06dd47f7c288..000000000000
+--- a/net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
++++ /dev/null
 @@ -1,599 +0,0 @@
 ---- pkt-gen/pkt-gen.c.orig	2017-08-06 18:26:36 UTC
 -+++ pkt-gen/pkt-gen.c
@@ -1383,18 +1328,3 @@ Index: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
 - 	/* Install ^C handler. */
 - 	global_nthreads = g.nthreads;
 - 	sigemptyset(&ss);
-
-Property changes on: net/pkt-gen/files/patch-pkt-gen_pkt-gen.c
-___________________________________________________________________
-Deleted: fbsd:nokeywords
-## -1 +0,0 ##
--on
-\ No newline at end of property
-Deleted: svn:eol-style
-## -1 +0,0 ##
--native
-\ No newline at end of property
-Deleted: svn:mime-type
-## -1 +0,0 ##
--text/plain
-\ No newline at end of property

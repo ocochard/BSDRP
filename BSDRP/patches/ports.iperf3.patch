@@ -1,0 +1,16 @@
+diff --git a/benchmarks/iperf3/files/patch-src_iperf__api.c b/benchmarks/iperf3/files/patch-src_iperf__api.c
+new file mode 100644
+index 0000000000..4a07d7b1dd
+--- /dev/null
++++ b/benchmarks/iperf3/files/patch-src_iperf__api.c
+@@ -0,0 +1,10 @@
++--- src/iperf_api.c.orig	2021-11-26 00:46:07 UTC
+++++ src/iperf_api.c
++@@ -51,6 +51,7 @@
++ #endif
++ #include <sys/time.h>
++ #include <sys/resource.h>
+++#define _WITH_CPU_SET_T
++ #include <sys/mman.h>
++ #include <sys/stat.h>
++ #include <sched.h>
