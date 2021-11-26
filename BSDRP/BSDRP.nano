@@ -520,6 +520,8 @@ add_port "sysutils/flashrom" "WITHOUT+=\"DMIDECODE FTDI\""
 add_port "sysutils/x86info"
 
 # Permit microcode upgrade
+add_port "sysutils/devcpu-data-intel"
+add_port "sysutils/devcpu-data-amd"
 add_port "sysutils/devcpu-data"
 
 # processor information (usefull for checking microcode version)
