@@ -1,3 +1,8 @@
+# Release XX
+
+## New features
+* added if_urndis drivers for Android USB tethering
+
 # Release 1.99 (25/05/2021)
 
 ## New features
