@@ -14,10 +14,6 @@ COM_SPEED=115200
 NANO_PACKAGE_DIR=${NANO_TOOLS}/Pkg
 NANO_PACKAGE_LIST="*"
 
-# Need to set early the NANO_ARCH variable for being use in the add_port function
-# TARGET_ARCH was set by the make script
-NANO_ARCH=${TARGET_ARCH}
-
 # Options to put in make.conf during buildworld only
 # BOOT_COMCONSOLE_SPEED is useless because we using /boot.config with -Sspeed option
 # But for baud higher than 9600 is not supported by boot0:
@@ -58,6 +54,7 @@ WITHOUT_BOOTPD=
 WITHOUT_BSDINSTALL=
 WITHOUT_CALENDAR=
 WITHOUT_CCD=
+WITHOUT_CROSS_COMPILER=
 WITHOUT_CTM=
 WITHOUT_CVS=
 WITHOUT_DICT=
@@ -199,10 +196,8 @@ add_netrate () {
 	for TOOL in ${TOOLS_LIST}; do
 		export TOOL
 		CR 'make clean -C /usr/src/tools/tools/${TOOL}'
-		CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-			MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-			UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
-			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+		CR 'env OSVERSION=${FBSD_DST_OSVERSION} \
+			UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE} ${FBSD_DST_OSVERSION}" \
 			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
 		CR 'make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL} install clean'
 	done # for TOOL
@@ -286,10 +281,8 @@ EOF
 			# Run ldconfig before
 			CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
 			# Start the build
-			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-				MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
-				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+			CR 'env OSVERSION=${FBSD_DST_OSVERSION} \
+				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE} ${FBSD_DST_OSVERSION}\" \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 				package install BATCH=yes \
 				WITHOUT=\"NLS X11 DOCS EXAMPLES\" "$2" clean'
@@ -314,10 +307,8 @@ EOF
 
 #### Ports list section #####
 
-# bapt@ broke the "make package-recurisve" and he doesn't want to fix it using
-#  the fallacious argument of "it's dirty"
-# => Need to manually list all the package to install
-# Meanwhile, you can use "make package-depends-list | cut -d ' ' -f3" on a port
+# Need to manually list all the package to install
+# We could use "make package-depends-list | cut -d ' ' -f3" on a port
 # for getting all its unordered running dependency.
 # And you can use a grep "depends on .* - not found" /usr/obj/project/_.cust.add_port_port-name
 # for getting the ordered list
@@ -325,8 +316,6 @@ EOF
 add_port "ports-mgmt/pkg"
 
 ## Add your custom port list here (not before the ports/mgmt/pkg!) ##
-
-# TO DO: Need to sort them by build dependencies
 
 # Perl
 add_port "lang/perl5.32" "WITHOUT+=\"DTRACE\""
@@ -382,7 +371,7 @@ add_port "net/freevrrpd"
 
 # ipsec-tools: IKEv1
  add_port "security/cyrus-sasl2"
-add_port "net/openldap24-client" "WITHOUT+=\"GSSAPI\""
+add_port "net/openldap25-client" "WITHOUT+=\"GSSAPI\""
 add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # strongswan: IKEv2 and lot's more
@@ -453,14 +442,10 @@ add_port "security/sudo"
 # mpd5: multi-link PPP protocol server (netgraph dependent)
 add_port "net/mpd5"
 
-# high-performance (bridge only) netmap tools
-if [ ${NANO_ARCH} = "amd64" ]; then
-	# Netmap's pkt-gen
-	add_port "net/pkt-gen"
-	#add_port "net/netmap-ipfw"
-	add_port "textproc/libucl"
-	add_port "net/netmap-fwd"
-fi
+add_port "net/pkt-gen"
+#add_port "net/netmap-ipfw"
+add_port "textproc/libucl"
+add_port "net/netmap-fwd"
 
 # Wiregurad kernel module port, waiting the embedded version
 add_port "shells/bash"
@@ -474,6 +459,7 @@ add_port "net/mlvpn"
 
 # openvpn
 add_port "security/easy-rsa"
+add_port "security/pkcs11-helper"
 add_port "security/openvpn"
 #  add_port "security/libgpg-error"
 # add_port "security/libgcrypt"
@@ -518,6 +504,8 @@ add_port "sysutils/flashrom" "WITHOUT+=\"DMIDECODE FTDI\""
 add_port "sysutils/x86info"
 
 # Permit microcode upgrade
+add_port "sysutils/devcpu-data-amd"
+add_port "sysutils/devcpu-data-intel"
 add_port "sysutils/devcpu-data"
 
 # processor information (usefull for checking microcode version)
@@ -557,11 +545,6 @@ add_port "net/quagga-bgp-netgen"
 add_port "sysutils/dtrace-toolkit"
 
 #### End of port list section ####
-
-# Add netrate tools
-if [ "${NANO_ARCH}" != "i386" ]; then
-	customize_cmd add_netrate
-fi
 
 cleanup_ports () {
 	# When port are build, they install build dependency that are not usefull for running the port

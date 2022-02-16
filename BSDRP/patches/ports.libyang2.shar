@@ -10,6 +10,8 @@
 #	net/libyang2/pkg-descr
 #	net/libyang2/Makefile
 #	net/libyang2/distinfo
+#	net/libyang2/files
+#	net/libyang2/files/patch-CMakeLists.txt
 #
 echo c - net/libyang2
 mkdir -p net/libyang2 > /dev/null 2>&1
@@ -41,9 +43,10 @@ Xinclude/libyang/tree_data.h
 Xinclude/libyang/tree_schema.h
 Xlib/libyang.so
 Xlib/libyang.so.2
-Xlib/libyang.so.2.1.4
+Xlib/libyang.so.2.8.25
 Xlibdata/pkgconfig/libyang.pc
 Xman/man1/yanglint.1.gz
+Xman/man1/yangre.1.gz
 8723e815afcc8f60477ab758236d5124
 echo x - net/libyang2/pkg-descr
 sed 's/^X//' >net/libyang2/pkg-descr << '3cda3747c7d29fbfdc36f8feab64d3e4'
@@ -55,7 +58,7 @@ XWWW: https://github.com/CESNET/libyang
 echo x - net/libyang2/Makefile
 sed 's/^X//' >net/libyang2/Makefile << '4a7c0a4c9bc602ab6dbf64f5fad30721'
 XPORTNAME=	libyang
-XPORTVERSION=	2.0.7
+XPORTVERSION=	2.0.97
 XDISTVERSIONPREFIX=	v
 XCATEGORIES=	net
 XPKGNAMESUFFIX=  2
@@ -66,7 +69,8 @@ X
 XLICENSE=	BSD3CLAUSE
 XLICENSE_FILE=	${WRKSRC}/LICENSE
 X
-XLIB_DEPENDS=	libpcre2-32.so:devel/pcre2
+XLIB_DEPENDS=	libpcre2-8.so:devel/pcre2
+XTEST_DEPENDS=	cmocka>0:sysutils/cmocka
 X
 XUSES=	cmake compiler:c++11-lang pkgconfig
 XUSE_LDCONFIG=	yes
@@ -74,15 +78,35 @@ X
 XUSE_GITHUB=	yes
 XGH_ACCOUNT=	CESNET
 X
-XCMAKE_ARGS+=	-DENABLE_LYD_PRIV=ON
+XTEST_TARGET=	test
+X
+XOPTIONS_DEFINE=	TEST
+X
+XTEST_CMAKE_BOOL=	ENABLE_TESTS
 X
 X.include <bsd.port.mk>
 4a7c0a4c9bc602ab6dbf64f5fad30721
 echo x - net/libyang2/distinfo
 sed 's/^X//' >net/libyang2/distinfo << 'f66851b3033398769b159804cf7bce0d'
-XTIMESTAMP = 1628781055
-XSHA256 (CESNET-libyang-v2.0.7_GH0.tar.gz) = b3b74ce39406db7c1e440b675fb4c2d87b042667ed17bcd77c70f77230afb41c
-XSIZE (CESNET-libyang-v2.0.7_GH0.tar.gz) = 1031818
+XTIMESTAMP = 1634144047
+XSHA256 (CESNET-libyang-v2.0.97_GH0.tar.gz) = 91f5db0bc3799170d1e480abfc08a7fe7e50ce07a5433b5e32e93418314d48f9
+XSIZE (CESNET-libyang-v2.0.97_GH0.tar.gz) = 1066042
 f66851b3033398769b159804cf7bce0d
+echo c - net/libyang2/files
+mkdir -p net/libyang2/files > /dev/null 2>&1
+echo x - net/libyang2/files/patch-CMakeLists.txt
+sed 's/^X//' >net/libyang2/files/patch-CMakeLists.txt << '311453ef30a498acf860e6afc953e80e'
+X--- CMakeLists.txt.orig	2021-10-13 16:55:40 UTC
+X+++ CMakeLists.txt
+X@@ -27,7 +27,7 @@ endif()
+X string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_UPPER)
+X if ("${BUILD_TYPE_UPPER}" STREQUAL "RELEASE")
+X     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build Type" FORCE)
+X-    set(CMAKE_C_FLAGS "-DNDEBUG -O2 ${CMAKE_C_FLAGS}")
+X+    set(CMAKE_C_FLAGS "-DNDEBUG ${CMAKE_C_FLAGS}")
+X elseif("${BUILD_TYPE_UPPER}" STREQUAL "DEBUG")
+X     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build Type" FORCE)
+X     set(CMAKE_C_FLAGS "-g3 -O0 ${CMAKE_C_FLAGS}")
+311453ef30a498acf860e6afc953e80e
 exit
 

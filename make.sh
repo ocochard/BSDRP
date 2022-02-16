@@ -422,56 +422,6 @@ done
 # Check for a kernel
 [ -f "${KERNELS_DIR}"/${NANO_KERNEL} ] || die "Can't found kernels/${NANO_KERNEL}"
 
-# Checking target ARCH cross-compilation compatibilities
-case "${NANO_KERNEL}" in
-	"amd64" | "amd64_xenhvm" )
-		if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
-			TARGET_ARCH="amd64"
-		else
-			die "Cross compiling is supported only between i386<=>amd64"
-		fi
-		;;
-	"i386" | "i386_xenpv" | "i386_xenhvm")
-		if [ "${LOCAL_ARCH}" = "amd64" -o "${LOCAL_ARCH}" = "i386" ]; then
-			TARGET_ARCH="i386"
-		else
-			die "Cross compiling is supported only between i386<=>amd64"
-		fi
-		;;
-	"cambria")
-		if [ "${LOCAL_ARCH}" = "arm" ]; then
-			TARGET_ARCH="arm"
-			TARGET_CPUTYPE=xscale; export TARGET_CPUTYPE
-			TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
-		else
-			die "Cross compiling is supported only between i386<=>amd64"
-		fi
-		;;
-	"sparc64")
-		if [ "${LOCAL_ARCH}" = "sparc64" ]; then
-			TARGET_ARCH="sparc64"
-			TARGET_CPUTYPE=sparc64; export TARGET_CPUTYPE
-			TARGET_BIG_ENDIAN=true; export TARGET_BIG_ENDIAN
-		else
-			die "Cross compiling is supported only between i386<=>amd64"
-		fi
-		;;
-	*)
-		die "ERROR: Bad arch type"
-esac
-
-# Cross compilation is not possible for the ports
-
-# Cambria is not compatible with vga output
-if [ "${TARGET_ARCH}" = "arm" ] ; then
-	[ "${INPUT_CONSOLE}" = "-vga" ] && \
-		echo "Gateworks Cambria platform didn't have vga board: Changing console to serial"
-	INPUT_CONSOLE="-serial"
-fi
-
-# Sparc64 is console agnostic
-[ "${TARGET_ARCH}" = "sparc64" ]  && INPUT_CONSOLE=""
-
 if [ $(sysctl -n hw.usermem) -lt 2000000000 ]; then
 	echo "WARNING: Not enough hw.usermem available, disable memory disk usage"
 	TMPFS=false
@@ -675,20 +625,10 @@ BRA=$(grep -m 1 BRANCH=	"${FREEBSD_SRC}/sys/conf/newvers.sh" | cut -f2 -d '"')
 export FBSD_DST_RELEASE="${REV}-${BRA}"
 export FBSD_DST_OSVERSION=$(awk '/^\#define[[:blank:]]__FreeBSD_version/ {print $3}' \
     "${FREEBSD_SRC}/sys/sys/param.h")
-export TARGET_ARCH
+#export TARGET_ARCH
 
 echo "Copying ${NANO_KERNEL} Kernel configuration file"
 cp "${KERNELS_DIR}"/${NANO_KERNEL} "${FREEBSD_SRC}"/sys/${TARGET_ARCH}/conf/
-
-# The xen_hvm kernel include the standard kernel, need to copy it too
-case ${NANO_KERNEL} in
-	"amd64_xenhvm")
-		cp "${KERNELS_DIR}"/amd64 "${FREEBSD_SRC}"/sys/${TARGET_ARCH}/conf/
-		;;
-	"i386_xenhvm")
-		cp "${KERNELS_DIR}"/i386 "${FREEBSD_SRC}"/sys/${TARGET_ARCH}/conf/
-        ;;
-esac
 
 if ($UPDATE_ONLY); then
 	echo "Update ONLY done!"

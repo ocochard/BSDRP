@@ -6,19 +6,41 @@
 # This archive contains:
 #
 #	net/frr8
+#	net/frr8/pkg-message
 #	net/frr8/pkg-descr
 #	net/frr8/files
 #	net/frr8/files/patch-vtysh_extract.pl.in
 #	net/frr8/files/patch-Makefile.am
 #	net/frr8/files/frr.in
 #	net/frr8/files/watchfrr.in
-#	net/frr8/pkg-message
+#	net/frr8/pkg-plist
 #	net/frr8/distinfo
 #	net/frr8/Makefile
-#	net/frr8/pkg-plist
 #
 echo c - net/frr8
 mkdir -p net/frr8 > /dev/null 2>&1
+echo x - net/frr8/pkg-message
+sed 's/^X//' >net/frr8/pkg-message << 'ae3ae36babcaf61879d82b2f0fce9993'
+X[
+X{ type: install
+X  message: <<EOM
+XBeware that remote control of frr7 daemons over TCP sockets is enabled by
+Xdefault.
+XUse daemon flags in /etc/rc.conf to disable it if unneeded, for example:
+Xzebra_flags="-P0"
+Xospfd_flags="-P0"
+X
+XFRR's OSPF daemons tries to allocate big socket buffer, so generate warning
+Xmessages like:
+X"setsockopt_so_sendbuf: fd 6: SO_SNDBUF set to 1048576 (requested 8388608)"
+XTo prevent such message kern.ipc.maxsockbuf can be increased:
+Xsysctl kern.ipc.maxsockbuf=16777216
+X
+XError message "ifam_read() doesn't read all socket data" is under investigation
+XEOM
+X}
+X]
+ae3ae36babcaf61879d82b2f0fce9993
 echo x - net/frr8/pkg-descr
 sed 's/^X//' >net/frr8/pkg-descr << 'bd6cf594e1070bfa98c79f45b1bf1cb0'
 XFRRouting (FRR) is an IP routing protocol suite for Linux and Unix platforms
@@ -158,6 +180,9 @@ X		echo "Checking intergrated config..."
 X		daemon="vtysh"
 X		daemon_flags=""
 X		command=%%PREFIX%%/bin/${daemon}
+X		if ! [ -f %%ETCDIR%%/vtysh.conf ]; then
+X			touch %%ETCDIR%%/vtysh.conf
+X		fi
 X		check_config
 X	fi
 X	for daemon in ${frr_daemons}; do
@@ -259,175 +284,6 @@ Xpidfile=/var/run/frr/watchfrr.pid
 X
 Xrun_rc_command "$1"
 4d356d0f40f56b1a3cbd543c89409e1d
-echo x - net/frr8/pkg-message
-sed 's/^X//' >net/frr8/pkg-message << 'ae3ae36babcaf61879d82b2f0fce9993'
-X[
-X{ type: install
-X  message: <<EOM
-XBeware that remote control of frr7 daemons over TCP sockets is enabled by
-Xdefault.
-XUse daemon flags in /etc/rc.conf to disable it if unneeded, for example:
-Xzebra_flags="-P0"
-Xospfd_flags="-P0"
-X
-XFRR's OSPF daemons tries to allocate big socket buffer, so generate warning
-Xmessages like:
-X"setsockopt_so_sendbuf: fd 6: SO_SNDBUF set to 1048576 (requested 8388608)"
-XTo prevent such message kern.ipc.maxsockbuf can be increased:
-Xsysctl kern.ipc.maxsockbuf=16777216
-X
-XError message "ifam_read() doesn't read all socket data" is under investigation
-XEOM
-X}
-X]
-ae3ae36babcaf61879d82b2f0fce9993
-echo x - net/frr8/distinfo
-sed 's/^X//' >net/frr8/distinfo << '00accd3051c1a44776ffef0e4cbb0479'
-XTIMESTAMP = 1628795734
-XSHA256 (FRRouting-frr-8.0.0-frr-8.0_GH0.tar.gz) = 53fcc136f1936fe325400db3e9f27f976fd39ea9197ceb355798d7f1da972cf6
-XSIZE (FRRouting-frr-8.0.0-frr-8.0_GH0.tar.gz) = 8195258
-00accd3051c1a44776ffef0e4cbb0479
-echo x - net/frr8/Makefile
-sed 's/^X//' >net/frr8/Makefile << '6a4823330160140403e1c2c12af34346'
-XPORTNAME=	frr
-XPORTVERSION=	8.0.0
-X#DISTVERSIONPREFIX=	frr-
-XCATEGORIES=	net
-X.if defined(PYTHONTOOLS)
-XPKGNAMESUFFIX=	8-pythontools
-X.else
-XPKGNAMESUFFIX=	8
-X.endif
-X
-XMAINTAINER=	olivier@FreeBSD.org
-X
-XCOMMENT?=	IP routing protocol suite including BGP, IS-IS, OSPF and RIP
-X
-XLICENSE=	GPLv2
-XLICENSE_FILE=	${WRKSRC}/COPYING
-X
-X.if defined(PYTHONTOOLS)
-XRUN_DEPENDS=	frr-reload:net/frr8
-X
-XUSES=	python:run,3.6+ shebangfix
-X
-Xpost-patch:
-X	@${REINPLACE_CMD} -e 's|/etc/frr|${ETCDIR}|g' \
-X		-e 's|/usr/bin|${PREFIX}/bin|g' \
-X		-e 's|/usr/local/bin/tail|${TAIL}|g' \
-X		${WRKSRC}/tools/frr-reload.py
-X
-Xdo-install:
-X	${MKDIR} ${STAGEDIR}/${PREFIX}/lib/frr
-X	${INSTALL_SCRIPT} ${WRKSRC}/tools/frr-reload.py ${STAGEDIR}/${PREFIX}/lib/frr/
-X.else
-X
-XBUILD_DEPENDS=	gawk:lang/gawk
-XLIB_DEPENDS=	libjson-c.so:devel/json-c \
-X		libyang.so.2:net/libyang2 \
-X		libcares.so:dns/c-ares
-X
-XUSES=		autoreconf bison compiler:c++11-lang gmake pkgconfig libtool \
-X		makeinfo python:build,3.6+ readline shebangfix
-X
-XBINARY_ALIAS=	python=${PYTHON_VERSION}
-X
-XCONFLICTS=	openbgpd openospfd zebra quagga
-X
-XGNU_CONFIGURE=	yes
-XINSTALL_TARGET=	install-strip
-XUSE_LDCONFIG=	yes
-X.endif
-X
-XUSE_GITHUB=	yes
-XGH_ACCOUNT=	FRRouting
-XGH_TAGNAME=	frr-8.0
-X
-X.if defined(PYTHONTOOLS)
-XNO_BUILD=	yes
-XNO_ARCH=	yes
-X
-XSHEBANG_FILES=	tools/frr-reload.py
-XPLIST=			${.CURDIR}/pkg-plist
-XPKGMESSAGE=	""
-X.else
-XINFO=		frr
-X
-XOPTIONS_DEFINE=		CONFIGROLLBACKS FPM DATACENTER LDPD PAM SHELLACCESS \
-X			VTYSH MANPAGES MULTIPATH TCMALLOC RPKI SNMP
-XOPTIONS_DEFAULT=	VTYSH RPKI FPM MANPAGES
-XOPTIONS_SUB=	yes
-X
-XCONFIGROLLBACKS_DESC=	Enable configuration rollback support
-XFPM_DESC=		Enable Forwarding Plane Manager support
-XDATACENTER_DESC=	Use reduced BGP timers
-XLDPD_DESC=		Build ldpd
-XMULTIPATH_DESC=		Enable multipath function
-XPAM_DESC=		Use libpam for PAM support in vtysh
-XRPKI_DESC=		Add BGP RPKI (RFC 6810) support
-XSHELLACCESS_DESC=	Allow users to access shell/telnet/ssh
-XSNMP_DESC=		SNMP support
-XTCMALLOC_DESC=		Use tcmalloc
-XVTYSH_DESC=		Build integrated vty shell
-X
-XUSERS=	frr
-XGROUPS=	frr frrvty
-X
-XCPPFLAGS+=	-I${LOCALBASE}/include
-XLDFLAGS+=	-L${LOCALBASE}/lib
-X
-X# PIM compile but didn't work on FreeBSD
-XCONFIGURE_ARGS=	--enable-user=frr \
-X		--enable-group=frr \
-X		--enable-vty-group=frrvty \
-X		--disable-doc-html \
-X		--sysconfdir=${ETCDIR} \
-X		--localstatedir=/var/run/frr \
-X		--disable-backtrace \
-X		--disable-nhrpd \
-X		--disable-pathd \
-X		--disable-pimd \
-X		--disable-vrrpd \
-X		--with-vtysh-pager=cat
-X
-XMANPAGES_BUILD_DEPENDS=		${PYTHON_PKGNAMEPREFIX}sphinx>=0,1:textproc/py-sphinx@${PY_FLAVOR}
-XMANPAGES_CONFIGURE_OFF=		--disable-doc
-XCONFIGROLLBACKS_LIB_DEPENDS=	libsqlite3.so:databases/sqlite3
-XCONFIGROLLBACKS_CONFIGURE_ENABLE=	config-rollbacks
-XDATACENTER_CONFIGURE_ENABLE=	datacenter
-XSHELLACCESS_CONFIGURE_ENABLE=	shell-access
-XFPM_CONFIGURE_ENABLE=		fpm
-XPAM_CONFIGURE_WITH=		libpam
-XLDPD_CONFIGURE_ENABLE=		ldpd
-XMULTIPATH_CONFIGURE_ON=		--enable-multipath=64
-XRPKI_CONFIGURE_ENABLE=		rpki
-XRPKI_LIB_DEPENDS=		librtr.so:net-mgmt/rtrlib \
-X				libssh.so:security/libssh
-XTCMALLOC_CONFIGURE_ENABLE=	tcmalloc
-XTCMALLOC_LIB_DEPENDS=		libtcmalloc.so:devel/google-perftools
-XSNMP_CONFIGURE_ENABLE=		snmp
-XSNMP_CFLAGS=			"-std=gnu99"
-XSNMP_LIB_DEPENDS=		libnetsnmp.so:net-mgmt/net-snmp
-XSNMP_USES=			ssl
-XVTYSH_CONFIGURE_ENABLE=		vtysh
-X
-XUSE_RC_SUBR=	frr watchfrr
-X
-XSHEBANG_FILES=	yang/embedmodel.py
-X
-Xpost-patch:
-X	@${REINPLACE_CMD} -e 's|/etc/frr|${ETCDIR}|g' \
-X		-e 's|/usr/lib/|${PREFIX}/lib/|g' \
-X		-e 's|frr-pythontools|frr8-pythontools|g' \
-X		${WRKSRC}/tools/frr-reload
-X
-Xpost-install:
-X	${MKDIR} ${STAGEDIR}/var/run/frr
-X	${INSTALL_SCRIPT} ${WRKSRC}/tools/frr-reload ${STAGEDIR}${PREFIX}/sbin
-X.endif
-X
-X.include <bsd.port.mk>
-6a4823330160140403e1c2c12af34346
 echo x - net/frr8/pkg-plist
 sed 's/^X//' >net/frr8/pkg-plist << 'f1420a9c5477f5dcab0535cf1aafe7a1'
 X%%VTYSH%%bin/vtysh
@@ -653,5 +509,153 @@ Xshare/yang/ietf-interfaces.yang
 Xshare/yang/ietf-routing-types.yang
 X@dir(frr,frr,750) /var/run/frr
 f1420a9c5477f5dcab0535cf1aafe7a1
+echo x - net/frr8/distinfo
+sed 's/^X//' >net/frr8/distinfo << '00accd3051c1a44776ffef0e4cbb0479'
+XTIMESTAMP = 1636585752
+XSHA256 (FRRouting-frr-8.1.0-frr-8.0.1_GH0.tar.gz) = c0d625a33de49153557a38138fd2a8b677c5e966d542de352a4f4a4d22eeca58
+XSIZE (FRRouting-frr-8.1.0-frr-8.0.1_GH0.tar.gz) = 8206852
+00accd3051c1a44776ffef0e4cbb0479
+echo x - net/frr8/Makefile
+sed 's/^X//' >net/frr8/Makefile << '6a4823330160140403e1c2c12af34346'
+XPORTNAME=	frr
+XPORTVERSION=	8.1.0
+X#DISTVERSIONPREFIX=	frr-
+XCATEGORIES=	net
+X.if defined(PYTHONTOOLS)
+XPKGNAMESUFFIX=	8-pythontools
+X.else
+XPKGNAMESUFFIX=	8
+X.endif
+X
+XMAINTAINER=	olivier@FreeBSD.org
+X
+XCOMMENT?=	IP routing protocol suite including BGP, IS-IS, OSPF and RIP
+X
+XLICENSE=	GPLv2
+XLICENSE_FILE=	${WRKSRC}/COPYING
+X
+X.if defined(PYTHONTOOLS)
+XRUN_DEPENDS=	frr-reload:net/frr8
+X
+XUSES=	python:run,3.6+ shebangfix
+X
+Xpost-patch:
+X	@${REINPLACE_CMD} -e 's|/etc/frr|${ETCDIR}|g' \
+X		-e 's|/usr/bin|${PREFIX}/bin|g' \
+X		-e 's|/usr/local/bin/tail|${TAIL}|g' \
+X		${WRKSRC}/tools/frr-reload.py
+X
+Xdo-install:
+X	${MKDIR} ${STAGEDIR}/${PREFIX}/lib/frr
+X	${INSTALL_SCRIPT} ${WRKSRC}/tools/frr-reload.py ${STAGEDIR}/${PREFIX}/lib/frr/
+X.else
+X
+XBUILD_DEPENDS=	gawk:lang/gawk
+XLIB_DEPENDS=	libjson-c.so:devel/json-c \
+X		libyang.so.2:net/libyang2 \
+X		libcares.so:dns/c-ares \
+X		libpcre2-8.so:devel/pcre2
+X
+XUSES=		autoreconf bison compiler:c++11-lang gmake pkgconfig libtool \
+X		makeinfo python:build,3.6+ readline shebangfix
+X
+XBINARY_ALIAS=	python=${PYTHON_VERSION}
+X
+XCONFLICTS=	openbgpd openospfd zebra quagga
+X
+XGNU_CONFIGURE=	yes
+XINSTALL_TARGET=	install-strip
+XUSE_LDCONFIG=	yes
+X.endif
+X
+XUSE_GITHUB=	yes
+XGH_ACCOUNT=	FRRouting
+XGH_TAGNAME=	frr-8.0.1
+X
+X.if defined(PYTHONTOOLS)
+XNO_BUILD=	yes
+XNO_ARCH=	yes
+X
+XSHEBANG_FILES=	tools/frr-reload.py
+XPLIST=			${.CURDIR}/pkg-plist
+XPKGMESSAGE=	""
+X.else
+XINFO=		frr
+X
+XOPTIONS_DEFINE=		CONFIGROLLBACKS FPM DATACENTER LDPD PAM SHELLACCESS \
+X			VTYSH MANPAGES MULTIPATH TCMALLOC RPKI SNMP
+XOPTIONS_DEFAULT=	VTYSH RPKI FPM MANPAGES
+XOPTIONS_SUB=	yes
+X
+XCONFIGROLLBACKS_DESC=	Enable configuration rollback support
+XFPM_DESC=		Enable Forwarding Plane Manager support
+XDATACENTER_DESC=	Use reduced BGP timers
+XLDPD_DESC=		Build ldpd
+XMULTIPATH_DESC=		Enable multipath function
+XPAM_DESC=		Use libpam for PAM support in vtysh
+XRPKI_DESC=		Add BGP RPKI (RFC 6810) support
+XSHELLACCESS_DESC=	Allow users to access shell/telnet/ssh
+XSNMP_DESC=		SNMP support
+XTCMALLOC_DESC=		Use tcmalloc
+XVTYSH_DESC=		Build integrated vty shell
+X
+XUSERS=	frr
+XGROUPS=	frr frrvty
+X
+XCPPFLAGS+=	-I${LOCALBASE}/include
+XLDFLAGS+=	-L${LOCALBASE}/lib
+X
+X# PIM compile but didn't work on FreeBSD
+XCONFIGURE_ARGS=	--enable-user=frr \
+X		--enable-group=frr \
+X		--enable-vty-group=frrvty \
+X		--disable-doc-html \
+X		--sysconfdir=${ETCDIR} \
+X		--localstatedir=/var/run/frr \
+X		--disable-backtrace \
+X		--disable-nhrpd \
+X		--disable-pathd \
+X		--disable-pimd \
+X		--disable-vrrpd \
+X		--with-vtysh-pager=cat
+X
+XMANPAGES_BUILD_DEPENDS=		${PYTHON_PKGNAMEPREFIX}sphinx>=0,1:textproc/py-sphinx@${PY_FLAVOR}
+XMANPAGES_CONFIGURE_OFF=		--disable-doc
+XCONFIGROLLBACKS_LIB_DEPENDS=	libsqlite3.so:databases/sqlite3
+XCONFIGROLLBACKS_CONFIGURE_ENABLE=	config-rollbacks
+XDATACENTER_CONFIGURE_ENABLE=	datacenter
+XSHELLACCESS_CONFIGURE_ENABLE=	shell-access
+XFPM_CONFIGURE_ENABLE=		fpm
+XPAM_CONFIGURE_WITH=		libpam
+XLDPD_CONFIGURE_ENABLE=		ldpd
+XMULTIPATH_CONFIGURE_ON=		--enable-multipath=64
+XRPKI_CONFIGURE_ENABLE=		rpki
+XRPKI_LIB_DEPENDS=		librtr.so:net-mgmt/rtrlib \
+X				libssh.so:security/libssh
+XTCMALLOC_CONFIGURE_ENABLE=	tcmalloc
+XTCMALLOC_LIB_DEPENDS=		libtcmalloc.so:devel/google-perftools
+XSNMP_CONFIGURE_ENABLE=		snmp
+XSNMP_CFLAGS=			"-std=gnu99"
+XSNMP_LIB_DEPENDS=		libnetsnmp.so:net-mgmt/net-snmp
+XSNMP_USES=			ssl
+XVTYSH_CONFIGURE_ENABLE=		vtysh
+X
+XUSE_RC_SUBR=	frr watchfrr
+X
+XSHEBANG_FILES=	yang/embedmodel.py
+X
+Xpost-patch:
+X	@${REINPLACE_CMD} -e 's|/etc/frr|${ETCDIR}|g' \
+X		-e 's|/usr/lib/|${PREFIX}/lib/|g' \
+X		-e 's|frr-pythontools|frr8-pythontools|g' \
+X		${WRKSRC}/tools/frr-reload
+X
+Xpost-install:
+X	${MKDIR} ${STAGEDIR}/var/run/frr
+X	${INSTALL_SCRIPT} ${WRKSRC}/tools/frr-reload ${STAGEDIR}${PREFIX}/sbin
+X.endif
+X
+X.include <bsd.port.mk>
+6a4823330160140403e1c2c12af34346
 exit
 

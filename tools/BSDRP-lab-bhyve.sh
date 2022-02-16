@@ -118,7 +118,7 @@ load_module () {
 # Common with vbox/quemu script
 uncompress_image () {
     [ -f ${FILE} ] || die "Can't find file ${FILE}"
-	FILE_TYPE=$(file -b ${FILE} | cut -d ';' -f 1)
+	FILE_TYPE=$(file -b ${FILE} | cut -d ',' -f 1)
 
 	[ -f ${VM_TEMPLATE} ] && rm ${VM_TEMPLATE}
 
