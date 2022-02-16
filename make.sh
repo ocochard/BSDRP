@@ -178,7 +178,12 @@ patch_port() {
 	for patch in $(cd "${PORT_PATCH_DIR}" && ls ports.*.patch); do
 		if ! grep -q $patch "${PROJECT_DIR}/FreeBSD/ports-patches"; then
 			echo "Applying patch $patch..."
-			patch -p0 -NE -d "${PORTS_SRC}" -i "${PORT_PATCH_DIR}"/$patch || die "Port tree patch failed"
+			if grep -q 'diff --git a/' "${SRC_PATCH_DIR}"/$patch; then
+				p="-p1"
+			else
+				p="-p0"
+			fi
+			patch $p -NE -d "${PORTS_SRC}" -i "${PORT_PATCH_DIR}"/$patch || die "Port tree patch failed"
 			echo $patch >> "${PROJECT_DIR}"/FreeBSD/ports-patches
 		fi
 	done

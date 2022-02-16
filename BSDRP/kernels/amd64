@@ -51,7 +51,7 @@ options 	FFS			# Berkeley Fast Filesystem
 #options 	NFSLOCKD		# Network Lock Manager
 #options 	NFS_ROOT		# NFS usable as /, requires NFSCL
 options 	MSDOSFS			# MSDOS Filesystem
-#options 	CD9660			# ISO 9660 Filesystem
+options 	CD9660			# ISO 9660 Filesystem
 options 	PROCFS			# Process filesystem (requires PSEUDOFS)
 options 	PSEUDOFS		# Pseudo-filesystem framework
 options 	TMPFS			# Efficient memory filesystem
@@ -173,7 +173,7 @@ device		scbus			# SCSI bus (required for ATA/SCSI)
 #device		ch			# SCSI media changers
 device		da			# Direct Access (disks)
 #device		sa			# Sequential Access (tape etc)
-#device		cd			# CD
+device		cd			# CD
 device		pass			# Passthrough device (direct ATA/SCSI access)
 device		ses			# Enclosure Services (SES and SAF-TE)
 #device		ctl			# CAM Target Layer
@@ -372,8 +372,9 @@ device		vtnet			# VirtIO Ethernet device
 device		virtio_blk		# VirtIO Block device
 device		virtio_scsi		# VirtIO SCSI device
 device		virtio_balloon		# VirtIO Memory Balloon device
-device		virtio_console	# VirtIO Console driver
-device		virtio_random	# VirtIO Entropy driver
+
+# Linux KVM paravirtualization support
+device		kvm_clock		# KVM paravirtual clock driver
 
 # Linux KVM paravirtualization support
 device		kvm_clock		# KVM paravirtual clock driver
@@ -439,6 +440,10 @@ device enc
 
 # Fenestras X" alternative /dev/random implementation
 options		RANDOM_FENESTRASX
+
+# Extra virtio drivers
+device		virtio_console	# VirtIO Console driver
+device		virtio_random	# VirtIO Entropy driver
 
 # Don't enter the debugger for a panic
 options		KDB_UNATTENDED
