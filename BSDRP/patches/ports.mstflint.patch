@@ -1,7 +1,7 @@
-diff --git sysutils/mstflint/Makefile sysutils/mstflint/Makefile
-index 196b63f1e3b3..5002d784ab41 100644
---- sysutils/mstflint/Makefile
-+++ sysutils/mstflint/Makefile
+diff --git a/sysutils/mstflint/Makefile b/sysutils/mstflint/Makefile
+index 45e1f0ab92d5..12ce7d625ba7 100644
+--- a/sysutils/mstflint/Makefile
++++ b/sysutils/mstflint/Makefile
 @@ -44,7 +44,6 @@ USES+=	ssl
  .if ${PORT_OPTIONS:MADAB}
  CONFIGURE_ARGS+=	--enable-adb-generic-tools

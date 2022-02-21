@@ -751,7 +751,7 @@ echo "VM5 (including jail5 and jail6) configured"
 
 bird_jails() {
 sysrc hostname=host \
-  cloned_interfaces="epair0 epair1 epair2 epair3" \
+  cloned_interfaces="epair0 epair1 epair2 epair3 epair4" \
   kld_list="ipsec"
 cat > /etc/devfs.rules <<EOF
 [devfsrules_jailbpf=4]
@@ -768,9 +768,10 @@ tenant -c -j jail1 -i epair0a
 tenant -c -j jail2 -i epair0b,epair1a
 tenant -c -j jail3 -i epair1b,epair2a
 tenant -c -j jail4 -i epair2b,epair3a
-tenant -c -j jail5 -i epair3b
+tenant -c -j jail5 -i epair3b,epair4a
+tenant -c -j jail6 -i epair4b
 
-for i in $(jot 5); do
+for i in $(jot 6); do
 	mkdir -p /etc/jails/jail$i/local
 done
 
@@ -823,11 +824,22 @@ cat > /etc/jails/jail5/rc.conf <<EOF
 hostname="jail5"
 gateway_enable=YES
 ipv6_gateway_enable=YES
-cloned_interfaces=lo1
 ifconfig_epair3b="inet 192.168.45.5/24"
 ifconfig_epair3b_ipv6="inet6 2001:db8:45::5/64"
-ifconfig_lo1="inet 192.168.50.5/24"
-ifconfig_lo1_ipv6="inet6 2001:db8:50::5/64"
+ifconfig_epair4a="inet 192.168.56.5/24"
+ifconfig_epair4a_ipv6="inet6 2001:db8:56::5/64"
+bird_enable=yes
+EOF
+
+cat > /etc/jails/jail6/rc.conf <<EOF
+hostname="jail6"
+gateway_enable=YES
+ipv6_gateway_enable=YES
+cloned_interfaces=lo1
+ifconfig_epair4b="inet 192.168.56.6/24"
+ifconfig_epair4b_ipv6="inet6 2001:db8:56::6/64"
+ifconfig_lo1="inet 192.168.60.6/24"
+ifconfig_lo1_ipv6="inet6 2001:db8:60::6/64"
 bird_enable=yes
 EOF
 
@@ -1068,14 +1080,10 @@ protocol ospf v3 ospf6 {
     };
 }
 
-protocol static static4 {
-    ipv4;
-    route 192.168.50.0/24 via 192.168.45.5;
-}
-
-protocol static static6 {
-    ipv6;
-    route 2001:db8:50::/64 via 2001:db8:45::5;
+protocol babel {
+  interface "epair3a" { type wired; };
+  ipv4 { import all; export all;};
+  ipv6 { import all; export all;};
 }
 EOF
 
@@ -1110,13 +1118,61 @@ protocol direct {
         ipv6;
 }
 
+protocol babel {
+  interface "epair3b" { type wired; };
+  ipv4 { import all; export all;};
+  ipv6 { import all; export all;};
+}
+
+protocol static static4 {
+    ipv4;
+    route 192.168.60.0/24 via 192.168.56.6;
+}
+
+protocol static static6 {
+    ipv6;
+    route 2001:db8:60::/64 via 2001:db8:56::6;
+}
+EOF
+
+cat > /etc/jails/jail6/local/bird.conf <<EOF
+# Configure logging
+log syslog all;
+log "/var/log/bird.log" all;
+log stderr all;
+
+# Override router ID
+router id 192.168.10.6;
+
+# Sync bird routing table with kernel
+protocol kernel kernel4 {
+	ipv4 {
+		export all;
+    };
+}
+protocol kernel kernel6 {
+    ipv6 {
+        export all;
+    };
+}
+
+protocol device {
+        scan time 10;
+}
+
+# Include directly connected networks
+protocol direct {
+        ipv4;
+        ipv6;
+}
+
 protocol static static4 {
 		ipv4;
-        route 0.0.0.0/0 via 192.168.45.4;
+        route 0.0.0.0/0 via 192.168.56.5;
 }
 protocol static static6 {
 		ipv6;
-        route ::/0 via 2001:db8:45::4;
+        route ::/0 via 2001:db8:56::5;
 }
 
 EOF
