@@ -70,3 +70,6 @@ net.link.ifqmaxlen="16384"
 
 # Avoid message netisr_register: epair requested queue limit 688128 capped to net.isr.maxqlimit 1024
 net.isr.maxqlimit=1000000
+
+# Use all cores for netisr processing
+net.isr.maxthreads=-1

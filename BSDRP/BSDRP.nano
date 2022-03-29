@@ -535,7 +535,7 @@ add_port "net-mgmt/bgpq4"
 add_port "net/ixl_unlock"
 
 # Mellanox Firmware Burning and Diagnostics Tools
-add_port "sysutils/mstflint-lite"
+#add_port "sysutils/mstflint-lite"
 
 # my ASCII network diagram tool
 add_port "net/graphpath"
@@ -653,8 +653,13 @@ bsdrp_custom () {
 	mkdir -p ${NANO_WORLDDIR}/etc/dot.ssh.root
 	ln -s ../etc/dot.ssh.root ${NANO_WORLDDIR}/root/.ssh
 
-	# relocate /root/.vimrc to /etc/dot.vimrc
+	# relocate /root/.* to /etc/dot.*
 	ln -s ../etc/dot.vimrc ${NANO_WORLDDIR}/root/.vimrc
+	rm ${NANO_WORLDDIR}/root/.shrc
+	ln -s ../etc/dot.shrc ${NANO_WORLDDIR}/root/.shrc
+	ln -s ../etc/dot.complete ${NANO_WORLDDIR}/root/.complete
+	rm ${NANO_WORLDDIR}/root/.cshrc
+	ln -s ../etc/dot.cshrc ${NANO_WORLDDIR}/root/.cshrc
 
 	# turn on noatime for /cfg
 	sed -i "" -e "/cfg/s/rw/rw,noatime/" ${NANO_WORLDDIR}/etc/fstab
