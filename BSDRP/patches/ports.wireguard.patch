@@ -1,0 +1,81 @@
+diff --git net/wireguard/Makefile net/wireguard/Makefile
+index 2e78148064d1..e79927f37882 100644
+--- net/wireguard/Makefile
++++ net/wireguard/Makefile
+@@ -12,4 +12,10 @@ USES=	metaport
+ 
+ RUN_DEPENDS+=	${KMODDIR}/if_wg.ko:net/wireguard-kmod
+ 
+-.include <bsd.port.mk>
++.include <bsd.port.pre.mk>
++
++.if (${OSVERSION} > 1400056)
++EXTRA_PATCHES+= ${PATCHDIR}/extra-patch-if__wg.c
++.endif
++
++.include <bsd.port.post.mk>
+diff --git net/wireguard/files/extra-patch-if__wg.c net/wireguard/files/extra-patch-if__wg.c
+new file mode 100644
+index 000000000000..092d66cbde9a
+--- /dev/null
++++ net/wireguard/files/extra-patch-if__wg.c
+@@ -0,0 +1,59 @@
++--- if_wg.c.orig	2021-11-05 14:40:17 UTC
+++++ if_wg.c
++@@ -377,7 +377,7 @@ static struct wg_packet *wg_queue_dequeue_parallel(str
++ static int wg_queue_both(struct wg_queue *, struct wg_queue *, struct wg_packet *);
++ static struct wg_packet *wg_queue_dequeue_serial(struct wg_queue *);
++ static struct wg_packet *wg_queue_dequeue_parallel(struct wg_queue *);
++-static void wg_input(struct mbuf *, int, struct inpcb *, const struct sockaddr *, void *);
+++static bool wg_input(struct mbuf *, int, struct inpcb *, const struct sockaddr *, void *);
++ static void wg_peer_send_staged(struct wg_peer *);
++ static int wg_clone_create(struct if_clone *, int, caddr_t);
++ static void wg_qflush(struct ifnet *);
++@@ -1946,7 +1946,7 @@ wg_queue_dequeue_parallel(struct wg_queue *parallel)
++ 	return (pkt);
++ }
++ 
++-static void
+++static bool
++ wg_input(struct mbuf *m, int offset, struct inpcb *inpcb,
++     const struct sockaddr *sa, void *_sc)
++ {
++@@ -1965,7 +1965,7 @@ wg_input(struct mbuf *m, int offset, struct inpcb *inp
++ 	m = m_unshare(m, M_NOWAIT);
++ 	if (!m) {
++ 		if_inc_counter(sc->sc_ifp, IFCOUNTER_IQDROPS, 1);
++-		return;
+++		return (true);
++ 	}
++ 
++ 	/* Caller provided us with `sa`, no need for this header. */
++@@ -1974,13 +1974,13 @@ wg_input(struct mbuf *m, int offset, struct inpcb *inp
++ 	/* Pullup enough to read packet type */
++ 	if ((m = m_pullup(m, sizeof(uint32_t))) == NULL) {
++ 		if_inc_counter(sc->sc_ifp, IFCOUNTER_IQDROPS, 1);
++-		return;
+++		return (true);
++ 	}
++ 
++ 	if ((pkt = wg_packet_alloc(m)) == NULL) {
++ 		if_inc_counter(sc->sc_ifp, IFCOUNTER_IQDROPS, 1);
++ 		m_freem(m);
++-		return;
+++		return (true);
++ 	}
++ 
++ 	/* Save send/recv address and port for later. */
++@@ -2027,11 +2027,11 @@ wg_input(struct mbuf *m, int offset, struct inpcb *inp
++ 	} else {
++ 		goto error;
++ 	}
++-	return;
+++	return (true);
++ error:
++ 	if_inc_counter(sc->sc_ifp, IFCOUNTER_IERRORS, 1);
++ 	wg_packet_free(pkt);
++-	return;
+++	return (true);
++ }
++ 
++ static void
