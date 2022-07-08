@@ -254,7 +254,7 @@ XZ="xz -9 -T0 -vf"
 # Temporary (working) directory
 TMPDIR="$(pwd)"/workdir
 # Is svn or svnlite available ?
-SVN_CMD=$(which svn) || SVN_CMD=$(which svnlite)
+SVN_CMD=$(which svn) || SVN_CMD=$(which svnlite) || true
 # script (make.sh) file name
 SCRIPT=$(readlink -f $0)
 # directory where make.sh file is

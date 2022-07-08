@@ -219,7 +219,7 @@ add_port () {
 	else
 		PKG_NAME=$(env PORTSDIR="${PORTS_SRC}" make package-name)
 	fi
-	if [ -f "${NANO_OBJ}"/ports/packages/All/${PKG_NAME}.txz ]; then
+	if [ -f "${NANO_OBJ}"/ports/packages/All/${PKG_NAME}.pkg ]; then
 	# Pkg file found: Generate add_pkg_NAME function
 		eval "
 		add_pkg_${port} () {
@@ -250,7 +250,7 @@ FreeBSD: {
 EOF
 			# Bug with pkg: not using the "-d" option prevent to install the package with error message "pkg fail to extract static"
 			# Need to force assume_always_yes for avoiding bootstrap pkg confirmation too
-			CR 'env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
+			CR 'env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg -d add /usr/ports/packages/All/${PKG_NAME}.pkg'
 			umount \${NANO_WORLDDIR}/usr/ports/packages
 			umount \${NANO_WORLDDIR}/dev
 			rmdir \${NANO_WORLDDIR}/usr/ports/packages
@@ -338,7 +338,7 @@ add_port "print/indexinfo"
 add_port "devel/libffi"
 add_port "devel/readline"
 add_port "math/mpdecimal"
-add_port "lang/python38"
+add_port "lang/python39"
 add_port "lang/python3"
 add_port "lang/python"
 add_port "devel/py-setuptools"
@@ -348,7 +348,7 @@ add_port "devel/py-setuptools"
  add_port "converters/libiconv"
 add_port "archivers/lzo2"
 add_port "archivers/liblz4"
-add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 LIBSSH2 POP3 RTSP SMTP TELNET\""
+add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 LIBSSH2 POP3 PSL RTSP SMTP TELNET\""
 # Build dep that will be removed after, but need to force STATIC mode for mstflint
 add_port "textproc/expat2" "WITH=\"STATIC\""
 add_port "security/libssh"
@@ -471,6 +471,10 @@ add_port "security/openvpn"
 #add_port "net/wireguard-go"
 #add_port "net/wireguard"
 
+# Realtek official drivers
+add_port "net/realtek-re-kmod"
+add_port "net/aquantia-atlantic-kmod"
+
 # tinc
 add_port "security/tinc"
 
@@ -558,6 +562,7 @@ cleanup_ports () {
 	# 5. sdiff -s package.info.full package.info.lite
 	BUILD_DEP='
 autoconf
+autoconf-switch
 autoconf-wrapper
 automake
 automake-wrapper

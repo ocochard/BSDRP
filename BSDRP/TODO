@@ -1,5 +1,12 @@
 # TODO List fort the BSD Router Project
 
+hw.dmar.enable=1
+    hw.dmar.pmr.disable=1
+    hw.dmar.dma=0
+
+https://reviews.freebsd.org/D34907
+
+
 ## Bugs #
 
 * if no-mandatory /data had a fsck problem, system refuse go in single user

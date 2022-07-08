@@ -2,7 +2,6 @@
 
 set -euf -o pipefail
 
-SVN_CMD=""
 rev=""
 git_count=""
 dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -17,17 +16,6 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # Get last svn rev
 # $1: Folder to sync
 # return (echo) revision number
-get_last_svn_rev () {
-	[ -d $1 ] || die "No folder $1 found"
-	${SVN_CMD} up $1 || die "Error during ${SVN_CMD} of $1"
-	rev=$(${SVN_CMD} info $1 | grep "Last Changed Rev" | cut -w -f 4)
-	[ -z "${rev}" ] && die "No revision number found"
-	#rev=${rev%%.}
-	# Test if it's an integer
-	[ $rev -eq $rev ] || die "Revision number is not an integer"
-	return 0
-}
-
 get_last_git_rev() {
 	[ -d $1 ] || die "No folder $1 found"
 	cd $dir/../$1
@@ -54,8 +42,6 @@ update () {
 }
 
 ### Main function ###
-
-SVN_CMD=$(which svn) || SVN_CMD=$(which svnlite)
 
 # Optional argument to update only one branch
 if [ $# -eq 1 ]; then

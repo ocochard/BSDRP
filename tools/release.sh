@@ -124,7 +124,7 @@ debug
 		echo ""
 		FILE_LIST=""
  		for arch in ${ARCH_LIST}; do
-			FILE_LIST="${FILE_LIST} $(ls ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-* | cut -d '/' -f 5 | grep ${type} | grep ".xz")"
+			FILE_LIST="${FILE_LIST} $(ls ${OBJ_BASE_DIR}/${PROJECT}.${arch}/ | cut -d '/' -f 5 | grep '^BSDRP-' | grep ${type} | grep ".xz")"
     	done
 
 		for file in ${FILE_LIST}; do

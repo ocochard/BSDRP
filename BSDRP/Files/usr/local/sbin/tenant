@@ -1,9 +1,10 @@
 #!/bin/sh
 #
 # Tenant (jail on nanobsd helper script) for BSD Router Project
+# Adapted to be used on generic FreeBSD too
 # https://bsdrp.net
 #
-# Copyright (c) 2017-2021, The BSDRP Development Team
+# Copyright (c) 2017-2022, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -40,8 +41,15 @@ tenant=""
 nics=""
 defaultgw=""
 authorizedkeys=""
-jailbase="/var/jails"
-[ -f /etc/nanobsd.conf ] && NANOBSD=true || NANOBSD=false
+release=$(uname -r)
+if [ -f /etc/nanobsd.conf ]; then
+	NANOBSD=true
+	jailbase="/var/jails"
+else
+	NANOBSD=false
+	# using same dir as ez-jail
+	jailbase="/usr/jails"
+fi
 
 #############################################
 ########### Function definition #############
@@ -70,18 +78,23 @@ usage () {
 # TO DO: All die() call in this function need to do a cleanup
 create () {
 	[ -z "${tenant}" ] && die "BUG: tenant name mandatory"
+	[ -f /etc/jail.conf.d/${tenant}.conf ] && die "Already existng jail configuration file"
 	if [ -f /etc/jail.conf ]; then
 		grep -q "^${tenant} {" /etc/jail.conf && die "Already existing entry into /etc/jail.conf"
 		[ -d /etc/jails/${tenant} ] && die "Aleary existing directory /etc/jails/${tenant}"
-		# Check if interface are already declared
-		nicslist=$nics
-		while [ "$nicslist" ] ;do
-			iter=${nicslist%%,*}
-			nicname=${iter%%/*}
-			grep -E -q "vnet\.interface.*${nicname}" /etc/jail.conf && die "Interface ${nicname} already declared into /etc/jail"
-			[ "$nicslist" = "$iter" ] && nicslist='' || nicslist="${nicslist#*,}"
-		done
 	fi
+	# Check if interface are already declared
+	nicslist=$nics
+	while [ "$nicslist" ] ;do
+		iter=${nicslist%%,*}
+		nicname=${iter%%/*}
+		if [ -f /etc/jail.conf ]; then
+			grep -E -q "vnet\.interface.*${nicname}" /etc/jail.conf && die "Interface ${nicname} already declared into /etc/jail"
+		else
+			grep -Esq "vnet.\interface.%${nicname}" /etc/jail.conf.d/*.conf && die "Interface ${nicname} already declared into /etc/jail.conf.d/*.conf"
+		fi
+		[ "$nicslist" = "$iter" ] && nicslist='' || nicslist="${nicslist#*,}"
+	done
 
 	# Get last ID
 	if [ -f /etc/jail.lastid ]; then
@@ -91,7 +104,13 @@ create () {
 		id=1
 	fi
 
-	if ($NANOBSD); then
+	jailroot="${jailbase}/${tenant}"
+	jailfstab="/etc/jail.conf.d/${tenant}.fstab"
+	mkdir -p ${jailroot}
+
+	if ( $NANOBSD ); then
+		# NanoBSD: Only file in /etc could be saved
+		jailetc="/etc/jails/${tenant}"
 		# In NANOBSD mode, autosave should be enabled if jail is created
 		# It allow to automatically save customer configuration changes
 		if ! sysrc -c autosave_enable="YES"; then
@@ -99,36 +118,45 @@ create () {
 			sysrc autosave_enable="YES" > /dev/null 2>&1
 			service autosave start > /dev/null 2>&1 || echo "Warning: Can't start autosave"
 		fi
+	else
+		jailetc="${jailroot}/etc"
+		if ! [ -r ${jailroot}/sources/${release}.base.txz ]; then
+			echo "Downloading https://download.freebsd.org/snapshots/amd64/${release}/base.txz..."
+			mkdir -p ${jailroot}/sources
+			fetch https://download.freebsd.org/snapshots/amd64/${release}/base.txz -o ${jailroot}/sources/${release}.base.txz
+		fi
+		echo "Generating /etc and /var..."
+		tar -xzv --include='./var/*' --include='./etc/*' -C ${jailroot}/ -f ${jailroot}/sources/${release}.base.txz
 	fi
 
-	jailroot="${jailbase}/${tenant}"
-	jailcfg="/etc/jails/${tenant}"
 	# Generate pre-fstab for jail
 	{
-		for i in etc var; do
-			echo "tmpfs ${jailroot}/$i tmpfs rw,size=16000000 0 0"
-			#echo "/conf/base/$i ${jailroot}/conf/base/$i nullfs ro 0 0"
-		done
 		for i in root bin sbin lib libexec usr; do
 			echo "/$i ${jailroot}/$i nullfs ro 0 0"
 		done
-		echo "/conf/base ${jailroot}/conf/base nullfs ro 0 0"
-		echo "/etc/jails/${tenant} ${jailroot}/cfg nullfs rw,noatime 0 0"
-	} > /etc/fstab.${tenant}
+		if ( $NANOBSD ); then
+			#  using same concept as tmpfs for /etc and /var
+			for i in etc var; do
+				echo "tmpfs ${jailroot}/$i tmpfs rw,size=16000000 0 0"
+			done
+			echo "/conf/base ${jailroot}/conf/base nullfs ro 0 0"
+			echo "/etc/jails/${tenant} ${jailroot}/cfg nullfs rw,noatime 0 0"
+		fi
+	} > ${jailfstab}
 
 	# Start to populate internal jail RC configuration file
-	mkdir -p ${jailcfg}
+	mkdir -p ${jailetc}
 
 	# Cleanup jail sysctl.conf
-	echo "#Nothing here" > ${jailcfg}/sysctl.conf
+	echo "#Nothing here" > ${jailetc}/sysctl.conf
 
 	if [ -n "$authorizedkeys" ]; then
-		mkdir ${jailcfg}/dot.ssh.root || die "Can't create ${jailcfg}/dot.ssh.root"
-		cp $authorizedkeys ${jailcfg}/dot.ssh.root/authorized_keys || die "Can't copy $authorizedkeys into ${jailcfg}/dot.ssh.root/"
+		mkdir ${jailetc}/dot.ssh.root || die "Can't create ${jailetc}/dot.ssh.root"
+		cp $authorizedkeys ${jailetc}/dot.ssh.root/authorized_keys || die "Can't copy $authorizedkeys into ${jailetc}/dot.ssh.root/"
 	fi
 
 	# Start to generate internal jail RC configuration file
-	cat > ${jailcfg}/rc.conf <<EOF
+	cat > ${jailetc}/rc.conf <<EOF
 #Automatically generated ${tenant} RC configuration file
 hostname=${tenant}
 sshd_enable=YES
@@ -136,18 +164,27 @@ gateway_enable=YES
 ipv6_gateway_enable=YES
 EOF
 
-	# Start to generate jail.conf file
-	cat >> /etc/jail.conf <<EOF
+	# Generate jail.conf file
+	cat > /etc/jail.conf.d/${tenant}.conf <<EOF
 ${tenant} {
     jid = ${id};
     path          = "${jailroot}";
+EOF
+	if ( $NANOBSD ); then
+		cat >> /etc/jail.conf.d/${tenant}.conf <<EOF
     # Because we are using jail on nanobsd, the jail directories are volatil (mounted into /var/jails)
     # They didn't exist after a reboot, then we need to create jail directories with exec.prestart
     # But mount.* instructions are called before exec.prestart, then we need to call mount manually
     # into the exec.prestart
-    #mount.devfs;
-    #mount.fstab   = "/etc/fstab.${tenant}";
-    #devfs_ruleset = 4;
+EOF
+	else
+		cat >> /etc/jail.conf.d/${tenant}.conf <<EOF
+    mount.devfs;
+    mount.fstab   = "${jailfstab}";
+    devfs_ruleset = 4;
+EOF
+	fi
+	cat >> /etc/jail.conf.d/${tenant}.conf <<EOF
     host.hostname = "${tenant}";
     vnet new;
     allow.chflags = 1;
@@ -161,22 +198,32 @@ ${tenant} {
 EOF
 
 	# we need to create all mount points
-        for dir in dev etc var cfg root bin sbin lib libexec usr conf/base; do
-		echo "    exec.prestart  += \"mkdir -p ${jailroot}/${dir}\";" >> /etc/jail.conf
-        done
+	for dir in dev etc var cfg root bin sbin lib libexec usr conf/base; do
+		if ( $NANOBSD ); then
+			echo "    exec.prestart  += \"mkdir -p ${jailroot}/${dir}\";" >> /etc/jail.conf.d/${tenant}.conf
 
-	# And manually use mount
-	cat >> /etc/jail.conf <<EOF
+		else
+			mkdir -p ${jailroot}/${dir}
+		fi
+	done
+
+	# And manually use mount on NANOBSD
+	if ( $NANOBSD ); then
+		cat >> /etc/jail.conf.d/${tenant}.conf <<EOF
     exec.prestart  += "test -L ${jailroot}/tmp || ln -s /var/tmp ${jailroot}/tmp";
-    exec.prestart  += "mount -F /etc/fstab.${tenant} -a";
+    exec.prestart  += "mount -F ${jailfstab} -a";
     exec.prestart  += "mount -t devfs -o rw,ruleset=4 devfs ${jailroot}/dev";
 
     # Copy reference and backuped files to /etc
     exec.prestart  += "test -d ${jailroot}/var/cron || cp -a /conf/base/ ${jailroot}";
-    exec.prestart  += "cp -a ${jailcfg}/ ${jailroot}/etc/";
+    exec.prestart  += "cp -a ${jailetc}/ ${jailroot}/etc/";
     # Prevent diskless
     exec.prestart  += "test -f ${jailroot}/etc/diskless && rm ${jailroot}/etc/diskless || true";
 EOF
+	else
+		echo "XXXX TODO"
+		echo "Where to get ref /etc files from ?"
+	fi
 
 # Parse nics variable (can be in form bridge0,vtnet4.4/10.0.0.1/24)
 	# And finish to populate jail RC and jail configuration file
@@ -241,7 +288,7 @@ EOF
 			else
 				die "[BUG] bridge id bigged than 255, code not implemented"
 			fi
-			cat >> /etc/jail.conf <<EOF
+			cat >> /etc/jail.conf.d/${tenant}.conf <<EOF
     vnet.interface  += "epair${id}${bid}b";
     exec.prestart  += "ifconfig epair${id}${bid} create";
     # fix bug that can create conflict on same LAN for epair
@@ -255,26 +302,26 @@ EOF
 EOF
 
 		else
-			echo "    vnet.interface  += \"${nicname}\";" >> /etc/jail.conf
-			echo "    exec.poststop  += \"ifconfig ${nicname} -vnet ${id}\";" >> /etc/jail.conf
+			echo "    vnet.interface  += \"${nicname}\";" >> /etc/jail.conf.d/${tenant}.conf
+			echo "    exec.poststop  += \"ifconfig ${nicname} -vnet ${id}\";" >> /etc/jail.conf.d/${tenant}.conf
 		fi
 
-		echo ifconfig_${rcnicname}${value} >> ${jailcfg}/rc.conf
+		echo ifconfig_${rcnicname}${value} >> ${jailetc}/rc.conf
 
 		[ "$nics" = "$iter" ] && nics='' || nics="${nics#*,}"
 	done
 	if [ -n "$defaultgw" ]; then
 		if echo $defaultgw | grep -q ':'; then
-			echo "ipv6_defaultrouter=\"${defaultgw}\"" >> ${jailcfg}/rc.conf
+			echo "ipv6_defaultrouter=\"${defaultgw}\"" >> ${jailetc}/rc.conf
 		else
-			echo "defaultrouter=\"${defaultgw}\"" >> ${jailcfg}/rc.conf
+			echo "defaultrouter=\"${defaultgw}\"" >> ${jailetc}/rc.conf
 		fi
 	fi
 	# Close jail configuration file
-	cat >> /etc/jail.conf <<EOF
+	cat >> /etc/jail.conf.d/${tenant}.conf <<EOF
     exec.prestart  += "logger jail ${tenant} pre-started";
     exec.poststop  += "umount ${jailroot}/dev";
-    exec.poststop  += "umount -a -F /etc/fstab.${tenant}";
+    exec.poststop  += "umount -a -F ${jailfstab}";
     exec.poststop  += "jail -r ${id}";
     exec.poststop  += "logger jail ${tenant} post-stopped";
 }
@@ -295,18 +342,31 @@ EOF
 
 # Delete jail
 delete () {
-	[ -f /etc/jail.conf ] || die "ERROR: No jail configured"
-	grep -q "^${tenant} {" /etc/jail.conf || die "ERROR: No jail named $tenant configured"
+	# Old version: /etc/jail.conf and /etc/fstab.${tenant}
+	# New version: /etc/jail.conf.d/${tenant}.conf and /etc/jail.conf.d/${tenant}.fstab
+	if ! [ -f /etc/jail.conf.d/${tenant}.conf ]; then
+		if ! [ -f /etc/jail.conf ]; then
+			die "ERROR: No jail configured"
+		fi
+	fi
+	if [ -f /etc/jail.conf ]; then
+		grep -q "^${tenant} {" /etc/jail.conf || die "ERROR: No jail named $tenant configured in /etc/jail.conf"
+	fi
 	jls -j ${tenant} > /dev/null 2>&1 && die "Jail is running: Stop it before delete it (service jail stop ${tenant})"
 	mount | grep -q "/var/jails/${tenant}/" && die "There are still some mount points regarding ${tenant}"
-	[ -f /etc/fstab.${tenant} ] && rm /etc/fstab.${tenant}
+	rm -f /etc/fstab.${tenant}
+	rm -f /etc/jail.conf.d/${tenant}.fstab
+	rm -f /etc/jail.conf.d/${tenant}.conf
 	for i in etc var; do
 		[ -d /$i/jails/${tenant} ] && rm -rf /$i/jails/${tenant}
 	done
-	sed -i "" -e "/^$tenant {/,/^}/d" /etc/jail.conf
+	if [ -f /etc/jail.conf ]; then
+		sed -i "" -e "/^$tenant {/,/^}/d" /etc/jail.conf
+	fi
 	# Removing this jail from the autostart
 	sysrc -q jail_list-=${tenant}  > /dev/null 2>&1
 	# If it's the last, disable jail and remove jail.conf
+	echo "XXXXX TO DO: Cleaunp new and old version"
 	echo "Jail ${tenant} is deleted."
 	if ! grep -q '{' /etc/jail.conf; then
 		rm /etc/jail.conf || die "ERROR during deleting /etc/jail.conf"
