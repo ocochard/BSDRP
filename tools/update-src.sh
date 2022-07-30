@@ -52,7 +52,7 @@ if [ $# -eq 1 ]; then
 		die "No source in $1/FreeBSD/src"
 	fi
 else
-	for i in BSDRP STABLE-12 STABLE-13 MAIN; do
+	for i in BSDRP RELEASE-12 RELEASE-13 STABLE-12 STABLE-13 MAIN; do
 		if [ -d $i/FreeBSD/src ]; then
 			get_last_git_rev $i/FreeBSD/src
 			update $i/make.conf SRC_REV $rev

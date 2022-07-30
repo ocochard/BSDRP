@@ -287,7 +287,7 @@ EOF
 				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE} ${FBSD_DST_OSVERSION}\" \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 				package install BATCH=yes \
-				WITHOUT=\"NLS X11 DOCS EXAMPLES\" "$2" clean'
+				WITHOUT=\"INFO NLS X11 DOCS EXAMPLES\" "$2" clean'
 			# add a -DWITH_DEBUG before the $2 for building port with debug
 			# and comment the strip command
 

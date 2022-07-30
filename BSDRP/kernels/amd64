@@ -376,9 +376,6 @@ device		virtio_balloon		# VirtIO Memory Balloon device
 # Linux KVM paravirtualization support
 device		kvm_clock		# KVM paravirtual clock driver
 
-# Linux KVM paravirtualization support
-device		kvm_clock		# KVM paravirtual clock driver
-
 # HyperV drivers and enhancement support
 device		hyperv			# HyperV drivers
 
@@ -448,4 +445,4 @@ device		virtio_random	# VirtIO Entropy driver
 # Don't enter the debugger for a panic
 options		KDB_UNATTENDED
 
-# The kernel modules to be build are listed in the variable NANO_MODULES (make.conf)
+# The kernel modules to be build are listed -src.conf in MODULES_OVERRIDE variable

@@ -1,9 +1,8 @@
-Index: net/pimdd/Makefile
-===================================================================
---- net/pimdd/Makefile	(revision 444518)
-+++ net/pimdd/Makefile	(working copy)
-@@ -3,7 +3,7 @@
- 
+diff --git net/pimdd/Makefile net/pimdd/Makefile
+index c1d01fb1d3e9..aed5417b830f 100644
+--- net/pimdd/Makefile
++++ net/pimdd/Makefile
+@@ -1,6 +1,6 @@
  PORTNAME=	pimdd
  PORTVERSION=	0.2.1.0
 -PORTREVISION=	2
@@ -11,10 +10,10 @@ Index: net/pimdd/Makefile
  CATEGORIES=	net
  MASTER_SITES=	http://antc.uoregon.edu/PIMDM/
  DISTNAME=	pimd-dense
-Index: net/pimdd/files/patch-Makefile
-===================================================================
---- net/pimdd/files/patch-Makefile	(revision 444518)
-+++ net/pimdd/files/patch-Makefile	(working copy)
+diff --git net/pimdd/files/patch-Makefile net/pimdd/files/patch-Makefile
+index 26738616213e..dd9a652a125c 100644
+--- net/pimdd/files/patch-Makefile
++++ net/pimdd/files/patch-Makefile
 @@ -17,7 +17,7 @@
   ### Compilation flags for different platforms. Uncomment only one of them
   ## FreeBSD
@@ -24,11 +23,11 @@ Index: net/pimdd/files/patch-Makefile
   
   ## NetBSD   -DNetBSD is done by OS
   #CFLAGS= -Wall -g	-Iinclude/netbsd ${MCAST_INCLUDE} ${SNMPDEF} ${RSRRDEF} ${MISCDEFS} -DPIM
-Index: net/pimdd/files/pimdd.in
-===================================================================
---- net/pimdd/files/pimdd.in	(revision 444518)
-+++ net/pimdd/files/pimdd.in	(working copy)
-@@ -18,6 +18,7 @@
+diff --git net/pimdd/files/pimdd.in net/pimdd/files/pimdd.in
+index 239797997cf1..3fd4e267790b 100644
+--- net/pimdd/files/pimdd.in
++++ net/pimdd/files/pimdd.in
+@@ -17,6 +17,7 @@ rcvar="${name}_enable"
  command="%%PREFIX%%/sbin/${name}"
  required_files="%%PREFIX%%/etc/${name}.conf"
  extra_commands=reload

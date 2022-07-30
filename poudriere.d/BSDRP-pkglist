@@ -1,7 +1,7 @@
 benchmarks/iperf
 benchmarks/iperf3
 benchmarks/netperf
-editors/vim
+editors/vim@tiny
 lang/perl5.32
 lang/python
 net-mgmt/bgpq4
