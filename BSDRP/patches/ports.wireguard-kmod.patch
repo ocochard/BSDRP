@@ -1,0 +1,17 @@
+diff --git net/wireguard-kmod/files/patch-support.h net/wireguard-kmod/files/patch-support.h
+new file mode 100644
+index 000000000000..f817d01cadb8
+--- /dev/null
++++ net/wireguard-kmod/files/patch-support.h
+@@ -0,0 +1,11 @@
++--- support.h.orig	2022-09-05 23:22:49 UTC
+++++ support.h
++@@ -37,7 +37,7 @@ sogetsockaddr(struct socket *so, struct sockaddr **nam
++ 	int error;
++ 
++ 	CURVNET_SET(so->so_vnet);
++-	error = (*so->so_proto->pr_usrreqs->pru_sockaddr)(so, nam);
+++	error = so->so_proto->pr_sockaddr(so, nam);
++ 	CURVNET_RESTORE();
++ 	return (error);
++ }
