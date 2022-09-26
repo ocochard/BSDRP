@@ -1,3 +1,10 @@
+# Release 1.992 (not released
+
+## New features
+* Added ZFS support: Some users locally store logs
+* Temporary disable aquantia-atlantic (build broken)
+
+-----------------------------------------------------
 # Release 1.991 (07/05/2022)
 
 ## New features

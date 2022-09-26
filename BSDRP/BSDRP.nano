@@ -114,10 +114,6 @@ WITHOUT_UNBOUND=
 WITHOUT_USB_GADGET_EXAMPLES=
 WITHOUT_WIRELESS=
 WITHOUT_WPA_SUPPLICANT_EAPOL=
-# Removing ZFS create this error:
-#--- cddl/lib/libavl__L ---
-#ld: error: relocation R_X86_64_PC32 cannot be used against symbol __stderrp; recompile with -fPIC
-#WITHOUT_ZFS=
 WITH_IDEA=
 WITH_OFED=
 WITH_DEBUG_FILES=
