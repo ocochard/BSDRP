@@ -458,7 +458,7 @@ add_port "net/mlvpn"
 # openvpn
 add_port "security/easy-rsa"
 add_port "security/pkcs11-helper"
-add_port "security/openvpn"
+add_port "security/openvpn-devel" "WITH+=\"DCO\""
 #  add_port "security/libgpg-error"
 # add_port "security/libgcrypt"
 #add_port "security/openvpn-auth-radius"
@@ -469,7 +469,7 @@ add_port "security/openvpn"
 
 # Realtek official drivers
 add_port "net/realtek-re-kmod"
-add_port "net/aquantia-atlantic-kmod"
+#add_port "net/aquantia-atlantic-kmod"
 
 # tinc
 add_port "security/tinc"

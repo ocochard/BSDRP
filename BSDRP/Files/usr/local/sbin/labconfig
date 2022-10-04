@@ -1999,6 +1999,8 @@ mkdir -p /usr/local/etc/openvpn
 cat > /usr/local/etc/openvpn/openvpn.conf <<EOF
 dev tun
 tun-ipv6
+# DCO needs a subnet topology (and loaded if_ovpn)
+topology subnet
 ca /usr/local/etc/easy-rsa/pki/ca.crt
 cert /usr/local/etc/easy-rsa/pki/issued/VM2.crt
 key /usr/local/etc/easy-rsa/pki/private/VM2.key
@@ -2017,6 +2019,23 @@ cat > /usr/local/etc/openvpn/ccd/VM4 <<EOF
 iroute 10.0.45.0 255.255.255.0
 iroute-ipv6 2001:db8:45::/64
 EOF
+
+cat > /usr/local/etc/openvpn/VM4-openvpn.conf <<EOF
+client
+dev tun
+remote 10.0.23.2
+<ca>
+EOF
+
+cat /usr/local/etc/easy-rsa/pki/ca.crt >> /usr/local/etc/openvpn/VM4-openvpn.conf
+echo '</ca>' >> /usr/local/etc/openvpn/VM4-openvpn.conf
+echo '<cert>' >> /usr/local/etc/openvpn/VM4-openvpn.conf
+cat /usr/local/etc/easy-rsa/pki/issued/VM4.crt >> /usr/local/etc/openvpn/VM4-openvpn.conf
+echo '</cert>' >> /usr/local/etc/openvpn/VM4-openvpn.conf
+echo '<key>' >> /usr/local/etc/openvpn/VM4-openvpn.conf
+cat /usr/local/etc/easy-rsa/pki/private/VM4.key >> /usr/local/etc/openvpn/VM4-openvpn.conf
+echo '</key>' >> /usr/local/etc/openvpn/VM4-openvpn.conf
+
 hostname VM2
 service netif restart
 service routing restart

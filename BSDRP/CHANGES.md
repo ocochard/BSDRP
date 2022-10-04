@@ -1,7 +1,8 @@
-# Release 1.992 (not released
+# Release 1.992 (not released)
 
 ## New features
 * Added ZFS support: Some users locally store logs
+* OpenVPN Data Channel offload (kernel module), improving speed
 * Temporary disable aquantia-atlantic (build broken)
 
 -----------------------------------------------------
