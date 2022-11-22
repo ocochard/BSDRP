@@ -445,10 +445,12 @@ add_port "net/pkt-gen"
 add_port "textproc/libucl"
 add_port "net/netmap-fwd"
 
-# Wiregurad kernel module port, waiting the embedded version
+# Wiregurad tools
 add_port "shells/bash"
 add_port "net/wireguard-tools"
-add_port "net/wireguard-kmod"
+
+# Tailscale
+#add_port "security/tailscale"
 
 # mlvpn: Link aggregator
  add_port "devel/libev"
@@ -490,14 +492,14 @@ add_port "net/mrtparse"
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 # Into cleanup_ports(), remove libiconv from the list too or it will delete all port that depends from it
 #  add_port "converters/libiconv"
-#  add_port "devel/gettext-runtime"
-# add_port "sysutils/fusefs-libs"
-#  add_port "textproc/libxml2"
+ add_port "devel/gettext-runtime"
+ add_port "sysutils/fusefs-libs"
+  add_port "textproc/libxml2"
 #  add_port "devel/pcre"
-# add_port "devel/glib20"
-# add_port "net/libdnet"
-# add_port "archivers/libmspack"
-#add_port "emulators/open-vm-tools-nox11"
+ add_port "devel/glib20"
+ add_port "net/libdnet"
+ add_port "archivers/libmspack"
+add_port "emulators/open-vm-tools" "FLAVOR=nox11"
 
 # Permit BIOS upgrade
   add_port "misc/pciids"
@@ -511,6 +513,7 @@ add_port "sysutils/devcpu-data-intel"
 add_port "sysutils/devcpu-data"
 
 # processor information (usefull for checking microcode version)
+ add_port "devel/simdjson"
 add_port "sysutils/intel-pcm"
 
 # One tool to resume them al
