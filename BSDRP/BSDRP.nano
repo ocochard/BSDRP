@@ -507,17 +507,21 @@ add_port "emulators/open-vm-tools" "FLAVOR=nox11"
 add_port "sysutils/flashrom" "WITHOUT+=\"DMIDECODE FTDI\""
 add_port "sysutils/x86info"
 
-# Permit microcode upgrade
-add_port "sysutils/devcpu-data-amd"
-add_port "sysutils/devcpu-data-intel"
-add_port "sysutils/devcpu-data"
+# amd64 only ports
 
-# processor information (usefull for checking microcode version)
- add_port "devel/simdjson"
-add_port "sysutils/intel-pcm"
+if [ "$(uname -p)" = "amd64" ]; then
+	# Permit microcode upgrade
+	add_port "sysutils/devcpu-data-amd"
+	add_port "sysutils/devcpu-data-intel"
+	add_port "sysutils/devcpu-data"
 
-# One tool to resume them al
-add_port "net-mgmt/nstat"
+	# processor information (usefull for checking microcode version)
+	 add_port "devel/simdjson"
+	add_port "sysutils/intel-pcm"
+
+	# One tool to resume them al
+	add_port "net-mgmt/nstat"
+fi
 
 # Continuously displays information regarding the packet traffic
 add_port "net/trafshow"

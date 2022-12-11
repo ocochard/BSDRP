@@ -220,11 +220,7 @@ check_clean() {
 
 usage () {
 	(
-		echo "Usage: $0 -bdhkuryw [-a ARCH] [-c vga|serial] [-p PROJECT]"
-		echo " -a   specify target architecture:"
-		echo "      i386, i386_xenpv, i386_xenhvm, amd64 or amd64_xenhvm"
-		echo "      if not specified, use local system arch (`uname -p`)"
-		echo "      cambria (arm) and sparc64 targets are in work-in-progress state"
+		echo "Usage: $0 -bdhkuryw [-c vga|serial] [-p PROJECT]"
 		echo " -b   suppress build[world|kernel]"
 		echo " -c   specify console type: vga (default) or serial"
 		echo " -C   force a cleanup of previous object files"
@@ -261,14 +257,12 @@ SCRIPT=$(readlink -f $0)
 SCRIPT_DIR=$(dirname "$SCRIPT")
 # boolean for answering YES automatically
 ALWAYS_YES=false
-# Host arch (i386, amd64, sparc64, et...)
+# Host arch (i386, amd64, aarch64, etc.)
 LOCAL_ARCH=$(uname -p)
 # Project name, set by default to BSDRP, need to be an existing subdir
 PROJECT="BSDRP"
 # Target architecture for the image to build
-# Cross-complitation of ports is only supported for i386 <=> amd64
 TARGET_ARCH=${LOCAL_ARCH}
-# Kernel to use: i386 arch can have a standard kernel, or for XEN_PV, etc...
 NANO_KERNEL=${TARGET_ARCH}
 # For skiping some build part (world, kernel)
 SKIP_REBUILD=""
@@ -287,11 +281,8 @@ TMPFS=false
 NOCLEAN="-n"
 
 #Get argument
-while getopts "a:bCc:dfhkp:s:uUryw" arg; do
+while getopts "bCc:dfhkp:s:uUryw" arg; do
 	case "${arg}" in
-		a)
-			NANO_KERNEL=$OPTARG
-			;;
 		b)
 			SKIP_REBUILD="${SKIP_REBUILD} -b"
 			;;
@@ -545,11 +536,6 @@ echo "NANO_PMAKE=\"make -j ${MAKE_JOBS}\""
 
 eval echo NANO_MODULES=\\\"\${NANO_MODULES_${NANO_KERNEL}}\\\" >> "${TMPDIR}"/${PROJECT}.nano
 case ${NANO_KERNEL} in
-	"cambria")
-		NANO_MAKEFS="makefs -B big \
-		-o bsize=4096,fsize=512,density=8192,optimization=space"
-		export NANO_MAKEFS
-		;;
 	"i386_xenpv" | "i386_xenhvm" | "amd64_xenhvm" | "amd64_xenpv" )
 		#echo "add_port \"lang/python27\" \"-DNOPORTDATA\"" >> /tmp/${PROJECT}.nano
 		#echo "add_port \"sysutils/xen-tools\"" >> /tmp/${PROJECT}.nano
@@ -630,7 +616,6 @@ BRA=$(grep -m 1 BRANCH=	"${FREEBSD_SRC}/sys/conf/newvers.sh" | cut -f2 -d '"')
 export FBSD_DST_RELEASE="${REV}-${BRA}"
 export FBSD_DST_OSVERSION=$(awk '/^\#define[[:blank:]]__FreeBSD_version/ {print $3}' \
     "${FREEBSD_SRC}/sys/sys/param.h")
-#export TARGET_ARCH
 
 echo "Copying ${NANO_KERNEL} Kernel configuration file"
 cp "${KERNELS_DIR}"/${NANO_KERNEL} "${FREEBSD_SRC}"/sys/${TARGET_ARCH}/conf/
