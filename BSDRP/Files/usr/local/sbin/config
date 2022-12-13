@@ -86,9 +86,9 @@ usage () {
 	# value $0 is the name of the called script
 	echo "Usage: $0 option"
 	echo "	- diff [quiet|factory]	  : Show diff between current and saved config"
-	echo "	- save	   : Save current config"
+	echo "	- save [name]  : Save current config, optional name to store the config"
 	echo "	- apply    : Apply current config"
-	echo "	- rollback : Revert to previous config"
+	echo "	- rollback [name]: Revert to previous config, optinal name of config to use"
 	echo "	- put	   : Put the saved config to a remote server"
 	echo "	- get	   : Get config from remote server"
 	echo "	- factory  : Return to default configuration"
@@ -151,6 +151,10 @@ umount_data () {
 archive_cfg () {
 	# TO DO: No archive support inside a jail
 	(${INSIDEJAIL}) && return 0
+	local name=$1
+	if [ -z "${name}" ]; then
+		name=rollback
+	fi
 	if is_mounted /data; then
 		local DATA_ALREADY_MOUNTED=true
 	else
@@ -161,17 +165,14 @@ archive_cfg () {
 		fi
 	fi
 	echo "Archiving previous configuration files..."
-	if [ ! -d /data/archives ]; then
-		mkdir /data/archives || die "ERROR: Can't create /data/archives"
-	else
-		if [ -f /data/archives/rollback.tar.xz ]; then
-				rm /data/archives/rollback.tar.xz || \
-				echo "WARNING: Can't delete /data/archives/rollback.tar.xz"
-		fi
+	mkdir -p /data/archives || die "ERROR: Can't create /data/archives"
+	if [ "$name" = "rollback" ] && [ -f /data/archives/$name.tar.xz ]; then
+			rm /data/archives/$name.tar.xz || \
+			echo "WARNING: Can't delete /data/archives/$name.tar.xz"
 	fi
 
-	if ! tar -cJvpf /data/archives/rollback.tar.xz -C /cfg/ . 2>/dev/null; then
-		echo "WARNING: Can't generate tar archive."
+	if ! tar -cJvpf /data/archives/$name.tar.xz -C /cfg/ . 2>/dev/null; then
+		echo "WARNING: Can't generate tar archive $name."
 	fi
 
 	# If data was allready mounted, don't unmount it
@@ -184,9 +185,10 @@ archive_cfg () {
 # TODO: Need to backup /boot/loader.conf.local in case of restoring
 #	configuration to other routers
 save_cfg () {
+	local name=$1
 	setlock
 	mount_cfg || die "ERROR: Can't mount /cfg"
-	archive_cfg || echo "WARNING: Can't archive"
+	archive_cfg "" || echo "WARNING: Can't archive"
 	echo "Saving configuration..."
 
 	(
@@ -243,6 +245,9 @@ save_cfg () {
 		[ -e /etc/$i ] || rm -rf /cfg/$i
 	done
 	)
+	if [ -n "${name}" ]; then
+		archive_cfg "${name}" || echo "WARNING: Can't archive"
+	fi
 
 	umount_cfg
 	echo "Done."
@@ -321,12 +326,16 @@ diff () {
 # Rollback to previous configuration
 rollback () {
 	echo "Rollback the archived configuration"
+	local name=$1
+	if [ -z "${name}" ]; then
+		name=rollback
+	fi
 	mount_data || die "ERROR: Can't mount data, then can't retreive archive file"
 	# Check if archive exist
-	if [ -f /data/archives/rollback.tar.xz ]; then
-		restore_cfg /data/archives/rollback.tar.xz /etc
+	if [ -f /data/archives/${name}.tar.xz ]; then
+		restore_cfg /data/archives/${name}.tar.xz /etc
 	else
-		echo "No archive file found."
+		echo "No archive ${name} file found."
 		echo "You need to save your configuration once before to rollback it"
 		umount_data
 		exit 1
@@ -511,7 +520,7 @@ set -u
 
 case "$FIRST_OPTION" in
 	save)
-		save_cfg
+		save_cfg ${SECOND_OPTION}
 		;;
 	apply)
 		apply_cfg
@@ -520,7 +529,7 @@ case "$FIRST_OPTION" in
 		diff
 		;;
 	rollback)
-		rollback
+		rollback ${SECOND_OPTION}
 		;;
 	put)
 		put

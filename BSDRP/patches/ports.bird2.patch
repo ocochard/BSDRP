@@ -1,0 +1,84 @@
+diff --git a/net/bird2/Makefile b/net/bird2/Makefile
+index eabdf825eae6..0d8064cc0d77 100644
+--- a/net/bird2/Makefile
++++ b/net/bird2/Makefile
+@@ -1,5 +1,5 @@
+ PORTNAME=	bird
+-DISTVERSION=	2.0.10
++DISTVERSION=	2.0.11
+ CATEGORIES=	net
+ MASTER_SITES=	https://bird.network.cz/download/
+ PKGNAMESUFFIX=	2
+@@ -10,6 +10,9 @@ WWW=		https://bird.network.cz/
+ 
+ LICENSE=	GPLv2
+ 
++FLAVORS=	base netlink
++netlink_PKGNAMESUFFIX=	-netlink
++
+ USES=		bison cpe gmake ncurses readline
+ 
+ CONFLICTS=	bird
+@@ -57,4 +60,14 @@ STATIC_VARS=	rt_prot+=static
+ CONFIGURE_ARGS+=--with-protocols="${RT_PROT}"
+ RPKI_LIB_DEPENDS=	libssh.so:security/libssh
+ 
++.include <bsd.port.options.mk>
++
++.if ${FLAVOR:U} == netlink
++CONFIGURE_ARGS+=--with-sysconfig=bsd-netlink
++EXTRA_PATCHES+=	${PATCHDIR}/extra-patch-netlink
++.if ${OSVERSION} < 1400073
++BROKEN=No netlink support
++.endif
++.endif
++
+ .include <bsd.port.mk>
+diff --git a/net/bird2/distinfo b/net/bird2/distinfo
+index 8e0364275638..3b3692fdba36 100644
+--- a/net/bird2/distinfo
++++ b/net/bird2/distinfo
+@@ -1,3 +1,3 @@
+-TIMESTAMP = 1656504519
+-SHA256 (bird-2.0.10.tar.gz) = 7ed341ddd8dc87fa9736586b3515447a8436fec442d65f4022155ab9de1ffd5a
+-SIZE (bird-2.0.10.tar.gz) = 1276546
++TIMESTAMP = 1670848920
++SHA256 (bird-2.0.11.tar.gz) = 60a7b83b67b9d089d2a745a11fddd12461f631abc7b645b6c085adf90b3f55d6
++SIZE (bird-2.0.11.tar.gz) = 1301502
+diff --git a/net/bird2/files/extra-patch-netlink b/net/bird2/files/extra-patch-netlink
+new file mode 100644
+index 000000000000..fd58ddaed2b3
+--- /dev/null
++++ b/net/bird2/files/extra-patch-netlink
+@@ -0,0 +1,31 @@
++From d890c5cca7f6239ddd7ea605e45854658f50d39b Mon Sep 17 00:00:00 2001
++From: Alexander Chernikov <melifaro@FreeBSD.org>
++Date: Tue, 13 Sep 2022 12:08:58 +0000
++Subject: [PATCH 1/1] FreeBSD: add netlink support
++
++Netlink can be enabled by picking new sysconfig target:
++./configure --with-sysconfig=bsd-netlink
++---
++ sysdep/bsd-netlink/Makefile |  9 +++++++++
++ sysdep/cf/bsd-netlink.h     | 34 ++++++++++++++++++++++++++++++++++
++ sysdep/cf/linux.h           |  2 ++
++ sysdep/linux/netlink.c      |  7 ++++++-
++ 4 files changed, 51 insertions(+), 1 deletion(-)
++ create mode 100644 sysdep/bsd-netlink/Makefile
++ create mode 100644 sysdep/cf/bsd-netlink.h
++
++diff --git sysdep/bsd-netlink/Makefile sysdep/bsd-netlink/Makefile
++new file mode 100644
++index 00000000..90b639a4
++--- /dev/null
+++++ sysdep/bsd-netlink/Makefile
++@@ -0,0 +1,9 @@
+++src := $(s)../linux/netlink.c
+++obj := $(objdir)/sysdep/bsd-netlink/netlink.o
+++$(obj): $(src)
+++	$(E)echo CC -o $@ -c $<
+++	$(Q)$(CC) $(CFLAGS) -MMD -MP -o $@ -c $<
+++$(all-daemon)
+++$(conf-y-targets): $(s)../linux/netlink.Y
+++
+++tests_objs := $(tests_objs) $(obj)

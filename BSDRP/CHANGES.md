@@ -1,7 +1,7 @@
 # Release 1.992 (not released)
 
 ## New features
-* Added ZFS support: Some users locally store logs
+* Added ZFS support: Some users locally store logs and ZFS could be useful
 * OpenVPN Data Channel offload (kernel module), improving speed
 * Temporary disable aquantia-atlantic (build broken)
 * Added: Open VMware tools for FreeBSD VMware guests

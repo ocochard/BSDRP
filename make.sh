@@ -625,7 +625,7 @@ if ($UPDATE_ONLY); then
 	exit 0
 fi
 
-# Overwrite the nanobsd script with our own improved nanobsd
+# Overwrite the nanobsd script with the latest version (and customized)
 # Mandatory for supporting multiple folders to be installed
 cd ${curdir}
 cp tools/defaults.sh "${NANOBSD_DIR}"/

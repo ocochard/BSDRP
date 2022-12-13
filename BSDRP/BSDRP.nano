@@ -362,7 +362,7 @@ add_port "net/frr8-pythontools"
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Bird: routing daemon
-add_port "net/bird2"
+add_port "net/bird2" "FLAVOR=netlink"
 
 # FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
@@ -859,7 +859,8 @@ usr/sbin/config
 	done
 	# Generate package inventory
 	if [ -x ${NANO_WORLDDIR}/usr/local/sbin/pkg ]; then
-		CR 'pkg query \*\ %n\ %v:\ %c' > ${NANO_OBJ}/packages.info
+		pkg -c ${NANO_WORLDDIR} query \*\ %n\ %v:\ %c > ${NANO_OBJ}/packages.info
+		#CR 'pkg query \*\ %n\ %v:\ %c' > ${NANO_OBJ}/packages.info
 	fi
 }
 
