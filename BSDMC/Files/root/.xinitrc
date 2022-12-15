@@ -1,2 +1,0 @@
-exec xterm &
-exec fluxbox

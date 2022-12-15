@@ -16,7 +16,6 @@ usage () {
 	echo "-frr: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab"
 	echo "-frr_jails: same as previous but with jails"
 	echo "-bird_jails: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab_with_bird"
-	echo "-bird_jails: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab_with_bird"
 	echo "-vpn: https://bsdrp.net/documentation/examples/gre_ipsec_and_openvpn"
 	echo "-bgp: https://bsdrp.net/documentation/examples/bgp_route_reflector_and_confederation_using_quagga_and_bird"
 	echo "-jailpf: https://bsdrp.net/documentation/examples/multi-tenant_ha_pf_firewalls"
@@ -1020,7 +1019,7 @@ protocol rip ng rip6 {
   interface "epair1b" {};
 }
 
-protocol ospf v2 opsf4 {
+protocol ospf v2 ospf4 {
   ipv4 { import all; export all;};
   area 0 {
     interface "epair2a" {};
