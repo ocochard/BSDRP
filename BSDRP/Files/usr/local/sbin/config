@@ -520,7 +520,7 @@ set -u
 
 case "$FIRST_OPTION" in
 	save)
-		save_cfg ${SECOND_OPTION}
+		save_cfg "${SECOND_OPTION}"
 		;;
 	apply)
 		apply_cfg
@@ -529,7 +529,7 @@ case "$FIRST_OPTION" in
 		diff
 		;;
 	rollback)
-		rollback ${SECOND_OPTION}
+		rollback "${SECOND_OPTION}"
 		;;
 	put)
 		put
