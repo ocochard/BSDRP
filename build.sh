@@ -1,0 +1,78 @@
+#!/bin/sh
+#
+# New (experimental) Build script for BSD Router Project
+# https://bsdrp.net
+#
+# Copyright (c) 2009-2023, The BSDRP Development Team
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#        notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#        notice, this list of conditions and the following disclaimer in the
+#        documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+set -eu
+echo ******** EXPERIMENTAL ********
+
+gen_pkg_list () {
+	# Extract list of packages from BSDRP.nano
+	# XXX need to convert FLAVOR to @
+	grep '^add_port "' BSDRP/BSDRP.nano | cut -d '"' -f 2 | sort > poudriere.d/BSDRP-pkglist
+}
+
+gen_pkg_options () {
+	# Extract all ports for specific options to set
+	# Need to translate into some category_port_SET/UNSET in jail-specific make.conf
+	#  grep 'add_port.*WITH' BSDRP/BSDRP.nano
+	echo XXX
+	grep 'add_port' | sort > ports_custom_options
+}
+
+# Update pkglist file
+# Commented because need manual review until automatic FLAVOR is managed
+#gen_pkg_list
+
+#gen_pkg_option
+
+# Download and patches sources, install custom kernel (amd64)
+echo "[DEBUG] Skip make -U"
+#./make.sh -U
+
+# XXX we have a problem if user have custom generic poudirere like
+# Need to use custom etc dir for poudriere, but need to reuse already local configuration
+cp /usr/local/etc/poudriere.conf poudriere.etc/
+# Create, or update the builder jail
+if poudriere -e poudriere.etc jail -ln | grep -q BSDRPj; then
+	poudriere -e poudriere.etc jail -u -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > build_jail.log
+else
+	poudriere -e poudriere.etc jail -c -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > build_jail.log
+fi
+# Create or update port tree
+if poudriere -e poudriere.etc ports -ln | grep -q BSDRPp; then
+	poudriere -e poudriere.etc ports -u -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports > build_ports.log
+else
+	poudriere -e poudriere.etc ports -c -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports > build_ports.log
+fi
+
+# Build the ports
+poudriere -e poudriere.etc bulk -j BSDRPj -p BSDRPp -f poudriere.etc/poudriere.d/BSDRP-pkglist
+# Build the firmware image
+# size in bytes
+poudriere -e poudriere.etc image -t firmware -s 2g -j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net -c BSDRP/Files/ -f poudriere.etc/poudriere.d/BSDRP-pkglist -A poudriere.etc/poudriere.d/post-script.sh > build_image.log

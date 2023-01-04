@@ -3,7 +3,7 @@
 # Bhyve lab script for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2013-2020, The BSDRP Development Team
+# Copyright (c) 2013-2023, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -133,7 +133,7 @@ uncompress_image () {
 		bunzip2 --decompress --stdout ${FILE} > ${VM_TEMPLATE} || \
 			die "Can't bunzip2 image file"
 		;;
-	"DOS/MBR boot sector")
+	"DOS/MBR boot sector"|"DOS/MBR boot sector; partition 1 : ID=0xee")
 		cp ${FILE} ${VM_TEMPLATE}
 		return 0
 		;;
@@ -431,7 +431,7 @@ destroy_all_if
 NCPUS=$(( CORES * THREADS ))
 
 if ( ${VERBOSE} ); then
-	echo "BSD Router Project (http://bsdrp.net) - bhyve full-meshed lab script"
+	echo "BSD Router Project (https://bsdrp.net) - bhyve full-meshed lab script"
 	echo "Setting-up a virtual lab with $NUMBER_VM VM(s):"
 	echo "- Working directory: ${WRK_DIR}"
 	echo -n "- Each VM has a total of ${NCPUS} (${CORES} cores and ${THREADS} threads)"

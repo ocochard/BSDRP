@@ -1,8 +1,8 @@
-diff --git sysutils/dtrace-toolkit/Makefile sysutils/dtrace-toolkit/Makefile
-index 66751bf1d..280eeeb5f 100644
---- sysutils/dtrace-toolkit/Makefile
-+++ sysutils/dtrace-toolkit/Makefile
-@@ -16,7 +16,7 @@ USE_GITHUB=	yes
+diff --git a/sysutils/dtrace-toolkit/Makefile b/sysutils/dtrace-toolkit/Makefile
+index f77a41e753f5..4fa0ee037077 100644
+--- a/sysutils/dtrace-toolkit/Makefile
++++ b/sysutils/dtrace-toolkit/Makefile
+@@ -15,7 +15,7 @@ USE_GITHUB=	yes
  GH_ACCOUNT=	opendtrace
  GH_PROJECT=	toolkit
  GH_TAGNAME=	ec23e25c8995bfa50cd7c0058129f1f489fdabb4

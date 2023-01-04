@@ -134,6 +134,7 @@ NANO_LATE_CUSTOMIZE=""
 NANO_NEWFS="-b 4096 -f 512 -i 8192 -O1 -m 0"
 
 # Number of code images on media (1 or 2)
+# We need 2 code here (running and old)
 NANO_IMAGES=2
 
 # 0 -> Leave second image all zeroes so it compresses better.
@@ -330,31 +331,31 @@ add_port "net-mgmt/bsnmp-regex"
 add_port "net-mgmt/bsnmp-ucd"
 
 # Python (install this port soon)
-add_port "print/indexinfo"
-add_port "devel/libffi"
-add_port "devel/readline"
-add_port "math/mpdecimal"
-add_port "lang/python39"
-add_port "lang/python3"
+ add_port "print/indexinfo"
+ add_port "devel/libffi"
+ add_port "devel/readline"
+ add_port "math/mpdecimal"
+ add_port "lang/python39"
+ add_port "lang/python3"
 add_port "lang/python"
 add_port "devel/py-setuptools"
 
 # RPKI RTR client library
 # libssh build needs cmake, perl and libiconv
  add_port "converters/libiconv"
-add_port "archivers/lzo2"
-add_port "archivers/liblz4"
-add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 LIBSSH2 POP3 PSL RTSP SMTP TELNET\""
+ add_port "archivers/lzo2"
+ add_port "archivers/liblz4"
+ add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 LIBSSH2 POP3 PSL RTSP SMTP TELNET\""
 # Build dep that will be removed after, but need to force STATIC mode for mstflint
-add_port "textproc/expat2" "WITH=\"STATIC\""
-add_port "security/libssh"
+ add_port "textproc/expat2" "WITH=\"STATIC\""
+ add_port "security/libssh"
 add_port "net-mgmt/rtrlib"
 
 # FRRouting: routing daemon
-add_port "devel/json-c"
+ add_port "devel/json-c"
   add_port "devel/pcre2"
-add_port "net/libyang2"
-add_port "dns/c-ares"
+ add_port "net/libyang2"
+ add_port "dns/c-ares"
 add_port "net/frr8" "WITH=\"MULTIPATH\""
 add_port "net/frr8-pythontools"
 
@@ -369,7 +370,7 @@ add_port "net/freevrrpd"
 
 # ipsec-tools: IKEv1
  add_port "security/cyrus-sasl2"
-add_port "net/openldap25-client" "WITHOUT+=\"GSSAPI\""
+ add_port "net/openldap25-client" "WITHOUT+=\"GSSAPI\""
 add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # strongswan: IKEv2 and lot's more
@@ -383,7 +384,7 @@ add_port "net-mgmt/pmacct"
 add_port "net/ucarp"
 
 # ARP level "ping" utility
-add_port "net/libnet"
+ add_port "net/libnet"
 add_port "net/arping"
 
 # smcroute: Manipulate the multicast routes
@@ -427,8 +428,8 @@ add_port "net-mgmt/nrpe3"
 add_port "editors/vim" "FLAVOR=tiny"
 
 # tmux: screen equivalent, but better because BSD
-add_port "devel/libevent"
-add_port "textproc/utf8proc"
+ add_port "devel/libevent"
+ add_port "textproc/utf8proc"
 add_port "sysutils/tmux"
 
 # ipmi tools
@@ -442,11 +443,11 @@ add_port "net/mpd5"
 
 add_port "net/pkt-gen"
 #add_port "net/netmap-ipfw"
-add_port "textproc/libucl"
+ add_port "textproc/libucl"
 add_port "net/netmap-fwd"
 
 # Wiregurad tools
-add_port "shells/bash"
+ add_port "shells/bash"
 add_port "net/wireguard-tools"
 
 # Tailscale
@@ -458,8 +459,8 @@ add_port "net/wireguard-tools"
 add_port "net/mlvpn"
 
 # openvpn
-add_port "security/easy-rsa"
-add_port "security/pkcs11-helper"
+ add_port "security/easy-rsa"
+ add_port "security/pkcs11-helper"
 add_port "security/openvpn-devel" "WITH+=\"DCO\""
 #  add_port "security/libgpg-error"
 # add_port "security/libgcrypt"
@@ -511,16 +512,16 @@ add_port "sysutils/x86info"
 
 if [ "$(uname -p)" = "amd64" ]; then
 	# Permit microcode upgrade
-	add_port "sysutils/devcpu-data-amd"
-	add_port "sysutils/devcpu-data-intel"
-	add_port "sysutils/devcpu-data"
+ add_port "sysutils/devcpu-data-amd"
+ add_port "sysutils/devcpu-data-intel"
+add_port "sysutils/devcpu-data"
 
 	# processor information (usefull for checking microcode version)
-	 add_port "devel/simdjson"
-	add_port "sysutils/intel-pcm"
+ add_port "devel/simdjson"
+add_port "sysutils/intel-pcm"
 
 	# One tool to resume them al
-	add_port "net-mgmt/nstat"
+add_port "net-mgmt/nstat"
 fi
 
 # Continuously displays information regarding the packet traffic
