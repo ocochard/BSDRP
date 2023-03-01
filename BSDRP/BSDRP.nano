@@ -483,7 +483,7 @@ add_port "benchmarks/iperf"
 add_port "benchmarks/iperf3"
 
 # LLDP daemon
-#add_port "net-mgmt/lldpd" "WITHOUT+=\"BASH JSON PROPRIETARY SNMP XML\""
+add_port "net-mgmt/lldpd" "WITHOUT+=\"BASH JSON SNMP XML\""
 
 # ExaBGP: having fun with BGP
 add_port "net/exabgp4"
@@ -556,6 +556,9 @@ add_port "sysutils/dtrace-toolkit"
 
 #### End of port list section ####
 
+# Add netrate tools
+customize_cmd add_netrate
+
 cleanup_ports () {
 	# When port are build, they install build dependency that are not usefull for running the port
 	# The list of build-only package to be delete can be found like this:
@@ -575,20 +578,26 @@ bison
 boost-jam
 boost-libs
 cmake
+cmocka
+docbook
 expat
 gcc
 gawk
 gettext
+gettext-tools
 gmake
 go
 go14
 help2man
+iso8879
 jsoncpp
 libarchive
 libnghttp2
 libsigsegv
 libtool
+libtextstyle
 libuv
+libxslt
 m4
 mpfr
 mpc
@@ -599,37 +608,40 @@ p5-Text-Unidecode
 p5-Unicode-EastAsianWidth
 pkgconf
 python27
-py37-Babel
-py37-cython
-py37-Jinja2
-py37-MarkupSafe
-py37-alabaster
-py37-asn1crypto
-py37-certifi
-py26-cffi
-py37-chardet
-py37-cryptography
-py37-docutils
-py38-enum34
-py37-idna
-py37-imagesize
-py37-openssl
-py37-pycparser
-py37-pygments
-py37-pyparsing
-py37-pystemmer
-py37-pysocks
-py37-pytest-runner
-py37-pytz
-py37-setuptools_scm
-py37-six
-py37-snowballstemmer
-py37-sphinx*
-py37-typing
-py37-urllib3
+py39-Babel
+py39-cython
+py39-Jinja2
+py39-MarkupSafe
+py39-alabaster
+py39-asn1crypto
+py39-certifi
+py39-cffi
+py39-chardet
+py39-cryptography
+py39-docutils
+py39-enum34
+py39-idna
+py39-imagesize
+py39-openssl
+py39-pycparser
+py39-pygments
+py39-pyparsing
+py39-pystemmer
+py39-pysocks
+py39-pytest-runner
+py39-pytz
+py39-setuptools_scm
+py39-six
+py39-snowballstemmer
+py39-sphinx*
+py39-typing
+py39-urllib3
 rhash
 scons
+sdocbook-xml
 texinfo
+xmlcatmgr
+xmlcharent
 '
 		mount -t devfs devfs ${NANO_WORLDDIR}/dev
 		for pkg in ${BUILD_DEP}; do

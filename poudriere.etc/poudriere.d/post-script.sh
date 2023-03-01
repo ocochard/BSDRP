@@ -2,6 +2,8 @@
 #
 # Not all WITHOUT_ options are correctly use during image generation
 
+# XXX Need to build /usr/src/tools/tools/netrate/netblast&netreceive
+
 # XXX Need to extract debug symbols first
 TO_REMOVE='
 usr/sbin/config
@@ -28,11 +30,11 @@ if [ -z "${WORLDDIR}" ]; then
 	exit 1
 fi
 
-for i in ${TO_REMOVE}; do
-	if [ -e ${WORLDDIR}/$i ]; then
-		rm -rf ${WORLDDIR}/$i
-	fi
-done
+#for i in ${TO_REMOVE}; do
+#	if [ -e ${WORLDDIR}/$i ]; then
+#		rm -rf ${WORLDDIR}/$i
+#	fi
+#done
 
 # Kill all .a's that are installed with TOOLCHAIN (remove 33MB)
-find ${WORLDDIR} -type f -name \*.a | xargs rm
+#find ${WORLDDIR} -type f -name \*.a | xargs rm

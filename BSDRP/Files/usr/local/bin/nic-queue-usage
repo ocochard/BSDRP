@@ -49,7 +49,7 @@ def read_nic(name):
         for line in subprocess.check_output("/sbin/sysctl dev.{}.{}".format(m.group(1), m.group(2)).split(), universal_newlines=True).split("\n"):
             # XXX: number of RXQ can be different than TXQ
             # dev.cxl.0.rxq.1.rxcsum
-            # dev.cxl.0.txq.1.txcsum: 359615473
+            # dev.cxl.1.txq.1.txpkt_wrs: 714494990
             # dev.cxl.0.stats.rx_frames
             # dev.cxl.0.stats.tx_frames
             # dev.ix.0.queue0.rx_packets: 45256216
@@ -81,7 +81,7 @@ def read_nic(name):
             if driver == "bxe":
                 m = re.match(r'.*\.queue.(\d+)\.tx_pkts:\s+(\d+)', line)
             elif driver in ("cc", "cxl"):
-                m = re.match(r'.*\.txq\.(\d+)\.txcsum:\s+(\d+)', line)
+                m = re.match(r'.*\.txq\.(\d+)\.txpkt_wrs:\s+(\d+)', line)
             elif driver in ("ix", "igb"):
                 m = re.match(r'.*\.queue(\d+)\.tx_packets:\s+(\d+)', line)
             elif driver == "ixl":

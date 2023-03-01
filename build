@@ -60,19 +60,30 @@ echo "[DEBUG] Skip make -U"
 cp /usr/local/etc/poudriere.conf poudriere.etc/
 # Create, or update the builder jail
 if poudriere -e poudriere.etc jail -ln | grep -q BSDRPj; then
+	echo "Updating poudriere jail (build_jail.log)"
 	poudriere -e poudriere.etc jail -u -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > build_jail.log
 else
+	echo "Creating poudriere jail (build_jail.log)"
 	poudriere -e poudriere.etc jail -c -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > build_jail.log
 fi
 # Create or update port tree
 if poudriere -e poudriere.etc ports -ln | grep -q BSDRPp; then
+	echo "Updating poudriere port tree (build_ports.log)"
 	poudriere -e poudriere.etc ports -u -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports > build_ports.log
 else
+	echo "Creating poudriere port tree (build_ports.log)"
 	poudriere -e poudriere.etc ports -c -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports > build_ports.log
 fi
 
 # Build the ports
-poudriere -e poudriere.etc bulk -j BSDRPj -p BSDRPp -f poudriere.etc/poudriere.d/BSDRP-pkglist
+echo "Building packages (build_ports.log)"
+poudriere -e poudriere.etc bulk -j BSDRPj -p BSDRPp -f poudriere.etc/poudriere.d/BSDRP-pkglist >> build_ports.log
 # Build the firmware image
 # size in bytes
-poudriere -e poudriere.etc image -t firmware -s 2g -j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net -c BSDRP/Files/ -f poudriere.etc/poudriere.d/BSDRP-pkglist -A poudriere.etc/poudriere.d/post-script.sh > build_image.log
+echo "Generating disk image (build_image.log)"
+poudriere -e poudriere.etc image -t firmware -s 2g \
+	-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
+	-c BSDRP/Files/ \
+	-f poudriere.etc/poudriere.d/BSDRP-pkglist \
+	-X poudriere.etc/poudriere.d/excluded.files \
+	-A poudriere.etc/poudriere.d/post-script.sh > build_image.log
