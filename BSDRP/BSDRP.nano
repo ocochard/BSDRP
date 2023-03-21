@@ -377,6 +377,7 @@ add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 add_port "security/strongswan" "WITH=\"MEDIATION GCM\" WITHOUT+=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
 
 # pmacct: IP accounting tool
+ add_port "devel/libcdada"
 add_port "net-mgmt/pmacct"
 
 # ucarp: Userland carp because enabling carp in the kernel prevent to use FreeVRRPd

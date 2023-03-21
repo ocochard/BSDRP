@@ -1,0 +1,13 @@
+diff --git a/sysutils/dtrace-toolkit/Makefile b/sysutils/dtrace-toolkit/Makefile
+index 8847c48f8539..d36d04ca4eab 100644
+--- a/sysutils/dtrace-toolkit/Makefile
++++ b/sysutils/dtrace-toolkit/Makefile
+@@ -10,7 +10,7 @@ WWW=		https://github.com/opendtrace/toolkit
+ LICENSE=	CDDL
+ LICENSE_FILE=	${WRKSRC}/Docs/cddl1.txt
+ 
+-USES=		perl5 python ruby shebangfix
++USES=		perl5 python shebangfix
+ USE_GITHUB=	yes
+ GH_ACCOUNT=	opendtrace
+ GH_PROJECT=	toolkit
