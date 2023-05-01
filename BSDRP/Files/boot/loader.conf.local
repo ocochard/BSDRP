@@ -35,6 +35,10 @@ fib_dxr_load="YES"
 cpu_microcode_load="YES"
 cpu_microcode_name="/boot/firmware/intel-ucode.bin"
 
+# Disabling Page Table Isolation
+# XXX Need to run bench
+#vm.pmap.pti="0"
+
 ### Intel NIC tuning ###
 # https://bsdrp.net/documentation/technical_docs/performance#nic_drivers_tuning
 # Don't limit the maximum of number of received packets to process at a time

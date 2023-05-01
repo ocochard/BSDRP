@@ -356,6 +356,7 @@ add_port "net-mgmt/rtrlib"
   add_port "devel/pcre2"
  add_port "net/libyang2"
  add_port "dns/c-ares"
+ add_port "devel/libunwind"
 add_port "net/frr8" "WITH=\"MULTIPATH\""
 add_port "net/frr8-pythontools"
 
@@ -526,7 +527,8 @@ add_port "net-mgmt/nstat"
 fi
 
 # Continuously displays information regarding the packet traffic
-add_port "net/trafshow"
+# Build broken
+#add_port "net/trafshow"
 
 # Network aware cat
 add_port "net/nc"
