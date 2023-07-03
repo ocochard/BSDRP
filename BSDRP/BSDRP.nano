@@ -369,10 +369,9 @@ add_port "net/bird2" "FLAVOR=netlink"
 # FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
 
-# ipsec-tools: IKEv1
- add_port "security/cyrus-sasl2"
- add_port "net/openldap25-client" "WITHOUT+=\"GSSAPI\""
-add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
+# add_port "security/cyrus-sasl2"
+# add_port "net/openldap25-client" "WITHOUT+=\"GSSAPI\""
+#add_port "security/ipsec-tools" "WITH=\"RC5 IDEA RADIUS LDAP\""
 
 # strongswan: IKEv2 and lot's more
 add_port "security/strongswan" "WITH=\"MEDIATION GCM\" WITHOUT+=\"EAPAKA3GPP2 EAPSIMFILE SQLITE UNBOUND LOADTESTER TESTVECTOR\""
@@ -424,7 +423,7 @@ add_port "sysutils/fswatch-mon"
 # monit: managing and monitoring processes tool
 add_port "sysutils/monit"
  add_port "net-mgmt/nagios-plugins"
-add_port "net-mgmt/nrpe3"
+add_port "net-mgmt/nrpe"
 # Already needed to build libssh
 # add_port "converters/libiconv"
 add_port "editors/vim" "FLAVOR=tiny"
@@ -464,9 +463,9 @@ add_port "net/mlvpn"
  add_port "security/easy-rsa"
  add_port "security/pkcs11-helper"
 add_port "security/openvpn-devel" "WITH+=\"DCO\""
-#  add_port "security/libgpg-error"
-# add_port "security/libgcrypt"
-#add_port "security/openvpn-auth-radius"
+  add_port "security/libgpg-error"
+ add_port "security/libgcrypt"
+add_port "security/openvpn-auth-radius"
 
 # wireguard
 #add_port "net/wireguard-go"
