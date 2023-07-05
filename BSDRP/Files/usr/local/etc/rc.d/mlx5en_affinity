@@ -42,8 +42,16 @@ mlx5en_affinity_start()
 	# Exclude some CPU from binding
 	NCPU=$((NCPU - ${mlx5en_affinity_avoidncpu}))
 	CPU=${mlx5en_affinity_firstcpu}
-	cxl=$(sysctl dev.mce. | grep -c eeprom_info)
-	for i in $(seq 0 $((cxl - 1))); do
+
+	# Number of NIC
+	nic=$(sysctl dev.mce. | grep -c hw_mtu)
+	if [  ${nic} -eq 0 ]; then
+		echo "No Mellanox card detected"
+		exit 0
+	fi
+
+	# XXX Need to guest the CPU numa domain
+	for i in $(seq 0 $((nic - 1))); do
 		# Need to filter the first 3 IRQ that seems not related to RX queues
 		# Need to filter only the used IRQ (=number of channels)
 		for IRQ in `/usr/bin/vmstat -ai |\
