@@ -1,13 +1,10 @@
-BSD Router Project
-==================
+# [![BSDRP logo](logos/BSDRP.logo.128.png)BSD Router Project](https://bsdrp.net)
 
 Copyright (c) 2009-2023, The BSDRP Development Team
 
-Homepage: https://bsdrp.net
-
 ## Description
 
-BSDRP is an embedded free and open source router distribution based on [FreeBSD](https://www.freebsd.org) with [FRRouting](https://frrouting.org) and [Bird](http://bird.network.cz/).
+BSD Router Project (BSDRP) is an embedded free and open source router distribution based on [FreeBSD](https://www.freebsd.org) with [FRRouting](https://frrouting.org) and [Bird](http://bird.network.cz/).
 
 ## Build-time requirements
  - FreeBSD 13.0 or higher
@@ -15,10 +12,11 @@ BSDRP is an embedded free and open source router distribution based on [FreeBSD]
 ## Other information
 
 The make.sh script is the build tool for generating BSDRP image:
-./make.sh -h for displaying the help
+```
+./make.sh -h
+```
 
-More details on the website:
-https://bsdrp.net/documentation/technical_docs
+[More details on the technical documentations section]( https://bsdrp.net/documentation/technical_docs)
 
 ## Child projects
  * MAIN, STABLE-13, STABLE12: Generate a small nanobsd image (without packages), used for following network performance evolution in time
