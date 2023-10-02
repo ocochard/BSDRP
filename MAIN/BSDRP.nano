@@ -58,6 +58,7 @@ WITHOUT_BOOTPD=
 WITHOUT_BSDINSTALL=
 WITHOUT_CALENDAR=
 WITHOUT_CCD=
+WITHOUT_CROSS_COMPILER=
 WITHOUT_CTM=
 WITHOUT_CVS=
 WITHOUT_DICT=
@@ -125,7 +126,10 @@ WITH_OFED=
 WITH_DEBUG_FILES=
 WITH_DIRDEPS_BUILD=
 WITH_RETPOLINE=
+WITH_REPRODUCIBLE_BUILD=
 WITH_MALLOC_PRODUCTION=
+WITH_OPENSSL_KTLS=
+WITHOUT_PTHREADS_ASSERTIONS=
 '
 
 # Customize commands.
@@ -198,10 +202,8 @@ add_netrate () {
 	for TOOL in ${TOOLS_LIST}; do
 		export TOOL
 		CR 'make clean -C /usr/src/tools/tools/${TOOL}'
-		CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-			MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-			UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE}" \
-			UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+		CR 'env OSVERSION=${FBSD_DST_OSVERSION} \
+			UNAME_r=${FBSD_DST_RELEASE} UNAME_v="FreeBSD ${FBSD_DST_RELEASE} ${FBSD_DST_OSVERSION}" \
 			make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL}'
 		CR 'make WRKDIRPREFIX=/usr/workdir -C /usr/src/tools/tools/${TOOL} install clean'
 	done # for TOOL
@@ -221,7 +223,7 @@ add_port () {
 	else
 		PKG_NAME=$(env PORTSDIR="${PORTS_SRC}" make package-name)
 	fi
-	if [ -f "${NANO_OBJ}"/ports/packages/All/${PKG_NAME}.txz ]; then
+	if [ -f "${NANO_OBJ}"/ports/packages/All/${PKG_NAME}.pkg ]; then
 	# Pkg file found: Generate add_pkg_NAME function
 		eval "
 		add_pkg_${port} () {
@@ -252,7 +254,7 @@ FreeBSD: {
 EOF
 			# Bug with pkg: not using the "-d" option prevent to install the package with error message "pkg fail to extract static"
 			# Need to force assume_always_yes for avoiding bootstrap pkg confirmation too
-			CR 'env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg -d add /usr/ports/packages/All/${PKG_NAME}.txz'
+			CR 'env ASSUME_ALWAYS_YES=true SIGNATURE_TYPE=none pkg -d add /usr/ports/packages/All/${PKG_NAME}.pkg'
 			umount \${NANO_WORLDDIR}/usr/ports/packages
 			umount \${NANO_WORLDDIR}/dev
 			rmdir \${NANO_WORLDDIR}/usr/ports/packages
@@ -285,13 +287,11 @@ EOF
 			# Run ldconfig before
 			CR '/sbin/ldconfig -m /lib /usr/lib /usr/lib/compat'
 			# Start the build
-			CR 'env TARGET=${NANO_ARCH} TARGET_ARCH=${NANO_ARCH} \
-				MACHINE=${NANO_ARCH} MACHINE_ARCH=${NANO_ARCH} OSVERSION=${FBSD_DST_OSVERSION} \
-				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE}\" \
-				UNAME_p=${NANO_ARCH} UNAME_m=${NANO_ARCH} \
+			CR 'env OSVERSION=${FBSD_DST_OSVERSION} \
+				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE} ${FBSD_DST_OSVERSION}\" \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 				package install BATCH=yes \
-				WITHOUT=\"NLS X11 DOCS EXAMPLES\" \"$2\" clean'
+				WITHOUT=\"INFO NLS X11 DOCS EXAMPLES\" "$2" clean'
 			# add a -DWITH_DEBUG before the $2 for building port with debug
 			# and comment the strip command
 
@@ -313,10 +313,8 @@ EOF
 
 #### Ports list section #####
 
-# bapt@ broke the "make package-recurisve" and he doesn't want to fix it using
-#  the fallacious argument of "it's dirty"
-# => Need to manually list all the package to install
-# Meanwhile, you can use "make package-depends-list | cut -d ' ' -f3" on a port
+# Need to manually list all the package to install
+# We could use "make package-depends-list | cut -d ' ' -f3" on a port
 # for getting all its unordered running dependency.
 # And you can use a grep "depends on .* - not found" /usr/obj/project/_.cust.add_port_port-name
 # for getting the ordered list
@@ -552,39 +550,38 @@ usr/share/tmac/tmac.vgrind
 
 # Enable only serial system only
 bsdrp_console_serial () {
-	# Enable getty on console
-	sed -i "" -e /ttyu0/s/onifconsole/on/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[13]0/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[13]/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-
-    # Disable getty on syscons devices
-    sed -i "" -e '/^ttyv[0-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
-
-    # Tell loader to use serial console early.
-    echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
+	# Force first 4 serial console into "onifexists" to be sure to enable them
+	# but preventing polluting console with "getty ... No such file or directory"
+	sed -i "" -e '/^ttyu[0]/s/onifconsole/on/' ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e '/^ttyu[1-3]/s/onifconsole/onifexists/' ${NANO_WORLDDIR}/etc/ttys
+	# Enable local video devices only if they exists too
+	#  this prevent to overload console with theses message:
+	#  getty[7]: open /dev/ttyv1: No such file or directory
+	#  init: getty repeating too quickly on port /dev/ttyv1, sleeping 30 secs
+	sed -i "" -e '/^ttyv[0-4]/s/on /onifexists /' ${NANO_WORLDDIR}/etc/ttys
+	# Disable some syscons devices: No need for 8 on a router
+	sed -i "" -e '/^ttyv[4-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
+	# Tell loader to use serial console early.
+	echo "-S${COM_SPEED} -h" > ${NANO_WORLDDIR}/boot.config
 
 }
 
 # Enable use of keyboard/vga and serial
 bsdrp_console_dual () {
-    sed -i "" -e /tty[du]0/s/off/on/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /tty[du]0/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-
-    # Tell loader to use serial and vga console.
-    echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
-
+	# Force first 4 serial console into "onifexists" to be sure to enable them
+	# but preventing polluting console with "getty ... No such file or directory"
+	sed -i "" -e '/^ttyu[0-1]/s/on/onifexists/' ${NANO_WORLDDIR}/etc/ttys
+	sed -i "" -e '/^ttyu[2-3]/s/onifconsole/onifexists/' ${NANO_WORLDDIR}/etc/ttys
+	# Tell loader to use serial and vga console, set baud speed
+	echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 }
 
 # Standard vga console, but permit serial port to be use as vt100 console
 bsdrp_console_vga () {
-	sed -i "" -e /ttyu[13]/s/off/onifconsole/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[13]/s/dialup/vt100/ ${NANO_WORLDDIR}/etc/ttys
-	sed -i "" -e /ttyu[13]/s/9600/${COM_SPEED}/ ${NANO_WORLDDIR}/etc/ttys
-
-	# Set serial console speed (but not use it)
-    echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
+	# Disable some syscons devices: No need for 8 on a router
+	sed -i "" -e '/^ttyv[4-8]/s/on /off /' ${NANO_WORLDDIR}/etc/ttys
+	# Tell loader to use vga and serial and set serial speed (boot0 will be vga only)
+	echo "-S${COM_SPEED} -Dh" > ${NANO_WORLDDIR}/boot.config
 }
 
 # Special xen console configuration

@@ -318,7 +318,7 @@ add_port "ports-mgmt/pkg"
 ## Add your custom port list here (not before the ports/mgmt/pkg!) ##
 
 # Perl
-add_port "lang/perl5.32" "WITHOUT+=\"DTRACE\""
+add_port "lang/perl5.34" "WITHOUT+=\"DTRACE\""
 
 # Allow fetching from SSL site
 add_port "security/ca_root_nss"
@@ -468,10 +468,6 @@ add_port "security/openvpn-devel" "WITH+=\"DCO\""
  add_port "security/libgcrypt"
 add_port "security/openvpn-auth-radius"
 
-# wireguard
-#add_port "net/wireguard-go"
-#add_port "net/wireguard"
-
 # Realtek official drivers
 add_port "net/realtek-re-kmod"
 #add_port "net/aquantia-atlantic-kmod"
@@ -495,14 +491,14 @@ add_port "net/mrtparse"
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 # Into cleanup_ports(), remove libiconv from the list too or it will delete all port that depends from it
 #  add_port "converters/libiconv"
- add_port "devel/gettext-runtime"
- add_port "sysutils/fusefs-libs"
-  add_port "textproc/libxml2"
+# add_port "devel/gettext-runtime"
+# add_port "sysutils/fusefs-libs"
+#  add_port "textproc/libxml2"
 #  add_port "devel/pcre"
- add_port "devel/glib20"
- add_port "net/libdnet"
- add_port "archivers/libmspack"
-add_port "emulators/open-vm-tools" "FLAVOR=nox11"
+# add_port "devel/glib20"
+# add_port "net/libdnet" # Broken since https://reviews.freebsd.org/D41651
+# add_port "archivers/libmspack"
+#add_port "emulators/open-vm-tools" "FLAVOR=nox11"
 
 # Permit BIOS upgrade
   add_port "misc/pciids"
@@ -514,9 +510,10 @@ add_port "sysutils/x86info"
 
 if [ "$(uname -p)" = "amd64" ]; then
 	# Permit microcode upgrade
- add_port "sysutils/devcpu-data-amd"
- add_port "sysutils/devcpu-data-intel"
-add_port "sysutils/devcpu-data"
+  add_port "sysutils/cpu-microcode-rc"
+  add_port "sysutils/cpu-microcode-amd"
+  add_port "sysutils/cpu-microcode-intel"
+add_port "sysutils/cpu-microcode"
 
 	# processor information (usefull for checking microcode version)
  add_port "devel/simdjson"
