@@ -1500,7 +1500,7 @@ EOF
 
 sysrc -f /etc/jails/jail6/rc.conf hostname=jail6 \
   frr_vtysh_boot="YES" \
-  frr_daemons="zebra babeld staticd" \
+  frr_daemons="zebra mgmtd babeld staticd" \
   frr_enable=yes
 
 cat > /etc/jails/jail6/local/frr/frr.conf <<EOF
@@ -1529,7 +1529,7 @@ EOF
 sysrc -f /etc/jails/jail7/rc.conf hostname=jail7 \
   cloned_interfaces=lo1 \
   frr_vtysh_boot="YES" \
-  frr_daemons="zebra staticd" \
+  frr_daemons="zebra mgmtd staticd" \
   frr_enable=yes
 
 cat > /etc/jails/jail7/local/frr/frr.conf <<EOF
@@ -1875,7 +1875,7 @@ echo "VM5 configured"
 frr_vm6 () {
 sysrc hostname=router6 \
 	frr_vtysh_boot="YES" \
-	frr_daemons="zebra babeld staticd" \
+	frr_daemons="zebra mgmtd babeld staticd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
@@ -1910,7 +1910,7 @@ frr_vm7 () {
 sysrc hostname=router7 \
 	cloned_interfaces=lo1 \
 	frr_vtysh_boot="YES" \
-	frr_daemons="zebra staticd" \
+	frr_daemons="zebra mgmtd staticd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog

@@ -285,7 +285,7 @@ EOF
 				UNAME_r=${FBSD_DST_RELEASE} UNAME_v=\"FreeBSD ${FBSD_DST_RELEASE} ${FBSD_DST_OSVERSION}\" \
 				make WRKDIRPREFIX=/usr/workdir FETCH_ARGS=-pRr -C /usr/ports/$1 \
 				package install BATCH=yes \
-				WITHOUT=\"INFO NLS X11 DOCS EXAMPLES\" "$2" clean'
+				WITHOUT=\"INFO NLS X11 DOCS DOXYGEN EXAMPLES\" "$2" clean'
 			# add a -DWITH_DEBUG before the $2 for building port with debug
 			# and comment the strip command
 
@@ -347,8 +347,7 @@ add_port "devel/py-setuptools"
  add_port "archivers/lzo2"
  add_port "archivers/liblz4"
  add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 LIBSSH2 POP3 PSL RTSP SMTP TELNET\""
-# Build dep that will be removed after, but need to force STATIC mode for mstflint
- add_port "textproc/expat2" "WITH=\"STATIC\""
+ add_port "textproc/expat2"
  add_port "security/libssh"
 add_port "net-mgmt/rtrlib"
 
@@ -358,8 +357,10 @@ add_port "net-mgmt/rtrlib"
  add_port "net/libyang2"
  add_port "dns/c-ares"
  add_port "devel/libunwind"
-add_port "net/frr8" "WITH=\"MULTIPATH\""
-add_port "net/frr8-pythontools"
+  add_port "devel/protobuf"
+ add_port "devel/protobuf-c"
+add_port "net/frr9" "WITH=\"MULTIPATH\""
+add_port "net/frr9-pythontools"
 
 # FRR installs some software that we don't need anymore after install:
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
@@ -490,15 +491,16 @@ add_port "net/mrtparse"
 # VM tools (about 10MB)
 # VM tools brings too lot's of deps: Need to delete them all after installing (if there are used for build only)
 # Into cleanup_ports(), remove libiconv from the list too or it will delete all port that depends from it
-#  add_port "converters/libiconv"
-# add_port "devel/gettext-runtime"
-# add_port "sysutils/fusefs-libs"
-#  add_port "textproc/libxml2"
-#  add_port "devel/pcre"
-# add_port "devel/glib20"
-# add_port "net/libdnet" # Broken since https://reviews.freebsd.org/D41651
-# add_port "archivers/libmspack"
-#add_port "emulators/open-vm-tools" "FLAVOR=nox11"
+ #add_port "converters/libiconv" # already added
+ add_port "devel/gettext-runtime"
+ add_port "sysutils/fusefs-libs"
+  add_port "textproc/libxml2"
+  add_port "devel/pcre"
+ add_port "devel/glib20"
+  add_port "net/libpfctl"
+ add_port "net/libdnet"
+ add_port "archivers/libmspack"
+add_port "emulators/open-vm-tools" "FLAVOR=nox11"
 
 # Permit BIOS upgrade
   add_port "misc/pciids"
@@ -543,7 +545,7 @@ add_port "net-mgmt/bgpq4"
 add_port "net/ixl_unlock"
 
 # Mellanox Firmware Burning and Diagnostics Tools
-#add_port "sysutils/mstflint-lite"
+#add_port "sysutils/mstflint" "WITH+=\"FWMANAGER ADAB\""
 
 # my ASCII network diagram tool
 add_port "net/graphpath"
@@ -614,16 +616,21 @@ py39-Jinja2
 py39-MarkupSafe
 py39-alabaster
 py39-asn1crypto
+py39-build
 py39-certifi
 py39-cffi
 py39-chardet
 py39-cryptography
 py39-docutils
 py39-enum34
+py39-flit-core
+py39-installer
 py39-idna
 py39-imagesize
 py39-openssl
+py39-packaging
 py39-pycparser
+py39-pyproject_hooks
 py39-pygments
 py39-pyparsing
 py39-pystemmer
@@ -634,8 +641,10 @@ py39-setuptools_scm
 py39-six
 py39-snowballstemmer
 py39-sphinx*
+py39-tomli
 py39-typing
 py39-urllib3
+py39-wheel
 rhash
 scons
 sdocbook-xml

@@ -1,10 +1,127 @@
-# Release 1.992 (not released)
+# Release 1.992 (05/10/2023)
 
 ## New features
+* Based on FreeBSD 15-head 166a655fcf1 and ports tree 1112795aca0f
 * Added ZFS support: Some users locally store logs and ZFS could be useful
 * OpenVPN Data Channel offload (kernel module), improving speed
 * Temporary disable aquantia-atlantic (build broken)
 * Added: Open VMware tools for FreeBSD VMware guests
+
+## Upgraded packages
+* bgpq4 to 1.11
+* bird to 2.13.1
+* cpu microcodes to 20230808
+* frr to 9.0.1
+* iperf to 2.1.9
+* iperf3 to 3.15
+* strongswan to 5.9.11
+
+## Packages list
+
+* arping 2.21_1: ARP level "ping" utility
+* bash 5.2.15: GNU Project's Bourne Again SHell
+* bgpq4 1.11: Lightweight prefix-list generator for various routers v4
+* bird2-netlink 2.13.1: Dynamic IP routing daemon
+* bsnmp-regex 0.6_2: bsnmpd module allowing creation of counters from log files
+* bsnmp-ucd 0.4.5: bsnmpd module that implements parts of UCD-SNMP-MIB
+* c-ares 1.19.1: Asynchronous DNS resolver library
+* ca_root_nss 3.93: Root certificate bundle from the Mozilla Project
+* cpu-microcode 1.0: Meta-package for CPU microcode updates
+* cpu-microcode-amd 20230808: AMD CPU microcode updates
+* cpu-microcode-intel 20230808: Intel CPU microcode updates
+* cpu-microcode-rc 1.0: RC script for CPU microcode updates
+* curl 8.3.0: Command line tool and library for transferring data with URLs
+* dhcp6 20080615.2_3: KAME DHCP6 client, server, and relay
+* dhcprelya 6.1_1: Lightweight DHCP relay agent (Yandex edition)
+* dtrace-toolkit 1.0_7: Collection of useful scripts for DTrace
+* easy-rsa 3.1.6: Small RSA key management package based on openssl
+* flashrom 1.3.0_1: Utility for reading, writing, verifying, and erasing flash ROM chips
+* freevrrpd 1.2: RFC 2338 compliant VRRP implementation
+* frr9 9.0.1: IP routing protocol suite including BGP, IS-IS, OSPF, BABEL and RIP
+* frr9-pythontools 9.0.1: Provide configuration reload functionality for FRR
+* fswatch-mon 1.13.0_2: Cross-platform file change monitor
+* fusefs-libs 2.9.9_2: FUSE allows filesystem implementation in userspace
+* gettext-runtime 0.22_1: GNU gettext runtime libraries and programs
+* glib 2.78.0,2: Some useful routines of C programming (current stable version)
+* graphpath 1.2: Generates an ASCII network diagram from the route table
+* indexinfo 0.3.1: Utility to regenerate the GNU info page index
+* intel-pcm 202302_1: Process Count Monitor (PCM) for Intel processors
+* iperf 2.1.9: Tool to measure maximum TCP and UDP bandwidth
+* iperf3 3.15: Improved tool to measure TCP and UDP bandwidth
+* ipmitool 1.8.18_3: CLI to manage IPMI systems
+* isc-dhcp44-server 4.4.3P1: ISC Dynamic Host Configuration Protocol server
+* ixl_unlock 1: Disable SFP Module Qualification on Intel XL710 network cards
+* json-c 0.17: JSON (JavaScript Object Notation) implementation in C
+* libcdada 0.4.0: Basic data structures in C as libstdc++ wrapper
+* libdnet 1.13_4: Simple interface to low level networking routines
+* libev 4.33,1: Full-featured and high-performance event loop library
+* libevent 2.1.12: API for executing callback functions on events or timeouts
+* libffi 3.4.4: Foreign Function Interface
+* libgcrypt 1.10.2: General purpose cryptographic library based on the code from GnuPG
+* libgpg-error 1.47: Common error values for all GnuPG components
+* libiconv 1.17: Character set conversion library
+* liblz4 1.9.4,1: LZ4 compression library, lossless and very fast
+* libmspack 0.11alpha: Library for Microsoft compression formats
+* libnet 1.2,1: C library for creating IP packets
+* libpci 3.10.0: PCI configuration space I/O made easy
+* libpfctl 0.4: Library for interaction with pf(4)
+* libsodium 1.0.18: Library to build higher-level cryptographic tools
+* libssh 0.10.5: Library implementing the SSH2 protocol
+* libucl 0.8.2: Universal configuration library parser
+* libunwind 20211201_2: Generic stack unwinding library
+* libxml2 2.10.4_1: XML parser library for GNOME
+* libyang2 2.1.111: YANG data modeling language library, version 2
+* lldpd 1.0.14: LLDP (802.1ab)/CDP/EDP/SONMP/FDP daemon and SNMP subagent
+* lzo2 2.10_1: Portable speedy, lossless data compression library
+* mlvpn 2.3.1_2: Multi-link VPN
+* monit 5.33.0: Unix system management and proactive monitoring
+* mpd5 5.9_16: Multi-link PPP daemon based on netgraph(4)
+* mpdecimal 2.5.1: C/C++ arbitrary precision decimal floating point libraries
+* mrouted 3.9.8_1: Multicast routing daemon providing DVMRP for IPv4
+* mtr 0.95_1: Traceroute and ping in a single network diagnostic tool
+* nagios-plugins 2.4.4,1: Plugins for Nagios
+* nc 1.0.1_1: Network aware cat
+* netmap-fwd 0.2: IPv4 router over netmap for FreeBSD
+* netperf 2.7.1.p20210121_1: Network performance benchmarking package
+* nrpe 4.1.0: Nagios Remote Plugin Executor
+* nstat g20230601,1: Replacement for bw/netstat/vmstat/pcm-memory.x
+* ntraceroute 6.4.2_3: Ubiquitous network routing analysis tool
+* open-vm-tools-nox11 12.3.0,2: Open VMware tools for FreeBSD VMware guests (without X11)
+* openvpn-auth-radius 2.1_4: RADIUS authentication plugin for OpenVPN
+* openvpn-devel g20230331,1: Secure IP/Ethernet tunnel daemon
+* pciids 20230922: Database of all known IDs used in PCI devices
+* pcre 8.45_3: Perl Compatible Regular Expressions library
+* pcre2 10.42: Perl Compatible Regular Expressions library, version 2
+* perl5 5.34.1_3: Practical Extraction and Report Language
+* pimd 2.3.2_1: Lightweight stand-alone PIM-SM v2 multicast routing daemon
+* pimdd 0.2.1.0_3: UO Dense Protocol-Independent Multicast (PIM-DM) daemon for IPv4
+* pkcs11-helper 1.29.0: Helper library for multiple PKCS#11 providers
+* pkg 1.20.7: Package manager
+* pkt-gen g2023.04.22: Packet sink/source using the netmap API
+* pmacct 1.7.8: Accounting and aggregation tool for IPv4 and IPv6 traffic
+* protobuf 3.21.12,1: Data interchange format library
+* protobuf-c 1.4.1_1: Code generator and libraries to use Protocol Buffers from pure C
+* py39-exabgp4 4.2.21: BGP engine and route injector
+* py39-mrtparse 2.0.0: MRT format data parser
+* py39-setuptools 63.1.0_1: Python packages installer
+* python 3.9_3,2: "meta-port" for the default version of Python interpreter
+* python3 3_3: Meta-port for the Python interpreter 3.x
+* python39 3.9.18: Interpreted object-oriented programming language
+* quagga-bgp-netgen 0.2: Generates Quagga/FRR bgp configuration file with lot's of routes
+* readline 8.2.1: Library for editing command lines as they are typed
+* realtek-re-kmod 198.00_3: Kernel driver for Realtek PCIe Ethernet Controllers
+* rtrlib 0.8.0_1: Open-source C implementation of the RPKI/Router Protocol client
+* simdjson 3.1.5: Parsing gigabytes of JSON per second
+* strongswan 5.9.11_2: Open Source IKEv2 IPsec-based VPN solution
+* sudo 1.9.14p3: Allow others to run commands as root
+* tayga 0.9.2: Userland stateless NAT64 daemon
+* tinc 1.0.36_2: Virtual Private Network (VPN) daemon
+* tmux 3.3a_1: Terminal Multiplexer
+* ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
+* utf8proc 2.8.0: UTF-8 processing library
+* vim-tiny 9.0.1976: Improved version of the vi editor (tiny flavor)
+* wireguard-tools 1.0.20210914_1: Fast, modern and secure VPN Tunnel
+* x86info 1.31.s03: x86 CPU identification and feature display utility
 
 -----------------------------------------------------
 # Release 1.991 (07/05/2022)
