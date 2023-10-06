@@ -471,7 +471,7 @@ add_port "security/openvpn-auth-radius"
 
 # Realtek official drivers
 add_port "net/realtek-re-kmod"
-#add_port "net/aquantia-atlantic-kmod"
+add_port "net/aquantia-atlantic-kmod"
 
 # tinc
 add_port "security/tinc"
@@ -620,6 +620,7 @@ py39-build
 py39-certifi
 py39-cffi
 py39-chardet
+py39-charset-normalizer
 py39-cryptography
 py39-docutils
 py39-enum34
@@ -627,6 +628,7 @@ py39-flit-core
 py39-installer
 py39-idna
 py39-imagesize
+py39-importlib-metadata
 py39-openssl
 py39-packaging
 py39-pycparser
@@ -644,6 +646,7 @@ py39-sphinx*
 py39-tomli
 py39-typing
 py39-urllib3
+py39-zipp
 py39-wheel
 rhash
 scons

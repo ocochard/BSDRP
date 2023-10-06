@@ -1,10 +1,9 @@
-# Release 1.992 (05/10/2023)
+# Release 1.992 (06/10/2023)
 
 ## New features
 * Based on FreeBSD 15-head 166a655fcf1 and ports tree 1112795aca0f
-* Added ZFS support: Some users locally store logs and ZFS could be useful
+* Added ZFS support
 * OpenVPN Data Channel offload (kernel module), improving speed
-* Temporary disable aquantia-atlantic (build broken)
 * Added: Open VMware tools for FreeBSD VMware guests
 
 ## Upgraded packages
@@ -17,7 +16,6 @@
 * strongswan to 5.9.11
 
 ## Packages list
-
 * arping 2.21_1: ARP level "ping" utility
 * bash 5.2.15: GNU Project's Bourne Again SHell
 * bgpq4 1.11: Lightweight prefix-list generator for various routers v4
