@@ -693,7 +693,9 @@ if ! $FAST; then
 	echo "Compressing ${NAME} upgrade image..."
 	${XZ} "${NANO_OBJ}"/${FILENAME}
 	echo "Generating checksum for ${NAME} upgrade image..."
-	sha256 "${NANO_OBJ}"/${FILENAME}.xz > "${NANO_OBJ}"/${FILENAME}.sha256
+	cd "${NANO_OBJ}"
+	sha256 ${FILENAME}.xz > ${FILENAME}.sha256
+	cd "${curdir}"
 	echo "${NAME} upgrade image file here:"
 	echo "${NANO_OBJ}/${FILENAME}.xz"
 else
