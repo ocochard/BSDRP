@@ -55,6 +55,17 @@ load_module () {
     fi
 }
 
+# Generating sha256
+sha () {
+	local filename=$(basename $1)
+	local dirname=$(dirname $1)
+	echo "Generating checksum for ${filename}..."
+	(
+		cd $dirname
+		sha256 ${filename} > ${filename}.sha256
+	)
+}
+
 # Update or install sources if not already installed
 update_src () {
 	echo "Updating/Installing FreeBSD sources"
@@ -692,10 +703,7 @@ if ! $FAST; then
 	fi
 	echo "Compressing ${NAME} upgrade image..."
 	${XZ} "${NANO_OBJ}"/${FILENAME}
-	echo "Generating checksum for ${NAME} upgrade image..."
-	cd "${NANO_OBJ}"
-	sha256 ${FILENAME}.xz > ${FILENAME}.sha256
-	cd "${curdir}"
+	sha "${NANO_OBJ}"/${FILENAME}.xz
 	echo "${NAME} upgrade image file here:"
 	echo "${NANO_OBJ}/${FILENAME}.xz"
 else
@@ -732,7 +740,7 @@ EOF
 		rm "${NANO_OBJ}"/${FILENAME}.img
 		rm "${NANO_OBJ}"/${NAME}-${NANO_KERNEL}.kernel.gz
 		echo "Generating checksum for ${NAME} Xen archive..."
-        sha256 "${NANO_OBJ}"/${FILENAME}.tar.xz > "${NANO_OBJ}"/${FILENAME}.sha256
+		sha "${NANO_OBJ}"/${FILENAME}.tar.xz
 		echo "${NANO_OBJ}/${FILENAME}.tar.xz include:"
 		echo "- XEN example configuration file: ${FILENAME}.conf"
 		echo "- The disk image: ${FILENAME}.img"
@@ -742,8 +750,7 @@ EOF
 	else
 		echo "Compressing ${NAME} full image..."
 		${XZ} "${NANO_OBJ}"/${FILENAME}
-		echo "Generating checksum for ${NAME} full image..."
-		sha256 "${NANO_OBJ}"/${FILENAME}.xz > ${NANO_OBJ}/${FILENAME}.sha256
+		sha "${NANO_OBJ}"/${FILENAME}.xz
 		echo "Zipped ${NAME} full image file here:"
 		echo "${NANO_OBJ}/${FILENAME}.xz"
 		mv "${NANO_OBJ}"/_.mtree ${NANO_OBJ}/${NAME}-${VERSION}-${NANO_KERNEL}${INPUT_CONSOLE}.mtree
