@@ -124,7 +124,7 @@ debug
 		echo ""
 		FILE_LIST=""
  		for arch in ${ARCH_LIST}; do
-			FILE_LIST="${FILE_LIST} $(ls ${OBJ_BASE_DIR}/${PROJECT}.${arch}/ | cut -d '/' -f 5 | grep '^BSDRP-' | grep ${type} | grep ".xz")"
+			FILE_LIST="${FILE_LIST} $(ls ${OBJ_BASE_DIR}/${PROJECT}.${arch}/ | cut -d '/' -f 5 | grep '^BSDRP-' | grep ${type} | grep '\.xz$')"
     	done
 
 		for file in ${FILE_LIST}; do
@@ -145,7 +145,6 @@ debug
 				echo -n "| ${ARCH}"
 			else
 				if ! ( $TITLE_SET ) && [ "${type}" != "${OLD_TYPE}" ]; then
-					#echo "^ Type ^ Arch ^ Console ^ File ^ Checksum ^"
 					echo "^ Arch ^ Console ^ File ^ Checksum ^"
 					TITLE_SET=true
 					OLD_TYPE=${type}
@@ -153,7 +152,6 @@ debug
 					TITLE_SET=false
 				fi
 				ARCH=$(basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1)
-				#echo -n "| $(echo ${file} | cut -d '-' -f 3)"
 				echo -n "| ${ARCH}"
 				echo -n " | $(echo ${file} | cut -d '-' -f 5 | cut -d '.' -f 1)"
 			fi
@@ -163,8 +161,8 @@ debug
 				echo -n " |"
 				;;
 			*)
-				echo -n " | [[$URL/${ARCH}/$(echo ${file} | sed -e 's/xz/sha256/g') |"
-				echo -n "$(echo ${file} | sed -e 's/xz/sha256/g')]] |"
+				echo -n " | [[$URL/${ARCH}/${file}.sha256 |"
+				echo -n "${file}.sha256]] |"
 				;;
 			esac
 			echo ""
