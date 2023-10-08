@@ -34,7 +34,7 @@ echo ******** EXPERIMENTAL ********
 gen_pkg_list () {
 	# Extract list of packages from BSDRP.nano
 	# XXX need to convert FLAVOR to @
-	grep '^add_port "' BSDRP/BSDRP.nano | cut -d '"' -f 2 | sort > poudriere.d/BSDRP-pkglist
+	grep '^add_port "' BSDRP/BSDRP.nano | cut -d '"' -f 2 | sort > poudriere.etc/poudriere.d/BSDRP-pkglist
 }
 
 gen_pkg_options () {
@@ -55,7 +55,7 @@ gen_pkg_options () {
 echo "[DEBUG] Skip make -U"
 #./make.sh -U
 
-# XXX we have a problem if user have custom generic poudirere like
+# XXX we have a problem if user have custom generic poudirere
 # Need to use custom etc dir for poudriere, but need to reuse already local configuration
 cp /usr/local/etc/poudriere.conf poudriere.etc/
 # Create, or update the builder jail

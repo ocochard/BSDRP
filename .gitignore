@@ -1,5 +1,6 @@
 # ignore downloaded FreeBSD source and port tree
 workdir/
+poudriere.etc/poudriere.conf
 poudriere.etc/poudriere.d/jails/
 poudriere.etc/poudriere.d/ports/
 BSDRP/FreeBSD

@@ -1,3 +1,13 @@
+# Release xxx
+
+## Bug fixes
+* Reduced periodic log reports noise
+* switch back to openvpn and not the openvpn-dev branch
+
+## To do
+* Log file rotation and/or emails:
+  * /var/spool/clientmqueue (periodic email)
+
 # Release 1.992 (06/10/2023)
 
 ## New features

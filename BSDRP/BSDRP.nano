@@ -464,7 +464,7 @@ add_port "net/mlvpn"
 # openvpn
  add_port "security/easy-rsa"
  add_port "security/pkcs11-helper"
-add_port "security/openvpn-devel" "WITH+=\"DCO\""
+add_port "security/openvpn" "WITH+=\"DCO\""
   add_port "security/libgpg-error"
  add_port "security/libgcrypt"
 add_port "security/openvpn-auth-radius"
