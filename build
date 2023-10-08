@@ -29,7 +29,7 @@
 #
 
 set -eu
-echo ******** EXPERIMENTAL ********
+echo "******** EXPERIMENTAL ********"
 
 gen_pkg_list () {
 	# Extract list of packages from BSDRP.nano
