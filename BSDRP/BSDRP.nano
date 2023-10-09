@@ -747,6 +747,7 @@ EOF
 	# usr/include : 15MB
 	FOLDERS_TO_REMOVE='
 usr/libexec/bsdinstall
+usr/local/BSDRP
 usr/local/include
 usr/local/info
 usr/include

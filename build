@@ -30,6 +30,8 @@
 
 set -eu
 echo "******** EXPERIMENTAL ********"
+echo "WARNING: Need patched poudriere"
+echo "https://github.com/freebsd/poudriere/pull/1038"
 
 gen_pkg_list () {
 	# Extract list of packages from BSDRP.nano
@@ -45,6 +47,13 @@ gen_pkg_options () {
 	grep 'add_port' | sort > ports_custom_options
 }
 
+gen_kernel_modules () {
+	# Extract all kernel module for arch
+	. "${SCRIPT_DIR}"/${PROJECT}/make.conf
+	echo "MODULES_OVERRIDE to put in poudriere.etc/poudriere.d/BSDRPj-src.conf:"
+	echo ${NANO_MODULES_amd64}
+}
+
 # Update pkglist file
 # Commented because need manual review until automatic FLAVOR is managed
 #gen_pkg_list
@@ -58,15 +67,21 @@ echo "[DEBUG] Skip make -U"
 # XXX we have a problem if user have custom generic poudirere
 # Need to use custom etc dir for poudriere, but need to reuse already local configuration
 cp /usr/local/etc/poudriere.conf poudriere.etc/
+
 # Create, or update the builder jail
+
 if poudriere -e poudriere.etc jail -ln | grep -q BSDRPj; then
-	echo "Updating poudriere jail (build_jail.log)"
-	poudriere -e poudriere.etc jail -u -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > build_jail.log
+	path_of_the_jail=$(poudriere -e poudriere.etc/ jail -j BSDRPj -l | tail -1 | cut -d ' ' -f 10)
+	if [ -n "$(find /usr/local/BSDRP/BSDRP/FreeBSD/src -type f -newer ${path_of_the_jail}/boot/kernel/kernel)" ]; then
+		echo "Find sources newer than kernel, updating poudriere jail (build_jail.log)"
+		poudriere -e poudriere.etc jail -u -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > build_jail.log
+	fi
 else
 	echo "Creating poudriere jail (build_jail.log)"
 	poudriere -e poudriere.etc jail -c -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > build_jail.log
 fi
 # Create or update port tree
+# XXX Regression: latest modifications time of dependencies are ignored
 if poudriere -e poudriere.etc ports -ln | grep -q BSDRPp; then
 	echo "Updating poudriere port tree (build_ports.log)"
 	poudriere -e poudriere.etc ports -u -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports > build_ports.log
@@ -75,11 +90,14 @@ else
 	poudriere -e poudriere.etc ports -c -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports > build_ports.log
 fi
 
-# Build the ports
+# Build the packages
 echo "Building packages (build_ports.log)"
 poudriere -e poudriere.etc bulk -j BSDRPj -p BSDRPp -f poudriere.etc/poudriere.d/BSDRP-pkglist >> build_ports.log
 # Build the firmware image
 # size in bytes
+
+# Notice that we are using a custom pkg.conf files preventing to install useless files
+
 echo "Generating disk image (build_image.log)"
 poudriere -e poudriere.etc image -t firmware -s 2g \
 	-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \

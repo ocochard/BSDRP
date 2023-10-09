@@ -15,4 +15,3 @@ usr/share/openssl
 usr/include
 usr/share/misc/magic.mgc
 usr/share/misc/termcap.db
-usr/local/include
