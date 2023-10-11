@@ -728,10 +728,6 @@ begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"
 #			regexSocket = "/var/run/bsnmp-regex.sock"
 EOF
 
-	# Set Quagga permission
-	grep -q quagga ${NANO_WORLDDIR}/etc/passwd && \
-		CR 'chown -R quagga:quagga /usr/local/etc/quagga'
-
 	# Set FRR permission
 	grep -q frr ${NANO_WORLDDIR}/etc/passwd && \
 		CR 'chown -R frr:frr /usr/local/etc/frr'
@@ -786,6 +782,8 @@ boot/loader.efi
 usr/sbin/ctladm
 usr/bin/ctlstat
 usr/local/etc/rc.d/freevrrpd.sh.sample
+usr/local/sbin/pkg-static.pkgsave
+usr/local/sbin/pkg-static
 usr/share/misc/magic.mgc
 usr/share/misc/termcap.db
 var/db/services.db
@@ -817,6 +815,21 @@ usr/bin/lex
 usr/bin/lex++
 usr/bin/lint
 usr/bin/llvm-tblgen
+usr/bin/llvm-symbolizer
+usr/bin/llvm-profdata
+usr/bin/llvm-ar
+usr/bin/llvm-readelf
+usr/bin/llvm-cxxfilt
+usr/bin/llvm-objdump
+usr/bin/llvm-addr2line
+usr/bin/llvm-nm
+usr/bin/llvm-readobj
+usr/bin/llvm-strip
+usr/bin/llvm-ranlib
+usr/bin/llvm-strings
+usr/bin/llvm-size
+usr/bin/llvm-cov
+usr/bin/llvm-objcopy
 usr/bin/mkstr
 usr/bin/nm
 usr/bin/objcopy
