@@ -425,6 +425,7 @@ add_port "sysutils/monit"
 add_port "net-mgmt/nrpe"
 # Already needed to build libssh
 # add_port "converters/libiconv"
+ add_port "sysutils/xxd"
 add_port "editors/vim" "FLAVOR=console"
 
 # tmux: screen equivalent, but better because BSD
