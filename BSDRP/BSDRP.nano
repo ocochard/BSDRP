@@ -320,9 +320,6 @@ add_port "ports-mgmt/pkg"
 # Perl
 add_port "lang/perl5.34" "WITHOUT+=\"DTRACE\""
 
-# Allow fetching from SSL site
-add_port "security/ca_root_nss"
-
 # Then we need to install net-snmp without perl modules
 # net-snmp support is not very good for FreeBSD, disable it
 #add_port "net-mgmt/net-snmp" "-DWITH_MFD_REWRITES -DWITHOUT_TKMIB -DWITH_DUMMY -DWITHOUT_PERL_EMBEDDED -DWITHOUT_PERL"

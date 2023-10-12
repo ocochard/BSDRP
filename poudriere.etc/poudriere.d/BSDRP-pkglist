@@ -43,7 +43,6 @@ net/tayga
 net/ucarp
 net/wireguard-tools
 ports-mgmt/pkg
-security/ca_root_nss
 security/openvpn-auth-radius
 security/openvpn
 security/strongswan
