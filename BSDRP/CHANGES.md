@@ -4,10 +4,14 @@
 * Reduced periodic log reports noise
 * switch back to openvpn and not the openvpn-dev branch
 
+## New features
+* replaced vim@tiny by vim@console (brings vimdiff and default plugins)
+
 ## To do
 * Log file rotation and/or emails:
   * /var/spool/clientmqueue (periodic email)
 
+-------------------------------------------------------------------------------
 # Release 1.992 (06/10/2023)
 
 ## New features
@@ -131,7 +135,7 @@
 * wireguard-tools 1.0.20210914_1: Fast, modern and secure VPN Tunnel
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.991 (07/05/2022)
 
 ## New features
@@ -242,7 +246,7 @@
 * wireguard-tools 1.0.20210914_1: Fast, modern and secure VPN Tunnel
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.99 (25/05/2021)
 
 ## New features
@@ -352,7 +356,7 @@
 * wireguard-tools 1.0.20210424: Fast, modern and secure VPN Tunnel
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.98 (18/01/2021)
 
 ## New features
@@ -478,7 +482,7 @@
 * wireguard-go 0.0.20201118: WireGuard implementation in Go
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.97 (04/08/2020)
 
 ## New feature
@@ -597,7 +601,7 @@
 * wireguard-go 0.0.20200320: WireGuard implementation in Go
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.96 (7/11/2019)
 
 ## Bug fix
@@ -683,7 +687,7 @@
 * utf8proc 2.4.0: UTF-8 processing library
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.95 (27/10/2019)
 
 ## Bug fix
@@ -766,7 +770,7 @@
 * utf8proc 2.4.0: UTF-8 processing library
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.94 (14/10/2019)
 
 ## Special upgrade notes for installation older than BSDRP 1.93
@@ -873,7 +877,7 @@ system resize-system-slice 1911680
 * utf8proc 2.4.0: UTF-8 processing library
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.93 (2019/05/30)
 
 ## New features
@@ -964,7 +968,7 @@ system resize-system-slice 1911680
 * utf8proc 2.2.0: UTF-8 processing library
 * x86info 1.31.s03: x86 CPU identification and feature display utility
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.92 (2019/03/20)
 
 ## New features
@@ -1058,7 +1062,8 @@ system resize-system-slice 1911680
 * tmux 2.8: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 * x86info 1.31.s03: x86 CPU identification and feature display utility
------------------------------------------------------
+
+-------------------------------------------------------------------------------
 # Release 1.91 (19/08/2018)
 
 ## New features
@@ -1145,7 +1150,7 @@ system resize-system-slice 1911680
 * tmux 2.7: Terminal Multiplexer
 * ucarp 1.5.2.20171201: Userlevel Common Address Redundancy Protocol
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.90 (01/06/2018)
 
 ## New features
@@ -1265,7 +1270,7 @@ system resize-system-slice 1911680
 * tmux 2.7: Terminal Multiplexer
 * ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.80 (2017-06-30)
 
 ## New features
@@ -1353,8 +1358,8 @@ system resize-system-slice 1911680
 * tayga 0.9.2: Userland stateless NAT64 daemon
 * tmux 2.5: Terminal Multiplexer
 * ucarp 1.5.2_2: Userlevel Common Address Redundancy Protocol
------------------------------------------------------
 
+-------------------------------------------------------------------------------
 # Release 1.70 (2017-01-23)
 
 ## Special upgrade notes (installation older than BSDRP 1.60)
@@ -1438,8 +1443,7 @@ system resize-system-slice 964000
 * tmux-2.3
 * ucarp-1.5.2_2
 
------------------------------------------------------
-
+-------------------------------------------------------------------------------
 # Release 1.60 (08/09/2016)
 
 ## New features
@@ -1525,7 +1529,7 @@ system resize-system-slice 964000
 * tmux-2.2_1
 * ucarp-1.5.2_2
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 
 # Release 1.59 (21/04/2016)
 
@@ -1600,7 +1604,7 @@ system resize-system-slice 964000
 * tmux-2.1_1
 * ucarp-1.5.2_2
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 
 # Release 1.58 (10/12/2015)
 
@@ -1691,7 +1695,7 @@ system resize-system-slice 964000
 * tmux-2.1
 * ucarp-1.5.2_2
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.57 (16/08/2015)
 
 ## New features
@@ -1750,7 +1754,7 @@ system resize-system-slice 964000
 * tmux-2.0
 * ucarp-1.5.2_2
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 # Release 1.56 (2015/05/15)
 
 ## New features
@@ -1816,7 +1820,7 @@ system resize-system-slice 964000
 * tmux-2.0
 * ucarp-1.5.2_2
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 
 # Release 1.55 (2015/03/21)
 
@@ -1876,7 +1880,7 @@ system resize-system-slice 964000
 * tmux-1.9a_1
 * ucarp-1.5.2_2
 
------------------------------------------------------
+-------------------------------------------------------------------------------
 
 # Release 1.54 (2015/01/02)
 
