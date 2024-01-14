@@ -318,7 +318,7 @@ add_port "ports-mgmt/pkg"
 ## Add your custom port list here (not before the ports/mgmt/pkg!) ##
 
 # Perl
-add_port "lang/perl5.34" "WITHOUT+=\"DTRACE\""
+add_port "lang/perl5.36" "WITHOUT+=\"DTRACE\""
 
 # Then we need to install net-snmp without perl modules
 # net-snmp support is not very good for FreeBSD, disable it
@@ -354,6 +354,8 @@ add_port "net-mgmt/rtrlib"
  add_port "net/libyang2"
  add_port "dns/c-ares"
  add_port "devel/libunwind"
+   add_port "devel/abseil"
+   add_port "devel/jsoncpp"
   add_port "devel/protobuf"
  add_port "devel/protobuf-c"
 add_port "net/frr9" "WITH=\"MULTIPATH\""
@@ -503,7 +505,7 @@ add_port "emulators/open-vm-tools" "FLAVOR=nox11"
 # Permit BIOS upgrade
   add_port "misc/pciids"
  add_port "devel/libpci"
-add_port "sysutils/flashrom" "WITHOUT+=\"DMIDECODE FTDI\""
+#add_port "sysutils/flashrom" "WITHOUT+=\"DMIDECODE FTDI\""
 add_port "sysutils/x86info"
 
 # amd64 only ports

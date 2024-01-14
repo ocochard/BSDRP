@@ -105,3 +105,6 @@ poudriere -e poudriere.etc image -t firmware -s 2g \
 	-f poudriere.etc/poudriere.d/BSDRP-pkglist \
 	-X poudriere.etc/poudriere.d/excluded.files \
 	-A poudriere.etc/poudriere.d/post-script.sh > build_image.log
+
+# Convert image to VHD
+# qemu-img convert -f raw -O vpc /usr/local/poudriere/data/images/BSDRP.img BSDRP.vhd
