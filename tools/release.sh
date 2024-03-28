@@ -65,7 +65,7 @@ generate(){
 		# This build can let unclean building dependencies
 		if ! ($FAST_MODE); then
 			( cd ${SRC_DIR}
-        	${DRY} ./make.sh -C -p ${PROJECT} -u -f -y -a ${arch}
+        	${DRY} ./make.sh -C -p ${PROJECT} -u -f -y
         	)
 		fi
 		if ! ($FAST_MODE); then
@@ -77,7 +77,7 @@ generate(){
 			[ "${arch}" = "sparc64" -a "${console}" = "serial" ] && continue
 			[ ! -f ${PROJECT}/kernels/${arch} ] && continue
         	( cd ${SRC_DIR}
-        	${DRY} ./make.sh -p ${PROJECT} -b -a ${arch} -c ${console}
+        	${DRY} ./make.sh -p ${PROJECT} -b -c ${console}
         	)
 			if [ "${arch}" = "i386_xenpv" -o "${arch}" = "sparc64" ]; then
    				[ -f ${OBJ_BASE_DIR}/${PROJECT}.${arch}/BSDRP-${VERSION}-${arch}.mtree.xz ] || die "problem during final build regarding of ${arch}-${console}"

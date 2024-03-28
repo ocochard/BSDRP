@@ -1,0 +1,52 @@
+diff --git a/net/frr9/Makefile b/net/frr9/Makefile
+index 6bc2e7943ac9..fee0dd410d35 100644
+--- a/net/frr9/Makefile
++++ b/net/frr9/Makefile
+@@ -1,7 +1,7 @@
+ PORTNAME=	frr
+ PORTVERSION=	9.1
+ DISTVERSIONPREFIX=	frr-
+-PORTREVISION=	2
++PORTREVISION=	3
+ CATEGORIES=	net
+ .if defined(PYTHONTOOLS)
+ PKGNAMESUFFIX=	9-pythontools
+diff --git a/net/frr9/files/patch-Makefile.am b/net/frr9/files/patch-Makefile.am
+index 626f17a2d784..0d83cb505723 100644
+--- a/net/frr9/files/patch-Makefile.am
++++ b/net/frr9/files/patch-Makefile.am
+@@ -1,11 +1,11 @@
+---- Makefile.am.orig	2021-11-08 12:44:24.000000000 +0900
+-+++ Makefile.am	2021-12-23 09:23:13.400659000 +0900
+-@@ -168,7 +168,7 @@
++--- Makefile.am.orig	2023-11-27 13:45:33 UTC
+++++ Makefile.am
++@@ -182,7 +182,7 @@ include grpc/subdir.am
+  include qpb/subdir.am
+  include fpm/subdir.am
+  include grpc/subdir.am
+ -include tools/subdir.am
+ +# include tools/subdir.am
+  
+- include bgpd/subdir.am
+- include bgpd/rfp-example/librfp/subdir.am
++ include mgmtd/subdir.am
++ 
+diff --git a/net/frr9/files/patch-lib_sockopt.c b/net/frr9/files/patch-lib_sockopt.c
+new file mode 100644
+index 000000000000..01e17527ed9d
+--- /dev/null
++++ b/net/frr9/files/patch-lib_sockopt.c
+@@ -0,0 +1,12 @@
++--- lib/sockopt.c.orig	2023-11-27 13:45:33 UTC
+++++ lib/sockopt.c
++@@ -673,6 +673,9 @@ int sockopt_tcp_mss_get(int sock)
++ 	int tcp_maxseg = 0;
++ 	socklen_t tcp_maxseg_len = sizeof(tcp_maxseg);
++ 
+++	if (sock < 0)
+++		return 0;
+++
++ 	ret = getsockopt(sock, IPPROTO_TCP, TCP_MAXSEG, &tcp_maxseg,
++ 			 &tcp_maxseg_len);
++ 	if (ret != 0) {

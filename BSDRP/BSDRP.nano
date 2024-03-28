@@ -342,9 +342,11 @@ add_port "devel/py-setuptools"
 # libssh build needs cmake, perl and libiconv
  add_port "converters/libiconv"
  add_port "archivers/lzo2"
+  add_port "devel/py-packaging"
  add_port "archivers/liblz4"
  add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 LIBSSH2 POP3 PSL RTSP SMTP TELNET\""
  add_port "textproc/expat2"
+ add_port "devel/jsoncpp"
  add_port "security/libssh"
 add_port "net-mgmt/rtrlib"
 
@@ -355,7 +357,8 @@ add_port "net-mgmt/rtrlib"
  add_port "dns/c-ares"
  add_port "devel/libunwind"
    add_port "devel/abseil"
-   add_port "devel/jsoncpp"
+	# Already needed to build libssh
+   # add_port "devel/jsoncpp"
   add_port "devel/protobuf"
  add_port "devel/protobuf-c"
 add_port "net/frr9" "WITH=\"MULTIPATH\""
@@ -365,7 +368,7 @@ add_port "net/frr9-pythontools"
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Bird: routing daemon
-add_port "net/bird2" "FLAVOR=netlink"
+add_port "net/bird2"
 
 # FreeVRRPd (netgraph dependent)
 add_port "net/freevrrpd"
@@ -496,6 +499,7 @@ add_port "net/mrtparse"
  add_port "sysutils/fusefs-libs"
   add_port "textproc/libxml2"
   add_port "devel/pcre"
+  #add_port "devel/py-packaging"
  add_port "devel/glib20"
   add_port "net/libpfctl"
  add_port "net/libdnet"
@@ -592,7 +596,6 @@ go
 go14
 help2man
 iso8879
-jsoncpp
 libarchive
 libnghttp2
 libsigsegv
@@ -611,7 +614,9 @@ p5-Unicode-EastAsianWidth
 pkgconf
 python27
 py39-Babel
+py39-calver
 py39-cython
+py39-editables
 py39-Jinja2
 py39-MarkupSafe
 py39-alabaster
@@ -630,7 +635,8 @@ py39-idna
 py39-imagesize
 py39-importlib-metadata
 py39-openssl
-py39-packaging
+py39-pathspec
+py39-pluggy
 py39-pycparser
 py39-pyproject_hooks
 py39-pygments
@@ -644,7 +650,9 @@ py39-six
 py39-snowballstemmer
 py39-sphinx*
 py39-tomli
+py39-trove-classifiers
 py39-typing
+py39-typing-extensions
 py39-urllib3
 py39-zipp
 py39-wheel

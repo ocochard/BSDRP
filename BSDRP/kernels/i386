@@ -31,7 +31,7 @@ options 	VIMAGE			# Subsystem virtualization, e.g. VNET
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
 options 	IPSEC_SUPPORT		# Allow kldload of ipsec and tcpmd5
-options		ROUTE_MPATH		# Multipath routing support
+options 	ROUTE_MPATH		# Multipath routing support
 options 	TCP_HHOOK		# hhook(9) framework for TCP
 options 	TCP_OFFLOAD		# TCP offload
 options 	SCTP_SUPPORT		# Allow kldload of SCTP
@@ -57,11 +57,12 @@ options 	GEOM_LABEL		# Provides labelization
 #options 	COMPAT_FREEBSD5		# Compatible with FreeBSD5
 #options 	COMPAT_FREEBSD6		# Compatible with FreeBSD6
 #options 	COMPAT_FREEBSD7		# Compatible with FreeBSD7
-#options	COMPAT_FREEBSD9		# Compatible with FreeBSD9
-#options	COMPAT_FREEBSD10	# Compatible with FreeBSD10
-options		COMPAT_FREEBSD11	# Compatible with FreeBSD11
-options 	COMPAT_FREEBSD12	# Compatible with FreeBSD12
+#options 	COMPAT_FREEBSD9		# Compatible with FreeBSD9
+#options 	COMPAT_FREEBSD10	# Compatible with FreeBSD10
+#options 	COMPAT_FREEBSD11	# Compatible with FreeBSD11
+#options 	COMPAT_FREEBSD12	# Compatible with FreeBSD12
 options 	COMPAT_FREEBSD13	# Compatible with FreeBSD13
+options 	COMPAT_FREEBSD14	# Compatible with FreeBSD14
 options 	SCSI_DELAY=5000		# Delay (in ms) before probing SCSI
 options 	KTRACE			# ktrace(1) support
 options 	STACK			# stack(9) support
@@ -107,7 +108,7 @@ device		acpi
 device		smbios
 device		pci
 options 	PCI_HP			# PCI-Express native HotPlug
-options		PCI_IOV			# PCI SR-IOV support
+options 	PCI_IOV			# PCI SR-IOV support
 
 # Floppy drives
 #device		fdc
@@ -174,7 +175,7 @@ device		kbdmux			# keyboard multiplexer
 #options 	SC_PIXEL_MODE		# add support for the raster text mode
 
 # vt is the default video console driver
-device 		vt
+device		vt
 device		vt_vga
 device		vt_vbefb
 
@@ -250,7 +251,6 @@ device		xl			# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 #device		ath			# Atheros CardBus/PCI NICs
 #device		ath_hal			# Atheros CardBus/PCI chip support
 #options 	AH_AR5416_INTERRUPT_MITIGATION # AR5416 interrupt mitigation
-#options 	ATH_ENABLE_11N		# Enable 802.11n support for AR5416 and later
 #device		ath_rate_sample		# SampleRate tx rate control for ath
 #device		bwi			# Broadcom BCM430x/BCM431x wireless NICs.
 #device		bwn			# Broadcom BCM43xx wireless NICs.
