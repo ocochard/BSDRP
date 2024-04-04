@@ -1,6 +1,6 @@
 # [![BSDRP logo](logos/BSDRP.logo.128.png)BSD Router Project](https://bsdrp.net)
 
-Copyright (c) 2009-2023, The BSDRP Development Team
+Copyright (c) 2009-2024, The BSDRP Development Team
 
 ## Description
 
