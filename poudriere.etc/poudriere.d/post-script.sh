@@ -72,6 +72,8 @@ ln -s ../etc/dot.shrc ${WORLDDIR}/root/.shrc
 ln -s ../etc/dot.complete ${WORLDDIR}/root/.complete
 rm ${WORLDDIR}/root/.cshrc
 ln -s ../etc/dot.cshrc ${WORLDDIR}/root/.cshrc
+rm ${WORLDDIR}/root/.profile
+ln -s ../etc/dot.profile ${WORLDDIR}/root/.profile
 
 # Add fdesc (mandatory to use bash) and procfs to fstab
 (

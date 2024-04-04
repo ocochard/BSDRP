@@ -11,6 +11,7 @@
   * gpart recover da0 (fix 'corrupt' status on gpt partitions)
   * Check for bootfailed attribute and act regarding
   * Update script need to be updated to add bootonce and not removing bootme
+* freevrrpd: cannot create a bridge device: No such file or directory
 
 ## Poudriere patches
 Mandatory:
