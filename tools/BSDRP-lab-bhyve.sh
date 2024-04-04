@@ -3,7 +3,7 @@
 # Bhyve lab script for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2013-2023, The BSDRP Development Team
+# Copyright (c) 2013-2024, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,7 +43,7 @@ NCPUS=1
 NUMBER_VM="1"
 RAM="512M"
 THREADS=1
-UEFI=false
+UEFI=true
 VALE=false
 VERBOSE=true
 VNIC="virtio-net"
@@ -58,13 +58,13 @@ usage() {
 	echo "Usage: $0 [-adeEhqsvV] -i FreeBSD-disk-image.img [-n vm-number] [-l LAN-number] [-c core] [-A number of additionnal disks] "
 	echo " -a           Disable full-meshing"
 	echo " -A           Number of additionnal disks"
+	echo " -B           Disable UEFI boot mode (switch back to BIOS mode)"
 	echo " -c           Number of core per VM (default: ${CORES})"
 	echo " -d           Delete All VMs, including the template"
 	echo " -D           Disk controller (default: ${DISK_CTRL}, can be ahci-hd|virtio-scsi|nvme)"
 	echo " -g           Enable remote kgdb (host needs to be compiled with 'device bvmdebug')"
 	echo " -h           Display this help"
 	echo " -e           Emulate Intel e82545 (e1000) in place of virtIO NIC"
-	echo " -E           Enable UEFI boot mode (needs bhyve-firmware installed)"
 	echo " -i filename  FreeBSD file image"
 	echo " -l X         Number of LAN common to all VM (default: ${LAN})"
 	echo " -m X         RAM size (default: ${RAM})"
@@ -338,6 +338,9 @@ while getopts "ac:dghD:eEi:l:m:n:qt:svVw:A:S:" FLAG; do
 	A)
 		ADD_DISKS_NUMBER="$OPTARG"
 		;;
+	B)
+		UEFI=false
+		;;
 	c)
 		CORES="$OPTARG"
 		;;
@@ -351,9 +354,6 @@ while getopts "ac:dghD:eEi:l:m:n:qt:svVw:A:S:" FLAG; do
 		;;
 	e)
 		VNIC="e1000"
-		;;
-	E)
-		UEFI=true
 		;;
 	g)
 		DEBUG=true
@@ -422,7 +422,7 @@ if [ -n "${FILE}" ]; then
 fi
 
 if ( $UEFI ); then
-	[ -f /usr/local/share/uefi-firmware/BHYVE_UEFI.fd ] || die "Need to installl bhyve-firmware to enable UEFI"
+	[ -f /usr/local/share/uefi-firmware/BHYVE_UEFI.fd ] || die "Missing bhyve-firmware package for UEFI"
 fi
 
 # Clean-up previous interfaces if existing

@@ -4,7 +4,7 @@ benchmarks/netperf
 devel/py-setuptools
 editors/vim@console
 emulators/open-vm-tools@nox11
-lang/perl5.34
+lang/perl5.36
 lang/python
 net-mgmt/bgpq4
 net-mgmt/bsnmp-regex
@@ -16,7 +16,7 @@ net-mgmt/pmacct
 net-mgmt/rtrlib
 net/aquantia-atlantic-kmod
 net/arping
-net/bird2@netlink
+net/bird2
 net/dhcp6
 net/dhcprelya
 net/exabgp4
@@ -43,8 +43,8 @@ net/tayga
 net/ucarp
 net/wireguard-tools
 ports-mgmt/pkg
-security/openvpn-auth-radius
 security/openvpn
+security/openvpn-auth-radius
 security/strongswan
 security/sudo
 security/tinc

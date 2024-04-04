@@ -39,11 +39,21 @@ done
 # Imported from the nanobsd bsdrp_custom ()
 # Mainly renaming NANO_WORLDDIR by WORLDDIR
 
+# boot.config used by boot(8) and uefi(8)
+# -D : boot with the dual console configuration
+# Disabled: Could generate multiple errors messages on screen
+# echo "-D" > ${WORLDDIR}/boot.config
+
 # Replace BSDRP_VERSION in /boot/lua/brand-bsdrp.lua with the version number in etc/version
 sed -i "" -e /BSDRP_VERSION/s//$(cat ${WORLDDIR}/etc/version)/ ${WORLDDIR}/boot/lua/brand-bsdrp.lua
 
-# Disable reverse DNS in sshd:
-echo "UseDNS no" >> ${WORLDDIR}/etc/ssh/sshd_config
+# SSH:
+# - Allow root (the only user by default)
+# - Disable reverse DNS
+(
+	echo "UseDNS no"
+	echo "PermitRootLogin yes"
+) >> ${WORLDDIR}/etc/ssh/sshd_config
 
 # Disable system beep and enable color with csh
 (

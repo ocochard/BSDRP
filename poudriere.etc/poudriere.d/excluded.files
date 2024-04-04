@@ -1,8 +1,7 @@
 *.a
+usr/obj
 usr/sbin/config
 usr/lib/debug
-usr/sbin/bsdconfig
-usr/share/bsdconfig
 usr/share/bhyve
 usr/share/examples
 usr/share/flua

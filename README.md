@@ -7,13 +7,14 @@ Copyright (c) 2009-2023, The BSDRP Development Team
 BSD Router Project (BSDRP) is an embedded free and open source router distribution based on [FreeBSD](https://www.freebsd.org) with [FRRouting](https://frrouting.org) and [Bird](http://bird.network.cz/).
 
 ## Build-time requirements
- - FreeBSD 13.0 or higher
+ - FreeBSD 14.0 or higher
+ - poudriere
 
 ## Other information
 
-The make.sh script is the build tool for generating BSDRP image:
+The build script is the build tool for generating BSDRP image:
 ```
-./make.sh -h
+./build -h
 ```
 
 [More details on the technical documentations section]( https://bsdrp.net/documentation/technical_docs)

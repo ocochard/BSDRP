@@ -3,7 +3,7 @@
 # New (experimental) Build script for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2009-2023, The BSDRP Development Team
+# Copyright (c) 2009-2024, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,8 +30,6 @@
 
 set -eu
 echo "******** EXPERIMENTAL ********"
-echo "WARNING: Need patched poudriere"
-echo "https://github.com/freebsd/poudriere/pull/1038"
 
 gen_pkg_list () {
 	# Extract list of packages from BSDRP.nano
@@ -62,14 +60,13 @@ gen_kernel_modules () {
 
 # Download and patches sources, install custom kernel (amd64)
 echo "[DEBUG] Skip make -U"
-#./make.sh -U
+./make.sh -U
 
 # XXX we have a problem if user have custom generic poudirere
 # Need to use custom etc dir for poudriere, but need to reuse already local configuration
 cp /usr/local/etc/poudriere.conf poudriere.etc/
 
 # Create, or update the builder jail
-
 if poudriere -e poudriere.etc jail -ln | grep -q BSDRPj; then
 	path_of_the_jail=$(poudriere -e poudriere.etc/ jail -j BSDRPj -l | tail -1 | cut -d ' ' -f 10)
 	if [ -n "$(find /usr/local/BSDRP/BSDRP/FreeBSD/src -type f -newer ${path_of_the_jail}/boot/kernel/kernel)" ]; then
@@ -80,6 +77,7 @@ else
 	echo "Creating poudriere jail (build_jail.log)"
 	poudriere -e poudriere.etc jail -c -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > build_jail.log
 fi
+
 # Create or update port tree
 # XXX Regression: latest modifications time of dependencies are ignored
 if poudriere -e poudriere.etc ports -ln | grep -q BSDRPp; then
@@ -105,6 +103,8 @@ poudriere -e poudriere.etc image -t firmware -s 2g \
 	-f poudriere.etc/poudriere.d/BSDRP-pkglist \
 	-X poudriere.etc/poudriere.d/excluded.files \
 	-A poudriere.etc/poudriere.d/post-script.sh > build_image.log
+
+echo "Done: /usr/local/poudriere/data/images/BSDRP.img"
 
 # Convert image to VHD
 # qemu-img convert -f raw -O vpc /usr/local/poudriere/data/images/BSDRP.img BSDRP.vhd

@@ -1,3 +1,26 @@
+# Release 2.0 (xxx)
+
+## New features
+* nanobsd framework replaced by poudriere-image that brings:
+  * Dual BIOS/UEFI boot support
+  * MBR to GPT migration
+  * Clean packages build (the standard poudriere way)
+
+## To fix
+* bootonce script that should do:
+  * gpart recover da0 (fix 'corrupt' status on gpt partitions)
+  * Check for bootfailed attribute and act regarding
+  * Update script need to be updated to add bootonce and not removing bootme
+
+## Poudriere patches
+Mandatory:
+* https://github.com/freebsd/poudriere/pull/1139
+* https://github.com/freebsd/poudriere/pull/1140
+
+Optional:
+* https://github.com/freebsd/poudriere/pull/1141
+
+-------------------------------------------------------------------------------
 # Release 1.993 (28/03/2024)
 
 ## Bug fixes
