@@ -1,0 +1,39 @@
+#!/bin/sh
+# Fix GPT partition table
+
+# PROVIDE:      gpartfix
+# REQUIRE:      FILESYSTEMS
+# KEYWORD:      nojail
+
+#
+# Add the following lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# gpartfix (bool):   Set to YES by default.
+
+. /etc/rc.subr
+
+name="gpartfix"
+rcvar=${name}_enable
+
+start_cmd="gpartfix_start"
+
+gpartfix_start() {
+	. /etc/nanobsd.conf
+	boot_disk=$(glabel status | grep -E "${boot_label}(s1a|1)" \
+         | awk '{ s=$3; sub(/[s|p][1-4]a?$/, "", s); print s; }')
+    if [ -n "${output}" ]; then
+		echo "BUG in gpartfix: Can't retrieve boot disk name"
+		exit 1
+	fi
+	if /sbin/gpart show ${boot_disk} | grep -q CORRUPT; then
+		echo "GPT corrupted table found on bootable media, fixing it..."
+		/sbin/gpart recover ${boot_disk}
+	fi
+}
+
+load_rc_config $name
+
+: ${gpartfix_enable="NO"}
+
+run_rc_command "$1"

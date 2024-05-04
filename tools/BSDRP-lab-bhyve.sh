@@ -118,22 +118,22 @@ load_module () {
 # Common with vbox/quemu script
 uncompress_image () {
     [ -f ${FILE} ] || die "Can't find file ${FILE}"
-	FILE_TYPE=$(file -b ${FILE} | cut -d ',' -f 1)
+	FILE_TYPE=$(file -b ${FILE} | cut -d ' ' -f 1)
 
 	[ -f ${VM_TEMPLATE} ] && rm ${VM_TEMPLATE}
 
 	case "${FILE_TYPE}" in
-	"XZ compressed data")
+	"XZ")
 		which xz > /dev/null 2>&1 || die "Need xz"
 		xz --decompress --stdout ${FILE} > ${VM_TEMPLATE} || \
 			die "Can't unxz image file"
 		;;
-	"BZIP compressed data")
+	"BZIP")
 		which bunzip2 > /dev/null 2>&1 || die "Need bunzip2"
 		bunzip2 --decompress --stdout ${FILE} > ${VM_TEMPLATE} || \
 			die "Can't bunzip2 image file"
 		;;
-	"DOS/MBR boot sector"|"DOS/MBR boot sector; partition 1 : ID=0xee")
+	"DOS/MBR")
 		cp ${FILE} ${VM_TEMPLATE}
 		return 0
 		;;
@@ -330,7 +330,7 @@ create_interface() {
 [ $# -lt 1 ] && ! [ -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 [ $(id -u) -ne 0 ] && usage "ERROR: not executed as root"
 
-while getopts "ac:dghD:eEi:l:m:n:qt:svVw:A:S:" FLAG; do
+while getopts "aBc:dghD:ei:l:m:n:qt:svVw:A:S:" FLAG; do
     case "${FLAG}" in
 	a)
 		MESHED=false
@@ -437,7 +437,8 @@ if ( ${VERBOSE} ); then
 	echo -n "- Each VM has a total of ${NCPUS} (${CORES} cores and ${THREADS} threads)"
 	echo " and ${RAM} RAM"
 	echo "- Emulated NIC: ${VNIC}"
-	( $UEFI ) && echo "- UEFI enabled"
+	echo -n "- Boot mode: "
+	( $UEFI ) && echo "UEFI" || echo "BIOS"
 	( $VNC ) && echo "- Graphical/VNC enabled"
 	echo -n "- Switch mode: "
 	( ${VALE} ) && echo "vale (netmap)" || echo "bridge + tap"

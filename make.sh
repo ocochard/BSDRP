@@ -541,7 +541,11 @@ case ${NANO_KERNEL} in
 		;;
 esac
 
-echo "# Bootloader type"  >> "${TMPDIR}"/${PROJECT}.nano
+(
+	echo "# Bootloader type"
+	echo "NANO_BOOTLOADER=\"boot/boot0\""
+) >> "${TMPDIR}"/${PROJECT}.nano
+
 {
 	# We don’t need to use bsdlabel partition type with gpt
 	echo "NANO_PARTITION_BOOT=\"\""
