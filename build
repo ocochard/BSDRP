@@ -10,10 +10,10 @@
 # modification, are permitted provided that the following conditions
 # are met:
 # 1. Redistributions of source code must retain the above copyright
-#        notice, this list of conditions and the following disclaimer.
+#    notice, this list of conditions and the following disclaimer.
 # 2. Redistributions in binary form must reproduce the above copyright
-#        notice, this list of conditions and the following disclaimer in the
-#        documentation and/or other materials provided with the distribution.
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
 #
 # THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -28,35 +28,31 @@
 # SUCH DAMAGE.
 #
 
+# vim: set tabstop=4 shiftwidth=4 expandtab:
+
 set -eu
 echo "******** EXPERIMENTAL ********"
 
-gen_pkg_list () {
-	# Extract list of packages from BSDRP.nano
-	# XXX need to convert FLAVOR to @
-	grep '^add_port "' BSDRP/BSDRP.nano | cut -d '"' -f 2 | sort > poudriere.etc/poudriere.d/BSDRP-pkglist
+#######################################
+# Print on STDERR
+# Globals:
+#   None
+# Arguments:
+#   Message to print
+#######################################
+die() {
+  echo -n "EXIT: " >&2
+  echo "$@" >&2
+  exit 1
 }
 
-gen_pkg_options () {
-	# Extract all ports for specific options to set
-	# Need to translate into some category_port_SET/UNSET in jail-specific make.conf
-	#  grep 'add_port.*WITH' BSDRP/BSDRP.nano
-	echo XXX
-	grep 'add_port' | sort > ports_custom_options
-}
-
-gen_kernel_modules () {
-	# Extract all kernel module for arch
-	. "${SCRIPT_DIR}"/${PROJECT}/make.conf
-	echo "MODULES_OVERRIDE to put in poudriere.etc/poudriere.d/BSDRPj-src.conf:"
-	echo ${NANO_MODULES_amd64}
-}
-
-# Update pkglist file
-# Commented because need manual review until automatic FLAVOR is managed
-#gen_pkg_list
-
-#gen_pkg_option
+#######################################
+# Generate list of packages from BSDRP.nano
+# Globals:
+#   None
+# Arguments:
+#   None
+#######################################
 
 # Download and patches sources, install custom kernel (amd64)
 # Using a custom branch is always a mess to sync with upstream
@@ -93,8 +89,8 @@ if poudriere -e poudriere.etc ports -ln | grep -q BSDRPp; then
 else
 	echo "Creating poudriere port tree (build_ports.log).."
 	if ! poudriere -e poudriere.etc ports -c -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports > build_ports.log; then
-		echo "failed"
-		tail build_ports.log
+  echo "failed"
+  tail build_ports.log
 	fi
 fi
 
@@ -117,7 +113,7 @@ poudriere -e poudriere.etc image -t firmware -s 4g \
 	-X poudriere.etc/poudriere.d/excluded.files \
 	-A poudriere.etc/poudriere.d/post-script.sh > build_image.log
 
-echo "Done: /usr/local/poudriere/data/images/BSDRP.img"
+echo "Done: /usr/local/poudriere/data/images/BSDRP.img"
 
 # Convert image to VHD
 # qemu-img convert -f raw -O vpc /usr/local/poudriere/data/images/BSDRP.img BSDRP.vhd
