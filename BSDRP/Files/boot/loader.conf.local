@@ -1,6 +1,6 @@
 ##################################################################
 # For modifying this file, you need to remount / in read-write:  #
-# mount -u rw /                                                  #
+# mount -uw /                                                    #
 #                                                                #
 # Don't load modules not necessary for mounting local disk here: #
 # - add module name to the kld_list variable in rc.conf          #
