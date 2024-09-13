@@ -30,7 +30,7 @@ net/mlvpn
 net/mpd5
 net/mrouted
 net/mrtparse
-net/mtr
+net/mtr@nox11
 net/nc
 net/netmap-fwd
 net/ntraceroute

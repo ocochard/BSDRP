@@ -7,18 +7,17 @@ Index: tools/tools/ifinfo/Makefile
  SRCS=	ifinfo.c rfc1650.c
  MAN=
 +BINDIR=	/usr/local/bin
- 
+
  .include <bsd.prog.mk>
 Index: tools/tools/mctest/Makefile
 ===================================================================
 --- tools/tools/mctest/Makefile	(revision 315217)
 +++ tools/tools/mctest/Makefile	(working copy)
-@@ -2,5 +2,6 @@
- 
- PROG_CXX=   mctest 
+@@ -1,4 +1,5 @@
+ PROG_CXX=   mctest
  LIBADD= pthread
 +BINDIR=	/usr/local/bin
- 
+
  .include <bsd.prog.mk>
 Index: tools/tools/netrate/netsend/Makefile
 ===================================================================
@@ -29,7 +28,7 @@ Index: tools/tools/netrate/netsend/Makefile
  PROG=	netsend
  MAN=
 +BINDIR?=	/usr/local/bin
- 
+
  .include <bsd.prog.mk>
 Index: tools/tools/netmap/Makefile
 ===================================================================
@@ -40,11 +39,11 @@ Index: tools/tools/netmap/Makefile
  # we can just define 'progs' and create custom targets.
  PROGS	=	pkt-gen nmreplay bridge lb
 +BINDIR	=	/usr/local/sbin
- 
+
  CLEANFILES = $(PROGS) *.o
  MAN=
 @@ -34,3 +35,8 @@
- 
+
  lb: lb.o pkt_hash.o
  	$(CC) $(CFLAGS) -o lb lb.o pkt_hash.o $(LDFLAGS)
 +

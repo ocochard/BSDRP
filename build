@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# New (experimental) Build script for BSD Router Project
+# New build script for BSD Router Project
 # https://bsdrp.net
 #
 # Copyright (c) 2009-2024, The BSDRP Development Team
@@ -28,10 +28,17 @@
 # SUCH DAMAGE.
 #
 
-# vim: set tabstop=4 shiftwidth=4 expandtab:
-
 set -eu
-echo "******** EXPERIMENTAL ********"
+
+####################################################
+#                            Poudriere             #
+# Poudriere configurations files are in poudriere.etc/poudriere.d/
+# - First reduced FreeBSD (contains tools needed to build ports) in BSDRPj-src.conf
+# - Reduced FreeBSD (no more building tools) in image-BSDRPj-src.conf
+# - Files that are useless (there is no WITHOUT_ for them) in excluded.files
+# - ports options in BSDRPj-make.conf
+# - ports list in BSDRP-pkglist
+# - post customization script in post-script.sh
 
 #######################################
 # Print on STDERR
@@ -59,10 +66,11 @@ die() {
 # so kept local patch files method
 
 # XXX Need to put "update" function in a shared lib
-echo "[DEBUG] Skip make -U"
+echo "[DEBUG] run make -U"
 ./make.sh -U
 
-# XXX we have a problem if user have custom generic poudirere
+# XXX we have a problem if user have custom generic poudriere
+# XXX using a symlink ?
 # Need to use custom etc dir for poudriere, but need to reuse already local configuration
 cp /usr/local/etc/poudriere.conf poudriere.etc/
 

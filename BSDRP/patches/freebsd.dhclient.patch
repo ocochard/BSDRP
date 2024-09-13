@@ -1,29 +1,29 @@
 diff --git a/sbin/dhclient/bpf.c b/sbin/dhclient/bpf.c
-index a50abca62fd..ac46626b5a9 100644
+index d4bbe56332c8..eeae19f1f899 100644
 --- a/sbin/dhclient/bpf.c
 +++ b/sbin/dhclient/bpf.c
-@@ -185,6 +185,8 @@ if_register_send(struct interface_info *info)
+@@ -179,6 +179,8 @@ if_register_send(struct interface_info *info)
  	if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &on,
  	    sizeof(on)) == -1)
  		error("setsockopt(IP_HDRINCL): %m");
 +	if (setsockopt(sock, SOL_SOCKET, SO_SETFIB, &info->fib, sizeof(info->fib)))
-+		error("setsockopt(SOL_SOCKET, SO_SETFIB): %m");
++	    error("setsockopt(SOL_SOCKET, SO_SETFIB): %m");
  	info->ufdesc = sock;
  }
- 
+
 diff --git a/sbin/dhclient/dhclient.c b/sbin/dhclient/dhclient.c
-index 8c2615e4c3d..83c18b70172 100644
+index 4a674cec5888..d09e05997e7c 100644
 --- a/sbin/dhclient/dhclient.c
 +++ b/sbin/dhclient/dhclient.c
-@@ -375,6 +375,7 @@ main(int argc, char *argv[])
+@@ -376,6 +376,7 @@ main(int argc, char *argv[])
  	int			 ch, fd, quiet = 0, i = 0;
  	int			 pipe_fd[2];
  	int			 immediate_daemon = 0;
-+	uint32_t	 fib = 0;
++	uint32_t		 fib = 0;
  	struct passwd		*pw;
  	pid_t			 otherpid;
  	cap_rights_t		 rights;
-@@ -396,6 +397,9 @@ main(int argc, char *argv[])
+@@ -397,6 +398,9 @@ main(int argc, char *argv[])
  		case 'd':
  			no_daemon = 1;
  			break;
@@ -33,32 +33,32 @@ index 8c2615e4c3d..83c18b70172 100644
  		case 'l':
  			path_dhclient_db = optarg;
  			break;
-@@ -444,6 +448,7 @@ main(int argc, char *argv[])
+@@ -448,6 +452,7 @@ main(int argc, char *argv[])
  	if (quiet)
  		log_perror = 0;
- 
+
 +	ifi->fib = fib;
  	tzset();
- 	time(&cur_time);
- 
-@@ -575,7 +580,7 @@ usage(void)
+ 	clock_gettime(CLOCK_MONOTONIC, &time_now);
+ 	cur_time = time_now.tv_sec;
+@@ -580,7 +585,7 @@ usage(void)
  {
- 
- 	fprintf(stderr, "usage: %s [-bdqu] ", getprogname());
+
+ 	fprintf(stderr, "usage: %s [-bdnqu] ", getprogname());
 -	fprintf(stderr, "[-c conffile] [-l leasefile] interface\n");
-+	fprintf(stderr, "[-c conffile] [-l leasefile] [-f fib] interface\n");
++	fprintf(stderr, "[-c conffile] [-f fib] [-l leasefile] interface\n");
  	exit(1);
  }
- 
+
 diff --git a/sbin/dhclient/dhcpd.h b/sbin/dhclient/dhcpd.h
-index b151daa90a1..48690c80778 100644
+index 6f1f6679875c..167d5e7d022d 100644
 --- a/sbin/dhclient/dhcpd.h
 +++ b/sbin/dhclient/dhcpd.h
-@@ -216,6 +216,7 @@ struct interface_info {
+@@ -214,6 +214,7 @@ struct interface_info {
  	int			 dead;
  	u_int16_t		 index;
  	int			 linkstat;
-+	uint32_t	 fib;
++	uint32_t		 fib;
  };
- 
+
  struct timeout {

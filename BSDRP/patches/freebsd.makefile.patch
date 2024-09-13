@@ -1,0 +1,13 @@
+diff --git a/Makefile.inc1 b/Makefile.inc1
+index 57141a48243..59ab29c5075 100644
+--- a/Makefile.inc1
++++ b/Makefile.inc1
+@@ -634,7 +634,7 @@ XPATH=		${WORLDTMP}/bin:${WORLDTMP}/usr/sbin:${WORLDTMP}/usr/bin
+ # When building we want to find the cross tools before the host tools in ${BPATH}.
+ # We also need to add UNIVERSE_TOOLCHAIN_PATH so that we can find the shared
+ # toolchain files (clang, lld, etc.) during make universe/tinderbox
+-STRICTTMPPATH=	${XPATH}:${BPATH}:${UNIVERSE_TOOLCHAIN_PATH}
++STRICTTMPPATH=	${XPATH}:${BPATH}${UNIVERSE_TOOLCHAIN_PATH:D\:${UNIVERSE_TOOLCHAIN_PATH}}
+ # We should not be using tools from /usr/bin accidentally since this could cause
+ # the build to break on other systems that don't have that tool. For now we
+ # still allow using the old behaviour (inheriting $PATH) if
