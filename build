@@ -69,11 +69,6 @@ die() {
 echo "[DEBUG] run make -U"
 ./make.sh -U
 
-# XXX we have a problem if user have custom generic poudriere
-# XXX using a symlink ?
-# Need to use custom etc dir for poudriere, but need to reuse already local configuration
-cp /usr/local/etc/poudriere.conf poudriere.etc/
-
 # Create, or update the builder jail
 if poudriere -e poudriere.etc jail -ln | grep -q BSDRPj; then
 	path_of_the_jail=$(poudriere -e poudriere.etc/ jail -j BSDRPj -l | tail -1 | cut -d ' ' -f 10)
@@ -121,7 +116,9 @@ poudriere -e poudriere.etc image -t firmware -s 4g \
 	-X poudriere.etc/poudriere.d/excluded.files \
 	-A poudriere.etc/poudriere.d/post-script.sh > build_image.log
 
-echo "Done: /usr/local/poudriere/data/images/BSDRP.img"
+echo "Build done"
+echo "- Full disk image: /usr/local/poudriere/data/images/BSDRP.img"
+echo "- Upgrade image: /usr/local/poudriere/data/images/BSDRP-upgrade.img"
 
 # Convert image to VHD
 # qemu-img convert -f raw -O vpc /usr/local/poudriere/data/images/BSDRP.img BSDRP.vhd

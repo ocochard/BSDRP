@@ -1,0 +1,107 @@
+diff --git a/security/strongswan/files/patch-conf_Makefile.in b/security/strongswan/files/patch-conf_Makefile.in
+index 0d8969f38a0..0f9f1851c69 100644
+--- a/security/strongswan/files/patch-conf_Makefile.in
++++ b/security/strongswan/files/patch-conf_Makefile.in
+@@ -1,6 +1,6 @@
+---- conf/Makefile.in.orig	2019-03-29 18:18:48 UTC
++--- conf/Makefile.in.orig	2024-03-19 10:57:29 UTC
+ +++ conf/Makefile.in
+-@@ -899,15 +899,15 @@ install-data-local: $(plugins_install_src)
++@@ -917,15 +917,15 @@ install-data-local: $(plugins_install_src)
+  	test -e "$(DESTDIR)${strongswanconfdir}" || $(INSTALL) -d "$(DESTDIR)$(strongswanconfdir)" || true
+  	test -e "$(DESTDIR)${strongswanddir}" || $(INSTALL) -d "$(DESTDIR)$(strongswanddir)" || true
+  	test -e "$(DESTDIR)${charonconfdir}" || $(INSTALL) -d "$(DESTDIR)$(charonconfdir)" || true
+diff --git a/security/strongswan/files/patch-src_libcharon_plugins_kernel__pfkey_kernel__pfkey__ipsec.c b/security/strongswan/files/patch-src_libcharon_plugins_kernel__pfkey_kernel__pfkey__ipsec.c
+new file mode 100644
+index 00000000000..e06cde2380a
+--- /dev/null
++++ b/security/strongswan/files/patch-src_libcharon_plugins_kernel__pfkey_kernel__pfkey__ipsec.c
+@@ -0,0 +1,14 @@
++--- src/libcharon/plugins/kernel_pfkey/kernel_pfkey_ipsec.c.orig	2023-06-08 10:35:17 UTC
+++++ src/libcharon/plugins/kernel_pfkey/kernel_pfkey_ipsec.c
++@@ -765,6 +765,11 @@ ENUM(sadb_ext_type_names, SADB_EXT_RESERVED, SADB_EXT_
++ 	"SADB_X_EXT_SA_REPLAY",
++ 	"SADB_X_EXT_NEW_ADDRESS_SRC",
++ 	"SADB_X_EXT_NEW_ADDRESS_DST",
+++#ifdef SADB_X_EXT_IF_HW_OFFL
+++	"SADB_X_EXT_LFT_CUR_SW_OFFL",
+++	"SADB_X_EXT_LFT_CUR_HW_OFFL",
+++	"SADB_X_EXT_IF_HW_OFFL",
+++#endif
++ #endif /* __linux__ */
++ #endif /* __APPLE__ */
++ );
+diff --git a/security/strongswan/files/patch-src_libcharon_plugins_smp_smp.c b/security/strongswan/files/patch-src_libcharon_plugins_smp_smp.c
+index 43b0b51b8db..c2dd9fcd838 100644
+--- a/security/strongswan/files/patch-src_libcharon_plugins_smp_smp.c
++++ b/security/strongswan/files/patch-src_libcharon_plugins_smp_smp.c
+@@ -1,6 +1,6 @@
+---- src/libcharon/plugins/smp/smp.c.orig	2018-10-23 17:03:28 UTC
++--- src/libcharon/plugins/smp/smp.c.orig	2024-03-19 10:25:55 UTC
+ +++ src/libcharon/plugins/smp/smp.c
+-@@ -740,7 +740,7 @@ METHOD(plugin_t, destroy, void,
++@@ -745,7 +745,7 @@ plugin_t *smp_plugin_create()
+   */
+  plugin_t *smp_plugin_create()
+  {
+@@ -9,7 +9,7 @@
+  	private_smp_t *this;
+  	mode_t old;
+  
+-@@ -768,6 +768,11 @@ plugin_t *smp_plugin_create()
++@@ -773,6 +773,11 @@ plugin_t *smp_plugin_create()
+  		free(this);
+  		return NULL;
+  	}
+diff --git a/security/strongswan/files/patch-src_libstrongswan_plugins_openssl_openssl__plugin.c b/security/strongswan/files/patch-src_libstrongswan_plugins_openssl_openssl__plugin.c
+index 9d02e2adf22..07ff587133e 100644
+--- a/security/strongswan/files/patch-src_libstrongswan_plugins_openssl_openssl__plugin.c
++++ b/security/strongswan/files/patch-src_libstrongswan_plugins_openssl_openssl__plugin.c
+@@ -1,6 +1,6 @@
+---- src/libstrongswan/plugins/openssl/openssl_plugin.c.orig	2018-12-14 15:48:24 UTC
++--- src/libstrongswan/plugins/openssl/openssl_plugin.c.orig	2024-02-21 15:54:00 UTC
+ +++ src/libstrongswan/plugins/openssl/openssl_plugin.c
+-@@ -810,7 +810,7 @@ plugin_t *openssl_plugin_create()
++@@ -814,7 +814,7 @@ plugin_t *openssl_plugin_create()
+  		},
+  	);
+  
+diff --git a/security/strongswan/files/patch-src_libstrongswan_utils_utils_byteorder.h b/security/strongswan/files/patch-src_libstrongswan_utils_utils_byteorder.h
+index 5bb0c2cbd46..ed9d35d3b1b 100644
+--- a/security/strongswan/files/patch-src_libstrongswan_utils_utils_byteorder.h
++++ b/security/strongswan/files/patch-src_libstrongswan_utils_utils_byteorder.h
+@@ -1,6 +1,6 @@
+---- src/libstrongswan/utils/utils/byteorder.h.orig	2018-10-03 21:35:17 UTC
++--- src/libstrongswan/utils/utils/byteorder.h.orig	2023-03-27 21:00:49 UTC
+ +++ src/libstrongswan/utils/utils/byteorder.h
+-@@ -22,6 +22,10 @@
++@@ -23,6 +23,10 @@
+  #ifndef BYTEORDER_H_
+  #define BYTEORDER_H_
+  
+diff --git a/security/strongswan/files/patch-src_starter_Makefile.in b/security/strongswan/files/patch-src_starter_Makefile.in
+index 57e674a1b8c..400d3693f83 100644
+--- a/security/strongswan/files/patch-src_starter_Makefile.in
++++ b/security/strongswan/files/patch-src_starter_Makefile.in
+@@ -1,6 +1,6 @@
+---- src/starter/Makefile.in.orig	2018-12-27 09:46:22 UTC
++--- src/starter/Makefile.in.orig	2024-03-19 10:57:37 UTC
+ +++ src/starter/Makefile.in
+-@@ -1018,8 +1018,8 @@ install-exec-local :
++@@ -1057,8 +1057,8 @@ install-exec-local :
+  		test -e "$(DESTDIR)${sysconfdir}/ipsec.d/crls" || $(INSTALL) -d "$(DESTDIR)$(sysconfdir)/ipsec.d/crls" || true
+  		test -e "$(DESTDIR)${sysconfdir}/ipsec.d/reqs" || $(INSTALL) -d "$(DESTDIR)$(sysconfdir)/ipsec.d/reqs" || true
+  		test -e "$(DESTDIR)${sysconfdir}/ipsec.d/private" || $(INSTALL) -d -m 750 "$(DESTDIR)$(sysconfdir)/ipsec.d/private" || true
+diff --git a/security/strongswan/files/patch-src_swanctl_Makefile.in b/security/strongswan/files/patch-src_swanctl_Makefile.in
+index c667b0cc444..2e6eaecbf6d 100644
+--- a/security/strongswan/files/patch-src_swanctl_Makefile.in
++++ b/security/strongswan/files/patch-src_swanctl_Makefile.in
+@@ -1,6 +1,6 @@
+---- src/swanctl/Makefile.in.orig	2019-01-18 17:24:51 UTC
++--- src/swanctl/Makefile.in.orig	2024-03-19 10:57:37 UTC
+ +++ src/swanctl/Makefile.in
+-@@ -1065,7 +1065,7 @@ install-data-local: swanctl.conf
++@@ -1151,7 +1151,7 @@ install-data-local: swanctl.conf
+  	test -e "$(DESTDIR)$(swanctldir)/bliss" || $(INSTALL) -d -m 750 "$(DESTDIR)$(swanctldir)/bliss" || true
+  	test -e "$(DESTDIR)$(swanctldir)/pkcs8" || $(INSTALL) -d -m 750 "$(DESTDIR)$(swanctldir)/pkcs8" || true
+  	test -e "$(DESTDIR)$(swanctldir)/pkcs12" || $(INSTALL) -d -m 750 "$(DESTDIR)$(swanctldir)/pkcs12" || true

@@ -7,6 +7,10 @@
   * MBR to GPT migration
   * Clean packages build (the standard poudriere way)
 * bird: Enable BGP Monitor Protocol
+* New package: net/vpp
+* Removed packages:
+  * freevrrpd (carp is now supporting VRRP mode)
+  * ucarp (no more conflict once carp enabled in VRRP mode)
 
 ## To fix
 * bootonce script that should do:
@@ -2310,7 +2314,7 @@ But you installed it on a 512MB disk (or larger), here is how to resize the part
 
 ## Misc for developers/testers
 * bisection-gen.sh: Permit to generate a list of BSDRP image based on a list of FreeBSD svn-revision number
-* bench-lab.sh: Permit to automatize multiple upgrade image + configuration sets + bench tests 
+* bench-lab.sh: Permit to automatize multiple upgrade image + configuration sets + bench tests
 
 ## Installed packages
 * NetPIPE-3.7.1
@@ -2481,7 +2485,7 @@ But you installed it on a 512MB disk (or larger), here is how to resize the part
 * Redirect periodic output to a log file
 * User customized /boot/loader.conf.local file is preserved after an upgrade
 * Add version number on the boot menu
-* Build script speed improvement: add mdmfs support, kept distfiles in the same folder as FreeBSD sources, didn't compile all kernel modules 
+* Build script speed improvement: add mdmfs support, kept distfiles in the same folder as FreeBSD sources, didn't compile all kernel modules
 * Lab tools: Scripts adapted to virtualbox 4.2 (maximum number of NIC increased to 36) and virtio mode supported
 
 ## Updated packages
@@ -2532,7 +2536,7 @@ Regarding netmap:
 * tmux-1.7_1                     A Terminal Multiplexer
 * ucarp-1.5.2_1                  Userlevel Common Address Redundancy Protocol
 * virtio-kmod-9.1-0.242658       virtio kernel modules port for 8.[23]/9.[01]
- 
+
 ----------------------------
 # Release 1.1 (2012/02/16)
 
@@ -2701,9 +2705,9 @@ You need to use a special upgrade script, that will convert partition name.
 
 ## New features
 * Kernel:
-	* Add ipdivert module 
+	* Add ipdivert module
 	* Re-enable kbd-mux that permit to use USB keyboard
-* Clean the default /etc/rc.conf, put specials BSDRP parameters in /etc/rc.conf.misc 
+* Clean the default /etc/rc.conf, put specials BSDRP parameters in /etc/rc.conf.misc
 * Add tmux (terminal multiplexer)
 * Add patch that permit to compile net/bird and net/bird6 on sparc64
 * Secure quagga VTY by listenning to localhost only (thankt to Nugroho Atmotaruno)
@@ -2712,7 +2716,7 @@ You need to use a special upgrade script, that will convert partition name.
 	* Quagga to 0.99.17
 
 ## Bug fix
-* Fix ipfw module load by adding libalias module 
+* Fix ipfw module load by adding libalias module
 * Fix ucarp comportement by using carp-up/carp-down script that create an alias for the virtual IP on the master host
 * Fix writing ssh keys for root (Thanks to Christian Degen)
 * Fix crontab backup (Thanks to Christian Degen)
@@ -2792,22 +2796,22 @@ Related:
 * Fix upgrade script that can't change the active partition
 
 ## Installed packages
-* bird-1.2.3, Dynamic IP routing daemon (IPv4 version) 
-* bird6-1.2.3, Dynamic IP routing daemon (IPv6 version) 
-* dlmalloc-2.8.4, Small, fast malloc library by Doug Lea 
-* fprobe-1.1_1, Tool that collects network traffic data 
-* freevrrpd-0.9.3, This a VRRP RFC2338 Compliant implementation under FreeBSD 
+* bird-1.2.3, Dynamic IP routing daemon (IPv4 version)
+* bird6-1.2.3, Dynamic IP routing daemon (IPv6 version)
+* dlmalloc-2.8.4, Small, fast malloc library by Doug Lea
+* fprobe-1.1_1, Tool that collects network traffic data
+* freevrrpd-0.9.3, This a VRRP RFC2338 Compliant implementation under FreeBSD
 * iperf-2.0.4, A tool to measure maximum TCP and UDP bandwidth
-* isc-dhcp31-relay-3.1.3_1, The ISC Dynamic Host Configuration Protocol relay 
-* isc-dhcp31-server-3.1.3_1, The ISC Dynamic Host Configuration Protocol server 
-* mcast-tools-20061214, IPv6 multicast routing daemons and tools 
+* isc-dhcp31-relay-3.1.3_1, The ISC Dynamic Host Configuration Protocol relay
+* isc-dhcp31-server-3.1.3_1, The ISC Dynamic Host Configuration Protocol server
+* mcast-tools-20061214, IPv6 multicast routing daemons and tools
 * mrouted-3.9_1, Multicast routing daemon providing DVMRP for IPv4
 * NetPIPE-3.7.1, A self-scaling network benchmark
-* net-snmp-5.5_3, An extendable SNMP implementation 
-* openlldp-0.3.a_1, Link Layer Discovery Protocol daemon 
+* net-snmp-5.5_3, An extendable SNMP implementation
+* openlldp-0.3.a_1, Link Layer Discovery Protocol daemon
 * quagga-0.99.16, Free RIPv1, RIPv2, OSPFv2, BGP4, IS-IS route software
-* ssmtp-2.62.3, Extremely simple MTA to get mail off the system to a mail hub 
-* ucarp-1.5.2, Userlevel Common Address Redundancy Protocol 
+* ssmtp-2.62.3, Extremely simple MTA to get mail off the system to a mail hub
+* ucarp-1.5.2, Userlevel Common Address Redundancy Protocol
 
 --------------------------------------------------
 # Release 0.32 (2010/02/17)
@@ -2834,7 +2838,7 @@ Related:
 * Serial port no more mandatory for vga release (#2857424)
 * Keyboard works under Virtualbox (#2840062)
 * nsswitch error messages in /var/log/cron
-* Bad xorp default configuration file 
+* Bad xorp default configuration file
 
 ## Know bugs
 * Quagga: Can't set IPv6 address on interface (https://bugzilla.quagga.net/show_bug.cgi?id=408)
@@ -2853,7 +2857,7 @@ Related:
 * Kernel : enable Packet filter (mandatory for altq), enable ALTQ_NOPPC because kernel use SMP
 
 ## Bug fixes
-* "system check-vm" tool badly detected allready tuned system 
+* "system check-vm" tool badly detected allready tuned system
 * make.sh need to be started twice for generating the images (Bug 2843819)
 * Adapt nsswitch.conf to BSDRP (WITHOUT_NIS)
 * Problem with bad permission on saved configuration directories, that prevent to start Quagga after a reboot (Bug 2843816)

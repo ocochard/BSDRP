@@ -20,7 +20,6 @@ net/bird2
 net/dhcp6
 net/dhcprelya
 net/exabgp4
-net/freevrrpd
 net/frr9
 net/frr9-pythontools
 net/graphpath
@@ -40,7 +39,7 @@ net/pkt-gen
 net/quagga-bgp-netgen
 net/realtek-re-kmod
 net/tayga
-net/ucarp
+net/vpp
 net/wireguard-tools
 ports-mgmt/pkg
 security/openvpn

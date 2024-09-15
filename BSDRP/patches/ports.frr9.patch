@@ -28,7 +28,7 @@ index 1f12d03af354..f9b3b6069b3b 100644
  SHEBANG_FILES=	yang/embedmodel.py
  
 diff --git net/frr9/files/frr.in net/frr9/files/frr.in
-index a62055d75d3e..442c37805217 100644
+index a62055d75d3e..90e838357c61 100644
 --- net/frr9/files/frr.in
 +++ net/frr9/files/frr.in
 @@ -6,15 +6,38 @@
@@ -187,7 +187,7 @@ index a62055d75d3e..442c37805217 100644
 +	else
 +		echo "Bug in do_cmd(), dmn could not be empty or =all"
 +		ret=1
-+	fi
+ 	fi
 +	return ${ret}
 +}
 +
@@ -196,7 +196,7 @@ index a62055d75d3e..442c37805217 100644
 +	ret=0
 +	if checkyesno frr_vtysh_boot; then
 +		%%PREFIX%%/bin/vtysh -b || ret=1
- 	fi
++	fi
 +	return ${ret}
 +}
 +
@@ -242,7 +242,7 @@ index a62055d75d3e..442c37805217 100644
  case "$1" in
      force*)
  		frr_cmd=${frr_cmd#force}
-@@ -140,29 +172,71 @@ case "$1" in
+@@ -140,29 +172,75 @@ case "$1" in
  esac
  shift
  
@@ -290,27 +290,34 @@ index a62055d75d3e..442c37805217 100644
 -		checkyesno frr_enable && do_cmd "start"
  		;;
      stop)
-+		# watchfrr do not stop all daemons, so need to stop it first
-+		# then continuing with all others daemons
-+		if [ "${frr_daemons}" = "watchfrr" ]; then
-+			loop_do_cmd
-+			frr_daemons=${watchfrr_daemons}
-+		fi
- 		frr_daemons=$(reverse_list ${frr_daemons})
+-		frr_daemons=$(reverse_list ${frr_daemons})
 -		do_cmd "stop"
-+		loop_do_cmd
++		if checkyesno frr_enable; then
++			# watchfrr do not stop all daemons, so need to stop it first
++			# then continuing with all others daemons
++			if [ "${frr_daemons}" = "watchfrr" ]; then
++				loop_do_cmd
++				frr_daemons=${watchfrr_daemons}
++			fi
++			frr_daemons=$(reverse_list ${frr_daemons})
++			loop_do_cmd
++		fi
  		;;
      restart)
-+		# watchfrr calls "service frr restart all" at startup
-+		# to start all services
- 		frr_daemons=$(reverse_list ${frr_daemons})
+-		frr_daemons=$(reverse_list ${frr_daemons})
 -		do_cmd "stop"
-+		frr_cmd=stop
-+		loop_do_cmd
- 		frr_daemons=$(reverse_list ${frr_daemons})
+-		frr_daemons=$(reverse_list ${frr_daemons})
 -		checkyesno frr_enable && do_cmd "start"
-+		frr_cmd=start
-+		loop_do_cmd
++		if checkyesno frr_enable; then
++			# watchfrr calls "service frr restart all" at startup
++			# to start all services
++			frr_daemons=$(reverse_list ${frr_daemons})
++			frr_cmd=stop
++			loop_do_cmd
++			frr_daemons=$(reverse_list ${frr_daemons})
++			frr_cmd=start
++			loop_do_cmd
++		fi
 +		;;
 +    reload)
 +		if ! [ -x %%PREFIX%%/sbin/frr-reload.py ]; then
