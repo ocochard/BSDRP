@@ -30,15 +30,29 @@
 
 set -eu
 
-####################################################
-#                            Poudriere             #
+###############################################################################
 # Poudriere configurations files are in poudriere.etc/poudriere.d/
-# - First reduced FreeBSD (contains tools needed to build ports) in BSDRPj-src.conf
-# - Reduced FreeBSD (no more building tools) in image-BSDRPj-src.conf
-# - Files that are useless (there is no WITHOUT_ for them) in excluded.files
-# - ports options in BSDRPj-make.conf
-# - ports list in BSDRP-pkglist
-# - post customization script in post-script.sh
+# - First build a "builder" jail (BSDRPj), which is a reduced FreeBSD but that
+#   still needs to have compilers tools to build packages.
+#   - List of WITHOUT in BSDRPj-src.conf
+#   - Custom kernel configuration file (amd64 here)
+# - Second, from this builder jail, we generate packages:
+#   - ports list in BSDRP-pkglist
+#   - ports options in BSDRPj-make.conf
+# - Third and last, we generate a nanobsd-like, uefi compliant firmware image
+#   - No need of compiler tools, more WITHOUT_added in image-BSDRPj-src.conf
+#   - But FreeBSD some unwanted files are still here, so adding list of them
+#     in excluded.files
+#   - All avoiding extracting unwanted files from package using a pkg.conf
+#     in BSDRP/Files/usr/local/etc/pkg.conf
+#   - And a post customization script in post-script.sh
+###############################################################################
+
+# Variables
+
+logfile=build.log
+
+# Functions
 
 #######################################
 # Print on STDERR
@@ -53,16 +67,7 @@ die() {
   exit 1
 }
 
-#######################################
-# Generate list of packages from BSDRP.nano
-# Globals:
-#   None
-# Arguments:
-#   None
-#######################################
-
 # Download and patches sources, install custom kernel (amd64)
-# Using a custom branch is always a mess to sync with upstream
 # so kept local patch files method
 
 # XXX Need to put "update" function in a shared lib
@@ -73,39 +78,39 @@ echo "[DEBUG] run make -U"
 if poudriere -e poudriere.etc jail -ln | grep -q BSDRPj; then
 	path_of_the_jail=$(poudriere -e poudriere.etc/ jail -j BSDRPj -l | tail -1 | cut -d ' ' -f 10)
 	if [ -n "$(find /usr/local/BSDRP/BSDRP/FreeBSD/src -type f -newer ${path_of_the_jail}/boot/kernel/kernel)" ]; then
-		echo "Find sources newer than kernel, updating poudriere jail (build_jail.log)..."
-		poudriere -e poudriere.etc jail -u -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > build_jail.log
+		echo "Find sources newer than kernel, updating poudriere jail..."
+		poudriere -e poudriere.etc jail -u -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > $logfile
 	fi
 else
-	echo "Creating poudriere jail (build_jail.log)..."
-	poudriere -e poudriere.etc jail -c -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > build_jail.log
+	echo "Creating poudriere jail..."
+	poudriere -e poudriere.etc jail -c -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 >> $logfile
 fi
 
 # Create or update port tree
 # XXX Regression: latest modifications time of dependencies are ignored
 if poudriere -e poudriere.etc ports -ln | grep -q BSDRPp; then
-	echo "Updating poudriere port tree (build_ports.log)..."
-	if ! poudriere -e poudriere.etc ports -u -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports > build_ports.log; then
+	echo "Updating poudriere port tree..."
+	if ! poudriere -e poudriere.etc ports -u -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports >> $logfile; then
 	echo "failed"
-		tail build_ports.log
+		tail $logfile
 	fi
 else
-	echo "Creating poudriere port tree (build_ports.log).."
-	if ! poudriere -e poudriere.etc ports -c -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports > build_ports.log; then
+	echo "Creating poudriere port tree.."
+	if ! poudriere -e poudriere.etc ports -c -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports >> $logfile; then
   echo "failed"
-  tail build_ports.log
+  tail $logfile
 	fi
 fi
 
 # Build the packages
-echo "Building packages (build_ports.log)..."
-if ! poudriere -e poudriere.etc bulk -j BSDRPj -p BSDRPp -f poudriere.etc/poudriere.d/BSDRP-pkglist >> build_ports.log; then
+echo "Building packages..."
+if ! poudriere -e poudriere.etc bulk -j BSDRPj -p BSDRPp -f poudriere.etc/poudriere.d/BSDRP-pkglist >> $logfile; then
 	echo "failed"
-	tail build_ports.log
+	tail $logfile
 fi
+
 # Build the firmware image
 # size in bytes
-
 # Notice that we are using a custom pkg.conf files preventing to install useless files
 
 echo "Generating disk image (build_image.log)..."
