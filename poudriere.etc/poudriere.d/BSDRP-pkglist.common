@@ -39,7 +39,6 @@ net/pkt-gen
 net/quagga-bgp-netgen
 net/realtek-re-kmod
 net/tayga
-net/vpp
 net/wireguard-tools
 ports-mgmt/pkg
 security/openvpn
@@ -47,13 +46,10 @@ security/openvpn-auth-radius
 security/strongswan
 security/sudo
 security/tinc
-sysutils/cpu-microcode
 sysutils/dtrace-toolkit
 sysutils/flashrom
 sysutils/fswatch-mon
-sysutils/intel-pcm
 sysutils/ipmitool
 sysutils/monit
 sysutils/mstflint
 sysutils/tmux
-sysutils/x86info

@@ -51,6 +51,7 @@ set -eu
 # Variables
 
 logfile=build.log
+sudo=""
 
 # Functions
 
@@ -67,36 +68,59 @@ die() {
   exit 1
 }
 
+###### main ######
+
+if [ $(id -u) -ne 0 ]; then
+	if which -s sudo; then
+		sudo="sudo -E"
+	else
+		die "Need to start as root because sudo not found"
+	fi
+fi
+
+arch=$(uname -m)
+localdir=$(realpath $(dirname $0))
 # Download and patches sources, install custom kernel (amd64)
 # so kept local patch files method
 
 # XXX Need to put "update" function in a shared lib
 echo "[DEBUG] run make -U"
-./make.sh -U
+#./make.sh -U
 
-# Create, or update the builder jail
+# Create or update the builder jail
+# if arm64 sed delete amd kernel module and pkglist
+# XXX Need to avoid patching revisionned file
+if [ "${arch}" = "arm64" ]; then
+	for f in amdsbwd amdsmn amdtemp coretemp cpuctl; do
+		if grep -q $f ${localdir}/poudriere.etc/poudriere.d/BSDRPj-src.conf; then
+			echo "AMD64 detected, removing $f kernel module..."
+		sed -i "" -e "/^[[:space:]]${f}/d" ${localdir}/poudriere.etc/poudriere.d/BSDRPj-src.conf
+		fi
+	done
+fi
 if poudriere -e poudriere.etc jail -ln | grep -q BSDRPj; then
-	path_of_the_jail=$(poudriere -e poudriere.etc/ jail -j BSDRPj -l | tail -1 | cut -d ' ' -f 10)
-	if [ -n "$(find /usr/local/BSDRP/BSDRP/FreeBSD/src -type f -newer ${path_of_the_jail}/boot/kernel/kernel)" ]; then
+	path_of_the_jail=$(poudriere -e ${localdir}/poudriere.etc/ jail -j BSDRPj -l | tail -1 | cut -d ' ' -f 10)
+	if [ -n "$(find ${localdir}/BSDRP/FreeBSD/src -type f -newer ${path_of_the_jail}/boot/kernel/kernel)" ]; then
 		echo "Find sources newer than kernel, updating poudriere jail..."
-		poudriere -e poudriere.etc jail -u -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 > $logfile
+		echo "XXX BUG: Always trigger this update!!!!"
+		${sudo} poudriere -e ${localdir}/poudriere.etc jail -u -j BSDRPj -b -m src=${localdir}/BSDRP/FreeBSD/src -K ${arch} > $logfile
 	fi
 else
 	echo "Creating poudriere jail..."
-	poudriere -e poudriere.etc jail -c -j BSDRPj -b -m src=/usr/local/BSDRP/BSDRP/FreeBSD/src -K amd64 >> $logfile
+	${sudo} poudriere -e ${localdir}/poudriere.etc jail -c -j BSDRPj -b -m src=${localdir}/BSDRP/FreeBSD/src -K ${arch} >> $logfile
 fi
 
 # Create or update port tree
 # XXX Regression: latest modifications time of dependencies are ignored
-if poudriere -e poudriere.etc ports -ln | grep -q BSDRPp; then
+if poudriere -e ${localdir}/poudriere.etc ports -ln | grep -q BSDRPp; then
 	echo "Updating poudriere port tree..."
-	if ! poudriere -e poudriere.etc ports -u -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports >> $logfile; then
+	if ! ${sudo} poudriere -e ${localdir}/poudriere.etc ports -u -p BSDRPp -m null -M ${localdir}/BSDRP/FreeBSD/ports >> $logfile; then
 	echo "failed"
 		tail $logfile
 	fi
 else
 	echo "Creating poudriere port tree.."
-	if ! poudriere -e poudriere.etc ports -c -p BSDRPp -m null -M /usr/local/BSDRP/BSDRP/FreeBSD/ports >> $logfile; then
+	if ! ${sudo} poudriere -e ${localdir}/poudriere.etc ports -c -p BSDRPp -m null -M ${localdir}/BSDRP/FreeBSD/ports >> $logfile; then
   echo "failed"
   tail $logfile
 	fi
@@ -104,7 +128,8 @@ fi
 
 # Build the packages
 echo "Building packages..."
-if ! poudriere -e poudriere.etc bulk -j BSDRPj -p BSDRPp -f poudriere.etc/poudriere.d/BSDRP-pkglist >> $logfile; then
+if ! ${sudo} poudriere -e ${localdir}/poudriere.etc bulk -j BSDRPj -p BSDRPp \
+	-f ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist >> $logfile; then
 	echo "failed"
 	tail $logfile
 fi
@@ -113,13 +138,19 @@ fi
 # size in bytes
 # Notice that we are using a custom pkg.conf files preventing to install useless files
 
+# Some packages are architectures dependends
+cp ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist.common /tmp/BSDRP-pkg.list
+if [ -f ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist.${arch} ]; then
+	cat ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist.${arch} >> /tmp/BSDRP.pkg.list
+fi
+
 echo "Generating disk image (build_image.log)..."
-poudriere -e poudriere.etc image -t firmware -s 4g \
+${sudo} poudriere -e ${localdir}/poudriere.etc image -t firmware -s 4g \
 	-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
-	-c BSDRP/Files/ \
-	-f poudriere.etc/poudriere.d/BSDRP-pkglist \
-	-X poudriere.etc/poudriere.d/excluded.files \
-	-A poudriere.etc/poudriere.d/post-script.sh > build_image.log
+	-c ${localdir}/BSDRP/Files/ \
+	-f /tmp/BSDRP-pkg.list \
+	-X ${localdir}/poudriere.etc/poudriere.d/excluded.files \
+	-A ${localdir}/poudriere.etc/poudriere.d/post-script.sh > build_image.log
 
 echo "Build done"
 echo "- Full disk image: /usr/local/poudriere/data/images/BSDRP.img"

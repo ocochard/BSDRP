@@ -268,7 +268,7 @@ SCRIPT_DIR=$(dirname "$SCRIPT")
 # boolean for answering YES automatically
 ALWAYS_YES=false
 # Host arch (i386, amd64, aarch64, etc.)
-LOCAL_ARCH=$(uname -p)
+LOCAL_ARCH=$(uname -m)
 # Project name, set by default to BSDRP, need to be an existing subdir
 PROJECT="BSDRP"
 # Target architecture for the image to build
