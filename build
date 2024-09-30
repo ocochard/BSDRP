@@ -94,7 +94,7 @@ echo "[DEBUG] run make -U"
 # if arm64 sed delete amd kernel module and pkglist
 # XXX Need to avoid patching revisionned file
 if [ "${arch}" = "arm64" ]; then
-	for f in amdsbwd amdsmn amdtemp coretemp cpuctl; do
+  for f in amdsbwd amdsmn amdtemp blake2 coretemp cpuctl ichwd ioat qat qat_c2xxx qatfw; do
 		if grep -q $f ${localdir}/poudriere.etc/poudriere.d/BSDRPj-src.conf; then
 			echo "AMD64 detected, removing $f kernel module..."
 		sed -i "" -e "/^[[:space:]]${f}/d" ${localdir}/poudriere.etc/poudriere.d/BSDRPj-src.conf
