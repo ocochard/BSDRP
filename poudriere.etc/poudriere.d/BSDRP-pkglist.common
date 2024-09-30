@@ -20,8 +20,8 @@ net/bird2
 net/dhcp6
 net/dhcprelya
 net/exabgp4
-net/frr9
-net/frr9-pythontools
+net/frr10
+net/frr10-pythontools
 net/graphpath
 net/isc-dhcp44-server
 net/ixl_unlock

@@ -50,7 +50,8 @@ set -eu
 
 # Variables
 
-logfile=build.log
+logfile="/tmp/BSDRP.build.log"
+pkglist="/tmp/BSDRP.pkg.list"
 sudo=""
 
 # Functions
@@ -80,6 +81,8 @@ fi
 
 arch=$(uname -m)
 localdir=$(realpath $(dirname $0))
+
+echo "Generating BSDRP disk image (logs in: ${logfile})..."
 # Download and patches sources, install custom kernel (amd64)
 # so kept local patch files method
 
@@ -102,7 +105,7 @@ if poudriere -e poudriere.etc jail -ln | grep -q BSDRPj; then
 	path_of_the_jail=$(poudriere -e ${localdir}/poudriere.etc/ jail -j BSDRPj -l | tail -1 | cut -d ' ' -f 10)
 	if [ -n "$(find ${localdir}/BSDRP/FreeBSD/src -type f -newer ${path_of_the_jail}/boot/kernel/kernel)" ]; then
 		echo "Find sources newer than kernel, updating poudriere jail..."
-		echo "XXX BUG: Always trigger this update!!!!"
+		echo "XXX BUG: Always trigger this update!!!!"
 		${sudo} poudriere -e ${localdir}/poudriere.etc jail -u -j BSDRPj -b -m src=${localdir}/BSDRP/FreeBSD/src -K ${arch} > $logfile
 	fi
 else
@@ -114,7 +117,7 @@ fi
 # XXX Regression: latest modifications time of dependencies are ignored
 if poudriere -e ${localdir}/poudriere.etc ports -ln | grep -q BSDRPp; then
 	echo "Updating poudriere port tree..."
-	if ! ${sudo} poudriere -e ${localdir}/poudriere.etc ports -u -p BSDRPp -m null -M ${localdir}/BSDRP/FreeBSD/ports >> $logfile; then
+	if ! ${sudo} poudriere -e ${localdir}/poudriere.etc ports -u -p BSDRPp -m null -M ${localdir}/BSDRP/FreeBSD/ports >> $logfile 2>&1; then
 	echo "failed"
 		tail $logfile
 	fi
@@ -127,9 +130,14 @@ else
 fi
 
 # Build the packages
+# Some packages are architectures dependends
+cp ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${pkglist}
+if [ -f ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist.${arch} ]; then
+	cat ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist.${arch} >> ${pkglist}
+fi
 echo "Building packages..."
 if ! ${sudo} poudriere -e ${localdir}/poudriere.etc bulk -j BSDRPj -p BSDRPp \
-	-f ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist >> $logfile; then
+	-f ${pkglist} >> $logfile; then
 	echo "failed"
 	tail $logfile
 fi
@@ -138,19 +146,13 @@ fi
 # size in bytes
 # Notice that we are using a custom pkg.conf files preventing to install useless files
 
-# Some packages are architectures dependends
-cp ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist.common /tmp/BSDRP-pkg.list
-if [ -f ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist.${arch} ]; then
-	cat ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist.${arch} >> /tmp/BSDRP.pkg.list
-fi
-
-echo "Generating disk image (build_image.log)..."
+echo "Generating disk image..."
 ${sudo} poudriere -e ${localdir}/poudriere.etc image -t firmware -s 4g \
 	-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
 	-c ${localdir}/BSDRP/Files/ \
-	-f /tmp/BSDRP-pkg.list \
+	-f ${pkglist} \
 	-X ${localdir}/poudriere.etc/poudriere.d/excluded.files \
-	-A ${localdir}/poudriere.etc/poudriere.d/post-script.sh > build_image.log
+	-A ${localdir}/poudriere.etc/poudriere.d/post-script.sh >> $logfile 2>&1
 
 echo "Build done"
 echo "- Full disk image: /usr/local/poudriere/data/images/BSDRP.img"
