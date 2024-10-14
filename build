@@ -106,11 +106,14 @@ if poudriere -e poudriere.etc jail -ln | grep -q BSDRPj; then
 	if [ -n "$(find ${localdir}/BSDRP/FreeBSD/src -type f -newer ${path_of_the_jail}/boot/kernel/kernel)" ]; then
 		echo "Find sources newer than kernel, updating poudriere jail..."
 		echo "XXX BUG: Always trigger this update!!!!"
-		${sudo} poudriere -e ${localdir}/poudriere.etc jail -u -j BSDRPj -b -m src=${localdir}/BSDRP/FreeBSD/src -K ${arch} > $logfile
+		${sudo} poudriere -e ${localdir}/poudriere.etc jail -u -j BSDRPj -b -m src=${localdir}/BSDRP/FreeBSD/src -K ${arch} > $logfile 2>&1
 	fi
 else
 	echo "Creating poudriere jail..."
-	${sudo} poudriere -e ${localdir}/poudriere.etc jail -c -j BSDRPj -b -m src=${localdir}/BSDRP/FreeBSD/src -K ${arch} >> $logfile
+	if ! ${sudo} poudriere -e ${localdir}/poudriere.etc jail -c -j BSDRPj -b -m src=${localdir}/BSDRP/FreeBSD/src -K ${arch} >> $logfile 2>&1; then
+    tail -n 20 $logfile
+    die "Failed to create the base jail"
+  fi
 fi
 
 # Create or update port tree
@@ -118,14 +121,14 @@ fi
 if poudriere -e ${localdir}/poudriere.etc ports -ln | grep -q BSDRPp; then
 	echo "Updating poudriere port tree..."
 	if ! ${sudo} poudriere -e ${localdir}/poudriere.etc ports -u -p BSDRPp -m null -M ${localdir}/BSDRP/FreeBSD/ports >> $logfile 2>&1; then
-	echo "failed"
-		tail $logfile
+		tail -n 20 $logfile
+	  die "Failed to update port tree"
 	fi
 else
 	echo "Creating poudriere port tree.."
-	if ! ${sudo} poudriere -e ${localdir}/poudriere.etc ports -c -p BSDRPp -m null -M ${localdir}/BSDRP/FreeBSD/ports >> $logfile; then
-  echo "failed"
-  tail $logfile
+	if ! ${sudo} poudriere -e ${localdir}/poudriere.etc ports -c -p BSDRPp -m null -M ${localdir}/BSDRP/FreeBSD/ports >> $logfile 2>&1; then
+  tail -n 20 $logfile
+  die "Failed to create port tree"
 	fi
 fi
 
@@ -137,9 +140,9 @@ if [ -f ${localdir}/poudriere.etc/poudriere.d/BSDRP-pkglist.${arch} ]; then
 fi
 echo "Building packages..."
 if ! ${sudo} poudriere -e ${localdir}/poudriere.etc bulk -j BSDRPj -p BSDRPp \
-	-f ${pkglist} >> $logfile; then
-	echo "failed"
-	tail $logfile
+	-f ${pkglist} >> $logfile 2>&1; then
+	tail -n 20 $logfile
+	die "Failed to build packages"
 fi
 
 # Build the firmware image
@@ -147,12 +150,15 @@ fi
 # Notice that we are using a custom pkg.conf files preventing to install useless files
 
 echo "Generating disk image..."
-${sudo} poudriere -e ${localdir}/poudriere.etc image -t firmware -s 4g \
+if ! ${sudo} poudriere -e ${localdir}/poudriere.etc image -t firmware -s 4g \
 	-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
 	-c ${localdir}/BSDRP/Files/ \
 	-f ${pkglist} \
 	-X ${localdir}/poudriere.etc/poudriere.d/excluded.files \
-	-A ${localdir}/poudriere.etc/poudriere.d/post-script.sh >> $logfile 2>&1
+	-A ${localdir}/poudriere.etc/poudriere.d/post-script.sh >> $logfile 2>&1; then
+  tail -n 20 $logfile
+  die "Failed to generate disk image"
+fi
 
 echo "Build done"
 echo "- Full disk image: /usr/local/poudriere/data/images/BSDRP.img"
