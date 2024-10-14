@@ -37,6 +37,7 @@
 set -eu
 
 curdir=$(pwd)
+sudo=""
 
 #############################################
 ########### Function definition #############
@@ -51,7 +52,7 @@ load_module () {
     # $1 : Module name
     if ! kldstat -m $1 > /dev/null 2>&1; then
         echo "$1 module not loaded. Loading it..."
-        kldload $1|| die "can't load $1"
+        ${sudo} kldload $1|| die "can't load $1"
     fi
 }
 
@@ -225,7 +226,7 @@ check_clean() {
 	    | awk '{$1=""; print;}'`
 	if [ -n "$__a" ]; then
 		echo "unmounting $__a"
-		umount $__a
+		${sudo} umount $__a
 	fi
 }
 
@@ -254,6 +255,14 @@ usage () {
 
 echo "BSD Router Project image build script"
 echo ""
+
+if [ $(id -u) -ne 0 ]; then
+  if which -s sudo; then
+    sudo="sudo -E"
+  else
+    die "Need to start as root because sudo not found"
+  fi
+fi
 
 # XZ command line
 XZ="xz -9 -T0 -vf"
@@ -431,7 +440,7 @@ fi
 		if [ "$(id -u)" != "0" ]; then
    			die "Need to be root for issuing 'mount -t tmpfs tmpfs ${TMPDIR}/tmpfs'"
 		else
-		mount -t tmpfs tmpfs "${TMPDIR}"/tmpfs || die "ERROR: Cannot mount a tmpfs"
+		${sudo} mount -t tmpfs tmpfs "${TMPDIR}"/tmpfs || die "ERROR: Cannot mount a tmpfs"
 		fi
 	NANO_OBJ="${TMPDIR}"/tmpfs/${PROJECT}.${NANO_KERNEL}
 else
@@ -633,7 +642,7 @@ chmod +x "${NANOBSD_DIR}"/nanobsd.sh
 echo "Launching NanoBSD build process..."
 cd "${NANOBSD_DIR}"
 set +e
-sh "${NANOBSD_DIR}"/nanobsd.sh ${NOCLEAN} ${SKIP_REBUILD} -c "${TMPDIR}"/${PROJECT}.nano
+${sudo} sh "${NANOBSD_DIR}"/nanobsd.sh ${NOCLEAN} ${SKIP_REBUILD} -c "${TMPDIR}"/${PROJECT}.nano
 ERROR_CODE=$?
 set -e
 if [ -n "${MASTER_PROJECT}" ]; then
