@@ -5,20 +5,24 @@
 * nanobsd framework replaced by poudriere-image that brings:
   * Dual BIOS/UEFI boot support
   * MBR to GPT migration
-  * Clean packages build (the standard poudriere way)
-* bird: Enable BGP Monitor Protocol
-* New package: net/vpp
+  * Clean packages build
+* New package:
+  * net/bird: Enable BGP Monitor Protocol
+  * net/frr10
+  * net/vpp
+  * dns/dnsmasq (will replace isc-dhcp44 and dhcprelya)
 * Removed packages:
   * freevrrpd (carp is now supporting VRRP mode)
   * ucarp (no more conflict once carp enabled in VRRP mode)
-
+* Deprecated packages:
+  * isc-dhcp44 (use dnsmasq, kea requires 300MB disk space with its dependencies)
+  * dhcprelya (use dnsmasq)
 ## To fix
+* partition resize instruction to add (like with release 1.94)
 * bootonce script that should do:
   * gpart recover da0 (fix 'corrupt' status on gpt partitions)
   * Check for bootfailed attribute and act regarding
   * Update script need to be updated to add bootonce and not removing bootme
-* freevrrpd: Need to be replaced by new carp/VRRP
-  cannot create a bridge device: No such file or directory
 
 -------------------------------------------------------------------------------
 # Release 1.993 (28/03/2024)

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# New build script for BSD Router Project
+# Build script for BSD Router Project
 # https://bsdrp.net
 #
 # Copyright (c) 2009-2024, The BSDRP Development Team
@@ -94,9 +94,9 @@ echo "[DEBUG] run make -U"
 # if arm64 sed delete amd kernel module and pkglist
 # XXX Need to avoid patching revisionned file
 if [ "${arch}" = "arm64" ]; then
-  for f in amdsbwd amdsmn amdtemp blake2 coretemp cpuctl ichwd ioat qat qat_c2xxx qatfw; do
+  for f in amdsbwd amdsmn amdtemp blake2 coretemp cpuctl ichwd ioat qat qat_c2xxx qatfw padlock; do
 		if grep -q $f ${localdir}/poudriere.etc/poudriere.d/BSDRPj-src.conf; then
-			echo "AMD64 detected, removing $f kernel module..."
+			echo "${arch} detected, removing $f kernel module..."
 		sed -i "" -e "/^[[:space:]]${f}/d" ${localdir}/poudriere.etc/poudriere.d/BSDRPj-src.conf
 		fi
 	done

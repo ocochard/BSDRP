@@ -2,6 +2,7 @@ benchmarks/iperf
 benchmarks/iperf3
 benchmarks/netperf
 devel/py-setuptools
+dns/dnsmasq
 editors/vim@console
 emulators/open-vm-tools@nox11
 lang/perl5.36

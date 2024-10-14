@@ -1,23 +1,11 @@
-# TODO List fort the BSD Router Project
-
-hw.dmar.enable=1
-    hw.dmar.pmr.disable=1
-    hw.dmar.dma=0
-
-https://reviews.freebsd.org/D34907
-
+# TODO List
 
 ## Bugs #
 
 * if no-mandatory /data had a fsck problem, system refuse go in single user
 * add auto-trimming of all log files that are being created
 
-## Arch #
-
-* NEED to merge lot's of common task of create_arch_diskimage() in nanobsd
-
 ## Boot loader ##
-* How to add UEFI bootloader ? (available on -current), because some x86_64 machine didn't have UEFI compability (PC Engine APU)
 * poudriere-image uses EFI, need to test generated image on APU
 
 ## Authentication #
@@ -28,6 +16,7 @@ https://reviews.freebsd.org/D34907
 
 * Is utf-8 support for console usefull ?
 * Need to publish an OVF (Open Virtualization Format) tar file
+* Need to enable nuageinit (usefull for automatic regression tests)
 * A netgraph documentation "for dummies" like this: http://nexus.org.ua/weblog/message/406/
 
 ## TRIM ##
@@ -41,14 +30,6 @@ give "yes"
 * Lab script: Generate a lab diagram in DOT language, see example in tools/bsdrp.lab.gv
 * Lab script: Add a libvirt script
 * Lab script: Add jail based lab
-
-## nanobsd patches to study for inclusion #
-
-http://lists.freebsd.org/pipermail/freebsd-embedded/2012-June/001580.html
-
-## Design
-
-PROJECT name and NAME in PROJECT/make.conf are redundant
 
 ## Security
 
