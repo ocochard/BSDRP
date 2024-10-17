@@ -197,13 +197,20 @@ install () {
 	[ $# -eq 0 ] && die "BUG calling install() without arguments"
 	target_disk=$1
 
+	if [ ! -c ${target_disk} ]; then
+		die "Do not find ${target_disk}"
+	fi
+
 	# Load the NANO_DRIVE (label) variable:
 	# nanobsd: ufs/BSDRP
 	# poudriere-image: gpt/BSDRP
 	. /etc/nanobsd.conf
 
-	label=$(get_label)						# BSDRP
+	label=$(get_label)				# BSDRP
 	boot_dev=$(label2dev ${NANO_DRIVE})		# da0
+
+	disks=$(sysctl -n kern.disks)
+	[ "${boot_dev}" = "${target_disk}" ] && die "Source disk (${boot_dev}) is same as destination disk (${target_disk}), use another disk in this list: ${disks}"
 
 	# Extract only size of usefull data (so end of unextended partition data)
 	sectors=$(gpart show ${boot_dev} | grep '\- free \-' | tr -s ' ' | cut -d ' ' -f 2 | tail -n 1)
@@ -216,17 +223,10 @@ install () {
 		sectors_end=65536
 		sectors=$(( sectors_beg + sectors_end ))
 	fi
-	disks=$(sysctl -n kern.disks)
-	[ "${boot_dev}" = "${target_disk}" ] && die "Source disk (${boot_dev}) is same as destination disk (${target_disk}), use another disk on this list: ${disks}"
 	bytes=$(( 1 + ${sectors} / 2048 ))
-	# Avoid the error message “the primary GPT table is corrupt or invalid.”
-	# by cleaning the 2 GPT tables on the destination hard drive
-	echo "Cleaning GPT tables on destination hard drive $1..."
-	dd if=/dev/zero of=/dev/${target_disk} bs=1m count=1 > /dev/null 2>&1 || die "Can't erase MBR/GPT table"
-	dd if=/dev/zero of=/dev/${target_disk} bs=1m oseek=$(diskinfo ${target_disk} \
-		| awk '{print int($3 / (1024*1024)) - 4;}') > /dev/null 2>&1 || true
 	echo "Copying ${bytes}MB from ${boot_dev} to ${target_disk}..."
 	dd if=/dev/${boot_dev} of=/dev/${target_disk} bs=1M count=${bytes} || die "Meet error during install"
+	# Fix the message “the primary GPT table is corrupt or invalid.”
 	gpart restore /dev/${target_disk}
 }
 
@@ -258,6 +258,8 @@ expand_data_slice () {
 	# gpart resize + growfs is simpler than deleting and recreating partition
 	# but growfs is very slow
 	gpart resize -i ${partid} ${boot_dev}
+	# The label could flap after the resize, need to wait it came back
+	sleep 2
 	growfs -y ${lbldatapart}
 	echo "Done"
 }
