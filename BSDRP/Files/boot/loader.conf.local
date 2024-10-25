@@ -1,18 +1,27 @@
-##################################################################
-# For modifying this file, you need to remount / in read-write:  #
-# mount -uw /                                                    #
-#                                                                #
-# Don't load modules not necessary for mounting local disk here: #
-# - add module name to the kld_list variable in rc.conf          #
-# Example for loading the padlock crypto module and coretemp:    #
-# kld_list='padlock coretemp'                                    #
-#                                                                #
-# Don't put serial/dual console port value like these here too:  #
-# - boot_serial                                                  #
-# - comconsole_speed                                             #
-# - console                                                      #
-# Use /boot.config in place                                      #
-##################################################################
+#####################################################################
+# For modifying this file, you need to remount / in read-write:     #
+# mount -uw /                                                       #
+#                                                                   #
+# Don't load modules not necessary for mounting local disk here:    #
+# - add module name to the kld_list variable in rc.conf             #
+# Example for loading the padlock crypto module and coretemp:       #
+# kld_list='padlock coretemp'                                       #
+#                                                                   #
+# For BIOS based machine, don’t put serial/dual console like these: #
+# - boot_serial                                                     #
+# - comconsole_speed                                                #
+# - console                                                         #
+# Use /boot.config in place                                         #
+#####################################################################
+
+# Multiconsole support, mandatory for IPMI SoL
+boot_multicons="YES"
+# Values description in loader(8) and loader.efi(8)
+#console="eficom,efi,comconsole,vidconsole"
+# Some emulated serial port with IPMI SoL doesn’t use the default 0x3f8
+# Search for the correct value with :grep 'uart.*port' /var/run/dmesg.boot
+# Then declare the corrcet one, as example here:
+#comconsole_port="0x2F8"
 
 ### Don't wait for USB (can prevent correct reboot)
 hw.usb.no_shutdown_wait="1"
@@ -44,6 +53,11 @@ hw.ix.rx_process_limit="-1"
 # Allow unsupported SFP
 hw.ix.unsupported_sfp="1"
 hw.ix.allow_unsupported_sfp="1"
+
+# No flow control: TCP will manage better the packet loss
+# 0: No fc, 1: rxpause, 2: txpause, 3: rx and tx pause (full)
+hw.ixl.flow_control="0"
+hw.ix.flow_control="0"
 
 ### Chelsio NIC tuning ###
 # Prevent to reserve ASIC ressources unused on a router/firewall,
