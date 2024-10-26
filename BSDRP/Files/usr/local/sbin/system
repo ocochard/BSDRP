@@ -195,9 +195,10 @@ ask_save () {
 install () {
 
 	[ $# -eq 0 ] && die "BUG calling install() without arguments"
-	target_disk=$1
+	# Remove trailing /dev/ if entered by user
+	target_disk=$(basename $1)
 
-	if [ ! -c ${target_disk} ]; then
+	if [ ! -c /dev/${target_disk} ]; then
 		die "Do not find ${target_disk}"
 	fi
 
@@ -227,7 +228,7 @@ install () {
 	echo "Copying ${bytes}MB from ${boot_dev} to ${target_disk}..."
 	dd if=/dev/${boot_dev} of=/dev/${target_disk} bs=1M count=${bytes} || die "Meet error during install"
 	# Fix the message “the primary GPT table is corrupt or invalid.”
-	gpart restore /dev/${target_disk}
+	gpart recover /dev/${target_disk}
 }
 
 # When installed on bigger usb key or hard-drive
