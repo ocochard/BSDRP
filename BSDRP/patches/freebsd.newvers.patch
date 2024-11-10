@@ -1,8 +1,8 @@
-Index: sys/conf/newvers.sh
-===================================================================
---- sys/conf/newvers.sh	(revision 308878)
-+++ sys/conf/newvers.sh	(working copy)
-@@ -45,6 +45,7 @@
+diff --git sys/conf/newvers.sh sys/conf/newvers.sh
+index 481af548039..d4ace519275 100644
+--- sys/conf/newvers.sh
++++ sys/conf/newvers.sh
+@@ -156,6 +156,7 @@ shift $((OPTIND - 1))
  #
  findvcs()
  {

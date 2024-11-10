@@ -14,6 +14,7 @@
 
 ## misc #
 
+* generate SBOM for each release
 * Is utf-8 support for console usefull ?
 * Need to publish an OVF (Open Virtualization Format) tar file
 * Need to enable nuageinit (usefull for automatic regression tests)

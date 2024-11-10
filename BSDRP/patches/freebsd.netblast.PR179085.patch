@@ -1,8 +1,8 @@
-Index: tools/tools/netrate/netblast/Makefile
-===================================================================
---- tools/tools/netrate/netblast/Makefile	(revision 361538)
-+++ tools/tools/netrate/netblast/Makefile	(working copy)
-@@ -4,5 +4,8 @@
+diff --git tools/tools/netrate/netblast/Makefile tools/tools/netrate/netblast/Makefile
+index 0b1b6eb4bf7..af894be7c5f 100644
+--- tools/tools/netrate/netblast/Makefile
++++ tools/tools/netrate/netblast/Makefile
+@@ -3,5 +3,8 @@
  
  PROG=	netblast
  MAN=
@@ -11,11 +11,11 @@ Index: tools/tools/netrate/netblast/Makefile
 +WARNS?= 3
  
  .include <bsd.prog.mk>
-Index: tools/tools/netrate/netblast/netblast.c
-===================================================================
---- tools/tools/netrate/netblast/netblast.c	(revision 361538)
-+++ tools/tools/netrate/netblast/netblast.c	(working copy)
-@@ -28,8 +28,10 @@
+diff --git tools/tools/netrate/netblast/netblast.c tools/tools/netrate/netblast/netblast.c
+index bf31317a0d5..16f5d760e79 100644
+--- tools/tools/netrate/netblast/netblast.c
++++ tools/tools/netrate/netblast/netblast.c
+@@ -26,78 +26,152 @@
  
  #include <sys/endian.h>
  #include <sys/types.h>
@@ -26,7 +26,6 @@ Index: tools/tools/netrate/netblast/netblast.c
  
  #include <netinet/in.h>
  #include <netdb.h>			/* getaddrinfo */
-@@ -36,70 +38,142 @@
  
  #include <signal.h>
  #include <stdio.h>
@@ -39,7 +38,7 @@ Index: tools/tools/netrate/netblast/netblast.c
 +#include <pthread_np.h>
 +#include <fcntl.h>
 +#include <time.h>   /* clock_getres() */
- 
++
 +/* sysctl wrapper to return the number of active CPUs
 +   function from netmap/pkt-gen.c */
 +static int
@@ -76,7 +75,7 @@ Index: tools/tools/netrate/netblast/netblast.c
 +{
 +    return ((n + l - 1)/l)*l;
 +}
-+
+ 
  static void
  usage(void)
  {
@@ -193,18 +192,18 @@ Index: tools/tools/netrate/netblast/netblast.c
 +		return NULL;
 +		/*NOTREACHED*/
 +	}
++
++	/* Store address family for Ethernet bandwitdh estimation */
++	t->family=res->ai_family;
  
 -	send_errors = send_calls = 0;
 -	counter = 0;
 -	while (global_stop_flag == 0) {
-+	/* Store address family for Ethernet bandwitdh estimation */
-+	t->family=res->ai_family;
-+
 +	while (global_stop_flag) {
  		/*
  		 * We maintain and, if there's room, send a counter.  Note
  		 * that even if the error is purely local, we still increment
-@@ -110,32 +184,87 @@
+@@ -108,49 +182,104 @@ blast_loop(int s, long duration, u_char *packet, u_int packet_len)
  		 * operation, causing the current sequence number also to be
  		 * skipped.
  		 */
@@ -224,7 +223,7 @@ Index: tools/tools/netrate/netblast/netblast.c
  	}
 +    return NULL;
 +}
- 
++
 +static struct td_desc **
 +make_threads(char *address, char *port, u_char *packet, u_int packet_len, int nthreads)
 +{
@@ -258,7 +257,7 @@ Index: tools/tools/netrate/netblast/netblast.c
 +    }
 +    return tp;
 +}
-+
+ 
 +static void
 +main_thread(struct td_desc **tp, long duration, struct timespec starttime, struct timespec tmptime, long payloadsize, int nthreads)
 +{
@@ -307,7 +306,6 @@ Index: tools/tools/netrate/netblast/netblast.c
  }
  
  int
-@@ -142,18 +271,18 @@
  main(int argc, char *argv[])
  {
  	long payloadsize, duration;
@@ -323,19 +321,18 @@ Index: tools/tools/netrate/netblast/netblast.c
 +	struct itimerval it;
  
 -	if (argc != 5)
-+
-+
-+	if (argc < 5)
- 		usage();
+-		usage();
  
 -	memset(&hints, 0, sizeof(hints));
 -	hints.ai_family = PF_UNSPEC;
 -	hints.ai_socktype = SOCK_DGRAM;
--
++
++	if (argc < 5)
++		usage();
+ 
  	port = strtoul(argv[2], &dummy, 10);
  	if (port < 1 || port > 65535 || *dummy != '\0') {
- 		fprintf(stderr, "Invalid port number: %s\n", argv[2]);
-@@ -177,6 +306,15 @@
+@@ -175,6 +304,15 @@ main(int argc, char *argv[])
  		/*NOTREACHED*/
  	}
  
@@ -351,7 +348,7 @@ Index: tools/tools/netrate/netblast/netblast.c
  	packet = malloc(payloadsize);
  	if (packet == NULL) {
  		perror("malloc");
-@@ -185,37 +323,44 @@
+@@ -183,37 +321,44 @@ main(int argc, char *argv[])
  	}
  
  	bzero(packet, payloadsize);
@@ -382,26 +379,29 @@ Index: tools/tools/netrate/netblast/netblast.c
 -			cause = "socket";
 -			continue;
 -		}
- 
+-
 -		if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
 -			cause = "connect";
 -			close(s);
 -			s = -1;
 -			continue;
 -		}
-+	if (clock_getres(CLOCK_REALTIME, &tmptime) == -1) {
-+		perror("clock_getres");
-+		return (-1);
-+	}
  
 -		break;  /* okay we got one */
-+	if (clock_gettime(CLOCK_REALTIME, &starttime) == -1) {
-+		perror("clock_gettime");
++	if (clock_getres(CLOCK_REALTIME, &tmptime) == -1) {
++		perror("clock_getres");
 +		return (-1);
  	}
 -	if (s < 0) {
 -		perror(cause);
 +
++	if (clock_gettime(CLOCK_REALTIME, &starttime) == -1) {
++		perror("clock_gettime");
+ 		return (-1);
+-		/*NOTREACHED*/
+ 	}
+ 
+-	freeaddrinfo(res0);
 +	it.it_interval.tv_sec = 0;
 +	it.it_interval.tv_usec = 0;
 +	it.it_value.tv_sec = duration;
@@ -409,14 +409,11 @@ Index: tools/tools/netrate/netblast/netblast.c
 +
 +	if (setitimer(ITIMER_REAL, &it, NULL) < 0) {
 +		perror("setitimer");
- 		return (-1);
--		/*NOTREACHED*/
- 	}
++		return (-1);
++	}
  
--	freeaddrinfo(res0);
+-	return (blast_loop(s, duration, packet, payloadsize));
 +    tp = make_threads(argv[1],argv[2], packet, payloadsize, nthreads);
 +    main_thread(tp, duration, starttime,  tmptime, payloadsize, nthreads);
  
--	return (blast_loop(s, duration, packet, payloadsize));
--
  }
