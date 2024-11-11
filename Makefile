@@ -20,13 +20,17 @@ SUDO =
 .endif
 
 # Define the path to the variables file
-# This loade all FREEBSD_* and PORTS_* variables
+# This loads all FREEBSD_* and PORTS_* variables
 VARS_FILE = Makefile.vars
 .if exists(${VARS_FILE})
 .include "${VARS_FILE}"
 .else
 .error "Variables file '${VARS_FILE}' not found."
 .endif
+
+POUDRIERE_IMAGES_DIR = /usr/local/poudriere/data/images
+BSDRP_IMAGE = ${POUDRIERE_IMAGES_DIR}/BSDRP.img
+BSDRP_UPDATE_IMAGE = ${POUDRIERE_IMAGES_DIR}/BSDRP-update.img
 
 # Load existing patches files (used to trigged target if modified)
 PATCHES_DIR = ${.CURDIR}/BSDRP/patches
@@ -46,11 +50,10 @@ PORTS_SHAR != find $(PATCHES_DIR) -name 'ports.*.shar'
 # MACHINE_ARCH could be aarch64, but the source sys directory is arm64 :-(
 SRC_ARCH = ${MACHINE_ARCH:S/aarch64/arm64/}
 #logfile="/tmp/BSDRP.build.log"
-#pkglist="/tmp/BSDRP.pkg.list"
 
 .PHONY: upstream-sync sync-fbsd sync-ports
 
-all:	check-requirements build-image
+all: check-requirements ${BSDRP_IMAGE} ${BSDRP_UPDATE_IMAGE}
 
 check-requirements:
 	# Check if git installed and sudo requiered
@@ -140,18 +143,41 @@ install-kernel: ${.CURDIR}/BSDRP/kernels/${SRC_ARCH}
 	touch ${.TARGET}
 
 build-builder-jail: patch-sources
-	@echo "XXX ${SUDO} poudriere jail create or update"
+	# XXX need to use only one line with -c|-u
 	# MACHINE_ARCH: aarch64 or amd64
-	${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -c -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${SRC_ARCH}
+	@if ! ${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -ln | grep -q BSDRPj; then \
+		${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -c -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${SRC_ARCH}; \
+	else \
+		${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -u -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${SRC_ARCH}; \
+	fi
 	touch ${.TARGET}
 
-build-packages: build-builder-jail
-	@echo "XXX ${SUDO} poudriere bulk"
+build-ports-tree: patch-sources
+	# XXX need to use only one line with -c|-u
+	@if ! ${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -ln | grep -q BSDRPp; then \
+		${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -c -p BSDRPp -m null -M ${.OBJDIR}/ports; \
+	else \
+		${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -u -p BSDRPp -m null -M ${.OBJDIR}/ports; \
+	fi
 	touch ${.TARGET}
 
-build-image: build-packages
+build-packages: build-builder-jail build-ports-tree
+	# Some packages are architecture dependends
+	cp ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${.OBJDIR}/pkglist
+	@if [ -f ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${SRC_ARCH} ]; then \
+		cat ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${SRC_ARCH} >> ${.OBJDIR}/pkglist; \
+  fi
+	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc bulk -j BSDRPj -p BSDRPp -f ${.OBJDIR}/pkglist
+	touch ${.TARGET}
+
+${BSDRP_IMAGE} ${BSDRP_UPDATE_IMAGE}: build-packages
 	@echo "XXX ${SUDO} poudriere image"
-	# /usr/local/poudriere/data/images/BSDRP.img
+	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc image -t firmware -s 4g \
+		-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
+		-c ${.CURDIR}/BSDRP/Files/ \
+		-f ${.OBJDIR}/pkglist \
+		-X ${.CURDIR}/poudriere.etc/poudriere.d/excluded.files \
+		-A ${.CURDIR}/poudriere.etc/poudriere.d/post-script.sh
 
 upstream-sync: sync-fbsd sync-ports
 
@@ -172,8 +198,8 @@ sync-ports: fetch-src-ports
 clean:
 	@echo "delete stuff"
 	rm -f ${.OBJDIR}/*
-	rm -f /usr/local/poudriere/data/images/BSDRP.img
-	rm -f /usr/local/poudriere/data/images/BSDRP-update.img
+	rm -f ${BSDRP_IMAGE}
+	rm -f ${BSDRP_UPDATE_IMAGE}
 
 clean-all:
 	rm -rf ${.OBJDIR}/*
