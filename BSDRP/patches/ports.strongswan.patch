@@ -1,12 +1,12 @@
-Index: security/strongswan/files/strongswan.in
-===================================================================
---- security/strongswan/files/strongswan.in	(revision 466830)
-+++ security/strongswan/files/strongswan.in	(working copy)
-@@ -9,6 +9,7 @@
+diff --git security/strongswan/files/strongswan.in security/strongswan/files/strongswan.in
+index 443e2e4738a2..a686813b7ae2 100644
+--- security/strongswan/files/strongswan.in
++++ security/strongswan/files/strongswan.in
+@@ -17,6 +17,7 @@
+ #	Default is "%%INTERFACE%%"
  
- command="%%PREFIX%%/sbin/ipsec"
  . /etc/rc.subr
 +: ${strongswan_enable="NO"}
  
- name="strongswan"
- rcvar=${name}_enable
+ name=strongswan
+ desc="Strongswan IPsec startup script"

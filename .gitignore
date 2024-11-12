@@ -1,13 +1,6 @@
 # ignore downloaded FreeBSD source and port tree
-workdir/
 poudriere.etc/poudriere.d/jails/
 poudriere.etc/poudriere.d/ports/
-BSDRP/FreeBSD
-MAIN/FreeBSD
-STABLE-12/FreeBSD
-STABLE-13/FreeBSD
-BSDMC/FreeBSD
-EINE/FreeBSD
 EINE/local.data
 EINE/DEMO.data/GeoLite2-City.mmdb
 EINE/DEMO.data/GeoLite2-City.mmdb.gz

@@ -1,8 +1,8 @@
-Index: libexec/rc/rc.d/random
-===================================================================
---- libexec/rc/rc.d/random	(revision 346264)
-+++ libexec/rc/rc.d/random	(working copy)
-@@ -83,7 +83,17 @@
+diff --git libexec/rc/rc.d/random libexec/rc/rc.d/random
+index c34f0d1f86b..6c0fbe0ab86 100755
+--- libexec/rc/rc.d/random
++++ libexec/rc/rc.d/random
+@@ -83,7 +83,17 @@ random_start()
  	[Nn][Oo])
  		;;
  	*)
