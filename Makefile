@@ -13,6 +13,11 @@
 # upstream-sync   - Fetch latest FreeBSD and port tree sources
 #                   and update hashes in Makefile.vars
 
+
+POUDRIERE_IMAGES_DIR = /usr/local/poudriere/data/images
+BSDRP_IMAGE = ${POUDRIERE_IMAGES_DIR}/BSDRP.img
+BSDRP_UPDATE_IMAGE = ${POUDRIERE_IMAGES_DIR}/BSDRP-update.img
+
 .if ${USER} != "root"
 SUDO ?= sudo
 .else
@@ -28,44 +33,33 @@ VARS_FILE = Makefile.vars
 .error "Variables file '${VARS_FILE}' not found."
 .endif
 
-POUDRIERE_IMAGES_DIR = /usr/local/poudriere/data/images
-BSDRP_IMAGE = ${POUDRIERE_IMAGES_DIR}/BSDRP.img
-BSDRP_UPDATE_IMAGE = ${POUDRIERE_IMAGES_DIR}/BSDRP-update.img
 
 # Load existing patches files (used to trigged target if modified)
 PATCHES_DIR = ${.CURDIR}/BSDRP/patches
 FREEBSD_PATCHES != find $(PATCHES_DIR) -name 'freebsd.*.patch'
-.if empty(FREEBSD_PATCHES)
-.error "No FreeBSD patches found"
-.endif
 PORTS_PATCHES != find $(PATCHES_DIR) -name 'ports.*.patch'
-.if empty(PORTS_PATCHES)
-.error "No ports patches found"
-.endif
 PORTS_SHAR != find $(PATCHES_DIR) -name 'ports.*.shar'
-.if empty(PORTS_SHAR)
-.error "No new ports shar files found"
+.for required in FREEBSD_PATCHES PORTS_PATCHES PORTS_SHAR
+.if empty(${required})
+.error "No ${required:tl} files found"
 .endif
+.endfor
 
 # MACHINE_ARCH could be aarch64, but the source sys directory is arm64 :-(
 SRC_ARCH = ${MACHINE_ARCH:S/aarch64/arm64/}
 #logfile="/tmp/BSDRP.build.log"
 
-.PHONY: upstream-sync sync-fbsd sync-ports
+.PHONY: all check-requirements clean clean-all upstream-sync sync-FreeBSD sync-ports
 
 all: check-requirements ${BSDRP_IMAGE} ${BSDRP_UPDATE_IMAGE}
 
 check-requirements:
-	# Check if git installed and sudo requiered
 	@which git > /dev/null || { echo "Error: git is not installed."; exit 1; }
 .if ${USER} != "root"
 	@which ${SUDO} > /dev/null || { echo "Error: sudo is not installed."; exit 1; }
 .endif
 
-update-src: update-src-fbsd update-src-ports
-	# Update all sources (manually triggeretd only)
-	@echo "Update FreeBSD and ports tree sources"
-	@echo "XXX"
+# Sources management
 
 update-src-fbsd: ${VARS_FILE} fetch-src-fbsd
 	# Update only if VARS_FILE was updated since last run
@@ -109,8 +103,8 @@ patch-src-freebsd: update-src-fbsd
 	@echo "List of patches: ${FREEBSD_PATCHES}"
 	# Need to start with a fresh cleanup tree
 	# XXX Before simple update too ?
-	git -C ${.OBJDIR}/FreeBSD checkout .
-	git -C ${.OBJDIR}/FreeBSD clean -fd
+	@git -C ${.OBJDIR}/FreeBSD checkout .
+	@git -C ${.OBJDIR}/FreeBSD clean -fd
 	# All patches are in git diff format (so -p0)
 	@for patch in ${FREEBSD_PATCHES}; do \
 		patch -p0 -NE -d  ${.OBJDIR}/FreeBSD -i $${patch} || exit 1; \
@@ -122,12 +116,12 @@ patch-src-ports: update-src-ports
 	@echo "Patch FreeBSD port tree sources..."
 	# Need to start with a fresh cleanup tree
 	# XXX Need to be moved in its own target and Before simple update too ?
-	git -C ${.OBJDIR}/ports checkout .
-	git -C ${.OBJDIR}/ports clean -fd
+	@git -C ${.OBJDIR}/ports checkout .
+	@git -C ${.OBJDIR}/ports clean -fd
 	@for patch in ${PORTS_PATCHES}; do \
 		patch -p0 -NE -d  ${.OBJDIR}/ports -i $${patch} || exit 1; \
 	done
-	touch ${.TARGET}
+	@touch ${.TARGET}
 
 add-src-ports: update-src-ports
 	# XXX Need to be replaced with a generic call (catch each shar file mods)
@@ -135,40 +129,31 @@ add-src-ports: update-src-ports
 	@for shar in ${PORTS_SHAR}; do \
 		(cd "${.OBJDIR}/ports" && sh $${shar} || exit 1); \
 	done
-	touch ${.TARGET}
+	@touch ${.TARGET}
 
 install-kernel: ${.CURDIR}/BSDRP/kernels/${SRC_ARCH}
 	@echo "Install kernel for arch ${MACHINE_ARCH} (${SRC_ARCH})"
-	cp ${.CURDIR}/BSDRP/kernels/${SRC_ARCH} ${.OBJDIR}/FreeBSD/sys/${SRC_ARCH}/conf/
-	touch ${.TARGET}
+	@cp ${.CURDIR}/BSDRP/kernels/${SRC_ARCH} ${.OBJDIR}/FreeBSD/sys/${SRC_ARCH}/conf/
+	@touch ${.TARGET}
 
 build-builder-jail: patch-sources
-	# XXX need to use only one line with -c|-u
-	# MACHINE_ARCH: aarch64 or amd64
-	@if ! ${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -ln | grep -q BSDRPj; then \
-		${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -c -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${SRC_ARCH}; \
-	else \
-		${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -u -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${SRC_ARCH}; \
-	fi
-	touch ${.TARGET}
+	@JAIL_ACTION=$$(${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c") && \
+	${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -$${JAIL_ACTION} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${SRC_ARCH}
+	@touch ${.TARGET}
 
 build-ports-tree: patch-sources
-	# XXX need to use only one line with -c|-u
-	@if ! ${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -ln | grep -q BSDRPp; then \
-		${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -c -p BSDRPp -m null -M ${.OBJDIR}/ports; \
-	else \
-		${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -u -p BSDRPp -m null -M ${.OBJDIR}/ports; \
-	fi
-	touch ${.TARGET}
+	@PORTS_ACTION=$$(${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -ln | grep -q BSDRPp && echo "u" || echo "c") && \
+	${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -$${PORTS_ACTION} -p BSDRPp -m null -M ${.OBJDIR}/ports
+	@touch ${.TARGET}
 
 build-packages: build-builder-jail build-ports-tree
 	# Some packages are architecture dependends
-	cp ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${.OBJDIR}/pkglist
+	@cp ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${.OBJDIR}/pkglist
 	@if [ -f ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${SRC_ARCH} ]; then \
 		cat ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${SRC_ARCH} >> ${.OBJDIR}/pkglist; \
-  fi
+	fi
 	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc bulk -j BSDRPj -p BSDRPp -f ${.OBJDIR}/pkglist
-	touch ${.TARGET}
+	@touch ${.TARGET}
 
 ${BSDRP_IMAGE} ${BSDRP_UPDATE_IMAGE}: build-packages
 	@echo "XXX ${SUDO} poudriere image"
@@ -185,15 +170,15 @@ sync-fbsd: fetch-src-fbsd
 	@git -C ${.OBJDIR}/FreeBSD stash
 	@git -C ${.OBJDIR}/FreeBSD pull
 	NEW_FBSD_HASH=$$(git -C ${.OBJDIR}/FreeBSD rev-parse --short HEAD) && \
-	sed -i '' "s/FREEBSD_HASH?=.*/FREEBSD_HASH?=$$NEW_FBSD_HASH/" ${.CURDIR}/${VARS_FILE} \
-	@rm -f patch-src-freebsd
+	sed -i '' "s/FREEBSD_HASH?=.*/FREEBSD_HASH?=$$NEW_FBSD_HASH/" ${.CURDIR}/${VARS_FILE} && \
+	rm -f ${.OBJDIR}/patch-src-freebsd
 
 sync-ports: fetch-src-ports
 	@git -C ${.OBJDIR}/ports stash
 	@git -C ${.OBJDIR}/ports pull
 	NEW_PORTS_HASH=$$(git -C ${.OBJDIR}/ports rev-parse --short HEAD) && \
-	sed -i '' "s/PORTS_HASH?=.*/PORTS_HASH?=$$NEW_PORTS_HASH/" ${.CURDIR}/${VARS_FILE}
-	@rm -f patch-src-ports
+	sed -i '' "s/PORTS_HASH?=.*/PORTS_HASH?=$$NEW_PORTS_HASH/" ${.CURDIR}/${VARS_FILE} && \
+	rm -f ${.OBJDIR}/patch-src-ports
 
 clean:
 	@echo "delete stuff"
@@ -201,7 +186,22 @@ clean:
 	rm -f ${BSDRP_IMAGE}
 	rm -f ${BSDRP_UPDATE_IMAGE}
 
-clean-all:
+clean-all: clean clean-jail clean-ports-tree clean-packages
 	rm -rf ${.OBJDIR}/*
+	# XXX need to remove jail and ports tree too ?
 
-.PHONY: all check-requirements clean clean-all update-src
+clean-jail:
+	${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -y -d -j BSDRPj
+	@rm -f ${.OBJDIR}/build-builder-jail
+
+clean-ports-tree:
+	${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -y -d -p BSDRPp
+	@rm -f ${.OBJDIR}/build-ports-tree
+
+clean-packages:
+	${SUDO} poudriere -e ${.CURDIR}/poudriere.etc distclean -y -a -p BSDRPp
+	${SUDO} poudriere -e ${.CURDIR}/poudriere.etc logclean -y -a -j BSDRPj -p BSDRPp
+	${SUDO} poudriere -e ${.CURDIR}/poudriere.etc pkgclean -y -A -j BSDRPj -p BSDRPp
+	@rm -f ${.OBJDIR}/build-packages
+
+.PHONY: all check-requirements clean clean-all
