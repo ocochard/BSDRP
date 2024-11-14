@@ -63,6 +63,7 @@ PORTS_SHAR != find $(PATCHES_DIR) -name 'ports.*.shar'
 
 # MACHINE_ARCH could be aarch64, but the source sys directory is arm64 :-(
 SRC_ARCH = ${MACHINE_ARCH:S/aarch64/arm64/}
+KERNEL = ${.OBJDIR}/FreeBSD/sys/${SRC_ARCH}/conf/${SRC_ARCH}
 #logfile="/tmp/BSDRP.build.log"
 
 .PHONY: all check-requirements clean clean-all upstream-sync sync-FreeBSD sync-ports
@@ -108,7 +109,7 @@ fetch-src-ports:
 	@git clone -b ${PORTS_BRANCH} --single-branch "${PORTS_REPO}".git ${.OBJDIR}/ports
 	@touch ${.TARGET}
 
-patch-sources: patch-src-freebsd patch-src-ports add-src-ports install-kernel
+patch-sources: patch-src-freebsd patch-src-ports add-src-ports ${KERNEL}
 	@echo "Patch FreeBSD and ports sources..."
 	@touch ${.TARGET}
 
@@ -147,10 +148,9 @@ add-src-ports: update-src-ports
 	done
 	@touch ${.TARGET}
 
-install-kernel: ${.CURDIR}/BSDRP/kernels/${SRC_ARCH}
+${KERNEL}: ${.CURDIR}/BSDRP/kernels/${SRC_ARCH}
 	@echo "Install kernel for arch ${MACHINE_ARCH} (${SRC_ARCH})"
 	@cp ${.CURDIR}/BSDRP/kernels/${SRC_ARCH} ${.OBJDIR}/FreeBSD/sys/${SRC_ARCH}/conf/
-	@touch ${.TARGET}
 
 build-builder-jail: patch-sources
 	@JAIL_ACTION=$$(${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c") && \
@@ -187,14 +187,14 @@ sync-fbsd: fetch-src-fbsd
 	@git -C ${.OBJDIR}/FreeBSD pull
 	NEW_FBSD_HASH=$$(git -C ${.OBJDIR}/FreeBSD rev-parse --short HEAD) && \
 	sed -i '' "s/FREEBSD_HASH?=.*/FREEBSD_HASH?=$$NEW_FBSD_HASH/" ${.CURDIR}/${VARS_FILE} && \
-	@rm -f ${.OBJDIR}/patch-src-freebsd
+	rm -f ${.OBJDIR}/patch-src-freebsd
 
 sync-ports: fetch-src-ports
 	@git -C ${.OBJDIR}/ports stash
 	@git -C ${.OBJDIR}/ports pull
 	NEW_PORTS_HASH=$$(git -C ${.OBJDIR}/ports rev-parse --short HEAD) && \
 	sed -i '' "s/PORTS_HASH?=.*/PORTS_HASH?=$$NEW_PORTS_HASH/" ${.CURDIR}/${VARS_FILE} && \
-	@rm -f ${.OBJDIR}/patch-src-ports
+	rm -f ${.OBJDIR}/patch-src-ports
 
 clean: clean-images
 
