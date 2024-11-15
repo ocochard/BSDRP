@@ -55,6 +55,8 @@ PATCHES_DIR = ${.CURDIR}/BSDRP/patches
 FREEBSD_PATCHES != find $(PATCHES_DIR) -name 'freebsd.*.patch'
 PORTS_PATCHES != find $(PATCHES_DIR) -name 'ports.*.patch'
 PORTS_SHAR != find $(PATCHES_DIR) -name 'ports.*.shar'
+FREEBSD_SRC_DIR = ${.OBJDIR}/FreeBSD
+PORTS_SRC_DIR = ${.OBJDIR}/ports
 .for required in FREEBSD_PATCHES PORTS_PATCHES PORTS_SHAR
 .if empty(${required})
 .error "No ${required:tl} files found"
@@ -78,35 +80,33 @@ check-requirements:
 
 # Sources management
 
-update-src-fbsd: ${VARS_FILE} fetch-src-fbsd
+${FREEBSD_SRC_DIR}:
+	@echo "Git clone FreeBSD..."
+	@git clone -b ${FREEBSD_BRANCH} --single-branch "${FREEBSD_REPO}".git ${FREEBSD_SRC_DIR}
+
+${PORTS_SRC_DIR}:
+	@echo "Git clone FreeBSD ports tree..."
+	@git clone -b ${PORTS_BRANCH} --single-branch "${PORTS_REPO}".git ${PORTS_SRC_DIR}
+
+update-src-fbsd: ${VARS_FILE} ${FREEBSD_SRC_DIR}
 	# Update only if VARS_FILE was updated since last run
 	@echo "Update FreeBSD src at hash ${FREEBSD_HASH}"
 	# revert back to previous revision
-	@git -C ${.OBJDIR}/FreeBSD checkout main
-	@git -C ${.OBJDIR}/FreeBSD pull
-	@git -C ${.OBJDIR}/FreeBSD checkout ${FREEBSD_HASH}
+	@git -C ${FREEBSD_SRC_DIR} checkout main
+	@git -C ${FREEBSD_SRC_DIR} pull
+	@git -C ${FREEBSD_SRC_DIR} checkout ${FREEBSD_HASH}
 	@echo "Git commit count:"
-	@git -C ${.OBJDIR}/FreeBSD rev-list HEAD --count
+	@git -C ${FREEBSD_SRC_DIR} rev-list HEAD --count
 	@touch ${.TARGET}
 
-update-src-ports: ${VARS_FILE} fetch-src-ports
+update-src-ports: ${VARS_FILE} ${PORTS_SRC_DIR}
 	# Update only if VARS_FILE was updated since last run
 	@echo "Update FreeBSD port tree at hash ${PORTS_HASH}"
 	# revert back to previous revision
-	@git -C ${.OBJDIR}/ports pull
-	@git -C ${.OBJDIR}/ports checkout ${PORTS_HASH}
+	@git -C ${PORTS_SRC_DIR} pull
+	@git -C ${PORTS_SRC_DIR} checkout ${PORTS_HASH}
 	@echo "Git commit count:"
-	@git -C ${.OBJDIR}/ports rev-list HEAD --count
-	@touch ${.TARGET}
-
-fetch-src-fbsd:
-	@echo "Git clone FreeBSD..."
-	@git clone -b ${FREEBSD_BRANCH} --single-branch "${FREEBSD_REPO}".git ${.OBJDIR}/FreeBSD
-	@touch ${.TARGET}
-
-fetch-src-ports:
-	@echo "git clone FreeBSD ports tree..."
-	@git clone -b ${PORTS_BRANCH} --single-branch "${PORTS_REPO}".git ${.OBJDIR}/ports
+	@git -C ${PORTS_SRC_DIR} rev-list HEAD --count
 	@touch ${.TARGET}
 
 patch-sources: patch-src-freebsd patch-src-ports add-src-ports ${KERNEL}
@@ -120,8 +120,8 @@ patch-src-freebsd: update-src-fbsd
 	@echo "List of patches: ${FREEBSD_PATCHES}"
 	# Need to start with a fresh cleanup tree
 	# XXX Before simple update too ?
-	@git -C ${.OBJDIR}/FreeBSD checkout .
-	@git -C ${.OBJDIR}/FreeBSD clean -fd
+	@git -C ${FREEBSD_SRC_DIR} checkout .
+	@git -C ${FREEBSD_SRC_DIR} clean -fd
 	# All patches are in git diff format (so -p0)
 	@for patch in ${FREEBSD_PATCHES}; do \
 		patch -p0 -NE -d  ${.OBJDIR}/FreeBSD -i $${patch} || exit 1; \
@@ -198,7 +198,7 @@ sync-ports: fetch-src-ports
 
 clean: clean-images
 
-clean-all: clean-jail clean-ports-tree clean-images
+clean-all: clean-jail clean-ports-tree clean-images clean-src
 
 clean-jail: clean-packages
 	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -y -d -j BSDRPj
@@ -218,4 +218,9 @@ clean-images:
 	@rm -f ${BSDRP_IMAGE}
 	@rm -f ${BSDRP_UPDATE_IMAGE}
 
-.PHONY: all check-requirements clean clean-all
+clean-src:
+	@rm -rf ${FREEBSD_SRC_DIR}
+	@rm -rf ${PORTS_SRC_DIR}
+	@rm -f ${.OBJDIR}/patch-src-freebsd
+	@rm -f ${.OBJDIR}/patch-src-ports
+	@rm -f ${.OBJDIR}/add-src-ports
