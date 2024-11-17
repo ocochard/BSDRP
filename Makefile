@@ -90,9 +90,9 @@ ${PORTS_SRC_DIR}:
 
 update-src-fbsd: ${VARS_FILE} ${FREEBSD_SRC_DIR}
 	# Update only if VARS_FILE was updated since last run
-	@echo "Update FreeBSD src at hash ${FREEBSD_HASH}"
+	@echo "Update FreeBSD sources at hash ${FREEBSD_HASH}..."
 	# revert back to previous revision
-	@git -C ${FREEBSD_SRC_DIR} checkout main
+	@git -C ${FREEBSD_SRC_DIR} checkout ${FREEBSD_BRANCH}
 	@git -C ${FREEBSD_SRC_DIR} pull
 	@git -C ${FREEBSD_SRC_DIR} checkout ${FREEBSD_HASH}
 	@echo "Git commit count:"
@@ -101,8 +101,9 @@ update-src-fbsd: ${VARS_FILE} ${FREEBSD_SRC_DIR}
 
 update-src-ports: ${VARS_FILE} ${PORTS_SRC_DIR}
 	# Update only if VARS_FILE was updated since last run
-	@echo "Update FreeBSD port tree at hash ${PORTS_HASH}"
+	@echo "Update FreeBSD port tree at hash ${PORTS_HASH}..."
 	# revert back to previous revision
+	@git -C ${PORTS_SRC_DIR} checkout ${PORTS_BRANCH}
 	@git -C ${PORTS_SRC_DIR} pull
 	@git -C ${PORTS_SRC_DIR} checkout ${PORTS_HASH}
 	@echo "Git commit count:"
@@ -110,14 +111,13 @@ update-src-ports: ${VARS_FILE} ${PORTS_SRC_DIR}
 	@touch ${.TARGET}
 
 patch-sources: patch-src-freebsd patch-src-ports add-src-ports ${KERNEL}
-	@echo "Patch FreeBSD and ports sources..."
 	@touch ${.TARGET}
 
 patch-src-freebsd: update-src-fbsd
 	# XXX Need to be replaced with a generic call (catch each patch mods)
 	# in a for loop, allowing to patch only when changed
-	@echo "Patch FreeBSD sources"
-	@echo "List of patches: ${FREEBSD_PATCHES}"
+	@echo "Patch FreeBSD sources..."
+	@echo "List of patches: ${FREEBSD_PATCHES}"
 	# Need to start with a fresh cleanup tree
 	# XXX Before simple update too ?
 	@git -C ${FREEBSD_SRC_DIR} checkout .
@@ -185,16 +185,18 @@ upstream-sync: sync-fbsd sync-ports
 sync-fbsd: fetch-src-fbsd
 	@git -C ${.OBJDIR}/FreeBSD stash
 	@git -C ${.OBJDIR}/FreeBSD pull
-	NEW_FBSD_HASH=$$(git -C ${.OBJDIR}/FreeBSD rev-parse --short HEAD) && \
+	@NEW_FBSD_HASH=$$(git -C ${.OBJDIR}/FreeBSD rev-parse --short HEAD) && \
 	sed -i '' "s/FREEBSD_HASH?=.*/FREEBSD_HASH?=$$NEW_FBSD_HASH/" ${.CURDIR}/${VARS_FILE} && \
-	rm -f ${.OBJDIR}/patch-src-freebsd
+	rm -f ${.OBJDIR}/patch-src-freebsd && \
+	echo "Updating previous FreeBSD hash ${FREEBSD_HASH} to $${NEW_FBSD_HASH}"
 
 sync-ports: fetch-src-ports
 	@git -C ${.OBJDIR}/ports stash
 	@git -C ${.OBJDIR}/ports pull
-	NEW_PORTS_HASH=$$(git -C ${.OBJDIR}/ports rev-parse --short HEAD) && \
+	@NEW_PORTS_HASH=$$(git -C ${.OBJDIR}/ports rev-parse --short HEAD) && \
 	sed -i '' "s/PORTS_HASH?=.*/PORTS_HASH?=$$NEW_PORTS_HASH/" ${.CURDIR}/${VARS_FILE} && \
-	rm -f ${.OBJDIR}/patch-src-ports
+	rm -f ${.OBJDIR}/patch-src-ports && \
+	echo "Updating previous ports hash ${PORTS_HASH} to $${NEW_PORTS_HASH}"
 
 clean: clean-images
 
