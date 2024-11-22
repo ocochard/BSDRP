@@ -88,10 +88,22 @@ ${PORTS_SRC_DIR}:
 	@echo "Git clone FreeBSD ports tree..."
 	@git clone -b ${PORTS_BRANCH} --single-branch "${PORTS_REPO}".git ${PORTS_SRC_DIR}
 
-update-src-fbsd: ${VARS_FILE} ${FREEBSD_SRC_DIR}
-	# Update only if VARS_FILE was updated since last run
+cleanup-src-fbsd:
+	@echo "Clean FreeBSD sources..."
+	@git -C ${FREEBSD_SRC_DIR} checkout .
+	@git -C ${FREEBSD_SRC_DIR} clean -fd
+	@rm -f ${.OBJDIR}/patch-src-freebsd
+	@touch ${.TARGET}
+
+cleanup-src-ports:
+	@echo "Clean port sources..."
+	@git -C ${.OBJDIR}/ports checkout .
+	@git -C ${.OBJDIR}/ports clean -fd
+	@rm -f ${.OBJDIR}/patch-src-ports
+	@touch ${.TARGET}
+
+update-src-fbsd: ${VARS_FILE} ${FREEBSD_SRC_DIR} cleanup-src-fbsd
 	@echo "Update FreeBSD sources at hash ${FREEBSD_HASH}..."
-	# revert back to previous revision
 	@git -C ${FREEBSD_SRC_DIR} checkout ${FREEBSD_BRANCH}
 	@git -C ${FREEBSD_SRC_DIR} pull
 	@git -C ${FREEBSD_SRC_DIR} checkout ${FREEBSD_HASH}
@@ -99,10 +111,8 @@ update-src-fbsd: ${VARS_FILE} ${FREEBSD_SRC_DIR}
 	@git -C ${FREEBSD_SRC_DIR} rev-list HEAD --count
 	@touch ${.TARGET}
 
-update-src-ports: ${VARS_FILE} ${PORTS_SRC_DIR}
-	# Update only if VARS_FILE was updated since last run
+update-src-ports: ${VARS_FILE} ${PORTS_SRC_DIR} cleanup-src-ports
 	@echo "Update FreeBSD port tree at hash ${PORTS_HASH}..."
-	# revert back to previous revision
 	@git -C ${PORTS_SRC_DIR} checkout ${PORTS_BRANCH}
 	@git -C ${PORTS_SRC_DIR} pull
 	@git -C ${PORTS_SRC_DIR} checkout ${PORTS_HASH}
@@ -118,10 +128,6 @@ patch-src-freebsd: update-src-fbsd
 	# in a for loop, allowing to patch only when changed
 	@echo "Patch FreeBSD sources..."
 	@echo "List of patches: ${FREEBSD_PATCHES}"
-	# Need to start with a fresh cleanup tree
-	# XXX Before simple update too ?
-	@git -C ${FREEBSD_SRC_DIR} checkout .
-	@git -C ${FREEBSD_SRC_DIR} clean -fd
 	# All patches are in git diff format (so -p0)
 	@for patch in ${FREEBSD_PATCHES}; do \
 		patch -p0 -NE -d  ${.OBJDIR}/FreeBSD -i $${patch} || exit 1; \
@@ -131,11 +137,7 @@ patch-src-freebsd: update-src-fbsd
 patch-src-ports: update-src-ports
 	# XXX Need to be replaced with a generic call (catch each patch mods)
 	@echo "Patch FreeBSD port tree sources..."
-	# Need to start with a fresh cleanup tree
-	# XXX Need to be moved in its own target and Before simple update too ?
-	@git -C ${.OBJDIR}/ports checkout .
-	@git -C ${.OBJDIR}/ports clean -fd
-	@for patch in ${PORTS_PATCHES}; do \
+		@for patch in ${PORTS_PATCHES}; do \
 		patch -p0 -NE -d  ${.OBJDIR}/ports -i $${patch} || exit 1; \
 	done
 	@touch ${.TARGET}
@@ -152,7 +154,15 @@ ${KERNEL}: ${.CURDIR}/BSDRP/kernels/${SRC_ARCH}
 	@echo "Install kernel for arch ${MACHINE_ARCH} (${SRC_ARCH})"
 	@cp ${.CURDIR}/BSDRP/kernels/${SRC_ARCH} ${.OBJDIR}/FreeBSD/sys/${SRC_ARCH}/conf/
 
-build-builder-jail: patch-sources
+build-builder-jail: patch-sources ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common
+	@echo "Build the builder jail and kernel..."
+	# All jail-src.conf need to end by MODULES_OVERRIDE section because this is arch dependends
+	@cp ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf
+	@if [ -f ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${SRC_ARCH} ]; then \
+		cat ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${SRC_ARCH} >> ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
+	else \
+		echo "" >> ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
+	fi
 	@JAIL_ACTION=$$(${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c") && \
 	${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -$${JAIL_ACTION} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${SRC_ARCH}
 	@touch ${.TARGET}
@@ -163,6 +173,7 @@ build-ports-tree: patch-sources
 	@touch ${.TARGET}
 
 build-packages: build-builder-jail build-ports-tree
+	@echo "Build packages..."
 	# Some packages are architecture dependends
 	@cp ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${.OBJDIR}/pkglist
 	@if [ -f ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${SRC_ARCH} ]; then \
@@ -172,7 +183,7 @@ build-packages: build-builder-jail build-ports-tree
 	@touch ${.TARGET}
 
 ${BSDRP_IMAGE} ${BSDRP_UPDATE_IMAGE}: build-packages
-	@echo "XXX ${SUDO} poudriere image"
+	@echo "Build image..."
 	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc image -t firmware -s 4g \
 		-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
 		-c ${.CURDIR}/BSDRP/Files/ \

@@ -15,7 +15,6 @@ net-mgmt/nrpe
 net-mgmt/nstat
 net-mgmt/pmacct
 net-mgmt/rtrlib
-net/aquantia-atlantic-kmod
 net/arping
 net/bird2
 net/dhcp6
@@ -38,7 +37,6 @@ net/pimd
 net/pimdd
 net/pkt-gen
 net/quagga-bgp-netgen
-net/realtek-re-kmod
 net/tayga
 net/wireguard-tools
 ports-mgmt/pkg

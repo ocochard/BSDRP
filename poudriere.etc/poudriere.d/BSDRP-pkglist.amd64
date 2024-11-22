@@ -1,3 +1,5 @@
+net/realtek-re-kmod
+net/aquantia-atlantic-kmod
 net/vpp
 sysutils/cpu-microcode
 sysutils/dtrace-toolkit

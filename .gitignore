@@ -1,6 +1,8 @@
 # ignore downloaded FreeBSD source and port tree
 poudriere.etc/poudriere.d/jails/
 poudriere.etc/poudriere.d/ports/
+# ignore arch-dependent generated config file
+poudriere.etc/poudriere.d/BSDRPj-src.conf
 EINE/local.data
 EINE/DEMO.data/GeoLite2-City.mmdb
 EINE/DEMO.data/GeoLite2-City.mmdb.gz

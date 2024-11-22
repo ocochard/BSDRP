@@ -1,0 +1,15 @@
+	amdsbwd \
+	amdsmn \
+	amdtemp \
+	blake2 \
+	coretemp \
+	cpuctl \
+	ichwd \
+	ioat \
+	hifn \
+	hyperv \
+	padlock \
+	qat \
+	qat_c2xxx \
+	qatfw \
+	vmware

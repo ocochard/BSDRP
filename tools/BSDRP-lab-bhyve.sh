@@ -31,6 +31,7 @@
 set -eu
 
 ### Global variables ###
+arch=$(uname -p)
 ADD_DISKS_NUMBER=0
 ADD_DISKS_SIZE="8G"	# Additionnal disks size in GB
 CORES=1
@@ -43,7 +44,11 @@ NCPUS=1
 NUMBER_VM="1"
 RAM="512M"
 THREADS=1
-UEFI=true
+if [ "${arch}" == "amd64" ]; then
+	UEFI=true
+else
+	UEFI=false
+fi
 VALE=false
 VERBOSE=true
 VNIC="virtio-net"
@@ -87,9 +92,6 @@ die() { echo -n "ERROR: " >&2; echo "$@" >&2; exit 1; }
 
 # Check FreeBSD system pre-requise for starting bhyve
 check_bhyve_support () {
-	# Check if processor support bhyve
-	grep -q 'Features.*POPCNT' /var/run/dmesg.boot || die \
-		"Your CPU does not support POPCNT."
 	# Check if bhyve vmm is loaded
 	load_module vmm
 	# Same for serial console nmdm
@@ -234,12 +236,14 @@ run_vm() {
 			VM_FIRSTBOOT_$1=false
 		fi
 		"
-		eval VM_LOAD_$1=\"bhyveload -S -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm\${NMDM_ID}A \${VM_NAME}_$1\"
-		eval \${VM_LOAD_$1}
+		if [ "${arch}" == "amd64" ]; then
+			eval VM_LOAD_$1=\"bhyveload -S -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm\${NMDM_ID}A \${VM_NAME}_$1\"
+			eval \${VM_LOAD_$1}
+		fi
 		# c: Number of guest virtual CPUs
 		# m: RAM
 		# l: bootrom
-		# A: Generate ACPI tables.  Required for FreeBSD/amd64 guests
+		# A: Generate ACPI tables.  Required for FreeBSD/amd64 guests only
 		# I: Allow devices behind the LPC PCI-ISA bridge to be configured.
 		#     The only supported devices are the TTY-class devices, com1
 		#     and com2.
@@ -250,18 +254,24 @@ run_vm() {
 		# s: Configure a virtual PCI slot and function.
 		# S: Configure legacy ISA slot and function
 		# PCI 0:0 hostbridge
-		# PCI 0:1 lpc (serial)
+		# PCI 0:1 lpc (serial), x86 only
 		# PCI 1:0 Hard drive
 		# PCI 2:0 and next: Network NIC
 		# PCI last:0 ptnetnetmap-memdev (if PTNET&VALE enabled)
 		#   Note: It's not possible to have "hole" in PCI assignement
-		VM_COMMON="bhyve -c cpus=${NCPUS},cores=${CORES},threads=${THREADS} -S -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
+		VM_COMMON="bhyve -c cpus=${NCPUS},cores=${CORES},threads=${THREADS} -S -m ${RAM} -s 0:0,hostbridge"
+		if [ "${arch}" == "amd64" ]; then
+			VM_COMMON="${VM_COMMON} -A -H -P -s 0:1,lpc"
+			( $UEFI ) && VM_BOOT="-l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
+			eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\${NMDM_ID}A\"
+		elif [ "${arch}" == "aarch64" ]; then
+			VM_COMMON="${VM_COMMON} -o bootrom=/usr/local/share/u-boot/u-boot-bhyve-arm64/u-boot.bin"
+			eval VM_CONSOLE_$1=\"-o console=/dev/nmdm\${NMDM_ID}A\"
+		fi
 		VM_BOOT=""
-		( $UEFI ) && VM_BOOT="-l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
 		VM_VNC=""
 		# XXX Need to check if TCP port available
 		( $VNC ) && VM_VNC="-s 29,fbuf,tcp=0.0.0.0:590$1,w=800,h=600"
-		eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\${NMDM_ID}A\"
 		eval VM_DISK_$1=\"-s 1:0,\${DISK_CTRL},\${WRK_DIR}/\${VM_NAME}_$1\"
 		if [ ${ADD_DISKS_NUMBER} -gt 0 ]; then
 			for i in $(jot ${ADD_DISKS_NUMBER}); do

@@ -81,15 +81,9 @@ WITH_PIE=
 WITHOUT_PTHREADS_ASSERTIONS=
 MODULES_OVERRIDE= \
 	acl_nfs4 \
-	amdsbwd \
-	amdsmn \
-	amdtemp \
 	backlight \
-	blake2 \
 	bridgestp \
 	carp \
-	coretemp \
-	cpuctl \
 	dpdk_lpm4 \
 	dpdk_lpm6 \
 	dtrace \
@@ -98,11 +92,8 @@ MODULES_OVERRIDE= \
 	ena \
 	fdescfs \
 	fib_dxr \
-	hifn \
 	hwpmc \
-	hyperv \
 	i2c \
-	ichwd \
 	if_bridge \
 	if_disc \
 	if_epair \
@@ -113,7 +104,6 @@ MODULES_OVERRIDE= \
 	if_stf \
 	if_tuntap \
 	if_vxlan \
-	ioat \
 	ipdivert \
 	ipfilter \
 	ipfw \
@@ -134,13 +124,9 @@ MODULES_OVERRIDE= \
 	netgraph \
 	nullfs \
 	opensolaris \
-	padlock \
 	pf \
 	pflog \
 	pfsync \
-	qat \
-	qat_c2xxx \
-	qatfw \
 	qlxgb \
 	qlxgbe \
 	rc4 \
@@ -148,6 +134,5 @@ MODULES_OVERRIDE= \
 	unionfs \
 	usb/uether \
 	usb/urndis \
-	vmware \
 	xdr \
-	zfs
+	zfs \
