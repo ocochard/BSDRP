@@ -4,9 +4,10 @@ Copyright (c) 2009-2024, The BSDRP Development Team
 
 ## Description
 
-The BSD Router Project (BSDRP) is a free and open-source embedded router distribution built on [FreeBSD](https://www.freebsd.org), featuring: [FRRouting](https://frrouting.org), [Bird](http://bird.network.cz/), [ExaBGP](https://github.com/Exa-Networks/exabgp), [OpenVPN](https://openvpn.net/) and [strongSwan](https://www.strongswan.org/).
+The BSD Router Project (BSDRP) is a free, open-source router distribution based on [FreeBSD](https://www.freebsd.org).
+It includes softwares like: [FRRouting](https://frrouting.org), [Bird](http://bird.network.cz/), [ExaBGP](https://github.com/Exa-Networks/exabgp), [OpenVPN](https://openvpn.net/) and [strongSwan](https://www.strongswan.org/).
 
-## Build-time requirements
+## Requirements to Build
 
 - FreeBSD 14.2 or higher
 - poudriere
@@ -14,9 +15,9 @@ The BSD Router Project (BSDRP) is a free and open-source embedded router distrib
 
 ## How to build
 
-The build system is Makefile based:
+The build system uses a Makefile. To build an image, just run:
 ```
 make
 ```
 
-[More details on the technical documentations section]( https://bsdrp.net/documentation/technical_docs)
+[Learn more in the technical documentation]( https://bsdrp.net/documentation/technical_docs)

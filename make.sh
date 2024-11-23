@@ -556,7 +556,7 @@ esac
 ) >> "${TMPDIR}"/${PROJECT}.nano
 
 {
-	# We don’t need to use bsdlabel partition type with gpt
+	# We don't need to use bsdlabel partition type with gpt
 	echo "NANO_PARTITION_BOOT=\"\""
 	echo "NANO_BOOTLOADER=\"boot/pmbr\""
 	echo "NANO_PARTCODE=\"boot/gptboot\""
@@ -625,7 +625,7 @@ else
 	echo "#                                                                 #"
 	echo "#          WARNING: This make.sh script is deprecated!            #"
 	echo "#                                                                 #"
-	echo "#             use 'build' shell script in place                   #"
+	echo "#          Use 'make' in place to generate BSDRP firmware images  #"
 	echo "#                                                                 #"
 	echo "###################################################################"
 fi
