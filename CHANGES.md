@@ -24,13 +24,14 @@ system resize-system-slice 3921919
 * Deprecated packages (will be removed in next release):
   * isc-dhcp44 (use dnsmasq, kea requires 300MB disk space with its dependencies)
   * dhcprelya (use dnsmasq)
-## To fix
+
+## To fix and test before release
+* [Fix bad permissions due to overlay](https://github.com/freebsd/poudriere/issues/1181)
 * partition resize to test (on BIOS based)
 * bootonce script that should do:
   * gpart recover da0 (fix 'corrupt' status on gpt partitions)
   * Check for bootfailed attribute and act regarding
   * Update script need to be updated to add bootonce and not removing bootme
-* Fix root/.ssh with bad permissions, sshd refuses to use it
 
 -------------------------------------------------------------------------------
 # Release 1.993 (28/03/2024)

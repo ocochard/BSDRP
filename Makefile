@@ -31,105 +31,91 @@
 #   - And a post customization script in post-script.sh
 ###############################################################################
 
-POUDRIERE_IMAGES_DIR = /usr/local/poudriere/data/images
-BSDRP_IMAGE = ${POUDRIERE_IMAGES_DIR}/BSDRP.img
-BSDRP_UPDATE_IMAGE = ${POUDRIERE_IMAGES_DIR}/BSDRP-update.img
+poudriere_images_dir = /usr/local/poudriere/data/images
+bsdrp_image = ${poudriere_images_dir}/BSDRP.img
+bsdrp_update_image = ${poudriere_images_dir}/BSDRP-update.img
 
 .if ${USER} != "root"
-SUDO ?= sudo
+sudo ?= sudo
 .else
-SUDO =
+sudo =
 .endif
 
 # Define the path to the variables file
-# This loads all FREEBSD_* and PORTS_* variables
-VARS_FILE = Makefile.vars
-.if exists(${VARS_FILE})
-.include "${VARS_FILE}"
+# This loads all fbsd_* and ports_* variables
+vars_file = Makefile.vars
+.if exists(${vars_file})
+.include "${vars_file}"
 .else
-.error "Variables file '${VARS_FILE}' not found."
+.error "Variables file '${vars_file}' not found."
 .endif
 
 # Load existing patches files (used to trigged target if modified)
-PATCHES_DIR = ${.CURDIR}/BSDRP/patches
-FREEBSD_PATCHES != find $(PATCHES_DIR) -name 'freebsd.*.patch'
-PORTS_PATCHES != find $(PATCHES_DIR) -name 'ports.*.patch'
-PORTS_SHAR != find $(PATCHES_DIR) -name 'ports.*.shar'
-FREEBSD_SRC_DIR = ${.OBJDIR}/FreeBSD
-PORTS_SRC_DIR = ${.OBJDIR}/ports
-.for required in FREEBSD_PATCHES PORTS_PATCHES PORTS_SHAR
+patches_dir = ${.CURDIR}/BSDRP/patches
+fbsd_patches != find $(patches_dir) -name 'freebsd.*.patch'
+ports_patches != find $(patches_dir) -name 'ports.*.patch'
+ports_shar != find $(patches_dir) -name 'ports.*.shar'
+src_fbsd_dir = ${.OBJDIR}/FreeBSD
+src_ports_dir = ${.OBJDIR}/ports
+.for required in fbsd_patches ports_patches ports_shar
 .if empty(${required})
 .error "No ${required:tl} files found"
 .endif
 .endfor
 
 # MACHINE_ARCH could be aarch64, but the source sys directory is arm64 :-(
-SRC_ARCH = ${MACHINE_ARCH:S/aarch64/arm64/}
-KERNEL = ${.OBJDIR}/FreeBSD/sys/${SRC_ARCH}/conf/${SRC_ARCH}
+src_arch = ${MACHINE_ARCH:S/aarch64/arm64/}
+kernel = ${.OBJDIR}/FreeBSD/sys/${src_arch}/conf/${src_arch}
 #logfile="/tmp/BSDRP.build.log"
 
 .PHONY: all check-requirements clean clean-all upstream-sync sync-FreeBSD sync-ports
 
-all: check-requirements ${BSDRP_IMAGE} ${BSDRP_UPDATE_IMAGE}
+all: check-requirements ${bsdrp_image} ${bsdrp_update_image}
 
 check-requirements:
 	@which git > /dev/null || { echo "Error: git is not installed."; exit 1; }
 .if ${USER} != "root"
-	@which ${SUDO} > /dev/null || { echo "Error: sudo is not installed."; exit 1; }
+	@which ${sudo} > /dev/null || { echo "Error: sudo is not installed."; exit 1; }
 .endif
 
 # Sources management
 
-${FREEBSD_SRC_DIR}:
+${src_fbsd_dir}:
 	@echo "Git clone FreeBSD..."
-	@git clone -b ${FREEBSD_BRANCH} --single-branch "${FREEBSD_REPO}".git ${FREEBSD_SRC_DIR}
+	@git clone -b ${fbsd_branch} --single-branch "${fbsd_repo}".git ${src_fbsd_dir}
 
-${PORTS_SRC_DIR}:
+${src_ports_dir}:
 	@echo "Git clone FreeBSD ports tree..."
-	@git clone -b ${PORTS_BRANCH} --single-branch "${PORTS_REPO}".git ${PORTS_SRC_DIR}
+	@git clone -b ${ports_branch} --single-branch "${ports_repo}".git ${src_ports_dir}
 
-cleanup-src-fbsd:
-	@echo "Clean FreeBSD sources..."
-	@git -C ${FREEBSD_SRC_DIR} checkout .
-	@git -C ${FREEBSD_SRC_DIR} clean -fd
-	@rm -f ${.OBJDIR}/patch-src-freebsd
+.for src in fbsd ports
+cleanup-src-${src}:
+	@echo "==> Cleaning ${src} sources..."
+	@git -C ${src_${src}_dir} checkout .
+	@git -C ${src_${src}_dir} clean -fd
+	@rm -f patch-src-${src}
 	@touch ${.TARGET}
 
-cleanup-src-ports:
-	@echo "Clean port sources..."
-	@git -C ${.OBJDIR}/ports checkout .
-	@git -C ${.OBJDIR}/ports clean -fd
-	@rm -f ${.OBJDIR}/patch-src-ports
-	@touch ${.TARGET}
-
-update-src-fbsd: ${VARS_FILE} ${FREEBSD_SRC_DIR} cleanup-src-fbsd
-	@echo "Update FreeBSD sources at hash ${FREEBSD_HASH}..."
-	@git -C ${FREEBSD_SRC_DIR} checkout ${FREEBSD_BRANCH}
-	@git -C ${FREEBSD_SRC_DIR} pull
-	@git -C ${FREEBSD_SRC_DIR} checkout ${FREEBSD_HASH}
+update-src-${src}: ${vars_file} ${src_${src}_dir} cleanup-src-${src}
+	@echo "==> Updating ${src} at hash ${${src}_hash}..."
+	@git -C ${src_${src}_dir} checkout ${${src}_branch}
+	@git -C ${src_${src}_dir} pull
+	@git -C ${src_${src}_dir} checkout ${${src}_hash}
 	@echo "Git commit count:"
-	@git -C ${FREEBSD_SRC_DIR} rev-list HEAD --count
+	@git -C ${src_${src}_dir} rev-list HEAD --count
 	@touch ${.TARGET}
+.endfor
 
-update-src-ports: ${VARS_FILE} ${PORTS_SRC_DIR} cleanup-src-ports
-	@echo "Update FreeBSD port tree at hash ${PORTS_HASH}..."
-	@git -C ${PORTS_SRC_DIR} checkout ${PORTS_BRANCH}
-	@git -C ${PORTS_SRC_DIR} pull
-	@git -C ${PORTS_SRC_DIR} checkout ${PORTS_HASH}
-	@echo "Git commit count:"
-	@git -C ${PORTS_SRC_DIR} rev-list HEAD --count
-	@touch ${.TARGET}
-
-patch-sources: patch-src-freebsd patch-src-ports add-src-ports ${KERNEL}
+patch-sources: patch-src-freebsd patch-src-ports add-src-ports ${kernel}
 	@touch ${.TARGET}
 
 patch-src-freebsd: update-src-fbsd
 	# XXX Need to be replaced with a generic call (catch each patch mods)
 	# in a for loop, allowing to patch only when changed
 	@echo "Patch FreeBSD sources..."
-	@echo "List of patches: ${FREEBSD_PATCHES}"
+	@echo "List of patches: ${fbsd_patches}"
 	# All patches are in git diff format (so -p0)
-	@for patch in ${FREEBSD_PATCHES}; do \
+	@for patch in ${fbsd_patches}; do \
 		patch -p0 -NE -d  ${.OBJDIR}/FreeBSD -i $${patch} || exit 1; \
 	done
 	@touch ${.TARGET}
@@ -137,7 +123,7 @@ patch-src-freebsd: update-src-fbsd
 patch-src-ports: update-src-ports
 	# XXX Need to be replaced with a generic call (catch each patch mods)
 	@echo "Patch FreeBSD port tree sources..."
-		@for patch in ${PORTS_PATCHES}; do \
+	@for patch in ${ports_patches}; do \
 		patch -p0 -NE -d  ${.OBJDIR}/ports -i $${patch} || exit 1; \
 	done
 	@touch ${.TARGET}
@@ -150,41 +136,41 @@ add-src-ports: update-src-ports
 	done
 	@touch ${.TARGET}
 
-${KERNEL}: ${.CURDIR}/BSDRP/kernels/${SRC_ARCH}
-	@echo "Install kernel for arch ${MACHINE_ARCH} (${SRC_ARCH})"
-	@cp ${.CURDIR}/BSDRP/kernels/${SRC_ARCH} ${.OBJDIR}/FreeBSD/sys/${SRC_ARCH}/conf/
+${kernel}: ${.CURDIR}/BSDRP/kernels/${src_arch}
+	@echo "Install kernel for arch ${MACHINE_ARCH} (${src_arch})"
+	@cp ${.CURDIR}/BSDRP/kernels/${src_arch} ${.OBJDIR}/FreeBSD/sys/${src_arch}/conf/
 
 build-builder-jail: patch-sources ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common
 	@echo "Build the builder jail and kernel..."
 	# All jail-src.conf need to end by MODULES_OVERRIDE section because this is arch dependends
 	@cp ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf
-	@if [ -f ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${SRC_ARCH} ]; then \
-		cat ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${SRC_ARCH} >> ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
+	@if [ -f ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${src_arch} ]; then \
+		cat ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${src_arch} >> ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
 	else \
 		echo "" >> ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
 	fi
-	@JAIL_ACTION=$$(${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c") && \
-	${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -$${JAIL_ACTION} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${SRC_ARCH}
+	@jail_action=$$(${sudo} poudriere -e ${.CURDIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c") && \
+	${sudo} poudriere -e ${.CURDIR}/poudriere.etc jail -$${jail_action} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${src_arch}
 	@touch ${.TARGET}
 
 build-ports-tree: patch-sources
-	@PORTS_ACTION=$$(${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -ln | grep -q BSDRPp && echo "u" || echo "c") && \
-	${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -$${PORTS_ACTION} -p BSDRPp -m null -M ${.OBJDIR}/ports
+	@ports_action=$$(${sudo} poudriere -e ${.CURDIR}/poudriere.etc ports -ln | grep -q BSDRPp && echo "u" || echo "c") && \
+	${sudo} poudriere -e ${.CURDIR}/poudriere.etc ports -$${ports_action} -p BSDRPp -m null -M ${.OBJDIR}/ports
 	@touch ${.TARGET}
 
 build-packages: build-builder-jail build-ports-tree
 	@echo "Build packages..."
 	# Some packages are architecture dependends
 	@cp ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${.OBJDIR}/pkglist
-	@if [ -f ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${SRC_ARCH} ]; then \
-		cat ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${SRC_ARCH} >> ${.OBJDIR}/pkglist; \
+	@if [ -f ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} ]; then \
+		cat ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} >> ${.OBJDIR}/pkglist; \
 	fi
-	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc bulk -j BSDRPj -p BSDRPp -f ${.OBJDIR}/pkglist
+	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc bulk -j BSDRPj -p BSDRPp -f ${.OBJDIR}/pkglist
 	@touch ${.TARGET}
 
-${BSDRP_IMAGE} ${BSDRP_UPDATE_IMAGE}: build-packages
+${bsdrp_image} ${bsdrp_update_image}: build-packages
 	@echo "Build image..."
-	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc image -t firmware -s 4g \
+	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc image -t firmware -s 4g \
 		-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
 		-c ${.CURDIR}/BSDRP/Files/ \
 		-f ${.OBJDIR}/pkglist \
@@ -196,44 +182,45 @@ upstream-sync: sync-fbsd sync-ports
 sync-fbsd: fetch-src-fbsd
 	@git -C ${.OBJDIR}/FreeBSD stash
 	@git -C ${.OBJDIR}/FreeBSD pull
-	@NEW_FBSD_HASH=$$(git -C ${.OBJDIR}/FreeBSD rev-parse --short HEAD) && \
-	sed -i '' "s/FREEBSD_HASH?=.*/FREEBSD_HASH?=$$NEW_FBSD_HASH/" ${.CURDIR}/${VARS_FILE} && \
+	@new_fbsd_hash=$$(git -C ${.OBJDIR}/FreeBSD rev-parse --short HEAD) && \
+	sed -i '' "s/fbsd_hash?=.*/fbsd_hash?=$$new_fbsd_hash/" ${.CURDIR}/${vars_file} && \
 	rm -f ${.OBJDIR}/patch-src-freebsd && \
-	echo "Updating previous FreeBSD hash ${FREEBSD_HASH} to $${NEW_FBSD_HASH}"
+	echo "Updating previous FreeBSD hash ${fbsd_hash} to $${new_fbsd_hash}"
 
 sync-ports: fetch-src-ports
 	@git -C ${.OBJDIR}/ports stash
 	@git -C ${.OBJDIR}/ports pull
-	@NEW_PORTS_HASH=$$(git -C ${.OBJDIR}/ports rev-parse --short HEAD) && \
-	sed -i '' "s/PORTS_HASH?=.*/PORTS_HASH?=$$NEW_PORTS_HASH/" ${.CURDIR}/${VARS_FILE} && \
+	@new_ports_hash=$$(git -C ${.OBJDIR}/ports rev-parse --short HEAD) && \
+	sed -i '' "s/ports_hash?=.*/ports_hash?=$$new_ports_hash/" ${.CURDIR}/${vars_file} && \
 	rm -f ${.OBJDIR}/patch-src-ports && \
-	echo "Updating previous ports hash ${PORTS_HASH} to $${NEW_PORTS_HASH}"
+	echo "Updating previous ports hash ${ports_hash} to $${new_ports_hash}"
 
 clean: clean-images
 
 clean-all: clean-jail clean-ports-tree clean-images clean-src
+	@rm -f ${.OBJDIR}/*
 
 clean-jail: clean-packages
-	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc jail -y -d -j BSDRPj
+	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc jail -y -d -j BSDRPj
 	@rm -f ${.OBJDIR}/build-builder-jail
 
 clean-ports-tree: clean-packages
-	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc ports -y -d -p BSDRPp
+	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc ports -y -d -p BSDRPp
 	@rm -f ${.OBJDIR}/build-ports-tree
 
 clean-packages:
-	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc distclean -y -a -p BSDRPp
-	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc logclean -y -a -j BSDRPj -p BSDRPp
-	@${SUDO} poudriere -e ${.CURDIR}/poudriere.etc pkgclean -y -A -j BSDRPj -p BSDRPp
+	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc distclean -y -a -p BSDRPp
+	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc logclean -y -a -j BSDRPj -p BSDRPp
+	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc pkgclean -y -A -j BSDRPj -p BSDRPp
 	@rm -f ${.OBJDIR}/build-packages
 
 clean-images:
-	@rm -f ${BSDRP_IMAGE}
-	@rm -f ${BSDRP_UPDATE_IMAGE}
+	@${sudo} rm -f ${bsdrp_image}
+	@${sudo} rm -f ${bsdrp_update_image}
 
 clean-src:
-	@rm -rf ${FREEBSD_SRC_DIR}
-	@rm -rf ${PORTS_SRC_DIR}
+	@rm -rf ${src_fbsd_dir}
+	@rm -rf ${src_ports_dir}
 	@rm -f ${.OBJDIR}/patch-src-freebsd
 	@rm -f ${.OBJDIR}/patch-src-ports
 	@rm -f ${.OBJDIR}/add-src-ports

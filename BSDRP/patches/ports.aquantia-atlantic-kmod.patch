@@ -1,0 +1,159 @@
+diff --git net/aquantia-atlantic-kmod/Makefile net/aquantia-atlantic-kmod/Makefile
+index 79f736182dbd..f9e8387b41b7 100644
+--- net/aquantia-atlantic-kmod/Makefile
++++ net/aquantia-atlantic-kmod/Makefile
+@@ -19,4 +19,12 @@ GH_TAGNAME=	c61d27b
+
+ PLIST_FILES=	${KMODDIR}/if_atlantic.ko
+
++.include <bsd.port.options.mk>
++# This patch is compliant with FreeBSD 14, but mandatory starting 15
++.if ${OPSYS} == FreeBSD && (${OSVERSION} >= 1500027)
++EXTRA_PATCHES+= ${FILESDIR}/extra-patch-aq__media.c
++EXTRA_PATCHES+= ${FILESDIR}/extra-patch-aq__ring.c
++EXTRA_PATCHES+= ${FILESDIR}/extra-patch-aq__main.c
++.endif
++
+ .include <bsd.port.mk>
+diff --git net/aquantia-atlantic-kmod/files/extra-patch-aq__main.c net/aquantia-atlantic-kmod/files/extra-patch-aq__main.c
+new file mode 100644
+index 000000000000..09eeb0d119a8
+--- /dev/null
++++ net/aquantia-atlantic-kmod/files/extra-patch-aq__main.c
+@@ -0,0 +1,66 @@
++--- aq_main.c.orig	2022-01-25 07:53:28 UTC
+++++ aq_main.c
++@@ -379,7 +383,7 @@ static int aq_if_attach_pre(if_ctx_t ctx)
++ #else
++ 	if_t ifp;
++ 	ifp = iflib_get_ifp(ctx);
++-	ifp->if_capenable =  IFCAP_RXCSUM | IFCAP_TXCSUM | IFCAP_HWCSUM | IFCAP_TSO |
+++	if_setcapenable(ifp,  IFCAP_RXCSUM | IFCAP_TXCSUM | IFCAP_HWCSUM | IFCAP_TSO |
++ 							  IFCAP_JUMBO_MTU | IFCAP_VLAN_HWFILTER |
++ 							  IFCAP_VLAN_MTU | IFCAP_VLAN_HWTAGGING |
++ 							  IFCAP_VLAN_HWCSUM);
++@@ -718,7 +722,7 @@ static uint64_t aq_if_get_counter(if_ctx_t ctx, ift_co
++ static uint64_t aq_if_get_counter(if_ctx_t ctx, ift_counter cnt)
++ {
++ 	struct aq_dev *softc = iflib_get_softc(ctx);
++-	struct ifnet *ifp = iflib_get_ifp(ctx);
+++	if_t ifp = iflib_get_ifp(ctx);
++
++ 	switch (cnt) {
++ 	case IFCOUNTER_IERRORS:
++@@ -776,7 +780,7 @@ static void aq_if_multi_set(if_ctx_t ctx)
++ static void aq_if_multi_set(if_ctx_t ctx)
++ {
++ 	struct aq_dev *softc = iflib_get_softc(ctx);
++-	struct ifnet  *ifp = iflib_get_ifp(ctx);
+++	if_t ifp = iflib_get_ifp(ctx);
++ 	struct aq_hw  *hw = &softc->hw;
++ 	AQ_DBG_ENTER();
++ #if __FreeBSD_version >= 1300054
++@@ -786,9 +790,9 @@ static void aq_if_multi_set(if_ctx_t ctx)
++ #endif
++ 	if (softc->mcnt >= AQ_HW_MAC_MAX)
++ 	{
++-		aq_hw_set_promisc(hw, !!(ifp->if_flags & IFF_PROMISC),
+++		aq_hw_set_promisc(hw, !!(if_getflags(ifp) & IFF_PROMISC),
++ 				  aq_is_vlan_promisc_required(softc),
++-				  !!(ifp->if_flags & IFF_ALLMULTI) || aq_is_mc_promisc_required(softc));
+++				  !!(if_getflags(ifp) & IFF_ALLMULTI) || aq_is_mc_promisc_required(softc));
++ 	}else{
++ #if __FreeBSD_version >= 1300054
++ 		if_foreach_llmaddr(iflib_get_ifp(ctx), &aq_mc_filter_apply, softc);
++@@ -810,7 +814,7 @@ static void aq_if_media_status(if_ctx_t ctx, struct if
++
++ static void aq_if_media_status(if_ctx_t ctx, struct ifmediareq *ifmr)
++ {
++-	struct ifnet *ifp;
+++	if_t ifp;
++
++ 	AQ_DBG_ENTER();
++
++@@ -824,13 +828,13 @@ static int aq_if_media_change(if_ctx_t ctx)
++ static int aq_if_media_change(if_ctx_t ctx)
++ {
++ 	struct aq_dev *softc = iflib_get_softc(ctx);
++-	struct ifnet *ifp = iflib_get_ifp(ctx);
+++	if_t ifp = iflib_get_ifp(ctx);
++ 	int rc = 0;
++
++ 	AQ_DBG_ENTER();
++
++ 	/* Not allowd in UP state, since causes unsync of rings */
++-	if ((ifp->if_flags & IFF_UP)){
+++	if ((if_getflags(ifp) & IFF_UP)){
++ 		rc = EPERM;
++ 		goto exit;
++ 	}
+diff --git net/aquantia-atlantic-kmod/files/extra-patch-aq__media.c net/aquantia-atlantic-kmod/files/extra-patch-aq__media.c
+new file mode 100644
+index 000000000000..a312d409e19b
+--- /dev/null
++++ net/aquantia-atlantic-kmod/files/extra-patch-aq__media.c
+@@ -0,0 +1,38 @@
++--- aq_media.c.orig	2022-01-25 07:53:28 UTC
+++++ aq_media.c
++@@ -94,9 +94,9 @@ void aq_mediastatus_update(aq_dev_t *aq_dev, u32 link_
++ 		aq_dev->media_active |= IFM_AUTO;
++ }
++
++-void aq_mediastatus(struct ifnet *ifp, struct ifmediareq *ifmr)
+++void aq_mediastatus(if_t ifp, struct ifmediareq *ifmr)
++ {
++-	aq_dev_t *aq_dev = iflib_get_softc(ifp->if_softc);
+++	aq_dev_t *aq_dev = iflib_get_softc(if_getsoftc(ifp));
++
++ 	ifmr->ifm_active = IFM_ETHER;
++ 	ifmr->ifm_status = IFM_AVALID;
++@@ -107,11 +107,11 @@ void aq_mediastatus(struct ifnet *ifp, struct ifmediar
++ 	ifmr->ifm_active |= aq_dev->media_active;
++ }
++
++-int aq_mediachange(struct ifnet *ifp)
+++int aq_mediachange(if_t ifp)
++ {
++-	aq_dev_t          *aq_dev = iflib_get_softc(ifp->if_softc);
+++	aq_dev_t          *aq_dev = iflib_get_softc(if_getsoftc(ifp));
++ 	struct aq_hw      *hw = &aq_dev->hw;
++-	int                old_media_rate = ifp->if_baudrate;
+++	int                old_media_rate = if_getbaudrate(ifp);
++ 	int                old_link_speed = hw->link_rate;
++ 	struct ifmedia    *ifm = iflib_get_media(aq_dev->ctx);
++ 	int                user_media = IFM_SUBTYPE(ifm->ifm_media);
++@@ -169,7 +169,7 @@ int aq_mediachange(struct ifnet *ifp)
++ 	hw->fc.fc_tx = (ifm->ifm_media & IFM_ETH_TXPAUSE) ? 1 : 0;
++
++ 	/* In down state just remember new link speed */
++-	if (!(ifp->if_flags & IFF_UP))
+++	if (!(if_getflags(ifp) & IFF_UP))
++ 		return (0);
++
++ 	if ((media_rate != old_media_rate) || (hw->link_rate != old_link_speed)) {
+diff --git net/aquantia-atlantic-kmod/files/extra-patch-aq__ring.c net/aquantia-atlantic-kmod/files/extra-patch-aq__ring.c
+new file mode 100644
+index 000000000000..dcd566b653fd
+--- /dev/null
++++ net/aquantia-atlantic-kmod/files/extra-patch-aq__ring.c
+@@ -0,0 +1,20 @@
++--- aq_ring.c.orig	2022-01-25 07:53:28 UTC
+++++ aq_ring.c
++@@ -331,7 +331,7 @@ static int aq_isc_rxd_pkt_get(void *arg, if_rxd_info_t
++ 	aq_dev_t *aq_dev = arg;
++ 	struct aq_ring *ring = aq_dev->rx_rings[ri->iri_qsidx];
++ 	aq_rx_desc_t *rx_desc;
++-	struct ifnet *ifp;
+++	if_t ifp;
++ 	int cidx, rc = 0, i;
++ 	size_t len, total_len;
++
++@@ -370,7 +370,7 @@ static int aq_isc_rxd_pkt_get(void *arg, if_rxd_info_t
++ 		cidx = aq_next(cidx, ring->rx_size - 1);
++ 	} while (!rx_desc->wb.eop);
++
++-	if ((ifp->if_capenable & IFCAP_RXCSUM) != 0) {
+++	if ((if_getcapenable(ifp) & IFCAP_RXCSUM) != 0) {
++ 		aq_rx_set_cso_flags(rx_desc, ri);
++ 	}
++ 	ri->iri_rsstype = bsd_rss_type[rx_desc->wb.rss_type & 0xF];
