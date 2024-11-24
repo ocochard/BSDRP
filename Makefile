@@ -104,36 +104,38 @@ update-src-${src}: ${vars_file} ${src_${src}_dir} cleanup-src-${src}
 	@echo "Git commit count:"
 	@git -C ${src_${src}_dir} rev-list HEAD --count
 	@touch ${.TARGET}
-.endfor
+
+patch-src-${src}: update-src-${src}
+	# XXX Need to be replaced with a generic call (catch each patch mods)
+	# in a for loop, allowing to patch only when changed
+.if !defined(${${src}_patches}) || empty(${${src}_patches})
+	@echo "WARNING: No ${src}_patches variable defined or empty, skipping patch"
+.else
+	@echo "Patch ${src} sources..."
+	# All patches are in git diff format (so -p0)
+	@for patch in ${${src}_patches}; do \
+		echo "Processing $${patch}..."; \
+		patch -p0 -NE -d  ${.OBJDIR}/${src} -i $${patch} || exit 1; \
+	done
+.endif
+	@touch ${.TARGET}
+
+.endfor # src
 
 patch-sources: patch-src-freebsd patch-src-ports add-src-ports ${kernel}
 	@touch ${.TARGET}
 
-patch-src-freebsd: update-src-fbsd
-	# XXX Need to be replaced with a generic call (catch each patch mods)
-	# in a for loop, allowing to patch only when changed
-	@echo "Patch FreeBSD sources..."
-	@echo "List of patches: ${fbsd_patches}"
-	# All patches are in git diff format (so -p0)
-	@for patch in ${fbsd_patches}; do \
-		patch -p0 -NE -d  ${.OBJDIR}/FreeBSD -i $${patch} || exit 1; \
-	done
-	@touch ${.TARGET}
-
-patch-src-ports: update-src-ports
-	# XXX Need to be replaced with a generic call (catch each patch mods)
-	@echo "Patch FreeBSD port tree sources..."
-	@for patch in ${ports_patches}; do \
-		patch -p0 -NE -d  ${.OBJDIR}/ports -i $${patch} || exit 1; \
-	done
-	@touch ${.TARGET}
-
 add-src-ports: update-src-ports
+.if !defined(ports_shar) || empty(ports_shar)
+	@echo "WARNING: No ports_shar variable defined or empty, skipping ports addition"
+.else
 	# XXX Need to be replaced with a generic call (catch each shar file mods)
 	@echo "Add extrat ports into FreeBSD port tree sources..."
-	@for shar in ${PORTS_SHAR}; do \
+	@for shar in ${ports_shar}; do \
+		echo "Processing $${shar}..."; \
 		(cd "${.OBJDIR}/ports" && sh $${shar} || exit 1); \
 	done
+.endif
 	@touch ${.TARGET}
 
 ${kernel}: ${.CURDIR}/BSDRP/kernels/${src_arch}
@@ -179,21 +181,16 @@ ${bsdrp_image} ${bsdrp_update_image}: build-packages
 
 upstream-sync: sync-fbsd sync-ports
 
-sync-fbsd: fetch-src-fbsd
-	@git -C ${.OBJDIR}/FreeBSD stash
-	@git -C ${.OBJDIR}/FreeBSD pull
-	@new_fbsd_hash=$$(git -C ${.OBJDIR}/FreeBSD rev-parse --short HEAD) && \
-	sed -i '' "s/fbsd_hash?=.*/fbsd_hash?=$$new_fbsd_hash/" ${.CURDIR}/${vars_file} && \
-	rm -f ${.OBJDIR}/patch-src-freebsd && \
-	echo "Updating previous FreeBSD hash ${fbsd_hash} to $${new_fbsd_hash}"
-
-sync-ports: fetch-src-ports
-	@git -C ${.OBJDIR}/ports stash
-	@git -C ${.OBJDIR}/ports pull
-	@new_ports_hash=$$(git -C ${.OBJDIR}/ports rev-parse --short HEAD) && \
-	sed -i '' "s/ports_hash?=.*/ports_hash?=$$new_ports_hash/" ${.CURDIR}/${vars_file} && \
-	rm -f ${.OBJDIR}/patch-src-ports && \
-	echo "Updating previous ports hash ${ports_hash} to $${new_ports_hash}"
+.for src in fbsd ports
+sync-${src}: ${src_${src}_dir}
+	@echo "Sync ${src} sources with upstream..."
+	@git -C ${src_${src}_dir} stash
+	@git -C ${src_${src}_dir} pull
+	@new_hash=$$(git -C ${src_${src}_dir} rev-parse --short HEAD) && \
+	sed -i '' "s/${src}_hash?=.*/${src}_hash?=$$new_hash/" ${.CURDIR}/${vars_file} && \
+	rm -f ${.OBJDIR}/patch-src-${src} && \
+	echo "Updating previous ${src} hash ${${src}_hash} to $${new_hash}"
+.endfor
 
 clean: clean-images
 
