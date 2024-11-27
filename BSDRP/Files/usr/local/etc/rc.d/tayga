@@ -63,7 +63,7 @@ tayga_postcmd()
 		ifconfig ${tun_device} up
 		# Warning: tayga ask to not configure same IP on router than tayga
 		[ -n "${ipv4_addr}" ] && ifconfig ${tun_device} inet ${ipv4_addr} netmask 255.255.255.255 ${ipv4_addr}
-		[ -n "${inet6addr}" ] && ifconfig ${tun_device} inet6 ${ipv6_addr}
+		[ -n "${ipv6_addr}" ] && ifconfig ${tun_device} inet6 ${ipv6_addr}
 		[ -n "${dynamic_pool}" ] && route add ${dynamic_pool} -interface ${tun_device}
 		[ -n "${prefix}" ] && route add -inet6 ${prefix} -interface ${tun_device}
 	else
