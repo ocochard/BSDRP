@@ -93,6 +93,7 @@ cleanup-src-${src}:
 	@git -C ${src_${src}_dir} checkout .
 	@git -C ${src_${src}_dir} clean -fd
 	@rm -f patch-src-${src}
+	@rm -f patch-sources
 	@touch ${.TARGET}
 
 update-src-${src}: ${vars_file} ${src_${src}_dir} cleanup-src-${src}

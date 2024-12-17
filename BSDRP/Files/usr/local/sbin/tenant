@@ -4,7 +4,7 @@
 # Adapted to be used on generic FreeBSD too
 # https://bsdrp.net
 #
-# Copyright (c) 2017-2022, The BSDRP Development Team
+# Copyright (c) 2017-2024, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -186,7 +186,6 @@ EOF
 	fi
 	cat >> /etc/jail.conf.d/${tenant}.conf <<EOF
     host.hostname = "${tenant}";
-    vnet new;
     allow.chflags = 1;
     exec.start    = "/bin/sh /etc/rc";
     exec.stop     = "/bin/sh /etc/rc.shutdown";
@@ -196,6 +195,9 @@ EOF
     # Commands to run on host before jail is created
     exec.prestart  = "logger pre-starting jail ${tenant}";
 EOF
+	if [ -n "$nics" ]; then
+		echo "vnet new;" >> /etc/jail.conf.d/${tenant}.conf
+	fi
 
 	# we need to create all mount points
 	for dir in dev etc var cfg root bin sbin lib libexec usr conf/base; do
@@ -366,12 +368,18 @@ delete () {
 	# Removing this jail from the autostart
 	sysrc -q jail_list-=${tenant}  > /dev/null 2>&1
 	# If it's the last, disable jail and remove jail.conf
-	echo "XXXXX TO DO: Cleaunp new and old version"
 	echo "Jail ${tenant} is deleted."
-	if ! grep -q '{' /etc/jail.conf; then
-		rm /etc/jail.conf || die "ERROR during deleting /etc/jail.conf"
-		rm /etc/jail.lastid || die "ERROR during deleting /etc/jail.lastid"
-		sysrc -q jail_enable="NO"  > /dev/null 2>&1
+	if [ -f /etc/jail.conf ]; then
+		if ! grep -q '{' /etc/jail.conf; then
+			rm /etc/jail.conf || die "ERROR during deleting /etc/jail.conf"
+			rm /etc/jail.lastid || die "ERROR during deleting /etc/jail.lastid"
+			sysrc -q jail_enable="NO"  > /dev/null 2>&1
+		fi
+	elif [ -d /etc/jail.conf.d ]; then
+		if [ -z "$(ls -A /etc/jail.conf.d 2>/dev/null)" ]; then
+			rm /etc/jail.lastid || die "ERROR during deleting /etc/jail.lastid"
+			sysrc -q jail_enable="NO"  > /dev/null 2>&1
+		fi
 	fi
 	exit 0
 }
