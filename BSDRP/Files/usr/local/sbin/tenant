@@ -120,20 +120,23 @@ create () {
 		fi
 	else
 		jailetc="${jailroot}/etc"
-		if ! [ -r ${jailroot}/sources/${release}.base.txz ]; then
+		if ! [ -r ${jailbase}/sources/${release}.base.txz ]; then
 			echo "Downloading https://download.freebsd.org/snapshots/amd64/${release}/base.txz..."
-			mkdir -p ${jailroot}/sources
-			fetch https://download.freebsd.org/snapshots/amd64/${release}/base.txz -o ${jailroot}/sources/${release}.base.txz
+			mkdir -p ${jailbase}/sources
+			fetch https://download.freebsd.org/snapshots/amd64/${release}/base.txz -o ${jailbase}/sources/${release}.base.txz
 		fi
 		echo "Generating /etc and /var..."
-		tar -xzv --include='./var/*' --include='./etc/*' -C ${jailroot}/ -f ${jailroot}/sources/${release}.base.txz
+		tar -xzv --include='./var/*' --include='./etc/*' -C ${jailroot}/ -f ${jailbase}/sources/${release}.base.txz
 	fi
 
 	# Generate pre-fstab for jail
 	{
-		for i in root bin sbin lib libexec usr; do
+		for i in root bin sbin lib libexec usr/bin usr/include usr/lib usr/libdata usr/share usr/libexec usr/sbin; do
 			echo "/$i ${jailroot}/$i nullfs ro 0 0"
 		done
+		# Use unionfs for usr/local allowing RW access to it (and install packages)
+		echo "/usr/local ${jailroot}/usr/local unionfs below 0 0"
+		echo "/var/db/pkg ${jailroot}/var/db/pkg unionfs below 0 0"
 		if ( $NANOBSD ); then
 			#  using same concept as tmpfs for /etc and /var
 			for i in etc var; do
@@ -197,10 +200,12 @@ EOF
 EOF
 	if [ -n "$nics" ]; then
 		echo "vnet new;" >> /etc/jail.conf.d/${tenant}.conf
+	else
+		echo "ip4 = inherit;" >> /etc/jail.conf.d/${tenant}.conf
 	fi
 
 	# we need to create all mount points
-	for dir in dev etc var cfg root bin sbin lib libexec usr conf/base; do
+	for dir in dev etc var cfg root bin sbin lib libexec usr conf/base usr/bin usr/include usr/lib usr/libdata usr/libexec usr/local usr/sbin usr/share; do
 		if ( $NANOBSD ); then
 			echo "    exec.prestart  += \"mkdir -p ${jailroot}/${dir}\";" >> /etc/jail.conf.d/${tenant}.conf
 
@@ -222,9 +227,6 @@ EOF
     # Prevent diskless
     exec.prestart  += "test -f ${jailroot}/etc/diskless && rm ${jailroot}/etc/diskless || true";
 EOF
-	else
-		echo "XXXX TODO"
-		echo "Where to get ref /etc files from ?"
 	fi
 
 # Parse nics variable (can be in form bridge0,vtnet4.4/10.0.0.1/24)
@@ -359,9 +361,8 @@ delete () {
 	rm -f /etc/fstab.${tenant}
 	rm -f /etc/jail.conf.d/${tenant}.fstab
 	rm -f /etc/jail.conf.d/${tenant}.conf
-	for i in etc var; do
-		[ -d /$i/jails/${tenant} ] && rm -rf /$i/jails/${tenant}
-	done
+	chflags -R noschg ${jailbase}/${tenant}
+	rm -rf ${jailbase}/${tenant}
 	if [ -f /etc/jail.conf ]; then
 		sed -i "" -e "/^$tenant {/,/^}/d" /etc/jail.conf
 	fi
