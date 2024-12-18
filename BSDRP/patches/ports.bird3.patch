@@ -1,0 +1,203 @@
+diff --git net/Makefile net/Makefile
+index 9362bab5d1e5..1a9366429847 100644
+--- net/Makefile
++++ net/Makefile
+@@ -57,6 +57,7 @@
+     SUBDIR += bindtest
+     SUBDIR += binkd
+     SUBDIR += bird2
++    SUBDIR += bird3
+     SUBDIR += bittwist
+     SUBDIR += bmon
+     SUBDIR += boinc-client
+diff --git net/bird2/Makefile net/bird2/Makefile
+index 13e4debd9c50..c8ff21ccc97f 100644
+--- net/bird2/Makefile
++++ net/bird2/Makefile
+@@ -15,8 +15,7 @@ rtsock_PKGNAMESUFFIX=	2-rtsock
+ 
+ USES=		bison cpe gmake ncurses readline
+ 
+-CONFLICTS=	bird
+-CONFLICTS+=	bird6
++CONFLICTS=	bird3
+ 
+ CPE_VENDOR=	nic
+ 
+diff --git net/bird3/Makefile net/bird3/Makefile
+new file mode 100644
+index 000000000000..8c27bcafdc41
+--- /dev/null
++++ net/bird3/Makefile
+@@ -0,0 +1,62 @@
++PORTNAME=	bird
++DISTVERSION=	3.0.0
++CATEGORIES=	net
++MASTER_SITES=	https://bird.network.cz/download/
++PKGNAMESUFFIX=	3
++
++MAINTAINER=	olivier@FreeBSD.org
++COMMENT=	Dynamic multithreaded IP routing daemon
++WWW=		https://bird.network.cz/
++
++LICENSE=	GPLv2
++
++USES=		bison cpe gmake ncurses readline
++
++CONFLICTS=	bird2
++
++CPE_VENDOR=	nic
++
++USE_CSTD=	gnu99
++GNU_CONFIGURE=	yes
++CONFIGURE_ARGS=	--localstatedir=/var
++USE_RC_SUBR=	bird
++SUB_FILES=	pkg-message
++
++GROUPS=		birdvty
++
++MAKE_JOBS_UNSAFE=	yes
++
++OPTIONS_MULTI=	RP
++RP_DESC=	Routing Protocols
++OPTIONS_MULTI_RP=	BFD BABEL BMP BGP MRT OSPF PIPE RADV RIP RPKI STATIC
++OPTIONS_DEFAULT=	BFD BABEL BGP MRT OSPF PIPE RADV RIP RPKI STATIC
++
++BFD_DESC=	Bidirectional Forwarding Detection
++BABEL_DESC=	Babel routing protocol
++BGP_DESC=	Border Gateway Protocol
++BMP_DESC=	BGP Monitoring Protocol
++MRT_DESC=	Dumping Routing Information in MRT Format
++OSPF_DESC=	Open Short Path First
++PIPE_DESC=	PIPE routing
++RADV_DESC=	Router Advertisement
++RIP_DESC=	Routing Information Protocol
++RPKI_DESC=	Resource Public Key Infrastructure
++STATIC_DESC=	Static routing
++
++BFD_VARS=	rt_prot+=bfd
++BABEL_VARS=	rt_prot+=babel
++BGP_VARS=	rt_prot+=bgp
++BMP_VARS=	rt_prot+=bmp
++MRT_VARS=	rt_prot+=mrt
++OSPF_VARS=	rt_prot+=ospf
++PIPE_VARS=	rt_prot+=pipe
++RADV_VARS=	rt_prot+=radv
++RIP_VARS=	rt_prot+=rip
++RPKI_VARS=	rt_prot+=rpki
++STATIC_VARS=	rt_prot+=static
++
++CONFIGURE_ARGS+=--with-protocols="${RT_PROT}"
++CONFIGURE_ARGS+=--with-sysconfig=bsd-netlink
++RPKI_LIB_DEPENDS=	libssh.so:security/libssh
++
++.include <bsd.port.mk>
+diff --git net/bird3/distinfo net/bird3/distinfo
+new file mode 100644
+index 000000000000..66fda3f7d35c
+--- /dev/null
++++ net/bird3/distinfo
+@@ -0,0 +1,3 @@
++TIMESTAMP = 1734554961
++SHA256 (bird-3.0.0.tar.gz) = 8130440a2e273ba6456df2fb3acb43da7cb4d566f94a294a3a52a1b118f2512a
++SIZE (bird-3.0.0.tar.gz) = 2641569
+diff --git net/bird3/files/bird.in net/bird3/files/bird.in
+new file mode 100644
+index 000000000000..de800bd69b81
+--- /dev/null
++++ net/bird3/files/bird.in
+@@ -0,0 +1,30 @@
++#!/bin/sh
++
++# PROVIDE: bird dynamicrouting
++# REQUIRE: LOGIN
++# KEYWORD: shutdown
++#
++# Add the following lines to /etc/rc.conf.local or /etc/rc.conf
++# to enable this service:
++#
++# bird_enable (bool):   Set to NO by default.
++#               Set it to YES to enable bird.
++# bird_config (path):   Set to %%PREFIX%%/etc/bird.conf
++#               by default.
++#
++
++. /etc/rc.subr
++
++name="bird"
++rcvar=bird_enable
++
++load_rc_config $name
++
++: ${bird_enable="NO"}
++: ${bird_config="%%PREFIX%%/etc/bird.conf"}
++: ${bird_group="birdvty"}
++
++command=%%PREFIX%%/sbin/${name}
++command_args="-c $bird_config -g $bird_group"
++
++run_rc_command "$1"
+diff --git net/bird3/files/patch-Makefile.in net/bird3/files/patch-Makefile.in
+new file mode 100644
+index 000000000000..2f8db6f96b66
+--- /dev/null
++++ net/bird3/files/patch-Makefile.in
+@@ -0,0 +1,11 @@
++--- Makefile.in.orig	2022-02-21 11:12:46 UTC
+++++ Makefile.in
++@@ -207,7 +207,7 @@ install: all
++ 		$(INSTALL_PROGRAM) $(exedir)/$$BIN $(DESTDIR)/$(sbindir)/$$BIN ;		\
++ 	done
++ 	if ! test -f $(DESTDIR)/@CONFIG_FILE@ ; then						\
++-		$(INSTALL_DATA) $(srcdir)/doc/bird.conf.example $(DESTDIR)/@CONFIG_FILE@ ;	\
+++		$(INSTALL_DATA) $(srcdir)/doc/bird.conf.example $(DESTDIR)/@CONFIG_FILE@.sample ;	\
++ 	else											\
++ 		echo "Not overwriting old bird.conf" ;						\
++ 	fi
+diff --git net/bird3/files/pkg-message.in net/bird3/files/pkg-message.in
+new file mode 100644
+index 000000000000..f1f38d120f01
+--- /dev/null
++++ net/bird3/files/pkg-message.in
+@@ -0,0 +1,11 @@
++[
++{ type: install
++  message: <<EOM
++%%LOCALBASE%%/sbin/birdc was added to /etc/shells
++To assign it to a user, the user needs to be in group wheel.
++
++Alternatively you could use security/sudo to grant a user access to it,
++which would allow '%%LOCALBASE%%/sbin/birdc -r' to restrict to read-only.
++EOM
++}
++]
+diff --git net/bird3/pkg-descr net/bird3/pkg-descr
+new file mode 100644
+index 000000000000..64904b25948a
+--- /dev/null
++++ net/bird3/pkg-descr
+@@ -0,0 +1,14 @@
++The BIRD project aims to develop a fully functional dynamic IP routing daemon.
++
++- Both IPv4 and IPv6
++- Multiple routing tables
++- BGP
++- RIP
++- OSPF
++- LDP
++- L3VPN
++- Static routes
++- Inter-table protocol
++- Command-line interface
++- Soft reconfiguration
++- Powerful language for route filtering
+diff --git net/bird3/pkg-plist net/bird3/pkg-plist
+new file mode 100644
+index 000000000000..d34280eb152d
+--- /dev/null
++++ net/bird3/pkg-plist
+@@ -0,0 +1,4 @@
++@sample etc/bird.conf.sample
++@shell sbin/birdc
++sbin/bird
++sbin/birdcl
