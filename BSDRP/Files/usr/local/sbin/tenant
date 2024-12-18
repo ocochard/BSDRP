@@ -127,6 +127,8 @@ create () {
 		fi
 		echo "Generating /etc and /var..."
 		tar -xzv --include='./var/*' --include='./etc/*' -C ${jailroot}/ -f ${jailbase}/sources/${release}.base.txz
+		# Inherit the DNS configuration from the host:
+		[ -r /etc/resolv.conf ] && cp /etc/resolv.conf ${jailroot}/etc/
 	fi
 
 	# Generate pre-fstab for jail
@@ -201,7 +203,11 @@ EOF
 	if [ -n "$nics" ]; then
 		echo "vnet new;" >> /etc/jail.conf.d/${tenant}.conf
 	else
-		echo "ip4 = inherit;" >> /etc/jail.conf.d/${tenant}.conf
+		(
+		echo "allow.raw_sockets;"
+		echo "ip4 = inherit;"
+		echo "ip6 = inherit;"
+		)  >> /etc/jail.conf.d/${tenant}.conf
 	fi
 
 	# we need to create all mount points
