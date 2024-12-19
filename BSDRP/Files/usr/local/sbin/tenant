@@ -127,8 +127,9 @@ create () {
 		fi
 		echo "Generating /etc and /var..."
 		tar -xzv --include='./var/*' --include='./etc/*' -C ${jailroot}/ -f ${jailbase}/sources/${release}.base.txz
-		# Inherit the DNS configuration from the host:
+		# Inherit the DNS configuration from the host and the existing pkg database:
 		[ -r /etc/resolv.conf ] && cp /etc/resolv.conf ${jailroot}/etc/
+		[ -d /var/db/pkg/repos ] && cp -a /var/db/pkg ${jailroot}/var/db/
 	fi
 
 	# Generate pre-fstab for jail
@@ -137,8 +138,7 @@ create () {
 			echo "/$i ${jailroot}/$i nullfs ro 0 0"
 		done
 		# Use unionfs for usr/local allowing RW access to it (and install packages)
-		echo "/usr/local ${jailroot}/usr/local unionfs below 0 0"
-		echo "/var/db/pkg ${jailroot}/var/db/pkg unionfs below 0 0"
+		echo "/usr/local ${jailroot}/usr/local unionfs below,noatime 0 0"
 		if ( $NANOBSD ); then
 			#  using same concept as tmpfs for /etc and /var
 			for i in etc var; do
