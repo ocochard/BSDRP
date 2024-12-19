@@ -69,9 +69,11 @@ usage () {
 	echo "                 multiple interface are comma separated"
 	echo "                 if interface a bridge, epair created and add to it"
 	echo "  -j: jail name"
+	echo "  -b: base directory to store jails"
 	echo "Example:"
 	echo "   $0 -c -j customer1 -f /tmp/sshkey.pub -i bridge0,vtnet4.2/10.0.0.1/24 -g 10.0.0.254"
-	exit 1
+	echo "   $0 -c -j shared -b /data/jails"
+exit 1
 }
 
 # Create jail configuration files
@@ -130,6 +132,7 @@ create () {
 		# Inherit the DNS configuration from the host and the existing pkg database:
 		[ -r /etc/resolv.conf ] && cp /etc/resolv.conf ${jailroot}/etc/
 		[ -d /var/db/pkg/repos ] && cp -a /var/db/pkg ${jailroot}/var/db/
+		[ -d /usr/local/pkg/var/db/pkg/repos ] && cp -a /var/db/pkg ${jailroot}/var/db/
 	fi
 
 	# Generate pre-fstab for jail
@@ -138,12 +141,13 @@ create () {
 			echo "/$i ${jailroot}/$i nullfs ro 0 0"
 		done
 		# Use unionfs for usr/local allowing RW access to it (and install packages)
-		echo "/usr/local ${jailroot}/usr/local unionfs below,noatime 0 0"
+		echo "/usr/local ${jailroot}/usr/local unionfs rw,below,noatime 0 0"
+		# Installing package need more free space in /var
 		if ( $NANOBSD ); then
-			#  using same concept as tmpfs for /etc and /var
-			for i in etc var; do
-				echo "tmpfs ${jailroot}/$i tmpfs rw,size=16000000 0 0"
-			done
+			#  using same concept as nanobsd with tmpfs for /etc and /var
+			# But use a lot of more space for /var
+			echo "tmpfs ${jailroot}/etc tmpfs rw,size=16000000 0 0"
+			echo "tmpfs ${jailroot}/var tmpfs rw,size=160000000 0 0"
 			echo "/conf/base ${jailroot}/conf/base nullfs ro 0 0"
 			echo "/etc/jails/${tenant} ${jailroot}/cfg nullfs rw,noatime 0 0"
 		fi
@@ -153,7 +157,8 @@ create () {
 	mkdir -p ${jailetc}
 
 	# Cleanup jail sysctl.conf
-	echo "#Nothing here" > ${jailetc}/sysctl.conf
+	echo "#Disabled by tenant script" > ${jailetc}/sysctl.conf
+	echo "#Disabled by tenant script" > ${jailetc}/fstab
 
 	if [ -n "$authorizedkeys" ]; then
 		mkdir ${jailetc}/dot.ssh.root || die "Can't create ${jailetc}/dot.ssh.root"
@@ -201,12 +206,12 @@ EOF
     exec.prestart  = "logger pre-starting jail ${tenant}";
 EOF
 	if [ -n "$nics" ]; then
-		echo "vnet new;" >> /etc/jail.conf.d/${tenant}.conf
+		echo "    vnet new;" >> /etc/jail.conf.d/${tenant}.conf
 	else
 		(
-		echo "allow.raw_sockets;"
-		echo "ip4 = inherit;"
-		echo "ip6 = inherit;"
+		echo "    allow.raw_sockets;"
+		echo "    ip4 = inherit;"
+		echo "    ip6 = inherit;"
 		)  >> /etc/jail.conf.d/${tenant}.conf
 	fi
 
@@ -352,15 +357,27 @@ EOF
 
 # Delete jail
 delete () {
+	# Need to extract jail's base directory from path variable
 	# Old version: /etc/jail.conf and /etc/fstab.${tenant}
 	# New version: /etc/jail.conf.d/${tenant}.conf and /etc/jail.conf.d/${tenant}.fstab
 	if ! [ -f /etc/jail.conf.d/${tenant}.conf ]; then
 		if ! [ -f /etc/jail.conf ]; then
 			die "ERROR: No jail configured"
 		fi
+	else
+		jaildir=$(grep 'path.*=.*;' /etc/jail.conf.d/${tenant}.conf | cut -d '"' -f 2)
+		if ! [ -d "${jaildir}" ]; then
+			die "ERROR: No directory ${jaildir} extracted from path in /etc/jail.conf.d/${tenant}.conf"
+		else
+			echo "XXX: Extracted jaildir: ${jaildir}"
+		fi
 	fi
 	if [ -f /etc/jail.conf ]; then
 		grep -q "^${tenant} {" /etc/jail.conf || die "ERROR: No jail named $tenant configured in /etc/jail.conf"
+		die "XXX: Need to extract jaildir here (or to be set on command line)"
+	fi
+	if ! [ -d ${jailbase}/${tenant} ]; then
+		die "No directory ${jailbase}/${tenant} found (need to specify -b basedir if used during creation)"
 	fi
 	jls -j ${tenant} > /dev/null 2>&1 && die "Jail is running: Stop it before delete it (service jail stop ${tenant})"
 	mount | grep -q "/var/jails/${tenant}/" && die "There are still some mount points regarding ${tenant}"
@@ -398,11 +415,16 @@ if [ $# -le 0 ] ; then
     usage
 fi
 
-args=$(getopt cdf:g:hi:j: $*)
+args=$(getopt b:cdf:g:hi:j: $*)
 
 set -- $args
 for i; do
 	case "$i" in
+	-b)
+		jailbase=$2
+		shift
+		shift
+		;;
 	-c)
 		($delete) && die "delete and create are mutualy exclusive"
 		create=true
