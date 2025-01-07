@@ -115,10 +115,11 @@ create () {
 		jailetc="/etc/jails/${tenant}"
 		# In NANOBSD mode, autosave should be enabled if jail is created
 		# It allow to automatically save customer configuration changes
+		# But autosave is only available on BSDRP, so do not display error
+		# in case it could not start it
 		if ! sysrc -c autosave_enable="YES"; then
-			echo "Enabling autosave feature"
 			sysrc autosave_enable="YES" > /dev/null 2>&1
-			service autosave start > /dev/null 2>&1 || echo "Warning: Can't start autosave"
+			service autosave start > /dev/null 2>&1 || true
 		fi
 	else
 		jailetc="${jailroot}/etc"
@@ -158,7 +159,6 @@ create () {
 
 	# Cleanup jail sysctl.conf
 	echo "#Disabled by tenant script" > ${jailetc}/sysctl.conf
-	echo "#Disabled by tenant script" > ${jailetc}/fstab
 
 	if [ -n "$authorizedkeys" ]; then
 		mkdir ${jailetc}/dot.ssh.root || die "Can't create ${jailetc}/dot.ssh.root"
