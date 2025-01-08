@@ -4,7 +4,7 @@
 # Adapted to be used on generic FreeBSD too
 # https://bsdrp.net
 #
-# Copyright (c) 2017-2024, The BSDRP Development Team
+# Copyright (c) 2017-2025, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,8 @@
 
 # Exit if error or variable undefined
 set -eu
+etc_dir_size=16m
+var_dir_size=160m
 create=false
 delete=false
 tenant=""
@@ -63,13 +65,14 @@ usage () {
 	echo "Usage: $0 -c|-d -j name -f authorized_keys -i if/ip/mask"
 	echo "  -c: create a jail"
 	echo "  -d: delete a jail"
+	echo "  -b: base directory to store jails"
 	echo "  -f authorized_keys: SSH authorized_keys to be installed into jail"
 	echo "  -g default-gateway: Default gateway"
 	echo "  -i if/ip/mask: network interface name / IP address / IP mask"
 	echo "                 multiple interface are comma separated"
 	echo "                 if interface a bridge, epair created and add to it"
 	echo "  -j: jail name"
-	echo "  -b: base directory to store jails"
+	echo "  -v: /var tpmfs size (default: ${var_dir_size})"
 	echo "Example:"
 	echo "   $0 -c -j customer1 -f /tmp/sshkey.pub -i bridge0,vtnet4.2/10.0.0.1/24 -g 10.0.0.254"
 	echo "   $0 -c -j shared -b /data/jails"
@@ -147,8 +150,8 @@ create () {
 		if ( $NANOBSD ); then
 			#  using same concept as nanobsd with tmpfs for /etc and /var
 			# But use a lot of more space for /var
-			echo "tmpfs ${jailroot}/etc tmpfs rw,size=16000000 0 0"
-			echo "tmpfs ${jailroot}/var tmpfs rw,size=160000000 0 0"
+			echo "tmpfs ${jailroot}/etc tmpfs rw,size=${etc_dir_size} 0 0"
+			echo "tmpfs ${jailroot}/var tmpfs rw,size=${var_dir_size} 0 0"
 			echo "/conf/base ${jailroot}/conf/base nullfs ro 0 0"
 			echo "/etc/jails/${tenant} ${jailroot}/cfg nullfs rw,noatime 0 0"
 		fi
@@ -415,7 +418,7 @@ if [ $# -le 0 ] ; then
     usage
 fi
 
-args=$(getopt b:cdf:g:hi:j: $*)
+args=$(getopt b:cdf:g:hi:j:v: $*)
 
 set -- $args
 for i; do
@@ -459,6 +462,11 @@ for i; do
 		;;
 	-j)
 		tenant=$2
+		shift
+		shift
+		;;
+	-v)
+		var_dir_size=$2
 		shift
 		shift
 		;;
