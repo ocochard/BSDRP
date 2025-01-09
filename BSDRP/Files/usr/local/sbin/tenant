@@ -37,6 +37,8 @@
 set -eu
 etc_dir_size=16m
 var_dir_size=160m
+root_dir_size=""
+root_tmpfs=false
 create=false
 delete=false
 tenant=""
@@ -65,14 +67,15 @@ usage () {
 	echo "Usage: $0 -c|-d -j name -f authorized_keys -i if/ip/mask"
 	echo "  -c: create a jail"
 	echo "  -d: delete a jail"
-	echo "  -b: base directory to store jails"
+	echo "  -b: base directory to store jails (default: ${jailbase})"
 	echo "  -f authorized_keys: SSH authorized_keys to be installed into jail"
 	echo "  -g default-gateway: Default gateway"
 	echo "  -i if/ip/mask: network interface name / IP address / IP mask"
 	echo "                 multiple interface are comma separated"
 	echo "                 if interface a bridge, epair created and add to it"
 	echo "  -j: jail name"
-	echo "  -v: /var tpmfs size (default: ${var_dir_size})"
+	echo "  -t size: Enable tmpfs for / with specified size (default: disabled) [experimental]"
+	echo "  -v size: /var tpmfs size (default: ${var_dir_size})"
 	echo "Example:"
 	echo "   $0 -c -j customer1 -f /tmp/sshkey.pub -i bridge0,vtnet4.2/10.0.0.1/24 -g 10.0.0.254"
 	echo "   $0 -c -j shared -b /data/jails"
@@ -85,6 +88,7 @@ create () {
 	[ -z "${tenant}" ] && die "BUG: tenant name mandatory"
 	[ -f /etc/jail.conf.d/${tenant}.conf ] && die "Already existng jail configuration file"
 	if [ -f /etc/jail.conf ]; then
+		# deprecated jail.conf support
 		grep -q "^${tenant} {" /etc/jail.conf && die "Already existing entry into /etc/jail.conf"
 		[ -d /etc/jails/${tenant} ] && die "Aleary existing directory /etc/jails/${tenant}"
 	fi
@@ -131,6 +135,8 @@ create () {
 			mkdir -p ${jailbase}/sources
 			fetch https://download.freebsd.org/snapshots/amd64/${release}/base.txz -o ${jailbase}/sources/${release}.base.txz
 		fi
+		# XXX Should some of the next steps be done in exec.prestart ?
+		# Because with root_tmpfs, it will be empty after each reboot
 		echo "Generating /etc and /var..."
 		tar -xzv --include='./var/*' --include='./etc/*' -C ${jailroot}/ -f ${jailbase}/sources/${release}.base.txz
 		# Inherit the DNS configuration from the host and the existing pkg database:
@@ -141,14 +147,19 @@ create () {
 
 	# Generate pre-fstab for jail
 	{
+		if [ ${root_tmpfs} = "true" ]; then
+			# XXX need to populate after each reboot"
+			echo "tmpfs ${jailroot} tmpfs rw,size=${root_dir_size} 0 0"
+		fi
 		for i in root bin sbin lib libexec usr/bin usr/include usr/lib usr/libdata usr/share usr/libexec usr/sbin; do
 			echo "/$i ${jailroot}/$i nullfs ro 0 0"
 		done
-		# Use unionfs for usr/local allowing RW access to it (and install packages)
+		# Use unionfs for usr/local allowing RW access to it (and install packages, but not replacing existing files)
+		# so step like "pkg lock -y pkg" could be advised
 		echo "/usr/local ${jailroot}/usr/local unionfs rw,below,noatime 0 0"
 		# Installing package need more free space in /var
 		if ( $NANOBSD ); then
-			#  using same concept as nanobsd with tmpfs for /etc and /var
+			# using same concept as nanobsd with tmpfs for /etc and /var
 			# But use a lot of more space for /var
 			echo "tmpfs ${jailroot}/etc tmpfs rw,size=${etc_dir_size} 0 0"
 			echo "tmpfs ${jailroot}/var tmpfs rw,size=${var_dir_size} 0 0"
@@ -216,6 +227,11 @@ EOF
 		echo "    ip4 = inherit;"
 		echo "    ip6 = inherit;"
 		)  >> /etc/jail.conf.d/${tenant}.conf
+	fi
+
+	# First step to mount the root tmpfs
+	if [ ${root_tmpfs} = "true" ]; then
+		echo "    exec.prestart  += \"mount -t tmpfs -o size=${root_dir_size} tmpfs ${jailroot}\";" >> /etc/jail.conf.d/${tenant}.conf
 	fi
 
 	# we need to create all mount points
@@ -340,6 +356,11 @@ EOF
     exec.prestart  += "logger jail ${tenant} pre-started";
     exec.poststop  += "umount ${jailroot}/dev";
     exec.poststop  += "umount -a -F ${jailfstab}";
+EOF
+	if [ ${root_tmpfs} = "true" ]; then
+		echo "    exec.poststop  += \"umount -f ${jailroot}\";" >> /etc/jail.conf.d/${tenant}.conf
+	fi
+	cat >> /etc/jail.conf.d/${tenant}.conf <<EOF
     exec.poststop  += "jail -r ${id}";
     exec.poststop  += "logger jail ${tenant} post-stopped";
 }
@@ -418,7 +439,7 @@ if [ $# -le 0 ] ; then
     usage
 fi
 
-args=$(getopt b:cdf:g:hi:j:v: $*)
+args=$(getopt b:cdf:g:hi:j:t:v: $*)
 
 set -- $args
 for i; do
@@ -462,6 +483,12 @@ for i; do
 		;;
 	-j)
 		tenant=$2
+		shift
+		shift
+		;;
+	-t)
+		root_tmpfs=true
+		root_dir_size=$2
 		shift
 		shift
 		;;
