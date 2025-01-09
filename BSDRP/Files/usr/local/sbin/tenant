@@ -151,7 +151,7 @@ create () {
 			# XXX need to populate after each reboot"
 			echo "tmpfs ${jailroot} tmpfs rw,size=${root_dir_size} 0 0"
 		fi
-		for i in root bin sbin lib libexec usr/bin usr/include usr/lib usr/libdata usr/share usr/libexec usr/sbin; do
+		for i in root bin sbin lib libexec usr/bin usr/lib usr/libdata usr/share usr/libexec usr/sbin; do
 			echo "/$i ${jailroot}/$i nullfs ro 0 0"
 		done
 		# Use unionfs for usr/local allowing RW access to it (and install packages, but not replacing existing files)
@@ -165,6 +165,10 @@ create () {
 			echo "tmpfs ${jailroot}/var tmpfs rw,size=${var_dir_size} 0 0"
 			echo "/conf/base ${jailroot}/conf/base nullfs ro 0 0"
 			echo "/etc/jails/${tenant} ${jailroot}/cfg nullfs rw,noatime 0 0"
+			# On nanoBSD, usr/include could be empty, so need a writable unionfs to populate it
+			echo "/usr/include ${jailroot}/usr/include unionfs rw,below,noatime 0 0"
+		else
+			echo "/usr/include ${jailroot}/usr/include nullfs ro 0 0"
 		fi
 	} > ${jailfstab}
 
