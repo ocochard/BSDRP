@@ -35,6 +35,7 @@
 
 # Exit if error or variable undefined
 set -eu
+VERSION="0.1"
 etc_dir_size=16m
 var_dir_size=160m
 root_dir_size=""
@@ -76,6 +77,7 @@ usage () {
 	echo "  -j: jail name"
 	echo "  -t size: Enable tmpfs for / with specified size (default: disabled) [experimental]"
 	echo "  -v size: /var tpmfs size (default: ${var_dir_size})"
+	echo "  -V: display version and exit"
 	echo "Example:"
 	echo "   $0 -c -j customer1 -f /tmp/sshkey.pub -i bridge0,vtnet4.2/10.0.0.1/24 -g 10.0.0.254"
 	echo "   $0 -c -j shared -b /data/jails"
@@ -151,7 +153,7 @@ create () {
 			# XXX need to populate after each reboot"
 			echo "tmpfs ${jailroot} tmpfs rw,size=${root_dir_size} 0 0"
 		fi
-		for i in root bin sbin lib libexec usr/bin usr/lib usr/libdata usr/share usr/libexec usr/sbin; do
+		for i in root bin sbin lib libexec usr/bin usr/libdata usr/share usr/libexec usr/sbin; do
 			echo "/$i ${jailroot}/$i nullfs ro 0 0"
 		done
 		# Use unionfs for usr/local allowing RW access to it (and install packages, but not replacing existing files)
@@ -167,8 +169,11 @@ create () {
 			echo "/etc/jails/${tenant} ${jailroot}/cfg nullfs rw,noatime 0 0"
 			# On nanoBSD, usr/include could be empty, so need a writable unionfs to populate it
 			echo "/usr/include ${jailroot}/usr/include unionfs rw,below,noatime 0 0"
+			# On nanoBSD, usr/lib could miss some libraries too
+			echo "/usr/lib ${jailroot}/usr/lib unionfs rw,below,noatime 0 0"
 		else
 			echo "/usr/include ${jailroot}/usr/include nullfs ro 0 0"
+			echo "/usr/lib ${jailroot}/usr/lib nullfs ro 0 0"
 		fi
 	} > ${jailfstab}
 
@@ -443,7 +448,7 @@ if [ $# -le 0 ] ; then
     usage
 fi
 
-args=$(getopt b:cdf:g:hi:j:t:v: $*)
+args=$(getopt b:cdf:g:hi:j:t:v:V $*)
 
 set -- $args
 for i; do
@@ -500,6 +505,11 @@ for i; do
 		var_dir_size=$2
 		shift
 		shift
+		;;
+	-V)
+		shift
+		echo version: ${VERSION}
+		exit 0
 		;;
 	--)
 		shift
