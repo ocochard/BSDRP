@@ -153,9 +153,11 @@ create () {
 			# XXX need to populate after each reboot"
 			echo "tmpfs ${jailroot} tmpfs rw,size=${root_dir_size} 0 0"
 		fi
-		for i in root bin sbin lib libexec usr/bin usr/libdata usr/share usr/libexec usr/sbin; do
+		for i in bin sbin lib libexec usr/bin usr/libdata usr/share usr/libexec usr/sbin; do
 			echo "/$i ${jailroot}/$i nullfs ro 0 0"
 		done
+		# Use unionfs for /root allowing RW access to it (users tempo files)
+		echo "/root ${jailroot}/root unionfs rw,below,noatime 0 0"
 		# Use unionfs for usr/local allowing RW access to it (and install packages, but not replacing existing files)
 		# so step like "pkg lock -y pkg" could be advised
 		echo "/usr/local ${jailroot}/usr/local unionfs rw,below,noatime 0 0"
