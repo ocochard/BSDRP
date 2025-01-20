@@ -76,6 +76,7 @@ check-requirements:
 .if ${USER} != "root"
 	@which ${sudo} > /dev/null || { echo "Error: sudo is not installed."; exit 1; }
 .endif
+  @grep -q mtree /usr/local/share/poudriere/image.sh || { echo "Error: Need https://github.com/freebsd/poudriere/pull/1200"; exit 1; }
 
 # Sources management
 

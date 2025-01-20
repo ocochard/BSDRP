@@ -5,7 +5,9 @@ Starting with version 2.0, BSDRP now needs at least a 4GB disk, instead of the
 previous 2GB. If you installed BSDRP on a 2GB disk, you won’t be able to
 upgrade it. But if you installed it on a 4GB (or larger) disk, you can resize
 the system slice using this command:
+```
 system resize-system-slice 3921919
+```
 
 ## New features
 * The Nanobsd framework is now replaced by poudriere-image. This brings:
@@ -26,8 +28,7 @@ system resize-system-slice 3921919
   * dhcprelya (use dnsmasq)
 
 ## To fix and test before release
-* [Fix bad permissions due to overlay](https://github.com/freebsd/poudriere/issues/1181)
-* partition resize to test (on BIOS based)
+* partition resize to test (on BIOS based systems)
 * bootonce script that should do:
   * gpart recover da0 (fix 'corrupt' status on gpt partitions)
   * Check for bootfailed attribute and act regarding
