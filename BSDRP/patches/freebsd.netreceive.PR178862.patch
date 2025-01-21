@@ -1,8 +1,8 @@
-Index: tools/tools/netrate/netreceive/Makefile
-===================================================================
---- tools/tools/netrate/netreceive/Makefile	(revision 338607)
-+++ tools/tools/netrate/netreceive/Makefile	(working copy)
-@@ -5,6 +5,7 @@
+diff --git tools/tools/netrate/netreceive/Makefile tools/tools/netrate/netreceive/Makefile
+index d4a421b557f..c4433033f53 100644
+--- tools/tools/netrate/netreceive/Makefile
++++ tools/tools/netrate/netreceive/Makefile
+@@ -4,6 +4,7 @@
  PROG=	netreceive
  MAN=
  LDFLAGS += -lpthread
@@ -10,11 +10,11 @@ Index: tools/tools/netrate/netreceive/Makefile
  
  WARNS?=	3
  
-Index: tools/tools/netrate/netreceive/netreceive.c
-===================================================================
---- tools/tools/netrate/netreceive/netreceive.c	(revision 338607)
-+++ tools/tools/netrate/netreceive/netreceive.c	(working copy)
-@@ -30,6 +30,7 @@
+diff --git tools/tools/netrate/netreceive/netreceive.c tools/tools/netrate/netreceive/netreceive.c
+index adef8aeaa25..fcb790752c3 100644
+--- tools/tools/netrate/netreceive/netreceive.c
++++ tools/tools/netrate/netreceive/netreceive.c
+@@ -28,6 +28,7 @@
  #include <sys/socket.h>
  #include <sys/time.h>
  #include <sys/poll.h>
@@ -22,7 +22,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  
  #include <netinet/in.h>
  #include <netdb.h>          /* getaddrinfo */
-@@ -44,9 +45,42 @@
+@@ -42,9 +43,42 @@
  #define MAXSOCK 20
  
  #include <pthread.h>
@@ -65,7 +65,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  static int round_to(int n, int l)
  {
  	return ((n + l - 1)/l)*l;
-@@ -60,8 +94,8 @@
+@@ -58,8 +92,8 @@ struct td_desc {
  	pthread_t td_id;
  	uint64_t count;	/* rx counter */
  	uint64_t byte_count;	/* rx byte counter */
@@ -75,7 +75,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  	int buflen;
  };
  
-@@ -101,19 +135,71 @@
+@@ -99,19 +133,71 @@ static void *
  rx_body(void *data)
  {
  	struct td_desc *t = data;
@@ -84,8 +84,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
 -	int y;
 +	int error, y;
 +	const char *cause = NULL;
- 
--	fds.fd = t->fd;
++
 +	hints.ai_family = PF_UNSPEC;
 +	hints.ai_socktype = SOCK_DGRAM;
 +	hints.ai_flags = AI_PASSIVE;
@@ -135,7 +134,8 @@ Index: tools/tools/netrate/netreceive/netreceive.c
 +		return NULL;
 +		/*NOTREACHED*/
 +	}
-+
+ 
+-	fds.fd = t->fd;
 +	fds.fd = s;
  	fds.events = POLLIN;
  
@@ -151,7 +151,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  			if (y < 0)
  				break;
  			t->count++;
-@@ -124,12 +210,11 @@
+@@ -122,12 +208,11 @@ rx_body(void *data)
  }
  
  static struct td_desc **
@@ -167,7 +167,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  	struct td_desc **tp;
  
  	printf("td len %d -> %d\n", (int)sizeof(struct td_desc) , td_len);
-@@ -140,42 +225,48 @@
+@@ -138,42 +223,48 @@ make_threads(int *s, int nsock, int nthreads)
  	}
  	tp = (struct td_desc **)m;
  	m += lb;	/* skip the pointers */
@@ -225,7 +225,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  		dn = c0 - c1;
  		clock_gettime(CLOCK_REALTIME, &now);
  		delta = now;
-@@ -185,8 +276,8 @@
+@@ -183,8 +274,8 @@ main_thread(struct td_desc **tp, int nsock, int nthreads)
  		pps = (pps * 1000000000) / (delta.tv_sec*1000000000 + delta.tv_nsec + 1);
  		bps = ((bc0 - bc1) * 8000000000) / (delta.tv_sec*1000000000 + delta.tv_nsec + 1);
  		fprintf(stderr, " %9ld pps %8.3f Mbps", (long)pps, .000001*bps);
@@ -236,7 +236,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  		c1 = c0;
  		bc1 = bc0;
  	}
-@@ -195,30 +286,25 @@
+@@ -193,30 +284,25 @@ main_thread(struct td_desc **tp, int nsock, int nthreads)
  int
  main(int argc, char *argv[])
  {
@@ -273,7 +273,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
  
  	packet = malloc(65536);
  	if (packet == NULL) {
-@@ -227,48 +313,9 @@
+@@ -225,48 +311,9 @@ main(int argc, char *argv[])
  	}
  	bzero(packet, 65536);
  
@@ -283,9 +283,7 @@ Index: tools/tools/netrate/netreceive/netreceive.c
 -		return (-1);
 -		/*NOTREACHED*/
 -	}
-+	printf("netreceive using %d threads listening on UDP port %d\n",
-+		nthreads, (u_short)port);
- 
+-
 -	nsock = 0;
 -	for (res = res0; res && nsock < MAXSOCK; res = res->ai_next) {
 -		s[nsock] = socket(res->ai_family, res->ai_socktype,
@@ -320,7 +318,9 @@ Index: tools/tools/netrate/netreceive/netreceive.c
 -
 -	tp = make_threads(s, nsock, nthreads);
 -	main_thread(tp, nsock, nthreads);
--
++	printf("netreceive using %d threads listening on UDP port %d\n",
++		nthreads, (u_short)port);
+ 
 -	/*NOTREACHED*/
 -	freeaddrinfo(res0);
 +	tp = make_threads(argv[1], nthreads);

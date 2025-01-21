@@ -3,7 +3,7 @@
 # System tool for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2009-2021, The BSDRP Development Team
+# Copyright (c) 2009-2025, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,27 +34,81 @@
 # Strict script
 set -eu
 
-# Variables
-USER_CONFIRM=""
-
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
-# get label
+# get system name label
 get_label () {
 	local label=$(cut -d '/' -f 2 /etc/nanobsd.conf)
 	[ -n "${label}" ] && echo ${label} || die "Can't retrieve nanobsd label"
+}
+
+# Display User confirmation message
+# $1: message
+# exit if user enter 'n'
+# return 0 if user enter 'y'
+user_confirm () {
+	local input=""
+	echo -n $1
+	while [ "${input}" != "y" -a "${input}" != "n" ]; do
+		read input <&1
+	done
+	[ "${input}" = "n" ] && exit 0 || return 0
+}
+
+# Check if a partition is mounted
+# $1: Partition to be checked (like /data)
+# return 0: yes
+# return 1: No
+is_mounted () {
+	[ -z "$1" ] &&  die "BUG: is_mounted() need argument"
+	mount | grep -q -e "[[:space:]]$1[[:space:]]" && return 0 || return 1
+}
+
+# Return true if $1 is an integer
+is_integer () {
+	case "${1#[+-]}" in
+		(*[!0123456789]*)	return 1 ;;
+		('')				return 1 ;;
+		(*)					return 0 ;;
+    esac
+}
+
+# Resolve ufs or gpt label to physical disk name
+# ufs/BSDRP -> ada0
+# $1: NANO_DRIVE label
+label2dev () {
+	local output=$(glabel status | grep -E "$1(s1a|s1|1)" \
+		| awk '{ s=$3; sub(/[s|p][1-4]a?$/, "", s); print s; }')
+	[ -n "${output}" ] && echo ${output} || die "BUG in label2dev: Can't retrieve disk name"
+}
+
+# Resolve partition number from gpt|ufs label
+label2part () {
+	# $1: label of gpt|ufs partition in form ufs/xxx or gpt/xxx
+	local output=$(glabel status | grep -E "$1" \
+		| awk '{ split($3,a,"p|s"); print a[2]}' | cut -d a -f 1)
+	if [ -z "${output}" ]; then
+		die "BUG in mount2label(): Empty result"
+	fi
+	if is_integer ${output}; then
+		echo ${output}
+	else
+		die "BUG in mount2label(): Partition number not an integer (${output})"
+	fi
+}
+
+# Return gpt|ufs label from the mount point
+# $1: mount point (/, /data, /cfg, etc)
+mount2label () {
+	local output=$(grep -w $1 /etc/fstab | cut -d ' ' -f 1 | cut -d '/' -f 3-4)	# ufs/BSDRPs4
+	[ -n "${output}" ] && echo ${output} || die "BUG in mount2label: Can't retrieve label from mount"
 }
 
 # Display help
 usage () {
 	echo "BSD Router Project: system tool"
 	case ${SECOND_OPTION} in
-	check-vm)
-		echo "Check if running under a Virtualized environnement (Qemu, VirtualBox, etc.)"
-		echo "- [quiet] : Display only the warning"
-		exit 0
-		;;
 	integrity)
 		echo "Check system integrity using a reference mtree file"
 		echo "The given file can be .mtree, .mtree.bz2 or .mtree.xz"
@@ -75,15 +129,6 @@ usage () {
 	echo "  - resize-system-slice [size] : Resize system slices (rare usage)"
 	echo "  - rollback              : Revert to previous version"
 	exit 0
-}
-
-# Check if a partition is mounted
-# $1: Partition to be checked (like /data)
-# return 0: yes
-# return 1: No
-is_mounted () {
-	[ -z "$1" ] &&  die "BUG: is_mounted() need argument"
-	mount | grep -q -e "[[:space:]]$1[[:space:]]" && return 0 || return 1
 }
 
 # dual-console
@@ -137,109 +182,92 @@ integrity () {
 
 }
 
-#ask to save configuration
+# ask to save configuration
 ask_save () {
 	echo "Warning: Unsaved changes detected !"
 	config diff || true
-	echo -n "Do you want to save the configuration before to continue or abort ? (y/n/a): "
-	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" -a "$USER_CONFIRM" != "a" ]; do
-		read USER_CONFIRM <&1
-	done
-	if [ "$USER_CONFIRM" = "y" ]; then
-		config save
-	elif [ "$USER_CONFIRM" = "a" ]; then
-		exit 0
-	fi
+	user_confirm "Do you want to save the configuration before to continue or abort ? (y/n/a): "
+	config save
 }
 
-#Install system to another disk
+# Install system to another disk
+# $1: Destination disk
 install () {
-	label=$(get_label)
-	boot_dev=$(glabel status | grep ${label}s1 | awk '{ print $3; }'\  | cut -d s -f 1 | tail -n 1)
-	sectors=$(gpart show ${boot_dev} | grep '\- free \-' | tr -s ' ' | cut -d ' ' -f 2 | tail -n 1)
-	disks=$(sysctl -n kern.disks)
-	[ $# -eq 0 ] && die "Missing destination disk (${disks})"
-	[ ${boot_dev} == $1 ] && die "Source disk (${boot_dev}) is same as destination disk ($1), use another disk on this list: ${disks}"
-	bytes=$(( 1 + ${sectors} / 2048 ))
-	# Avoid the error message “the primary GPT table is corrupt or invalid.”
-	# by cleaning the 2 GPT tables on the destination hard drive
-	echo "Cleaning GPT tables on destination hard drive $1..."
-	dd if=/dev/zero of=/dev/$1 bs=1m count=1 > /dev/null 2>&1 || die "Can't erase MBR/GPT table"
-	dd if=/dev/zero of=/dev/$1 bs=1m oseek=$(diskinfo $1 \
-		| awk '{print int($3 / (1024*1024)) - 4;}') > /dev/null 2>&1 || true
-	echo "Copying ${bytes}MB from ${boot_dev} to $1..."
-	dd if=/dev/${boot_dev} of=/dev/$1 bs=1M count=${bytes} || die "Meet error during install"
-}
 
-#When installed on bigger usb key or hard-drive
-#Destroy the data partition and re-create a big one
-expand_data_slice () {
+	[ $# -eq 0 ] && die "BUG calling install() without arguments"
+	# Remove trailing /dev/ if entered by user
+	target_disk=$(basename $1)
 
-	#Load the NANO_DRIVE (label) variable:
+	if [ ! -c /dev/${target_disk} ]; then
+		die "Do not find ${target_disk}"
+	fi
+
+	# Load the NANO_DRIVE (label) variable:
+	# nanobsd: ufs/BSDRP
+	# poudriere-image: gpt/BSDRP
 	. /etc/nanobsd.conf
 
-	if [ $(uname -m) = "sparc64" ]; then
-		boot_dev=/dev/$(glabel status | grep ${NANO_DRIVE}s1a \
-			| awk '{ print $3; }' | sed 's/.$//')
-		die "Not supported: sparc64 for this function"
-	else
-		boot_dev=/dev/$(glabel status | grep ${NANO_DRIVE}s1a \
-			| awk '{ s=$3; sub(/s[12]a$/, "", s); print s; }')
+	label=$(get_label)				# BSDRP
+	boot_dev=$(label2dev ${NANO_DRIVE})		# da0
+
+	disks=$(sysctl -n kern.disks)
+	[ "${boot_dev}" = "${target_disk}" ] && die "Source disk (${boot_dev}) is same as destination disk (${target_disk}), use another disk in this list: ${disks}"
+
+	# Extract only size of usefull data (so end of unextended partition data)
+	sectors=$(gpart show ${boot_dev} | grep '\- free \-' | tr -s ' ' | cut -d ' ' -f 2 | tail -n 1)
+	if [ -z "${sectors}" ]; then
+		# No -free- part detected:
+		# 1. Could be a GPT in CORRUPTED state
+		# 2. Or data partition could have been extended on the installation media
+		sectors_beg=$(gpart show ${boot_dev} | grep freebsd | tr -s ' ' | cut -d ' ' -f 2 | tail -n 1)
+		# 65536 is for the default 32M with poudriere-image
+		sectors_end=65536
+		sectors=$(( sectors_beg + sectors_end ))
 	fi
-	label=$(get_label)
+	bytes=$(( 1 + ${sectors} / 2048 ))
+	echo "Copying ${bytes}MB from ${boot_dev} to ${target_disk}..."
+	dd if=/dev/${boot_dev} of=/dev/${target_disk} bs=1M count=${bytes} || die "Meet error during install"
+	# Fix the message “the primary GPT table is corrupt or invalid.”
+	gpart recover /dev/${target_disk}
+}
+
+# When installed on bigger usb key or hard-drive
+# Destroy the data partition and re-create a big one
+expand_data_slice () {
+
+	# Load the NANO_DRIVE (label) variable:
+	# nanobsd: ufs/BSDRP
+	# poudriere-image: gpt/BSDRP
+	. /etc/nanobsd.conf
+
+	lbltype=$(echo ${NANO_DRIVE} | cut -d '/' -f 1)	# ufs or gpt
+	label=$(echo ${NANO_DRIVE} | cut -d '/' -f 2)	# BSDRP
+	boot_dev=$(label2dev ${NANO_DRIVE})				# ad0
 
 	is_mounted "/data" && die "/data is mounted, you need to unmount it"
 
 	#free space
-	FREE_SPACE=$(gpart show ${boot_dev} | grep "\- free \-" | grep -v "K)" \
+	free_space=$(gpart show ${boot_dev} | grep "\- free \-" | grep -v "K)" \
 			| cut -d '-' -f 3 | tr -s ' ')
-	[ -z "${FREE_SPACE}" ] && die "There is no space left on disk"
-	echo "There is ${FREE_SPACE} available on your disk that can be use for /data"
-	echo -n "Are you sure to repartition your disk ? (y/n)"
-	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
-		read USER_CONFIRM <&1
-	done
-	[ "$USER_CONFIRM" = "n" ] && die "User cancel"
+	[ -z "${free_space}" ] && die "There is no space left on disk (or CORRUPT gpt table that need to be fixed with gpt recover)"
+	echo "There is ${free_space} available on your disk that can be use for /data"
+	user_confirm "Are you sure to repartition your disk (it is a long process) ? (y/n)"
 
-	# Using "gpart resize" + growfs  is too slow and create a bug with
-	# the geom label (pr=kern/165962)
-	#
+	lbldatapart=$(mount2label '/data')		# ufs/BSDRPs4
+	partid=$(label2part ${lbldatapart})		# 4 for ufs/BSDRPs4 or 6 for gpt/data
 
-	# Backuping s4 (data) partition
-	dump -0auf/tmp/s4.dump /dev/${NANO_DRIVE}s4 \
-	|| die "ERROR: dumping ${NANO_DRIVE}s4 to /tmp failed"
-
-	# Deleting partition s4
-	# Need to check the partition delete on sparc64
-	gpart delete -i 4 ${boot_dev} \
-	|| die "Unable to gpart delete -i 4 ${boot_dev}"
-
-	# Recreating s4 using full disk space
-	gpart add -t freebsd ${boot_dev} \
-	|| die "Unable gpart add -t freebsd ${boot_dev}"
-
-	# Formatting the new partition (SUJ)
-	# TO DO: Check if disks support TRIM and enable it
-	label=$(get_label)
-	newfs -UjL ${label}s4 ${boot_dev}s4 \
-	|| die "Unable to newfs -UjL ${label}s4 ${boot_dev}s4"
-
-	# Restoring the dump
-	[ -d /tmp/slice ] || mkdir -p /tmp/slice
-	mount /dev/${NANO_DRIVE}s4 /tmp/slice \
-	|| die "Unable to mount /dev/${NANO_DRIVE}s4 /tmp/slice"
-	cd /tmp/slice
-	restore rf /tmp/s4.dump || die "Unable to restore rf /tmp/s4.dump"
-	[ -f /tmp/slice/restoresymtable ] && rm -rf /tmp/slice/restoresymtable
-	[ -f /etc/dumpdates ] && rm -rf /etc/dumpdates
-
-	cd
-	umount /tmp/slice || die "Can't unmount /tmp/slice, but it's done"
-
+	# gpart resize + growfs is simpler than deleting and recreating partition
+	# but growfs is very slow
+	gpart resize -i ${partid} ${boot_dev}
+	# The label could flap after the resize, need to wait it came back
+	sleep 2
+	growfs -y ${lbldatapart}
 	echo "Done"
-
 }
-#Revert to the other system partition
+
+# Revert to the other system partition
+# Just change fstab and gpart bootme????
+
 #Big part of this function came from the upgrade script
 #TODO: Need to merge the upgrade script and this script
 # 0. Ask a user confirmation
@@ -247,53 +275,51 @@ expand_data_slice () {
 # 2. Mount the previous and update the fstab
 # 3. Change the active slice and bootloader default choice
 rollback () {
-	# Get the NANO_GLABEL_SYS variable
-	NANO_GLABEL_SYS=$(get_label)
-	# Get the NANO_GLABEL_SYS_FULL variable
-	# (kept the last number: 1 or 2)
-	NANO_GLABEL_SYS_FULL=$(mount | grep " / " | cut -d'/' -f4 | cut -d' ' -f1)
+	# Load the NANO_DRIVE (label) variable:
+	# nanobsd: ufs/BSDRP
+	# poudriere-image: gpt/BSDRP
+	. /etc/nanobsd.conf
 
-	# Get the disk name using its label
-	NANO_DRIVE=$(glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} \
-	| awk '{print $3}' | cut -d's' -f1)
+	lbl_type=$(echo ${NANO_DRIVE} | cut -d '/' -f 1)	# ufs or gpt
+	label=$(echo ${NANO_DRIVE} | cut -d '/' -f 2)		# BSDRP
+	boot_dev=$(label2dev ${NANO_DRIVE})					# /dev/ad0
+	lbl_active=$(mount2label '/')			# ufs/BSDRPs2a or gpt/BSDRP2 or ufs/BSDRPs2
+	part_active=$(label2part ${lbl_active})	# 1 or 2 for nanobsd 3-4 for poudriere-image
 
-	# Get the full disk name
-	NANO_FULLDRIVE=$(glabel status | grep ufs/${NANO_GLABEL_SYS_FULL} \
-	| awk '{print $3}')
-
-	# Check and set final variable
-	DST_SLICE=0
-
-	if (echo $NANO_FULLDRIVE | grep -q "s1"); then
-		DST_SLICE=2
-		SRC_SLICE=1
+	if (echo "${lbl_active}" | grep -q "1"); then
+		lbl_prev=$(echo ${lbl_active} | sed 's/1/2/')
+	elif (echo "${lbl_active}" | grep -q "2"); then
+		lbl_prev=$(echo ${lbl_active} | sed 's/2/1/')
+	else
+		die "Can't detect active partition"
 	fi
-	if (echo $NANO_FULLDRIVE | grep -q "s2"); then
-		DST_SLICE=1
-		SRC_SLICE=2
+	part_prev=$(label2part ${lbl_prev})
+
+	# Special case: nanobsd ugpraded to poudriere-image
+	# then requested a rollback
+	if ! [ -c /dev/${lbl_prev} ]; then
+		if echo "${lbl_prev}" | grep -q 'ufs/'; then
+			if [ -c /dev/${lbl_prev}a ]; then
+				lbl_prev=${lbl_prev}a
+			fi
+		fi
 	fi
 
-	[ $DST_SLICE = 0 ] && die "Can't detect active slice"
-
-	# Check if old system was good
-	if [ -e /dev/${NANO_DRIVE}s${DST_SLICE}a ]; then
-		fsck_ffs -n /dev/${NANO_DRIVE}s${DST_SLICE}a ||
+	# Check if previous filesystem was good
+	if [ -c /dev/${lbl_prev} ]; then
+		fsck_ffs -n /dev/${lbl_prev} ||
 		die "ERROR: Missing or fsck problem on the previous system slice"
 	else
-		die "ERROR: This system was never upgraded"
+			die "ERROR: This system was never upgraded"
 	fi
 
-	echo -n "Warning: Are you sure to revert to the previous release ? (y/n)"
-	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "n" ]; do
-		read USER_CONFIRM <&1
-	done
-	[ "$USER_CONFIRM" = "n" ] && exit 0
+	user_confirm "Warning: Are you sure to revert to the previous release ? (y/n)"
 
 	# Need to compare some files between the old and new partition
 	[ -d /tmp/sysupgrade ] || mkdir /tmp/sysupgrade
 
-	#   Adapt fstab of the old system
-	sed -i "" "s/${NANO_GLABEL_SYS}s${SRC_SLICE}a/${NANO_GLABEL_SYS}s${DST_SLICE}a/g" /etc/fstab
+	#   Adapt fstab to reuse the previous system
+	sed -i "" "s|${lbl_active}|${lbl_prev}|g" /etc/fstab
 
 	# Save the config file that include the fstab
 	mount /cfg || die "ERROR: Cant't mount /cfg"
@@ -304,18 +330,24 @@ rollback () {
 	umount /cfg || die "ERROR: Can't umount /cfg"
 	case $(uname -m) in
 	i386|amd64)
-		boot0cfg -s ${DST_SLICE} -t 18 -v ${NANO_DRIVE} ||
-		die "ERROR: Can't update FreeBSD bootloader"
-		gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE} ||
-		die "ERROR: Can't update active partition"
+		if [ "${lbl_type}" = "ufs" ]; then
+			# nanobsd
+			boot0cfg -s ${part_prev} -t 18 -v ${boot_dev} || \
+				die "ERROR: Can't update FreeBSD bootloader"
+			gpart set -a active -i ${part_prev} ${boot_dev} || \
+				die "ERROR: Can't update active partition"
+		else
+			# poudriere-image
+			gpart set -a bootme -i ${part_prev} ${boot_dev} || \
+				die "ERROR: Can't add bootme flag to previous system partition"
+			gpart unset -a bootme -i ${part_activeT} ${boot_dev} || \
+				die "ERROR: Can't remove bootme flag from active system partition"
+		fi
 		;;
 	arm)
 		echo "arm upgrade script not tested!"
-		gpart set -a active -i ${DST_SLICE} ${NANO_DRIVE} ||
-		die "ERROR: Can't update active partition"
-		;;
-	sparc64)
-		echo "You need to configure OBP for booting on"
+		gpart set -a active -i ${part_prev} ${boot_dev} || \
+			die "ERROR: Can't update active partition"
 		;;
 	esac
 
@@ -334,26 +366,48 @@ check_cfg () {
 	config diff quiet || ask_save
 }
 
+# In case of second partition the active one, need to switch to first partition
+# $1: active partition in form ufs/BSDRPs2 or gpt/BSDRP2
 swap_system() {
 	echo -n "Active partition need to be partition 1, swaping it (Don't stop this fake-upgrade operation!)..."
-	cat /dev/${boot_dev}s2 | upgrade
+	cat /dev/$1 | upgrade
 	echo "Done, rebooting..."
 	reboot
 }
 
+# Resize OS partition size
+# SECOND_OPTION global var is the size
+# $1 is boot_dev in form of ada0
+# $2 is the format type (ufs: nanobsd, gpt: poudriere-image)
 resize_system() {
 	# Need to check if already resized
+	local boot_dev=$1
+	local lbl_type=$2
 	echo -n "Resizing partition..."
-	gpart delete -i 4 ${boot_dev}
-	gpart delete -i 3 ${boot_dev}
-	gpart delete -i 2 ${boot_dev}
-	gpart resize -i 1 -a 4k -s ${SECOND_OPTION} ${boot_dev}
-	gpart commit ${boot_dev}s1
-	gpart add -t freebsd -i 2 -a 4k -s ${SECOND_OPTION} ${boot_dev}
-	gpart add -t freebsd -i 3 -a 4k -s 16M ${boot_dev}
-	gpart add -t freebsd -i 4 -a 4k ${boot_dev}
-	newfs -b 4096 -f 512 -i 8192 -U -L ${label}s3 /dev/${boot_dev}s3
-	newfs -b 4096 -f 512 -i 8192 -U -L ${label}s4 /dev/${boot_dev}s4
+	if [ ${lbl_type} = "ufs" ]; then
+		# nanobsd
+		gpart delete -i 4 ${boot_dev}
+		gpart delete -i 3 ${boot_dev}
+		gpart delete -i 2 ${boot_dev}
+		gpart resize -i 1 -a 4k -s ${SECOND_OPTION} ${boot_dev}
+		gpart commit ${boot_dev}
+		gpart add -t freebsd -i 2 -a 4k -s ${SECOND_OPTION} ${boot_dev}
+		gpart add -t freebsd -i 3 -a 4k -s 16M ${boot_dev}
+		gpart add -t freebsd -i 4 -a 4k -l data ${boot_dev}
+		newfs -b 4096 -f 512 -i 8192 -U -L ${label}s3 /dev/${boot_dev}s3
+		newfs -b 4096 -f 512 -i 8192 -U -L ${label}s4 /dev/${boot_dev}s4
+	else
+		# poudriere-image
+		gpart delete -i 6 ${boot_dev}
+		gpart delete -i 5 ${boot_dev}
+		gpart delete -i 4 ${boot_dev}
+		gpart resize -i 3 -a 4k -s ${SECOND_OPTION} ${boot_dev}
+		gpart add -t freebsd-ufs -i 4 -a 4k -s ${SECOND_OPTION} -l BSDRP2 ${boot_dev}
+		gpart add -t freebsd-ufs -i 5 -a 4k -s 32M -l cfg ${boot_dev}
+		gpart add -t freebsd-ufs -i 6 -a 4k -l data ${boot_dev}
+		newfs -b 4096 -f 512 -i 8192 -U -L cfg /dev/gpt/cfg
+		newfs -U -L data /dev/gpt/data
+	fi
 	config save
 	echo "Done"
 }
@@ -366,33 +420,34 @@ resize_system_slice () {
 	echo "- If a partition swaping is needed, system will reboot automatically at the end of first step"
 	echo "  You need to restart this tool after the reboot for continuing"
 	echo "- All files stored in /data partition will be destroyed!"
-	echo -n "Do you want to continue or abort ? (y/a): "
-	USER_CONFIRM=""
-	while [ "$USER_CONFIRM" != "y" -a "$USER_CONFIRM" != "a" ]; do
-		read USER_CONFIRM <&1
-	done
-	[ "$USER_CONFIRM" = "a" ] && die "User aborded"
+	user_confirm "Do you want to continue or abort ? (y/a): "
+
+	# Load the NANO_DRIVE (label) variable:
+	# nanobsd: ufs/BSDRP
+	# poudriere-image: gpt/BSDRP
+	. /etc/nanobsd.conf
+
+	local boot_dev=$(label2dev ${NANO_DRIVE})		# da0
 
 	# Need to check total disk space
 	echo -n "Checking disk size..."
-	label=$(get_label)
-	boot_dev=$(glabel status | grep ${label}s1 | awk '{ print $3; }'\  | cut -d s -f 1)
-	# If user just tried to upgrade a too small sized disk, ${label}s1 could
-	#  be missing, so in this case try again but with ${label}s2
-	[ -z "${boot_dev}" ] && boot_dev=$(glabel status | grep ${label}s2 | awk '{ print $3; }'\  | cut -d s -f 1)
-	[ -z "${boot_dev}" ] && die "Can't detect the physical disk where BSDRP is installed"
-	disk_size=$(gpart show ${boot_dev} | grep ${boot_dev} | tr -s ' ' | cut -d ' ' -f 3)
+	local disk_size=$(gpart show ${boot_dev} | grep ${boot_dev} | tr -s ' ' | cut -d ' ' -f 3)
 	[ -z "${disk_size}" ] && die "Can't read the disk size"
 
 	# 1 000 000 sector at 512B
 	# Check that current disk sector size is enough for twice new system size AND cfg+data slices
-	minimum_size=$((SECOND_OPTION * 2 + 64260))
+	local minimum_size=$((SECOND_OPTION * 2 + 65536 + 655360))
 	[ ${disk_size} -lt ${minimum_size} ] && die "Disk too small for system slice expansion (minimum block size of ${minimum_size} but it has ${disk_size}"
 
 	is_mounted "/data" && die "/data is mounted, you need to unmount it"
 
-	. /etc/nanobsd.conf
-	mount /dev/${NANO_DRIVE}s1a > /dev/null 2>&1 && resize_system || swap_system
+	local lbl_active=$(mount2label '/')           # ufs/BSDRPs2a or gpt/BSDRP2
+	local lbl_type=$(echo ${NANO_DRIVE} | cut -d '/' -f 1)
+	if echo ${lbl_active} | grep -q 2; then
+		swap_system ${lbl_active}
+	else
+		resize_system ${boot_dev} ${lbl_type}
+	fi
 
 	echo "Your system slice were correctly resized"
 	return 0
@@ -441,9 +496,6 @@ else
 fi
 
 case "$FIRST_OPTION" in
-	check-vm)
-		check_vm
-		;;
 	dual-console)
 		dual_console ${SECOND_OPTION}
 		;;

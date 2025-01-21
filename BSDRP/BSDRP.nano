@@ -333,7 +333,7 @@ add_port "net-mgmt/bsnmp-ucd"
  add_port "devel/libffi"
  add_port "devel/readline"
  add_port "math/mpdecimal"
- add_port "lang/python39"
+ add_port "lang/python311"
  add_port "lang/python3"
 add_port "lang/python"
 add_port "devel/py-setuptools"
@@ -344,8 +344,10 @@ add_port "devel/py-setuptools"
  add_port "archivers/lzo2"
   add_port "devel/py-packaging"
  add_port "archivers/liblz4"
- add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IMAP GOPHER HTTP2 LIBSSH2 POP3 PSL RTSP SMTP TELNET\""
- add_port "textproc/expat2"
+ add_port "archivers/brotli"
+ add_port "archivers/zstd"
+  add_port "textproc/expat2"
+ add_port "ftp/curl" "WITH=\"GSSAPI_NONE\" WITHOUT+=\"GSSAPI_BASE IDN IMAP GOPHER HTTP2 LIBSSH2 POP3 PSL RTSP SMTP TELNET\""
  add_port "devel/jsoncpp"
  add_port "security/libssh"
 add_port "net-mgmt/rtrlib"
@@ -361,17 +363,14 @@ add_port "net-mgmt/rtrlib"
    # add_port "devel/jsoncpp"
   add_port "devel/protobuf"
  add_port "devel/protobuf-c"
-add_port "net/frr9" "WITH=\"MULTIPATH\""
-add_port "net/frr9-pythontools"
+add_port "net/frr10" "WITH=\"MULTIPATH\""
+add_port "net/frr10-pythontools"
 
 # FRR installs some software that we don't need anymore after install:
 # devel/libtool*, devel/gettext, /devel/gmake, /lang/gawk
 
 # Bird: routing daemon
 add_port "net/bird2"
-
-# FreeVRRPd (netgraph dependent)
-add_port "net/freevrrpd"
 
 # add_port "security/cyrus-sasl2"
 # add_port "net/openldap25-client" "WITHOUT+=\"GSSAPI\""
@@ -383,10 +382,6 @@ add_port "security/strongswan" "WITH=\"MEDIATION GCM\" WITHOUT+=\"EAPAKA3GPP2 EA
 # pmacct: IP accounting tool
  add_port "devel/libcdada"
 add_port "net-mgmt/pmacct"
-
-# ucarp: Userland carp because enabling carp in the kernel prevent to use FreeVRRPd
-# UPDATE: With FreeBSD 8.2 carp can be compiled as module, it should not interfere with FreeVRRPd
-add_port "net/ucarp"
 
 # ARP level "ping" utility
  add_port "net/libnet"
@@ -410,9 +405,9 @@ add_port "net/pimd"
 add_port "net/tayga"
 
 # dnsmasq:	DHCP server, DNS forwarder
-#add_port "math/gmp"
-#add_port "security/nettle"
-#add_port "dns/dnsmasq"
+add_port "math/gmp"
+add_port "security/nettle"
+add_port "dns/dnsmasq"
 # DHCP server and client
 add_port "net/isc-dhcp44-server"
 #add_port "net/isc-dhcp44-relay"
@@ -422,7 +417,7 @@ add_port "net/dhcprelya"
 add_port "net/dhcp6"
 
 # fswatch-mon: file change monitor (used for auto_save configuration)
-add_port "sysutils/fswatch-mon"
+add_port "filesystems/fswatch-mon"
 
 # monit: managing and monitoring processes tool
 add_port "sysutils/monit"
@@ -436,6 +431,7 @@ add_port "editors/vim" "FLAVOR=console"
 # tmux: screen equivalent, but better because BSD
  add_port "devel/libevent"
  add_port "textproc/utf8proc"
+ add_port "devel/ncurses"
 add_port "sysutils/tmux"
 
 # ipmi tools
@@ -474,7 +470,6 @@ add_port "security/openvpn-auth-radius"
 
 # Realtek official drivers
 add_port "net/realtek-re-kmod"
-add_port "net/aquantia-atlantic-kmod"
 
 # tinc
 add_port "security/tinc"
@@ -496,7 +491,7 @@ add_port "net/mrtparse"
 # Into cleanup_ports(), remove libiconv from the list too or it will delete all port that depends from it
  #add_port "converters/libiconv" # already added
  add_port "devel/gettext-runtime"
- add_port "sysutils/fusefs-libs"
+ add_port "filesystems/fusefs-libs"
   add_port "textproc/libxml2"
   add_port "devel/pcre"
   #add_port "devel/py-packaging"
@@ -504,6 +499,7 @@ add_port "net/mrtparse"
   add_port "net/libpfctl"
  add_port "net/libdnet"
  add_port "archivers/libmspack"
+ add_port "emulators/open-vm-kmod"
 add_port "emulators/open-vm-tools" "FLAVOR=nox11"
 
 # Permit BIOS upgrade
@@ -540,7 +536,7 @@ add_port "net/nc"
 add_port "net/ntraceroute"
 
 # MTR combines traceroute and ping
-add_port "net/mtr" "WITHOUT+=\"JSON\""
+add_port "net/mtr" "FLAVOR=nox11" "WITHOUT+=\"JSON\""
 
 # BGPQ3: Lightweight prefix-list generator for Cisco and Juniper routers
 add_port "net-mgmt/bgpq4"
@@ -613,49 +609,49 @@ p5-Text-Unidecode
 p5-Unicode-EastAsianWidth
 pkgconf
 python27
-py39-Babel
-py39-calver
-py39-cython
-py39-editables
-py39-Jinja2
-py39-MarkupSafe
-py39-alabaster
-py39-asn1crypto
-py39-build
-py39-certifi
-py39-cffi
-py39-chardet
-py39-charset-normalizer
-py39-cryptography
-py39-docutils
-py39-enum34
-py39-flit-core
-py39-installer
-py39-idna
-py39-imagesize
-py39-importlib-metadata
-py39-openssl
-py39-pathspec
-py39-pluggy
-py39-pycparser
-py39-pyproject_hooks
-py39-pygments
-py39-pyparsing
-py39-pystemmer
-py39-pysocks
-py39-pytest-runner
-py39-pytz
-py39-setuptools_scm
-py39-six
-py39-snowballstemmer
-py39-sphinx*
-py39-tomli
-py39-trove-classifiers
-py39-typing
-py39-typing-extensions
-py39-urllib3
-py39-zipp
-py39-wheel
+py311-Babel
+py311-calver
+py311-cython
+py311-editables
+py311-Jinja2
+py311-MarkupSafe
+py311-alabaster
+py311-asn1crypto
+py311-build
+py311-certifi
+py311-cffi
+py311-chardet
+py311-charset-normalizer
+py311-cryptography
+py311-docutils
+py311-enum34
+py311-flit-core
+py311-installer
+py311-idna
+py311-imagesize
+py311-importlib-metadata
+py311-openssl
+py311-pathspec
+py311-pluggy
+py311-pycparser
+py311-pyproject_hooks
+py311-pygments
+py311-pyparsing
+py311-pystemmer
+py311-pysocks
+py311-pytest-runner
+py311-pytz
+py311-setuptools_scm
+py311-six
+py311-snowballstemmer
+py311-sphinx*
+py311-tomli
+py311-trove-classifiers
+py311-typing
+py311-typing-extensions
+py311-urllib3
+py311-zipp
+py311-wheel
 rhash
 scons
 sdocbook-xml

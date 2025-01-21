@@ -3,7 +3,7 @@
 # Upgrade tool for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2009-2019, The BSDRP Development Team
+# Copyright (c) 2009-2025, The BSDRP Development Team
 # All rights reserved.
 # Based on the updatep1 and updatep2 script of nanoBSD
 #
@@ -33,10 +33,9 @@
 ##  Example of Usage ##
 #######################
 
-# Put the bziped _.disk.image on my-server, in the  home dir of my-user,
+# Put the compressed _.disk.image on my-router, in the  home dir of my-user,
 # and from the nanoBSD device, enter this command:
-# ssh my-user@my-server cat _.disk.image.bz2 | bzcat | upgrade
-# ssh my-user@my-server cat _.disk.image.xz | xzcat | upgrade
+# ssh my-user@my-router cat _.disk.image.xz | xzcat | upgrade
 
 # Strict script
 set -eu
@@ -81,125 +80,114 @@ v_umount () {
 	return 0
 }
 
-# Get Label information for MBR
-mbr_get_info() {
-	# On a MBR system, partition number/name map is:
-	# s1 is UFS with BSD slice a: first system partition (UFS label: NAMEs1a)
-	# s2 if UFS with BSD slice a: second system partition (UFS label: NAMEs2a)
-
-	# XXX Why not using 'kenv vfs.root.mountfrom' here ?
-	if mount | grep -E -q "^/dev/${NANO_DRIVE}s1a on / "; then
-		CURRENT_SLICE="s1"
-		CURRENT_PART="1"
-		NEXT_SLICE="s2"
-		NEXT_PART="2"
-	elif mount | grep -E -q "^/dev/${NANO_DRIVE}s2a on / " ; then
-		CURRENT_SLICE="s2"
-		CURRENT_PART="2"
-		NEXT_SLICE="s1"
-		NEXT_PART="1"
-	else
-    	die "Can't detect active slice"
-	fi
-
-	BSD_SLICE="a"
-	NEXT_LABEL_ID="${NEXT_SLICE}${BSD_SLICE}"
-	CURRENT_LABEL_ID="${CURRENT_SLICE}${BSD_SLICE}"
-
-	# ufs/BSDRPs1a     N/A  aacd0s1a
-	boot_dev=/dev/$(glabel status | grep ${NANO_DRIVE}${CURRENT_LABEL_ID} | \
-		awk '{ s=$3; sub(/s[12]a$/, "", s); print s; }')
-	[ -z "${boot_dev}" ] && die "Bug in mbr_get_info: boot_dev can't be empty"
-	return 0
-}
-
-# Get Label information for MBR
-gpt_get_info() {
-	# On a GPT system, partition number/name map is:
-	# p1 is msdosfs/EFI
-	# p2 is freebsd-boot
-	# p3 is first system with NAME1
-	# p4 is second system with NAME2
-
-	if mount | grep -E -q "^/dev/${NANO_DRIVE}1 on / "; then
-		CURRENT_SLICE="p3"
-		CURRENT_PART="3"
-		CURRENT_LABEL_ID="1"
-		NEXT_SLICE="p4"
-		NEXT_PART="4"
-		NEXT_LABEL_ID="2"
-	elif mount | grep -E -q "^/dev/${NANO_DRIVE}2 on / " ; then
-		CURRENT_SLICE="p4"
-		CURRENT_PART="4"
-		CURRENT_LABEL_ID="2"
-		NEXT_SLICE="p3"
-		NEXT_PART="3"
-		NEXT_LABEL_ID="1"
-	else
-		die "Can't detect active slice"
-	fi
-
+# Populate boot device and labels informations
+get_boot_info() {
 	BSD_SLICE=""
+	mountfrom=$(kenv vfs.root.mountfrom)
+	# MBR (nanobsd): "ufs:/dev/ufs/BSDRPs1a"
+	# GPT (poudriere): "ufs:/dev/gpt/BSDRP1"
+	# Removing prefix "ufs:"
+	mountfrom=$(echo ${mountfrom} | cut -d ':' -f 2)
+	# /dev/ufs/BSDRPs1a (old nanobsd) or /dev/gpt/BSDRP1 (fresh poudriere-image)
+	# or /dev/ufs/BSDRPs2 (converted from nanobsd to poudriere-image)
 
-	# gpt/BSDRP0     N/A  vtbd0p3
-	boot_dev=/dev/$(glabel status | grep ${NANO_DRIVE}${CURRENT_LABEL_ID} | \
-		awk '{ s=$3; sub(/p[34]$/, "", s); print s; }')
-	[ -z "${boot_dev}" ] && die "Bug in gpt_get_info: boot_dev can't be empty"
-	return 0
-}
+	# Now we could extract the label ID ('NANO_DRIVE=ufs/BSDRP')
+	CURRENT_LABEL_ID=$(echo ${mountfrom} | awk -F"${NANO_DRIVE}" '{print $2}')
+	# s1a (MBR), s1 (converted MBR), or 1 (GPT)
+	# Removing prefix /dev/
+	mountfrom=${mountfrom#/dev/}
+	# ufs/BSDRPs1a or gpt/BSDRP1 or ufs/BSDRPs1
+	BOOT_DEV=$(glabel status | awk -v label=$mountfrom '$1 == label {print $3}')
+	# ada0s1a (MBR) or ada0p3 (GPT) or adas1 (converted)
+	# Need to resolve the disk name, by removing the CURRENT_LABEL_ID at the end:
+	BOOT_DEV=${BOOT_DEV%${CURRENT_LABEL_ID}}
+	[ -z "${BOOT_DEV}" ] && die "Bug in get_boot_info: BOOT_DEV can't be empty"
+	BOOT_DEV="/dev/${BOOT_DEV}"
+	[ -c "${BOOT_DEV}" ] || die "Bug in get_boot_info: ${BOOT_DEV} need to be special char device"
+	# Populating all the others variables
+	if echo ${mountfrom} | grep -q 'ufs/'; then
+		# On a NanoBSD MBR system, partition number/name map is:
+		# s1 is UFS with BSD slice a: first system partition (UFS label: NAMEs1a)
+		# s2 if UFS with BSD slice a: second system partition (UFS label: NAMEs2a)
+		# On a converted from NanoBSD MBR system, no BSD slice used
+		GPT=false
+		if [ "${CURRENT_LABEL_ID}" = "s1a" ] || [ "${CURRENT_LABEL_ID}" = "s1" ]; then
+			CURRENT_SLICE="s1"
+			CURRENT_PART="1"
+			NEXT_SLICE="s2"
+			NEXT_PART="2"
+		elif [ "${CURRENT_LABEL_ID}" = "s2a" ] || [ "${CURRENT_LABEL_ID}" = "s2" ]; then
+			CURRENT_SLICE="s2"
+			CURRENT_PART="2"
+			NEXT_SLICE="s1"
+			NEXT_PART="1"
+		else
+			die "Bug in get_boot_info: MBR label ID not equal to s[12][a]"
+		fi
+		if echo ${CURRENT_LABEL_ID} | grep -q 'a$'; then
+			# NanoBSD MBR
+			BSD_SLICE="a"
+		fi
+		NEXT_LABEL_ID="${NEXT_SLICE}${BSD_SLICE}"
 
-get_info() {
-	if ($GPT); then
-		gpt_get_info
+	elif echo ${mountfrom} | grep -q 'gpt/'; then
+		# On a GPT system, partition number/name map is:
+		# p1 is msdosfs/EFI
+		# p2 is freebsd-boot
+		# p3 is first system with NAME1
+		# p4 is second system with NAME2
+		GPT=true
+		if [ "${CURRENT_LABEL_ID}" -eq 1 ]; then
+			CURRENT_SLICE="p3"
+			CURRENT_PART="3"
+			NEXT_SLICE="p4"
+			NEXT_PART="4"
+			NEXT_LABEL_ID="2"
+		elif [ "${CURRENT_LABEL_ID}" -eq 2 ]; then
+			CURRENT_SLICE="p4"
+			CURRENT_PART="4"
+			NEXT_SLICE="p3"
+			NEXT_PART="3"
+			NEXT_LABEL_ID="1"
+		else
+			die "Bug in get_boot_info: GPT label ID not equal to 1 neither 2"
+		fi
 	else
-		mbr_get_info
+		die "Do not found reference of /dev/ufs or /dev/gpt in vfs.root.mountfrom"
 	fi
-}
-
-# Get label information for Sun VTOC
-vtoc_get_info() {
-	if mount | grep -E -q "^/dev/${NANO_DRIVE}s1a on / "; then
-		CURRENT_SLICE="s1"
-		CURRENT_PART="a"
-		NEXT_SLICE="d"
-		NEXT_PART="d"
-	elif emount | grep -E -q "^/dev/${NANO_DRIVE}s2a on / " ; then
-		CURRENT_SLICE="s2"
-		CURRENT_PART="d"
-		NEXT_SLICE="s1"
-		NEXT_PART="a"
-	else
-    	die "Can't detect active slice"
-	fi
-	BSD_SLICE=""
-	NEXT_LABEL_ID="${NEXT_SLICE}a"
-	CURRENT_LABEL_ID="${CURRENT_SLICE}a"
-	# ufs/BSDRPs1a     N/A  ada1a
-	boot_dev=/dev/$(glabel status | grep ${NANO_DRIVE}${CURRENT_LABEL_ID} | \
-		awk '{ print $3; }'| sed 's/.$//')
-	return 0
 }
 
 write_new_image() {
-	# Check if your destination disk exist
-	[ -c ${boot_dev}${NEXT_SLICE} ] || die "${boot_dev}${NEXT_SLICE} is not a character special file"
 
 	# Blow away old system.
-	dd if=/dev/zero of=${boot_dev}${NEXT_SLICE} bs=1m count=1 > /dev/null 2>&1 || \
-		die "ERROR: Can't initialize destination partition ${boot_dev}${NEXT_SLICE}"
+	dd if=/dev/zero of="${BOOT_DEV}${NEXT_SLICE}" bs=1M count=1 > /dev/null 2>&1 || \
+		die "ERROR: Can't initialize destination partition ${BOOT_DEV}${NEXT_SLICE}"
 
 	# Copy in new system
-	dd of=${boot_dev}${NEXT_SLICE} obs=64k || \
-		die "ERROR: Can't install the upgrade on ${boot_dev}${NEXT_SLICE}"
+	dd of="${BOOT_DEV}${NEXT_SLICE}" bs=1M || \
+		die "ERROR: Can't install the upgrade on ${BOOT_DEV}${NEXT_SLICE}"
 
 	# Check that it worked
-	fsck_ffs -n ${boot_dev}${NEXT_SLICE}${BSD_SLICE} || \
-		die "ERROR: New file system ${boot_dev}${NEXT_SLICE}${BSD_SLICE} check failed"
+	# poudriere-image doesn't use anymore BSD_SLICE
+	if ! [ -c "${BOOT_DEV}${NEXT_SLICE}${BSD_SLICE}" ]; then
+		BSD_SLICE=""
+	fi
+	fsck_ffs -n "${BOOT_DEV}${NEXT_SLICE}${BSD_SLICE}" || \
+		die "ERROR: New file system ${BOOT_DEV}${NEXT_SLICE}${BSD_SLICE} check failed"
 
-	# Set UFS label into the new slice
-	if ! ($GPT); then
-		tunefs -L ${LABEL}${NEXT_LABEL_ID} ${boot_dev}${NEXT_SLICE}${BSD_SLICE} || \
-			die "ERROR: Can't put label on the new filesystem"
+	# During an upgrade from nanobsd to poudriere-image, we need to remove BSD_SLICE
+	# To detect we are in upgrade process, at this stage BSD_SLICE should be empty
+	# but NEXT_LABEL_ID should still reference it
+	if [ -z "${BSD_SLICE}" ]; then
+		if echo "${NEXT_LABEL_ID}" | grep -q 'a$'; then
+			# Upgrading to poudriere-image, need to remove 'a' from variables
+			NEXT_LABEL_ID=${NEXT_LABEL_ID%a}
+		fi
+	fi
+	# Set UFS label into the new slice (MBR only)
+	if [ "${GPT}" = false ]; then
+		tunefs -L ${LABEL}${NEXT_LABEL_ID} ${BOOT_DEV}${NEXT_SLICE}${BSD_SLICE} || \
+			die "ERROR: Can't put UFS label on the new filesystem"
 	fi
 
 	# Need to tune some files on the new partition
@@ -240,10 +228,29 @@ write_new_image() {
 	done
 
 	# Adapt fstab of the new system
-	for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab /etc/fstab; do
-	    sed -i "" "s/${LABEL}${CURRENT_LABEL_ID}/${LABEL}${NEXT_LABEL_ID}/g" $f
+	# New poudriere-image will have such lines:
+	# /dev/gpt/BSDRP1 / ufs ro 1 1
+	# /dev/gpt/cfg
+	# /dev/gpt/data
+	# But old nanobsd will have:
+	# /dev/ufs/BSDRPs1a / ufs ro 1 1
+	# /dev/ufs/BSDRPs3
+	# /dev/ufs/BSDRPs4
+	sed -i "" "s/${LABEL}${CURRENT_LABEL_ID}/${LABEL}${NEXT_LABEL_ID}/g" /etc/fstab
+	for f in /tmp/sysupgrade/etc/fstab /tmp/sysupgrade/conf/base/etc/fstab; do
+		cp /etc/fstab $f
 	done
 
+	# Same problem with conf/default/etc/remount that need to take care of
+	if ! cmp -s /tmp/sysupgrade/conf/default/etc/remount /conf/default/etc/remount; then
+		cp /conf/default/etc/remount /tmp/sysupgrade/conf/default/etc/remount
+	fi
+
+	if ! cmp -s /tmp/sysupgrade/conf/base/etc/nanobsd.conf /conf/base/etc/nanobsd.conf; then
+		for d in /tmp/sysupgrade/etc/ /tmp/sysupgrade/conf/base/etc/; do
+			cp /etc/nanobsd.conf $d
+		done
+	fi
 	# Check if there is a post-upgrade script on the new image
 	# (This script will be start at the end of the upgrade process)
 	if [ -f /tmp/sysupgrade/usr/local/sbin/post-upgrade ]; then
@@ -270,26 +277,26 @@ write_new_image() {
 
 mbr_boot_modif () {
 	# Change the default selection of the boot manager
-	boot0cfg -s ${NEXT_PART} -t 18 -v ${boot_dev} || \
+	boot0cfg -s ${NEXT_PART} -t 18 -v ${BOOT_DEV} || \
         die "ERROR: Can't update FreeBSD bootloader"
 	# Change the active partition
-	gpart set -a active -i ${NEXT_PART} ${boot_dev} || \
+	gpart set -a active -i ${NEXT_PART} ${BOOT_DEV} || \
 		die "ERROR: Can't update active partition"
 	return 0
 }
 
 gpt_boot_modif () {
 	# Change the active partition
-	gpart set -a bootme -i ${NEXT_PART} ${boot_dev} || \
+	gpart set -a bootme -i ${NEXT_PART} ${BOOT_DEV} || \
 		die "ERROR: Can't add bootme flag to new system slice"
-	gpart unset -a bootme -i ${CURRENT_PART} ${boot_dev} || \
+	gpart unset -a bootme -i ${CURRENT_PART} ${BOOT_DEV} || \
 		die "ERROR: Can't remove bootme flag from old system slice"
 	return 0
 }
 
 arm_boot_modif () {
 	echo "arm upgrade script not tested!"
-	gpart set -a active -i ${NEXT_PART} ${boot_dev} || \
+	gpart set -a active -i ${NEXT_PART} ${BOOT_DEV} || \
 		die "ERROR: Can't update active partition"
 	return 0
 }
@@ -303,22 +310,6 @@ boot_modif () {
 	return 0
 }
 
-vtoc_boot_modif () {
-	# Get the actual disk and remove the last caracter
-	# Thanks for this tips hrs@ !
-	DISK=$(kenv currdev | sed 's/.$//')
-	# Now DISK is like that: /pci@1f,0/ide@d/disk@1,0:
-	if eeprom boot-device=$DISK${NEXT_PART}; then
-		# http://docs.oracle.com/cd/E19127-01/ultra25.ws/819-1892-12/nvram.html
-		# "Initiates a warm boot where most NVRAM configuration parameters are read by
-		# OpenBoot PROM. With power cycling or a cold boot, all NVRAM configuration parameters
-		# are read by the OpenBoot PROM."
-		echo "WARNING: You need to do a cold reboot for forcing OBP to re-read just modified eeprom value"
-	else
-		echo "WARNING! Fail to eeprom boot-device=$DISK${NEXT_PART}"
-	fi
-}
-
 #### main function
 
 # Check lock
@@ -329,25 +320,17 @@ else
 	touch ${LOCK}
 fi
 
-# Partition type detection
-grep -q '=gpt/' /etc/nanobsd.conf && GPT=true
-
 case "${ARCH}" in
 	i386|amd64)
-		get_info
+		get_boot_info
 		write_new_image
 		boot_modif
 		;;
 	arm)
 		echo "WARNING: This script was never tested on ARM"
-		get_info
+		get_boot_info
 		write_new_image
 		arm_boot_modif
-		;;
-        sparc64)
-		vtoc_get_info
-		write_new_image
-		vtoc_boot_modif
 		;;
 	*)
 		die "Unsupported arch!"

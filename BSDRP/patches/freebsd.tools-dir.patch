@@ -1,41 +1,30 @@
-Index: tools/tools/ifinfo/Makefile
-===================================================================
---- tools/tools/ifinfo/Makefile	(revision 315217)
-+++ tools/tools/ifinfo/Makefile	(working copy)
-@@ -3,5 +3,6 @@
+diff --git tools/tools/ifinfo/Makefile tools/tools/ifinfo/Makefile
+index 3e95a642ca5..da98a49f4dc 100644
+--- tools/tools/ifinfo/Makefile
++++ tools/tools/ifinfo/Makefile
+@@ -1,6 +1,7 @@
  PROG=	ifinfo
  SRCS=	ifinfo.c rfc1650.c
  MAN=
 +BINDIR=	/usr/local/bin
+ BINDIR?= /usr/bin
  
  .include <bsd.prog.mk>
-Index: tools/tools/mctest/Makefile
-===================================================================
---- tools/tools/mctest/Makefile	(revision 315217)
-+++ tools/tools/mctest/Makefile	(working copy)
-@@ -2,5 +2,6 @@
- 
+diff --git tools/tools/mctest/Makefile tools/tools/mctest/Makefile
+index 0616e599ecf..010719ed775 100644
+--- tools/tools/mctest/Makefile
++++ tools/tools/mctest/Makefile
+@@ -1,4 +1,5 @@
  PROG_CXX=   mctest 
  LIBADD= pthread
 +BINDIR=	/usr/local/bin
  
  .include <bsd.prog.mk>
-Index: tools/tools/netrate/netsend/Makefile
-===================================================================
---- tools/tools/netrate/netsend/Makefile	(revision 315217)
-+++ tools/tools/netrate/netsend/Makefile	(working copy)
-@@ -5,5 +5,6 @@
- CFLAGS+=	-Wall
- PROG=	netsend
- MAN=
-+BINDIR?=	/usr/local/bin
- 
- .include <bsd.prog.mk>
-Index: tools/tools/netmap/Makefile
-===================================================================
---- tools/tools/netmap/Makefile	(revision 354229)
-+++ tools/tools/netmap/Makefile	(working copy)
-@@ -4,6 +4,7 @@
+diff --git tools/tools/netmap/Makefile tools/tools/netmap/Makefile
+index c1346149310..25daf3fcf29 100644
+--- tools/tools/netmap/Makefile
++++ tools/tools/netmap/Makefile
+@@ -3,6 +3,7 @@
  # For multiple programs using a single source file each,
  # we can just define 'progs' and create custom targets.
  PROGS	=	pkt-gen nmreplay bridge lb
@@ -43,7 +32,7 @@ Index: tools/tools/netmap/Makefile
  
  CLEANFILES = $(PROGS) *.o
  MAN=
-@@ -34,3 +35,8 @@
+@@ -33,3 +34,8 @@ nmreplay: nmreplay.o
  
  lb: lb.o pkt_hash.o
  	$(CC) $(CFLAGS) -o lb lb.o pkt_hash.o $(LDFLAGS)
@@ -52,3 +41,14 @@ Index: tools/tools/netmap/Makefile
 +	for i in ${PROGS}; do \
 +		install $$i ${DESTDIR}${BINDIR}; \
 +	done
+diff --git tools/tools/netrate/netsend/Makefile tools/tools/netrate/netsend/Makefile
+index a4c4ec187b8..80106d3b4ce 100644
+--- tools/tools/netrate/netsend/Makefile
++++ tools/tools/netrate/netsend/Makefile
+@@ -4,5 +4,6 @@
+ CFLAGS+=	-Wall
+ PROG=	netsend
+ MAN=
++BINDIR?=	/usr/local/bin
+ 
+ .include <bsd.prog.mk>
