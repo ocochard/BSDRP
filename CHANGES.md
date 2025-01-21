@@ -11,6 +11,7 @@ Upgrading will not add the dual UEFI/BIOS mode, a full reinstall is requiered.
   * Packages built using the official poudriere method
 * New packages:
   * net/vpp
+  * net/frr10 has lua scripting enabled
 * Removed packages:
   * isc-dhcp44 (use dnsmasq)
   * dhcprelya (use dnsmasq)
