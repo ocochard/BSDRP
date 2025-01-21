@@ -17,41 +17,42 @@ The authors of BSDRP would like to thank the authors of these software for their
 * "show memory" is a bourne shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
 * PC Engines APU led drivers: Larry Baird
 * chelsio-queue-usage: Alexander V. Chernikov (melifaro@FreeBSD.org)
-* abseil, license:APACHE20, https://abseil.io/                                                                       [83/5584]
-* aquantia-atlantic-kmod, license:BSD3CLAUSE, https://github.com/Aquantia/aqtion-freebsd
+* abseil, license:APACHE20, https://abseil.io/
 * arping, license:GPLv2, https://www.habets.pp.se/synscan/programs.php?prog=arping
 * bash, license:GPLv3+, https://www.gnu.org/software/bash/
 * bgpq4, license:BSD2CLAUSE, https://github.com/bgp/bgpq4
 * bird2, license:GPLv2, https://bird.network.cz/
+* brotli, license:MIT, https://github.com/google/brotli
 * bsnmp-regex, license:BSD3CLAUSE, http://thewalter.net/stef/software/bsnmp-regex/
 * bsnmp-ucd, license:BSD2CLAUSE, https://github.com/trociny/bsnmp-ucd
 * c-ares, license:MIT, https://c-ares.haxx.se/
-* cpu-microcode, license:NA, UNKNOWN
-* cpu-microcode-amd, license:EULA, UNKNOWN
+* cpu-microcode-amd, license:EULA
 * cpu-microcode-intel, license:EULA, https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files
-* cpu-microcode-rc, license:BSD2CLAUSE, UNKNOWN
+* cpu-microcode-rc, license:BSD2CLAUSE
 * curl, license:MIT, https://curl.se/
 * dhcp6, license:BSD3CLAUSE, https://wide-dhcpv6.sourceforge.net/
 * dhcprelya, license:BSD3CLAUSE, https://github.com/sem-hub/dhcprelya/
+* dnsmasq, license:GPLv2, https://www.thekelleys.org.uk/dnsmasq/doc.html
 * dtrace-toolkit, license:CDDL, https://github.com/opendtrace/toolkit
 * easy-rsa, license:GPLv2, https://github.com/OpenVPN/easy-rsa
-* freevrrpd, license:BSD2CLAUSE, https://github.com/ocochard/FreeVRRPd/
-* frr9, license:GPLv2, https://frrouting.org/
-* frr9-pythontools, license:GPLv2, https://frrouting.org/
+* frr10, license:GPLv2, https://frrouting.org/
+* frr10-pythontools, license:GPLv2, https://frrouting.org/
 * fswatch-mon, license:GPLv3, https://github.com/emcrisostomo/fswatch
 * fusefs-libs, license:LGPL21, https://github.com/libfuse/libfuse
 * gettext-runtime, license:LGPL21+, https://www.gnu.org/software/gettext/
 * gettext-runtime, license:GPLv3+, https://www.gnu.org/software/gettext/
 * glib, license:LGPL20, https://www.gtk.org/
+* gmp, license:LGPL3, https://gmplib.org/
 * graphpath, license:BSD2CLAUSE, https://github.com/ocochard/graphpath
-* indexinfo, license:BSD2CLAUSE, https://github.com/bapt/indexinfo
+* indexinfo, license:BSD2CLAUSE, https://codeberg.org.org/bapt/indexinfo
 * intel-pcm, license:BSD3CLAUSE, https://github.com/intel/pcm
 * iperf, license:BSD2CLAUSE, https://sourceforge.net/projects/iperf2/
 * iperf3, license:MIT, https://software.es.net/iperf/
 * iperf3, license:BSD3CLAUSE, https://software.es.net/iperf/
-* ipmitool, license:BSD3CLAUSE, https://sourceforge.net/projects/ipmitool/
+* ipmitool, license:BSD3CLAUSE, https://codeberg.org/IPMITool/ipmitool
 * isc-dhcp44-server, license:MPL20, https://www.isc.org/dhcp/
 * ixl_unlock, license:BSD2CLAUSE, https://github.com/bu7cher/ixl_unlock/
+* jansson, license:MIT, https://github.com/akheron/jansson
 * json-c, license:MIT, https://github.com/json-c/json-c/wiki
 * jsoncpp, license:MIT, https://github.com/open-source-parsers/jsoncpp
 * libcdada, license:BSD2CLAUSE, https://github.com/msune/libcdada
@@ -70,7 +71,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * libnet, license:BSD2CLAUSE, https://github.com/libnet/libnet
 * libpci, license:GPLv2, https://mj.ucw.cz/sw/pciutils/
 * libpfctl, license:BSD2CLAUSE, https://cgit.freebsd.org/src/tree/lib/libpfctl
-* libsodium, license:ISCL, https://github.com/jedisct1/libsodium
+* libsodium, license:ISCL, https://github.com/jedisct1/libsodium/
 * libssh, license:LGPL21, https://www.libssh.org/
 * libucl, license:BSD2CLAUSE, https://github.com/vstakhov/libucl
 * libunwind, license:MIT, https://github.com/libunwind/libunwind
@@ -83,11 +84,16 @@ The authors of BSDRP would like to thank the authors of these software for their
 * mpd5, license:BSD3CLAUSE, https://sourceforge.net/projects/mpd/
 * mpdecimal, license:BSD2CLAUSE, https://www.bytereef.org/mpdecimal/index.html
 * mrouted, license:MIT, http://freecode.com/projects/mrouted
-* mtr, license:GPLv2, https://www.bitwizard.nl/mtr/
+* mtr-nox11, license:GPLv2, https://www.bitwizard.nl/mtr/
 * nagios-plugins, license:GPLv3, https://nagios-plugins.org/
+* ncurses, license:MIT, https://invisible-island.net/ncurses/
 * netmap-fwd, license:BSD2CLAUSE, https://github.com/Netgate/netmap-fwd/
+* nettle, license:LGPL3, https://www.lysator.liu.se/~nisse/nettle/
+* nettle, license:GPLv2+, https://www.lysator.liu.se/~nisse/nettle/
 * nrpe, license:GPLv2+, https://www.nagios.org/
 * nstat, license:BSD2CLAUSE, https://github.com/gallatin/nstat
+* open-vm-kmod, license:GPLv2, https://github.com/vmware/open-vm-tools
+* open-vm-kmod, license:BSD2CLAUSE, https://github.com/vmware/open-vm-tools
 * open-vm-tools-nox11, license:LGPL21, https://github.com/vmware/open-vm-tools
 * openvpn, license:GPLv2, https://openvpn.net/community/
 * openvpn-auth-radius, license:GPLv2, https://www.nongnu.org/radiusplugin/index.html
@@ -106,12 +112,12 @@ The authors of BSDRP would like to thank the authors of these software for their
 * pmacct, license:GPLv2, http://www.pmacct.net/
 * protobuf, license:BSD3CLAUSE, https://protobuf.dev/
 * protobuf-c, license:BSD2CLAUSE, https://github.com/protobuf-c/protobuf-c
-* py39-exabgp4, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
-* py39-mrtparse, license:APACHE20, https://github.com/t2mune/mrtparse
-* py39-packaging, license:BSD2CLAUSE, https://packaging.pypa.io/en/stable/
-* py39-packaging, license:APACHE20, https://packaging.pypa.io/en/stable/
-* py39-setuptools, license:MIT, https://pypi.org/project/setuptools/
-* python39, license:PSFL, https://www.python.org/
+* py311-exabgp4, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
+* py311-mrtparse, license:APACHE20, https://github.com/t2mune/mrtparse
+* py311-packaging, license:BSD2CLAUSE, https://packaging.pypa.io/en/stable/
+* py311-packaging, license:APACHE20, https://packaging.pypa.io/en/stable/
+* py311-setuptools, license:MIT, https://pypi.org/project/setuptools/
+* python311, license:PSFL, https://www.python.org/
 * quagga-bgp-netgen, license:BSD2CLAUSE, https://github.com/ocochard/quagga-bgp-netgen/
 * readline, license:GPLv3, https://tiswww.case.edu/php/chet/readline/rltop.html
 * realtek-re-kmod, license:BSD4CLAUSE, https://github.com/alexdupre/rtl_bsd_drv
@@ -123,9 +129,10 @@ The authors of BSDRP would like to thank the authors of these software for their
 * tinc, license:GPLv3, https://www.tinc-vpn.org/
 * tmux, license:ISCL, https://tmux.github.io/
 * tmux, license:GPLv2, https://tmux.github.io/
-* ucarp, license:ISC, https://github.com/jedisct1/UCarp
 * utf8proc, license:MIT, https://juliastrings.github.io/utf8proc/
 * vim, license:VIM, https://www.vim.org/
 * wireguard-tools, license:GPLv2, https://git.zx2c4.com/wireguard-tools/about/
 * x86info, license:GPLv2, https://github.com/kernelslacker/x86info
 * xxd, license:VIM, https://www.vim.org/
+* zstd, license:GPLv2, https://facebook.github.io/zstd/
+* zstd, license:BSD3CLAUSE, https://facebook.github.io/zstd/

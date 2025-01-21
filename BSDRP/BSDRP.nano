@@ -536,7 +536,7 @@ add_port "net/nc"
 add_port "net/ntraceroute"
 
 # MTR combines traceroute and ping
-add_port "net/mtr" "FLAVOR=nox11" "WITHOUT+=\"JSON\""
+add_port "net/mtr" "FLAVOR=nox11 WITHOUT+=\"JSON\""
 
 # BGPQ3: Lightweight prefix-list generator for Cisco and Juniper routers
 add_port "net-mgmt/bgpq4"

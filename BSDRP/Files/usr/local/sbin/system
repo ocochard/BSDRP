@@ -28,9 +28,6 @@
 # SUCH DAMAGE.
 #
 
-# Uncomment for enable the debug mode:
-#set -xv
-
 # Strict script
 set -eu
 
@@ -45,15 +42,15 @@ get_label () {
 
 # Display User confirmation message
 # $1: message
-# exit if user enter 'n'
 # return 0 if user enter 'y'
+# return 1 if user enter 'n', then exit if not in loop because set -e
 user_confirm () {
 	local input=""
 	echo -n $1
 	while [ "${input}" != "y" -a "${input}" != "n" ]; do
 		read input <&1
 	done
-	[ "${input}" = "n" ] && exit 0 || return 0
+	[ "${input}" = "y" ] && return 0 || return 1
 }
 
 # Check if a partition is mounted
@@ -186,8 +183,9 @@ integrity () {
 ask_save () {
 	echo "Warning: Unsaved changes detected !"
 	config diff || true
-	user_confirm "Do you want to save the configuration before to continue or abort ? (y/n/a): "
-	config save
+	if user_confirm "Do you want to save the configuration before to continue ? (y/n): "; then
+		config save
+	fi
 }
 
 # Install system to another disk
@@ -420,7 +418,7 @@ resize_system_slice () {
 	echo "- If a partition swaping is needed, system will reboot automatically at the end of first step"
 	echo "  You need to restart this tool after the reboot for continuing"
 	echo "- All files stored in /data partition will be destroyed!"
-	user_confirm "Do you want to continue or abort ? (y/a): "
+	user_confirm "Do you want to continue ? (y/n): "
 
 	# Load the NANO_DRIVE (label) variable:
 	# nanobsd: ufs/BSDRP
@@ -441,7 +439,7 @@ resize_system_slice () {
 
 	is_mounted "/data" && die "/data is mounted, you need to unmount it"
 
-	local lbl_active=$(mount2label '/')           # ufs/BSDRPs2a or gpt/BSDRP2
+	local lbl_active=$(mount2label '/')           # ufs/BSDRPs2a or gpt/BSDRP2 or ufs/BsDRPs1
 	local lbl_type=$(echo ${NANO_DRIVE} | cut -d '/' -f 1)
 	if echo ${lbl_active} | grep -q 2; then
 		swap_system ${lbl_active}
