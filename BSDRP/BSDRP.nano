@@ -184,6 +184,9 @@ NANO_LABEL=${NANO_NAME}
 # Progress Print level
 PPLEVEL=3
 
+# Apply correct ownership and permissions to overlay directory
+NANO_CUST_FILES_MTREE="${NANO_TOOLS}/Files.mtree"
+
 # Add netblast/netrecieve tools
 add_netrate () {
 	TOOLS_LIST="cxgbtool ifinfo netrate/netblast netrate/netreceive netrate/netsend"
