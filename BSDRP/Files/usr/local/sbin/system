@@ -3,7 +3,7 @@
 # System tool for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2009-2024, The BSDRP Development Team
+# Copyright (c) 2009-2025, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -78,7 +78,7 @@ is_integer () {
 # ufs/BSDRP -> ada0
 # $1: NANO_DRIVE label
 label2dev () {
-	local output=$(glabel status | grep -E "$1(s1a|1)" \
+	local output=$(glabel status | grep -E "$1(s1a|s1|1)" \
 		| awk '{ s=$3; sub(/[s|p][1-4]a?$/, "", s); print s; }')
 	[ -n "${output}" ] && echo ${output} || die "BUG in label2dev: Can't retrieve disk name"
 }
@@ -283,24 +283,34 @@ rollback () {
 	lbl_type=$(echo ${NANO_DRIVE} | cut -d '/' -f 1)	# ufs or gpt
 	label=$(echo ${NANO_DRIVE} | cut -d '/' -f 2)		# BSDRP
 	boot_dev=$(label2dev ${NANO_DRIVE})					# /dev/ad0
-	lbl_active=$(mount2label '/')			# ufs/BSDRPs2a or gpt/BSDRP2
+	lbl_active=$(mount2label '/')			# ufs/BSDRPs2a or gpt/BSDRP2 or ufs/BSDRPs2
 	part_active=$(label2part ${lbl_active})	# 1 or 2 for nanobsd 3-4 for poudriere-image
 
 	if (echo "${lbl_active}" | grep -q "1"); then
-		lbl_prev=$(echo ${lbl_active} | sed 's/1/2')
+		lbl_prev=$(echo ${lbl_active} | sed 's/1/2/')
 	elif (echo "${lbl_active}" | grep -q "2"); then
-		lbl_prev=$(echo ${lbl_active} | sed 's/2/1')
+		lbl_prev=$(echo ${lbl_active} | sed 's/2/1/')
 	else
 		die "Can't detect active partition"
 	fi
 	part_prev=$(label2part ${lbl_prev})
 
+	# Special case: nanobsd ugpraded to poudriere-image
+	# then requested a rollback
+	if ! [ -c /dev/${lbl_prev} ]; then
+		if echo "${lbl_prev}" | grep -q 'ufs/'; then
+			if [ -c /dev/${lbl_prev}a ]; then
+				lbl_prev=${lbl_prev}a
+			fi
+		fi
+	fi
+
 	# Check if previous filesystem was good
-	if [ -e /dev/${lbl_prev} ]; then
+	if [ -c /dev/${lbl_prev} ]; then
 		fsck_ffs -n /dev/${lbl_prev} ||
 		die "ERROR: Missing or fsck problem on the previous system slice"
 	else
-		die "ERROR: This system was never upgraded"
+			die "ERROR: This system was never upgraded"
 	fi
 
 	user_confirm "Warning: Are you sure to revert to the previous release ? (y/n)"
@@ -309,7 +319,7 @@ rollback () {
 	[ -d /tmp/sysupgrade ] || mkdir /tmp/sysupgrade
 
 	#   Adapt fstab to reuse the previous system
-	sed -i "" "s/${lbl_active}/${lbl_prev}/g"
+	sed -i "" "s|${lbl_active}|${lbl_prev}|g" /etc/fstab
 
 	# Save the config file that include the fstab
 	mount /cfg || die "ERROR: Cant't mount /cfg"

@@ -3,7 +3,7 @@
 # Bhyve lab script for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2013-2024, The BSDRP Development Team
+# Copyright (c) 2013-2025, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -60,7 +60,7 @@ VM_TEMPLATE=${WRK_DIR}/vm_template
 usage() {
 	# $1: Cause of displaying usage
 	[ $# -eq 1 ] && echo $1
-	echo "Usage: $0 [-adeEhqsvV] -i FreeBSD-disk-image.img [-n vm-number] [-l LAN-number] [-c core] [-A number of additionnal disks] "
+	echo "Usage: $0 [-aBdeEhqsvV] -i FreeBSD-disk-image.img [-n vm-number] [-l LAN-number] [-c core] [-A number of additionnal disks] "
 	echo " -a           Disable full-meshing"
 	echo " -A           Number of additionnal disks"
 	echo " -B           Disable UEFI boot mode (switch back to BIOS mode)"
@@ -261,8 +261,10 @@ run_vm() {
 		#   Note: It's not possible to have "hole" in PCI assignement
 		VM_COMMON="bhyve -c cpus=${NCPUS},cores=${CORES},threads=${THREADS} -S -m ${RAM} -s 0:0,hostbridge"
 		if [ "${arch}" == "amd64" ]; then
-			VM_COMMON="${VM_COMMON} -A -H -P -s 0:1,lpc"
-			( $UEFI ) && VM_BOOT="-l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
+      VM_COMMON="${VM_COMMON} -A -H -P -s 0:1,lpc"
+      if [ ${UEFI} = true ]; then
+			  VM_BOOT="-l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
+      fi
 			eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\${NMDM_ID}A\"
 		elif [ "${arch}" == "aarch64" ]; then
 			VM_COMMON="${VM_COMMON} -o bootrom=/usr/local/share/u-boot/u-boot-bhyve-arm64/u-boot.bin"
@@ -271,7 +273,9 @@ run_vm() {
 		VM_BOOT=""
 		VM_VNC=""
 		# XXX Need to check if TCP port available
-		( $VNC ) && VM_VNC="-s 29,fbuf,tcp=0.0.0.0:590$1,w=800,h=600"
+    if [ ${VNC} = true ]; then
+		  VM_VNC="-s 29,fbuf,tcp=0.0.0.0:590$1,w=800,h=600"
+    fi
 		eval VM_DISK_$1=\"-s 1:0,\${DISK_CTRL},\${WRK_DIR}/\${VM_NAME}_$1\"
 		if [ ${ADD_DISKS_NUMBER} -gt 0 ]; then
 			for i in $(jot ${ADD_DISKS_NUMBER}); do
@@ -431,7 +435,7 @@ if [ -n "${FILE}" ]; then
 	uncompress_image
 fi
 
-if ( $UEFI ); then
+if [ ${UEFI} = true ]; then
 	[ -f /usr/local/share/uefi-firmware/BHYVE_UEFI.fd ] || die "Missing bhyve-firmware package for UEFI"
 fi
 
@@ -448,12 +452,12 @@ if ( ${VERBOSE} ); then
 	echo " and ${RAM} RAM"
 	echo "- Emulated NIC: ${VNIC}"
 	echo -n "- Boot mode: "
-	( $UEFI ) && echo "UEFI" || echo "BIOS"
-	( $VNC ) && echo "- Graphical/VNC enabled"
+	[ ${UEFI} = true ] && echo "UEFI" || echo "BIOS"
+	[ ${VNC} = true ] && echo "- Graphical/VNC enabled"
 	echo -n "- Switch mode: "
-	( ${VALE} ) && echo "vale (netmap)" || echo "bridge + tap"
+	[ ${VALE} = true ] && echo "vale (netmap)" || echo "bridge + tap"
 	echo "- $LAN LAN(s) between all VM"
-	( ${MESHED} ) && echo "- Full mesh Ethernet links between each VM"
+	[ ${MESHED} = true ] && echo "- Full mesh Ethernet links between each VM"
 fi
 
 i=1
@@ -472,7 +476,7 @@ while [ $i -le $NUMBER_VM ]; do
 	NIC_NUMBER=0
     if ( ${VERBOSE} ); then
 		if ( ${DEBUG} ); then
-			echo "VM $i (debugger port:Â 900$i) has the following NIC:"
+			echo "VM $i (debugger port: 900$i) has the following NIC:"
 		else
 			echo "VM $i has the following NIC:"
 		fi

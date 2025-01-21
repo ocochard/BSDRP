@@ -1,13 +1,16 @@
 # Release 2.0 (xxx)
 
 ## Special instruction before upgrade
-Starting with version 2.0, BSDRP now needs at least a 4GB disk, instead of the
-previous 2GB. If you installed BSDRP on a 2GB disk, you won’t be able to
-upgrade it. But if you installed it on a 4GB (or larger) disk, you can resize
-the system slice using this command:
+Starting with version 2.0, BSDRP now:
+1. Needs at least a 4GB disk, instead of the previous 2GB;
+2. Includes dual UEFI/BIOS boot mode.
+If you installed BSDRP on a 2GB disk, you won’t be able to upgrade it.
+But if you installed it on a 4GB (or larger) disk, you can resize the system
+partition using this command:
 ```
-system resize-system-slice 3921919
+system resize-system-slice 3921924
 ```
+Upgrading will not add the dual UEFI/BIOS mode, a full reinstall is requiered.
 
 ## New features
 * The Nanobsd framework is now replaced by poudriere-image. This brings:
