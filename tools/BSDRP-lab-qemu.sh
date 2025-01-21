@@ -3,7 +3,7 @@
 # Qemu/kvm lab test script for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2009-2023, The BSDRP Development Team
+# Copyright (c) 2009-2025, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,7 +43,7 @@ check_user () {
             echo "Shared LAN disabled"
             SHARED_WITH_HOST=false
         fi
-    fi  
+    fi
 }
 
 check_system_freebsd () {
@@ -57,7 +57,7 @@ check_system_freebsd () {
     fi
 
     [ -f /boot/modules/kqemu ] && KQEMU=true || KQEMU=false
-    if !($KQEMU); then        
+    if !($KQEMU); then
 	echo "WARNING: kqemu not found"
         echo "kqemu is not mandatory, but improve a lot the speed"
 	echo "kqemu is available for legacy qemu and not qemu-devel"
@@ -160,7 +160,7 @@ create_interfaces_shared_freebsd () {
         DETECTED_NIC=`ifconfig -l`
         for NIC in $DETECTED_NIC
         do
-           if `ifconfig $NIC | /usr/bin/grep -q 10.0.0.254`; then 
+           if `ifconfig $NIC | /usr/bin/grep -q 10.0.0.254`; then
                 if `echo $NIC | /usr/bin/grep -q bridge`; then
                     BRIDGE_IF="$NIC"
                 else
@@ -243,7 +243,7 @@ create_interfaces_lab_freebsd () {
 create_interfaces_lab_linux () {
 	BRIDGE_IF="bsdrp-admin-bridge"
 	TAP_IF="bsdrp-admin-tap"
-    if ! ifconfig $BRIDGE_IF; then
+    if ! brctl show $BRIDGE_IF; then
         echo "Creating admin bridge interface..."
 		brctl addbr $BRIDGE_IF || die "Can't create bridge admin interface"
 		ifconfig $BRIDGE_IF up || die "Can't put $BRIDGE_IF in up state"
@@ -259,7 +259,7 @@ create_interfaces_lab_linux () {
         # Link bridge with tap
         TAP_IF="TAP_IF_$i"
         TAP_IF=`eval echo $"${TAP_IF}"`
-        ifconfig ${BRIDGE_IF} addm ${TAP_IF} up
+        #ifconfig ${BRIDGE_IF} addm ${TAP_IF} up
 		brctl addif ${BRIDGE_IF} ${TAP_IF} || die "ERROR: Can't add ${TAP_IF} to bridge ${BRIDGE_IF}"
 		ifconfig ${TAP_IF} up || die "ERROR: Can't enable ${TAP_IF}"
         i=$(( $i + 1 ))
@@ -298,7 +298,7 @@ delete_interface_lab_freebsd () {
     if ! ifconfig ${BRIDGE_IF} destroy; then
 		echo "WARNING: Can't destroy ${BRIDGE_IF}"
 	fi
-} 
+}
 
 delete_interface_lab_linux () {
     i=1
@@ -321,7 +321,7 @@ delete_interface_lab_linux () {
 parse_filename () {
     QEMU_ARCH=0
 	if [ -z "$RAM" ]; then
-        RAM=256
+        RAM=512
     fi
 
 	case "$OS_DETECTED" in
@@ -341,7 +341,7 @@ parse_filename () {
     	fi
 		if $KQEMU; then
 			QEMU_ARCH="${QEMU_ARCH} -enable-kqemu"
-		fi 
+		fi
         break
          ;;
     "Linux")
@@ -355,7 +355,7 @@ parse_filename () {
 
     QEMU_OUTPUT=0
     if echo "${FILENAME}" | grep -q "serial"; then
-        QEMU_OUTPUT="-nographic -vga none"
+        QEMU_OUTPUT="-display none -serial mon:stdio"
         SERIAL=true
         echo "filename guests a serial image"
         echo "Will use standard console as input/output"
@@ -394,7 +394,8 @@ start_lab_vm () {
             NIC_NUMBER=0
             echo "em${NIC_NUMBER} connected to shared with host LAN, configure IP 10.0.0.${i}/8 on this."
             NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
-            QEMU_ADMIN_NIC="-net nic,macaddr=AA:AA:00:00:00:0${i},vlan=0,model=${NIC_MODEL} -net tap,vlan=0,ifname=${TAP_IF}"
+            QEMU_ADMIN_NIC="-device ${NIC_MODEL},netdev=0,macaddr=AA:AA:00:00:00:0${i} -netdev tap,id=0,ifname=${TAP_IF}"
+			 -nic hubport,hubid=1
         else
             QEMU_ADMIN_NIC=""
             NIC_NUMBER=0
@@ -408,9 +409,9 @@ start_lab_vm () {
                 echo "em${NIC_NUMBER} connected to Router${j}."
                 NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
                 if [ $i -le $j ]; then
-                    QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=AA:AA:00:00:0${i}:${i}${j},vlan=${i}${j},model=${NIC_MODEL} -net socket,mcast=230.0.0.1:100${i}${j},vlan=${i}${j}"
+                    QEMU_PP_NIC="${QEMU_PP_NIC} -device ${NIC_MODEL},netdev=pp${i}${j},mac=AA:AA:00:00:0${i}:${i}${j} -netdev socket,id=pp${i}${j},mcast=230.0.0.1:100${i}${j}"
                 else
-                    QEMU_PP_NIC="${QEMU_PP_NIC} -net nic,macaddr=AA:AA:00:00:0${i}:${j}${i},vlan=${j}${i},model=${NIC_MODEL} -net socket,mcast=230.0.0.1:100${j}${i},vlan=${j}${i}"
+                    QEMU_PP_NIC="${QEMU_PP_NIC} -device ${NIC_MODEL},netdev=pp${j}${i},mac=AA:AA:00:00:0${i}:${j}${i} -netdev socket,id=pp${j}${i},mcast=230.0.0.1:100${j}${i}"
                 fi
             fi
             j=$(( $j + 1 ))
@@ -421,11 +422,11 @@ start_lab_vm () {
         while [ $j -le $NUMBER_LAN ]; do
             echo "em${NIC_NUMBER} connected to LAN number ${j}."
             NIC_NUMBER=$(( ${NIC_NUMBER} + 1 ))
-            QEMU_LAN_NIC="${QEMU_LAN_NIC} -net nic,macaddr=CC:CC:00:00:0${j}:0${i},vlan=10${j},model=${NIC_MODEL} -net socket,mcast=230.0.0.1:1000${j},vlan=10${j}"
+            QEMU_LAN_NIC="${QEMU_LAN_NIC} -device ${NIC_MODEL},netdev=l${j},mac=CC:CC:00:00:0${j}:0${i} -netdev socket,id=l${j},mcast=230.0.0.1:1000${j}"
             j=$(( $j + 1 ))
         done
         if ($SERIAL); then
-            QEMU_OUTPUT="-nographic -vga none -serial telnet::800${i},server,nowait -serial mon:telnet::900${i},server,nowait"
+            QEMU_OUTPUT="-display none -serial telnet::800${i},server,nowait -serial mon:telnet::900${i},server,nowait"
             echo "Connect to the console port of router ${i} by telneting to localhost on port 800${i}"
 			echo "qemu-monitor is on port 900${i} for this router (Ctrl-A + c)"
         else
@@ -448,7 +449,7 @@ start_lab_vm () {
         done
         i=$(( $i + 1 ))
     done
-    
+
 }
 
 usage () {
@@ -499,7 +500,7 @@ RAM=""
 
 for i
 do
-        case "$i" 
+        case "$i"
         in
         -n)
                 LAB_MODE=true
@@ -557,8 +558,8 @@ fi
 echo "BSD Router Project: Qemu lab script"
 check_user
 
-OS_DETECTED=`uname -s`
- 
+OS_DETECTED=$(uname -s)
+
 case "$OS_DETECTED" in
 	"FreeBSD")
         check_system_freebsd
@@ -578,18 +579,18 @@ parse_filename
 
 QEMU_NIC="-net nic -net user"
 
-if ($SHARED_WITH_HOST); then
+#if ($SHARED_WITH_HOST); then
     if ($LAB_MODE); then
         create_interfaces_lab
     else
         create_interfaces_shared
     fi
-fi
+#fi
 
 if ($LAB_MODE); then
     echo "Starting qemu in lab mode..."
     echo "With $NUMBER_VM BSDRP VM full meshed"
-    start_lab_vm    
+    start_lab_vm
 else
     echo "Starting qemu..."
     ${QEMU_ARCH} -hda ${FILENAME} ${QEMU_NIC} -localtime \
