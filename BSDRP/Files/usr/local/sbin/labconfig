@@ -57,6 +57,7 @@ sysrc hostname=R2 \
 	vlans_em1="23" \
 	ifconfig_em1="up mtu 1528" \
 	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em0_alias0="inet 10.0.12.254/32 vhid 1 advskew 100 carpver 3"
 	ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64" \
 	ifconfig_em1_23="inet 10.0.23.2/24" \
 	ifconfig_em1_23_ipv6="inet6 2001:db8:23::2 prefixlen 64" \
@@ -64,7 +65,6 @@ sysrc hostname=R2 \
 	ifconfig_lo1="inet 10.0.0.2/32" \
 	ifconfig_lo1_ipv6="inet6 2001:db8::2 prefixlen 128" \
 	frr_enable=YES \
-	frr_vtysh_boot=YES \
 	dhcprelya_enable=YES \
 	dhcprelya_servers="10.0.45.5" \
 	dhcprelya_ifaces=em0 \
@@ -73,20 +73,8 @@ sysrc hostname=R2 \
 	ipsec_enable=YES \
 	ipsec_file="/etc/ipsec.conf" \
 	pimd_enable=YES \
-	freevrrpd_enable=YES
+	kld_list+=" carp"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
-
-cat > /usr/local/etc/freevrrpd.conf <<EOF
-[VRID]
-serverid = 1
-interface = em0
-# We want that this router is the master
-priority = 101
-addr = 10.0.12.254/24
-password = vrid1
-EOF
-
-ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /usr/local/etc/freevrrpd.conf
 
 cat > /usr/local/etc/mpd5/if-up.sh <<EOF
 #!/bin/sh
@@ -203,7 +191,7 @@ add -6 2001:db8:23::3 2001:db8:23::2 tcp 0x1003 -A tcp-md5 "abigpassword" ;
 EOF
 
 cat > /usr/local/etc/frr/frr.conf <<EOF
-frr version 7.0
+frr version 9.1
 frr defaults traditional
 hostname R2
 log syslog
@@ -212,9 +200,22 @@ interface ng0
  ip ospf message-digest-key 1 md5 superpass
  ip ospf network point-to-point
  ipv6 ospf6 passive
+exit
+!
+interface em0
+ ipv6 ospf6 area 0.0.0.0
+ ipv6 ospf6 passive
+exit
+!
+interface vtnet0
+ ipv6 ospf6 area 0.0.0.0
+ ipv6 ospf6 passive
+exit
 !
 interface ng1
  ipv6 ospf6 network point-to-point
+ ipv6 ospf6 area 0.0.0.0
+exit
 !
 router-id 0.0.0.2
 !
@@ -235,21 +236,20 @@ router bgp 100
   neighbor 2001:db8:23::3 activate
   neighbor 2001:db8:23::3 soft-reconfiguration inbound
  exit-address-family
+exit
 !
 router ospf
  ospf router-id 0.0.0.2
  network 10.0.12.0/24 area 0.0.0.0
  network 10.4.24.0/24 area 0.0.0.0
  area 0.0.0.0 authentication message-digest
+exit
 !
 router ospf6
- interface ng1 area 0.0.0.0
- interface em0 area 0.0.0.0
- interface vtnet0 area 0.0.0.0
-!
-line vty
+exit
 !
 bfd
+exit
 !
 EOF
 
@@ -408,7 +408,6 @@ sysrc hostname=R4 \
 	ifconfig_lo1="inet 10.0.0.4/32" \
 	ifconfig_lo1_ipv6="inet6 2001:db8::4 prefixlen 128" \
 	frr_enable=YES \
-	frr_vtysh_boot=YES \
 	mpd_enable=YES \
 	mpd_flags="-b -s ppp" \
 	firewall_enable=YES \
@@ -421,29 +420,38 @@ sysrc hostname=R4 \
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
 cat > /usr/local/etc/frr/frr.conf <<EOF
-frr version 7.0
+frr version 9.1
 frr defaults traditional
 hostname R4
 log syslog
 !
 interface em3
  ip router isis BSDRP
+ ip ospf passive
  ipv6 ospf6 passive
+ ipv6 ospf6 area 0.0.0.0
  ipv6 router isis BSDRP
+exit
 !
 interface ng0
  ip ospf message-digest-key 1 md5 superpass
  ip ospf network point-to-point
  ipv6 ospf6 passive
+exit
 !
 interface ng1
  ipv6 ospf6 network point-to-point
+ ipv6 ospf6 area 0.0.0.0
+exit
 !
 !
 interface vtnet3
  ip router isis BSDRP
+ ip ospf passive
  ipv6 ospf6 passive
- ipv6 router isis BSDRP
+ ipv6 ospf6 area 0.0.0.0
+ipv6 router isis BSDRP
+ exit
 !
 router-id 0.0.0.4
 !
@@ -452,26 +460,26 @@ router rip
  network em2
  network vtnet2
  version 2
+exit
 !
 router ripng
  network lo1
  network em2
  network vtnet2
+exit
 !
 router ospf
  ospf router-id 0.0.0.4
  redistribute isis
- passive-interface em3
- passive-interface vtnet3
  network 10.0.4.0/24 area 0.0.0.0
  network 10.0.45.0/24 area 0.0.0.0
  network 10.4.24.0/24 area 0.0.0.0
  area 0.0.0.0 authentication message-digest
+exit
 !
 router ospf6
  redistribute isis
- interface ng1 area 0.0.0.0
- interface vtnet3 area 0.0.0.0
+exit
 !
 router isis BSDRP
  is-type level-1-2
@@ -480,10 +488,10 @@ router isis BSDRP
  redistribute ipv4 connected level-1
  redistribute ipv6 ospf6 level-1
  redistribute ipv6 connected level-1
-!
-line vty
+exit
 !
 bfd
+exit
 !
 EOF
 
@@ -659,7 +667,6 @@ sysrc -f /etc/jails/jail5/rc.conf hostname=jail5 \
 	dhcpd_flags="-q" \
 	dhcpd_conf="/usr/local/etc/dhcpd.conf" \
 	frr_enable=YES \
-	frr_vtysh_boot="YES" \
 	nfacctd_enable=YES \
 	pimd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/jails/jail5/rc.conf
@@ -1216,8 +1223,7 @@ sysrc -f /etc/jails/jail1/rc.conf hostname=jail1 \
   cloned_interfaces=lo1 \
   ipsec_enable=YES \
   ipsec_file="/etc/ipsec.conf" \
-  frr_vtysh_boot="YES" \
-  frr_daemons="zebra bgpd bfdd" \
+  frr_daemons="mgmtd zebra bgpd bfdd" \
   frr_enable=yes
 
 cat <<EOF > /etc/jails/jail1/ipsec.conf
@@ -1273,8 +1279,7 @@ EOF
 sysrc -f /etc/jails/jail2/rc.conf hostname=jail2 \
   ipsec_enable=YES \
   ipsec_file="/etc/ipsec.conf" \
-  frr_vtysh_boot="YES" \
-  frr_daemons="zebra bgpd bfdd ripd ripngd" \
+  frr_daemons="mgmtd zebra bgpd bfdd ripd ripngd" \
   frr_enable=yes
 
 cat <<EOF > /etc/jails/jail2/ipsec.conf
@@ -1350,8 +1355,7 @@ bfd
 EOF
 
 sysrc -f /etc/jails/jail3/rc.conf hostname=jail3 \
-  frr_vtysh_boot="YES" \
-  frr_daemons="zebra ospfd ospf6d ripd ripngd bfdd" \
+  frr_daemons="mgmtd zebra ospfd ospf6d ripd ripngd bfdd" \
   frr_enable=yes
 
 cat > /etc/jails/jail3/local/frr/frr.conf <<EOF
@@ -1410,8 +1414,7 @@ bfd
 EOF
 
 sysrc -f /etc/jails/jail4/rc.conf hostname=jail4 \
-  frr_vtysh_boot="YES" \
-  frr_daemons="zebra ospfd ospf6d isisd bfdd" \
+  frr_daemons="mgmtd zebra ospfd ospf6d isisd bfdd" \
   frr_enable=yes
 
 cat > /etc/jails/jail4/local/frr/frr.conf <<EOF
@@ -1462,8 +1465,7 @@ bfd
 EOF
 
 sysrc -f /etc/jails/jail5/rc.conf hostname=jail5 \
-  frr_vtysh_boot="YES" \
-  frr_daemons="zebra babeld isisd" \
+  frr_daemons="mgmtd zebra babeld isisd" \
   frr_enable=yes
 
 cat > /etc/jails/jail5/local/frr/frr.conf <<EOF
@@ -1499,8 +1501,7 @@ router isis BSDRP
 EOF
 
 sysrc -f /etc/jails/jail6/rc.conf hostname=jail6 \
-  frr_vtysh_boot="YES" \
-  frr_daemons="zebra mgmtd babeld staticd" \
+  frr_daemons="mgmtd zebra babeld staticd" \
   frr_enable=yes
 
 cat > /etc/jails/jail6/local/frr/frr.conf <<EOF
@@ -1528,8 +1529,7 @@ EOF
 
 sysrc -f /etc/jails/jail7/rc.conf hostname=jail7 \
   cloned_interfaces=lo1 \
-  frr_vtysh_boot="YES" \
-  frr_daemons="zebra mgmtd staticd" \
+  frr_daemons="mgmtd zebra staticd" \
   frr_enable=yes
 
 cat > /etc/jails/jail7/local/frr/frr.conf <<EOF
@@ -1561,8 +1561,7 @@ sysrc hostname=router1 \
 	cloned_interfaces=lo1 \
 	ipsec_enable=YES \
 	ipsec_file="/etc/ipsec.conf" \
-	frr_vtysh_boot="YES" \
-	frr_daemons="zebra bgpd bfdd" \
+	frr_daemons="mgmtd zebra bgpd bfdd" \
 	frr_enable=yes
 cat <<EOF > /etc/ipsec.conf
 flush ;
@@ -1625,8 +1624,7 @@ frr_vm2 () {
 sysrc hostname=router2 \
 	ipsec_enable=YES \
 	ipsec_file="/etc/ipsec.conf" \
-	frr_vtysh_boot="YES" \
-	frr_daemons="zebra bgpd bfdd ripd ripngd" \
+	frr_daemons="mgmtd zebra bgpd bfdd ripd ripngd" \
 	frr_enable=YES
 cat <<EOF > /etc/ipsec.conf
 flush ;
@@ -1708,8 +1706,7 @@ echo "VM2 configured"
 
 frr_vm3 () {
 sysrc hostname=router3 \
-	frr_vtysh_boot="YES" \
-	frr_daemons="zebra ospfd ospf6d ripd ripngd bfdd" \
+	frr_daemons="mgmtd zebra ospfd ospf6d ripd ripngd bfdd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
@@ -1773,8 +1770,7 @@ echo "VM3 configured"
 
 frr_vm4 () {
 sysrc hostname=router4 \
-	frr_vtysh_boot="YES" \
-	frr_daemons="zebra ospfd ospf6d isisd bfdd" \
+	frr_daemons="mgmtd zebra ospfd ospf6d isisd bfdd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
@@ -1831,8 +1827,7 @@ echo "VM4 configured"
 
 frr_vm5 () {
 sysrc hostname=router5 \
-	frr_vtysh_boot="YES" \
-	frr_daemons="zebra babeld isisd" \
+	frr_daemons="mgmtd zebra babeld isisd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
@@ -1874,8 +1869,7 @@ echo "VM5 configured"
 
 frr_vm6 () {
 sysrc hostname=router6 \
-	frr_vtysh_boot="YES" \
-	frr_daemons="zebra mgmtd babeld staticd" \
+	frr_daemons="mgmtd zebra mgmtd babeld staticd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
@@ -1909,8 +1903,7 @@ echo "VM6 configured"
 frr_vm7 () {
 sysrc hostname=router7 \
 	cloned_interfaces=lo1 \
-	frr_vtysh_boot="YES" \
-	frr_daemons="zebra mgmtd staticd" \
+	frr_daemons="mgmtd zebra mgmtd staticd" \
 	frr_enable=YES
 cat > /usr/local/etc/frr/frr.conf <<EOF
 log syslog
