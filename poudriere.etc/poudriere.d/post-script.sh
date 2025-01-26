@@ -87,3 +87,12 @@ mkdir -p ${WORLDDIR}/etc/cron
 rm -rf ${WORLDDIR}/var/cron
 ln -s ../etc/cron ${WORLDDIR}/var/cron
 
+# Generating mtree
+echo "Generating mtree..."
+IMG_DIR=${POUDRIERE_DATA}/images
+echo "./etc" > ${IMG_DIR}/${IMAGENAME}.mtree-exclude
+echo "./var" >> ${IMG_DIR}/${IMAGENAME}.mtree-exclude
+echo "./tmp" >> ${IMG_DIR}/${IMAGENAME}.mtree-exclude
+echo "./dev" >> ${IMG_DIR}/${IMAGENAME}.mtree-exclude
+( cd ${WORLDDIR} && mtree -x -ic -k flags,gid,mode,nlink,size,link,uid,sha256digest -X ${IMG_DIR}/${IMAGENAME}.mtree-exclude ) > ${IMG_DIR}/${IMAGENAME}.mtree
+rm ${IMG_DIR}/${IMAGENAME}.mtree-exclude

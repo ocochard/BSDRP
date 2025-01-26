@@ -22,16 +22,22 @@
 # - Second, from this builder jail, we generate packages:
 #   - ports list in BSDRP-pkglist
 #   - ports options in BSDRPj-make.conf
-# - Third and last, we generate a nanobsd-like, uefi compliant firmware image
+# - Third, generate a nanobsd-like, uefi compliant firmware image
 #   - No need of compiler tools, more WITHOUT_added in image-BSDRPj-src.conf
-#   - But FreeBSD some unwanted files are still here, so adding list of them
+#   - But some unwanted files are still here, so adding list of them
 #     in excluded.files
-#   - All avoiding extracting unwanted files from package using a pkg.conf
+#   - Avoid extracting unwanted files from package using a pkg.conf
 #     in BSDRP/Files/usr/local/etc/pkg.conf
-#   - And a post customization script in post-script.sh
+#   - And a post customization script in post-script.sh that:
+#     - Replace BSDRP_VERSION in boot menu
+#     - Create some symlinks
+#     - Customize fstab
+#     - Generate mtree
+# - Forth, renaming and zipping in case of release mode
 ###############################################################################
 
-poudriere_images_dir = /usr/local/poudriere/data/images
+poudriere_basefs = $(grep '^BASEFS=' /usr/local/etc/poudriere.conf | cut -d '=' -f 2)
+poudriere_images_dir = ${poudriere_basefs}/data/images
 bsdrp_image = ${poudriere_images_dir}/BSDRP.img
 bsdrp_update_image = ${poudriere_images_dir}/BSDRP-update.img
 
