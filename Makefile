@@ -75,14 +75,14 @@ src_ports_dir = ${.OBJDIR}/ports
 src_arch = ${MACHINE_ARCH:S/aarch64/arm64/}
 kernel = ${.OBJDIR}/FreeBSD/sys/${src_arch}/conf/${src_arch}
 
-poudriere_image_pre = ${poudriere_images_dir}/BSDRP
-bsdrp_image_full = ${poudriere_image_pre}-full-${src_arch}.img
-bsdrp_image_upgrade = ${poudriere_image_pre}-upgrade-${src_arch}.img
-bsdrp_image_mtree = ${poudriere_image_pre}-${src_arch}.mtree
+VERSION != cat ${.CURDIR}/BSDRP/Files/etc/version
+BSDRP_IMG_FULL = ${poudriere_images_dir}/BSDRP-${VERSION}-full-${src_arch}.img
+BSDRP_IMG_UPGRADE = ${poudriere_images_dir}/BSDRP-${VERSION}-upgrade-${src_arch}.img
+BSDRP_IMG_MTREE = ${poudriere_images_dir}/BSDRP-${VERSION}-${src_arch}.mtree
 
 .PHONY: all check-requirements clean clean-all upstream-sync
 
-all: check-requirements ${bsdrp_image_full} ${bsdrp_image_upgrade} ${bsdrp_image_mtree}
+all: check-requirements ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE}
 
 check-requirements:
 	@which git > /dev/null || { echo "Error: git is not installed."; exit 1; }
@@ -185,7 +185,7 @@ build-packages: build-builder-jail build-ports-tree
 	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc bulk -j BSDRPj -p BSDRPp -f ${.OBJDIR}/pkglist
 	@touch ${.TARGET}
 
-${bsdrp_image_full} ${bsdrp_image_upgrade} ${bsdrp_image_mtree}: build-packages
+${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE}: build-packages
 	@echo "Build image..."
 	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc image -t firmware -s 4g \
 		-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
@@ -193,10 +193,10 @@ ${bsdrp_image_full} ${bsdrp_image_upgrade} ${bsdrp_image_mtree}: build-packages
 		-f ${.OBJDIR}/pkglist \
 		-X ${.CURDIR}/poudriere.etc/poudriere.d/excluded.files \
 		-A ${.CURDIR}/poudriere.etc/poudriere.d/post-script.sh
-	@test -f ${poudriere_image_pre}.img || { echo "Error: ${poudriere_image_pre}.img was not created"; exit 1; }
-	${sudo} mv ${poudriere_image_pre}.img ${bsdrp_image_full}
-	${sudo} mv ${poudriere_image_pre}-upgrade.img ${bsdrp_image_upgrade}
-	${sudo} mv ${poudriere_image_pre}.mtree ${bsdrp_image_mtree}
+	@test -f ${poudriere_images_dir}/BSDRP.img || { echo "Error: ${poudriere_images_dir}/BSDRP.img was not created"; exit 1; }
+	${sudo} mv ${poudriere_images_dir}/BSDRP.img ${BSDRP_IMG_FULL}
+	${sudo} mv ${poudriere_images_dir}/BSDRP-upgrade.img ${BSDRP_IMG_UPGRADE}
+	${sudo} mv ${poudriere_images_dir}/BSDRP.mtree ${BSDRP_IMG_MTREE}
 
 upstream-sync: sync-FreeBSD sync-ports
 
@@ -236,9 +236,9 @@ clean-packages:
 	@rm -f ${.OBJDIR}/build-packages
 
 clean-images:
-	@${sudo} rm -f ${bsdrp_image_full}
-	@${sudo} rm -f ${bsdrp_image_upgrade}
-	@${sudo} rm -f ${bsdrp_image_mtree}
+	@${sudo} rm -f ${BSDRP_IMG_FULL}
+	@${sudo} rm -f ${BSDRP_IMG_UPGRADE}
+	@${sudo} rm -f ${BSDRP_IMG_MTREE}
 
 clean-src:
 	@rm -rf ${src_FreeBSD_dir}
