@@ -1,18 +1,8 @@
 # BSD Router Project
 # https://bsdrp.net
 
-# The common user-driven targets are:
-#
-# clean           - Clean existing images only
-# clean-packages  - Clean all existing packages
-# clean-jail      - Clean existing builder jail (sometime FreeBSD current
-#                   need a fresh start because incompatible with previous
-#                   existing obj tree)
-# clean-all       - Clean all: FreeBSD sources, port tree sources, jail,
-#                   packages, images
-# upstream-sync   - Fetch latest FreeBSD and port tree sources
-#                   and update hashes in Makefile.vars
-# compress-images - Compress generated files
+# Cf the help target at the end of the file for targets descriptions
+
 ###############################################################################
 # Poudriere configurations files are in poudriere.etc/poudriere.d/
 # - First build a "builder" jail (BSDRPj), which is a reduced FreeBSD but that
@@ -82,16 +72,18 @@ BSDRP_IMG_UPGRADE = ${poudriere_images_dir}/BSDRP-${VERSION}-upgrade-${src_arch}
 BSDRP_IMG_DEBUG = ${poudriere_images_dir}/BSDRP-${VERSION}-debug-${src_arch}.tar
 BSDRP_IMG_MTREE = ${poudriere_images_dir}/BSDRP-${VERSION}-${src_arch}.mtree
 
-.PHONY: all check-requirements clean clean-all upstream-sync
+.PHONY: all check-requirements clean clean-all upstream-sync help
 
 all: check-requirements ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}
 
 check-requirements:
 	@which git > /dev/null || { echo "Error: git is not installed."; exit 1; }
+	@which xz > /dev/null || { echo "Error: xz is not installed."; exit 1; }
+	@which poudriere > /dev/null || { echo "Error: poudriere is not installed."; exit 1; }
 .if ${USER} != "root"
 	@which ${sudo} > /dev/null || { echo "Error: sudo is not installed."; exit 1; }
 .endif
-  @grep -q mtree /usr/local/share/poudriere/image.sh || { echo "Error: Need https://github.com/freebsd/poudriere/pull/1200"; exit 1; }
+	@grep -q mtree /usr/local/share/poudriere/image.sh || { echo "Error: Need https://github.com/freebsd/poudriere/pull/1200"; exit 1; }
 
 # Sources management
 
@@ -179,12 +171,14 @@ build-ports-tree: patch-sources
 
 build-packages: build-builder-jail build-ports-tree
 	@echo "Build packages..."
-	# Some packages are architecture dependends
-	@cp ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${.OBJDIR}/pkglist
+	@cp ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${.OBJDIR}/pkglist || exit 1
 	@if [ -f ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} ]; then \
-		cat ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} >> ${.OBJDIR}/pkglist; \
+		cat ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} >> ${.OBJDIR}/pkglist || exit 1; \
 	fi
-	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc bulk -j BSDRPj -p BSDRPp -f ${.OBJDIR}/pkglist
+	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc bulk -j BSDRPj -p BSDRPp -f ${.OBJDIR}/pkglist || { \
+		echo "Error: Package build failed"; \
+		exit 1; \
+	}
 	@touch ${.TARGET}
 
 ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: build-packages
@@ -256,8 +250,20 @@ clean-src:
 	@rm -f ${.OBJDIR}/add-src-ports
 
 compress-images: ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}
-	@echo "Compressing files..."
-	@${sudo} xz -9 -T0 -vf ${BSDRP_IMG_FULL}
-	@${sudo} xz -9 -T0 -vf ${BSDRP_IMG_UPGRADE}
-	@${sudo} xz -9 -T0 -vf ${BSDRP_IMG_MTREE}
-	@${sudo} xz -9 -T0 -vf ${BSDRP_IMG_DEBUG}
+	@echo "Compressing files using $(shell nproc) threads..."
+	@for img in ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}; do \
+		${sudo} xz -9 -T0 -vf $${img} & \
+	done
+	@wait
+
+help:
+	@echo "Available targets:"
+	@echo " all             - Build everything (default)"
+	@echo " clean           - Clean existing images only"
+	@echo " clean-packages  - Clean all existing packages"
+	@echo " clean-jail      - Clean existing builder jail"
+	@echo "                   Sometimes previous FreeBSD obj tree prevent clean upgrade"
+	@echo " clean-all       - Clean everything"
+	@echo " upstream-sync   - Fetch latest sources (FreeBSD and ports tree)"
+	@echo "                   And update hashes in Makefile.vars"
+	@echo " compress-images - Compress generated files"
