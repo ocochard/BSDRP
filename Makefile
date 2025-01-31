@@ -12,7 +12,7 @@
 #                   packages, images
 # upstream-sync   - Fetch latest FreeBSD and port tree sources
 #                   and update hashes in Makefile.vars
-
+# compress-images - Compress generated files
 ###############################################################################
 # Poudriere configurations files are in poudriere.etc/poudriere.d/
 # - First build a "builder" jail (BSDRPj), which is a reduced FreeBSD but that
@@ -42,6 +42,7 @@ poudriere_basefs != grep '^BASEFS=' /usr/local/etc/poudriere.conf | cut -d '=' -
 .endif
 
 poudriere_images_dir = ${poudriere_basefs}/data/images
+poudriere_jail_dir = ${poudriere_basefs}/jails/BSDRPj
 
 .if ${USER} != "root"
 sudo ?= sudo
@@ -78,11 +79,12 @@ kernel = ${.OBJDIR}/FreeBSD/sys/${src_arch}/conf/${src_arch}
 VERSION != cat ${.CURDIR}/BSDRP/Files/etc/version
 BSDRP_IMG_FULL = ${poudriere_images_dir}/BSDRP-${VERSION}-full-${src_arch}.img
 BSDRP_IMG_UPGRADE = ${poudriere_images_dir}/BSDRP-${VERSION}-upgrade-${src_arch}.img
+BSDRP_IMG_DEBUG = ${poudriere_images_dir}/BSDRP-${VERSION}-debug-${src_arch}.tar
 BSDRP_IMG_MTREE = ${poudriere_images_dir}/BSDRP-${VERSION}-${src_arch}.mtree
 
 .PHONY: all check-requirements clean clean-all upstream-sync
 
-all: check-requirements ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE}
+all: check-requirements ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}
 
 check-requirements:
 	@which git > /dev/null || { echo "Error: git is not installed."; exit 1; }
@@ -185,7 +187,7 @@ build-packages: build-builder-jail build-ports-tree
 	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc bulk -j BSDRPj -p BSDRPp -f ${.OBJDIR}/pkglist
 	@touch ${.TARGET}
 
-${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE}: build-packages
+${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: build-packages
 	@echo "Build image..."
 	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc image -t firmware -s 4g \
 		-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
@@ -194,9 +196,10 @@ ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE}: build-packages
 		-X ${.CURDIR}/poudriere.etc/poudriere.d/excluded.files \
 		-A ${.CURDIR}/poudriere.etc/poudriere.d/post-script.sh
 	@test -f ${poudriere_images_dir}/BSDRP.img || { echo "Error: ${poudriere_images_dir}/BSDRP.img was not created"; exit 1; }
-	${sudo} mv ${poudriere_images_dir}/BSDRP.img ${BSDRP_IMG_FULL}
-	${sudo} mv ${poudriere_images_dir}/BSDRP-upgrade.img ${BSDRP_IMG_UPGRADE}
-	${sudo} mv ${poudriere_images_dir}/BSDRP.mtree ${BSDRP_IMG_MTREE}
+	@${sudo} tar cf ${BSDRP_IMG_DEBUG} -C ${poudriere_jail_dir}/usr/lib debug
+	@${sudo} mv ${poudriere_images_dir}/BSDRP.img ${BSDRP_IMG_FULL}
+	@${sudo} mv ${poudriere_images_dir}/BSDRP-upgrade.img ${BSDRP_IMG_UPGRADE}
+	@${sudo} mv ${poudriere_images_dir}/BSDRP.mtree ${BSDRP_IMG_MTREE}
 
 upstream-sync: sync-FreeBSD sync-ports
 
@@ -236,9 +239,10 @@ clean-packages:
 	@rm -f ${.OBJDIR}/build-packages
 
 clean-images:
-	@${sudo} rm -f ${BSDRP_IMG_FULL}
-	@${sudo} rm -f ${BSDRP_IMG_UPGRADE}
-	@${sudo} rm -f ${BSDRP_IMG_MTREE}
+	@${sudo} rm -f ${BSDRP_IMG_FULL}*
+	@${sudo} rm -f ${BSDRP_IMG_UPGRADE}*
+	@${sudo} rm -f ${BSDRP_IMG_MTREE}*
+	@${sudo} rm -f ${BSDRP_IMG_DEBUG}*
 
 clean-src:
 	@rm -rf ${src_FreeBSD_dir}
@@ -246,3 +250,10 @@ clean-src:
 	@rm -f ${.OBJDIR}/patch-src-FreeBSD
 	@rm -f ${.OBJDIR}/patch-src-ports
 	@rm -f ${.OBJDIR}/add-src-ports
+
+compress-images: ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}
+	@echo "Compressing files..."
+	@${sudo} xz -9 -T0 -vf ${BSDRP_IMG_FULL}
+	@${sudo} xz -9 -T0 -vf ${BSDRP_IMG_UPGRADE}
+	@${sudo} xz -9 -T0 -vf ${BSDRP_IMG_MTREE}
+	@${sudo} xz -9 -T0 -vf ${BSDRP_IMG_DEBUG}
