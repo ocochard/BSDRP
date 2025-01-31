@@ -189,12 +189,16 @@ build-packages: build-builder-jail build-ports-tree
 
 ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: build-packages
 	@echo "Build image..."
+	# Replace version in brand-bsdrp.lua
+	@sed -i "" -e s"/BSDRP_VERSION/${VERSION}/" ${.CURDIR}/BSDRP/Files/boot/lua/brand-bsdrp.lua
 	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc image -t firmware -s 4g \
 		-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
 		-c ${.CURDIR}/BSDRP/Files/ \
 		-f ${.OBJDIR}/pkglist \
 		-X ${.CURDIR}/poudriere.etc/poudriere.d/excluded.files \
 		-A ${.CURDIR}/poudriere.etc/poudriere.d/post-script.sh
+	# Restore brand-bsdrp.lua
+	@git -C ${.CURDIR}/BSDRP/Files/boot/lua checkout brand-bsdrp.lua
 	@test -f ${poudriere_images_dir}/BSDRP.img || { echo "Error: ${poudriere_images_dir}/BSDRP.img was not created"; exit 1; }
 	@${sudo} tar cf ${BSDRP_IMG_DEBUG} -C ${poudriere_jail_dir}/usr/lib debug
 	@${sudo} mv ${poudriere_images_dir}/BSDRP.img ${BSDRP_IMG_FULL}
