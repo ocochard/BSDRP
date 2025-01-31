@@ -36,10 +36,12 @@
 # - Forth, renaming and zipping in case of release mode
 ###############################################################################
 
-poudriere_basefs = $(grep '^BASEFS=' /usr/local/etc/poudriere.conf | cut -d '=' -f 2)
+poudriere_basefs != grep '^BASEFS=' /usr/local/etc/poudriere.conf | cut -d '=' -f 2 || echo ""
+.if empty(poudriere_basefs)
+.error "Could not determine BASEFS from poudriere.conf"
+.endif
+
 poudriere_images_dir = ${poudriere_basefs}/data/images
-bsdrp_image = ${poudriere_images_dir}/BSDRP.img
-bsdrp_update_image = ${poudriere_images_dir}/BSDRP-update.img
 
 .if ${USER} != "root"
 sudo ?= sudo
@@ -73,9 +75,14 @@ src_ports_dir = ${.OBJDIR}/ports
 src_arch = ${MACHINE_ARCH:S/aarch64/arm64/}
 kernel = ${.OBJDIR}/FreeBSD/sys/${src_arch}/conf/${src_arch}
 
+poudriere_image_pre = ${poudriere_images_dir}/BSDRP
+bsdrp_image_full = ${poudriere_image_pre}-full-${src_arch}.img
+bsdrp_image_upgrade = ${poudriere_image_pre}-upgrade-${src_arch}.img
+bsdrp_image_mtree = ${poudriere_image_pre}-${src_arch}.mtree
+
 .PHONY: all check-requirements clean clean-all upstream-sync
 
-all: check-requirements ${bsdrp_image} ${bsdrp_update_image}
+all: check-requirements ${bsdrp_image_full} ${bsdrp_image_upgrade} ${bsdrp_image_mtree}
 
 check-requirements:
 	@which git > /dev/null || { echo "Error: git is not installed."; exit 1; }
@@ -116,7 +123,7 @@ patch-src-${src}: update-src-${src}
 	# XXX Need to be replaced with a generic call (catch each patch mods)
 	# in a for loop, allowing to patch only when changed
 	#@echo "DEBUG:  ${src}_patches = ${${src}_patches}"
-.if !defined(${src}_patches) || empty(${src}_patches)
+.if !defined(${src}_patches) || empty(${src}_patches})
 	@echo "WARNING: No patches found for ${src} in ${patches_dir}"
 .else
 	@echo "==> Applying ${src} patches..."
@@ -178,7 +185,7 @@ build-packages: build-builder-jail build-ports-tree
 	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc bulk -j BSDRPj -p BSDRPp -f ${.OBJDIR}/pkglist
 	@touch ${.TARGET}
 
-${bsdrp_image} ${bsdrp_update_image}: build-packages
+${bsdrp_image_full} ${bsdrp_image_upgrade} ${bsdrp_image_mtree}: build-packages
 	@echo "Build image..."
 	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc image -t firmware -s 4g \
 		-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
@@ -186,6 +193,10 @@ ${bsdrp_image} ${bsdrp_update_image}: build-packages
 		-f ${.OBJDIR}/pkglist \
 		-X ${.CURDIR}/poudriere.etc/poudriere.d/excluded.files \
 		-A ${.CURDIR}/poudriere.etc/poudriere.d/post-script.sh
+	@test -f ${poudriere_image_pre}.img || { echo "Error: ${poudriere_image_pre}.img was not created"; exit 1; }
+	${sudo} mv ${poudriere_image_pre}.img ${bsdrp_image_full}
+	${sudo} mv ${poudriere_image_pre}-upgrade.img ${bsdrp_image_upgrade}
+	${sudo} mv ${poudriere_image_pre}.mtree ${bsdrp_image_mtree}
 
 upstream-sync: sync-FreeBSD sync-ports
 
@@ -225,8 +236,9 @@ clean-packages:
 	@rm -f ${.OBJDIR}/build-packages
 
 clean-images:
-	@${sudo} rm -f ${bsdrp_image}
-	@${sudo} rm -f ${bsdrp_update_image}
+	@${sudo} rm -f ${bsdrp_image_full}
+	@${sudo} rm -f ${bsdrp_image_upgrade}
+	@${sudo} rm -f ${bsdrp_image_mtree}
 
 clean-src:
 	@rm -rf ${src_FreeBSD_dir}
