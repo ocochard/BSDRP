@@ -123,7 +123,7 @@ patch-src-${src}: update-src-${src}
 	# XXX Need to be replaced with a generic call (catch each patch mods)
 	# in a for loop, allowing to patch only when changed
 	#@echo "DEBUG:  ${src}_patches = ${${src}_patches}"
-.if !defined(${src}_patches) || empty(${src}_patches})
+.if !defined(${src}_patches) || empty(${src}_patches)
 	@echo "WARNING: No patches found for ${src} in ${patches_dir}"
 .else
 	@echo "==> Applying ${src} patches..."
