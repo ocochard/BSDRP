@@ -23,7 +23,6 @@
 #     - Create some symlinks
 #     - Customize fstab
 #     - Generate mtree
-# - Forth, renaming and zipping in case of release mode
 ###############################################################################
 
 poudriere_basefs != grep '^BASEFS=' /usr/local/etc/poudriere.conf | cut -d '=' -f 2 || echo ""
@@ -75,10 +74,13 @@ BSDRP_IMG_FULL = ${poudriere_images_dir}/BSDRP-${VERSION}-full-${src_arch}.img
 BSDRP_IMG_UPGRADE = ${poudriere_images_dir}/BSDRP-${VERSION}-upgrade-${src_arch}.img
 BSDRP_IMG_DEBUG = ${poudriere_images_dir}/BSDRP-${VERSION}-debug-${src_arch}.tar
 BSDRP_IMG_MTREE = ${poudriere_images_dir}/BSDRP-${VERSION}-${src_arch}.mtree
+IMAGES := ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}
+COMPRESSED_IMAGES := ${BSDRP_IMG_FULL}.xz ${BSDRP_IMG_UPGRADE}.xz ${BSDRP_IMG_MTREE}.xz ${BSDRP_IMG_DEBUG}.xz
+CHECKSUM_IMAGES := ${COMPRESSED_IMAGES:%=%.sha256}
 
 .PHONY: all check-requirements clean clean-all upstream-sync help
 
-all: check-requirements ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}
+all: check-requirements ${IMAGES}
 
 check-requirements:
 	@which git > /dev/null || { echo "Error: git is not installed."; exit 1; }
@@ -198,6 +200,7 @@ build-packages: build-builder-jail build-ports-tree
 
 ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: build-packages
 	@echo "Build image..."
+	@${sudo} rm -f ${IMAGES} ${CHECKSUM_IMAGES} ${COMPRESSED_IMAGES}
 	# Replace version in brand-bsdrp.lua
 	@sed -i "" -e s"/BSDRP_VERSION/${VERSION}/" ${SRC_DIR}/BSDRP/Files/boot/lua/brand-bsdrp.lua
 	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc image -t firmware -s 4g \
@@ -241,10 +244,7 @@ clean-packages:
 	@rm -f ${.OBJDIR}/build-packages
 
 clean-images:
-	@${sudo} rm -f ${BSDRP_IMG_FULL}*
-	@${sudo} rm -f ${BSDRP_IMG_UPGRADE}*
-	@${sudo} rm -f ${BSDRP_IMG_MTREE}*
-	@${sudo} rm -f ${BSDRP_IMG_DEBUG}*
+	@${sudo} rm -f ${IMAGES} ${CHECKSUM_IMAGES} ${COMPRESSED_IMAGES}
 
 clean-src:
 	@rm -rf ${src_FreeBSD_dir}
@@ -253,16 +253,26 @@ clean-src:
 	@rm -f ${.OBJDIR}/patch-src-ports
 	@rm -f ${.OBJDIR}/add-src-ports
 
-compress-images: ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}
-	@echo "Compressing files using $(shell nproc) threads..."
-	@for img in ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}; do \
-		${sudo} xz -9 -T0 -vf $${img} & \
+release: all
+	@${MAKE} -f ${MAKEFILE} compress-images checksum-images
+
+compress-images: ${IMAGES}
+	@echo "Compressing image files using $$(nproc) threads..."
+	@for img in ${IMAGES}; do \
+		${sudo} xz -9 -T0 -vf $${img} || exit 1; \
 	done
-	@wait
+
+COMPRESSED_IMAGES := ${BSDRP_IMG_FULL}.xz ${BSDRP_IMG_UPGRADE}.xz ${BSDRP_IMG_MTREE}.xz ${BSDRP_IMG_DEBUG}.xz
+checksum-images: ${COMPRESSED_IMAGES}
+	@echo "Computing checksums of generated files..."
+	# Run in the images directory to prevent full path in the output
+	@for img in ${COMPRESSED_IMAGES}; do \
+		(cd ${poudriere_images_dir} && sha256 $$(basename $${img}) | ${sudo} tee $${img}.sha256); \
+	done
 
 help:
 	@echo "Available targets:"
-	@echo " all             - Build everything (default)"
+	@echo " all             - Build images (default)"
 	@echo " clean           - Clean existing images only"
 	@echo " clean-packages  - Clean all existing packages"
 	@echo " clean-jail      - Clean existing builder jail"
@@ -271,3 +281,5 @@ help:
 	@echo " upstream-sync   - Fetch latest sources (FreeBSD and ports tree)"
 	@echo "                   And update hashes in Makefile.vars"
 	@echo " compress-images - Compress generated files"
+	@echo " checksum-images - Compute checksums of generated files"
+	@echo " release         - Build, compress then generate checksums of images"
