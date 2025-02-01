@@ -31,8 +31,8 @@ poudriere_basefs != grep '^BASEFS=' /usr/local/etc/poudriere.conf | cut -d '=' -
 .error "Could not determine BASEFS from poudriere.conf"
 .endif
 
-poudriere_images_dir = ${poudriere_basefs}/data/images
-poudriere_jail_dir = ${poudriere_basefs}/jails/BSDRPj
+poudriere_images_dir := ${poudriere_basefs}/data/images
+poudriere_jail_dir := ${poudriere_basefs}/jails/BSDRPj
 
 .if ${USER} != "root"
 sudo ?= sudo
@@ -41,21 +41,25 @@ sudo =
 .endif
 
 # Define the path to the variables file
-# This loads all FreeBSD_* and ports_* variables
-vars_file = Makefile.vars
+# Here we assign ${.PARSEDIR} to ${SRC_DIR} in place of ${.CURDIR} to get the directory relative to the Makefile
+# We will call this Makefile recursively (so executed from the object directory).
+# XXXX But don't need to find the same solution about .OBJDIR (avoiding creating a sub .OBJDIR inside the existing .OBJDIR) ?
+SRC_DIR := ${.PARSEDIR}
+# Loading FreeBSD_* and ports_* variables
+vars_file := ${SRC_DIR}/Makefile.vars
 .if exists(${vars_file})
 .include "${vars_file}"
 .else
 .error "Variables file '${vars_file}' not found."
 .endif
 
-# Load existing patches files (used to trigged target if modified)
-patches_dir = ${.CURDIR}/BSDRP/patches
+# Load existing patches files (used to trigged targets if modified)
+patches_dir := ${SRC_DIR}/BSDRP/patches
 FreeBSD_patches != find $(patches_dir) -name 'freebsd.*.patch'
 ports_patches != find $(patches_dir) -name 'ports.*.patch'
 ports_shar != find $(patches_dir) -name 'ports.*.shar'
-src_FreeBSD_dir = ${.OBJDIR}/FreeBSD
-src_ports_dir = ${.OBJDIR}/ports
+src_FreeBSD_dir := ${.OBJDIR}/FreeBSD
+src_ports_dir := ${.OBJDIR}/ports
 .for required in FreeBSD_patches ports_patches ports_shar
 .if !defined(${required}) || empty(${required})
 .error "No ${required:tl} files found in ${patches_dir}"
@@ -66,7 +70,7 @@ src_ports_dir = ${.OBJDIR}/ports
 src_arch = ${MACHINE_ARCH:S/aarch64/arm64/}
 kernel = ${.OBJDIR}/FreeBSD/sys/${src_arch}/conf/${src_arch}
 
-VERSION != cat ${.CURDIR}/BSDRP/Files/etc/version
+VERSION != cat ${SRC_DIR}/BSDRP/Files/etc/version
 BSDRP_IMG_FULL = ${poudriere_images_dir}/BSDRP-${VERSION}-full-${src_arch}.img
 BSDRP_IMG_UPGRADE = ${poudriere_images_dir}/BSDRP-${VERSION}-upgrade-${src_arch}.img
 BSDRP_IMG_DEBUG = ${poudriere_images_dir}/BSDRP-${VERSION}-debug-${src_arch}.tar
@@ -84,6 +88,7 @@ check-requirements:
 	@which ${sudo} > /dev/null || { echo "Error: sudo is not installed."; exit 1; }
 .endif
 	@grep -q mtree /usr/local/share/poudriere/image.sh || { echo "Error: Need https://github.com/freebsd/poudriere/pull/1200"; exit 1; }
+	@grep -q 'pmbr=' /usr/local/share/poudriere/image_firmware.sh || { echo "Error: Need https://github.com/freebsd/poudriere/pull/1205"; exit 1; }
 
 # Sources management
 
@@ -95,41 +100,51 @@ ${src_ports_dir}:
 	@echo "Git clone FreeBSD ports tree..."
 	@git clone -b ${ports_branch} --single-branch "${ports_repo}".git ${src_ports_dir}
 
-.for src in FreeBSD ports
-cleanup-src-${src}:
-	@echo "==> Cleaning ${src} sources..."
-	@git -C ${src_${src}_dir} checkout .
-	@git -C ${src_${src}_dir} clean -fd
-	@rm -f patch-src-${src}
+.for repo in FreeBSD ports
+cleanup-src-${repo}:
+	@echo "==> Cleaning ${repo} sources..."
+	@git -C ${src_${repo}_dir} checkout .
+	@git -C ${src_${repo}_dir} clean -fd
+	@rm -f patch-src-${repo}
 	@rm -f patch-sources
 	@touch ${.TARGET}
 
-update-src-${src}: ${vars_file} ${src_${src}_dir} cleanup-src-${src}
-	@echo "==> Updating ${src} at hash ${${src}_hash}..."
-	@git -C ${src_${src}_dir} checkout ${${src}_branch}
-	@git -C ${src_${src}_dir} pull
-	@git -C ${src_${src}_dir} checkout ${${src}_hash}
+update-src-${repo}: ${vars_file} ${src_${repo}_dir}
+	@rm -f ${.OBJDIR}/cleanup-src-${repo}
+	@${MAKE} -f ${MAKEFILE} cleanup-src-${repo}
+	@echo "==> Updating ${repo} at hash ${${repo}_hash}..."
+	@git -C ${src_${repo}_dir} checkout ${${repo}_branch}
+	@git -C ${src_${repo}_dir} pull
+	@git -C ${src_${repo}_dir} checkout ${${repo}_hash}
 	@echo "Git commit count:"
-	@git -C ${src_${src}_dir} rev-list HEAD --count
+	@git -C ${src_${repo}_dir} rev-list HEAD --count
 	@touch ${.TARGET}
 
-patch-src-${src}: update-src-${src}
+patch-src-${repo}: update-src-${repo}
 	# XXX Need to be replaced with a generic call (catch each patch mods)
 	# in a for loop, allowing to patch only when changed
-	#@echo "DEBUG:  ${src}_patches = ${${src}_patches}"
-.if !defined(${src}_patches) || empty(${src}_patches)
-	@echo "WARNING: No patches found for ${src} in ${patches_dir}"
+.if !defined(${repo}_patches) || empty(${repo}_patches)
+	@echo "WARNING: No patches found for ${repo} in ${patches_dir}"
 .else
-	@echo "==> Applying ${src} patches..."
+	@echo "==> Applying ${repo} patches..."
 	# All patches are in git diff format (so -p0)
-	@for patch in ${${src}_patches}; do \
+	@for patch in ${${repo}_patches}; do \
 		echo "Processing $${patch}..."; \
-		patch -p0 -NE -d  ${.OBJDIR}/${src} -i $${patch} || exit 1; \
+		patch -p0 -NE -d ${.OBJDIR}/${repo} -i $${patch} || exit 1; \
 	done
 .endif
 	@touch ${.TARGET}
 
-.endfor # src
+sync-${repo}: ${src_${repo}_dir}
+	@rm -f ${.OBJDIR}/cleanup-src-${repo}
+	@${MAKE} -f ${MAKEFILE} cleanup-src-${repo}
+	@echo "Sync ${repo} sources with upstream..."
+	@git -C ${src_${repo}_dir} pull
+	@new_hash=$$(git -C ${src_${repo}_dir} rev-parse --short HEAD) && \
+	sed -i '' "s/${repo}_hash?=.*/${repo}_hash?=$$new_hash/" ${SRC_DIR}/${vars_file} && \
+	rm -f ${.OBJDIR}/patch-src-${repo} && \
+	echo "Updating previous ${repo} hash ${${repo}_hash} to $${new_hash}"
+.endfor # repo
 
 patch-sources: patch-src-FreeBSD patch-src-ports add-src-ports ${kernel}
 	@touch ${.TARGET}
@@ -138,7 +153,7 @@ add-src-ports: update-src-ports
 .if !defined(ports_shar) || empty(ports_shar)
 	@echo "WARNING: No ports_shar variable defined or empty, skipping ports addition"
 .else
-	# XXX Need to be replaced with a generic call (catch each shar file mods)
+	# XXX Need to be replaced with a generic call (to be triggered for only shar files mods)
 	@echo "Add extrat ports into FreeBSD port tree sources..."
 	@for shar in ${ports_shar}; do \
 		echo "Processing $${shar}..."; \
@@ -147,35 +162,35 @@ add-src-ports: update-src-ports
 .endif
 	@touch ${.TARGET}
 
-${kernel}: ${.CURDIR}/BSDRP/kernels/${src_arch}
+${kernel}: ${SRC_DIR}/BSDRP/kernels/${src_arch}
 	@echo "Install kernel for arch ${MACHINE_ARCH} (${src_arch})"
-	@cp ${.CURDIR}/BSDRP/kernels/${src_arch} ${.OBJDIR}/FreeBSD/sys/${src_arch}/conf/
+	@cp ${SRC_DIR}/BSDRP/kernels/${src_arch} ${.OBJDIR}/FreeBSD/sys/${src_arch}/conf/
 
-build-builder-jail: patch-sources ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common
+build-builder-jail: patch-sources ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common
 	@echo "Build the builder jail and kernel..."
 	# All jail-src.conf need to end by MODULES_OVERRIDE section because this is arch dependends
-	@cp ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf
-	@if [ -f ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${src_arch} ]; then \
-		cat ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${src_arch} >> ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
+	@cp ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf
+	@if [ -f ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${src_arch} ]; then \
+		cat ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${src_arch} >> ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
 	else \
-		echo "" >> ${.CURDIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
+		echo "" >> ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
 	fi
-	@jail_action=$$(${sudo} poudriere -e ${.CURDIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c") && \
-	${sudo} poudriere -e ${.CURDIR}/poudriere.etc jail -$${jail_action} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${src_arch}
+	@jail_action=$$(${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c") && \
+	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -$${jail_action} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${src_arch}
 	@touch ${.TARGET}
 
 build-ports-tree: patch-sources
-	@ports_action=$$(${sudo} poudriere -e ${.CURDIR}/poudriere.etc ports -ln | grep -q BSDRPp && echo "u" || echo "c") && \
-	${sudo} poudriere -e ${.CURDIR}/poudriere.etc ports -$${ports_action} -p BSDRPp -m null -M ${.OBJDIR}/ports
+	@ports_action=$$(${sudo} poudriere -e ${SRC_DIR}/poudriere.etc ports -ln | grep -q BSDRPp && echo "u" || echo "c") && \
+	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc ports -$${ports_action} -p BSDRPp -m null -M ${.OBJDIR}/ports
 	@touch ${.TARGET}
 
 build-packages: build-builder-jail build-ports-tree
 	@echo "Build packages..."
-	@cp ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${.OBJDIR}/pkglist || exit 1
-	@if [ -f ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} ]; then \
-		cat ${.CURDIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} >> ${.OBJDIR}/pkglist || exit 1; \
+	@cp ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${.OBJDIR}/pkglist || exit 1
+	@if [ -f ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} ]; then \
+		cat ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} >> ${.OBJDIR}/pkglist || exit 1; \
 	fi
-	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc bulk -j BSDRPj -p BSDRPp -f ${.OBJDIR}/pkglist || { \
+	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc bulk -j BSDRPj -p BSDRPp -f ${.OBJDIR}/pkglist || { \
 		echo "Error: Package build failed"; \
 		exit 1; \
 	}
@@ -184,15 +199,15 @@ build-packages: build-builder-jail build-ports-tree
 ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: build-packages
 	@echo "Build image..."
 	# Replace version in brand-bsdrp.lua
-	@sed -i "" -e s"/BSDRP_VERSION/${VERSION}/" ${.CURDIR}/BSDRP/Files/boot/lua/brand-bsdrp.lua
-	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc image -t firmware -s 4g \
+	@sed -i "" -e s"/BSDRP_VERSION/${VERSION}/" ${SRC_DIR}/BSDRP/Files/boot/lua/brand-bsdrp.lua
+	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc image -t firmware -s 4g \
 		-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
-		-c ${.CURDIR}/BSDRP/Files/ \
+		-c ${SRC_DIR}/BSDRP/Files/ \
 		-f ${.OBJDIR}/pkglist \
-		-X ${.CURDIR}/poudriere.etc/poudriere.d/excluded.files \
-		-A ${.CURDIR}/poudriere.etc/poudriere.d/post-script.sh
+		-X ${SRC_DIR}/poudriere.etc/poudriere.d/excluded.files \
+		-A ${SRC_DIR}/poudriere.etc/poudriere.d/post-script.sh
 	# Restore brand-bsdrp.lua
-	@git -C ${.CURDIR}/BSDRP/Files/boot/lua checkout brand-bsdrp.lua
+	@git -C ${SRC_DIR}/BSDRP/Files/boot/lua checkout brand-bsdrp.lua
 	@test -f ${poudriere_images_dir}/BSDRP.img || { echo "Error: ${poudriere_images_dir}/BSDRP.img was not created"; exit 1; }
 	@${sudo} tar cf ${BSDRP_IMG_DEBUG} -C ${poudriere_jail_dir}/usr/lib debug
 	@${sudo} mv ${poudriere_images_dir}/BSDRP.img ${BSDRP_IMG_FULL}
@@ -201,17 +216,6 @@ ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: bu
 
 upstream-sync: sync-FreeBSD sync-ports
 
-.for src in FreeBSD ports
-sync-${src}: ${src_${src}_dir} cleanup-src-${src}
-	@echo "Sync ${src} sources with upstream..."
-	@git -C ${src_${src}_dir} stash
-	@git -C ${src_${src}_dir} pull
-	@new_hash=$$(git -C ${src_${src}_dir} rev-parse --short HEAD) && \
-	sed -i '' "s/${src}_hash?=.*/${src}_hash?=$$new_hash/" ${.CURDIR}/${vars_file} && \
-	rm -f ${.OBJDIR}/patch-src-${src} && \
-	echo "Updating previous ${src} hash ${${src}_hash} to $${new_hash}"
-.endfor
-
 clean: clean-images
 
 clean-all: clean-jail clean-ports-tree clean-images clean-src
@@ -219,20 +223,20 @@ clean-all: clean-jail clean-ports-tree clean-images clean-src
 
 clean-jail: clean-packages
 	@echo "Deleting builder jail..."
-	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc jail -y -d -j BSDRPj || echo Missing builder jail
+	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -y -d -j BSDRPj || echo Missing builder jail
 	# Older obj dir is often the main root cause of build issue
 	@${sudo} rm -rf /usr/obj/usr/local/poudriere/jails/BSDRPj || echo Missing obj directory
 	@rm -f ${.OBJDIR}/build-builder-jail
 
 clean-ports-tree: clean-packages
 	@echo "Deleting port-tree..."
-	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc ports -y -d -p BSDRPp || echo Missing port tree
+	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc ports -y -d -p BSDRPp || echo Missing port tree
 	@rm -f ${.OBJDIR}/build-ports-tree
 
 clean-packages:
 	@echo "Deleting all existing packages..."
-	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc distclean -y -a -p BSDRPp || echo Missing port tree
-	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc logclean -y -a -j BSDRPj -p BSDRPp || echo Missing port tree or jail
+	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc distclean -y -a -p BSDRPp || echo Missing port tree
+	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc logclean -y -a -j BSDRPj -p BSDRPp || echo Missing port tree or jail
 	@${sudo} poudriere -e ${.CURDIR}/poudriere.etc pkgclean -y -A -j BSDRPj -p BSDRPp || echo Missing port tree or jail
 	@rm -f ${.OBJDIR}/build-packages
 
