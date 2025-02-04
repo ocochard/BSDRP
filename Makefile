@@ -70,10 +70,10 @@ src_arch = ${MACHINE_ARCH:S/aarch64/arm64/}
 kernel = ${.OBJDIR}/FreeBSD/sys/${src_arch}/conf/${src_arch}
 
 VERSION != cat ${SRC_DIR}/BSDRP/Files/etc/version
-BSDRP_IMG_FULL = ${poudriere_images_dir}/BSDRP-${VERSION}-full-${src_arch}.img
-BSDRP_IMG_UPGRADE = ${poudriere_images_dir}/BSDRP-${VERSION}-upgrade-${src_arch}.img
-BSDRP_IMG_DEBUG = ${poudriere_images_dir}/BSDRP-${VERSION}-debug-${src_arch}.tar
-BSDRP_IMG_MTREE = ${poudriere_images_dir}/BSDRP-${VERSION}-${src_arch}.mtree
+BSDRP_IMG_FULL = ${poudriere_images_dir}/BSDRP-${VERSION}-full-${MACHINE_ARCH}.img
+BSDRP_IMG_UPGRADE = ${poudriere_images_dir}/BSDRP-${VERSION}-upgrade-${MACHINE_ARCH}.img
+BSDRP_IMG_DEBUG = ${poudriere_images_dir}/BSDRP-${VERSION}-debug-${MACHINE_ARCH}.tar
+BSDRP_IMG_MTREE = ${poudriere_images_dir}/BSDRP-${VERSION}-${MACHINE_ARCH}.mtree
 IMAGES := ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}
 COMPRESSED_IMAGES := ${BSDRP_IMG_FULL}.xz ${BSDRP_IMG_UPGRADE}.xz ${BSDRP_IMG_MTREE}.xz ${BSDRP_IMG_DEBUG}.xz
 CHECKSUM_IMAGES := ${COMPRESSED_IMAGES:%=%.sha256}
