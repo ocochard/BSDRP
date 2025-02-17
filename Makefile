@@ -143,7 +143,7 @@ sync-${repo}: ${src_${repo}_dir}
 	@echo "Sync ${repo} sources with upstream..."
 	@git -C ${src_${repo}_dir} pull
 	@new_hash=$$(git -C ${src_${repo}_dir} rev-parse --short HEAD) && \
-	sed -i '' "s/${repo}_hash?=.*/${repo}_hash?=$$new_hash/" ${SRC_DIR}/${vars_file} && \
+	sed -i '' "s/${repo}_hash?=.*/${repo}_hash?=$$new_hash/" ${vars_file} && \
 	rm -f ${.OBJDIR}/patch-src-${repo} && \
 	echo "Updating previous ${repo} hash ${${repo}_hash} to $${new_hash}"
 .endfor # repo
