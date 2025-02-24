@@ -218,6 +218,8 @@ ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: bu
 	@${sudo} mv ${poudriere_images_dir}/BSDRP.mtree ${BSDRP_IMG_MTREE}
 
 upstream-sync: sync-FreeBSD sync-ports
+	@new_version=$$(git -C ${src_FreeBSD_dir} rev-list --count HEAD) && \
+	echo n$$new_version > ${SRC_DIR}/BSDRP/Files/etc/version
 
 clean: clean-images
 

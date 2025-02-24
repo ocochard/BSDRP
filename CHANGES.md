@@ -19,6 +19,7 @@ Upgrading will not add the dual UEFI/BIOS mode, a full reinstall is requiered.
 ## To fix and test before release
 * reboot or halt when asking to save modifications, refuse to continue if
   pressed "no" when we don’t want to save.
+* "/usr/local/etc/rc.d/pimd: 20: Syntax error: Unterminated quoted string"
 * bootonce script that should do:
   * gpart recover da0 (fix 'corrupt' status on gpt partitions)
   * Check for bootfailed attribute and act regarding
