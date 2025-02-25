@@ -74,8 +74,8 @@ search_boot_loaders() {
     local paths="
         /opt/homebrew/Cellar/qemu/*/share/qemu/edk2-${arch}-code.fd
         /Applications/UTM.app/Contents/Resources/qemu/edk2-${arch}-code.fd
+        /usr/local/share/qemu/edk2-${arch}-code.fd
         /usr/share/qemu/edk2-${arch}-code.fd
-        /usr/local/share/edk2-qemu/QEMU_UEFI_CODE-${arch}.fd
     "
 
     # Try each path
@@ -116,11 +116,11 @@ parse_filename () {
         QEMU_ARCH="qemu-system-i386 --machine pc -cpu qemu32 -drive if=pflash,readonly=on,format=raw,file=${bootloader}"
     elif echo "${filename}" | grep -q "aarch64"; then
         bootloader=$(search_boot_loaders aarch64)
-        # hvf: Apple hypervisor
+        # hvf: Apple hypervisor
         if [ "${HOST_OS}" = "Darwin" ] && [ "${HOST_ARCH}" = "arm64" ]; then
             ACCEL="accel=hvf -cpu host"
         else
-            ACCEL="accel=tcg -cpu max"
+            ACCEL="accel=tcg -cpu neoverse-n1"
         fi
         QEMU_ARCH="qemu-system-aarch64 --machine virt,${ACCEL} -drive if=pflash,readonly=on,format=raw,file=${bootloader}"
         echo "filename guests an ARM 64 image"
