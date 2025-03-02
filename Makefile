@@ -216,6 +216,10 @@ ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: bu
 	@${sudo} mv ${poudriere_images_dir}/BSDRP.img ${BSDRP_IMG_FULL}
 	@${sudo} mv ${poudriere_images_dir}/BSDRP-upgrade.img ${BSDRP_IMG_UPGRADE}
 	@${sudo} mv ${poudriere_images_dir}/BSDRP.mtree ${BSDRP_IMG_MTREE}
+	@echo "Uncompressed image availables as:"
+	@echo "- ${BSDRP_IMG_FULL}"
+	@echo "- ${BSDRP_IMG_UPGRADE}"
+	@echo "- ${BSDRP_IMG_MTREE}"
 
 upstream-sync: sync-FreeBSD sync-ports
 	@new_version=$$(git -C ${src_FreeBSD_dir} rev-list --count HEAD) && \
