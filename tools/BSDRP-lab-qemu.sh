@@ -49,21 +49,21 @@ die() {
 }
 
 check_image() {
-    local filename=$1
-    if [ ! -f ${filename} ]; then
-        die "ERROR: Can't found the file ${filename}"
+    local file=$1
+    if [ ! -f ${file} ]; then
+        die "ERROR: Can't found the file ${file}"
     fi
 
-    if file -b ${filename} | grep -q "XZ compressed data"; then
-		echo "Compressed image detected, uncompress it..."
-		xz -dk ${filename}
-		filename=$(echo ${filename} | sed -e 's/.xz//g')
-	fi
+    if file -b ${file} | grep -q "XZ compressed data"; then
+		  echo "Compressed image detected, uncompress it..."
+		  xz -dfk ${file}
+		  file=$(echo ${file} | sed -e 's/.xz//g')
+    fi
 
-    if ! file -b ${FILENAME} | grep -q "boot sector"; then
+    if ! file -b ${file} | grep -q "boot sector"; then
         die "ERROR: Not a BSDRP disk image (missing "boot sector" identifier)"
     fi
-
+    FILENAME=${file}
 }
 
 search_boot_loaders() {
@@ -97,24 +97,25 @@ search_boot_loaders() {
 
 # Parse filename for detecting ARCH
 parse_filename () {
-    local filename=$1
+    local file=$1
     QEMU_ARCH=""
 
 
     # Need to map disk image ARCH and local ARCH
     # load as read-only because on FreeBSD the UEFI firmwares are not writable and qemu by default check if it is writable
-    if echo "${filename}" | grep -q "amd64"; then
+    if echo "${file}" | grep -q "amd64"; then
         bootloader=$(search_boot_loaders x86_64)
         if [ "${HOST_OS}" = "Darwin" ] && [ "${HOST_ARCH}" = "x86_64" ]; then
             ACCEL="hvf"
         else
             ACCEL="tcg"
         fi
+        # XXX $ACCEL not used here ?
         QEMU_ARCH="qemu-system-x86_64 --machine pc -cpu qemu64 -drive if=pflash,readonly=on,format=raw,file=${bootloader}"
-    elif echo "${filename}" | grep -q "i386"; then
+    elif echo "${file}" | grep -q "i386"; then
         bootloader=$(search_boot_loaders i386)
         QEMU_ARCH="qemu-system-i386 --machine pc -cpu qemu32 -drive if=pflash,readonly=on,format=raw,file=${bootloader}"
-    elif echo "${filename}" | grep -q "aarch64"; then
+    elif echo "${file}" | grep -q "aarch64"; then
         bootloader=$(search_boot_loaders aarch64)
         # hvf: Apple hypervisor
         if [ "${HOST_OS}" = "Darwin" ] && [ "${HOST_ARCH}" = "arm64" ]; then
@@ -127,9 +128,11 @@ parse_filename () {
     fi
 
     if [ -z "$QEMU_ARCH" ]; then
+        # XXX Need to be optimized (avoid duplicate)
         echo "WARNING: Can't guests the CPU architecture of this image from the filename"
         echo "Defaulting to x86_64"
-        QEMU_ARCH="qemu-system-x86_64"
+        bootloader=$(search_boot_loaders x86_64)
+        QEMU_ARCH="qemu-system-x86_64 --machine pc -cpu qemu64 -drive if=pflash,readonly=on,format=raw,file=${bootloader}"
     fi
 
     QEMU_OUTPUT="-display none -serial mon:stdio" # Only valid if one VM started
