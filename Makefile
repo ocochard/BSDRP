@@ -265,7 +265,7 @@ release: all
 compress-images: ${IMAGES}
 	@echo "Compressing image files using $$(nproc) threads..."
 	@for img in ${IMAGES}; do \
-		${sudo} xz -9 -T0 -vf $${img} || exit 1; \
+		${sudo} xz -9 -T0 --memlimit=85% -vf $${img} || exit 1; \
 	done
 
 COMPRESSED_IMAGES := ${BSDRP_IMG_FULL}.xz ${BSDRP_IMG_UPGRADE}.xz ${BSDRP_IMG_MTREE}.xz ${BSDRP_IMG_DEBUG}.xz
