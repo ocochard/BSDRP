@@ -178,7 +178,7 @@ build-builder-jail: patch-sources ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-sr
 		echo "" >> ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
 	fi
 	@jail_action=$$(${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c") && \
-	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -$${jail_action} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${src_arch}
+	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -$${jail_action} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${src_arch} > ${.OBJDIR}/build.jail.log || exit 1
 	@touch ${.TARGET}
 
 build-ports-tree: patch-sources
@@ -232,8 +232,10 @@ clean-all: clean-jail clean-ports-tree clean-images clean-src
 
 clean-jail: clean-packages
 	@echo "Deleting builder jail..."
+	# XXX Do not clean if no builder jail ?
 	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -y -d -j BSDRPj || echo Missing builder jail
 	# Older obj dir is often the main root cause of build issue
+	# XXX How to dynamicaly retreive this directory ?
 	@${sudo} rm -rf /usr/obj/usr/local/poudriere/jails/BSDRPj || echo Missing obj directory
 	@rm -f ${.OBJDIR}/build-builder-jail
 
@@ -278,14 +280,17 @@ checksum-images: ${COMPRESSED_IMAGES}
 
 help:
 	@echo "Available targets:"
-	@echo " all             - Build images (default)"
-	@echo " clean           - Clean existing images only"
-	@echo " clean-packages  - Clean all existing packages"
-	@echo " clean-jail      - Clean existing builder jail"
-	@echo "                   Sometimes previous FreeBSD obj tree prevent clean upgrade"
-	@echo " clean-all       - Clean everything"
-	@echo " upstream-sync   - Fetch latest sources (FreeBSD and ports tree)"
-	@echo "                   And update hashes in Makefile.vars"
-	@echo " compress-images - Compress generated files"
-	@echo " checksum-images - Compute checksums of generated files"
-	@echo " release         - Build, compress then generate checksums of images"
+	@echo " all                 - Build images (default)"
+	@echo " clean               - Clean existing images only"
+	@echo " clean-packages      - Clean all existing packages"
+	@echo " clean-jail          - Clean existing builder jail and obj dirs"
+	@echo " clean-src           - Clean source trees"
+	@echo "                       Sometimes previous FreeBSD obj tree prevent clean upgrade"
+	@echo " clean-all           - Clean everything"
+	@echo " upstream-sync       - Fetch latest sources (FreeBSD and ports tree)"
+	@echo "                       And update hashes in Makefile.vars"
+	@echo " cleanup-src-FreeBSD - Clean FreeBSD sources to re-apply patches"
+	@echo " cleanup-src-ports   - Clean ports sources to re-apply patches"
+	@echo " compress-images     - Compress generated files"
+	@echo " checksum-images   - Compute checksums of generated files"
+	@echo " release           - Build, compress then generate checksums of images"
