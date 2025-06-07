@@ -17,8 +17,8 @@ Upgrading will not add the dual UEFI/BIOS mode, a full reinstall is requiered.
   * dhcprelya (use dnsmasq)
 
 ## To fix and test before release
-* reboot or halt when asking to save modifications, refuse to continue if
-  pressed "no" when we don’t want to save.
+* PC engine APU: Very slow/not boot after upgrade. Should it upgrade bootcode too ?
+* Remove line compress = none in "/etc/newsyslog.conf"
 * "/usr/local/etc/rc.d/pimd: 20: Syntax error: Unterminated quoted string"
 * bootonce script that should do:
   * gpart recover da0 (fix 'corrupt' status on gpt partitions)

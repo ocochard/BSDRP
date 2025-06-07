@@ -42,7 +42,7 @@ LAN=0
 MESHED=true
 NCPUS=1
 NUMBER_VM="1"
-RAM="512M"
+RAM="1G"
 THREADS=1
 if [ "${arch}" == "amd64" ]; then
 	UEFI=true

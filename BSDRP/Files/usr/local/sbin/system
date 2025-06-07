@@ -43,17 +43,24 @@ get_label () {
 	[ -n "${label}" ] && echo ${label} || die "Can't retrieve nanobsd label"
 }
 
-# Display User confirmation message
+# Get the user reply to confirmation message (y/n/a)
 # $1: message
-# exit if user enter 'n'
 # return 0 if user enter 'y'
+# return 1 if user enter 'n'
+# exit if user enter 'a' (abort)
 user_confirm () {
 	local input=""
 	echo -n $1
-	while [ "${input}" != "y" -a "${input}" != "n" ]; do
+	while [ "${input}" != "y" -a "${input}" != "n" -a "${input}" != "a" ]; do
 		read input <&1
 	done
-	[ "${input}" = "n" ] && exit 0 || return 0
+	if [ "${input}" = "n" ]; then
+		return 1
+	elif [ "${input}" = "y" ]; then
+		return 0
+	else
+		exit 0
+	fi
 }
 
 # Check if a partition is mounted
@@ -186,8 +193,7 @@ integrity () {
 ask_save () {
 	echo "Warning: Unsaved changes detected !"
 	config diff || true
-	user_confirm "Do you want to save the configuration before to continue or abort ? (y/n/a): "
-	config save
+	user_confirm "Do you want to save the configuration before to continue or abort ? (y/n/a): " && config save || true
 }
 
 # Install system to another disk
@@ -420,7 +426,7 @@ resize_system_slice () {
 	echo "- If a partition swaping is needed, system will reboot automatically at the end of first step"
 	echo "  You need to restart this tool after the reboot for continuing"
 	echo "- All files stored in /data partition will be destroyed!"
-	user_confirm "Do you want to continue or abort ? (y/a): "
+	user_confirm "Do you want to continue ? (y/n): "
 
 	# Load the NANO_DRIVE (label) variable:
 	# nanobsd: ufs/BSDRP

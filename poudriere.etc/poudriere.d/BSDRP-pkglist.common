@@ -5,7 +5,8 @@ devel/py-setuptools
 dns/dnsmasq
 editors/vim@console
 emulators/open-vm-tools@nox11
-lang/perl5.36
+filesystems/fswatch-mon
+lang/perl5.40
 lang/python
 net-mgmt/bgpq4
 net-mgmt/bsnmp-regex
@@ -45,9 +46,9 @@ security/openvpn-auth-radius
 security/strongswan
 security/sudo
 security/tinc
+sysutils/dmidecode
 sysutils/dtrace-toolkit
 sysutils/flashrom
-sysutils/fswatch-mon
 sysutils/ipmitool
 sysutils/monit
 sysutils/mstflint

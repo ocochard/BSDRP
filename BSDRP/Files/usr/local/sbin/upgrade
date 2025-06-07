@@ -82,25 +82,34 @@ v_umount () {
 
 # Populate boot device and labels informations
 get_boot_info() {
-	BSD_SLICE=""
 	mountfrom=$(kenv vfs.root.mountfrom)
 	# MBR (nanobsd): "ufs:/dev/ufs/BSDRPs1a"
 	# GPT (poudriere): "ufs:/dev/gpt/BSDRP1"
 	# Removing prefix "ufs:"
 	mountfrom=$(echo ${mountfrom} | cut -d ':' -f 2)
-	# /dev/ufs/BSDRPs1a (old nanobsd) or /dev/gpt/BSDRP1 (fresh poudriere-image)
-	# or /dev/ufs/BSDRPs2 (converted from nanobsd to poudriere-image)
-
-	# Now we could extract the label ID ('NANO_DRIVE=ufs/BSDRP')
+	# Could be in multiple forms:
+	# /dev/ufs/BSDRPs[1-2]a for old nanobsd
+	# /dev/gpt/BSDRP[1-2] for fresh poudriere-image
+	# /dev/ufs/BSDRP[1-2] for converted nanobsd to poudriere-image
+	# Now we could extract the label ID (NANO_DRIVE=ufs/BSDRP or gpt/BSDRP)
 	CURRENT_LABEL_ID=$(echo ${mountfrom} | awk -F"${NANO_DRIVE}" '{print $2}')
+	[ -z "${CURRENT_LABEL_ID}" ] && die "Bug in get_boot_info: CURRENT_LABEL_ID can't be empty"
 	# s1a (MBR), s1 (converted MBR), or 1 (GPT)
 	# Removing prefix /dev/
 	mountfrom=${mountfrom#/dev/}
-	# ufs/BSDRPs1a or gpt/BSDRP1 or ufs/BSDRPs1
-	BOOT_DEV=$(glabel status | awk -v label=$mountfrom '$1 == label {print $3}')
+	# ufs/BSDRPs1a or gpt/BSDRP1 or ufs/BSDRP1
+	BOOT_PART=$(glabel status | awk -v label=$mountfrom '$1 == label {print $3}')
 	# ada0s1a (MBR) or ada0p3 (GPT) or adas1 (converted)
-	# Need to resolve the disk name, by removing the CURRENT_LABEL_ID at the end:
-	BOOT_DEV=${BOOT_DEV%${CURRENT_LABEL_ID}}
+	# Need to resolve the disk name, by removing the partition id at the end:
+	if echo ${BOOT_PART} | grep -q 'p[3-4]$'; then
+		BOOT_DEV=$(echo "${BOOT_PART}" | sed 's/p[3-4]$//')
+	elif echo ${BOOT_PART} | grep -q 's[1-2]$'; then
+		BOOT_DEV=$(echo "${BOOT_PART}" | sed 's/s[1-2]$//')
+	elif echo ${BOOT_PART} | grep -q 's[1-2]a$'; then
+		BOOT_DEV=$(echo "${BOOT_PART}" | sed 's/s[1-2]a$//')
+	else
+		die "Bug in get_boot_info: BOOT_PART not parsable (${BOOT_PART}"
+	fi
 	[ -z "${BOOT_DEV}" ] && die "Bug in get_boot_info: BOOT_DEV can't be empty"
 	BOOT_DEV="/dev/${BOOT_DEV}"
 	[ -c "${BOOT_DEV}" ] || die "Bug in get_boot_info: ${BOOT_DEV} need to be special char device"
@@ -124,11 +133,7 @@ get_boot_info() {
 		else
 			die "Bug in get_boot_info: MBR label ID not equal to s[12][a]"
 		fi
-		if echo ${CURRENT_LABEL_ID} | grep -q 'a$'; then
-			# NanoBSD MBR
-			BSD_SLICE="a"
-		fi
-		NEXT_LABEL_ID="${NEXT_SLICE}${BSD_SLICE}"
+		NEXT_LABEL_ID="${NEXT_SLICE}"
 
 	elif echo ${mountfrom} | grep -q 'gpt/'; then
 		# On a GPT system, partition number/name map is:
@@ -167,26 +172,18 @@ write_new_image() {
 	dd of="${BOOT_DEV}${NEXT_SLICE}" bs=1M || \
 		die "ERROR: Can't install the upgrade on ${BOOT_DEV}${NEXT_SLICE}"
 
-	# Check that it worked
-	# poudriere-image doesn't use anymore BSD_SLICE
-	if ! [ -c "${BOOT_DEV}${NEXT_SLICE}${BSD_SLICE}" ]; then
-		BSD_SLICE=""
-	fi
-	fsck_ffs -n "${BOOT_DEV}${NEXT_SLICE}${BSD_SLICE}" || \
-		die "ERROR: New file system ${BOOT_DEV}${NEXT_SLICE}${BSD_SLICE} check failed"
+	fsck_ffs -n "${BOOT_DEV}${NEXT_SLICE}" || \
+		die "ERROR: New file system ${BOOT_DEV}${NEXT_SLICE} check failed"
 
-	# During an upgrade from nanobsd to poudriere-image, we need to remove BSD_SLICE
-	# To detect we are in upgrade process, at this stage BSD_SLICE should be empty
-	# but NEXT_LABEL_ID should still reference it
-	if [ -z "${BSD_SLICE}" ]; then
-		if echo "${NEXT_LABEL_ID}" | grep -q 'a$'; then
-			# Upgrading to poudriere-image, need to remove 'a' from variables
-			NEXT_LABEL_ID=${NEXT_LABEL_ID%a}
-		fi
+	# During an upgrade from nanobsd to poudriere-image, we need to remove
+	# old BSD partition letter a
+	if echo "${NEXT_LABEL_ID}" | grep -q 'a$'; then
+		# Upgrading to poudriere-image, need to remove 'a' from variables
+		NEXT_LABEL_ID=${NEXT_LABEL_ID%a}
 	fi
 	# Set UFS label into the new slice (MBR only)
 	if [ "${GPT}" = false ]; then
-		tunefs -L ${LABEL}${NEXT_LABEL_ID} ${BOOT_DEV}${NEXT_SLICE}${BSD_SLICE} || \
+		tunefs -L ${LABEL}${NEXT_LABEL_ID} ${BOOT_DEV}${NEXT_SLICE} || \
 			die "ERROR: Can't put UFS label on the new filesystem"
 	fi
 
