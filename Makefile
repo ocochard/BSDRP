@@ -178,7 +178,7 @@ build-builder-jail: patch-sources ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-sr
 		echo "" >> ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
 	fi
 	@jail_action=$$(${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c") && \
-	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -$${jail_action} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${src_arch} > ${.OBJDIR}/build.jail.log || exit 1
+	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -$${jail_action} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${src_arch} > ${.OBJDIR}/build.jail.log || tail -n 50 ${.OBJDIR}/build.jail.log; exit 1
 	@touch ${.TARGET}
 
 build-ports-tree: patch-sources
