@@ -177,8 +177,15 @@ build-builder-jail: patch-sources ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-sr
 	else \
 		echo "" >> ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
 	fi
-	@jail_action=$$(${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c") && \
-	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -$${jail_action} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${src_arch} > ${.OBJDIR}/build.jail.log || tail -n 50 ${.OBJDIR}/build.jail.log; exit 1
+	@# Determine if jail exists (u=update, c=create)
+	@JAIL_ACTION=$$(${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c"); \
+	echo "debug: $${JAIL_ACTION}"; \
+	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -$${JAIL_ACTION} -j BSDRPj -b -m src=${.OBJDIR}/FreeBSD -K ${src_arch} > ${.OBJDIR}/build.jail.log; \
+	if [ $$? -ne 0 ]; then \
+		echo "ERROR: Jail build failed. Last 50 lines of log:"; \
+		tail -n 50 ${.OBJDIR}/build.jail.log; \
+		exit 1; \
+	fi
 	@touch ${.TARGET}
 
 build-ports-tree: patch-sources

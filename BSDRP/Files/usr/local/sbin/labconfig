@@ -12,19 +12,20 @@ usage () {
 	echo "$0 full_vm1        for configuring VM1 of lab Full"
 	echo "$0 frr_vm3         for configuring VM3 of lab FRR"
 	echo "Lab list:"
-	echo "-full: https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab"
-	echo "-frr: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab"
-	echo "-frr_jails: same as previous but with jails"
 	echo "-bird_jails: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab_with_bird"
-	echo "-vpn: https://bsdrp.net/documentation/examples/gre_ipsec_and_openvpn"
-	echo "-freevrrpd: https://bsdrp.net/documentation/examples/simple_vrrp_lab"
 	echo "-bgp: https://bsdrp.net/documentation/examples/bgp_route_reflector_and_confederation_using_quagga_and_bird"
-	echo "-jailpf: https://bsdrp.net/documentation/examples/multi-tenant_ha_pf_firewalls"
-	echo "-graphpath: https://bsdrp.net/documentation/examples/graphpath"
-	echo "-mlppp: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links"
-	echo "-mlvpn: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links_with_mlvpn"
 	echo "-ecmp: https://bsdrp.net/documentation/examples/ecmp"
 	echo "-fairshape: https://bsdrp.net/documentation/examples/fair_traffic_shaping_per_ip_with_ipfw-dummynet"
+	echo "-full: https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab"
+	echo "-freevrrpd: https://bsdrp.net/documentation/examples/simple_vrrp_lab"
+	echo "-frr: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab"
+	echo "-frr_jails: same as previous but with jails"
+	echo "-graphpath: https://bsdrp.net/documentation/examples/graphpath"
+	echo "-jailpf: https://bsdrp.net/documentation/examples/multi-tenant_ha_pf_firewalls"
+	echo "-mlppp: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links"
+	echo "-mlvpn: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links_with_mlvpn"
+	echo "-pimsm: https://bsdrp.net/documentation/examples/multicast_with_pim-sm"
+	echo "-vpn: https://bsdrp.net/documentation/examples/gre_ipsec_and_openvpn"
 	exit 1
 }
 
@@ -3300,6 +3301,72 @@ service netif restart
 service routing restart
 service mpd5 start
 hostname R6
+config save
+}
+
+pimsm_vm1 () {
+sysrc hostname=VM1 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em0="inet 10.0.12.1/24" \
+	defaultrouter=10.0.12.2
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+service hostname restart
+service netif restart
+service routing restart
+config save
+}
+
+pimsm_vm2 () {
+sysrc hostname=VM2 \
+	gateway_enable=YES \
+	ipv6_gateway_enable=YES \
+	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em1="inet 10.0.23.2/24" \
+	defaultrouter=10.0.23.3 \
+	pimd_enable=yes
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+cat > /usr/local/etc/pimd.conf <<EOF
+rp-candidate 10.0.23.2 time 10 priority 1
+#rp-address 10.0.23.2
+EOF
+service hostname restart
+service netif restart
+service routing restart
+service pimd start
+config save
+}
+
+pimsm_vm3 () {
+sysrc hostname=VM3 \
+	gateway_enable=YES \
+	ipv6_gateway_enable=YES \
+	ifconfig_em1="inet 10.0.23.3/24" \
+	ifconfig_em2="inet 10.0.34.3/24" \
+	defaultrouter=10.0.23.2 \
+	pimd_enable=yes
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+cat > /usr/local/etc/pimd.conf <<EOF
+bsr-candidate 10.0.23.3 priority 1
+#rp-address 10.0.23.2
+EOF
+service hostname restart
+service netif restart
+service routing restart
+service pimd start
+config save
+}
+
+pimsm_vm4 () {
+sysrc hostname=VM4 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em2="inet 10.0.34.4/24" \
+	defaultrouter=10.0.34.3
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+service hostname restart
+service netif restart
+service routing restart
 config save
 }
 
