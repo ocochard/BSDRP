@@ -3,4 +3,3 @@ net/vpp
 sysutils/cpu-microcode
 sysutils/dtrace-toolkit
 sysutils/intel-pcm
-sysutils/x86info
