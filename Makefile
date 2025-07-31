@@ -193,7 +193,7 @@ build-ports-tree: patch-sources
 	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc ports -$${ports_action} -p BSDRPp -m null -M ${.OBJDIR}/ports
 	@touch ${.TARGET}
 
-build-packages: build-builder-jail build-ports-tree
+build-packages: build-builder-jail build-ports-tree ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common
 	@echo "Build packages..."
 	@cp ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${.OBJDIR}/pkglist || exit 1
 	@if [ -f ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} ]; then \
@@ -299,5 +299,5 @@ help:
 	@echo " cleanup-src-FreeBSD - Clean FreeBSD sources to re-apply patches"
 	@echo " cleanup-src-ports   - Clean ports sources to re-apply patches"
 	@echo " compress-images     - Compress generated files"
-	@echo " checksum-images   - Compute checksums of generated files"
-	@echo " release           - Build, compress then generate checksums of images"
+	@echo " checksum-images     - Compute checksums of generated files"
+	@echo " release             - Build, compress then generate checksums of images"

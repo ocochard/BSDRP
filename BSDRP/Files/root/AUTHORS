@@ -26,113 +26,114 @@ The authors of BSDRP would like to thank the authors of these software for their
 * bsnmp-regex, license:BSD3CLAUSE, http://thewalter.net/stef/software/bsnmp-regex/
 * bsnmp-ucd, license:BSD2CLAUSE, https://github.com/trociny/bsnmp-ucd
 * c-ares, license:MIT, https://c-ares.haxx.se/
-* cpu-microcode-amd, license:EULA
+* cpu-microcode-amd, license:EULA, UNKNOWN
 * cpu-microcode-intel, license:EULA, https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files
-* cpu-microcode-rc, license:BSD2CLAUSE
+* cpu-microcode-rc, license:BSD2CLAUSE, UNKNOWN
 * curl, license:MIT, https://curl.se/
 * dhcp6, license:BSD3CLAUSE, https://wide-dhcpv6.sourceforge.net/
 * dhcprelya, license:BSD3CLAUSE, https://github.com/sem-hub/dhcprelya/
+* dmidecode, license:GPLv2, https://www.nongnu.org/dmidecode/
 * dnsmasq, license:GPLv2, https://www.thekelleys.org.uk/dnsmasq/doc.html
+* dpdk22.11, license:BSD3CLAUSE, https://dpdk.org/
 * dtrace-toolkit, license:CDDL, https://github.com/opendtrace/toolkit
 * easy-rsa, license:GPLv2, https://github.com/OpenVPN/easy-rsa
+* expat, license:MIT, https://github.com/libexpat/libexpat
 * frr10, license:GPLv2, https://frrouting.org/
 * frr10-pythontools, license:GPLv2, https://frrouting.org/
 * fswatch-mon, license:GPLv3, https://github.com/emcrisostomo/fswatch
 * fusefs-libs, license:LGPL21, https://github.com/libfuse/libfuse
-* gettext-runtime, license:LGPL21+, https://www.gnu.org/software/gettext/
-* gettext-runtime, license:GPLv3+, https://www.gnu.org/software/gettext/
+* gettext-runtime, license:GPLv3+, LGPL21+, https://www.gnu.org/software/gettext/
 * glib, license:LGPL20, https://www.gtk.org/
 * gmp, license:LGPL3, https://gmplib.org/
 * graphpath, license:BSD2CLAUSE, https://github.com/ocochard/graphpath
-* indexinfo, license:BSD2CLAUSE, https://codeberg.org.org/bapt/indexinfo
+* indexinfo, license:BSD2CLAUSE, https://codeberg.org/bapt/indexinfo
 * intel-pcm, license:BSD3CLAUSE, https://github.com/intel/pcm
 * iperf, license:BSD2CLAUSE, https://sourceforge.net/projects/iperf2/
-* iperf3, license:MIT, https://software.es.net/iperf/
-* iperf3, license:BSD3CLAUSE, https://software.es.net/iperf/
+* iperf3, license:MIT, BSD3CLAUSE, https://software.es.net/iperf/
 * ipmitool, license:BSD3CLAUSE, https://codeberg.org/IPMITool/ipmitool
+* isa-l, license:BSD3CLAUSE, https://github.com/intel/isa-l
 * isc-dhcp44-server, license:MPL20, https://www.isc.org/dhcp/
 * ixl_unlock, license:BSD2CLAUSE, https://github.com/bu7cher/ixl_unlock/
 * jansson, license:MIT, https://github.com/akheron/jansson
 * json-c, license:MIT, https://github.com/json-c/json-c/wiki
 * jsoncpp, license:MIT, https://github.com/open-source-parsers/jsoncpp
+* ksh, license:EPL, http://www.kornshell.com/
 * libcdada, license:BSD2CLAUSE, https://github.com/msune/libcdada
 * libdnet, license:BSD3CLAUSE, https://github.com/5u623l20/libdnet/
+* libedit, license:BSD2CLAUSE, https://thrysoee.dk/editline/
+* libepoll-shim, license:MIT, https://github.com/jiixyj/epoll-shim
 * libev, license:BSD2CLAUSE, http://software.schmorp.de/pkg/libev.html
 * libevent, license:BSD3CLAUSE, https://libevent.org/
 * libffi, license:MIT, https://sourceware.org/libffi/
-* libgcrypt, license:LGPL21+, https://www.gnupg.org/software/libgcrypt/index.html
-* libgcrypt, license:GPLv2+, https://www.gnupg.org/software/libgcrypt/index.html
-* libgpg-error, license:LGPL21, https://www.gnupg.org/software/libgpg-error/
-* libgpg-error, license:GPLv2, https://www.gnupg.org/software/libgpg-error/
+* libgcrypt, license:LGPL21+, GPLv2+, https://www.gnupg.org/software/libgcrypt/index.html
+* libgpg-error, license:GPLv2, LGPL21, https://www.gnupg.org/software/libgpg-error/
 * libiconv, license:GPLv3, https://www.gnu.org/software/libiconv/
-* liblz4, license:GPLv2, https://lz4.org/
-* liblz4, license:BSD2CLAUSE, https://lz4.org/
-* libmspack, license:LGPL21, https://www.cabextract.org.uk/libmspack/
+* libidn2, license:GPLv3, https://www.gnu.org/software/libidn/#libidn2
+* libinotify, license:MIT, https://github.com/libinotify-kqueue/libinotify-kqueue
+* liblz4, license:BSD2CLAUSE, GPLv2, https://lz4.org/
 * libnet, license:BSD2CLAUSE, https://github.com/libnet/libnet
-* libpci, license:GPLv2, https://mj.ucw.cz/sw/pciutils/
+* libpcap, license:BSD3CLAUSE, https://www.tcpdump.org/
 * libpfctl, license:BSD2CLAUSE, https://cgit.freebsd.org/src/tree/lib/libpfctl
 * libsodium, license:ISCL, https://github.com/jedisct1/libsodium/
 * libssh, license:LGPL21, https://www.libssh.org/
 * libucl, license:BSD2CLAUSE, https://github.com/vstakhov/libucl
+* libunistring, license:GPLv2, GFDL, LGPL3+, https://www.gnu.org/software/libunistring/
 * libunwind, license:MIT, https://github.com/libunwind/libunwind
 * libxml2, license:MIT, http://xmlsoft.org/
 * libyang2, license:BSD3CLAUSE, https://github.com/CESNET/libyang
 * lldpd, license:ISCL, https://lldpd.github.io/
+* lua53, license:MIT, https://www.lua.org/
+* lua54, license:MIT, https://www.lua.org/
 * lzo2, license:GPLv2, https://www.oberhumer.com/opensource/lzo/
 * mlvpn, license:BSD2CLAUSE, https://zehome.github.io/MLVPN/
 * monit, license:AGPLv3, https://mmonit.com/monit/
 * mpd5, license:BSD3CLAUSE, https://sourceforge.net/projects/mpd/
 * mpdecimal, license:BSD2CLAUSE, https://www.bytereef.org/mpdecimal/index.html
 * mrouted, license:MIT, http://freecode.com/projects/mrouted
+* mstflint, license:BSD2CLAUSE, GPLv2, https://github.com/Mellanox/mstflint
 * mtr-nox11, license:GPLv2, https://www.bitwizard.nl/mtr/
 * nagios-plugins, license:GPLv3, https://nagios-plugins.org/
-* ncurses, license:MIT, https://invisible-island.net/ncurses/
+* nc, license:, https://www.kyne.com.au/~mark/software/ncat.php
+* net-snmp, license:BSD3CLAUSE, http://net-snmp.sourceforge.net/
 * netmap-fwd, license:BSD2CLAUSE, https://github.com/Netgate/netmap-fwd/
-* nettle, license:LGPL3, https://www.lysator.liu.se/~nisse/nettle/
-* nettle, license:GPLv2+, https://www.lysator.liu.se/~nisse/nettle/
+* netperf, license:, https://hewlettpackard.github.io/netperf/
+* nettle, license:LGPL3, GPLv2+, https://www.lysator.liu.se/~nisse/nettle/
 * nrpe, license:GPLv2+, https://www.nagios.org/
 * nstat, license:BSD2CLAUSE, https://github.com/gallatin/nstat
-* open-vm-kmod, license:GPLv2, https://github.com/vmware/open-vm-tools
-* open-vm-kmod, license:BSD2CLAUSE, https://github.com/vmware/open-vm-tools
+* ntraceroute, license:, UNKNOWN
+* open-vm-kmod, license:BSD2CLAUSE, GPLv2, https://github.com/vmware/open-vm-tools
 * open-vm-tools-nox11, license:LGPL21, https://github.com/vmware/open-vm-tools
 * openvpn, license:GPLv2, https://openvpn.net/community/
 * openvpn-auth-radius, license:GPLv2, https://www.nongnu.org/radiusplugin/index.html
-* pciids, license:GPLv2+, https://pci-ids.ucw.cz/
-* pciids, license:BSD3CLAUSE, https://pci-ids.ucw.cz/
-* pcre, license:BSD3CLAUSE, https://www.pcre.org/
 * pcre2, license:BSD3CLAUSE, https://www.pcre.org/
-* perl5, license:GPLv1+, https://www.perl.org/
-* perl5, license:ART10, https://www.perl.org/
+* perl5, license:ART10, GPLv1+, https://www.perl.org/
 * pimd, license:BSD3CLAUSE, http://troglobit.com/pimd.html
 * pimdd, license:MIT, http://antc.uoregon.edu/PIMDM/pimd-dense.html
-* pkcs11-helper, license:GPLv2, https://github.com/OpenSC/pkcs11-helper
-* pkcs11-helper, license:BSD3CLAUSE, https://github.com/OpenSC/pkcs11-helper
+* pkcs11-helper, license:BSD3CLAUSE, GPLv2, https://github.com/OpenSC/pkcs11-helper
 * pkg, license:BSD2CLAUSE, https://github.com/freebsd/pkg
+* pkgconf, license:ISCL, https://gitea.treehouse.systems/ariadne/pkgconf
 * pkt-gen, license:BSD2CLAUSE, https://github.com/luigirizzo/netmap
 * pmacct, license:GPLv2, http://www.pmacct.net/
 * protobuf, license:BSD3CLAUSE, https://protobuf.dev/
 * protobuf-c, license:BSD2CLAUSE, https://github.com/protobuf-c/protobuf-c
 * py311-exabgp4, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
 * py311-mrtparse, license:APACHE20, https://github.com/t2mune/mrtparse
-* py311-packaging, license:BSD2CLAUSE, https://packaging.pypa.io/en/stable/
-* py311-packaging, license:APACHE20, https://packaging.pypa.io/en/stable/
-* py311-setuptools, license:MIT, https://pypi.org/project/setuptools/
+* py311-packaging, license:BSD2CLAUSE, APACHE20, https://packaging.pypa.io/en/stable/
+* py311-pyelftools, license:MIT, https://github.com/eliben/pyelftools
+* py311-setuptools, license:MIT, https://github.com/pypa/setuptools
 * python311, license:PSFL, https://www.python.org/
 * quagga-bgp-netgen, license:BSD2CLAUSE, https://github.com/ocochard/quagga-bgp-netgen/
 * readline, license:GPLv3, https://tiswww.case.edu/php/chet/readline/rltop.html
 * realtek-re-kmod, license:BSD4CLAUSE, https://github.com/alexdupre/rtl_bsd_drv
 * rtrlib, license:MIT, https://rtrlib.realmv6.org/
-* simdjson, license:APACHE20, https://simdjson.org/
+* simdjson, license:APACHE20, MIT, https://simdjson.org/
 * strongswan, license:GPLv2, https://www.strongswan.org
 * sudo, license:sudo, https://www.sudo.ws/
-* tayga, license:GPLv2, http://www.litech.org/tayga/
+* tayga, license:GPLv2, https://github.com/apalrd/tayga/
 * tinc, license:GPLv3, https://www.tinc-vpn.org/
-* tmux, license:ISCL, https://tmux.github.io/
-* tmux, license:GPLv2, https://tmux.github.io/
-* utf8proc, license:MIT, https://juliastrings.github.io/utf8proc/
+* tmux, license:GPLv2, ISCL, https://tmux.github.io/
 * vim, license:VIM, https://www.vim.org/
+* vpp, license:APACHE20, https://fd.io
 * wireguard-tools, license:GPLv2, https://git.zx2c4.com/wireguard-tools/about/
-* x86info, license:GPLv2, https://github.com/kernelslacker/x86info
 * xxd, license:VIM, https://www.vim.org/
-* zstd, license:GPLv2, https://facebook.github.io/zstd/
-* zstd, license:BSD3CLAUSE, https://facebook.github.io/zstd/
+* zstd, license:BSD3CLAUSE, GPLv2, https://facebook.github.io/zstd/
