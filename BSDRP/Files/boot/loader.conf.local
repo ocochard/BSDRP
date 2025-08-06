@@ -17,11 +17,20 @@
 # Multiconsole support, mandatory for IPMI SoL
 boot_multicons="YES"
 # Values description in loader(8) and loader.efi(8)
-#console="eficom,efi,comconsole,vidconsole"
+# For EFI:
+#console="eficom,efi"
+# For BIOS:
+#console="comconsole,vidconsole"
 # Some emulated serial port with IPMI SoL doesn’t use the default 0x3f8
-# Search for the correct value with :grep 'uart.*port' /var/run/dmesg.boot
-# Then declare the corrcet one, as example here:
-#comconsole_port="0x2F8"
+# Search for the correct value with this command:
+# grep 'uart.*port' /var/run/dmesg.boot
+# Then declare the correct one as default.
+# Example:
+# uart0: <16550 or compatible> port 0x3f8-0x3ff irq 4 flags 0x10 on acpi0
+# uart1: <16550 or compatible> port 0x2f8-0x2ff irq 3 on acpi0
+# Here, the first (uart0) is the physical serial port, but if you need the SoL
+# as default console, add this line:
+#comconsole_port="0x2f8"
 
 ### Don't wait for USB (can prevent correct reboot)
 hw.usb.no_shutdown_wait="1"
@@ -60,6 +69,10 @@ hw.ixl.flow_control="0"
 hw.ix.flow_control="0"
 
 ### Chelsio NIC tuning ###
+
+# No pause
+hw.cxgbe.pause_settings="0"
+
 # Prevent to reserve ASIC ressources unused on a router/firewall,
 # improve performance when we will reach 10Mpps or more
 hw.cxgbe.toecaps_allowed="0"

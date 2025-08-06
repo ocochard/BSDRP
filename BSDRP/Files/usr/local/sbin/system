@@ -252,10 +252,12 @@ expand_data_slice () {
 
 	is_mounted "/data" && die "/data is mounted, you need to unmount it"
 
+	# Need a clean gpart
+	gpart recover /dev/${boot_dev}
+
 	#free space
-	free_space=$(gpart show ${boot_dev} | grep "\- free \-" | grep -v "K)" \
-			| cut -d '-' -f 3 | tr -s ' ')
-	[ -z "${free_space}" ] && die "There is no space left on disk (or CORRUPT gpt table that need to be fixed with gpt recover)"
+	free_space=$(gpart show ada0 | awk '/- free -/ {gsub(/[()]/, "", $6); print $6}')
+	[ -z "${free_space}" ] && die "There is no space left on disk"
 	echo "There is ${free_space} available on your disk that can be use for /data"
 	user_confirm "Are you sure to repartition your disk (it is a long process) ? (y/n)"
 
@@ -267,7 +269,7 @@ expand_data_slice () {
 	gpart resize -i ${partid} ${boot_dev}
 	# The label could flap after the resize, need to wait it came back
 	sleep 2
-	growfs -y ${lbldatapart}
+	growfs -y /dev/${lbldatapart}
 	echo "Done"
 }
 

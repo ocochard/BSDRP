@@ -57,6 +57,7 @@ patches_dir := ${SRC_DIR}/BSDRP/patches
 FreeBSD_patches != find $(patches_dir) -name 'freebsd.*.patch'
 ports_patches != find $(patches_dir) -name 'ports.*.patch'
 ports_shar != find $(patches_dir) -name 'ports.*.shar'
+overlay_files != find ${SRC_DIR}/BSDRP/Files
 src_FreeBSD_dir := ${.OBJDIR}/FreeBSD
 src_ports_dir := ${.OBJDIR}/ports
 .for required in FreeBSD_patches ports_patches ports_shar
@@ -205,7 +206,7 @@ build-packages: build-builder-jail build-ports-tree ${SRC_DIR}/poudriere.etc/pou
 	}
 	@touch ${.TARGET}
 
-${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: build-packages
+${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: build-packages ${SRC_DIR}/poudriere.etc/poudriere.d/post-script.sh ${overlay_files}
 	@echo "Build image..."
 	@${sudo} rm -f ${IMAGES} ${CHECKSUM_IMAGES} ${COMPRESSED_IMAGES}
 	# Replace version in brand-bsdrp.lua

@@ -55,6 +55,9 @@ sed -i "" -e /BSDRP_VERSION/s//$(cat ${WORLDDIR}/etc/version)/ ${WORLDDIR}/boot/
 	echo "PermitRootLogin yes"
 ) >> ${WORLDDIR}/etc/ssh/sshd_config
 
+# tty: Forcing the usage of serial if they exists (IPMI Sol)
+sed -i "" -e '/^ttyu[0-3]/s/onifconsole/onifexists/' ${WORLDDIR}/etc/ttys
+
 # Disable system beep and enable color with csh
 (
   echo "set nobeep"
