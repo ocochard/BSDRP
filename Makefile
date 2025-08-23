@@ -232,6 +232,12 @@ ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: bu
 upstream-sync: sync-FreeBSD sync-ports
 	@new_version=$$(git -C ${src_FreeBSD_dir} rev-list --count HEAD) && \
 	echo n$$new_version > ${SRC_DIR}/BSDRP/Files/etc/version
+	@new_freebsd_hash=$$(git -C ${src_FreeBSD_dir} log -1 --pretty=format:"%h") && \
+	echo "FreeBSD:" $$new_freebsd_hash > ${SRC_DIR}/BSDRP/Files/etc/version.hashes
+	@new_ports_hash=$$(git -C ${src_ports_dir} log -1 --pretty=format:"%h") && \
+	echo "Port tree:" $$new_ports_hash >> ${SRC_DIR}/BSDRP/Files/etc/version.hashes
+	@new_bsdrp_hash=$$(git -C ${SRC_DIR} log -1 --pretty=format:"%h") && \
+	echo "BSDRP:" $$new_bsdrp_hash >> ${SRC_DIR}/BSDRP/Files/etc/version.hashes
 
 clean: clean-images
 
