@@ -4,8 +4,6 @@
 
 * if non-critical /data had a fsck problem, system refuse go in single user
 * add auto-trimming of all log files that are being created
-* if mount -uw /, and saving and rebooting, an /entropy file is created,
-  and it panic during reboot (dd trying to read it)
 
 ## Boot loader ##
 * poudriere-image uses EFI, need to test generated image on APU
@@ -22,7 +20,6 @@
 * Need to enable nuageinit (usefull for automatic regression tests)
 * A netgraph documentation "for dummies" like this: http://nexus.org.ua/weblog/message/406/
 * doc: Using mermaid markdown ? https://github.blog/developer-skills/github/include-diagrams-markdown-files-mermaid/
-* Version: adding FreeBSD/ports/BSDR hashes somewhere (etc/version.fbsd, /etc/version.ports, etc/version.bsdrp) ?
 
 ## TRIM ##
 
