@@ -7,6 +7,9 @@
 
 ## Boot loader ##
 * poudriere-image uses EFI, need to test generated image on APU
+* bootonce script that should do:
+  * Check for bootfailed attribute and act regarding
+  * Update script need to be updated to add bootonce and not removing bootme
 
 ## Authentication #
 
