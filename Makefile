@@ -211,7 +211,8 @@ ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: bu
 	@${sudo} rm -f ${IMAGES} ${CHECKSUM_IMAGES} ${COMPRESSED_IMAGES}
 	# Replace version in brand-bsdrp.lua
 	@sed -i "" -e s"/BSDRP_VERSION/${VERSION}/" ${SRC_DIR}/BSDRP/Files/boot/lua/brand-bsdrp.lua
-	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc image -t firmware -s 4g \
+	# Image size of 4g still too big to upgrade previous 4g nanobsd image, need to reduce
+	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc image -t firmware -s 3.95g \
 		-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
 		-c ${SRC_DIR}/BSDRP/Files/ \
 		-f ${.OBJDIR}/pkglist \
@@ -232,12 +233,6 @@ ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: bu
 upstream-sync: sync-FreeBSD sync-ports
 	@new_version=$$(git -C ${src_FreeBSD_dir} rev-list --count HEAD) && \
 	echo n$$new_version > ${SRC_DIR}/BSDRP/Files/etc/version
-	@new_freebsd_hash=$$(git -C ${src_FreeBSD_dir} log -1 --pretty=format:"%h") && \
-	echo "FreeBSD:" $$new_freebsd_hash > ${SRC_DIR}/BSDRP/Files/etc/version.hashes
-	@new_ports_hash=$$(git -C ${src_ports_dir} log -1 --pretty=format:"%h") && \
-	echo "Port tree:" $$new_ports_hash >> ${SRC_DIR}/BSDRP/Files/etc/version.hashes
-	@new_bsdrp_hash=$$(git -C ${SRC_DIR} log -1 --pretty=format:"%h") && \
-	echo "BSDRP:" $$new_bsdrp_hash >> ${SRC_DIR}/BSDRP/Files/etc/version.hashes
 
 clean: clean-images
 

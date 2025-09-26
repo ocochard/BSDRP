@@ -3,7 +3,7 @@
 # Post-upgrade fixup tool for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2009-2020, The BSDRP Development Team
+# Copyright (c) 2009-2025, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,15 +28,15 @@
 # SUCH DAMAGE.
 #
 
-set -e
+set -eu
 
 # A usefull function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
-[ $# -lt 1 ] && die "ERROR: This script should be call by update"
+[ $# -lt 1 ] && die "ERROR: This script should be call by sbin/upgrade"
 
-DST=$1
-set -u
+DST=$1		# DST=/dev/ufs/BSDRPs2
+
 mount_newpart () {
 	if [ ! -d /tmp/sysupgrade ]; then
     	mkdir /tmp/sysupgrade
@@ -55,40 +55,23 @@ umount_newpart () {
 	fi
 }
 
-# Release 1.1 upgrade script didn't preserve the existence of /boot/loader.conf.local
-if grep -q '^1.1$' /etc/version; then
-	mount_newpart
-	# Kept the /boot/loader.conf.local file
-	if [ -f /boot/loader.conf.local ]; then
-    	cp /boot/loader.conf.local /tmp/sysupgrade/boot || echo "WARNING: Can't backup /boot/loader.conf.local"
-	fi
-	umount_newpart
-fi
+version=$(cat /etc/version)
 
-# Release 1.7 (and previous, but they are very old, then we don't care here) need a Quagga to FRR upgrade
-if grep -q '^1.7' /etc/version; then
-	# Need to add new users and groups
-	pw groupadd frr -g 168
-	pw useradd frr -u 168 -c "FRRouting user" -d /var/empty -g 168 -s /usr/sbin/nologin
-	pw groupadd frrvty -M frr -g 152
-	config save
-	# Need to check if /cfg/group or /cfg/password and generation action
-	if grep -q quagga /etc/rc.conf; then
-		echo "Quagga seems configured, replacing quagga references by frr..."
-		# Replacing quagga by frr and copying quagga configuration files into frr
-		if mount | ! grep -q "/cfg"; then
-			mount /cfg
-		fi
-		sed -i "" -e s/quagga/frr/g /cfg/rc.conf
-		# We will change current /etc/rc.conf too for avoiding asking saving before reboot
-		sed -i "" -e s/quagga/frr/g /etc/rc.conf
+# If upgrading an old nanobsd based on MBR, then new GPT image doesn’t include:
+# 1. BSD disklabel
+# 2. BSD bootloader
+# But the MBR boot loader requieres those, so we need to reinstall them.
 
-		if [ -d /cfg/local/quagga ]; then
-			[ -d /cfg/local/frr ] || mkdir /cfg/local/frr
-			cp /cfg/local/quagga/* /cfg/local/frr/
-			chown -R 168:168 /cfg/local/frr/
-		fi
-		umount /cfg
+if grep -q 'ufs/' /etc/nanobsd.conf; then
+	stripped_dst=${DST#/dev/}
+	part=$(glabel status | grep ${stripped_dst} | awk '{print $3; }')
+	if [ -c /dev/${part} ]; then
+		# Overwritting partition will not delete the contents
+		gpart create -s bsd /dev/${part}
+		gpart add -t freebsd-ufs -b 0 /dev/${part}
+		gpart bootcode -b /boot/boot /dev/${part}
+	else
+		die "BUG in post-upgrade script, /dev/${part} is not a partition"
 	fi
 fi
 

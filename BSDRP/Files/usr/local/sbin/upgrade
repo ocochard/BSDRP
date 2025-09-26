@@ -53,6 +53,20 @@ die() {
 	exit 1
 }
 
+# Check if the 'x' flag is set in the shell options.
+case "$-" in
+  *x*)
+    # The 'x' flag is present, so the script is in debug mode.
+    # Set the variable to propagate the flag to the child script.
+    DEBUG_PROPAGATE="-x"
+    ;;
+  *)
+    # The 'x' flag is not present.
+    DEBUG_PROPAGATE=""
+    ;;
+esac
+
+
 #Load the NANO_DRIVE variable (ufs/BSDRP or gpt/BSDRP):
 [ -f /etc/nanobsd.conf ] || die "No /etc/nanobsd.conf found"
 . /etc/nanobsd.conf
@@ -340,9 +354,9 @@ logger ${LABEL} Upgrade complete
 if [ -f /tmp/post-upgrade ]; then
 	echo "Starting post-upgrade script..."
 	logger Starting post-upgrade script
-	chmod +x /tmp/post-upgrade
+
 	# Execute post-upgrade script with new partition as parameter
-	/tmp/post-upgrade /dev/${NANO_DRIVE}${NEXT_LABEL_ID}
+	sh "$DEBUG_PROPAGATE" /tmp/post-upgrade /dev/${NANO_DRIVE}${NEXT_LABEL_ID}
 fi
 
 [ -f ${LOCK} ] && rm ${LOCK}

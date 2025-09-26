@@ -16,8 +16,8 @@ Upgrading will not add the dual UEFI/BIOS mode, a full reinstall is requiered.
   * isc-dhcp44 (use dnsmasq)
   * dhcprelya (use dnsmasq)
 
-## To fix and test before release
-* PC engine APU: Very slow/not boot after upgrade. Should it upgrade bootcode too ?
+## To fix
+
 * bootonce script that should do:
   * gpart recover da0 (fix 'corrupt' status on gpt partitions)
   * Check for bootfailed attribute and act regarding
