@@ -1,31 +1,35 @@
-Founder:
-    Olivier Cochard-Labbe <olivier@cochard.me>
+## BSDRP authors
+
+Founder: Olivier Cochard-Labbé <cochard@gmail.com>
 
 Developers and Contributors:
 Listed in order of seniority along with date of first contribution.
   - Baptiste Chaussade (bchaussade@gmail.com): Tester and Wiki contributer about Virtualbox stufs (08/2009)
   - Marc Gauthier (mga.gauthier@orange.com): Patch that improve a lot's the data partition growing (replacing gpart-resize/growfs with a dump/gpart-delete/gpart-create/newfs/restore" (03/2012)
 
-Reuse of existing softwares/patches:
+## Reuse of existing softwares/patches
 
 BSD Router Project (BSDRP) is based upon/includes various free software, listed below.
 The authors of BSDRP would like to thank the authors of these software for their efforts:
-* FreeBSD: Copyright (c) 1995-2021 The FreeBSD Project. All rights reserved
+* FreeBSD: Copyright (c) 1995-2025 The FreeBSD Project. All rights reserved
 * FreeNAS 8: Lot's of idea regarding the nanobsd tunning, Copyright iXsystems
 * Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support
 * Idea of using glabel for disk type absraction: Scott Ullrich (pfSense)
 * "show memory" is a bourne shell conversion of the perl freebsd-memory script: Copyright (c) 2003-2004 Ralf S. Engelschall
 * PC Engines APU led drivers: Larry Baird
 * chelsio-queue-usage: Alexander V. Chernikov (melifaro@FreeBSD.org)
+
+## Packages
 * abseil, license:APACHE20, https://abseil.io/
 * arping, license:GPLv2, https://www.habets.pp.se/synscan/programs.php?prog=arping
 * bash, license:GPLv3+, https://www.gnu.org/software/bash/
 * bgpq4, license:BSD2CLAUSE, https://github.com/bgp/bgpq4
-* bird2, license:GPLv2, https://bird.network.cz/
+* bird2, license:GPLv2, https://bird.nic.cz/
 * brotli, license:MIT, https://github.com/google/brotli
 * bsnmp-regex, license:BSD3CLAUSE, http://thewalter.net/stef/software/bsnmp-regex/
 * bsnmp-ucd, license:BSD2CLAUSE, https://github.com/trociny/bsnmp-ucd
 * c-ares, license:MIT, https://c-ares.haxx.se/
+* cpu-microcode, license:NA, UNKNOWN
 * cpu-microcode-amd, license:EULA, UNKNOWN
 * cpu-microcode-intel, license:EULA, https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files
 * cpu-microcode-rc, license:BSD2CLAUSE, UNKNOWN
@@ -38,6 +42,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * dtrace-toolkit, license:CDDL, https://github.com/opendtrace/toolkit
 * easy-rsa, license:GPLv2, https://github.com/OpenVPN/easy-rsa
 * expat, license:MIT, https://github.com/libexpat/libexpat
+* flashrom, license:GPLv2, https://www.flashrom.org/
 * frr10, license:GPLv2, https://frrouting.org/
 * frr10-pythontools, license:GPLv2, https://frrouting.org/
 * fswatch-mon, license:GPLv3, https://github.com/emcrisostomo/fswatch
@@ -73,6 +78,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * liblz4, license:BSD2CLAUSE, GPLv2, https://lz4.org/
 * libnet, license:BSD2CLAUSE, https://github.com/libnet/libnet
 * libpcap, license:BSD3CLAUSE, https://www.tcpdump.org/
+* libpci, license:GPLv2, https://mj.ucw.cz/sw/pciutils/
 * libpfctl, license:BSD2CLAUSE, https://cgit.freebsd.org/src/tree/lib/libpfctl
 * libsodium, license:ISCL, https://github.com/jedisct1/libsodium/
 * libssh, license:LGPL21, https://www.libssh.org/
@@ -105,8 +111,9 @@ The authors of BSDRP would like to thank the authors of these software for their
 * open-vm-tools-nox11, license:LGPL21, https://github.com/vmware/open-vm-tools
 * openvpn, license:GPLv2, https://openvpn.net/community/
 * openvpn-auth-radius, license:GPLv2, https://www.nongnu.org/radiusplugin/index.html
+* pciids, license:BSD3CLAUSE, GPLv2+, https://pci-ids.ucw.cz/
 * pcre2, license:BSD3CLAUSE, https://www.pcre.org/
-* perl5, license:ART10, GPLv1+, https://www.perl.org/
+* perl5.40, license:ART10, GPLv1+, https://www.perl.org/
 * pimd, license:BSD3CLAUSE, http://troglobit.com/pimd.html
 * pimdd, license:MIT, http://antc.uoregon.edu/PIMDM/pimd-dense.html
 * pkcs11-helper, license:BSD3CLAUSE, GPLv2, https://github.com/OpenSC/pkcs11-helper

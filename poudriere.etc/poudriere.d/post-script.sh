@@ -11,7 +11,8 @@
 
 # Not all WITHOUT_ options are correctly applied during image generation
 # - Some /usr/include are still here
-# - some ports aren't happy with excluding /usr/local/include (net-snmp)
+# - Some ports aren't happy with excluding /usr/local/include (net-snmp)
+# - Some wireless firmwares are still build
 
 # XXX Need to build /usr/src/tools/tools/netrate/netblast&netreceive
 
@@ -90,9 +91,14 @@ mkdir -p ${WORLDDIR}/etc/cron
 rm -rf ${WORLDDIR}/var/cron
 ln -s ../etc/cron ${WORLDDIR}/var/cron
 
+IMG_DIR=${POUDRIERE_DATA}/images
+
+# Generate package list and license inventory
+pkg -r ${WORLDDIR} query \*\ %n\ %v:\ %c > ${IMG_DIR}/packages.list
+pkg -r ${WORLDDIR} query \*\ %n,\ license:%L,\ %w > ${IMG_DIR}/packages.license.list
+
 # Generating mtree
 echo "Generating mtree..."
-IMG_DIR=${POUDRIERE_DATA}/images
 echo "./etc" > ${IMG_DIR}/${IMAGENAME}.mtree-exclude
 echo "./var" >> ${IMG_DIR}/${IMAGENAME}.mtree-exclude
 echo "./tmp" >> ${IMG_DIR}/${IMAGENAME}.mtree-exclude

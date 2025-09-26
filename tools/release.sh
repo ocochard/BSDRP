@@ -1,11 +1,11 @@
 #!/bin/sh
 #This script permit to help the generation and uploading process of new images
+# XXX sourceforge downloading speed too slow need to enable mirrors
 #It generate the dokuwiki table too
 # For list of installed software to be include in CHANGES
-# cat /usr/obj/BSDRP.amd64/packages.info
-# (it's a pkg query \*\ %n\ %v:\ %c)
+# /usr/local/poudriere/data/images/packages.list
 # For list of installed software to be incluled in AUTHORS
-# pkg query \*\ %n,\ license:%L,\ %w
+# /usr/local/poudriere/data/images/packages.license.list
 
 set -eu
 # A usefull function (from: http://code.google.com/p/sh-die/)
