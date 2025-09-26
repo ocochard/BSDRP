@@ -1,4 +1,5 @@
 *.a
+boot/firmware/iwm*
 usr/obj
 usr/sbin/config
 usr/lib/debug
