@@ -10,6 +10,7 @@ A full reinstall is required for those new features.
   * Support for both BIOS and UEFI boot and GPT partition type
      * A full reinstall is required to migrate from MBR to GPT
   * Packages are now built using the official poudriere method
+* New architecture available: aarch64
 * New packages:
   * net/vpp
   * flashrom
