@@ -1,4 +1,4 @@
-# Release 2.0 (2025/09/27)
+# Release 2.0 (2025/09/28)
 
 ## Special instructions before upgrade
 BSDRP 1.994 or later is required.

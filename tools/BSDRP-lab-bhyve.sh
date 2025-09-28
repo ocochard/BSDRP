@@ -44,6 +44,7 @@ NCPUS=1
 NUMBER_VM="1"
 RAM="1G"
 THREADS=1
+SUDO=sudo
 if [ "${arch}" == "amd64" ]; then
 	UEFI=true
 else
@@ -104,7 +105,7 @@ check_bhyve_support () {
 			load_module if_tap
 		fi
 		# Enable net.link.tap.up_on_open
-		sysctl net.link.tap.up_on_open=1 > /dev/null 2>&1 || echo "Warning: Can't enable net.link.tap.up_on_open"
+		${SUDO} sysctl net.link.tap.up_on_open=1 > /dev/null 2>&1 || echo "Warning: Can't enable net.link.tap.up_on_open"
 	fi
 }
 
@@ -112,7 +113,7 @@ load_module () {
 	# $1 : Module name
 	if ! kldstat -m $1 > /dev/null 2>&1; then
 		echo "$1 module not loaded. Loading it..."
-		kldload $1 && return 0 || return 1
+		${SUDO} kldload $1 && return 0 || return 1
 	fi
 }
 
@@ -182,7 +183,7 @@ destroy_all_if() {
 	IF_LIST=$(ifconfig -l)
 	for i in ${IF_LIST}; do
 		ifconfig $i | grep -q "description: MESH_\|description: LAN_" && \
-			ifconfig $i destroy
+			${SUDO} ifconfig $i destroy
 	done
 	return 0
 }
@@ -191,11 +192,11 @@ destroy_vm() {
 	# $1: VM name
 	# Check if this VM exist by small query
 	if is_running $1; then
-		bhyvectl --vm=$1 --destroy || echo "Can't destroy VM $1"
+		${SUDO} bhyvectl --vm=$1 --destroy || echo "Can't destroy VM $1"
 		# BSDRP_1, extract all char after _
 		# VM name is in form BSDRP_1, but console in form BSDRP.1B
 		CONS=$(echo $1 | sed 's/_/./')
-		pkill -f "cu -l /dev/nmdm-${CONS}B" || true
+		${SUDO} pkill -f "cu -l /dev/nmdm-${CONS}B" || true
 	fi
 	return 0
 }
@@ -237,7 +238,7 @@ run_vm() {
 		fi
 		"
 		if [ "${arch}" == "amd64" ]; then
-			eval VM_LOAD_$1=\"bhyveload -S -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm\${NMDM_ID}A \${VM_NAME}_$1\"
+			eval VM_LOAD_$1=\"${SUDO} bhyveload -S -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm\${NMDM_ID}A \${VM_NAME}_$1\"
 			eval \${VM_LOAD_$1}
 		fi
 		# c: Number of guest virtual CPUs
@@ -259,7 +260,7 @@ run_vm() {
 		# PCI 2:0 and next: Network NIC
 		# PCI last:0 ptnetnetmap-memdev (if PTNET&VALE enabled)
 		#   Note: It's not possible to have "hole" in PCI assignement
-		VM_COMMON="bhyve -c cpus=${NCPUS},cores=${CORES},threads=${THREADS} -S -m ${RAM} -s 0:0,hostbridge"
+		VM_COMMON="${SUDO} bhyve -c cpus=${NCPUS},cores=${CORES},threads=${THREADS} -S -m ${RAM} -s 0:0,hostbridge"
 		if [ "${arch}" == "amd64" ]; then
       VM_COMMON="${VM_COMMON} -A -H -P -s 0:1,lpc"
       if [ ${UEFI} = true ]; then
@@ -292,7 +293,7 @@ run_vm() {
 			eval VM_DEBUG_$1=\"\"
 		fi
 		# Store VM_$1_VMDM data for displaying it later
-		echo "- VM $1 : cu -l /dev/nmdm${NMDM_ID}B" >> ${TMPCONSOLE}
+		echo "- VM $1 : ${SUDO} cu -l /dev/nmdm${NMDM_ID}B" >> ${TMPCONSOLE}
 
 		# Check bhyve exit code, and if error: exit the infinite loop
 		# 0  rebooted
@@ -330,10 +331,10 @@ create_interface() {
 			return 0
 		fi
 	done
-	IF=$(ifconfig $2 create)
-	ifconfig ${IF} description $1 up || die "Can't set $1 on ${IF}"
+	IF=$(${SUDO} ifconfig $2 create)
+	${SUDO} ifconfig ${IF} description $1 up || die "Can't set $1 on ${IF}"
 	if [ $# -eq 3 ]; then
-		ifconfig $3 addm ${IF} || die "Can't add ${IF} on bridge $3"
+		${SUDO} ifconfig $3 addm ${IF} || die "Can't add ${IF} on bridge $3"
 	fi
 	echo ${IF}
 	return 0
@@ -342,7 +343,11 @@ create_interface() {
 #### Main ####
 
 [ $# -lt 1 ] && ! [ -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
-[ $(id -u) -ne 0 ] && usage "ERROR: not executed as root"
+if [ $(id -u) -ne 0 ]; then
+  if [ $(${SUDO} id -u) -ne 0 ]; then
+    die "ERROR: Could not use ${SUDO}"
+  fi
+fi
 
 while getopts "aBc:dghD:ei:l:m:n:qt:svVw:A:S:" FLAG; do
     case "${FLAG}" in

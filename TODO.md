@@ -2,31 +2,29 @@
 
 ## Bugs #
 
-* if non-critical /data had a fsck problem, system refuse go in single user
+* if non-critical /data had a fsck problem, system refuses to go into single user
 * add auto-trimming of all log files that are being created
 
 ## Boot loader ##
-* poudriere-image uses EFI, need to test generated image on APU
 * bootonce script that should do:
-  * Check for bootfailed attribute and act regarding
-  * Update script need to be updated to add bootonce and not removing bootme
+  * Check for bootfailed attribute and act accordingly
+  * Update script needs to be updated to add bootonce and not remove bootme
 
 ## Authentication #
 
-* Need to test PAM (Radius, TACAS+) modules
+* Need to test PAM (Radius, TACACS+) modules
 
 ## misc #
 
-* generate SBOM for each release
-* Is utf-8 support for console usefull ?
+* Is UTF-8 support for console useful?
 * Need to publish an OVF (Open Virtualization Format) tar file
-* Need to enable nuageinit (usefull for automatic regression tests)
+* Need to enable nuageinit (useful for automatic regression tests)
 * A netgraph documentation "for dummies" like this: http://nexus.org.ua/weblog/message/406/
 * doc: Using mermaid markdown ? https://github.blog/developer-skills/github/include-diagrams-markdown-files-mermaid/
 
 ## TRIM ##
 
-Adding a rc script that automatically enable TRIM on /dev/ufs/BSDRP* if:
+Adding an rc script that automatically enables TRIM on /dev/ufs/BSDRP* if:
 sudo camcontrol identify ada0 | grep TRIM | cut -d ' ' -f 5
 give "yes"
 
