@@ -31,66 +31,36 @@ upload(){
 }
 
 dokuwiki(){
-	URL="https://sourceforge.net/projects/bsdrp/files/BSD_Router_Project/$1"
-	FILE_TYPE='
+	local ver=$1
+  local arch=$2
+  URL="https://sourceforge.net/projects/bsdrp/files/BSD_Router_Project/${ver}"
+  ARCHS='
+amd64
+aarch64
+'
+	FAMILIES='
 full
 upgrade
 mtree
 debug
 	'
-	[ -d ${OBJ_BASE_DIR}/${PROJECT}.sparc64 ] && ARCH_LIST="${ARCH_LIST}sparc64"
-	for type in ${FILE_TYPE}; do
-		TITLE_SET=false
-		OLD_TYPE=""
-		echo ""
-		echo "type: ${type}"
-		echo ""
-		FILE_LIST=""
- 		for arch in ${ARCH_LIST}; do
-			FILE_LIST="${FILE_LIST} $(ls ${OBJ_BASE_DIR}/${PROJECT}.${arch}/ | cut -d '/' -f 5 | grep '^BSDRP-' | grep ${type} | grep '\.xz$')"
-    	done
-
-		for file in ${FILE_LIST}; do
-			if [ "${type}" == "mtree" ]; then
-				if ! ($TITLE_SET); then
-					echo "^ Arch ^ Console ^ File ^"
-					TITLE_SET=true
-                fi
-				ARCH=$(basename ${file} | cut -d '-' -f 3 | cut -d '.' -f 1)
-				echo -n "| ${ARCH}"
-				echo -n " | $(echo ${file} | cut -d '-' -f 4 | cut -d '.' -f 1)"
-			elif [ "${type}" == "debug" ]; then
-				if ! ($TITLE_SET); then
-					echo "^ Arch ^ File ^"
-					TITLE_SET=true
-				fi
-				ARCH=$(basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1)
-				echo -n "| ${ARCH}"
-			else
-				if ! ( $TITLE_SET ) && [ "${type}" != "${OLD_TYPE}" ]; then
-					echo "^ Arch ^ Console ^ File ^ Checksum ^"
-					TITLE_SET=true
-					OLD_TYPE=${type}
-				else
-					TITLE_SET=false
-				fi
-				ARCH=$(basename ${file} | cut -d '-' -f 4 | cut -d '.' -f 1)
-				echo -n "| ${ARCH}"
-				echo -n " | $(echo ${file} | cut -d '-' -f 5 | cut -d '.' -f 1)"
-			fi
-			echo -n " | [[$URL/${ARCH}/${file}/download|${file}]]"
-			case ${type} in
-			mtree | debug)
-				echo -n " |"
-				;;
-			*)
-				echo -n " | [[$URL/${ARCH}/${file}.sha256 |"
-				echo -n "${file}.sha256]] |"
-				;;
-			esac
-			echo ""
-		done # for file
-	done # for type
+	for family in ${FAMILIES}; do
+    # family = purpose
+		echo "^ Arch ^ Purpose ^ File ^ Checksum ^"
+      for arch in ${ARCHS}; do
+				echo -n "| ${arch}"
+ 				echo -n "| ${family}"
+        # xxx mtree and tar
+        case ${family} in
+          full|upgrade) ext=".img.xz" ;;
+          mtree) ext=".mtree.xz";;
+          debug) ext=".tar.xz";;
+        esac
+        file=BSDRP-${ver}-${family}-${arch}${ext}
+			  echo -n " | [[$URL/${arch}/${file}/download|${file}]]"
+ 			  echo " | [[$URL/${arch}/${file}.sha256/download|sha256]] |"
+     done # for arch
+	  done # for type
 	exit 0
 }
 
