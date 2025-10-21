@@ -106,6 +106,7 @@ MODULES_OVERRIDE= \
 	if_stf \
 	if_tuntap \
 	if_vxlan \
+	if_wg \
 	ipdivert \
 	ipfilter \
 	ipfw \
