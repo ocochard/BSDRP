@@ -11,7 +11,7 @@ lang/python
 net-mgmt/bgpq4
 net-mgmt/bsnmp-regex
 net-mgmt/bsnmp-ucd
-net-mgmt/lldpd
+net-mgmt/lldpd@tiny
 net-mgmt/nrpe
 net-mgmt/nstat
 net-mgmt/pmacct
