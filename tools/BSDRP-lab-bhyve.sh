@@ -88,10 +88,16 @@ usage() {
 }
 
 ### Functions ####
-# A usefull function (from: http://code.google.com/p/sh-die/)
+# Error handling function - prints error message and exits
+# Arguments:
+#   $@: Error message to display
+# Returns: exits with code 1
 die() { echo -n "ERROR: " >&2; echo "$@" >&2; exit 1; }
 
-# Check FreeBSD system pre-requise for starting bhyve
+# Check and load required FreeBSD kernel modules for bhyve operation
+# Loads vmm, nmdm, and network tap modules as needed
+# Arguments: none
+# Returns: 0 on success, may exit on failure
 check_bhyve_support () {
 	# Check if bhyve vmm is loaded
 	load_module vmm
@@ -109,16 +115,21 @@ check_bhyve_support () {
 	fi
 }
 
+# Load a FreeBSD kernel module if not already loaded
+# Arguments:
+#   $1: Name of the kernel module to load
+# Returns: 0 if module loaded successfully, 1 on failure
 load_module () {
-	# $1 : Module name
 	if ! kldstat -m $1 > /dev/null 2>&1; then
 		echo "$1 module not loaded. Loading it..."
 		${SUDO} kldload $1 && return 0 || return 1
 	fi
 }
 
-# Check filename given, and unzip it
-# Common with vbox/quemu script
+# Detect and decompress disk image file to VM template
+# Supports XZ, BZIP2, and raw disk formats
+# Arguments: none (uses global FILE and VM_TEMPLATE variables)
+# Returns: 0 on success, exits on error
 uncompress_image () {
     [ -f ${FILE} ] || die "Can't find file ${FILE}"
 	FILE_TYPE=$(file -b ${FILE} | cut -d ' ' -f 1)
@@ -154,6 +165,9 @@ uncompress_image () {
 
 }
 
+# Remove all VM disk images and clean up VM template
+# Arguments: none
+# Returns: 0 on success
 erase_all_vm() {
 	# We can display vm by looking in /dev/vmm
 	# Search for VM disk image
@@ -169,6 +183,9 @@ erase_all_vm() {
 	return 0
 }
 
+# Stop and destroy all running BSDRP VMs
+# Arguments: none
+# Returns: 0 on success
 stop_all_vm() {
 	if [ -e /dev/vmm ]; then
 		local VM_LIST=$(find /dev/vmm -name "${VM_NAME}_*")
@@ -179,6 +196,10 @@ stop_all_vm() {
 	return 0
 }
 
+# Destroy all network interfaces created for VM meshing
+# Removes interfaces with MESH_ or LAN_ descriptions
+# Arguments: none
+# Returns: 0 on success
 destroy_all_if() {
 	IF_LIST=$(ifconfig -l)
 	for i in ${IF_LIST}; do
@@ -188,8 +209,11 @@ destroy_all_if() {
 	return 0
 }
 
+# Destroy a specific bhyve virtual machine and cleanup resources
+# Arguments:
+#   $1: Name of the VM to destroy
+# Returns: 0 on success
 destroy_vm() {
-	# $1: VM name
 	# Check if this VM exist by small query
 	if is_running $1; then
 		${SUDO} bhyvectl --vm=$1 --destroy || echo "Can't destroy VM $1"
@@ -201,15 +225,20 @@ destroy_vm() {
 	return 0
 }
 
+# Check if a bhyve virtual machine is currently running
+# Arguments:
+#   $1: Name of the VM to check
+# Returns: 0 if running, 1 if not running
 is_running() {
-	# $1: VM name
 	[ -e /dev/vmm/$1 ] && return 0 || return 1
 }
 
+# Find an available nmdm (null-modem) device for VM console
+# Arguments:
+#   $1: Starting VM number to check
+# Returns: suffix string for available nmdm device
+# Note: nmdm devices auto-create on access, so we avoid direct testing
 get_free_nmdm () {
-	# Check if /dev/nmdm$1 doesn't exist, and if not use a free one
-	# WARNING: /dev/nmdm are automatically created when direct access to them
-	#          So need to avoid direct test like [ -c /dev/nmdm${1}A ]
         TMPFILE=$(mktemp /tmp/nmdmlist.XXXXXX) || die "Can not create tmp file"
 	find /dev/ -name 'nmdm-BSDRP.*A' > $TMPFILE
 	# $1: VM number
@@ -222,8 +251,11 @@ get_free_nmdm () {
 	echo "-BSDRP.$i"
 }
 
+# Start a bhyve virtual machine with networking and console setup
+# Arguments:
+#   $1: VM number identifier
+# Returns: continues in infinite loop for VM reboots
 run_vm() {
-	# $1: VM number
 	# Destroy previous if already exist
 
 	# Need an infinite loop: This permit to do a reboot initated from the VM
@@ -481,7 +513,7 @@ while [ $i -le $NUMBER_VM ]; do
 	NIC_NUMBER=0
     if ( ${VERBOSE} ); then
 		if ( ${DEBUG} ); then
-			echo "VM $i (debugger port: 900$i) has the following NIC:"
+			echo "VM $i (debugger port: 900$i) has the following NIC:"
 		else
 			echo "VM $i has the following NIC:"
 		fi

@@ -42,12 +42,21 @@ NUMBER_LAN=0
 RAM=1024
 
 ### Functions
+# Error handling function - prints error message and exits
+# Arguments:
+#   $@: Error message to display
+# Returns: exits with code 1
 die() {
     echo -n "EXIT: " >&2
     echo "$@" >&2
     exit 1
 }
 
+# Validate and prepare disk image file for QEMU
+# Handles XZ compressed images and verifies boot sector
+# Arguments:
+#   $1: Path to the disk image file
+# Returns: 0 on success, exits on invalid image
 check_image() {
     local file=$1
     if [ ! -f ${file} ]; then
@@ -66,6 +75,10 @@ check_image() {
     FILENAME=${file}
 }
 
+# Search for UEFI firmware files in common installation paths
+# Arguments:
+#   $1: Architecture (x86_64, i386, aarch64)
+# Returns: prints path to firmware file, exits if not found
 search_boot_loaders() {
     local arch=$1
     local bootloader=""
@@ -95,7 +108,11 @@ search_boot_loaders() {
     fi
 }
 
-# Parse filename for detecting ARCH
+# Parse disk image filename to detect architecture and configure QEMU
+# Sets up appropriate QEMU command, bootloader, and acceleration
+# Arguments:
+#   $1: Path to the disk image file
+# Returns: 0 on success, sets global QEMU_ARCH and related variables
 parse_filename () {
     local file=$1
     QEMU_ARCH=""
@@ -142,6 +159,10 @@ parse_filename () {
     echo "Guest VM configured without vga card"
 }
 
+# Start QEMU virtual machines in a lab configuration
+# Creates full-mesh networking between VMs with admin and LAN interfaces
+# Arguments: none (uses global variables NUMBER_VM, NUMBER_LAN, etc.)
+# Returns: 0 on success, starts VMs in background for multi-VM setups
 start_lab_vm () {
     echo "Starting a lab with $NUMBER_VM routers:"
     echo "- 1 shared LAN between all routers and the host"
@@ -205,6 +226,9 @@ start_lab_vm () {
 
 }
 
+# Display usage information and help text
+# Arguments: none
+# Returns: exits with code 2
 usage () {
         (
         echo "Usage: $0 [-shv] -i BSDRP-full.img [-n router-number] [-l LAN-number]"

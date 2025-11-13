@@ -7,15 +7,26 @@ BSDRP_DIR="/usr/local/BSDRP/tools"
 CR="/tmp/validate-images-status.txt"
 [ -f ${CR} ] && rm ${CR}
 
-# A usefull function (from: http://code.google.com/p/sh-die/)
+# Error handling function - prints error message and exits
+# Arguments:
+#   $@: Error message to display
+# Returns: exits with code 1
 die() { echo -n "ERROR: " >&2; echo "$@" >&2; exit 1; }
 
+# Run a virtual machine with specified image for testing
+# Arguments:
+#   $1: Path to the disk image file
+# Returns: 0 on success
 run_vm () {
 	echo "stop BSDRP-bhyve lab..."
 	${BSDRP_DIR}/BSDRP-lab-bhyve.sh -s
 	${BSDRP_DIR}/BSDRP-lab-bhyve.sh -e -i $1
 }
 
+# Test if VM boots successfully by waiting for login prompt
+# Arguments:
+#   $1: Name/path of the image being tested
+# Returns: 0 on success, logs results to status file
 test_vm () {
 	if /tmp/wait-for-login; then
 		echo "Success: $1" >> ${CR}
@@ -24,6 +35,9 @@ test_vm () {
 	fi
 }
 
+# Stop and destroy the running virtual machine
+# Arguments: none
+# Returns: 0 on success
 stop_vm () {
 	${BSDRP_DIR}/BSDRP-lab-bhyve.sh -s
 	${BSDRP_DIR}/BSDRP-lab-bhyve.sh -d

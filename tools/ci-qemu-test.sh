@@ -1,12 +1,17 @@
 #!/bin/sh
-
-# Testing BSDRP with qemu
+#
+# Continuous Integration QEMU test script for BSDRP
+# This script tests BSDRP images by booting them in QEMU and verifying successful startup
 
 set -euf
 
 PROJECT=TESTING
 ARCH=amd64
 
+# Error handling function - prints error message to stderr and exits
+# Arguments:
+#   $*: Error message to display
+# Returns: exits with code 1
 die()
 {
 	echo "$*" 1>&2

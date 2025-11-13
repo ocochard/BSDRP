@@ -36,7 +36,11 @@ DEST_DATA=/tmp/bsdrp_data
 DEST_LIST="$DEST_ROOT $DEST_CFG $DEST_DATA"
 BSDRP_SRC=..
 
-# Get options passed by user
+# Parse and process command line options
+# Arguments:
+#   $1: Required option (mount, umount, update, qemu, help)
+#   $2: Optional filename parameter
+# Returns: 0 on success, exits on invalid options
 getoption () {
 	if [ $# -lt 1 ]; then
         	usage
@@ -75,7 +79,9 @@ getoption () {
         esac
 }
 
-# Display help
+# Display usage information and help text
+# Arguments: none
+# Returns: exits with code 0
 usage () {
 	echo "BSD Router Project image manipulation tool"
 
@@ -89,9 +95,10 @@ usage () {
 	exit 0
 }
 
-# Check if image is mounted
-# $1: mount point to check
-# Return 0 (true) if yes, 1 (false) if not
+# Check if a filesystem is mounted at the specified mount point
+# Arguments:
+#   $1: Mount point to check
+# Returns: 0 if mounted, 1 if not mounted
 is_mounted () {
 	if df $1  > /dev/null 2>&1; then
 		return 0
@@ -100,6 +107,9 @@ is_mounted () {
 	fi
 }
 
+# Check if any of the BSDRP image partitions are currently mounted
+# Arguments: none
+# Returns: 0 if any partition is mounted, 1 if none are mounted
 are_mounted () {
 	for MOUNT in $DEST_LIST; do
 		if [ -d $MOUNT ];then
@@ -111,7 +121,10 @@ are_mounted () {
 	return 1
 }
 
-# update image
+# Update mounted image with files from BSDRP source tree
+# Copies files from BSDRP/Files directory to the mounted root partition
+# Arguments: none
+# Returns: 0 on success, exits on error
 update_img () {
 	if ! are_mounted; then
 		echo "ERROR: image not mounted"
@@ -138,7 +151,9 @@ update_img () {
 	)
 
 }
-# Check validity of image file
+# Validate that the specified file is a valid BSDRP disk image
+# Arguments: none (uses global FILENAME variable)
+# Returns: 0 on success, exits on invalid image
 check_img () {
 	if [ "${FILENAME}" = "" ];
 	then
@@ -162,7 +177,9 @@ check_img () {
 
 }
 
-# Convert to qcow2 format
+# Convert BSDRP disk image to compressed QCOW2 format for QEMU
+# Arguments: none (uses global FILENAME variable)
+# Returns: 0 on success, exits on error
 convert_2qemu () {
 	check_img
 	if [ ! -f /usr/local/bin/qemu-img ]
@@ -196,7 +213,10 @@ convert_2qemu () {
 	exit 0
 }
 
-# Mount image
+# Mount BSDRP disk image partitions for manipulation
+# Creates memory disk and mounts root, cfg, and data partitions
+# Arguments: none (uses global FILENAME variable)
+# Returns: 0 on success, exits on error
 mount_img () {
 
 	if are_mounted; then
@@ -253,7 +273,9 @@ mount_img () {
 	exit 0
 }
 
-# umount the image
+# Unmount all BSDRP image partitions and cleanup memory disk
+# Arguments: none
+# Returns: 0 on success, exits on error
 umount_img () {
 
 	if ! are_mounted; then

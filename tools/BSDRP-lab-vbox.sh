@@ -35,9 +35,16 @@ VM_TPL_NAME="BSDRP_lab_template"
 LOG_FILE="${HOME}/BSDRP_lab.log"
 DEFAULT_RAM="512"
 
-# A usefull function (from: http://code.google.com/p/sh-die/)
+# Error handling function - prints error message and exits
+# Arguments:
+#   $@: Error message to display
+# Returns: exits with code 1
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
+# Check VirtualBox installation and version compatibility
+# Verifies VirtualBox 4.1+ and detects VNC/VRDE support
+# Arguments: none
+# Returns: 0 on success, exits on incompatible version
 check_system_common () {
 	echo "Checking if VirtualBox installed..." >> ${LOG_FILE}
 
@@ -69,7 +76,11 @@ check_system_common () {
 
 }
 
-# Check filename given, and unzip it
+# Validate and decompress BSDRP disk image file
+# Supports BZIP2 and XZ compressed images
+# Arguments:
+#   $1: Path to the disk image file
+# Returns: 0 on success, exits on invalid image
 check_image () {
 	[ -f $1 ] || die "[ERROR] Can't found the file $1"
 
@@ -96,8 +107,11 @@ check_image () {
 
 }
 
-# Create BSDRP template VM by converting BSDRP image disk file (given in parameter) into Virtualbox format and compress it
-# This template is used only for the image disk
+# Create VirtualBox template VM from BSDRP disk image
+# Converts disk image to VDI format and configures VM settings
+# Arguments:
+#   $1: Path to the BSDRP disk image file
+# Returns: 0 on success, exits on error
 create_template () {
 	# Generate $VM_ARCH and $CONSOLE from the filename
 
@@ -225,7 +239,7 @@ parse_filename () {
 	fi
 	[ "$VM_ARCH" = "0" ] && die "[ERROR] Can't deduce arch type from filename"
 
-	# SERIAL can b√e allready set from CLI options
+	# SERIAL can be allready set from CLI options
 	if [ -z ${SERIAL} ]; then
 		if echo "$1" | grep -q "serial"; then
 			SERIAL=true

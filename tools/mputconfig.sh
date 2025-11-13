@@ -32,7 +32,9 @@ set -e
 
 ### Functions ###
 
-# system_check: Check if empty is installed
+# Check if required 'empty' tool is installed on the system
+# Arguments: none
+# Returns: 0 if found, exits with code 2 if not found
 system_check () {
 	if ! which empty > /dev/null 2>&1; then
 		echo "ERROR: empty (http://empty.sourceforge.net/) is a mandatory dependency"
@@ -43,6 +45,10 @@ system_check () {
 	fi
 }
 
+# Clean up and close connection to a remote device
+# Arguments:
+#   $1: Device hostname/IP address
+# Returns: 0 on success
 clean_close () {
 	local DEVICE=$1
 	if [ -f ${DEVICE}.pid ]; then
@@ -58,7 +64,10 @@ clean_close () {
     fi
 
 }
-# Send command to given host
+# Execute commands on a remote device via SSH using expect-like tool
+# Arguments:
+#   $1: Device hostname/IP address
+# Returns: 0 on success, 1 on connection/authentication failure
 put_cmd () {
     echo "INFO: Sending commands to $1..." >> ${LOG_FILE}
 	local DEVICE=$1
@@ -88,7 +97,9 @@ put_cmd () {
 	set -e
 	return 0
 }
-# usage: Display command line help
+# Display usage information and command line help
+# Arguments: none
+# Returns: exits with code 1
 usage () {
 	echo "$0 -h -c commands_list_file -l device_list_file [-e extra_ssh_option] [-t parrallel_threads]"
 	echo "  -c commands_list_file : Text file that contains list of commands to be send to remote device"
