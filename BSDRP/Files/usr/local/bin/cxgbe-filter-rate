@@ -1,16 +1,51 @@
 #!/bin/sh
 set -euf -o pipefail
+
+# Input validation for Chelsio nexus name
 if [ "$#" -eq 0 ]; then
-	echo "Need Chelsio nexus name (examble: t5nex0)"
+	echo "ERROR: Need Chelsio nexus name (example: t5nex0)"
 	echo "List of Nexus detected:"
 	grep t.nex /var/run/dmesg.boot || true
 	exit 1
 fi
-VALUE=$(cxgbetool "$1" filter list  | awk '{if (NR!=1) {print $2}}')
-echo "Filter hit rate"
+
+# Validate nexus name format (should be t[0-9]nex[0-9])
+NEXUS_NAME="$1"
+case "${NEXUS_NAME}" in
+	t[0-9]nex[0-9]*) ;; # Valid format
+	*) echo "ERROR: Invalid nexus name format. Expected t[N]nex[N] (e.g., t5nex0)"; exit 1 ;;
+esac
+
+# Check if nexus exists in system
+if ! grep -q "${NEXUS_NAME}" /var/run/dmesg.boot 2>/dev/null; then
+	echo "ERROR: Nexus '${NEXUS_NAME}' not found in system"
+	echo "Available nexus devices:"
+	grep t.nex /var/run/dmesg.boot || echo "No Chelsio nexus devices found"
+	exit 1
+fi
+# Get initial filter statistics
+if ! VALUE=$(cxgbetool "${NEXUS_NAME}" filter list 2>/dev/null | awk '{if (NR!=1) {print $2}}'); then
+	echo "ERROR: Failed to read filter statistics from ${NEXUS_NAME}"
+	exit 1
+fi
+
+# Validate that we got numeric data
+case "${VALUE}" in
+	''|*[!0-9]*) echo "ERROR: Invalid filter statistics received"; exit 1 ;;
+esac
+
+echo "Filter hit rate for ${NEXUS_NAME}"
 while true; do
 	sleep 1
-	NEW_VALUE=$(cxgbetool "$1" filter list  | awk '{if (NR!=1) {print $2}}')
+	if ! NEW_VALUE=$(cxgbetool "${NEXUS_NAME}" filter list 2>/dev/null | awk '{if (NR!=1) {print $2}}'); then
+		echo "ERROR: Failed to read filter statistics"
+		continue
+	fi
+
+	# Validate numeric data
+	case "${NEW_VALUE}" in
+		''|*[!0-9]*) echo "ERROR: Invalid statistics data"; continue ;;
+	esac
 	RATE=$((NEW_VALUE - VALUE))
 	VALUE="${NEW_VALUE}"
 	echo "${RATE}"

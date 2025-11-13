@@ -1,7 +1,35 @@
 #!/bin/sh
-# return true if the number of routes entrie is bigger or egal as the argument
+# Return true if the number of route entries is greater than or equal to the argument
 set -eu
+
+# Input validation
+if [ "$#" -ne 1 ]; then
+	echo "ERROR: Exactly one argument required (expected number of routes)" >&2
+	exit 2
+fi
+
+# Validate that argument is a positive integer
 expected="$1"
-routes=$(netstat -rn | wc -l)
+case "${expected}" in
+	''|*[!0-9]*) echo "ERROR: Argument must be a positive integer" >&2; exit 2 ;;
+	0) echo "ERROR: Expected route count must be greater than 0" >&2; exit 2 ;;
+esac
+# Get current route count
+if ! routes=$(netstat -rn 2>/dev/null | wc -l); then
+	echo "ERROR: Failed to get routing table" >&2
+	exit 2
+fi
+
+# Clean up whitespace and validate result
 routes=$(echo "$routes")
-[ "$routes" -ge "$expected" ] && exit 0 || exit 1
+case "${routes}" in
+	''|*[!0-9]*) echo "ERROR: Invalid route count received" >&2; exit 2 ;;
+esac
+
+# Compare route count with expected value
+if [ "$routes" -ge "$expected" ]; then
+	exit 0
+else
+	echo "INFO: Current routes ($routes) < expected ($expected)" >&2
+	exit 1
+fi
