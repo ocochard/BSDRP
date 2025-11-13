@@ -38,7 +38,7 @@ lock="/var/run/config.bsdrp.lock"
 # Checking if script is running inside a jail or not
 [ $(sysctl -n security.jail.jailed) -eq 0 ] && INSIDEJAIL=false || INSIDEJAIL=true
 
-# A usefull function (from: http://code.google.com/p/sh-die/)
+# A useful function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # Because we are using running script, we need to cleanup mess before leaving
@@ -231,10 +231,10 @@ save_cfg () {
 				# tar can preserve full parent path owners only if list of full path is given
 				# As example for file1 in etc/dir1/dir2/file1 we need to backup
 				#  etc/dir1 etc/dir1/dir2 etc/dir1/dir2/file1
-				# Handle parent directory creation for tar
+				# Handle simple filenames vs nested paths
 				case "$i" in
 					*/*)
-						# File with path - need to create parent directories
+						# Contains slash - use parent directory logic
 						tmp_list=$(mktemp) || die "Can't create temporary file"
 						dir=""
 						for c in $(echo "$i" | tr "/" " "); do
@@ -245,7 +245,7 @@ save_cfg () {
 						rm -f "$tmp_list"
 						;;
 					*)
-						# Simple filename - just copy directly
+						# Simple filename - copy directly
 						tar cf - "$i" -C /etc | tar xf - -C /cfg
 						;;
 				esac
@@ -330,12 +330,12 @@ diff () {
 		IFS="$old_IFS"
 		if [ -f "${REFERENCE}/$i" ]; then
 			if ! cmp -hs "/etc/$i" "${REFERENCE}/$i"; then
-				echo "1" > /tmp/DIFF_FOUND
+				echo "1" > "$DIFF_FOUND"
 				[ ! "$SECOND_OPTION" = "quiet" ] && find "$i" -print || break
 			fi
 		elif [ ! "$SECOND_OPTION" = "conf/base/etc" ]; then
 			if ! cmp -hs "/conf/base/etc/$i" "/etc/$i"; then
-				echo "1" > /tmp/DIFF_FOUND
+				echo "1" > "$DIFF_FOUND"
 				[ ! "$SECOND_OPTION" = "quiet" ] && find "$i" -print || break
 			fi
 		fi
@@ -343,11 +343,12 @@ diff () {
 	IFS="$old_IFS"
 	)
 	[ ! "$SECOND_OPTION" = "factory" ] && umount_cfg
-	if [ -f /tmp/DIFF_FOUND ]; then
-		rm /tmp/DIFF_FOUND || die "WARNING: Can't delete /tmp/DIFF_FOUND"
+	if [ -f "$DIFF_FOUND" ]; then
+		rm "$DIFF_FOUND" || die "WARNING: Can't delete $DIFF_FOUND"
 		exit 1
 	else
 		[ ! "$SECOND_OPTION" = "quiet" ] && echo "None found."
+		rm -f "$DIFF_FOUND"
 		exit 0
 	fi
 }

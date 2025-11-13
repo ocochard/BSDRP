@@ -34,7 +34,7 @@ set -eu
 
 lock="/var/run/autosave.bsdrp.lock"
 
-# A usefull function (from: http://code.google.com/p/sh-die/)
+# A useful function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # Because we are using running script, we need to cleanup mess before leaving

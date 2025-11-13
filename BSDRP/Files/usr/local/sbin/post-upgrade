@@ -30,7 +30,7 @@
 
 set -eu
 
-# A usefull function (from: http://code.google.com/p/sh-die/)
+# A useful function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 [ $# -lt 1 ] && die "ERROR: This script should be call by sbin/upgrade"

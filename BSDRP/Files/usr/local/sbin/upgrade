@@ -45,7 +45,7 @@ ARCH=$(uname -m)
 GPT=false
 LOCK=/tmp/UPGRADE-LOCK
 
-# A usefull function (from: http://code.google.com/p/sh-die/)
+# A useful function (from: http://code.google.com/p/sh-die/)
 die() {
 	echo -n "EXIT: " >&2
 	echo "$@" >&2

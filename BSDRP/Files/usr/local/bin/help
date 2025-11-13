@@ -32,8 +32,7 @@
 # set -xv
 
 # Strict script
-set -e
-set -u
+set -eu
 
 echo "Welcome to BSD Router Project (BSDRP) help"
 echo ""

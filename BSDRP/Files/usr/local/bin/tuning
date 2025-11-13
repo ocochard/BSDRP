@@ -48,7 +48,7 @@ NCORE=0
 # chk_ : check if
 # add_ : add line to file
 
-# A usefull function (from: http://code.google.com/p/sh-die/)
+# A useful function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 usage () {
@@ -184,7 +184,7 @@ tune_if_tsolro () {
 }
 
 tune_modules () {
-	# Check if usefull modules are loaded
+	# Check if useful modules are loaded
 	if grep -q 'Feature.*AESNI' /var/run/dmesg.boot ; then
 		# CPU support it, check if not already loaded
 		if ! kldstat -n aesni 2>&1 | grep -q aesni; then
@@ -334,7 +334,7 @@ net_mbuf () {
 }
 
 timecounter () {
-	# Are the timecounter tuning usefull ?
+	# Are the timecounter tuning useful ?
 	TIMECOUTER_CHOICE=`sysctl -n sysctl kern.timecounter.choice`
 	if echo "${TIMECOUTER_CHOICE}" | grep -q "HPET"	; then
 		sysctl -n kern.timecounter.hardware | grep -q HPET || \

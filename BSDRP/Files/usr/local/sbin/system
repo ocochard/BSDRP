@@ -34,7 +34,7 @@
 # Strict script
 set -eu
 
-# A usefull function (from: http://code.google.com/p/sh-die/)
+# A useful function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # get system name label
@@ -218,7 +218,7 @@ install () {
 	disks=$(sysctl -n kern.disks)
 	[ "${boot_dev}" = "${target_disk}" ] && die "Source disk (${boot_dev}) is same as destination disk (${target_disk}), use another disk in this list: ${disks}"
 
-	# Extract only size of usefull data (so end of unextended partition data)
+	# Extract only size of useful data (so end of unextended partition data)
 	sectors=$(gpart show ${boot_dev} | grep '\- free \-' | tr -s ' ' | cut -d ' ' -f 2 | tail -n 1)
 	if [ -z "${sectors}" ]; then
 		# No -free- part detected:
@@ -423,7 +423,7 @@ resize_system() {
 resize_system_slice () {
 	[ -z "${SECOND_OPTION}" ] && die "Missing size (in block)"
 	echo "This tool will expand the 2 systems slices to the given size."
-	echo "It's only usefull for specific upgrade"
+	echo "It's only useful for specific upgrade"
 	echo "- If a partition swaping is needed, system will reboot automatically at the end of first step"
 	echo "  You need to restart this tool after the reboot for continuing"
 	echo "- All files stored in /data partition will be destroyed!"
