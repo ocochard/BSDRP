@@ -35,17 +35,25 @@ fi
 
 ### Functions ###
 
-# An usefull function (from: http://code.google.com/p/sh-die/)
+# Error handling function - prints error message and exits
+# Arguments:
+#   $@: Error message to display
+# Returns: exits with code 1
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
+# Display usage information and command line help
+# Arguments: none
+# Returns: exits with code 0
 usage() {
 	echo "$0 nanobsd-images-dir [phabricator-id]"
 	exit 0
 }
 
-# Build image
-# $1 Revision number
-# $2 file image extension (same as revision if empty)
+# Build BSDRP project image for specific revision
+# Arguments:
+#   $1: SVN revision number to build
+#   $2: File image extension (optional, defaults to revision number)
+# Returns: 0 on success, exits on build failure
 build_project() {
 	[ $# -lt 1 ] && die "BUG during build_project() call, missing argument"
 	SVN_REV=$1

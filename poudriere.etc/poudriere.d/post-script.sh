@@ -1,8 +1,20 @@
 #!/bin/sh
 #
-# poudriere cleanup phase is run at 'almost' the last stage
-# (notice fstab is generated after)
-# so overlaydir is already copied and packages installed
+# BSDRP Poudriere post-processing cleanup script
+# Executes during poudriere image generation at final stage
+#
+# Purpose:
+#   - Remove unnecessary files and directories from the image
+#   - Apply system customizations for BSDRP router appliance
+#   - Configure SSH, TTY, and shell settings
+#   - Generate package inventory and mtree manifest
+#
+# Execution context:
+#   - Runs after overlay directory copy and package installation
+#   - Uses WORLDDIR environment variable for target root filesystem
+#   - Executed by poudriere during image build process
+#
+# Returns: 0 on success, 1 on missing WORLDDIR variable
 
 # cleanup phase (when the clean way fails)
 # - Use WITHOUT_ in image-BSDRPj-src.conf

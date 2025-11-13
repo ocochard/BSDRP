@@ -1,7 +1,23 @@
 #!/bin/sh
-# Generate images from a review DXXXX number:
-# 2 images using the TESTING (current with minimum patches applied)
-# one without the DXXX patchs and another with the patch
+#
+# BSDRP review image generation script
+# Builds comparison images for FreeBSD Phabricator reviews
+#
+# Purpose:
+#   Creates two TESTING project images for patch comparison:
+#   1. Reference image without the review patch
+#   2. Patched image with the review applied
+#
+# Workflow:
+#   - Downloads patch from FreeBSD Phabricator review system
+#   - Builds baseline image from current sources
+#   - Applies patch and builds modified image
+#   - Stores both images for testing and comparison
+#
+# Arguments:
+#   -r REVIEW-ID: FreeBSD Phabricator review identifier (e.g., D12345)
+#
+# Returns: 0 on success, exits on build failure
 
 set -eu
 REVIEW=""
@@ -10,6 +26,9 @@ REVIEW=""
 # Check for unwanted patches (git status | remove?)
 # make directory and build reference and patched images
 
+# Display usage information and command line help
+# Arguments: none
+# Returns: exits with code 0
 usage () {
 	echo "Usage: $0 -r REVIEW-ID"
 	exit 0

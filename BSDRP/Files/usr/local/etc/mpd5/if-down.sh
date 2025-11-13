@@ -1,9 +1,20 @@
 #!/bin/sh
-#Example of if-down.sh script to be used with mpd5
-#mpd5 call script with options:
-#interface proto local-ip remote-ip authname peer-address
-#example:
-#command "/urs/local/etc/mpd5/if-down.sh ng0 inet 10.3.23.1/32 10.3.23.10 '-' '10.0.23.2'"
+#
+# MPD5 interface down script for BSDRP
+# Handles IPv4 and IPv6 route removal when PPP interface goes down
+#
+# Called by mpd5 with the following arguments:
+#   $1: interface (e.g., ng0)
+#   $2: protocol (inet/inet6)
+#   $3: local IP address
+#   $4: remote IP address
+#   $5: authentication name
+#   $6: peer address
+#
+# Example:
+#   if-down.sh ng0 inet 10.3.23.1/32 10.3.23.10 '-' '10.0.23.2'
+#
+# Returns: 0 on success, 1 on failure
 logger "$0 called with parameters: $@"
 remote_inet="1.1.1.0/24"
 remote_inet6="2001:db8:1::1 -prefixlen 64"

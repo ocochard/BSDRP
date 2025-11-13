@@ -1,19 +1,34 @@
 #!/bin/sh
-# This script upload images and generate dokuwiki
-# XXX sourceforge downloading speed too slow need to enable mirrors
-# For list of installed software to be include in CHANGES
-# /usr/local/poudriere/data/images/packages.list
-# For list of installed software to be incluled in AUTHORS
-# /usr/local/poudriere/data/images/packages.license.list
+#
+# BSDRP release management script
+# Handles image upload to SourceForge and generates documentation
+#
+# Purpose:
+#   - Uploads BSDRP images to SourceForge file hosting
+#   - Generates DokuWiki-formatted download tables
+#   - Manages release artifacts and checksums
+#
+# Dependencies:
+#   - Package lists from poudriere: packages.list, packages.license.list
+#   - BSDRP version from BSDRP/Files/etc/version
+#   - SCP access to SourceForge project
+#
+# Note: SourceForge download mirrors may have slow propagation
 
 set -eu
-# A usefull function (from: http://code.google.com/p/sh-die/)
+# Error handling function - prints error message and exits
+# Arguments:
+#   $@: Error message to display
+# Returns: exits with code 1
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # General variables
 : ${DRY:=""}
 poudriere_imgdir="/usr/local/poudriere/data/images"
 
+# Display usage information and available commands
+# Arguments: none
+# Returns: exits with code 0
 usage () {
 	echo "$0 [ upload | dokuwiki ]"
 	echo " - upload: Upload all images to SourceForge"
@@ -21,6 +36,11 @@ usage () {
 	exit 0
 }
 
+# Upload BSDRP images and changelog to SourceForge
+# Arguments:
+#   $1: Version string (e.g., 2.0, nightly/2012-09-05)
+#   $2: Architecture (amd64, aarch64, etc.)
+# Returns: exits with code 0
 upload(){
   local ver=$1
   local arch=$2
@@ -30,6 +50,11 @@ upload(){
 	exit 0
 }
 
+# Generate DokuWiki-formatted download table for website
+# Arguments:
+#   $1: Version string for SourceForge URL path
+#   $2: Architecture (currently unused, iterates all architectures)
+# Returns: exits with code 0, outputs wiki markup to stdout
 dokuwiki(){
 	local ver=$1
   local arch=$2
