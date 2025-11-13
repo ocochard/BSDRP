@@ -196,54 +196,77 @@ save_cfg () {
 	# Looking for all regular files, symlinks AND directory in /etc
 	# symlinks can be created into /usr/local/etc/rc.d as example (multipe openvpn)
 	# directory because user can create empty directory and new one need to use
+	# Handle filenames with spaces by setting IFS to newline only
+	old_IFS="$IFS"
+	IFS='
+'
 	for i in "$@" $(find * \( -type d -o -type f -o -type l \) ! -path "cron/tabs"); do
-		if [ -d /etc/$i ] ; then
+		IFS="$old_IFS"
+		if [ -d "/etc/$i" ] ; then
 			# Does this directory exist in reference configuration ?
-			if ! [ -d /conf/base/etc/$i ]; then
+			if ! [ -d "/conf/base/etc/$i" ]; then
 				# Does this directory already saved ?
-				if ! [ -d /cfg/$i ]; then
+				if ! [ -d "/cfg/$i" ]; then
 					# Need to give full parent path dir to tar for preserving owner
 					dir=""
 					full=""
-					for c in $(echo $i | tr "/" " "); do
-						[ -z "${dir}" ] && dir=$c || dir="${dir}/${c}"
-						full="$full $dir"
+					for c in $(echo "$i" | tr "/" " "); do
+						[ -z "${dir}" ] && dir="$c" || dir="${dir}/${c}"
+						full="$full \"$dir\""
 					done
-					tar cf - ${full} -C /etc | tar xf - -C /cfg
+					eval "tar cf - ${full} -C /etc | tar xf - -C /cfg"
 				fi
 			fi
-		elif [ -f /cfg/$i -o -h /cfg/$i ]; then
+		elif [ -f "/cfg/$i" -o -h "/cfg/$i" ]; then
 			# If this file/symlink was previously saved, compare the saved-version (/cfg) and the running-version (/etc)
 			# Instruct cmp to not follow symbolic links, because some software (like freeradius)
 			# install symlink to /dev/random
-			if ! cmp -hs /etc/$i /cfg/$i || [ $(stat -f "%p%g%u" /etc/$i) != $(stat -f "%p%g%u" /cfg/$i) ]; then
-				cp -pfv /etc/$i /cfg/$i 2>/dev/null || echo "ERROR: failed to backup /etc/$i"
+			if ! cmp -hs "/etc/$i" "/cfg/$i" || [ $(stat -f "%p%g%u" "/etc/$i") != $(stat -f "%p%g%u" "/cfg/$i") ]; then
+				cp -pfv "/etc/$i" "/cfg/$i" 2>/dev/null || echo "ERROR: failed to backup /etc/$i"
 			fi
 		else
 			# If this file was not previously saved, compare the running-version (/etc) and
 			# the default-version (/conf/base/etc)
-			if ! cmp -hs /conf/base/etc/$i /etc/$i || [ $(stat -f "%p%g%u" /conf/base/etc/$i) != $(stat -f "%p%g%u" /etc/$i) ]; then
+			if ! cmp -hs "/conf/base/etc/$i" "/etc/$i" || [ $(stat -f "%p%g%u" "/conf/base/etc/$i") != $(stat -f "%p%g%u" "/etc/$i") ]; then
 				# tar can preserve full parent path owners only if list of full path is given
 				# As example for file1 in etc/dir1/dir2/file1 we need to backup
 				#  etc/dir1 etc/dir1/dir2 etc/dir1/dir2/file1
-				dir=""
-				full=""
-				for c in $(echo $i | tr "/" " "); do
-					[ -z "${dir}" ] && dir=$c || dir="${dir}/${c}"
-					full="$full $dir"
-				done
-				tar cf - ${full} -C /etc | tar xf - -C /cfg
+				# Handle parent directory creation for tar
+				case "$i" in
+					*/*)
+						# File with path - need to create parent directories
+						tmp_list=$(mktemp) || die "Can't create temporary file"
+						dir=""
+						for c in $(echo "$i" | tr "/" " "); do
+							[ -z "${dir}" ] && dir="$c" || dir="${dir}/${c}"
+							echo "$dir" >> "$tmp_list"
+						done
+						tar cf - -T "$tmp_list" -C /etc | tar xf - -C /cfg
+						rm -f "$tmp_list"
+						;;
+					*)
+						# Simple filename - just copy directly
+						tar cf - "$i" -C /etc | tar xf - -C /cfg
+						;;
+				esac
 			fi
 		fi
 	done
+	IFS="$old_IFS"
 	)
 
 	# Deleting file, symlink or directory in /cfg that are no more in /etc
 	(
 	cd /cfg
+	# Handle filenames with spaces by setting IFS to newline only
+	old_IFS="$IFS"
+	IFS='
+'
 	for i in "$@" $(find * \( -type d -o -type l -o -type f \)); do
-		[ -e /etc/$i ] || rm -rf /cfg/$i
+		IFS="$old_IFS"
+		[ -e "/etc/$i" ] || rm -rf "/cfg/$i"
 	done
+	IFS="$old_IFS"
 	)
 	if [ -n "${name}" ]; then
 		archive_cfg "${name}" || echo "WARNING: Can't archive"
@@ -299,19 +322,25 @@ diff () {
 	fi
 	(
 	cd /etc
+	# Handle filenames with spaces by setting IFS to newline only
+	old_IFS="$IFS"
+	IFS='
+'
 	for i in "$@" $(find * -type f); do
-		if [ -f ${REFERENCE}/$i ]; then
-			if ! cmp -hs /etc/$i ${REFERENCE}/$i; then
+		IFS="$old_IFS"
+		if [ -f "${REFERENCE}/$i" ]; then
+			if ! cmp -hs "/etc/$i" "${REFERENCE}/$i"; then
 				echo "1" > /tmp/DIFF_FOUND
-				[ ! "$SECOND_OPTION" = "quiet" ] && find $i -print || break
+				[ ! "$SECOND_OPTION" = "quiet" ] && find "$i" -print || break
 			fi
 		elif [ ! "$SECOND_OPTION" = "conf/base/etc" ]; then
-			if ! cmp -hs /conf/base/etc/$i /etc/$i; then
+			if ! cmp -hs "/conf/base/etc/$i" "/etc/$i"; then
 				echo "1" > /tmp/DIFF_FOUND
-				[ ! "$SECOND_OPTION" = "quiet" ] && find $i -print || break
+				[ ! "$SECOND_OPTION" = "quiet" ] && find "$i" -print || break
 			fi
 		fi
 	done
+	IFS="$old_IFS"
 	)
 	[ ! "$SECOND_OPTION" = "factory" ] && umount_cfg
 	if [ -f /tmp/DIFF_FOUND ]; then

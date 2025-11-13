@@ -116,12 +116,30 @@ get_forwarding_rate () {
 	# bench should running during 30 seconds minimum
 	PACKETS_TO_SENT=$(( PPS * DURATION ))
 
+
+	# Validate SSH credentials
+	[ -z "${SSH_CREDS:-}" ] && die "ERROR: SSH credentials not provided. Use -D option."
+	case "${SSH_CREDS}" in
+		*[\;\|\&\$\`\(\)]*) die "ERROR: Invalid characters in SSH credentials" ;;
+		*[[:space:]]*@*[[:space:]]*) die "ERROR: Invalid SSH credential format" ;;
+	esac
+
+	# Validate sysctl parameters
+	[ -z "${STATS_RX:-}" ] && die "ERROR: RX stats parameter not provided. Use -R option."
+	[ -z "${STATS_TX:-}" ] && die "ERROR: TX stats parameter not provided. Use -T option."
+	case "${STATS_RX}" in
+		*[\;\|\&\$\`\(\)[:space:]]*) die "ERROR: Invalid characters in RX stats parameter" ;;
+	esac
+	case "${STATS_TX}" in
+		*[\;\|\&\$\`\(\)[:space:]]*) die "ERROR: Invalid characters in TX stats parameter" ;;
+	esac
+
 	# Get initial counters
 
 	SSH_CMD="/usr/bin/ssh -q ${SSH_CREDS}"
 
-	COUNTER_RX_PREV=$(${SSH_CMD} sysctl -n ${STATS_RX})
-	COUNTER_TX_PREV=$(${SSH_CMD} sysctl -n ${STATS_TX})
+	COUNTER_RX_PREV=$(${SSH_CMD} sysctl -n "${STATS_RX}")
+	COUNTER_TX_PREV=$(${SSH_CMD} sysctl -n "${STATS_TX}")
 
 	CMD_TX="pkt-gen -f tx -N ${SCHKSUM} -${AF} -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PACKETS_TO_SENT} \
 -d ${DST_NET} -D ${DMAC} -S ${SMAC} -s ${SRC_NET}"
@@ -133,8 +151,8 @@ get_forwarding_rate () {
 	extract ${TX_FILE}
 
 	# Retreive new counter
-	COUNTER_RX=$(${SSH_CMD} sysctl -n ${STATS_RX})
-	COUNTER_TX=$(${SSH_CMD} sysctl -n ${STATS_TX})
+	COUNTER_RX=$(${SSH_CMD} sysctl -n "${STATS_RX}")
+	COUNTER_TX=$(${SSH_CMD} sysctl -n "${STATS_TX}")
 	COUNTER_RX=$(( COUNTER_RX - COUNTER_RX_PREV ))
 	COUNTER_TX=$(( COUNTER_TX - COUNTER_TX_PREV ))
 

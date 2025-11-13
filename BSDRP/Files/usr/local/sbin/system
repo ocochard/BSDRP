@@ -174,18 +174,17 @@ integrity () {
 	echo "./var" >> /tmp/mtree-exclude
 	echo "./tmp" >> /tmp/mtree-exclude
 	echo "./dev" >> /tmp/mtree-exclude
+	echo "Here is the modified files comparing to the reference mtree file:"
 	if echo "${FILE_TYPE}" | grep -qi "ASCII text"; then
-		cmd="mtree -f ${SECOND_OPTION} -X /tmp/mtree-exclude -p /"
+		mtree -f "${SECOND_OPTION}" -X /tmp/mtree-exclude -p /
 	elif echo "${FILE_TYPE}" | grep -qi bzip; then
 		# Warning, the bzipped file can be any type of file!
-		cmd="bzcat ${SECOND_OPTION} | mtree -X /tmp/mtree-exclude -p /"
+		bzcat "${SECOND_OPTION}" | mtree -X /tmp/mtree-exclude -p /
 	elif echo "${FILE_TYPE}" | grep -qi xz; then
-		cmd="xz -dc ${SECOND_OPTION} | mtree -X /tmp/mtree-exclude -p /"
+		xz -dc "${SECOND_OPTION}" | mtree -X /tmp/mtree-exclude -p /
 	else
 		die "Is the given reference mtree file a good mtree file ?"
 	fi
-	echo "Here is the modified files comparing to the reference mtree file:"
-	eval $cmd
 
 }
 
