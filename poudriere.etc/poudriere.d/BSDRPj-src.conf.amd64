@@ -6,7 +6,6 @@
 	cpuctl \
 	ichwd \
 	ioat \
-	hifn \
 	hyperv \
 	padlock \
 	qat \
