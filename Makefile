@@ -59,17 +59,17 @@
 # - BSD: .include "file"    vs GNU: include file
 # - BSD: VAR != command     vs GNU: VAR := $(shell command)
 ###############################################################################
-# Poudriere configurations files are in poudriere.etc/poudriere.d/
-# - First build a "builder" jail (BSDRPj), which is a reduced FreeBSD but that
-#   still needs to have compilers tools to build packages.
+# Poudriere configuration files are in poudriere.etc/poudriere.d/
+# - First build a "builder" jail (BSDRPj), which is a reduced FreeBSD but
+#   still needs to have compiler tools to build packages.
 #   - List of WITHOUT in BSDRPj-src.conf
 #   - Custom kernel configuration file (amd64 here)
 # - Second, from this builder jail, we generate packages:
 #   - ports list in BSDRP-pkglist
 #   - ports options in BSDRPj-make.conf
 # - Third, generate a nanobsd-like, uefi compliant firmware image
-#   - No need of compiler tools, more WITHOUT_added in image-BSDRPj-src.conf
-#   - But some unwanted files are still here, so adding list of them
+#   - No need for compiler tools, more WITHOUT_ options added in image-BSDRPj-src.conf
+#   - But some unwanted files are still present, so add a list of them
 #     in excluded.files
 #   - Avoid extracting unwanted files from package using a pkg.conf
 #     in BSDRP/Files/usr/local/etc/pkg.conf
@@ -116,7 +116,7 @@ sudo =
 # XXXX But don't need to find the same solution about .OBJDIR (avoiding creating a sub .OBJDIR inside the existing .OBJDIR) ?
 SRC_DIR := ${.PARSEDIR}
 
-# Loading FreeBSD_* and ports_* variables from an external file
+# Load FreeBSD_* and ports_* variables from an external file
 vars_file := ${SRC_DIR}/Makefile.vars
 
 # exists() checks if a file exists
@@ -127,7 +127,7 @@ vars_file := ${SRC_DIR}/Makefile.vars
 .error "Variables file '${vars_file}' not found."
 .endif
 
-# Load existing patches files (used to trigged targets if modified)
+# Load existing patch files (used to trigger targets if modified)
 patches_dir := ${SRC_DIR}/BSDRP/patches
 
 # Use != to run shell commands and capture their output into variables
@@ -458,12 +458,12 @@ help:
 	@echo " clean-packages      - Clean all existing packages"
 	@echo " clean-jail          - Clean existing builder jail and obj dirs"
 	@echo " clean-src           - Clean source trees"
-	@echo "                       Sometimes previous FreeBSD obj tree prevent clean upgrade"
+	@echo "                       Sometimes previous FreeBSD obj tree prevents clean upgrade"
 	@echo " clean-all           - Clean everything"
 	@echo " upstream-sync       - Fetch latest sources (FreeBSD and ports tree)"
-	@echo "                       And update hashes in Makefile.vars"
+	@echo "                       and update hashes in Makefile.vars"
 	@echo " cleanup-src-FreeBSD - Clean FreeBSD sources to re-apply patches"
 	@echo " cleanup-src-ports   - Clean ports sources to re-apply patches"
 	@echo " compress-images     - Compress generated files"
 	@echo " checksum-images     - Compute checksums of generated files"
-	@echo " release             - Build, compress then generate checksums of images"
+	@echo " release             - Build, compress, then generate checksums of images"
