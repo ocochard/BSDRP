@@ -45,7 +45,7 @@ NUMBER_VM="1"
 RAM="1G"
 THREADS=1
 SUDO=sudo
-if [ "${arch}" == "amd64" ]; then
+if [ "${arch}" = "amd64" ]; then
 	UEFI=true
 else
 	UEFI=false
@@ -93,6 +93,37 @@ usage() {
 #   $@: Error message to display
 # Returns: exits with code 1
 die() { echo -n "ERROR: " >&2; echo "$@" >&2; exit 1; }
+
+# Validate that a parameter is a positive integer within optional range
+# Arguments:
+#   $1: Value to validate
+#   $2: Parameter name (for error message)
+#   $3: Minimum value (optional)
+#   $4: Maximum value (optional)
+# Returns: exits with error if validation fails
+validate_number() {
+	local value="$1"
+	local param_name="$2"
+	local min="${3:-}"
+	local max="${4:-}"
+
+	# Check if value is a positive integer
+	case ${value} in
+	''|*[!0-9]*)
+		die "Invalid ${param_name}: must be a positive integer"
+		;;
+	esac
+
+	# Check minimum bound
+	if [ -n "${min}" ] && [ "${value}" -lt "${min}" ]; then
+		die "Invalid ${param_name}: must be >= ${min}"
+	fi
+
+	# Check maximum bound
+	if [ -n "${max}" ] && [ "${value}" -gt "${max}" ]; then
+		die "Invalid ${param_name}: must be <= ${max}"
+	fi
+}
 
 # Check and load required FreeBSD kernel modules for bhyve operation
 # Loads vmm, nmdm, and network tap modules as needed
@@ -269,7 +300,7 @@ run_vm() {
 			VM_FIRSTBOOT_$1=false
 		fi
 		"
-		if [ "${arch}" == "amd64" ]; then
+		if [ "${arch}" = "amd64" ]; then
 			eval VM_LOAD_$1=\"${SUDO} bhyveload -S -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm\${NMDM_ID}A \${VM_NAME}_$1\"
 			eval \${VM_LOAD_$1}
 		fi
@@ -293,13 +324,13 @@ run_vm() {
 		# PCI last:0 ptnetnetmap-memdev (if PTNET&VALE enabled)
 		#   Note: It's not possible to have "hole" in PCI assignement
 		VM_COMMON="${SUDO} bhyve -c cpus=${NCPUS},cores=${CORES},threads=${THREADS} -S -m ${RAM} -s 0:0,hostbridge"
-		if [ "${arch}" == "amd64" ]; then
+		if [ "${arch}" = "amd64" ]; then
       VM_COMMON="${VM_COMMON} -A -H -P -s 0:1,lpc"
       if [ ${UEFI} = true ]; then
 			  VM_BOOT="-l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
       fi
 			eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\${NMDM_ID}A\"
-		elif [ "${arch}" == "aarch64" ]; then
+		elif [ "${arch}" = "aarch64" ]; then
 			VM_COMMON="${VM_COMMON} -o bootrom=/usr/local/share/u-boot/u-boot-bhyve-arm64/u-boot.bin"
 			eval VM_CONSOLE_$1=\"-o console=/dev/nmdm\${NMDM_ID}A\"
 		fi
@@ -398,7 +429,7 @@ while getopts "aBc:dghD:ei:l:m:n:qt:svVw:A:S:" FLAG; do
 	d)
 		erase_all_vm
 		destroy_all_if
-		return 0
+		exit 0
 		;;
 	D)
 		DISK_CTRL="$OPTARG"
@@ -429,7 +460,7 @@ while getopts "aBc:dghD:ei:l:m:n:qt:svVw:A:S:" FLAG; do
 		;;
 	s)
 		stop_all_vm
-		return 0
+		exit 0
 		;;
 	S)
 		ADD_DISKS_SIZE="$OPTARG"
@@ -445,7 +476,7 @@ while getopts "aBc:dghD:ei:l:m:n:qt:svVw:A:S:" FLAG; do
 		;;
 	w)
 		WRK_DIR="$OPTARG"
-		[ -d "${WRK_DIR} ]" || usage "ERROR: Working directory not found"
+		[ -d "${WRK_DIR}" ] || usage "ERROR: Working directory not found"
 		VM_TEMPLATE="${WRK_DIR}/vm_template"
 		;;
 	*)
@@ -460,6 +491,13 @@ shift $((OPTIND-1))
 # Check user input
 [ ! -f "${VM_TEMPLATE}" ] && [ -z "${FILE}" ] && usage "ERROR: No previous template \
 	neither image filename given"
+
+# Validate numeric parameters
+validate_number "${NUMBER_VM}" "number of VMs (-n)" 1 255
+validate_number "${LAN}" "number of LANs (-l)" 0 255
+validate_number "${CORES}" "number of cores (-c)" 1
+validate_number "${THREADS}" "number of threads (-t)" 1
+validate_number "${ADD_DISKS_NUMBER}" "number of additional disks (-A)" 0
 # If default number of VM and LAN, then create at least one LAN
 [ ${NUMBER_VM} -eq 1 ] && [ ${LAN} -eq 0 ] && LAN=1
 
@@ -597,7 +635,7 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 	while [ $j -le $LAN ]; do
 		# Need to manage correct mac address
 		[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
-		[ $j -le 9 ] && MAC_J="0$i" || MAC_J="$i"
+		[ $j -le 9 ] && MAC_J="0$j" || MAC_J="$j"
 		case ${VNIC} in
 		virtio-net)
 			echo -n "- vtnet"
@@ -646,7 +684,7 @@ done # Main loop: while [ $i -le $NUMBER_VM ]
 i=1
 # Enter tips main loop for each VM
 if ( ${VERBOSE} ); then
-	( $VNC ) && echo "VM's VNC server TCP port: 590$i"
+	( $VNC ) && echo "VM's VNC server TCP ports: 5901-590${NUMBER_VM}"
 	echo "To connect VM'serial console, you can use:"
 	# run_vm was started in background
 	# Then need to wait ${TMPCONSOLE} is full
