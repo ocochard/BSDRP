@@ -310,7 +310,8 @@ apply_cfg () {
 diff () {
 	# Don't know how to exchange variable with the subshell
 	# Then using a file in /tmp
-	[ -f /tmp/DIFF_FOUND ] && rm /tmp/DIFF_FOUND
+	DIFF_FOUND="/tmp/DIFF_FOUND"
+	[ -f "$DIFF_FOUND" ] && rm "$DIFF_FOUND"
 	[ -z "$SECOND_OPTION" ] && \
 		echo "Looking for differences between running and saved configuration files..."
 	if [ "$SECOND_OPTION" = "factory" ]; then

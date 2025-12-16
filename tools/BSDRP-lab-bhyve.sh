@@ -66,6 +66,69 @@ readonly VNC_BASE_PORT=5900              # Base TCP port for VNC servers
 readonly DEBUG_BASE_PORT=9000            # Base TCP port for remote kgdb
 readonly MAX_VMS=255                     # Maximum number of VMs supported
 
+### PCI Address Allocation Scheme ###
+#
+# bhyve VMs use PCI devices for all virtual hardware. The script assigns
+# PCI addresses dynamically based on the number and type of devices.
+#
+# Fixed PCI Assignments:
+#   Bus 0, Slot 0: hostbridge (required for all VMs)
+#   Bus 0, Slot 1: LPC bridge for serial console (amd64 only)
+#   Bus 1, Slot 0: Primary disk controller (virtio-blk/ahci-hd/nvme)
+#   Bus 1, Slot 1+: Additional disk controllers (if -A option used)
+#   Slot 29:       Framebuffer device for VNC (if -v option used)
+#
+# Dynamic NIC Assignments:
+#   NICs are assigned starting from Bus 2, Slot 0
+#   With 8 slots per bus, addressing is:
+#     NIC 0-7:   Bus 2, Slots 0-7
+#     NIC 8-15:  Bus 3, Slots 0-7
+#     NIC 16-23: Bus 4, Slots 0-7
+#     etc.
+#
+# Formula: For NIC number N:
+#   PCI_BUS  = (N / 8) + 2
+#   PCI_SLOT = N % 8
+#
+# Example: VM with 3 meshed connections + 2 LANs = 5 NICs total
+#   NIC 0: Bus 2, Slot 0 (mesh to VM 2)
+#   NIC 1: Bus 2, Slot 1 (mesh to VM 3)
+#   NIC 2: Bus 2, Slot 2 (mesh to VM 4)
+#   NIC 3: Bus 2, Slot 3 (LAN 1)
+#   NIC 4: Bus 2, Slot 4 (LAN 2)
+
+### MAC Address Format ###
+#
+# All VMs use locally administered MAC addresses with a common prefix
+# to avoid conflicts with physical hardware.
+#
+# MAC Address Format: 58:9c:fc:XX:YY:ZZ
+#
+# Prefix: 58:9c:fc (bit 1 of first octet = 1, marking locally administered)
+#
+# For Mesh Network Links (point-to-point between two VMs):
+#   XX = Lower VM number (zero-padded to 2 digits)
+#   YY = Higher VM number (zero-padded to 2 digits)
+#   ZZ = Current VM number (zero-padded to 2 digits)
+#
+#   Example: Link between VM 1 and VM 3
+#     VM 1 interface: 58:9c:fc:01:03:01
+#     VM 3 interface: 58:9c:fc:01:03:03
+#
+# For LAN Links (shared broadcast domain):
+#   XX = LAN number (zero-padded to 2 digits)
+#   YY = 00 (fixed, identifies LAN vs mesh)
+#   ZZ = Current VM number (zero-padded to 2 digits)
+#
+#   Example: VM 5 connected to LAN 2
+#     VM 5 interface: 58:9c:fc:02:00:05
+#
+# This scheme ensures:
+#   - All MAC addresses are unique
+#   - Mesh link partners can be identified from MAC
+#   - LAN membership can be identified from MAC
+#   - No conflicts across up to 255 VMs and 255 LANs
+
 usage() {
 	# $1: Cause of displaying usage
 	[ $# -eq 1 ] && echo $1
@@ -354,101 +417,166 @@ get_free_nmdm () {
 	echo "-BSDRP.$i"
 }
 
+# Load FreeBSD bootloader for amd64 architecture
+# Arguments:
+#   $1: VM number
+#   $2: NMDM device ID
+# Returns: 0 on success
+# Note: Only needed for amd64 BIOS mode; UEFI and ARM64 use firmware
+load_vm_bootloader() {
+	local vm_num=$1
+	local nmdm_id=$2
+
+	if [ "${arch}" = "amd64" ]; then
+		${SUDO} bhyveload -S -m ${RAM} \
+			-d ${WRK_DIR}/${VM_NAME}_${vm_num} \
+			-c /dev/nmdm${nmdm_id}A \
+			${VM_NAME}_${vm_num}
+	fi
+}
+
+# Build console arguments for bhyve based on architecture
+# Arguments:
+#   $1: VM number
+#   $2: NMDM device ID
+# Returns: console argument string via echo
+build_vm_console_args() {
+	local vm_num=$1
+	local nmdm_id=$2
+
+	if [ "${arch}" = "amd64" ]; then
+		echo "-l com1,/dev/nmdm${nmdm_id}A"
+	elif [ "${arch}" = "aarch64" ]; then
+		echo "-o console=/dev/nmdm${nmdm_id}A"
+	fi
+}
+
+# Build disk arguments for bhyve (primary + additional disks)
+# Arguments:
+#   $1: VM number
+# Returns: disk argument string via echo
+build_vm_disk_args() {
+	local vm_num=$1
+	local disk_args="-s 1:0,${DISK_CTRL},${WRK_DIR}/${VM_NAME}_${vm_num}"
+
+	# Add additional disks if configured
+	if [ ${ADD_DISKS_NUMBER} -gt 0 ]; then
+		local i
+		for i in $(jot ${ADD_DISKS_NUMBER}); do
+			# Create disk file if it doesn't exist
+			if ! [ -f ${WRK_DIR}/${VM_NAME}_${vm_num}_add_${i} ]; then
+				truncate -S ${ADD_DISKS_SIZE} ${WRK_DIR}/${VM_NAME}_${vm_num}_add_${i}
+			fi
+			disk_args="${disk_args} -s 1:${i},ahci-hd,${WRK_DIR}/${VM_NAME}_${vm_num}_add_${i}"
+		done
+	fi
+
+	echo "${disk_args}"
+}
+
+# Build debug arguments for bhyve (remote gdb support)
+# Arguments:
+#   $1: VM number
+# Returns: debug argument string via echo (empty if debug disabled)
+build_vm_debug_args() {
+	local vm_num=$1
+
+	if [ "${DEBUG}" = "true" ]; then
+		local debug_port=$(( DEBUG_BASE_PORT + vm_num ))
+		echo "-g ${debug_port}"
+	else
+		echo ""
+	fi
+}
+
+# Build VNC framebuffer arguments for bhyve
+# Arguments:
+#   $1: VM number
+# Returns: VNC argument string via echo (empty if VNC disabled)
+build_vm_vnc_args() {
+	local vm_num=$1
+
+	if [ ${VNC} = true ]; then
+		local vnc_port=$(( VNC_BASE_PORT + vm_num ))
+		echo "-s 29,fbuf,tcp=0.0.0.0:${vnc_port},w=800,h=600"
+	else
+		echo ""
+	fi
+}
+
 # Start a bhyve virtual machine with networking and console setup
 # Arguments:
 #   $1: VM number identifier
 # Returns: continues in infinite loop for VM reboots
 run_vm() {
-	# Destroy previous if already exist
+	local vm_num=$1
+	local firstboot=true
+	local nmdm_id=""
 
-	# Need an infinite loop: This permit to do a reboot initated from the VM
-	eval VM_FIRSTBOOT_$1=true
-	while [ true ]; do
-		# load a FreeBSD guest inside a bhyve virtual machine
-		# BUT: If it's a reboot, DO NOT ask for a new NMDM_ID!
-		eval "
-		if (\${VM_FIRSTBOOT_$1}); then
-			NMDM_ID=\$(get_free_nmdm \$1)
-			VM_FIRSTBOOT_$1=false
+	# Infinite loop to support VM reboots initiated from within the guest
+	while true; do
+		# On first boot only, allocate a unique nmdm device for console
+		# Reuse the same device on subsequent reboots
+		if [ "${firstboot}" = "true" ]; then
+			nmdm_id=$(get_free_nmdm ${vm_num})
+			firstboot=false
 		fi
-		"
+
+		# Load bootloader (amd64 BIOS mode only)
+		load_vm_bootloader ${vm_num} "${nmdm_id}"
+
+		# Build base bhyve command with CPU/RAM configuration
+		# bhyve options:
+		#   -c: CPU topology (cores, threads)
+		#   -S: Wire guest memory (prevent swapping)
+		#   -m: RAM size
+		#   -A: Generate ACPI tables (amd64 only)
+		#   -H: Yield CPU on HLT instruction (power saving)
+		#   -P: Pin vCPUs to host CPUs (performance)
+		local vm_cmd="${SUDO} bhyve -c cpus=${NCPUS},cores=${CORES},threads=${THREADS} -S -m ${RAM} -s 0:0,hostbridge"
+
+		# Add architecture-specific options
+		local vm_boot=""
 		if [ "${arch}" = "amd64" ]; then
-			eval VM_LOAD_$1=\"${SUDO} bhyveload -S -m \${RAM} -d \${WRK_DIR}/\${VM_NAME}_$1 -c /dev/nmdm\${NMDM_ID}A \${VM_NAME}_$1\"
-			eval \${VM_LOAD_$1}
-		fi
-		# c: Number of guest virtual CPUs
-		# m: RAM
-		# l: bootrom
-		# A: Generate ACPI tables.  Required for FreeBSD/amd64 guests only
-		# I: Allow devices behind the LPC PCI-ISA bridge to be configured.
-		#     The only supported devices are the TTY-class devices, com1
-		#     and com2.
-		# H: Yield the virtual CPU thread when a HLT instruction is detected.
-		#    If this option is not specified, virtual CPUs will use 100% of a
-		#    host CPU
-		# P: Force guest virtual CPUs to be pinned to host CPUs
-		# s: Configure a virtual PCI slot and function.
-		# S: Configure legacy ISA slot and function
-		# PCI 0:0 hostbridge
-		# PCI 0:1 lpc (serial), x86 only
-		# PCI 1:0 Hard drive
-		# PCI 2:0 and next: Network NIC
-		# PCI last:0 ptnetnetmap-memdev (if PTNET&VALE enabled)
-		#   Note: It's not possible to have "hole" in PCI assignement
-		VM_COMMON="${SUDO} bhyve -c cpus=${NCPUS},cores=${CORES},threads=${THREADS} -S -m ${RAM} -s 0:0,hostbridge"
-		if [ "${arch}" = "amd64" ]; then
-      VM_COMMON="${VM_COMMON} -A -H -P -s 0:1,lpc"
-      if [ ${UEFI} = true ]; then
-			  VM_BOOT="-l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
-      fi
-			eval VM_CONSOLE_$1=\"-l com1,/dev/nmdm\${NMDM_ID}A\"
+			vm_cmd="${vm_cmd} -A -H -P -s 0:1,lpc"
+			# Use UEFI firmware if enabled, otherwise BIOS (bhyveload above)
+			if [ ${UEFI} = true ]; then
+				vm_boot="-l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
+			fi
 		elif [ "${arch}" = "aarch64" ]; then
-			VM_COMMON="${VM_COMMON} -o bootrom=/usr/local/share/u-boot/u-boot-bhyve-arm64/u-boot.bin"
-			eval VM_CONSOLE_$1=\"-o console=/dev/nmdm\${NMDM_ID}A\"
-		fi
-		VM_BOOT=""
-		VM_VNC=""
-		# XXX Need to check if TCP port available
-    if [ ${VNC} = true ]; then
-		  VNC_PORT=$(( VNC_BASE_PORT + $1 ))
-		  VM_VNC="-s 29,fbuf,tcp=0.0.0.0:${VNC_PORT},w=800,h=600"
-    fi
-		eval VM_DISK_$1=\"-s 1:0,\${DISK_CTRL},\${WRK_DIR}/\${VM_NAME}_$1\"
-		if [ ${ADD_DISKS_NUMBER} -gt 0 ]; then
-			for i in $(jot ${ADD_DISKS_NUMBER}); do
-				if ! [ -f ${WRK_DIR}/${VM_NAME}_$1_add_$i ]; then
-					truncate -S ${ADD_DISKS_SIZE} ${WRK_DIR}/${VM_NAME}_$1_add_$i
-				fi
-				eval VM_DISK_$1=\"\${VM_DISK_$1} -s 1:$i,ahci-hd,\${WRK_DIR}/\${VM_NAME}_$1_add_$i\"
-			done
+			vm_cmd="${vm_cmd} -o bootrom=/usr/local/share/u-boot/u-boot-bhyve-arm64/u-boot.bin"
 		fi
 
-		if(${DEBUG}); then
-			DEBUG_PORT=$(( DEBUG_BASE_PORT + $1 ))
-			eval VM_DEBUG_$1=\"-g \${DEBUG_PORT}\"
-		else
-			eval VM_DEBUG_$1=\"\"
-		fi
-		# Store VM_$1_VMDM data for displaying it later
-		echo "- VM $1 : ${SUDO} cu -l /dev/nmdm${NMDM_ID}B" >> ${TMPCONSOLE}
+		# Build component argument strings using helper functions
+		local vm_console=$(build_vm_console_args ${vm_num} "${nmdm_id}")
+		local vm_disk=$(build_vm_disk_args ${vm_num})
+		local vm_debug=$(build_vm_debug_args ${vm_num})
+		local vm_vnc=$(build_vm_vnc_args ${vm_num})
 
-		# Check bhyve exit code, and if error: exit the infinite loop
-		# 0  rebooted
-		# 1  powered off
-		# 2  halted
-		# 3  triple fault
-		# 4  exited due to an error
+		# Get network configuration from dynamic variable VM_NET_$vm_num
+		# This must use eval because each VM (running in parallel) has its own
+		# network configuration built in the main loop
+		local vm_net=""
+		eval "vm_net=\"\${VM_NET_${vm_num}}\""
 
+		# Store console connection command for user display
+		echo "- VM ${vm_num} : ${SUDO} cu -l /dev/nmdm${nmdm_id}B" >> ${TMPCONSOLE}
+
+		# Execute bhyve with all configured options
+		# Exit codes: 0=reboot, 1=poweroff, 2=halt, 3=triple-fault, 4=error
 		set +e
-		eval \${VM_COMMON} \${VM_BOOT} \${VM_VNC} \${VM_NET_$1} \${VM_DISK_$1} \${VM_CONSOLE_$1} \${VM_DEBUG_$1} ${VM_NAME}_$1
-		if [ $? -ne 0 ]; then
-			# Not a reboot, stop
+		${vm_cmd} ${vm_boot} ${vm_vnc} ${vm_net} ${vm_disk} ${vm_console} ${vm_debug} ${VM_NAME}_${vm_num}
+		local exit_code=$?
+		set -e
+
+		# Break loop if VM powered off or encountered error (not a reboot)
+		if [ ${exit_code} -ne 0 ]; then
 			break
 		fi
-		set -e
 	done
-	set -e
-	destroy_vm ${VM_NAME}_$1
+
+	# Cleanup VM resources
+	destroy_vm ${VM_NAME}_${vm_num}
 }
 
 create_interface() {
@@ -624,7 +752,9 @@ while [ $i -le $NUMBER_VM ]; do
 	#   OR it didn't already exists
 	# TO DO: Need to use UFS or ZFS snapshot in place of copying the full disk
 	[ ! -f ${WRK_DIR}/${VM_NAME}_$i -o -n "${FILE}" ] && cp ${VM_TEMPLATE} ${WRK_DIR}/${VM_NAME}_$i
-	# Network_config
+	# === Network Configuration ===
+	# Build bhyve NIC arguments for this VM
+	# Each VM gets assigned NIC_NUMBER sequential NICs (mesh + LAN)
 	NIC_NUMBER=0
     if ( ${VERBOSE} ); then
 		if ( ${DEBUG} ); then
@@ -635,18 +765,22 @@ while [ $i -le $NUMBER_VM ]; do
 		fi
 	fi
 
-	# Entering the Meshed NIC loop NIC loop
-	# Now generate X (X-1)/2 full meshed link
-	# if we have 3 VMs:
+	# === Mesh Network Topology ===
+	# Generate full mesh: each VM connects point-to-point to every other VM
+	# For N VMs, creates N*(N-1)/2 total links
+	#
+	# Example with 3 VMs:
 	#        VM1                            VM2
-	#    (TUN-BR1-2_1) -- BRIDGE1-2 -- (TUN-BR1-2_2)
-	#    (TUN-BR1-3_1)                 (TUN-BR2-3_3)
+	#    (TAP1-2_1) ---- BRIDGE1-2 ---- (TAP1-2_2)
+	#    (TAP1-3_1)                     (TAP2-3_2)
 	#            \                        /
 	#         BRIDGE1-3              BRIDGE2-3
 	#              \                   /
-	#           (TUN-BR1-3_3)   (TUN-BR2-3_3)
+	#           (TAP1-3_3)       (TAP2-3_3)
 	#                        VM3
 	#
+	# Initialize network args string for this VM (using eval for parallel execution)
+	# VM_NET_1, VM_NET_2, etc. are built here and read in run_vm()
 	eval VM_NET_${i}=\"\"
 	if ( ${MESHED} ); then
 		j=1
@@ -657,10 +791,13 @@ while [ $i -le $NUMBER_VM ]; do
 				( ${VERBOSE} ) && echo "${NIC_NUMBER} connected to VM ${j}"
 				# Calculate PCI address for this NIC
 				calculate_pci_address ${NIC_NUMBER}
-				# Format MAC address octets
+				# Format MAC address octets (zero-padded)
 				MAC_I=$(format_mac_octet $i)
 				MAC_J=$(format_mac_octet $j)
-				# We allways use "low number - high number" for identify cables
+
+				# Cable naming: always use "lower-higher" (e.g., link 1-3, not 3-1)
+				# This ensures both VMs on a link reference the same bridge/vale switch
+				# Without this, VM1-VM3 link would create both BRIDGE1-3 and BRIDGE3-1
 				if [ $i -le $j ]; then
 					if (${VALE} ); then
 						SW_CMD="vale${i}${j}:${VM_NAME}_$i"
