@@ -1,10 +1,10 @@
 diff --git sysutils/dtrace-toolkit/Makefile sysutils/dtrace-toolkit/Makefile
-index f741b6fb7434..fe2ba46cfcb0 100644
+index 156c31a4068c..8157bfd41122 100644
 --- sysutils/dtrace-toolkit/Makefile
 +++ sysutils/dtrace-toolkit/Makefile
-@@ -10,7 +10,7 @@ WWW=		https://github.com/opendtrace/toolkit
- LICENSE=	CDDL
- LICENSE_FILE=	${WRKSRC}/Docs/cddl1.txt
+@@ -12,7 +12,7 @@ LICENSE_FILE=	${WRKSRC}/Docs/cddl1.txt
+ 
+ RUN_DEPENDS=	ksh93:shells/ksh
  
 -USES=		perl5 python ruby shebangfix
 +USES=		perl5 python shebangfix
