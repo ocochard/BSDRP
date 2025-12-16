@@ -58,6 +58,14 @@ VNC=false
 WRK_DIR="${HOME}/BSDRP-VMs"
 VM_TEMPLATE=${WRK_DIR}/vm_template
 
+### Constants ###
+readonly MAC_PREFIX="58:9c:fc"           # MAC address prefix (locally administered)
+readonly PCI_BUS_OFFSET=2                # Buses 0-1 reserved for hostbridge/lpc
+readonly PCI_SLOTS_PER_BUS=8             # Number of PCI slots per bus
+readonly VNC_BASE_PORT=5900              # Base TCP port for VNC servers
+readonly DEBUG_BASE_PORT=9000            # Base TCP port for remote kgdb
+readonly MAX_VMS=255                     # Maximum number of VMs supported
+
 usage() {
 	# $1: Cause of displaying usage
 	[ $# -eq 1 ] && echo $1
@@ -123,6 +131,70 @@ validate_number() {
 	if [ -n "${max}" ] && [ "${value}" -gt "${max}" ]; then
 		die "Invalid ${param_name}: must be <= ${max}"
 	fi
+}
+
+# Calculate PCI bus and slot from NIC number
+# Arguments:
+#   $1: NIC number (0-based)
+# Outputs: Sets PCI_BUS and PCI_SLOT global variables
+# Note: PCI buses 0-1 are reserved for hostbridge and LPC
+calculate_pci_address() {
+	local nic_num=$1
+	PCI_BUS=$(( nic_num / PCI_SLOTS_PER_BUS + PCI_BUS_OFFSET ))
+	PCI_SLOT=$(( nic_num % PCI_SLOTS_PER_BUS ))
+}
+
+# Format number as zero-padded 2-digit string for MAC address
+# Arguments:
+#   $1: Number to format (0-255)
+# Returns: Zero-padded string via echo
+format_mac_octet() {
+	[ $1 -le 9 ] && echo "0$1" || echo "$1"
+}
+
+# Get driver name for NIC type and optionally display it
+# Arguments:
+#   $1: VNIC type (virtio-net|e1000|ptnet)
+#   $2: If "display", prints the driver name prefix (optional)
+# Returns: Driver name via echo
+get_nic_driver() {
+	local vnic_type=$1
+	local display_mode="${2:-}"
+	local driver=""
+
+	case ${vnic_type} in
+	virtio-net)
+		driver="vtnet"
+		;;
+	e1000)
+		driver="em"
+		;;
+	ptnet)
+		driver="ptnet"
+		;;
+	*)
+		driver="unknown"
+		;;
+	esac
+
+	if [ "${display_mode}" = "display" ]; then
+		echo -n "- ${driver}"
+	else
+		echo "${driver}"
+	fi
+}
+
+# Cleanup function - removes temporary files
+# Called automatically on exit, interrupt, or termination
+# Arguments: none
+# Returns: exits with stored exit code
+cleanup_on_exit() {
+	local exit_code=$?
+	# Clean up temporary files if they exist
+	[ -n "${TMPFILE:-}" ] && [ -f "${TMPFILE}" ] && rm -f "${TMPFILE}"
+	[ -n "${TMPCONSOLE:-}" ] && [ -f "${TMPCONSOLE}" ] && rm -f "${TMPCONSOLE}"
+	# Note: We don't destroy VMs on exit as they may be intentionally running
+	exit ${exit_code}
 }
 
 # Check and load required FreeBSD kernel modules for bhyve operation
@@ -338,7 +410,8 @@ run_vm() {
 		VM_VNC=""
 		# XXX Need to check if TCP port available
     if [ ${VNC} = true ]; then
-		  VM_VNC="-s 29,fbuf,tcp=0.0.0.0:590$1,w=800,h=600"
+		  VNC_PORT=$(( VNC_BASE_PORT + $1 ))
+		  VM_VNC="-s 29,fbuf,tcp=0.0.0.0:${VNC_PORT},w=800,h=600"
     fi
 		eval VM_DISK_$1=\"-s 1:0,\${DISK_CTRL},\${WRK_DIR}/\${VM_NAME}_$1\"
 		if [ ${ADD_DISKS_NUMBER} -gt 0 ]; then
@@ -351,7 +424,8 @@ run_vm() {
 		fi
 
 		if(${DEBUG}); then
-			eval VM_DEBUG_$1=\"-g 900$1\"
+			DEBUG_PORT=$(( DEBUG_BASE_PORT + $1 ))
+			eval VM_DEBUG_$1=\"-g \${DEBUG_PORT}\"
 		else
 			eval VM_DEBUG_$1=\"\"
 		fi
@@ -404,6 +478,9 @@ create_interface() {
 }
 
 #### Main ####
+
+# Install cleanup handler for temporary files
+trap cleanup_on_exit EXIT INT TERM
 
 [ $# -lt 1 ] && ! [ -f ${VM_TEMPLATE} ] && usage "ERROR: No argument given and no previous template to run"
 if [ $(id -u) -ne 0 ]; then
@@ -551,7 +628,8 @@ while [ $i -le $NUMBER_VM ]; do
 	NIC_NUMBER=0
     if ( ${VERBOSE} ); then
 		if ( ${DEBUG} ); then
-			echo "VM $i (debugger port: 900$i) has the following NIC:"
+			DEBUG_PORT=$(( DEBUG_BASE_PORT + i ))
+			echo "VM $i (debugger port: ${DEBUG_PORT}) has the following NIC:"
 		else
 			echo "VM $i has the following NIC:"
 		fi
@@ -575,28 +653,13 @@ while [ $i -le $NUMBER_VM ]; do
 		while [ $j -le $NUMBER_VM ]; do
 			# Skip if i = j
 			if [ $i -ne $j ]; then
-				case ${VNIC} in
-				virtio-net)
-					echo -n "- vtnet"
-					;;
-				e1000)
-					echo -n "- em"
-					;;
-				ptnet)
-					echo -n "- ptnet?"
-					;;
-				esac
+				get_nic_driver "${VNIC}" "display"
 				( ${VERBOSE} ) && echo "${NIC_NUMBER} connected to VM ${j}"
-				# PCI_SLOT must be between 0 and 7
-				# Need to increase PCI_BUS number if slot is more than 7
-
-				PCI_BUS=$(( NIC_NUMBER / 8 ))
-				PCI_SLOT=$(( NIC_NUMBER - 8 * PCI_BUS ))
-				# All PCI_BUS before 2 are already used
-				PCI_BUS=$(( PCI_BUS + 2 ))
-				# Need to manage correct mac address
-				[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
-				[ $j -le 9 ] && MAC_J="0$j" || MAC_J="$j"
+				# Calculate PCI address for this NIC
+				calculate_pci_address ${NIC_NUMBER}
+				# Format MAC address octets
+				MAC_I=$(format_mac_octet $i)
+				MAC_J=$(format_mac_octet $j)
 				# We allways use "low number - high number" for identify cables
 				if [ $i -le $j ]; then
 					if (${VALE} ); then
@@ -607,7 +670,7 @@ while [ $i -le $NUMBER_VM ]; do
 						SW_CMD=${TAP_IF}
 					fi
 					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${VNIC},\
-${SW_CMD},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
+${SW_CMD},mac=${MAC_PREFIX}:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
 
 				else
 					if (${VALE} ); then
@@ -618,7 +681,7 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_I}:\${MAC_J}:\${MAC_I}\"
 						SW_CMD=${TAP_IF}
 					fi
 					eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${VNIC},\
-${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
+${SW_CMD},mac=${MAC_PREFIX}:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 				fi
 				NIC_NUMBER=$(( NIC_NUMBER + 1 ))
 			fi
@@ -633,27 +696,13 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 	#    -------LAN_1-------------
 	#
 	while [ $j -le $LAN ]; do
-		# Need to manage correct mac address
-		[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
-		[ $j -le 9 ] && MAC_J="0$j" || MAC_J="$j"
-		case ${VNIC} in
-		virtio-net)
-			echo -n "- vtnet"
-			;;
-		e1000)
-			echo -n "- em"
-			;;
-		ptnet)
-			echo -n "- ptnet?"
-			;;
-		esac
+		# Format MAC address octets
+		MAC_I=$(format_mac_octet $i)
+		MAC_J=$(format_mac_octet $j)
+		get_nic_driver "${VNIC}" "display"
 		( ${VERBOSE} ) && echo "${NIC_NUMBER} connected to LAN number ${j}"
-		# PCI_SLOT must be between 0 and 7
-		# Need to increase PCI_BUS number if slot is more than 7
-		PCI_BUS=$(( NIC_NUMBER / 8 ))
-		PCI_SLOT=$(( NIC_NUMBER - 8 * PCI_BUS ))
-		# All PCI_BUS before 2 are already used
-		PCI_BUS=$(( PCI_BUS + 2 ))
+		# Calculate PCI address for this NIC
+		calculate_pci_address ${NIC_NUMBER}
 		if (${VALE} ); then
 			SW_CMD="vale${j}:${VM_NAME}_$i"
 		else
@@ -662,7 +711,7 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 			SW_CMD=${TAP_IF}
 		fi
 		eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${VNIC},\
-${SW_CMD},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
+${SW_CMD},mac=${MAC_PREFIX}:\${MAC_J}:00:\${MAC_I}\"
         NIC_NUMBER=$(( NIC_NUMBER + 1 ))
         j=$(( j + 1 ))
 	done # while [ $j -le $LAN ]
@@ -684,7 +733,11 @@ done # Main loop: while [ $i -le $NUMBER_VM ]
 i=1
 # Enter tips main loop for each VM
 if ( ${VERBOSE} ); then
-	( $VNC ) && echo "VM's VNC server TCP ports: 5901-590${NUMBER_VM}"
+	if ( $VNC ); then
+		VNC_START=$(( VNC_BASE_PORT + 1 ))
+		VNC_END=$(( VNC_BASE_PORT + NUMBER_VM ))
+		echo "VM's VNC server TCP ports: ${VNC_START}-${VNC_END}"
+	fi
 	echo "To connect VM'serial console, you can use:"
 	# run_vm was started in background
 	# Then need to wait ${TMPCONSOLE} is full
