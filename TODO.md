@@ -1,5 +1,9 @@
 # TODO List
 
+## Automated regression tests ##
+
+Need to enable /etc/rc.d/nuageinit
+
 ## Bugs #
 
 * if non-critical /data had a fsck problem, system refuses to go into single user
