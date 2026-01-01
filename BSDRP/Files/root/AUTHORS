@@ -11,7 +11,7 @@ Listed in order of seniority along with date of first contribution.
 
 BSD Router Project (BSDRP) is based upon/includes various free software, listed below.
 The authors of BSDRP would like to thank the authors of these software for their efforts:
-* FreeBSD: Copyright (c) 1995-2025 The FreeBSD Project. All rights reserved
+* FreeBSD: Copyright (c) 1995-2026 The FreeBSD Project. All rights reserved
 * FreeNAS 8: Lot's of idea regarding the nanobsd tunning, Copyright iXsystems
 * Gitoyen-NanoBSD-Quagga-router : patch to NanoBSD that add ports compiling support
 * Idea of using glabel for disk type absraction: Scott Ullrich (pfSense)
