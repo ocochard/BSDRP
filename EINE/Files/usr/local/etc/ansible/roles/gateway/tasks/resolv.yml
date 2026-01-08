@@ -1,3 +1,0 @@
-- name: copy resolv.conf file
-  action: copy src=/usr/local/etc/ansible/roles/gateway/files/etc/resolv.conf
-    dest=/etc/resolv.conf owner=root group=wheel mode=0644

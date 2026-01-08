@@ -1,7 +1,0 @@
----
-- hosts: vpn_wifi_routers
-  gather_facts: no
-  sudo: yes
-  roles:
-    - vpn_wifi_router
-    - nanobsd

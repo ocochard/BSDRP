@@ -1,4 +1,0 @@
-/var/log/suricata/stats.log root:wheel  640 3   500   *  BX   /var/run/suricata_inline.pid
-/var/log/suricata/fast.log root:wheel  640 3   500   *  BX   /var/run/suricata_inline.pid
-/var/log/suricata/http.log root:wheel  640 3   500   *  BX   /var/run/suricata_inline.pid
-/var/log/suricata/suricata.log root:wheel  640 3   500   *  BX   /var/run/suricata_inline.pid
