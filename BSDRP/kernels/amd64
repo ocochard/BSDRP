@@ -242,6 +242,7 @@ device		axp			# AMD EPYC integrated NIC (requires miibus)
 # PCI Ethernet NICs.
 device		bxe			# Broadcom NetXtreme II BCM5771X/BCM578XX 10GbE
 device		le			# AMD Am7900 LANCE and Am79C9xx PCnet
+device		rge			# Realtek 8125/8126/8127
 device		ti			# Alteon Networks Tigon I/II gigabit Ethernet
 
 # Nvidia/Mellanox Connect-X 4 and later, Ethernet only
@@ -309,7 +310,6 @@ device		xl			# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 device		crypto			# core crypto support
 device		aesni			# AES-NI OpenCrypto module
 device		loop			# Network loopback
-device		rdrand_rng		# Intel Bull Mountain RNG
 device		ether			# Ethernet support
 device		vlan			# 802.1Q VLAN support
 device		tuntap			# Packet tunnel.
@@ -322,6 +322,13 @@ device		xz			# lzma decompression
 # Be aware of the administrative consequences of enabling this!
 # Note that 'bpf' is required for DHCP.
 device		bpf			# Berkeley packet filter
+
+# random(4)
+device		rdrand_rng		# Intel Bull Mountain RNG
+device		tpm			# Trusted Platform Module
+options 	RANDOM_ENABLE_TPM	# enable entropy from TPM 2.0
+options 	RANDOM_ENABLE_KBD
+options 	RANDOM_ENABLE_MOUSE
 
 # USB support
 options 	USB_DEBUG		# enable debug msgs
