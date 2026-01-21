@@ -135,6 +135,9 @@ MODULES_OVERRIDE= \
 	rc4 \
 	safe \
 	unionfs \
+	usb/cdce \
+	usb/u3g \
+	usb/ucom \
 	usb/uether \
 	usb/urndis \
 	xdr \
