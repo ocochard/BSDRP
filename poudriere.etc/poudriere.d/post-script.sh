@@ -103,6 +103,9 @@ mkdir -p ${WORLDDIR}/etc/cron
 rm -rf ${WORLDDIR}/var/cron
 ln -s ../etc/cron ${WORLDDIR}/var/cron
 
+# Create the firstboot sentinel file (trigger nuageinet)
+touch ${WORLDDIR}/firstboot
+
 IMG_DIR=${POUDRIERE_DATA}/images
 
 # Generate package list and license inventory

@@ -3,7 +3,7 @@
 # Bhyve lab script for BSD Router Project
 # https://bsdrp.net
 #
-# Copyright (c) 2013-2025, The BSDRP Development Team
+# Copyright (c) 2013-2026, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -147,6 +147,10 @@ usage() {
 	echo " -m X         RAM size (default: ${RAM})"
 	echo " -n X         Number of VM full meshed (default: ${NUMBER_VM})"
 	echo " -q           Quiet"
+  echo " -r lab       Regression tests, labconfig familly to use"
+  echo "              Generate a cloudinit disk, instructing to run labconfig"
+  echo "              Example, with 'full', will run labconfig full_vm1 for the first VM,"
+  echo "              then labconfig full_vm2 for the second VM, etc."
 	echo " -s           Stop all VM"
 	echo " -t           Number of threads per core (default: ${THREADS})"
 	echo " -S           Additionnal disks size (default: ${ADD_DISKS_SIZE})"
@@ -346,6 +350,7 @@ erase_all_vm() {
 		rm $i || echo "can't erase vm $i"
 	done
 	[ -f ${VM_TEMPLATE} ] && rm ${VM_TEMPLATE}
+  rm -rf ${WRK_DIR}
 	return 0
 }
 
@@ -474,6 +479,35 @@ build_vm_disk_args() {
 	echo "${disk_args}"
 }
 
+# Build cloud-init disk argument
+# Arguments:
+#   $1: Lab name and vm name compliant to labconfig arg (ex: full_vm1)
+build_vm_disk_cloudinit_args() {
+  local lab=$1
+  local cloudinit_args=""
+  if [ -n "${REG_LAB}" ]; then
+    mkdir -p ${WRK_DIR}/cloudinit/${lab}
+    cat > ${WRK_DIR}/cloudinit/${lab}/meta-data <<EOF
+#cloud-config
+hostname: ${lab}.lab.bsdrp.net
+EOF
+    cat > ${WRK_DIR}/cloudinit/${lab}/user-data <<EOF
+#cloud-config
+runcmd:
+  - /usr/local/sbin/labconfig ${lab}
+EOF
+    # Generate a 64MB VFAT image from the directory
+    makefs -t msdos \
+      -o "volume_label=cidata" \
+      -o fat_type=12 \
+      -s 2m \
+      ${WRK_DIR}/cloudinit/${lab}.img ${WRK_DIR}/cloudinit/${lab} > /dev/null
+
+    cloudinit_args="-s 1:7,virtio-blk,${WRK_DIR}/cloudinit/${lab}.img"
+  fi
+  echo "${cloudinit_args}"
+}
+
 # Build debug arguments for bhyve (remote gdb support)
 # Arguments:
 #   $1: VM number
@@ -550,6 +584,7 @@ run_vm() {
 		# Build component argument strings using helper functions
 		local vm_console=$(build_vm_console_args ${vm_num} "${nmdm_id}")
 		local vm_disk=$(build_vm_disk_args ${vm_num})
+    local vm_disk_cloudinit=$(build_vm_disk_cloudinit_args ${REG_LAB}_vm${vm_num})
 		local vm_debug=$(build_vm_debug_args ${vm_num})
 		local vm_vnc=$(build_vm_vnc_args ${vm_num})
 
@@ -565,7 +600,7 @@ run_vm() {
 		# Execute bhyve with all configured options
 		# Exit codes: 0=reboot, 1=poweroff, 2=halt, 3=triple-fault, 4=error
 		set +e
-		${vm_cmd} ${vm_boot} ${vm_vnc} ${vm_net} ${vm_disk} ${vm_console} ${vm_debug} ${VM_NAME}_${vm_num}
+		${vm_cmd} ${vm_boot} ${vm_vnc} ${vm_net} ${vm_disk} ${vm_disk_cloudinit} ${vm_console} ${vm_debug} ${VM_NAME}_${vm_num}
 		local exit_code=$?
 		set -e
 
@@ -617,7 +652,7 @@ if [ $(id -u) -ne 0 ]; then
   fi
 fi
 
-while getopts "aBc:dghD:ei:l:m:n:qt:svVw:A:S:" FLAG; do
+while getopts "aBc:dghD:ei:l:m:n:qr:t:svVw:A:S:" FLAG; do
     case "${FLAG}" in
 	a)
 		MESHED=false
@@ -663,6 +698,9 @@ while getopts "aBc:dghD:ei:l:m:n:qt:svVw:A:S:" FLAG; do
 	q)
 		VERBOSE=false
 		;;
+  r)
+    REG_LAB="$OPTARG"
+    ;;
 	s)
 		stop_all_vm
 		exit 0
@@ -738,6 +776,7 @@ if ( ${VERBOSE} ); then
 	[ ${VALE} = true ] && echo "vale (netmap)" || echo "bridge + tap"
 	echo "- $LAN LAN(s) between all VM"
 	[ ${MESHED} = true ] && echo "- Full mesh Ethernet links between each VM"
+  [ -n "${REG_LAB}" ] && echo "- Regression test lab: ${REG_LAB}"
 fi
 
 i=1

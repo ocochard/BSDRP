@@ -4,7 +4,7 @@
 # Adapted to be used on generic FreeBSD too
 # https://bsdrp.net
 #
-# Copyright (c) 2017-2025, The BSDRP Development Team
+# Copyright (c) 2017-2026, The BSDRP Development Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -170,7 +170,8 @@ create () {
 			echo "/conf/base ${jailroot}/conf/base nullfs ro 0 0"
 			echo "/etc/jails/${tenant} ${jailroot}/cfg nullfs rw,noatime 0 0"
 			# On nanoBSD, usr/include could be empty, so need a writable unionfs to populate it
-			echo "/usr/include ${jailroot}/usr/include unionfs rw,below,noatime 0 0"
+			# No more existing since poudriere-image migration
+			#echo "/usr/include ${jailroot}/usr/include unionfs rw,below,noatime 0 0"
 			# On nanoBSD, usr/lib could miss some libraries too
 			echo "/usr/lib ${jailroot}/usr/lib unionfs rw,below,noatime 0 0"
 		else

@@ -5,7 +5,6 @@ usr/sbin/config
 usr/lib/debug
 usr/share/bhyve
 usr/share/examples
-usr/share/flua
 usr/share/doc
 usr/share/man/man3
 usr/share/man/man3lua

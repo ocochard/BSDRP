@@ -1,0 +1,68 @@
+diff --git libexec/nuageinit/nuageinit libexec/nuageinit/nuageinit
+index f7700f7d8e70..9bd140dbb049 100755
+--- libexec/nuageinit/nuageinit
++++ libexec/nuageinit/nuageinit
+@@ -16,6 +16,30 @@ end
+ local ni_path = arg[1]
+ local citype = arg[2]
+ 
++local function is_root_readonly()
++	local f = io.popen("mount | grep 'on / ' | grep -q '[(,]ro[,)]' && echo yes || echo no")
++	local result = f:read("*l")
++	f:close()
++	return result == "yes"
++end
++
++local function remount_root_rw()
++	local was_readonly = is_root_readonly()
++	if was_readonly then
++		local ret = os.execute("mount -uw /")
++		if not ret then
++			nuage.err("Failed to remount root filesystem read-write")
++		end
++	end
++	return was_readonly
++end
++
++local function restore_root_readonly(was_readonly)
++	if was_readonly then
++		os.execute("mount -ur /")
++	end
++end
++
+ local function default_user(obj, metadata)
+ 	local ssh_authorized_keys = {}
+ 	if type(metadata.public_keys) == "table" then
+@@ -746,6 +770,9 @@ end
+ local metadata = load_metadata(citype)
+ local line, obj = load_userdata()
+ 
++-- Check if root is read-only and remount read-write if needed
++local root_was_readonly = remount_root_rw()
++
+ -- No user-data
+ if line == nil then
+ 	local calls_table = {
+@@ -794,3 +821,6 @@ elseif line:sub(1, 2) == "#!" then
+ 	-- delay for execution at rc.local time --
+ 	nuage.chmod(root .. "/var/cache/nuageinit/user_data", "0755")
+ end
++
++-- Restore read-only status if root was originally mounted read-only
++restore_root_readonly(root_was_readonly)
+diff --git libexec/rc/rc.d/nuageinit libexec/rc/rc.d/nuageinit
+index 259ce3c138e5..b8d04b5c744c 100755
+--- libexec/rc/rc.d/nuageinit
++++ libexec/rc/rc.d/nuageinit
+@@ -47,9 +47,11 @@ nuageinit_start()
+ 		unset drive
+ 	done
+ 	if [ -n "$drive" ]; then
++		checkyesno root_rw_mount || mount -uw /
+ 		mkdir -p /media/nuageinit
+ 		fs=$(fstyp $drive 2> /dev/null)
+ 		mount -t $fs $drive /media/nuageinit
++		checkyesno root_rw_mount || mount -ur /
+ 	else
+ 		product=$(kenv smbios.system.product)
+ 		case "$product" in

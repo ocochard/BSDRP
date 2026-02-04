@@ -42,7 +42,7 @@ sysrc hostname=R1 \
 	rtsold_enable=yes \
 	sshd_enable=yes
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
-config save
+/usr/local/sbin/config save
 hostname R1
 service routing restart || true
 service netif restart
@@ -254,12 +254,11 @@ exit
 !
 EOF
 
-config save
+/usr/local/sbin/config save
 hostname R2
 service netif restart
 service ipsec start
 service rtadvd start
-service freevrrpd start
 service frr start
 service dhcprelya start
 service mpd5 start
@@ -370,6 +369,7 @@ protocol bgp R2inet4 {
     # Otherwise it will use the wrong 0.0.0.0 IP as source
     source address 10.0.23.3;
     neighbor 10.0.23.2 as 100;
+    authentication md5;
     password "abigpassword";
     ipv4 {
         import all;
@@ -383,6 +383,7 @@ protocol bgp R2inet6 {
     # Otherwise it will use the wrong :: IP as source
     source address 2001:db8:23::3;
     neighbor 2001:db8:23::2 as 100;
+    authentication md5;
     password "abigpassword";
     ipv6 {
         import all;
@@ -391,7 +392,7 @@ protocol bgp R2inet6 {
 }
 EOF
 
-config save
+/usr/local/sbin/config save
 hostname R3
 service netif restart
 service pf start
@@ -617,7 +618,7 @@ kldstat -q -m dummynet || kldload dummynet
 \${fwcmd} add allow ip from any to any
 EOF
 
-config save
+/usr/local/sbin/config save
 hostname R4
 service netif restart
 service frr start
@@ -650,11 +651,11 @@ service devfs restart
 service netif restart
 service kld start
 if ifconfig -l | grep -q vtnet; then
-	tenant -c -j jail5 -i vtnet3,epair0a
+	/usr/local/sbin/tenant -c -j jail5 -i vtnet3,epair0a
 else
-	tenant -c -j jail5 -i em3,epair0a
+	/usr/local/sbin/tenant -c -j jail5 -i em3,epair0a
 fi
-tenant -c -j jail6 -i epair0b
+/usr/local/sbin/tenant -c -j jail6 -i epair0b
 sysrc -f /etc/jails/jail5/rc.conf hostname=jail5 \
 	ifconfig_em3="inet 10.0.45.5/24" \
 	ifconfig_em3_ipv6="inet6 2001:db8:45::5 prefixlen 64" \
@@ -774,12 +775,12 @@ service devfs restart
 service netif restart
 service hostname restart
 service kld start
-tenant -c -j jail1 -i epair0a
-tenant -c -j jail2 -i epair0b,epair1a
-tenant -c -j jail3 -i epair1b,epair2a
-tenant -c -j jail4 -i epair2b,epair3a
-tenant -c -j jail5 -i epair3b,epair4a
-tenant -c -j jail6 -i epair4b
+/usr/local/sbin/tenant -c -j jail1 -i epair0a
+/usr/local/sbin/tenant -c -j jail2 -i epair0b,epair1a
+/usr/local/sbin/tenant -c -j jail3 -i epair1b,epair2a
+/usr/local/sbin/tenant -c -j jail4 -i epair2b,epair3a
+/usr/local/sbin/tenant -c -j jail5 -i epair3b,epair4a
+/usr/local/sbin/tenant -c -j jail6 -i epair4b
 
 for i in $(jot 6); do
 	mkdir -p /etc/jails/jail$i/local
@@ -890,6 +891,7 @@ protocol bgp bgp4 {
         # Otherwise it will use the wrong 0.0.0.0 IP as source
         source address 192.168.12.1;
         neighbor 192.168.12.2 as 12;
+        authentication md5;
         password "abigpassword";
         ipv4 {
             import all;
@@ -903,6 +905,7 @@ protocol bgp bgp6 {
         # Otherwise it will use the wrong :: IP as source
         source address 2001:db8:12::1;
         neighbor 2001:db8:12::2 as 12;
+        authentication md5;
         password "abigpassword";
         ipv6 {
             import all;
@@ -950,6 +953,7 @@ protocol bgp bgp4 {
         # Otherwise it will use the wrong 0.0.0.0 IP as source
         source address 192.168.12.2;
         neighbor 192.168.12.1 as 12;
+        authentication md5;
         password "abigpassword";
         ipv4 {
             import all;
@@ -964,6 +968,7 @@ protocol bgp bgp6 {
         # Otherwise it will use the wrong :: IP as source
         source address 2001:db8:12::2;
         neighbor 2001:db8:12::1 as 12;
+        authentication md5;
         password "abigpassword";
         ipv6 {
             import all;
@@ -1208,13 +1213,13 @@ service devfs restart
 service netif restart
 service hostname restart
 service kld start
-tenant -c -j jail1 -i epair0a
-tenant -c -j jail2 -i epair0b,epair1a
-tenant -c -j jail3 -i epair1b,epair2a
-tenant -c -j jail4 -i epair2b,epair3a
-tenant -c -j jail5 -i epair3b,epair4a
-tenant -c -j jail6 -i epair4b,epair5a
-tenant -c -j jail7 -i epair5b
+/usr/local/sbin/tenant -c -j jail1 -i epair0a
+/usr/local/sbin/tenant -c -j jail2 -i epair0b,epair1a
+/usr/local/sbin/tenant -c -j jail3 -i epair1b,epair2a
+/usr/local/sbin/tenant -c -j jail4 -i epair2b,epair3a
+/usr/local/sbin/tenant -c -j jail5 -i epair3b,epair4a
+/usr/local/sbin/tenant -c -j jail6 -i epair4b,epair5a
+/usr/local/sbin/tenant -c -j jail7 -i epair5b
 
 for i in $(jot 7); do
 	mkdir -p /etc/jails/jail$i/local/frr
@@ -1617,7 +1622,7 @@ hostname router1
 service netif restart
 service ipsec start
 service frr start
-config save
+/usr/local/sbin/config save
 echo "VM1 configured"
 }
 
@@ -1701,7 +1706,7 @@ EOF
 hostname router2
 service ipsec start
 service frr start
-config save
+/usr/local/sbin/config save
 echo "VM2 configured"
 }
 
@@ -1765,7 +1770,7 @@ bfd
 EOF
 hostname router3
 service frr start
-config save
+/usr/local/sbin/config save
 echo "VM3 configured"
 }
 
@@ -1822,7 +1827,7 @@ EOF
 
 hostname router4
 service frr start
-config save
+/usr/local/sbin/config save
 echo "VM4 configured"
 }
 
@@ -1864,7 +1869,7 @@ EOF
 hostname router5
 service netif restart
 service frr start
-config save
+/usr/local/sbin/config save
 echo "VM5 configured"
 }
 
@@ -1897,7 +1902,7 @@ EOF
 hostname router6
 service netif restart
 service frr start
-config save
+/usr/local/sbin/config save
 echo "VM6 configured"
 }
 
@@ -1924,7 +1929,7 @@ EOF
 hostname router7
 service netif restart
 service frr start
-config save
+/usr/local/sbin/config save
 echo "VM7 configured"
 }
 
@@ -1940,7 +1945,7 @@ ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 hostname VM1
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 vpn_vm2 () {
@@ -2042,7 +2047,7 @@ hostname VM2
 service netif restart
 service routing restart
 service sshd start
-config save
+/usr/local/sbin/config save
 }
 
 vpn_vm3 () {
@@ -2054,7 +2059,7 @@ sysrc hostname=VM3 \
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 hostname VM3
 service netif restart
-config save
+/usr/local/sbin/config save
 }
 
 vpn_vm4 () {
@@ -2111,7 +2116,7 @@ EOF
 hostname VM4
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 vpn_vm5 () {
@@ -2126,7 +2131,7 @@ ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 hostname VM5
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 ### BGP bird & FRR lab
@@ -2187,7 +2192,7 @@ protocol bgp R2inet6 {
         };
 }
 EOF
-config save
+/usr/local/sbin/config save
 hostname R1
 service netif restart
 service bird start
@@ -2272,7 +2277,7 @@ protocol bgp R3inet6 {
 }
 EOF
 hostname R2
-config save
+/usr/local/sbin/config save
 service netif restart
 service bird start
 }
@@ -2423,7 +2428,7 @@ router bgp 64512
 EOF
 hostname R4
 service frr start
-config save
+/usr/local/sbin/config save
 }
 
 bgp_vm5 () {
@@ -2471,7 +2476,7 @@ router bgp 64512
 EOF
 hostname R5
 service frr start
-config save
+/usr/local/sbin/config save
 }
 
 bgp_vm6 () {
@@ -2529,7 +2534,7 @@ router bgp 65535
 EOF
 hostname R6
 service frr start
-config save
+/usr/local/sbin/config save
 }
 
 bgp_vm7 () {
@@ -2580,7 +2585,7 @@ router bgp 65535
 EOF
 hostname R7
 service frr start
-config save
+/usr/local/sbin/config save
 }
 
 jailpf_vm1 () {
@@ -2606,7 +2611,7 @@ hostname VM1
 service devfs restart
 service netif restart
 service kld start
-tenant -c -j jail11 -i bridge0,vtnet5.1
+/usr/local/sbin/tenant -c -j jail11 -i bridge0,vtnet5.1
 cat > /etc/jails/jail11/rc.conf <<EOF
 hostname="jail11"
 sshd_enable=YES
@@ -2631,7 +2636,7 @@ pass quick on vtnet5.1 proto carp keep state (no-sync)
 pass log from vtnet5.1:network to epair10b:network
 pass log from self to any
 EOF
-tenant -c -j jail12 -i bridge0,vtnet5.2
+/usr/local/sbin/tenant -c -j jail12 -i bridge0,vtnet5.2
 cat > /etc/jails/jail12/rc.conf <<EOF
 hostname=jail12
 sshd_enable=YES
@@ -2682,7 +2687,7 @@ hostname VM2
 service devfs restart
 service netif restart
 service kld start
-tenant -c -j jail21 -i bridge0,vtnet5.1
+/usr/local/sbin/tenant -c -j jail21 -i bridge0,vtnet5.1
 cat > /etc/jails/jail21/rc.conf <<EOF
 hostname=jail21
 sshd_enable=YES
@@ -2707,7 +2712,7 @@ pass quick on vtnet5.1 proto carp keep state (no-sync)
 pass log from vtnet5.1:network to epair10b:network
 pass log from self to any
 EOF
-tenant -c -j jail22 -i bridge0,vtnet5.2
+/usr/local/sbin/tenant -c -j jail22 -i bridge0,vtnet5.2
 cat > /etc/jails/jail22/rc.conf <<EOF
 hostname=jail22
 sshd_enable=YES
@@ -2746,7 +2751,7 @@ hostname VM3
 service netif restart
 service routing restart || true
 service inetd start
-config save
+/usr/local/sbin/config save
 }
 
 jailpf_vm4 () {
@@ -2760,7 +2765,7 @@ sysrc hostname=VM4 \
 hostname VM4
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 jailpf_vm5 () {
@@ -2774,7 +2779,7 @@ sysrc hostname=VM5 \
 hostname VM5
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 ### graphpath
@@ -2800,7 +2805,7 @@ sysrc hostname="me" \
 hostname me
 service netif restart
 service routing restart
-tenant -c -j host11 -i bridge11
+/usr/local/sbin/tenant -c -j host11 -i bridge11
 cat > /etc/jails/host11/rc.conf <<EOF
 hostname="host11"
 ifconfig_epair111b="inet 10.0.11.11/24"
@@ -2809,7 +2814,7 @@ defaultrouter="10.0.11.254"
 ipv6_defaultrouter="2001:db8:11::254"
 EOF
 
-tenant -c -j host12 -i bridge12
+/usr/local/sbin/tenant -c -j host12 -i bridge12
 cat > /etc/jails/host12/rc.conf <<EOF
 hostname="host12"
 ifconfig_epair212b="inet 10.0.12.12/24"
@@ -2818,7 +2823,7 @@ defaultrouter="10.0.12.254"
 ipv6_defaultrouter="2001:db8:12::254"
 EOF
 
-tenant -c -j router11 -i bridge1,bridge11
+/usr/local/sbin/tenant -c -j router11 -i bridge1,bridge11
 cat > /etc/jails/router11/rc.conf <<EOF
 hostname="router11"
 gateway_enable=YES
@@ -2831,7 +2836,7 @@ defaultrouter="10.0.1.1"
 ipv6_defaultrouter="2001:db8:1::1"
 EOF
 
-tenant -c -j router12 -i bridge1,bridge12
+/usr/local/sbin/tenant -c -j router12 -i bridge1,bridge12
 cat > /etc/jails/router12/rc.conf <<EOF
 hostname=router12
 gateway_enable=YES
@@ -2844,7 +2849,7 @@ defaultrouter="10.0.1.1"
 ipv6_defaultrouter="2001:db8:1::1"
 EOF
 
-tenant -c -j router21 -i bridge2,bridge21
+/usr/local/sbin/tenant -c -j router21 -i bridge2,bridge21
 cat > /etc/jails/router21/rc.conf <<EOF
 hostname="router21"
 gateway_enable=YES
@@ -2857,7 +2862,7 @@ defaultrouter="10.0.2.1"
 ipv6_defaultrouter="2001:db8:2::1"
 EOF
 
-tenant -c -j host21 -i bridge21
+/usr/local/sbin/tenant -c -j host21 -i bridge21
 cat > /etc/jails/host21/rc.conf <<EOF
 hostname="host21"
 ifconfig_epair621b="inet 10.0.21.21/24"
@@ -2921,7 +2926,7 @@ service netif restart
 service routing restart
 service mlvpn start
 hostname VM1
-config save
+/usr/local/sbin/config save
 }
 
 mlvpn_vm2 () {
@@ -2951,7 +2956,7 @@ service netif restart
 service routing restart
 service ipfw start
 hostname VM2
-config save
+/usr/local/sbin/config save
 }
 
 mlvpn_vm3 () {
@@ -2982,7 +2987,7 @@ service netif restart
 service routing restart
 service ipfw start
 hostname VM3
-config save
+/usr/local/sbin/config save
 }
 
 mlvpn_vm4 () {
@@ -3013,7 +3018,7 @@ service netif restart
 service routing restart
 service ipfw start
 hostname VM4
-config save
+/usr/local/sbin/config save
 }
 
 mlvpn_vm5 () {
@@ -3029,7 +3034,7 @@ sysrc hostname=R5 \
 service netif restart
 service routing restart
 hostname VM5
-config save
+/usr/local/sbin/config save
 }
 
 
@@ -3132,7 +3137,7 @@ service netif restart
 service routing restart
 service mpd5 start
 hostname R1
-config save
+/usr/local/sbin/config save
 }
 
 mlppp_vm2 () {
@@ -3162,7 +3167,7 @@ service netif restart
 service routing restart
 service ipfw start
 hostname R2
-config save
+/usr/local/sbin/config save
 }
 
 mlppp_vm3 () {
@@ -3193,7 +3198,7 @@ service netif restart
 service routing restart
 service ipfw start
 hostname R3
-config save
+/usr/local/sbin/config save
 }
 
 mlppp_vm4 () {
@@ -3224,7 +3229,7 @@ service netif restart
 service routing restart
 service ipfw start
 hostname R4
-config save
+/usr/local/sbin/config save
 }
 
 mlppp_vm5 () {
@@ -3240,7 +3245,7 @@ sysrc hostname=R5 \
 service netif restart
 service routing restart
 hostname R5
-config save
+/usr/local/sbin/config save
 }
 
 
@@ -3301,7 +3306,7 @@ service netif restart
 service routing restart
 service mpd5 start
 hostname R6
-config save
+/usr/local/sbin/config save
 }
 
 pimsm_vm1 () {
@@ -3314,7 +3319,7 @@ ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 service hostname restart
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 pimsm_vm2 () {
@@ -3334,7 +3339,7 @@ service hostname restart
 service netif restart
 service routing restart
 service pimd start
-config save
+/usr/local/sbin/config save
 }
 
 pimsm_vm3 () {
@@ -3354,7 +3359,7 @@ service hostname restart
 service netif restart
 service routing restart
 service pimd start
-config save
+/usr/local/sbin/config save
 }
 
 pimsm_vm4 () {
@@ -3367,7 +3372,7 @@ ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 service hostname restart
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 ecmp_vm1 () {
@@ -3391,7 +3396,7 @@ sysrc hostname=VM1 \
 service hostname restart
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 ecmp_vm2 () {
@@ -3419,7 +3424,7 @@ sysctl net.inet6.ip6.redirect=1
 service hostname restart
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 ecmp_vm3 () {
@@ -3437,7 +3442,7 @@ sysrc hostname=VM3 \
 service hostname restart
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 ecmp_vm4 () {
@@ -3455,7 +3460,7 @@ sysrc hostname=VM4 \
 service hostname restart
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 ecmp_vm5 () {
@@ -3483,7 +3488,7 @@ sysctl net.inet6.ip6.redirect=1
 service hostname restart
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 ecmp_vm6 () {
@@ -3507,7 +3512,7 @@ sysrc hostname=VM6 \
 service hostname restart
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 fairshape_vm1 () {
@@ -3521,7 +3526,7 @@ service hostname restart
 service netif restart
 service routing restart
 service rtsold start
-config save
+/usr/local/sbin/config save
 }
 
 fairshape_vm2 () {
@@ -3535,7 +3540,7 @@ service hostname restart
 service netif restart
 service routing restart
 service rtsold start
-config save
+/usr/local/sbin/config save
 }
 
 fairshape_vm3 () {
@@ -3549,7 +3554,7 @@ service hostname restart
 service netif restart
 service routing restart
 service rtsold start
-config save
+/usr/local/sbin/config save
 }
 
 fairshape_vm4 () {
@@ -3610,7 +3615,7 @@ service routing restart
 service isc-dhcpd start
 service rtadvd start
 service ipfw start
-config save
+/usr/local/sbin/config save
 }
 
 fairshape_vm5 () {
@@ -3655,7 +3660,7 @@ EOF
 service hostname restart
 service netif restart
 service freevrrpd start
-config save
+/usr/local/sbin/config save
 }
 
 freevrrpd_vm2() {
@@ -3687,7 +3692,7 @@ EOF
 service hostname restart
 service netif restart
 service freevrrpd start
-config save
+/usr/local/sbin/config save
 }
 
 freevrrpd_vm3() {
@@ -3699,7 +3704,7 @@ sysrc hostname=R3 \
 service hostname restart
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 
 freevrrpd_vm4() {
@@ -3711,7 +3716,7 @@ sysrc hostname=R4 \
 service hostname restart
 service netif restart
 service routing restart
-config save
+/usr/local/sbin/config save
 }
 ### Main
 

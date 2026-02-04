@@ -1,9 +1,5 @@
 # TODO List
 
-## Automated regression tests ##
-
-Need to enable /etc/rc.d/nuageinit
-
 ## Bugs #
 
 * if non-critical /data had a fsck problem, system refuses to go into single user
@@ -22,7 +18,6 @@ Need to enable /etc/rc.d/nuageinit
 
 * Is UTF-8 support for console useful?
 * Need to publish an OVF (Open Virtualization Format) tar file
-* Need to enable nuageinit (useful for automatic regression tests)
 * A netgraph documentation "for dummies" like this: http://nexus.org.ua/weblog/message/406/
 * doc: Using mermaid markdown ? https://github.blog/developer-skills/github/include-diagrams-markdown-files-mermaid/
 
