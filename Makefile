@@ -234,9 +234,18 @@ check-requirements:
 # - Shar files are only re-applied if .shar files are modified
 # - This allows fast incremental builds when nothing has changed
 #
-# Each target creates a "sentinel file" (empty file with the target's name)
-# in ${.OBJDIR}. Make uses these files' timestamps to track dependencies.
-# If a dependency is newer than the sentinel, the target re-runs.
+# SENTINEL FILES AND BSD MAKE TARGET RESOLUTION:
+# Each target creates a "sentinel file" (empty file) to track completion.
+# IMPORTANT: Target names MUST include ${OBJ_DIR}/ prefix (e.g., ${OBJ_DIR}/add-src-ports)
+#
+# Why? When BSD Make evaluates a target like "add-src-ports: file.shar":
+# 1. Make looks for the target file in the CURRENT directory (not ${.OBJDIR})
+# 2. The "touch ${.TARGET}" command creates the file in ${.OBJDIR}
+# 3. On next run, Make can't find the file (looks in wrong directory)
+# 4. Result: target rebuilds every time even when dependencies haven't changed
+#
+# Solution: Prefix target names with ${OBJ_DIR}/ so Make looks in the correct
+# location. This ensures proper timestamp comparison for incremental builds.
 ###############################################################################
 
 # Targets that are file/directory paths: Make checks if the file exists
@@ -253,18 +262,18 @@ ${src_ports_dir}:
 # This loop creates: cleanup-src-FreeBSD and cleanup-src-ports
 # ${repo} gets substituted with each value in the list
 .for repo in FreeBSD ports
-cleanup-src-${repo}:
+${OBJ_DIR}/cleanup-src-${repo}:
 	@echo "==> Cleaning ${repo} sources..."
 	@git -C ${src_${repo}_dir} checkout .
 	@git -C ${src_${repo}_dir} clean -fd
-	@rm -f patch-src-${repo}
-	@rm -f patch-sources
+	@rm -f ${OBJ_DIR}/patch-src-${repo}
+	@rm -f ${OBJ_DIR}/patch-sources
 	# touch creates an empty file with the target's name (${.TARGET})
 	# This "sentinel file" marks that this target has been completed
 	# Make can check the file's timestamp to see if dependencies are newer
 	@touch ${.TARGET}
 
-update-src-${repo}: ${vars_file} ${src_${repo}_dir}
+${OBJ_DIR}/update-src-${repo}: ${vars_file} ${src_${repo}_dir}
 	# Only cleanup if the git hash has changed from what's currently checked out
 	@current_hash=$$(git -C ${src_${repo}_dir} rev-parse --short HEAD 2>/dev/null || echo "none"); \
 	if [ "$$current_hash" != "${${repo}_hash}" ]; then \
@@ -282,7 +291,7 @@ update-src-${repo}: ${vars_file} ${src_${repo}_dir}
 	fi
 	@touch ${.TARGET}
 
-patch-src-${repo}: update-src-${repo}
+${OBJ_DIR}/patch-src-${repo}: ${OBJ_DIR}/update-src-${repo}
 	# Apply patches based on git diff check, not timestamp comparison
 	# This avoids false triggers from patch files with future timestamps
 .if !defined(${repo}_patches) || empty(${repo}_patches)
@@ -305,7 +314,7 @@ patch-src-${repo}: update-src-${repo}
 
 sync-${repo}: ${src_${repo}_dir}
 	@rm -f ${OBJ_DIR}/cleanup-src-${repo}
-	@${MAKE} -f ${MAKEFILE} cleanup-src-${repo}
+	@${MAKE} -f ${MAKEFILE} ${OBJ_DIR}/cleanup-src-${repo}
 	@echo "Sync ${repo} sources with upstream..."
 	@git -C ${src_${repo}_dir} pull
 	@new_hash=$$(git -C ${src_${repo}_dir} rev-parse --short HEAD) && \
@@ -314,10 +323,10 @@ sync-${repo}: ${src_${repo}_dir}
 	echo "Updating previous ${repo} hash ${${repo}_hash} to $${new_hash}"
 .endfor # repo
 
-patch-sources: patch-src-FreeBSD patch-src-ports add-src-ports ${kernel}
+${OBJ_DIR}/patch-sources: ${OBJ_DIR}/patch-src-FreeBSD ${OBJ_DIR}/patch-src-ports ${OBJ_DIR}/add-src-ports ${kernel}
 	@touch ${.TARGET}
 
-add-src-ports: update-src-ports ${ports_shar}
+${OBJ_DIR}/add-src-ports: ${OBJ_DIR}/update-src-ports ${ports_shar}
 .if !defined(ports_shar) || empty(ports_shar)
 	@echo "WARNING: No ports_shar variable defined or empty, skipping ports addition"
 .else
@@ -333,7 +342,7 @@ ${kernel}: ${SRC_DIR}/BSDRP/kernels/${src_arch}
 	@echo "Install kernel for arch ${MACHINE_ARCH} (${src_arch})"
 	@cp ${SRC_DIR}/BSDRP/kernels/${src_arch} ${OBJ_DIR}/FreeBSD/sys/${src_arch}/conf/
 
-build-builder-jail: patch-sources ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common
+${OBJ_DIR}/build-builder-jail: ${OBJ_DIR}/patch-sources ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common
 	@echo "Build the builder jail and kernel..."
 	# All jail-src.conf need to end by MODULES_OVERRIDE section because this is arch dependends
 	@cp ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf
@@ -354,13 +363,13 @@ build-builder-jail: patch-sources ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-sr
 	fi
 	@touch ${.TARGET}
 
-build-ports-tree: patch-sources
+${OBJ_DIR}/build-ports-tree: ${OBJ_DIR}/patch-sources
 	# Determine if ports tree exists: update or create as needed
 	@ports_action=$$(${sudo} poudriere -e ${SRC_DIR}/poudriere.etc ports -ln | grep -q BSDRPp && echo "u" || echo "c") && \
 	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc ports -$${ports_action} -p BSDRPp -m null -M ${OBJ_DIR}/ports
 	@touch ${.TARGET}
 
-build-packages: build-builder-jail build-ports-tree ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common
+${OBJ_DIR}/build-packages: ${OBJ_DIR}/build-builder-jail ${OBJ_DIR}/build-ports-tree ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common
 	@echo "Build packages..."
 	@cp ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${OBJ_DIR}/pkglist || exit 1
 	@if [ -f ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} ]; then \
@@ -372,7 +381,7 @@ build-packages: build-builder-jail build-ports-tree ${SRC_DIR}/poudriere.etc/pou
 	}
 	@touch ${.TARGET}
 
-${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: build-packages ${SRC_DIR}/poudriere.etc/poudriere.d/post-script.sh ${overlay_files}
+${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: ${OBJ_DIR}/build-packages ${SRC_DIR}/poudriere.etc/poudriere.d/post-script.sh ${overlay_files}
 	@echo "Build image..."
 	# Only remove old images and compressed files, don't remove if they're already current
 	# The poudriere image command will overwrite them anyway
@@ -437,6 +446,11 @@ clean-src:
 	@rm -f ${OBJ_DIR}/patch-src-FreeBSD
 	@rm -f ${OBJ_DIR}/patch-src-ports
 	@rm -f ${OBJ_DIR}/add-src-ports
+	@rm -f ${OBJ_DIR}/patch-sources
+	@rm -f ${OBJ_DIR}/update-src-FreeBSD
+	@rm -f ${OBJ_DIR}/update-src-ports
+	@rm -f ${OBJ_DIR}/cleanup-src-FreeBSD
+	@rm -f ${OBJ_DIR}/cleanup-src-ports
 
 release: all
 	@${MAKE} -f ${MAKEFILE} compress-images checksum-images
