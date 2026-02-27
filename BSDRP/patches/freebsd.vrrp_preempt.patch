@@ -1,0 +1,897 @@
+diff --git sys/netinet/ip_carp.c sys/netinet/ip_carp.c
+index d33ac4e9a154..3fedbda6b57f 100644
+--- sys/netinet/ip_carp.c
++++ sys/netinet/ip_carp.c
+@@ -235,198 +235,209 @@ VNET_DEFINE_STATIC(int, carp_senderr_adj) = CARP_MAXSKEW;
+ 
+ /* Iface down demotion factor. */
+ VNET_DEFINE_STATIC(int, carp_ifdown_adj) = CARP_MAXSKEW;
+ #define	V_carp_ifdown_adj	VNET(carp_ifdown_adj)
+ 
+ static int carp_allow_sysctl(SYSCTL_HANDLER_ARGS);
+ static int carp_dscp_sysctl(SYSCTL_HANDLER_ARGS);
+ static int carp_demote_adj_sysctl(SYSCTL_HANDLER_ARGS);
+ 
+ SYSCTL_NODE(_net_inet, IPPROTO_CARP, carp, CTLFLAG_RW | CTLFLAG_MPSAFE, 0,
+     "CARP");
+ SYSCTL_PROC(_net_inet_carp, OID_AUTO, allow,
+     CTLFLAG_VNET | CTLTYPE_INT | CTLFLAG_RWTUN | CTLFLAG_NOFETCH | CTLFLAG_MPSAFE,
+     &VNET_NAME(carp_allow), 0, carp_allow_sysctl, "I",
+     "Accept incoming CARP packets");
+ SYSCTL_PROC(_net_inet_carp, OID_AUTO, dscp,
+     CTLFLAG_VNET | CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_MPSAFE,
+     0, 0, carp_dscp_sysctl, "I",
+     "DSCP value for carp packets");
+ SYSCTL_INT(_net_inet_carp, OID_AUTO, preempt, CTLFLAG_VNET | CTLFLAG_RW,
+     &VNET_NAME(carp_preempt), 0, "High-priority backup preemption mode");
+ SYSCTL_INT(_net_inet_carp, OID_AUTO, log, CTLFLAG_VNET | CTLFLAG_RW,
+     &VNET_NAME(carp_log), 0, "CARP log level");
+ SYSCTL_PROC(_net_inet_carp, OID_AUTO, demotion,
+     CTLFLAG_VNET | CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_MPSAFE,
+     0, 0, carp_demote_adj_sysctl, "I",
+     "Adjust demotion factor (skew of advskew)");
+ SYSCTL_INT(_net_inet_carp, OID_AUTO, senderr_demotion_factor,
+     CTLFLAG_VNET | CTLFLAG_RW,
+     &VNET_NAME(carp_senderr_adj), 0, "Send error demotion factor adjustment");
+ SYSCTL_INT(_net_inet_carp, OID_AUTO, ifdown_demotion_factor,
+     CTLFLAG_VNET | CTLFLAG_RW,
+     &VNET_NAME(carp_ifdown_adj), 0,
+     "Interface down demotion factor adjustment");
+ 
+ VNET_PCPUSTAT_DEFINE(struct carpstats, carpstats);
+ VNET_PCPUSTAT_SYSINIT(carpstats);
+ VNET_PCPUSTAT_SYSUNINIT(carpstats);
+ 
+ #define	CARPSTATS_ADD(name, val)	\
+     counter_u64_add(VNET(carpstats)[offsetof(struct carpstats, name) / \
+ 	sizeof(uint64_t)], (val))
+ #define	CARPSTATS_INC(name)		CARPSTATS_ADD(name, 1)
+ 
+ SYSCTL_VNET_PCPUSTAT(_net_inet_carp, OID_AUTO, stats, struct carpstats,
+     carpstats, "CARP statistics (struct carpstats, netinet/ip_carp.h)");
+ 
+ #define	CARP_LOCK_INIT(sc)	mtx_init(&(sc)->sc_mtx, "carp_softc",   \
+ 	NULL, MTX_DEF)
+ #define	CARP_LOCK_DESTROY(sc)	mtx_destroy(&(sc)->sc_mtx)
+ #define	CARP_LOCK_ASSERT(sc)	mtx_assert(&(sc)->sc_mtx, MA_OWNED)
+ #define	CARP_LOCK(sc)		mtx_lock(&(sc)->sc_mtx)
+ #define	CARP_UNLOCK(sc)		mtx_unlock(&(sc)->sc_mtx)
+ #define	CIF_LOCK_INIT(cif)	mtx_init(&(cif)->cif_mtx, "carp_if",   \
+ 	NULL, MTX_DEF)
+ #define	CIF_LOCK_DESTROY(cif)	mtx_destroy(&(cif)->cif_mtx)
+ #define	CIF_LOCK_ASSERT(cif)	mtx_assert(&(cif)->cif_mtx, MA_OWNED)
+ #define	CIF_LOCK(cif)		mtx_lock(&(cif)->cif_mtx)
+ #define	CIF_UNLOCK(cif)		mtx_unlock(&(cif)->cif_mtx)
+ #define	CIF_FREE(cif)	do {				\
+ 		CIF_LOCK(cif);				\
+ 		if (TAILQ_EMPTY(&(cif)->cif_vrs))	\
+ 			carp_free_if(cif);		\
+ 		else					\
+ 			CIF_UNLOCK(cif);		\
+ } while (0)
+ 
+ #define	CARP_LOG(...)	do {				\
+ 	if (V_carp_log > 0)				\
+ 		log(LOG_INFO, "carp: " __VA_ARGS__);	\
+ } while (0)
+ 
+ #define	CARP_DEBUG(...)	do {				\
+ 	if (V_carp_log > 1)				\
+ 		log(LOG_DEBUG, __VA_ARGS__);		\
+ } while (0)
+ 
+ #define	IFNET_FOREACH_IFA(ifp, ifa)					\
+ 	CK_STAILQ_FOREACH((ifa), &(ifp)->if_addrhead, ifa_link)	\
+ 		if ((ifa)->ifa_carp != NULL)
+ 
+ #define	CARP_FOREACH_IFA(sc, ifa)					\
+ 	CARP_LOCK_ASSERT(sc);						\
+ 	for (int _i = 0;						\
+ 		_i < (sc)->sc_naddrs + (sc)->sc_naddrs6 &&		\
+ 		((ifa) = sc->sc_ifas[_i]) != NULL;			\
+ 		++_i)
+ 
+ #define	IFNET_FOREACH_CARP(ifp, sc)					\
+ 	KASSERT(mtx_owned(&ifp->if_carp->cif_mtx) ||			\
+ 	    sx_xlocked(&carp_sx), ("cif_vrs not locked"));		\
+ 	TAILQ_FOREACH((sc), &(ifp)->if_carp->cif_vrs, sc_list)
+ 
+ #define	DEMOTE_ADVSKEW(sc)					\
+     (((sc)->sc_advskew + V_carp_demotion > CARP_MAXSKEW) ?	\
+     CARP_MAXSKEW :						\
+         (((sc)->sc_advskew + V_carp_demotion < 0) ?		\
+         0 : ((sc)->sc_advskew + V_carp_demotion)))
+ 
++/*
++ * VRRPv3 priority is the inverse of CARP advskew: higher is better.
++ * Subtract the global demotion counter and clamp to [0, 254].
++ * Priority 255 (IP address owner) is never demoted.
++ */
++#define	DEMOTE_VRRP_PRIO(sc)					\
++    ((sc)->sc_vrrp_prio == 255 ? 255 :				\
++    (((int)(sc)->sc_vrrp_prio - V_carp_demotion < 0) ? 0 :	\
++    (((int)(sc)->sc_vrrp_prio - V_carp_demotion > 254) ? 254 :	\
++    (int)(sc)->sc_vrrp_prio - V_carp_demotion)))
++
+ static void	carp_input_c(struct mbuf *, struct carp_header *, sa_family_t, int);
+ static void	vrrp_input_c(struct mbuf *, int, sa_family_t, int, int, uint16_t);
+ static struct carp_softc
+ 		*carp_alloc(struct ifnet *, carp_version_t, int);
+ static void	carp_destroy(struct carp_softc *);
+ static struct carp_if
+ 		*carp_alloc_if(struct ifnet *);
+ static void	carp_free_if(struct carp_if *);
+ static void	carp_set_state(struct carp_softc *, int, const char* reason);
+ static void	carp_sc_state(struct carp_softc *);
+ static void	carp_setrun(struct carp_softc *, sa_family_t);
+ static void	carp_master_down(void *);
+ static void	carp_master_down_locked(struct carp_softc *,
+     		    const char* reason);
+ static void	carp_send_ad_locked(struct carp_softc *);
+ static void	vrrp_send_ad_locked(struct carp_softc *);
+ static void	carp_addroute(struct carp_softc *);
+ static void	carp_ifa_addroute(struct ifaddr *);
+ static void	carp_delroute(struct carp_softc *);
+ static void	carp_ifa_delroute(struct ifaddr *);
+ static void	carp_send_ad_all(void *, int);
+ static void	carp_demote_adj(int, char *);
+ 
+ static LIST_HEAD(, carp_softc) carp_list = LIST_HEAD_INITIALIZER(carp_list);
+ static struct mtx carp_mtx;
+ static struct sx carp_sx;
+ static struct task carp_sendall_task =
+     TASK_INITIALIZER(0, carp_send_ad_all, NULL);
+ 
+ static int
+ carp_is_supported_if(if_t ifp)
+ {
+ 	if (ifp == NULL)
+ 		return (ENXIO);
+ 
+ 	switch (ifp->if_type) {
+ 	case IFT_ETHER:
+ 	case IFT_L2VLAN:
+ 	case IFT_BRIDGE:
+ 		break;
+ 	default:
+ 		return (EOPNOTSUPP);
+ 	}
+ 
+ 	return (0);
+ }
+ 
+ static void
+ carp_hmac_prepare(struct carp_softc *sc)
+ {
+ 	uint8_t version = CARP_VERSION_CARP, type = CARP_ADVERTISEMENT;
+ 	uint8_t vhid = sc->sc_vhid & 0xff;
+ 	struct ifaddr *ifa;
+ 	int i, found;
+ #ifdef INET
+ 	struct in_addr last, cur, in;
+ #endif
+ #ifdef INET6
+ 	struct in6_addr last6, cur6, in6;
+ #endif
+ 
+ 	CARP_LOCK_ASSERT(sc);
+ 	MPASS(sc->sc_version == CARP_VERSION_CARP);
+ 
+ 	/* Compute ipad from key. */
+ 	bzero(sc->sc_pad, sizeof(sc->sc_pad));
+ 	bcopy(sc->sc_key, sc->sc_pad, sizeof(sc->sc_key));
+ 	for (i = 0; i < sizeof(sc->sc_pad); i++)
+ 		sc->sc_pad[i] ^= 0x36;
+ 
+ 	/* Precompute first part of inner hash. */
+ 	SHA1Init(&sc->sc_sha1);
+ 	SHA1Update(&sc->sc_sha1, sc->sc_pad, sizeof(sc->sc_pad));
+ 	SHA1Update(&sc->sc_sha1, (void *)&version, sizeof(version));
+ 	SHA1Update(&sc->sc_sha1, (void *)&type, sizeof(type));
+ 	SHA1Update(&sc->sc_sha1, (void *)&vhid, sizeof(vhid));
+ #ifdef INET
+ 	cur.s_addr = 0;
+ 	do {
+ 		found = 0;
+ 		last = cur;
+ 		cur.s_addr = 0xffffffff;
+ 		CARP_FOREACH_IFA(sc, ifa) {
+ 			in.s_addr = ifatoia(ifa)->ia_addr.sin_addr.s_addr;
+ 			if (ifa->ifa_addr->sa_family == AF_INET &&
+ 			    ntohl(in.s_addr) > ntohl(last.s_addr) &&
+ 			    ntohl(in.s_addr) < ntohl(cur.s_addr)) {
+ 				cur.s_addr = in.s_addr;
+ 				found++;
+ 			}
+ 		}
+ 		if (found)
+ 			SHA1Update(&sc->sc_sha1, (void *)&cur, sizeof(cur));
+ 	} while (found);
+ #endif /* INET */
+ #ifdef INET6
+ 	memset(&cur6, 0, sizeof(cur6));
+ 	do {
+ 		found = 0;
+@@ -913,213 +924,213 @@ carp_input_c(struct mbuf *m, struct carp_header *ch, sa_family_t af, int ttl)
+ 			carp_master_down_locked(sc,
+ 			    "preempting a slower master");
+ 			break;
+ 		}
+ 
+ 		/*
+ 		 *  If the master is going to advertise at such a low frequency
+ 		 *  that he's guaranteed to time out, we'd might as well just
+ 		 *  treat him as timed out now.
+ 		 */
+ 		sc_tv.tv_sec = sc->sc_advbase * 3;
+ 		if (timevalcmp(&sc_tv, &ch_tv, <)) {
+ 			carp_master_down_locked(sc, "master will time out");
+ 			break;
+ 		}
+ 
+ 		/*
+ 		 * Otherwise, we reset the counter and wait for the next
+ 		 * advertisement.
+ 		 */
+ 		carp_setrun(sc, af);
+ 		break;
+ 	}
+ 
+ out:
+ 	CARP_UNLOCK(sc);
+ 	m_freem(m);
+ }
+ 
+ static void
+ vrrp_input_c(struct mbuf *m, int off, sa_family_t af, int ttl,
+     int len, uint16_t phdrcksum)
+ {
+ 	struct vrrpv3_header *vh = mtodo(m, off);
+ 	struct ifnet *ifp = m->m_pkthdr.rcvif;
+ 	struct ifaddr *ifa;
+ 	struct carp_softc *sc;
+ 
+ 	NET_EPOCH_ASSERT();
+ 	MPASS(vh->vrrp_version == CARP_VERSION_VRRPv3);
+ 
+ 	ifa = carp_find_ifa(m, af, vh->vrrp_vrtid);
+ 	if (ifa == NULL) {
+ 		m_freem(m);
+ 		return;
+ 	}
+ 
+ 	sc = ifa->ifa_carp;
+ 	CARP_LOCK(sc);
+ 
+ 	ifa_free(ifa);
+ 
+ 	/* verify the CARP version. */
+ 	if (sc->sc_version != CARP_VERSION_VRRPv3) {
+ 		CARP_UNLOCK(sc);
+ 
+ 		CARPSTATS_INC(carps_badver);
+ 		CARP_DEBUG("%s: invalid version %d\n", if_name(ifp),
+ 		    vh->vrrp_version);
+ 		m_freem(m);
+ 		return;
+ 	}
+ 
+ 	/* verify that the IP TTL is 255. */
+ 	if (ttl != CARP_DFLTTL) {
+ 		CARPSTATS_INC(carps_badttl);
+ 		CARP_DEBUG("%s: received ttl %d != 255 on %s\n", __func__,
+ 		    ttl, if_name(m->m_pkthdr.rcvif));
+ 		goto out;
+ 	}
+ 
+ 	if (vrrp_checksum_verify(m, off, len, phdrcksum)) {
+ 		CARPSTATS_INC(carps_badsum);
+ 		CARP_DEBUG("%s: incorrect checksum for VRID %u@%s\n", __func__,
+ 		    sc->sc_vhid, if_name(ifp));
+ 		goto out;
+ 	}
+ 
+ 	/* RFC9568, 7.1 Receiving VRRP packets. */
+ 	if (sc->sc_vrrp_prio == 255) {
+ 		CARP_DEBUG("%s: our priority is 255. Ignore peer announcement.\n",
+ 		    __func__);
+ 		goto out;
+ 	}
+ 
+ 	/* XXX TODO Check IP address payload. */
+ 
+ 	sc->sc_vrrp_master_inter = ntohs(vh->vrrp_max_adver_int);
+ 
+ 	switch (sc->sc_state) {
+ 	case INIT:
+ 		break;
+ 	case MASTER:
+ 		/*
+ 		 * If we receive an advertisement from a master who's going to
+ 		 * be more frequent than us, go into BACKUP state.
+ 		 * Same if the peer has a higher priority than us.
+ 		 */
+ 		if (ntohs(vh->vrrp_max_adver_int) < sc->sc_vrrp_adv_inter ||
+-		    vh->vrrp_priority > sc->sc_vrrp_prio) {
++		    vh->vrrp_priority > DEMOTE_VRRP_PRIO(sc)) {
+ 			callout_stop(&sc->sc_ad_tmo);
+ 			carp_set_state(sc, BACKUP,
+ 			    "more frequent advertisement received");
+ 			carp_setrun(sc, 0);
+ 			carp_delroute(sc);
+ 		}
+ 		break;
+ 	case BACKUP:
+ 		/*
+ 		 * If we're pre-empting masters who advertise slower than us,
+ 		 * and this one claims to be slower, treat him as down.
+ 		 */
+ 		if (V_carp_preempt && (ntohs(vh->vrrp_max_adver_int) > sc->sc_vrrp_adv_inter
+-		    || vh->vrrp_priority < sc->sc_vrrp_prio)) {
++		    || vh->vrrp_priority < DEMOTE_VRRP_PRIO(sc))) {
+ 			carp_master_down_locked(sc,
+ 			    "preempting a slower master");
+ 			break;
+ 		}
+ 
+ 		/*
+ 		 * Otherwise, we reset the counter and wait for the next
+ 		 * advertisement.
+ 		 */
+ 		carp_setrun(sc, af);
+ 		break;
+ 	}
+ 
+ out:
+ 	CARP_UNLOCK(sc);
+ 	m_freem(m);
+ }
+ 
+ static int
+ carp_tag(struct carp_softc *sc, struct mbuf *m)
+ {
+ 	struct m_tag *mtag;
+ 
+ 	/* Tag packet for carp_output */
+ 	if ((mtag = m_tag_get(PACKET_TAG_CARP, sizeof(sc->sc_vhid),
+ 	    M_NOWAIT)) == NULL) {
+ 		m_freem(m);
+ 		CARPSTATS_INC(carps_onomem);
+ 		return (ENOMEM);
+ 	}
+ 	bcopy(&sc->sc_vhid, mtag + 1, sizeof(sc->sc_vhid));
+ 	m_tag_prepend(m, mtag);
+ 
+ 	return (0);
+ }
+ 
+ static void
+ carp_prepare_ad(struct mbuf *m, struct carp_softc *sc, struct carp_header *ch)
+ {
+ 
+ 	MPASS(sc->sc_version == CARP_VERSION_CARP);
+ 
+ 	if (sc->sc_init_counter) {
+ 		/* this could also be seconds since unix epoch */
+ 		sc->sc_counter = arc4random();
+ 		sc->sc_counter = sc->sc_counter << 32;
+ 		sc->sc_counter += arc4random();
+ 	} else
+ 		sc->sc_counter++;
+ 
+ 	ch->carp_counter[0] = htonl((sc->sc_counter>>32)&0xffffffff);
+ 	ch->carp_counter[1] = htonl(sc->sc_counter&0xffffffff);
+ 
+ 	carp_hmac_generate(sc, ch->carp_counter, ch->carp_md);
+ }
+ 
+ static inline void
+ send_ad_locked(struct carp_softc *sc)
+ {
+ 	switch (sc->sc_version) {
+ 	case CARP_VERSION_CARP:
+ 		carp_send_ad_locked(sc);
+ 		break;
+ 	case CARP_VERSION_VRRPv3:
+ 		vrrp_send_ad_locked(sc);
+ 		break;
+ 	}
+ }
+ 
+ /*
+  * To avoid LORs and possible recursions this function shouldn't
+  * be called directly, but scheduled via taskqueue.
+  */
+ static void
+ carp_send_ad_all(void *ctx __unused, int pending __unused)
+ {
+ 	struct carp_softc *sc;
+ 	struct epoch_tracker et;
+ 
+ 	NET_EPOCH_ENTER(et);
+ 	mtx_lock(&carp_mtx);
+ 	LIST_FOREACH(sc, &carp_list, sc_next)
+ 		if (sc->sc_state == MASTER) {
+ 			CARP_LOCK(sc);
+ 			CURVNET_SET(sc->sc_carpdev->if_vnet);
+ 			send_ad_locked(sc);
+ 			CURVNET_RESTORE();
+ 			CARP_UNLOCK(sc);
+ 		}
+ 	mtx_unlock(&carp_mtx);
+ 	NET_EPOCH_EXIT(et);
+ }
+ 
+ /* Send a periodic advertisement, executed in callout context. */
+ static void
+ carp_callout(void *v)
+ {
+ 	struct carp_softc *sc = v;
+ 	struct epoch_tracker et;
+@@ -1263,199 +1274,199 @@ carp_send_ad_locked(struct carp_softc *sc)
+ 		} else
+ 			ip->ip_src.s_addr = 0;
+ 		ip->ip_dst = sc->sc_carpaddr;
+ 
+ 		ch_ptr = (struct carp_header *)(&ip[1]);
+ 		bcopy(&ch, ch_ptr, sizeof(ch));
+ 		carp_prepare_ad(m, sc, ch_ptr);
+ 		if (IN_MULTICAST(ntohl(sc->sc_carpaddr.s_addr)) &&
+ 		    carp_tag(sc, m) != 0)
+ 			goto resched;
+ 
+ 		m->m_data += sizeof(*ip);
+ 		ch_ptr->carp_cksum = in_cksum(m, len - sizeof(*ip));
+ 		m->m_data -= sizeof(*ip);
+ 
+ 		CARPSTATS_INC(carps_opackets);
+ 
+ 		carp_send_ad_error(sc, ip_output(m, NULL, NULL, IP_RAWOUTPUT,
+ 		    &sc->sc_carpdev->if_carp->cif_imo, NULL));
+ 	}
+ #endif /* INET */
+ #ifdef INET6
+ 	if (sc->sc_naddrs6) {
+ 		struct ip6_hdr *ip6;
+ 
+ 		m = m_gethdr(M_NOWAIT, MT_DATA);
+ 		if (m == NULL) {
+ 			CARPSTATS_INC(carps_onomem);
+ 			goto resched;
+ 		}
+ 		len = sizeof(*ip6) + sizeof(ch);
+ 		m->m_pkthdr.len = len;
+ 		m->m_pkthdr.rcvif = NULL;
+ 		m->m_len = len;
+ 		M_ALIGN(m, m->m_len);
+ 		ip6 = mtod(m, struct ip6_hdr *);
+ 		bzero(ip6, sizeof(*ip6));
+ 		ip6->ip6_vfc |= IPV6_VERSION;
+ 		/* Traffic class isn't defined in ip6 struct instead
+ 		 * it gets offset into flowid field */
+ 		ip6->ip6_flow |= htonl(V_carp_dscp << (IPV6_FLOWLABEL_LEN +
+ 		    IPTOS_DSCP_OFFSET));
+ 		ip6->ip6_hlim = CARP_DFLTTL;
+ 		ip6->ip6_nxt = IPPROTO_CARP;
+ 
+ 		/* set the source address */
+ 		ifa = carp_best_ifa(AF_INET6, sc->sc_carpdev);
+ 		if (ifa != NULL) {
+ 			bcopy(IFA_IN6(ifa), &ip6->ip6_src,
+ 			    sizeof(struct in6_addr));
+ 			ifa_free(ifa);
+ 		} else
+ 			/* This should never happen with IPv6. */
+ 			bzero(&ip6->ip6_src, sizeof(struct in6_addr));
+ 
+ 		/* Set the multicast destination. */
+ 		memcpy(&ip6->ip6_dst, &sc->sc_carpaddr6, sizeof(ip6->ip6_dst));
+ 		if (IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst) ||
+ 		    IN6_IS_ADDR_LINKLOCAL(&ip6->ip6_dst)) {
+ 			if (in6_setscope(&ip6->ip6_dst, sc->sc_carpdev, NULL) != 0) {
+ 				m_freem(m);
+ 				CARP_DEBUG("%s: in6_setscope failed\n", __func__);
+ 				goto resched;
+ 			}
+ 		}
+ 
+ 		ch_ptr = (struct carp_header *)(&ip6[1]);
+ 		bcopy(&ch, ch_ptr, sizeof(ch));
+ 		carp_prepare_ad(m, sc, ch_ptr);
+ 		if (IN6_IS_ADDR_MULTICAST(&sc->sc_carpaddr6) &&
+ 		    carp_tag(sc, m) != 0)
+ 			goto resched;
+ 
+ 		m->m_data += sizeof(*ip6);
+ 		ch_ptr->carp_cksum = in_cksum(m, len - sizeof(*ip6));
+ 		m->m_data -= sizeof(*ip6);
+ 
+ 		CARPSTATS_INC(carps_opackets6);
+ 
+ 		carp_send_ad_error(sc, ip6_output(m, NULL, NULL, 0,
+ 		    &sc->sc_carpdev->if_carp->cif_im6o, NULL, NULL));
+ 	}
+ #endif /* INET6 */
+ 
+ resched:
+ 	callout_reset(&sc->sc_ad_tmo, tvtohz(&tv), carp_callout, sc);
+ }
+ 
+ static void
+ vrrp_send_ad_locked(struct carp_softc *sc)
+ {
+ 	struct vrrpv3_header *vh_ptr;
+ 	struct ifaddr *ifa;
+ 	struct mbuf *m;
+ 	int len;
+ 	struct vrrpv3_header vh = {
+ 	    .vrrp_version = CARP_VERSION_VRRPv3,
+ 	    .vrrp_type = VRRP_TYPE_ADVERTISEMENT,
+ 	    .vrrp_vrtid = sc->sc_vhid,
+-	    .vrrp_priority = sc->sc_vrrp_prio,
++	    .vrrp_priority = DEMOTE_VRRP_PRIO(sc),
+ 	    .vrrp_count_addr = 0,
+ 	    .vrrp_max_adver_int = htons(sc->sc_vrrp_adv_inter),
+ 	    .vrrp_checksum = 0,
+ 	};
+ 
+ 	NET_EPOCH_ASSERT();
+ 	CARP_LOCK_ASSERT(sc);
+ 	MPASS(sc->sc_version == CARP_VERSION_VRRPv3);
+ 
+ #ifdef INET
+ 	if (sc->sc_naddrs) {
+ 		struct ip *ip;
+ 
+ 		m = m_gethdr(M_NOWAIT, MT_DATA);
+ 		if (m == NULL) {
+ 			CARPSTATS_INC(carps_onomem);
+ 			goto resched;
+ 		}
+ 		len = sizeof(*ip) + sizeof(vh);
+ 		m->m_pkthdr.len = len;
+ 		m->m_pkthdr.rcvif = NULL;
+ 		m->m_len = len;
+ 		M_ALIGN(m, m->m_len);
+ 		m->m_flags |= M_MCAST;
+ 		ip = mtod(m, struct ip *);
+ 		ip->ip_v = IPVERSION;
+ 		ip->ip_hl = sizeof(*ip) >> 2;
+ 		ip->ip_tos = V_carp_dscp << IPTOS_DSCP_OFFSET;
+ 		ip->ip_off = htons(IP_DF);
+ 		ip->ip_ttl = CARP_DFLTTL;
+ 		ip->ip_p = IPPROTO_CARP;
+ 		ip->ip_sum = 0;
+ 		ip_fillid(ip, V_ip_random_id);
+ 
+ 		ifa = carp_best_ifa(AF_INET, sc->sc_carpdev);
+ 		if (ifa != NULL) {
+ 			ip->ip_src.s_addr =
+ 			    ifatoia(ifa)->ia_addr.sin_addr.s_addr;
+ 			ifa_free(ifa);
+ 		} else
+ 			ip->ip_src.s_addr = 0;
+ 		ip->ip_dst.s_addr = htonl(INADDR_CARP_GROUP);
+ 
+ 		/* Include the IP addresses in the announcement. */
+ 		for (int i = 0; i < (sc->sc_naddrs + sc->sc_naddrs6); i++) {
+ 			struct sockaddr_in *in;
+ 
+ 			MPASS(sc->sc_ifas[i] != NULL);
+ 			if (sc->sc_ifas[i]->ifa_addr->sa_family != AF_INET)
+ 				continue;
+ 
+ 			in = (struct sockaddr_in *)sc->sc_ifas[i]->ifa_addr;
+ 
+ 			if (m_append(m, sizeof(in->sin_addr),
+ 			    (caddr_t)&in->sin_addr) != 1) {
+ 				m_freem(m);
+ 				goto resched;
+ 			}
+ 
+ 			vh.vrrp_count_addr++;
+ 			len += sizeof(in->sin_addr);
+ 		}
+ 		ip->ip_len = htons(len);
+ 
+ 		vh_ptr = (struct vrrpv3_header *)mtodo(m, sizeof(*ip));
+ 		bcopy(&vh, vh_ptr, sizeof(vh));
+ 
+ 		vh_ptr->vrrp_checksum = in_pseudo(ip->ip_src.s_addr,
+ 		    ip->ip_dst.s_addr,
+ 		    htonl((uint16_t)(len - sizeof(*ip)) + ip->ip_p));
+ 		vh_ptr->vrrp_checksum = in_cksum_skip(m, len, sizeof(*ip));
+ 
+ 		if (carp_tag(sc, m))
+ 			goto resched;
+ 
+ 		CARPSTATS_INC(carps_opackets);
+ 
+ 		carp_send_ad_error(sc, ip_output(m, NULL, NULL, IP_RAWOUTPUT,
+ 		    &sc->sc_carpdev->if_carp->cif_imo, NULL));
+ 	}
+ #endif
+ #ifdef INET6
+ 	if (sc->sc_naddrs6) {
+ 		struct ip6_hdr *ip6;
+ 
+ 		m = m_gethdr(M_NOWAIT, MT_DATA);
+ 		if (m == NULL) {
+ 			CARPSTATS_INC(carps_onomem);
+ 			goto resched;
+ 		}
+ 		len = sizeof(*ip6) + sizeof(vh);
+ 		m->m_pkthdr.len = len;
+ 		m->m_pkthdr.rcvif = NULL;
+ 		m->m_len = len;
+ 		M_ALIGN(m, m->m_len);
+ 		m->m_flags |= M_MCAST;
+ 		ip6 = mtod(m, struct ip6_hdr *);
+ 		bzero(ip6, sizeof(*ip6));
+ 		ip6->ip6_vfc |= IPV6_VERSION;
+diff --git tests/sys/netinet/carp.sh tests/sys/netinet/carp.sh
+index 90ed9d6f9baf..e0ef2fd97583 100755
+--- tests/sys/netinet/carp.sh
++++ tests/sys/netinet/carp.sh
+@@ -401,200 +401,261 @@ unicast_ll_v6_body()
+ 
+ 	j=carp_uni_ll_v6
+ 
+ 	bridge=$(vnet_mkbridge)
+ 	epair_one=$(vnet_mkepair)
+ 	epair_two=$(vnet_mkepair)
+ 
+ 	vnet_mkjail ${j}_one ${bridge} ${epair_one}a ${epair_two}a
+ 	vnet_mkjail ${j}_two ${epair_one}b
+ 	vnet_mkjail ${j}_three ${epair_two}b
+ 
+ 	jexec ${j}_one ifconfig ${bridge} addm ${epair_one}a \
+ 	    addm ${epair_two}a
+ 	jexec ${j}_one ifconfig ${epair_one}a up
+ 	jexec ${j}_one ifconfig ${epair_two}a up
+ 	jexec ${j}_one ifconfig ${bridge} inet6 2001:db8::0:4/64 up \
+ 	    no_dad
+ 	jexec ${j}_one ifconfig ${bridge} inet6 alias 2001:db8:1::1/64 \
+ 	    no_dad up
+ 
+ 	jexec ${j}_two ifconfig ${epair_one}b inet6 2001:db8:1::2/64 \
+ 	    no_dad up
+ 	jexec ${j}_three ifconfig ${epair_two}b inet6 2001:db8:1::3/64 \
+ 	    no_dad up
+ 
+ 	ll_one=$(jexec ${j}_two ifconfig ${epair_one}b | awk "/ .*%${epair_one}b.* / { print \$2 }" | cut -d % -f 1)
+ 	ll_two=$(jexec ${j}_three ifconfig ${epair_two}b | awk "/ .*%${epair_two}b.* / { print \$2 }" | cut -d % -f 1)
+ 
+ 	jexec ${j}_two ifconfig ${epair_one}b inet6 add vhid 1 \
+ 	    peer6 ${ll_two} \
+ 	    2001:db8::0:1/64
+ 	sleep 0.2
+ 	jexec ${j}_three ifconfig ${epair_two}b inet6 add vhid 1 \
+ 	    peer6 ${ll_one} \
+ 	    2001:db8::0:1/64
+ 
+ 	# Sanity check
+ 	atf_check -s exit:0 -o ignore jexec ${j}_two \
+ 	    ping -6 -c 1 2001:db8:1::3
+ 
+ 	wait_for_carp ${j}_two ${epair_one}b \
+ 	    ${j}_three ${epair_two}b
+ 
+ 	atf_check -s exit:0 -o ignore jexec ${j}_one \
+ 	    ping -6 -c 3 2001:db8::0:1
+ }
+ 
+ unicast_ll_v6_cleanup()
+ {
+ 	vnet_cleanup
+ }
+ 
+ atf_test_case "negative_demotion" "cleanup"
+ negative_demotion_head()
+ {
+ 	atf_set descr 'Test PR #259528'
+ 	atf_set require.user root
+ }
+ 
+ negative_demotion_body()
+ {
+ 	carp_init
+ 
+ 	epair=$(vnet_mkepair)
+ 
+ 	vnet_mkjail one ${epair}a
+ 	jexec one sysctl net.inet.carp.preempt=1
+ 	jexec one ifconfig ${epair}a 192.0.2.1/24 up
+ 	jexec one ifconfig ${epair}a add vhid 1 192.0.2.254/24 \
+ 	    advskew 0 pass foobar
+ 
+ 	vnet_mkjail two ${epair}b
+ 	jexec two sysctl net.inet.carp.preempt=1
+ 	jexec two ifconfig ${epair}b 192.0.2.2/24 up
+ 	jexec two ifconfig ${epair}b add vhid 1 192.0.2.254/24 \
+ 	    advskew 100 pass foobar
+ 
+ 	# Allow things to settle
+ 	wait_for_carp one ${epair}a two ${epair}b
+ 
+ 	if is_master one ${epair}a && is_master two ${epair}b
+ 	then
+ 		atf_fail "Two masters!"
+ 	fi
+ 
+ 	jexec one sysctl net.inet.carp.demotion=-1
+ 	sleep 3
+ 
+ 	if is_master one ${epair}a && is_master two ${epair}b
+ 	then
+ 		atf_fail "Two masters!"
+ 	fi
+ }
+ 
+ negative_demotion_cleanup()
+ {
+ 	vnet_cleanup
+ }
+ 
++atf_test_case "vrrp_preempt" "cleanup"
++vrrp_preempt_head()
++{
++	atf_set descr 'Test VRRP preemption'
++	atf_set require.user root
++}
++
++vrrp_preempt_body()
++{
++	carp_init
++
++	epair1=$(vnet_mkepair)
++	epair2=$(vnet_mkepair)
++
++	vnet_mkjail one ${epair1}a ${epair2}a
++	jexec one sysctl net.inet.carp.preempt=1
++	jexec one ifconfig ${epair1}a 192.0.2.1/24 up
++	jexec one ifconfig ${epair1}a add vhid 1 carpver 3 192.0.2.254/24 \
++	    vrrpprio 10 pass foobar1
++	jexec one ifconfig ${epair2}a 192.0.3.1/24 up
++	jexec one ifconfig ${epair2}a add vhid 2 carpver 3 192.0.3.254/24 \
++	    vrrpprio 10 pass foobar2
++
++	vnet_mkjail two ${epair1}b ${epair2}b
++	jexec two sysctl net.inet.carp.preempt=1
++	jexec two ifconfig ${epair1}b 192.0.2.2/24 up
++	jexec two ifconfig ${epair2}b 192.0.3.2/24 up
++	jexec two ifconfig ${epair1}b add vhid 1 carpver 3 192.0.2.254/24 \
++	    vrrpprio 1 pass foobar1
++	jexec two ifconfig ${epair2}b add vhid 2 carpver 3 192.0.3.254/24 \
++	    vrrpprio 1 pass foobar2
++
++	# Allow things to settle
++	wait_for_carp one ${epair1}a two ${epair1}b
++	wait_for_carp one ${epair2}a two ${epair2}b
++
++	# Bring down one interface; preemption should demote the second interface too
++	jexec one ifconfig ${epair1}a down
++	sleep 3
++
++	if is_master one ${epair2}a
++	then
++		atf_fail "preemption did not affect the second interface"
++	fi
++
++	# Bring interface back up; one should reclaim master
++	jexec one ifconfig ${epair1}a up
++	sleep 3
++
++	if ! is_master one ${epair2}a
++	then
++		atf_fail "Priority router did not take its master role back"
++	fi
++}
++
++vrrp_preempt_cleanup()
++{
++	vnet_cleanup
++}
++
+ 
+ 
+ atf_test_case "nd6_ns_source_mac" "cleanup"
+ nd6_ns_source_mac_head()
+ {
+         atf_set descr 'CARP ndp neighbor solicitation MAC source test (IPv6)'
+         atf_set require.user root
+ }
+ 
+ nd6_ns_source_mac_body()
+ {
+         carp_init
+         vnet_init_bridge
+ 
+         bridge=$(vnet_mkbridge)
+         epair_one=$(vnet_mkepair)
+         epair_two=$(vnet_mkepair)
+ 
+         vnet_mkjail carp_ndp_v6_bridge ${bridge} ${epair_one}a ${epair_two}a
+         vnet_mkjail carp_ndp_v6_master ${epair_one}b
+         vnet_mkjail carp_ndp_v6_slave ${epair_two}b
+ 
+         jexec carp_ndp_v6_bridge ifconfig ${bridge} inet6 2001:db8::0:4/64 up \
+             no_dad
+         jexec carp_ndp_v6_bridge ifconfig ${bridge} addm ${epair_one}a \
+             addm ${epair_two}a
+         jexec carp_ndp_v6_bridge ifconfig ${epair_one}a up
+         jexec carp_ndp_v6_bridge ifconfig ${epair_two}a up
+ 
+         jexec carp_ndp_v6_master ifconfig ${epair_one}b inet6 \
+             2001:db8::1:2/64 up no_dad
+         jexec carp_ndp_v6_master ifconfig ${epair_one}b inet6 add vhid 1 \
+             advskew 0 2001:db8::0:1/64
+ 
+         jexec carp_ndp_v6_slave ifconfig ${epair_two}b inet6 \
+ 	    2001:db8::1:3/64 up no_dad
+         jexec carp_ndp_v6_slave ifconfig ${epair_two}b inet6 add vhid 1 \
+             advskew 100 2001:db8::0:1/64
+ 
+         wait_for_carp carp_ndp_v6_master ${epair_one}b \
+             carp_ndp_v6_slave ${epair_two}b
+ 
+ 	# carp_ndp_v6_master is MASTER
+ 
+ 	# trigger a NS from the virtual IP from the BACKUP
+         atf_check -s exit:2 -o ignore jexec carp_ndp_v6_slave \
+             ping -6 -c 3 -S 2001:db8::0:1 2001:db8::0:4
+ 
+ 	# trigger a NS from the virtual IP from the MASTER,
+ 	# this ping should work
+         atf_check -s exit:0 -o ignore jexec carp_ndp_v6_master \
+             ping -6 -c 3 -S 2001:db8::0:1 2001:db8::0:4
+ 
+         # ndp entry should be for the virtual mac
+         atf_check -o match:'2001:db8::1 +00:00:5e:00:01:01' \
+ 	    jexec carp_ndp_v6_bridge ndp -an
+ }
+ 
+ nd6_ns_source_mac_cleanup()
+ {
+         vnet_cleanup
+ }
+ 
+ 
+ atf_test_case "switch" "cleanup"
+ switch_head()
+ {
+ 	atf_set descr 'Switch between master and backup'
+ 	atf_set require.user root
+ }
+ 
+ switch_body()
+ {
+ 	carp_init
+ 
+ 	epair=$(vnet_mkepair)
+ 
+ 	ifconfig ${epair}a up
+ 	ifconfig ${epair}a vhid 1 advskew 100 192.0.2.1/24
+ 	ifconfig ${epair}a vhid 1 state backup
+ 	ifconfig ${epair}a vhid 1 state master
+ }
+ 
+ switch_cleanup()
+ {
+ 	vnet_cleanup
+ }
+ 
+ atf_init_test_cases()
+ {
+ 	atf_add_test_case "basic_v4"
+ 	atf_add_test_case "vrrp_v4"
+ 	atf_add_test_case "unicast_v4"
+ 	atf_add_test_case "basic_v6"
+ 	atf_add_test_case "vrrp_v6"
+ 	atf_add_test_case "unicast_v6"
+ 	atf_add_test_case "unicast_ll_v6"
+ 	atf_add_test_case "negative_demotion"
+ 	atf_add_test_case "nd6_ns_source_mac"
++	atf_add_test_case "vrrp_preempt"
+ 	atf_add_test_case "switch"
+ }

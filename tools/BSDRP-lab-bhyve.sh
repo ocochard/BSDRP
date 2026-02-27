@@ -44,6 +44,7 @@ NCPUS=1
 NUMBER_VM="1"
 RAM="1G"
 THREADS=1
+REG_LAB=""
 SUDO=sudo
 if [ "${arch}" = "amd64" ]; then
 	UEFI=true

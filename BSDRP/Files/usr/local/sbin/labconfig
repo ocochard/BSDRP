@@ -17,7 +17,7 @@ usage () {
 	echo "-ecmp: https://bsdrp.net/documentation/examples/ecmp"
 	echo "-fairshape: https://bsdrp.net/documentation/examples/fair_traffic_shaping_per_ip_with_ipfw-dummynet"
 	echo "-full: https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab"
-	echo "-freevrrpd: https://bsdrp.net/documentation/examples/simple_vrrp_lab"
+	echo "-vrrp: https://bsdrp.net/documentation/examples/simple_vrrp_lab"
 	echo "-frr: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab"
 	echo "-frr_jails: same as previous but with jails"
 	echo "-graphpath: https://bsdrp.net/documentation/examples/graphpath"
@@ -3631,71 +3631,37 @@ service netif restart
 service routing restart
 }
 
-freevrrpd_vm1() {
+vrrp_vm1() {
 sysrc hostname=R1 \
+  kld_list+="carp" \
   ifconfig_vtnet3="inet 192.168.1.1/24" \
   ifconfig_vtnet4="inet 192.168.2.1/24" \
-  freevrrpd_enable=YES
-cat <<EOF > /usr/local/etc/freevrrpd.conf
-[VRID]
-serverid = 1
-interface = vtnet3
-# This router is the master
-priority = 101
-addr = 192.168.1.254/24
-# We want that this state is dependant with the state of vrid 2
-vridsdep = 2
-password = vrid1
-
-[VRID]
-serverid = 2
-interface = vtnet4
-# This router is the master
-priority = 101
-addr = 192.168.2.254/24
-password = vrid2
-# We want that this state is dependant with the state of vrid 1
-vridsdep = 1
-EOF
+  ifconfig_vtnet3_alias0="inet 192.168.1.254/32 vhid 1 vrrpprio 101 pass vrid1 carpver 3" \
+  ifconfig_vtnet4_alias0="inet 192.168.2.254/32 vhid 2 vrrpprio 101 pass vrid2 carpver 3"
+echo 'net.inet.carp.preempt=1' >> /etc/sysctl.conf
+kldload carp
 service hostname restart
 service netif restart
-service freevrrpd start
+sysctl net.inet.carp.preempt=1
 /usr/local/sbin/config save
 }
 
-freevrrpd_vm2() {
+vrrp_vm2() {
 sysrc hostname=R2 \
+  kld_list+="carp" \
   ifconfig_vtnet3="inet 192.168.1.2/24" \
   ifconfig_vtnet4="inet 192.168.2.2/24" \
-  freevrrpd_enable=YES
-cat <<EOF > /usr/local/etc/freevrrpd.conf
-[VRID]
-serverid = 1
-interface = vtnet3
-# This router is the backup
-priority = 100
-addr = 192.168.1.254/24
-# We want that this state is dependant with the state of vrid 2
-vridsdep = 2
-password = vrid1
-
-[VRID]
-serverid = 2
-interface = vtnet4
-# This router is the backup
-priority = 100
-addr = 192.168.2.254/24
-password = vrid2
-# We want that this state is dependant with the state of vrid 1
-vridsdep = 1
-EOF
+  ifconfig_vtnet3_alias0="inet 192.168.1.254/32 vhid 1 vrrpprio 100 pass vrid1 carpver 3" \
+  ifconfig_vtnet4_alias0="inet 192.168.2.254/32 vhid 2 vrrpprio 100 pass vrid2 carpver 3"
+echo 'net.inet.carp.preempt=1' >> /etc/sysctl.conf
+kldload carp
 service hostname restart
 service netif restart
-service freevrrpd start
+sysctl net.inet.carp.preempt=1
 /usr/local/sbin/config save
 }
 
-freevrrpd_vm3() {
+vrrp_vm3() {
 sysrc hostname=R3 \
   ifconfig_vtnet3="inet 192.168.1.3/24" \
   defaultrouter="192.168.1.254" \
@@ -3707,7 +3673,7 @@ service routing restart
 /usr/local/sbin/config save
 }
 
-freevrrpd_vm4() {
+vrrp_vm4() {
 sysrc hostname=R4 \
   ifconfig_vtnet4="inet 192.168.2.4/24" \
   defaultrouter="192.168.2.254" \
@@ -3718,6 +3684,7 @@ service netif restart
 service routing restart
 /usr/local/sbin/config save
 }
+
 ### Main
 
 [ $# -lt 1 ] && usage
