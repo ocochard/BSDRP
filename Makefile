@@ -185,11 +185,7 @@ MAKEFILE := ${.PARSEDIR}/${.PARSEFILE}
 # .PHONY is important for targets like "clean" or "all" that are actions, not files
 # Without .PHONY, if a file named "clean" exists, "make clean" would do nothing!
 .PHONY: all check-requirements clean clean-all upstream-sync help \
-	cleanup-src-FreeBSD cleanup-src-ports \
-	update-src-FreeBSD update-src-ports \
-	patch-src-FreeBSD patch-src-ports \
 	sync-FreeBSD sync-ports \
-	add-src-ports patch-sources \
 	build-builder-jail build-ports-tree build-packages \
 	clean-jail clean-ports-tree clean-packages clean-images clean-src \
 	release compress-images checksum-images
@@ -279,7 +275,7 @@ ${OBJ_DIR}/update-src-${repo}: ${vars_file} ${src_${repo}_dir}
 	if [ "$$current_hash" != "${${repo}_hash}" ]; then \
 		echo "==> Hash changed from $$current_hash to ${${repo}_hash}, cleaning ${repo} sources..."; \
 		rm -f ${OBJ_DIR}/cleanup-src-${repo} ${OBJ_DIR}/patch-src-${repo}; \
-		${MAKE} -f ${MAKEFILE} cleanup-src-${repo}; \
+		${MAKE} -f ${MAKEFILE} ${OBJ_DIR}/cleanup-src-${repo}; \
 		echo "==> Updating ${repo} at hash ${${repo}_hash}..."; \
 		git -C ${src_${repo}_dir} checkout ${${repo}_branch}; \
 		git -C ${src_${repo}_dir} pull; \
