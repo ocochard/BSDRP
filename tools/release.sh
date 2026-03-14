@@ -45,8 +45,7 @@ upload(){
   local ver=$1
   local arch=$2
 	${DRY} scp CHANGES.md cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/${ver}
-  FILE_LIST=$(ls ${poudriere_imgdir}/BSDRP-${ver}-*-${arch}.*)
-			${DRY} scp ${FILE_LIST} cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/${ver}/${arch}
+			${DRY} scp ${file_list} cochard,bsdrp@frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/BSD_Router_Project/${ver}/${arch}
 	exit 0
 }
 
@@ -103,6 +102,25 @@ else
 fi
 
 arch=$(uname -p)
+file_list=""
+file_list=$(ls ${poudriere_imgdir}/BSDRP-${version}-*-${arch}.*)
+
+if [ -z "${file_list}" ]; then
+  die "no files to be uploaded found"
+fi
+
+echo "Detected files to be uploaded:"
+echo "Do you confirm you want to upload to ${version}/${arch}"
+
+input=""
+while [ "${input}" != "y" ] && [ "${input}" != "n" ] && [ "${input}" != "a" ];do
+  read input <&1 # I: read without -r will mangle backslashes.
+done
+if [ "${input}" = "n" ]; then
+  $1 ${version} ${arch}
+else
+  exit 1
+fi
 
 if [ "$1" = "upload" -a $# -eq 1 ]; then
   echo "Missing destination directory, examples:"
@@ -111,14 +129,3 @@ if [ "$1" = "upload" -a $# -eq 1 ]; then
   echo
   usage
 fi
-
-
-if [ "$1" = "dokuwiki" -a $# -eq 1 ]; then
-  echo "Missing destination directory, examples:"
-  echo "- nightly/2012-09-05"
-  echo "- 2.0"
-  echo
-  usage
-fi
-
-$1 ${version} ${arch}

@@ -6,3 +6,5 @@ poudriere.etc/poudriere.d/BSDRPj-src.conf
 EINE/local.data
 EINE/DEMO.data/GeoLite2-City.mmdb
 EINE/DEMO.data/GeoLite2-City.mmdb.gz
+CLAUDE.md
+.claude
