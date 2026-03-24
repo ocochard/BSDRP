@@ -255,7 +255,7 @@ expand_data_slice () {
 	gpart recover /dev/${boot_dev}
 
 	#free space
-	free_space=$(gpart show ada0 | awk '/- free -/ {gsub(/[()]/, "", $6); print $6}')
+	free_space=$(gpart show ${boot_dev} | awk '/- free -/ {gsub(/[()]/, "", $6); print $6}')
 	[ -z "${free_space}" ] && die "There is no space left on disk"
 	echo "There is ${free_space} available on your disk that can be use for /data"
 	user_confirm "Are you sure to repartition your disk (it is a long process) ? (y/n)"
