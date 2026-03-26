@@ -1,6 +1,6 @@
 # [![BSDRP logo](logos/BSDRP.logo.128.png)BSD Router Project](https://bsdrp.net)
 
-Copyright (c) 2009-2025, The BSDRP Development Team
+Copyright (c) 2009-2026, The BSDRP Development Team
 
 ## Description
 
@@ -9,13 +9,13 @@ It includes software like: [FRRouting](https://frrouting.org), [Bird](http://bir
 
 ## Requirements to Build
 
-- FreeBSD 14.2 or higher
-- poudriere
-- git
+- FreeBSD 15.0 or higher
+- ports-mgmt/poudriere
+- devel/git
 
 ## How to build
 
-The build system uses a Makefile. To build BSDRP image disks, run:
+To build BSDRP image disks, run:
 ```
 make
 ```
