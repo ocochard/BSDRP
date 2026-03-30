@@ -356,7 +356,7 @@ if [ -f /tmp/post-upgrade ]; then
 	logger Starting post-upgrade script
 
 	# Execute post-upgrade script with new partition as parameter
-	sh "$DEBUG_PROPAGATE" /tmp/post-upgrade /dev/${NANO_DRIVE}${NEXT_LABEL_ID}
+	sh ${DEBUG_PROPAGATE} /tmp/post-upgrade /dev/${NANO_DRIVE}${NEXT_LABEL_ID}
 fi
 
 [ -f ${LOCK} ] && rm ${LOCK}
