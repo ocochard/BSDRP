@@ -33,7 +33,6 @@ options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
 options 	IPSEC_SUPPORT		# Allow kldload of ipsec and tcpmd5
 options 	IPSEC_OFFLOAD		# Inline ipsec offload infra
-options 	ROUTE_MPATH		# Multipath routing support
 options 	FIB_ALGO		# Modular fib lookups
 options 	TCP_OFFLOAD		# TCP offload
 #options 	TCP_BLACKBOX		# Enhanced TCP event logging
@@ -98,6 +97,7 @@ options 	KDB			# Enable kernel debugger support.
 options 	KDB_TRACE		# Print a stack trace for a panic.
 # For full debugger support use (turn off in stable branch):
 #include "std.debug"
+
 # Compression support
 options 	GZIO			# gzip (dumps)
 options 	ZSTDIO			# zstd (dumps, tarfs, uzip, zfs)
@@ -214,7 +214,7 @@ device		vt_vbefb
 #device		agp		# support several AGP chipsets
 
 # CardBus bridge support
-#device		cbb			# cardbus (yenta) bridge
+#device		cbb			# CardBus (yenta) bridge
 #device		cardbus			# CardBus (32-bit) bus
 
 # Serial (COM) ports
@@ -290,9 +290,9 @@ device		xl			# 3Com 3c90x (``Boomerang'', ``Cyclone'')
 #options 	IEEE80211_DEBUG		# enable debug msgs
 #options 	IEEE80211_SUPPORT_MESH	# enable 802.11s draft support
 #device		wlan_wep		# 802.11 WEP support
+#device		wlan_tkip		# 802.11 TKIP support
 #device		wlan_ccmp		# 802.11 CCMP support
 #device		wlan_gcmp		# 802.11 GCMP support
-#device		wlan_tkip		# 802.11 TKIP support
 #device		wlan_amrr		# AMRR transmit rate control algorithm
 #device		ath			# Atheros CardBus/PCI NICs
 #device		ath_hal			# Atheros CardBus/PCI chip support
