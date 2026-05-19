@@ -75,6 +75,7 @@ sysrc hostname=R2 \
 	ipsec_file="/etc/ipsec.conf" \
 	pimd_enable=YES \
 	kld_list+=" carp"
+kldstat -q -m carp || kldload carp
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 
 cat > /usr/local/etc/mpd5/if-up.sh <<EOF
@@ -614,8 +615,14 @@ kldstat -q -m dummynet || kldload dummynet
 \${fwcmd} add pipe 41 all from 10.0.0.2 to 10.0.0.4 in via any
 \${fwcmd} add pipe 60 all from 2001:db8::4 to 2001:db8::2 out via any
 \${fwcmd} add pipe 61 all from 2001:db8::2 to 2001:db8::4 in via any
-# We don't want to block traffic, only shape some
-\${fwcmd} add allow ip from any to any
+# We don't want to block traffic, only shape some.
+# IMPORTANT: number the catch-all allow at 65000 so the ipfw_netflow rc.d
+# script's default ngtee rule (01000) lands BEFORE this allow and gets to
+# tap every packet for the netflow node. Without an explicit number ipfw
+# auto-numbers this at 500, which short-circuits the ngtee at 1000 and
+# leaves the netflow node with zero packets - nfacctd in jail5 then
+# never writes its /tmp/file-*.txt output.
+\${fwcmd} add 65000 allow ip from any to any
 EOF
 
 /usr/local/sbin/config save
@@ -754,6 +761,20 @@ sysrc -f /etc/jails/jail6/rc.conf hostname=jail6 \
 	bsnmpd_enable=YES \
 	gateway_enable=NO \
 	ipv6_gateway_enable=NO
+
+# Enable the UCD-SNMP module in jail6's bsnmpd so OIDs under
+# 1.3.6.1.4.1.2021 (Net-SNMP / UCDavis) are answered - shipped via the
+# bsnmp-ucd port at /usr/local/lib/snmp_ucd.so. Without this jail6 only
+# serves mibII and external SNMP probes from R1 against UCD OIDs return
+# "No Such Object". bsnmpd has no INCLUDE directive, so append directly.
+if ! grep -q 'snmp_ucd.so' /etc/jails/jail6/etc/snmpd.config; then
+	echo '' >> /etc/jails/jail6/etc/snmpd.config
+	echo '# Enable UCD MIB (1.3.6.1.4.1.2021) - added by labconfig' \
+		>> /etc/jails/jail6/etc/snmpd.config
+	echo 'begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"' \
+		>> /etc/jails/jail6/etc/snmpd.config
+fi
+
 service jail start
 echo "VM5 (including jail5 and jail6) configured"
 }

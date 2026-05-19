@@ -94,6 +94,7 @@ MODULES_OVERRIDE= \
 	ena \
 	fdescfs \
 	fib_dxr \
+	geom/geom_mirror \
 	hwpmc \
 	i2c \
 	if_bridge \
