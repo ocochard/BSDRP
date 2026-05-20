@@ -15,25 +15,36 @@
 #   https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab
 #
 # Usage:
-#   sudo tools/regression-test.sh <lab>
+#   sudo tools/regression-test.sh [--boot-delay <s>] <image> <lab>
+#   sudo tools/regression-test.sh --no-launch <lab>
+#
+# Default mode (image given): wipes any prior lab state, launches the lab via
+# BSDRP-lab-bhyve.sh with the correct VM count for <lab>, sleeps for the boot
+# delay (default 60s) so cloud-init/labconfig has time to finish, then runs
+# the assertions.
+#
+# --no-launch mode: assumes the lab is already running and only runs the
+# assertions. Useful for inner-loop debugging when iterating on assertions
+# without rebooting the VMs.
 #
 # Runs every assertion unconditionally, including the slow ones
 # (iperf3 throughput, SNMP, gmirror, nfacctd file poll, end-to-end
 # IPv6 RA acquisition).
 #
 # Prerequisites:
-#   - The lab must already be running. For the "full" lab, the EXACT launch
-#     command is (run from the repo root, with the image you want to test):
+#   - expect(1) installed on the host (FreeBSD: pkg install expect).
+#     We use expect to drive /dev/nmdm-BSDRP.<N>B with proper tty/line
+#     discipline; raw shell redirection (printf > /dev/nmdm) does NOT
+#     drive a guest login(1) reliably.
+#   - For --no-launch mode, the lab must already be running. For the "full"
+#     lab, the EXACT launch command is (run from the repo root, with the
+#     image you want to test):
 #       sudo tools/BSDRP-lab-bhyve.sh -d     # wipe any prior VMs/disks/bridges
 #       sudo tools/BSDRP-lab-bhyve.sh -i BSDRP-<version>-full-amd64.img.xz \
 #                                    -n 5 -r full
 #     -n MUST be 5 (full lab has exactly 5 VMs).  -r full selects the lab
 #     family, which makes BSDRP-lab-bhyve.sh build per-VM cloud-init disks
 #     that invoke `labconfig full_vm<N>` on first boot.
-#   - expect(1) installed on the host (FreeBSD: pkg install expect).
-#     We use expect to drive /dev/nmdm-BSDRP.<N>B with proper tty/line
-#     discipline; raw shell redirection (printf > /dev/nmdm) does NOT
-#     drive a guest login(1) reliably.
 #
 # Exit code:
 #   0  all assertions passed
@@ -53,15 +64,85 @@
 set -u
 
 PROG=$(basename "$0")
-LAB=""
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
+# Self-elevate via sudo if not already root. nmdm devices, bhyve, bridges,
+# and ifconfig all require root; rather than aborting and asking the user
+# to re-run with sudo, transparently re-exec under sudo (matching the
+# style of BSDRP-lab-bhyve.sh which also relies on passwordless sudo).
+# Done BEFORE arg parsing so "$@" still holds the original args.
+if [ "$(id -u)" -ne 0 ]; then
+	if ! command -v sudo >/dev/null 2>&1; then
+		echo "ERROR: must run as root (sudo not found)" >&2
+		exit 2
+	fi
+	exec sudo "$0" "$@"
+fi
+LAB=""
+IMAGE=""
+NO_LAUNCH=0
+BOOT_DELAY=60        # seconds to wait after launching the lab before probing
+                     # consoles, so cloud-init's first-boot runcmd (labconfig)
+                     # has time to finish writing rc.conf and restarting
+                     # services. The per-assertion retry budget absorbs the
+                     # remainder of convergence.
+
+PARSE_ERROR=""
 while [ $# -gt 0 ]; do
 	case "$1" in
-		-h|--help) LAB=""; break ;;
-		-*) echo "unknown option: $1" >&2; exit 2 ;;
-		*) LAB="$1"; shift ;;
+		-h|--help)
+			LAB=""
+			break
+			;;
+		--no-launch|--already-running)
+			NO_LAUNCH=1
+			shift
+			;;
+		--boot-delay)
+			[ $# -ge 2 ] || { PARSE_ERROR="--boot-delay requires an argument"; break; }
+			BOOT_DELAY="$2"
+			shift 2
+			;;
+		--boot-delay=*)
+			BOOT_DELAY="${1#--boot-delay=}"
+			shift
+			;;
+		-*)
+			PARSE_ERROR="unknown option: $1"
+			break
+			;;
+		*)
+			# Positional: <image> <lab> in default mode, or <lab> alone
+			# in --no-launch mode. We collect into IMAGE/LAB and sort
+			# them out after parsing.
+			if [ -z "$IMAGE" ] && [ -z "$LAB" ]; then
+				IMAGE="$1"
+			elif [ -z "$LAB" ]; then
+				LAB="$1"
+			else
+				PARSE_ERROR="too many positional arguments"
+				break
+			fi
+			shift
+			;;
 	esac
 done
+
+# Sort positionals based on mode.
+if [ "$NO_LAUNCH" -eq 1 ]; then
+	# --no-launch: image is irrelevant. If only one positional was given,
+	# treat it as the lab name.
+	if [ -z "$LAB" ] && [ -n "$IMAGE" ]; then
+		LAB="$IMAGE"
+		IMAGE=""
+	fi
+	# If both positionals were given with --no-launch, the image is
+	# silently ignored (warn to be friendly).
+	if [ -n "$IMAGE" ]; then
+		echo "WARNING: --no-launch given; ignoring image argument '$IMAGE'" >&2
+		IMAGE=""
+	fi
+fi
 
 NMDM_PREFIX="/dev/nmdm-BSDRP."
 NMDM_SUFFIX="B"
@@ -85,24 +166,54 @@ usage() {
 	cat >&2 <<EOF
 $PROG - BSDRP regression-test driver
 
-Usage: sudo $PROG <lab>
+Usage:
+  sudo $PROG [--boot-delay <s>] <image> <lab>
+  sudo $PROG --no-launch <lab>
 
-Runs every assertion unconditionally, including the slow ones
-(iperf3 throughput, SNMP, gmirror, nfacctd file poll).
+In default mode the driver auto-launches the lab: it runs
+'BSDRP-lab-bhyve.sh -d' to wipe any prior state, then
+'BSDRP-lab-bhyve.sh -i <image> -n <count> -r <lab>' with the VM count
+derived from the lab name, sleeps for --boot-delay seconds (default 60),
+and finally runs every assertion.
+
+In --no-launch mode the lab must already be running:
+  sudo tools/BSDRP-lab-bhyve.sh -i <image> -n <count> -r <lab>
+
+Options:
+  --no-launch        Skip the wipe+launch step (alias: --already-running).
+  --boot-delay <s>   Seconds to wait after launch for cloud-init/labconfig
+                     to settle (default: 60).
+  -h, --help         Show this help.
 
 Implemented labs:
   full     5 VMs - per wiki: https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab
-
-The lab MUST already be running:
-  sudo tools/BSDRP-lab-bhyve.sh -i <image> -n <count> -r <lab>
 
 Requires: expect(1) on the host (pkg install expect).
 EOF
 	exit 2
 }
 
-[ -z "$LAB" ] && usage
-[ "$(id -u)" -eq 0 ] || die "must run as root (nmdm devices require it)"
+[ -n "$PARSE_ERROR" ] && { echo "$PROG: $PARSE_ERROR" >&2; usage; }
+if [ -z "$LAB" ]; then
+	# Distinguish "no args at all" (just show usage) from "args given but
+	# <lab> is missing" (the common case: user passed only the image path
+	# and forgot the lab name).
+	if [ -n "$IMAGE" ]; then
+		echo "$PROG: missing <lab> argument (got only '$IMAGE')" >&2
+	fi
+	usage
+fi
+
+# Validate --boot-delay is a non-negative integer.
+case "$BOOT_DELAY" in
+	''|*[!0-9]*) die "--boot-delay must be a non-negative integer (got '$BOOT_DELAY')" ;;
+esac
+
+# In default (launch) mode, an image path is required and must exist.
+if [ "$NO_LAUNCH" -eq 0 ]; then
+	[ -n "$IMAGE" ] || { echo "$PROG: <image> is required (or pass --no-launch)" >&2; usage; }
+	[ -f "$IMAGE" ] || die "image not found: $IMAGE"
+fi
 
 # expect(1) is mandatory - raw shell redirection to nmdm cannot drive
 # a guest login(1)/sh prompt reliably.
@@ -771,6 +882,33 @@ case "$LAB" in
 	full) ;;
 	*) die "lab '$LAB' has no assertions implemented yet (only 'full' is)" ;;
 esac
+
+# --- Phase 0: launch the lab (unless --no-launch) ------------------------
+# Done AFTER lab-name validation so a typo doesn't destroy a running lab.
+if [ "$NO_LAUNCH" -eq 0 ]; then
+	LAB_LAUNCHER="${SCRIPT_DIR}/BSDRP-lab-bhyve.sh"
+	[ -x "$LAB_LAUNCHER" ] || die "lab launcher not found or not executable: $LAB_LAUNCHER"
+
+	echo "=== Phase 0: launch lab=${LAB} (image=${IMAGE}, VMs=${VM_COUNT}) ==="
+
+	# Step 1: wipe any prior state. Required so cloud-init's first-boot
+	# runcmd re-fires `labconfig` on the new VMs — otherwise stale /cfg
+	# from a previous run keeps the old config and labconfig is silently
+	# skipped (see CLAUDE.md gotcha).
+	echo "+ $LAB_LAUNCHER -d"
+	"$LAB_LAUNCHER" -d || die "failed to wipe prior lab state ($LAB_LAUNCHER -d exited non-zero)"
+
+	# Step 2: launch the lab with the correct VM count for this lab.
+	echo "+ $LAB_LAUNCHER -i $IMAGE -n $VM_COUNT -r $LAB"
+	"$LAB_LAUNCHER" -i "$IMAGE" -n "$VM_COUNT" -r "$LAB" \
+		|| die "failed to launch lab ($LAB_LAUNCHER -i ... -r $LAB exited non-zero)"
+
+	# Step 3: give cloud-init / labconfig time to finish before we start
+	# driving the consoles. The per-assertion retry budget absorbs the
+	# rest of convergence.
+	echo "  waiting ${BOOT_DELAY}s for cloud-init/labconfig to settle..."
+	sleep "$BOOT_DELAY"
+fi
 
 VM_ORDER=$(lab_vm_order "$LAB")
 echo "=== BSDRP regression test: lab=${LAB}, VMs=${VM_COUNT} (order: ${VM_ORDER}) ==="
