@@ -15,11 +15,11 @@
 #   https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab
 #
 # Usage:
-#   sudo tools/regression-test.sh [-d] <lab>
+#   sudo tools/regression-test.sh <lab>
 #
-# Options:
-#   -d   Deep mode: also run slow/heavy checks (iperf3 throughput, SNMP,
-#        end-to-end IPv6 RA acquisition, scp backup verification).
+# Runs every assertion unconditionally, including the slow ones
+# (iperf3 throughput, SNMP, gmirror, nfacctd file poll, end-to-end
+# IPv6 RA acquisition).
 #
 # Prerequisites:
 #   - The lab must already be running. For the "full" lab, the EXACT launch
@@ -53,12 +53,10 @@
 set -u
 
 PROG=$(basename "$0")
-DEEP=false
 LAB=""
 
 while [ $# -gt 0 ]; do
 	case "$1" in
-		-d) DEEP=true; shift ;;
 		-h|--help) LAB=""; break ;;
 		-*) echo "unknown option: $1" >&2; exit 2 ;;
 		*) LAB="$1"; shift ;;
@@ -71,7 +69,10 @@ NMDM_SUFFIX="B"
 # Per-check tunables (seconds).
 LOGIN_TIMEOUT=30
 CMD_TIMEOUT=30        # per-command expect timeout
-RETRY_TIMEOUT=120     # how long to keep retrying an assertion before failing
+RETRY_TIMEOUT=45      # default per-assertion budget before declaring FAIL.
+                      # Most checks converge in <30s; 45s is the safety margin.
+                      # For slow-converging items (BGP, IS-IS, mpd5 PPTP),
+                      # pass a longer per-call override via assert's 6th arg.
 RETRY_INTERVAL=5
 
 PASS=0
@@ -84,10 +85,10 @@ usage() {
 	cat >&2 <<EOF
 $PROG - BSDRP regression-test driver
 
-Usage: sudo $PROG [-d] <lab>
+Usage: sudo $PROG <lab>
 
-Options:
-  -d   Deep mode: include slow tests (iperf3 throughput, SNMP, scp backups).
+Runs every assertion unconditionally, including the slow ones
+(iperf3 throughput, SNMP, gmirror, nfacctd file poll).
 
 Implemented labs:
   full     5 VMs - per wiki: https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab
@@ -239,20 +240,28 @@ EOF
 chmod +x "$EXPECT_DRIVER"
 
 # Run a single command on a VM console, return its stdout.
+# Optional 3rd arg overrides per-call CMD_TIMEOUT (seconds) for slow
+# commands (newfs, large kldload, etc).
 console_run() {
-	# Args: nmdm cmd
-	local nmdm="$1" cmd="$2"
+	# Args: nmdm cmd [cmd_timeout_override]
+	local nmdm="$1" cmd="$2" cmd_to="${3:-$CMD_TIMEOUT}"
+	[ -n "$cmd_to" ] || cmd_to="$CMD_TIMEOUT"
 	REGTEST_CMD="$cmd" "$EXPECT_BIN" -f "$EXPECT_DRIVER" \
-		"$nmdm" "$LOGIN_TIMEOUT" "$CMD_TIMEOUT" 2>/dev/null
+		"$nmdm" "$LOGIN_TIMEOUT" "$cmd_to" 2>/dev/null
 }
 
 # Retry a console command until its output matches success_regex or we
-# exceed RETRY_TIMEOUT. Prints the last output on stdout.
+# exceed the per-call timeout (default RETRY_TIMEOUT).
+# Prints the last output on stdout.
+# Note: ${4:-...} is required because the script runs under set -u.
 retry_check() {
-	# Args: nmdm cmd success_regex
+	# Args: nmdm cmd success_regex [timeout_override]
 	local nmdm="$1" cmd="$2" success_regex="$3"
+	local timeout="${4:-$RETRY_TIMEOUT}"
+	# Allow empty 4th arg from assert() to also mean "use default":
+	[ -n "$timeout" ] || timeout="$RETRY_TIMEOUT"
 	local t=0 out
-	while [ "$t" -lt "$RETRY_TIMEOUT" ]; do
+	while [ "$t" -lt "$timeout" ]; do
 		out=$(console_run "$nmdm" "$cmd" || true)
 		if printf '%s' "$out" | grep -Eq -- "$success_regex"; then
 			printf '%s' "$out"
@@ -281,10 +290,14 @@ VM${vm} ${check}: ${detail}"
 }
 
 # Shorthand: run a retry_check and record PASS/FAIL.
+# Optional 6th arg overrides RETRY_TIMEOUT for slow-converging checks
+# (e.g. mpd5 PPTP, IS-IS adjacency). Keep the default short so failures
+# don't bloat total runtime: 8 fails × 45s = 6 min, vs 16 min at 120s.
+# Note: ${6:-} (not $6) is required because the script runs under set -u.
 assert() {
-	# Args: vm name nmdm cmd success_regex
-	local vm="$1" name="$2" nmdm="$3" cmd="$4" rx="$5"
-	if retry_check "$nmdm" "$cmd" "$rx" >/dev/null; then
+	# Args: vm name nmdm cmd success_regex [timeout_override]
+	local vm="$1" name="$2" nmdm="$3" cmd="$4" rx="$5" timeout="${6:-}"
+	if retry_check "$nmdm" "$cmd" "$rx" "$timeout" >/dev/null; then
 		record "$vm" "$name" PASS ""
 	else
 		record "$vm" "$name" FAIL "no match for /$rx/"
@@ -336,72 +349,77 @@ lab_full_vm1() {
 	assert 1 "default route via R2 CARP (10.0.12.254)" "$nmdm" \
 		"netstat -rn4 2>&1" 'default[[:space:]]+10\.0\.12\.254'
 
-	if $DEEP; then
-		# Reachability sanity check before iperf3 - if R1 cannot reach jail6 the
-		# iperf3 run is pointless and reports faster.
-		# Path: R1 -> R2 -> PPTP tunnel (shaped by R4 pipes) -> R4 -> R5 -> jail6.
-		assert 1 "R1 reachability to jail6 (10.0.56.6)" "$nmdm" \
-			"ping -c 3 -W 2000 10.0.56.6 2>&1" '[123] packets received'
+	# Reachability sanity check before iperf3 - if R1 cannot reach jail6 the
+	# iperf3 run is pointless and reports faster.
+	# Path: R1 -> R2 -> PPTP tunnel (shaped by R4 pipes) -> R4 -> R5 -> jail6.
+	assert 1 "R1 reachability to jail6 (10.0.56.6)" "$nmdm" \
+		"ping -c 3 -W 2000 10.0.56.6 2>&1" '[123] packets received'
 
-		# wiki/R1 SNMP: bsnmpget to jail6 returns sysName.0 = "jail6".
-		# Exercises the same full path as the iperf3 test but with bsnmpd
-		# in jail6 - confirms snmp UDP/161 traverses the PPTP tunnel both
-		# ways and that jail6's bsnmpd is reachable via its IPv4 address.
-		assert 1 "R1 SNMP get sysName.0 from jail6 (IPv4)" "$nmdm" \
-			"bsnmpget -s 10.0.56.6 sysName.0 2>&1" 'sysName\.0[[:space:]]*=[[:space:]]*jail6'
+	# wiki/R1 SNMP: bsnmpget to jail6 returns sysName.0 = "jail6".
+	# Exercises the same full path as the iperf3 test but with bsnmpd
+	# in jail6 - confirms snmp UDP/161 traverses the PPTP tunnel both
+	# ways and that jail6's bsnmpd is reachable via its IPv4 address.
+	assert 1 "R1 SNMP get sysName.0 from jail6 (IPv4)" "$nmdm" \
+		"bsnmpget -s 10.0.56.6 sysName.0 2>&1" 'sysName\.0[[:space:]]*=[[:space:]]*jail6'
 
-		# wiki/R1 SNMP UCD MIB: bsnmpwalk under 1.3.6.1.4.1.2021.100.2.0
-		# (Net-SNMP versionTag) must return a value, which proves that
-		# jail6's bsnmpd has the UCD module (snmp_ucd.so) loaded. The
-		# value is the bsnmp-ucd port's CVS Name tag (e.g.
-		# "$Name: bsnmp-ucd-0-4-3 $") - we just match on "bsnmp-ucd".
-		assert 1 "R1 SNMP walk UCD versionTag from jail6 (IPv4)" "$nmdm" \
-			"bsnmpwalk -s 10.0.56.6 1.3.6.1.4.1.2021.100.2.0 2>&1" \
-			'bsnmp-ucd'
+	# wiki/R1 SNMP UCD MIB: bsnmpwalk under 1.3.6.1.4.1.2021.100.2.0
+	# (Net-SNMP versionTag) must return a value, which proves that
+	# jail6's bsnmpd has the UCD module (snmp_ucd.so) loaded. The
+	# value is the bsnmp-ucd port's CVS Name tag (e.g.
+	# "$Name: bsnmp-ucd-0-4-3 $") - we just match on "bsnmp-ucd".
+	assert 1 "R1 SNMP walk UCD versionTag from jail6 (IPv4)" "$nmdm" \
+		"bsnmpwalk -s 10.0.56.6 1.3.6.1.4.1.2021.100.2.0 2>&1" \
+		'bsnmp-ucd'
 
-		# wiki/R1 SNMP IPv6: same path but to jail6's SLAAC address (must
-		# be resolved first because jail6 has no static ::6, only autoconf).
-		# Two-step: query the address from jail5's nmdm, then issue bsnmpget.
-		local nmdm5_v6="${NMDM_PREFIX}5${NMDM_SUFFIX}"
-		local jail6_v6
-		jail6_v6=$(console_run "$nmdm5_v6" \
-			"jexec jail6 ifconfig lagg0 inet6 | awk '/inet6 2001:/{print \$2; exit}'" \
-			| tr -d '[:space:]')
-		if [ -n "$jail6_v6" ]; then
-			assert 1 "R1 SNMP get sysName.0 from jail6 (IPv6)" "$nmdm" \
-				"bsnmpget -s [${jail6_v6}]:161 sysName.0 2>&1" \
-				'sysName\.0[[:space:]]*=[[:space:]]*jail6'
-		else
-			record 1 "R1 SNMP get sysName.0 from jail6 (IPv6)" FAIL \
-				"could not resolve jail6 SLAAC IPv6 from jail5"
-		fi
-
-		# wiki/R1 GEOM mirror: build a small 2-way mirror over memory disks
-		# and newfs it. Validates that geom_mirror.ko is shipped + loadable,
-		# that mdconfig works, and that newfs can format the mirror. The
-		# `gmirror label` command implicitly auto-loads the kld via geom(8)'s
-		# userland wrapper, so this also exercises the auto-load path. The
-		# final assertion checks the mirror state is COMPLETE (both halves
-		# in sync, which is immediate for fresh empty MDs). Cleanup runs
-		# unconditionally afterwards so the test is idempotent.
-		console_run "$nmdm" \
-			"gmirror destroy r1regress 2>/dev/null; \
-			 mdconfig -d -u md10 2>/dev/null; \
-			 mdconfig -d -u md11 2>/dev/null; \
-			 mdconfig -s 100m -u md10 && \
-			 mdconfig -s 100m -u md11 && \
-			 gmirror label r1regress md10 md11 && \
-			 newfs /dev/mirror/r1regress >/dev/null 2>&1 && \
-			 echo GMIRROR_OK" >/dev/null
-		assert 1 "R1 gmirror 2-way mirror COMPLETE (geom_mirror.ko)" "$nmdm" \
-			"gmirror status 2>&1" 'mirror/r1regress[[:space:]]+COMPLETE'
-		# Cleanup: destroy mirror and free the MD backing stores.
-		console_run "$nmdm" \
-			"gmirror destroy r1regress 2>/dev/null; \
-			 mdconfig -d -u md10 2>/dev/null; \
-			 mdconfig -d -u md11 2>/dev/null; \
-			 echo CLEANUP_DONE" >/dev/null
+	# wiki/R1 SNMP IPv6: same path but to jail6's SLAAC address (must
+	# be resolved first because jail6 has no static ::6, only autoconf).
+	# Two-step: query the address from jail5's nmdm, then issue bsnmpget.
+	local nmdm5_v6="${NMDM_PREFIX}5${NMDM_SUFFIX}"
+	local jail6_v6
+	jail6_v6=$(console_run "$nmdm5_v6" \
+		"jexec jail6 ifconfig lagg0 inet6 | awk '/inet6 2001:/{print \$2; exit}'" \
+		| tr -d '[:space:]')
+	if [ -n "$jail6_v6" ]; then
+		assert 1 "R1 SNMP get sysName.0 from jail6 (IPv6)" "$nmdm" \
+			"bsnmpget -s [${jail6_v6}]:161 sysName.0 2>&1" \
+			'sysName\.0[[:space:]]*=[[:space:]]*jail6'
+	else
+		record 1 "R1 SNMP get sysName.0 from jail6 (IPv6)" FAIL \
+			"could not resolve jail6 SLAAC IPv6 from jail5"
 	fi
+
+	# wiki/R1 GEOM mirror: build a small 2-way mirror over memory disks
+	# and newfs it. Validates that geom_mirror.ko is shipped + loadable,
+	# that mdconfig works, and that newfs can format the mirror. The
+	# final assertion checks the mirror state is COMPLETE (both halves
+	# in sync, which is immediate for fresh empty MDs). Cleanup runs
+	# unconditionally afterwards so the test is idempotent.
+	#
+	# NOTE: we kldload geom_mirror explicitly. On FreeBSD (verified on
+	# 16-CURRENT, both stock and BSDRP), `gmirror label` does NOT
+	# auto-load the module — it writes the on-disk metadata via
+	# /lib/geom/geom_mirror.so and exits 0 silently, but kldstat shows
+	# the module is not loaded and `gmirror status` then complains
+	# "Command 'status' not available; try 'load' first."
+	# This is stock FreeBSD behavior, not a BSDRP regression.
+	# IMPORTANT: each console_run sends ONE line over the guest's TTY,
+	# which is in canonical mode with MAX_INPUT = 255 bytes. Longer
+	# lines are SILENTLY truncated, dropping trailing commands. We split
+	# the gmirror setup into several short console_run calls instead.
+	console_run "$nmdm" \
+		"gmirror destroy r1regress 2>/dev/null; mdconfig -d -u md10 2>/dev/null; mdconfig -d -u md11 2>/dev/null" 30 >/dev/null
+	console_run "$nmdm" "kldload geom_mirror" 30 >/dev/null
+	console_run "$nmdm" \
+		"mdconfig -s 100m -u md10 && mdconfig -s 100m -u md11 && gmirror label r1regress md10 md11 && newfs /dev/mirror/r1regress >/dev/null 2>&1 && echo GMIRROR_OK" 60 >/dev/null
+	assert 1 "R1 gmirror 2-way mirror COMPLETE (geom_mirror.ko)" "$nmdm" \
+		"gmirror status 2>&1" 'mirror/r1regress[[:space:]]+COMPLETE'
+	# Cleanup: destroy mirror, free the MD backing stores, AND kldunload
+	# geom_mirror so a subsequent run of this test (without rebooting the
+	# VMs) starts from a clean "module unloaded" state. Split into short
+	# lines because the guest TTY MAX_INPUT is 255 bytes (see above).
+	console_run "$nmdm" \
+		"gmirror destroy r1regress 2>/dev/null; mdconfig -d -u md10 2>/dev/null; mdconfig -d -u md11 2>/dev/null" 30 >/dev/null
+	console_run "$nmdm" "kldunload geom_mirror 2>/dev/null" 30 >/dev/null
 }
 
 # ---- R2 ------------------------------------------------------------------
@@ -705,14 +723,12 @@ lab_full_vm5() {
 	assert 5 "jail6: lagg0 failover proto" "$nmdm" \
 		"jexec jail6 ifconfig lagg0" 'laggproto failover'
 
-	if $DEEP; then
-		# wiki/jail6: lagg0 has an IPv6 autoconf address (from rtadvd in jail5).
-		assert 5 "jail6: lagg0 has SLAAC IPv6" "$nmdm" \
-			"jexec jail6 ifconfig lagg0 inet6" 'autoconf'
-		# wiki/jail6: bsnmpd answers sysName.0 with "jail6".
-		assert 5 "jail6: bsnmpd answers sysName.0" "$nmdm" \
-			"jexec jail6 bsnmpget -s localhost sysName.0 2>&1" 'jail6'
-	fi
+	# wiki/jail6: lagg0 has an IPv6 autoconf address (from rtadvd in jail5).
+	assert 5 "jail6: lagg0 has SLAAC IPv6" "$nmdm" \
+		"jexec jail6 ifconfig lagg0 inet6" 'autoconf'
+	# wiki/jail6: bsnmpd answers sysName.0 with "jail6".
+	assert 5 "jail6: bsnmpd answers sysName.0" "$nmdm" \
+		"jexec jail6 bsnmpget -s localhost sysName.0 2>&1" 'jail6'
 }
 
 # === Lab metadata =========================================================
@@ -757,7 +773,7 @@ case "$LAB" in
 esac
 
 VM_ORDER=$(lab_vm_order "$LAB")
-echo "=== BSDRP regression test: lab=${LAB}, VMs=${VM_COUNT} (order: ${VM_ORDER}), deep=${DEEP} ==="
+echo "=== BSDRP regression test: lab=${LAB}, VMs=${VM_COUNT} (order: ${VM_ORDER}) ==="
 
 # Build the list of VMs whose consoles are actually reachable.  The three
 # phases below all iterate over this list, so we only probe each VM's login
@@ -801,14 +817,12 @@ for vm in $LIVE_VMS; do
 done
 
 # --- Phase 3: throughput postlude (iperf3 across the shaped path) --------
-# Only runs in deep mode and only for labs with a defined throughput driver.
-if $DEEP; then
-	fn="lab_${LAB}_throughput"
-	if type "$fn" >/dev/null 2>&1; then
-		echo
-		echo "=== Phase 3: end-to-end throughput ==="
-		"$fn"
-	fi
+# Only runs for labs with a defined throughput driver.
+fn="lab_${LAB}_throughput"
+if type "$fn" >/dev/null 2>&1; then
+	echo
+	echo "=== Phase 3: end-to-end throughput ==="
+	"$fn"
 fi
 
 echo

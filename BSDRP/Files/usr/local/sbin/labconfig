@@ -767,12 +767,21 @@ sysrc -f /etc/jails/jail6/rc.conf hostname=jail6 \
 # bsnmp-ucd port at /usr/local/lib/snmp_ucd.so. Without this jail6 only
 # serves mibII and external SNMP probes from R1 against UCD OIDs return
 # "No Such Object". bsnmpd has no INCLUDE directive, so append directly.
-if ! grep -q 'snmp_ucd.so' /etc/jails/jail6/etc/snmpd.config; then
-	echo '' >> /etc/jails/jail6/etc/snmpd.config
-	echo '# Enable UCD MIB (1.3.6.1.4.1.2021) - added by labconfig' \
-		>> /etc/jails/jail6/etc/snmpd.config
-	echo 'begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"' \
-		>> /etc/jails/jail6/etc/snmpd.config
+# Note: jail6's /etc is built at jail-start via:
+#   exec.prestart += "cp -a /etc/jails/jail6/ /var/jails/jail6/etc/"
+# So drop snmpd.config DIRECTLY under /etc/jails/jail6/ (NOT in an etc/
+# subdir - the source dir IS the etc/ destination). Seed it from the
+# system default if not yet present, then append the UCD module line.
+mkdir -p /etc/jails/jail6
+if [ ! -f /etc/jails/jail6/snmpd.config ]; then
+	cp /etc/snmpd.config /etc/jails/jail6/snmpd.config
+fi
+if ! grep -q 'snmp_ucd.so' /etc/jails/jail6/snmpd.config; then
+	{
+		echo ''
+		echo '# Enable UCD MIB (1.3.6.1.4.1.2021) - added by labconfig'
+		echo 'begemotSnmpdModulePath."ucd" = "/usr/local/lib/snmp_ucd.so"'
+	} >> /etc/jails/jail6/snmpd.config
 fi
 
 service jail start
