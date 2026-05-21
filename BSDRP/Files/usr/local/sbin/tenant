@@ -63,6 +63,26 @@ fi
 # A useful function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
+# Derive next jail ID from existing /etc/jail.conf.d/*.conf files.
+# Falls back to /etc/jail.lastid for backward compatibility.
+# Returns 1 if no jails exist.
+get_next_id() {
+	local maxid=0
+	local jid
+	for conf in /etc/jail.conf.d/*.conf; do
+		[ -f "$conf" ] || continue
+		jid=$(grep -E '^[[:space:]]+jid[[:space:]]*=' "$conf" 2>/dev/null \
+			| grep -o '[0-9]*' | head -1)
+		[ -n "$jid" ] && [ "$jid" -gt "$maxid" ] && maxid=$jid
+	done
+	# Fall back to legacy jail.lastid if higher
+	if [ -f /etc/jail.lastid ]; then
+		. /etc/jail.lastid
+		[ "$id" -gt "$maxid" ] && maxid=$id
+	fi
+	echo $((maxid + 1))
+}
+
 # Display usage
 usage () {
 	echo "Usage: $0 -c|-d -j name -f authorized_keys -i if/ip/mask"
@@ -107,13 +127,8 @@ create () {
 		[ "$nicslist" = "$iter" ] && nicslist='' || nicslist="${nicslist#*,}"
 	done
 
-	# Get last ID
-	if [ -f /etc/jail.lastid ]; then
-		. /etc/jail.lastid
-		id=$(( id + 1))
-	else
-		id=1
-	fi
+	# Derive next jail ID from existing configs
+	id=$(get_next_id)
 
 	jailroot="${jailbase}/${tenant}"
 	jailfstab="/etc/jail.conf.d/${tenant}.fstab"
@@ -377,11 +392,6 @@ EOF
     exec.poststop  += "logger jail ${tenant} post-stopped";
 }
 EOF
-	{
-		echo "#!/bin/sh"
-		echo "id=$id"
-	} > /etc/jail.lastid
-
 	# Now enable this jail
 	sysrc -q jail_enable="YES" > /dev/null 2>&1
 	sysrc -q jail_parallel_start="YES" > /dev/null 2>&1
@@ -432,12 +442,12 @@ delete () {
 	if [ -f /etc/jail.conf ]; then
 		if ! grep -q '{' /etc/jail.conf; then
 			rm /etc/jail.conf || die "ERROR during deleting /etc/jail.conf"
-			rm /etc/jail.lastid || die "ERROR during deleting /etc/jail.lastid"
+			[ -f /etc/jail.lastid ] && rm /etc/jail.lastid
 			sysrc -q jail_enable="NO"  > /dev/null 2>&1
 		fi
 	elif [ -d /etc/jail.conf.d ]; then
 		if [ -z "$(ls -A /etc/jail.conf.d 2>/dev/null)" ]; then
-			rm /etc/jail.lastid || die "ERROR during deleting /etc/jail.lastid"
+			[ -f /etc/jail.lastid ] && rm /etc/jail.lastid
 			sysrc -q jail_enable="NO"  > /dev/null 2>&1
 		fi
 	fi
