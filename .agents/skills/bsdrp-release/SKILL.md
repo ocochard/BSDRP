@@ -154,3 +154,17 @@ convention in this repo is:
 
 Do not run these commands as part of the skill — only surface them
 if the user explicitly asks about tagging.
+
+## SourceForge upload (for reference)
+
+After the user commits and tags, the images and `CHANGES.md` are
+published to SourceForge via `tools/release.sh upload`. The script
+auto-detects the version from `BSDRP/Files/etc/version` and the arch
+from `uname -p` (override with `-a <arch>` for cross-built images).
+It uploads to `frs.sourceforge.net:/home/frs/project/b/bs/bsdrp/
+BSD_Router_Project/<ver>/<arch>/` via scp using SSH-key auth.
+
+Set `DRY=echo` in the environment for a dry run that prints the scp
+commands without executing them.
+
+Do not run the upload as part of the skill — leave it to the user.
