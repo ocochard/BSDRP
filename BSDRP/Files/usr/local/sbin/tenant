@@ -63,6 +63,29 @@ fi
 # A useful function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
+# Cleanup partial jail creation on failure.
+# Only removes artifacts for the jail being created.
+# Never touches other configured or running jails.
+CLEANUP_NEEDED=false
+cleanup_on_failure() {
+	if $CLEANUP_NEEDED && [ -n "${tenant}" ]; then
+		echo "WARNING: cleaning up partial jail '${tenant}'..." >&2
+		jls -j "${tenant}" > /dev/null 2>&1 && \
+			service jail stop "${tenant}" > /dev/null 2>&1 || true
+		mount | grep -q "${jailbase}/${tenant}/dev" && \
+			umount -f "${jailbase}/${tenant}/dev" > /dev/null 2>&1 || true
+		[ -f "/etc/jail.conf.d/${tenant}.fstab" ] && \
+			umount -a -F "/etc/jail.conf.d/${tenant}.fstab" > /dev/null 2>&1 || true
+		rm -f "/etc/jail.conf.d/${tenant}.conf"
+		rm -f "/etc/jail.conf.d/${tenant}.fstab"
+		[ -d "${jailbase}/${tenant}" ] && rm -rf "${jailbase}/${tenant}" || true
+		[ -d "/etc/jails/${tenant}" ] && rm -rf "/etc/jails/${tenant}" || true
+		sysrc -q jail_list-="${tenant}" > /dev/null 2>&1 || true
+	fi
+}
+trap cleanup_on_failure EXIT
+
+
 # Derive next jail ID from existing /etc/jail.conf.d/*.conf files.
 # Falls back to /etc/jail.lastid for backward compatibility.
 # Returns 1 if no jails exist.
@@ -132,6 +155,7 @@ create () {
 
 	jailroot="${jailbase}/${tenant}"
 	jailfstab="/etc/jail.conf.d/${tenant}.fstab"
+	CLEANUP_NEEDED=true
 	mkdir -p ${jailroot}
 
 	if ( $NANOBSD ); then
@@ -397,6 +421,7 @@ EOF
 	sysrc -q jail_parallel_start="YES" > /dev/null 2>&1
 	sysrc -q jail_list+=${tenant} > /dev/null 2>&1
 
+	CLEANUP_NEEDED=false
 	echo "Jail is created, you can start it now (service jail start ${tenant})"
 	exit 0
 }
