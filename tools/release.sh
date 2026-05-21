@@ -30,9 +30,10 @@ poudriere_imgdir="/usr/local/poudriere/data/images"
 # Arguments: none
 # Returns: exits with code 0
 usage () {
-	echo "$0 [ upload | dokuwiki ]"
+	echo "$0 [-a <arch>] [ upload | dokuwiki ]"
 	echo " - upload: Upload all images to SourceForge"
 	echo " - dokuwiki: Generate dokuwiki table of images"
+	echo " - -a <arch>: target arch (default: \$(uname -p)); use to upload cross-built images"
 	exit 0
 }
 
@@ -74,13 +75,14 @@ debug
       for arch in ${ARCHS}; do
 				echo -n "| ${arch}"
  				echo -n "| ${family}"
-        # xxx mtree and tar
+        # Filename format differs by family:
+        #   full / upgrade / debug: BSDRP-${ver}-${family}-${arch}.<ext>
+        #   mtree:                  BSDRP-${ver}-${arch}.mtree.xz  (no family in name)
         case ${family} in
-          full|upgrade) ext=".img.xz" ;;
-          mtree) ext=".mtree.xz";;
-          debug) ext=".tar.xz";;
+          full|upgrade) file=BSDRP-${ver}-${family}-${arch}.img.xz ;;
+          debug)        file=BSDRP-${ver}-${family}-${arch}.tar.xz ;;
+          mtree)        file=BSDRP-${ver}-${arch}.mtree.xz ;;
         esac
-        file=BSDRP-${ver}-${family}-${arch}${ext}
 			  echo -n " | [[$URL/${arch}/${file}/download|${file}]]"
  			  echo " | [[$URL/${arch}/${file}.sha256/download|sha256]] |"
      done # for arch
@@ -90,42 +92,61 @@ debug
 
 # Main part
 
+arch=$(uname -p)
+while getopts "a:h" opt; do
+  case "${opt}" in
+    a) arch=${OPTARG} ;;
+    h|*) usage ;;
+  esac
+done
+shift $((OPTIND - 1))
+
 if [ $# -lt 1 ]; then
 	echo " Missing argument"
 	usage
 fi
 
+# Whitelist subcommand before dispatching by name
+case "$1" in
+  upload|dokuwiki) cmd=$1 ;;
+  *) echo "Unknown command: $1"; usage ;;
+esac
+
 if [ -r BSDRP/Files/etc/version ]; then
   version=$(cat BSDRP/Files/etc/version)
 else
-  die "No BSDRP/Files/etc/version"
+  die "No BSDRP/Files/etc/version (run from the repo root)"
 fi
 
-arch=$(uname -p)
-file_list=""
-file_list=$(ls ${poudriere_imgdir}/BSDRP-${version}-*-${arch}.*)
+# dokuwiki is a pure formatter - no files / confirm needed
+if [ "${cmd}" = "dokuwiki" ]; then
+  ${cmd} "${version}" "${arch}"
+fi
+
+# upload path: locate artifacts, show them, confirm, then go.
+# Two globs needed because mtree files lack the -<family>- segment:
+#   BSDRP-${ver}-full-${arch}.img.xz       (full / upgrade / debug)
+#   BSDRP-${ver}-${arch}.mtree.xz          (mtree, no family in name)
+file_list=$(ls \
+  ${poudriere_imgdir}/BSDRP-${version}-*-${arch}.* \
+  ${poudriere_imgdir}/BSDRP-${version}-${arch}.* \
+  2>/dev/null || true)
 
 if [ -z "${file_list}" ]; then
-  die "no files to be uploaded found"
+  die "no files found matching ${poudriere_imgdir}/BSDRP-${version}-*${arch}.*"
 fi
 
-echo "Detected files to be uploaded:"
-echo "Do you confirm you want to upload to ${version}/${arch}"
+echo "Detected files to be uploaded to ${version}/${arch}:"
+echo "${file_list}" | sed 's/^/  /'
+echo
+echo "Do you confirm? [y/n]"
 
 input=""
-while [ "${input}" != "y" ] && [ "${input}" != "n" ] && [ "${input}" != "a" ];do
-  read input <&1 # I: read without -r will mangle backslashes.
+while [ "${input}" != "y" ] && [ "${input}" != "n" ]; do
+  read -r input
 done
-if [ "${input}" = "n" ]; then
-  $1 ${version} ${arch}
+if [ "${input}" = "y" ]; then
+  ${cmd} "${version}" "${arch}"
 else
   exit 1
-fi
-
-if [ "$1" = "upload" -a $# -eq 1 ]; then
-  echo "Missing destination directory, examples:"
-  echo "- nightly/2012-09-05"
-  echo "- 2.0"
-  echo
-  usage
 fi
