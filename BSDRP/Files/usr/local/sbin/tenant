@@ -42,6 +42,7 @@ root_dir_size=""
 root_tmpfs=false
 create=false
 delete=false
+list=false
 tenant=""
 nics=""
 defaultgw=""
@@ -106,11 +107,33 @@ get_next_id() {
 	echo $((maxid + 1))
 }
 
+# List all configured jails and their running status
+list_jails () {
+	echo "Configured jails:"
+	local found=false
+	for conf in /etc/jail.conf.d/*.conf; do
+		[ -f "$conf" ] || continue
+		found=true
+		name=$(basename "$conf" .conf)
+		jid=$(grep -E '^[[:space:]]+jid[[:space:]]*=' "$conf" 2>/dev/null \
+			| grep -o '[0-9]*' | head -1)
+		if jls -j "$name" > /dev/null 2>&1; then
+			state="RUNNING"
+		else
+			state="STOPPED"
+		fi
+		printf "  %-20s jid=%-4s %s\n" "$name" "${jid:-?}" "$state"
+	done
+	$found || echo "  (none configured)"
+	exit 0
+}
+
 # Display usage
 usage () {
 	echo "Usage: $0 -c|-d -j name -f authorized_keys -i if/ip/mask"
 	echo "  -c: create a jail"
 	echo "  -d: delete a jail"
+	echo "  -l: list configured jails and their status"
 	echo "  -b: base directory to store jails (default: ${jailbase})"
 	echo "  -f authorized_keys: SSH authorized_keys to be installed into jail"
 	echo "  -g default-gateway: Default gateway"
@@ -486,7 +509,7 @@ if [ $# -le 0 ] ; then
     usage
 fi
 
-args=$(getopt b:cdf:g:hi:j:t:v:V $*)
+args=$(getopt b:cdf:g:hi:j:lt:v:V $*)
 
 set -- $args
 for i; do
@@ -533,6 +556,10 @@ for i; do
 		shift
 		shift
 		;;
+	-l)
+		list=true
+		shift
+		;;
 	-t)
 		root_tmpfs=true
 		root_dir_size=$2
@@ -555,6 +582,7 @@ for i; do
 	esac
 done
 
+($list) && list_jails
 [ -z "$tenant" ] && die "jail name mandatory"
 ($create) && create
 ($delete) && delete
