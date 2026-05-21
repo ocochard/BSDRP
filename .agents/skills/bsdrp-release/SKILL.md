@@ -137,3 +137,20 @@ Print a one-line summary per artifact:
 
 Do NOT commit, tag, or push - leave those to the user. The skill stops
 at "ready to be committed".
+
+## Tag naming convention (for reference)
+
+When the user later asks for the tag command, the established
+convention in this repo is:
+
+- **Format**: `vX.Y` (lowercase `v` prefix, dotted version — verify
+  with `git tag -l | sort -V | tail` before suggesting).
+- **Annotated**: use `git tag -a` with a message matching prior
+  releases — `Releasing version vX.Y` (check `git for-each-ref
+  --format='%(subject)' refs/tags/v<prev>` to confirm the exact
+  wording is still in use).
+- **Push is separate**: `git push origin vX.Y` — `git push` alone
+  does not push tags.
+
+Do not run these commands as part of the skill — only surface them
+if the user explicitly asks about tagging.
