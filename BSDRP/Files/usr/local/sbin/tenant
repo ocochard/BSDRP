@@ -462,19 +462,16 @@ delete () {
 		jaildir=$(grep 'path.*=.*;' /etc/jail.conf.d/${tenant}.conf | cut -d '"' -f 2)
 		if ! [ -d "${jaildir}" ]; then
 			die "ERROR: No directory ${jaildir} extracted from path in /etc/jail.conf.d/${tenant}.conf"
-		else
-			echo "XXX: Extracted jaildir: ${jaildir}"
 		fi
 	fi
 	if [ -f /etc/jail.conf ]; then
 		grep -q "^${tenant} {" /etc/jail.conf || die "ERROR: No jail named $tenant configured in /etc/jail.conf"
-		die "XXX: Need to extract jaildir here (or to be set on command line)"
 	fi
 	if ! [ -d ${jailbase}/${tenant} ]; then
 		die "No directory ${jailbase}/${tenant} found (need to specify -b basedir if used during creation)"
 	fi
 	jls -j ${tenant} > /dev/null 2>&1 && die "Jail is running: Stop it before delete it (service jail stop ${tenant})"
-	mount | grep -q "/var/jails/${tenant}/" && die "There are still some mount points regarding ${tenant}"
+	mount | grep -q "${jailbase}/${tenant}/" && die "There are still some mount points regarding ${tenant}"
 	rm -f /etc/fstab.${tenant}
 	rm -f /etc/jail.conf.d/${tenant}.fstab
 	rm -f /etc/jail.conf.d/${tenant}.conf
