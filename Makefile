@@ -382,17 +382,20 @@ ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: ${
 	# Only remove old images and compressed files, don't remove if they're already current
 	# The poudriere image command will overwrite them anyway
 	@${sudo} rm -f ${CHECKSUM_IMAGES} ${COMPRESSED_IMAGES}
-	# Replace version in brand-bsdrp.lua
-	@sed -i '' -e s"/BSDRP_VERSION/${VERSION}/" ${SRC_DIR}/BSDRP/Files/boot/lua/brand-bsdrp.lua
+	# Stage the file overlay into obj/ so we can do build-time substitutions
+	# without mutating the tracked tree (would otherwise leave git dirty if
+	# the build is interrupted before the restore step).
+	@rm -rf ${OBJ_DIR}/Files
+	@cp -R ${SRC_DIR}/BSDRP/Files ${OBJ_DIR}/Files
+	# Replace version in brand-bsdrp.lua (on the staged copy)
+	@sed -i '' -e s"/BSDRP_VERSION/${VERSION}/" ${OBJ_DIR}/Files/boot/lua/brand-bsdrp.lua
 	# Image size of 4g still too big to upgrade previous 4g nanobsd image, need to reduce
 	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc image -t firmware -s 3.95g \
 		-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
-		-c ${SRC_DIR}/BSDRP/Files/ \
+		-c ${OBJ_DIR}/Files/ \
 		-f ${OBJ_DIR}/pkglist \
 		-X ${SRC_DIR}/poudriere.etc/poudriere.d/excluded.files \
 		-A ${SRC_DIR}/poudriere.etc/poudriere.d/post-script.sh
-	# Restore brand-bsdrp.lua
-	@git -C ${SRC_DIR}/BSDRP/Files/boot/lua checkout brand-bsdrp.lua
 	@test -f ${poudriere_images_dir}/BSDRP.img || { echo "Error: ${poudriere_images_dir}/BSDRP.img was not created"; exit 1; }
 	@${sudo} tar cf ${BSDRP_IMG_DEBUG} -C ${poudriere_jail_dir}/usr/lib debug
 	@${sudo} mv ${poudriere_images_dir}/BSDRP.img ${BSDRP_IMG_FULL}

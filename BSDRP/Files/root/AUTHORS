@@ -81,7 +81,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * libunistring, license:GPLv2, GFDL, LGPL3+, https://www.gnu.org/software/libunistring/
 * libunwind, license:MIT, https://github.com/libunwind/libunwind
 * libxml2, license:MIT, http://xmlsoft.org/
-* libyang2, license:BSD3CLAUSE, https://github.com/CESNET/libyang
+* libyang3, license:BSD3CLAUSE, https://github.com/CESNET/libyang
 * lldpd-tiny, license:ISCL, https://lldpd.github.io/
 * lua53, license:MIT, https://www.lua.org/
 * lua54, license:MIT, https://www.lua.org/
@@ -108,7 +108,6 @@ The authors of BSDRP would like to thank the authors of these software for their
 * pciids, license:BSD3CLAUSE, GPLv2+, https://pci-ids.ucw.cz/
 * pcre2, license:BSD3CLAUSE, https://www.pcre.org/
 * perl5, license:ART10, GPLv1+, https://www.perl.org/
-* perl5.40, license:ART10, GPLv1+, https://www.perl.org/
 * pimd, license:BSD3CLAUSE, http://troglobit.com/pimd.html
 * pimdd, license:MIT, http://antc.uoregon.edu/PIMDM/pimd-dense.html
 * pkcs11-helper, license:BSD3CLAUSE, GPLv2, https://github.com/OpenSC/pkcs11-helper

@@ -100,6 +100,7 @@ MODULES_OVERRIDE= \
 	if_bridge \
 	if_disc \
 	if_epair \
+	if_geneve \
 	if_gre \
 	if_infiniband \
 	if_lagg \
