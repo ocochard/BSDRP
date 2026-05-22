@@ -168,7 +168,7 @@ create () {
 		if [ -f /etc/jail.conf ]; then
 			grep -E -q "vnet\.interface.*${nicname}" /etc/jail.conf && die "Interface ${nicname} already declared into /etc/jail"
 		else
-			grep -Esq "vnet.\interface.%${nicname}" /etc/jail.conf.d/*.conf && die "Interface ${nicname} already declared into /etc/jail.conf.d/*.conf"
+			grep -E -qs "vnet\.interface.*${nicname}" /etc/jail.conf.d/*.conf && die "Interface ${nicname} already declared into /etc/jail.conf.d/*.conf"
 		fi
 		[ "$nicslist" = "$iter" ] && nicslist='' || nicslist="${nicslist#*,}"
 	done
