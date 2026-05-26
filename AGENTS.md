@@ -23,7 +23,7 @@ matching doc edits, run `mkdocs build --strict` there, and commit +
 push the two repos independently. They are not coupled by a submodule;
 they have separate lifecycles, just related ones.
 
-The website repo's `CLAUDE.md` has its own copyediting and convention
+The website repo's `AGENTS.md` has its own copyediting and convention
 notes; read it before editing markdown there.
 
 ## Architecture
