@@ -6,6 +6,26 @@ This file provides guidance to Agent when working with code in this repository.
 
 BSD Router Project (BSDRP) is a FreeBSD-based router distribution that creates specialized network appliance firmware. The project uses poudriere-image to build both BIOS and UEFI-compatible disk images with networking software like FRRouting, Bird, ExaBGP, OpenVPN, and strongSwan.
 
+## Companion repo: `~/bsdrp-website`
+
+The public documentation site at `bsdrp.net` lives in a separate repo at
+`~/bsdrp-website` (github.com/ocochard/bsdrp-website). It is an
+mkdocs-material site whose source of truth is the markdown under
+`docs/`.
+
+**Many changes here have a documentation side**: a software version
+bump, a new lab/example, a new build option, or a behavior change in
+the user-facing tooling typically warrants matching edits in the
+website repo (release notes, version mentions on the homepage, new
+pages under `docs/documentation/examples/`). When a session in this
+repo makes such a change, also open `~/bsdrp-website`, make the
+matching doc edits, run `mkdocs build --strict` there, and commit +
+push the two repos independently. They are not coupled by a submodule;
+they have separate lifecycles, just related ones.
+
+The website repo's `CLAUDE.md` has its own copyediting and convention
+notes; read it before editing markdown there.
+
 ## Architecture
 
 The build system has three main phases:
