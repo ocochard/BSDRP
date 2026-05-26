@@ -69,6 +69,8 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # Never touches other configured or running jails.
 CLEANUP_NEEDED=false
 cleanup_on_failure() {
+	# Disable errexit so a single failing step doesn't abort the rest of cleanup
+	set +e
 	if $CLEANUP_NEEDED && [ -n "${tenant}" ]; then
 		echo "WARNING: cleaning up partial jail '${tenant}'..." >&2
 		jls -j "${tenant}" > /dev/null 2>&1 && \
@@ -101,8 +103,9 @@ get_next_id() {
 	done
 	# Fall back to legacy jail.lastid if higher
 	if [ -f /etc/jail.lastid ]; then
+		id=0
 		. /etc/jail.lastid
-		[ "$id" -gt "$maxid" ] && maxid=$id
+		[ "${id:-0}" -gt "$maxid" ] && maxid=$id
 	fi
 	echo $((maxid + 1))
 }
@@ -582,5 +585,13 @@ done
 
 ($list) && list_jails
 [ -z "$tenant" ] && die "jail name mandatory"
+# Validate tenant name: only alphanumerics, underscore and dash allowed.
+# This prevents path-traversal or wildcard expansion in cleanup_on_failure's
+# rm -rf "${jailbase}/${tenant}" and related operations.
+case "$tenant" in
+	*[!A-Za-z0-9_-]*|.|..)
+		die "Invalid jail name '${tenant}' (allowed: A-Z a-z 0-9 _ -)"
+		;;
+esac
 ($create) && create
 ($delete) && delete
