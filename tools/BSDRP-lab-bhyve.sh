@@ -45,6 +45,7 @@ NUMBER_VM="1"
 RAM="1G"
 THREADS=1
 REG_LAB=""
+USER_DATA=""
 SUDO=sudo
 if [ "${arch}" = "amd64" ]; then
 	UEFI=true
@@ -133,7 +134,7 @@ readonly MAX_VMS=255                     # Maximum number of VMs supported
 usage() {
 	# $1: Cause of displaying usage
 	[ $# -eq 1 ] && echo $1
-	echo "Usage: $0 [-aBdeEhqsvV] -i FreeBSD-disk-image.img [-n vm-number] [-l LAN-number] [-c core] [-A number of additionnal disks] "
+	echo "Usage: $0 [-aBdeEhqsvV] -i FreeBSD-disk-image.img [-n vm-number] [-l LAN-number] [-c core] [-A number of additionnal disks] [-u user-data-file]"
 	echo " -a           Disable full-meshing"
 	echo " -A           Number of additionnal disks"
 	echo " -B           Disable UEFI boot mode (switch back to BIOS mode)"
@@ -152,6 +153,8 @@ usage() {
   echo "              Generate a cloudinit disk, instructing to run labconfig"
   echo "              Example, with 'full', will run labconfig full_vm1 for the first VM,"
   echo "              then labconfig full_vm2 for the second VM, etc."
+  echo " -u filename  Custom cloud-init user-data file (overrides -r's generated user-data)"
+  echo "              Same user-data is attached to every VM; meta-data is still generated"
 	echo " -s           Stop all VM"
 	echo " -t           Number of threads per core (default: ${THREADS})"
 	echo " -S           Additionnal disks size (default: ${ADD_DISKS_SIZE})"
@@ -482,21 +485,27 @@ build_vm_disk_args() {
 
 # Build cloud-init disk argument
 # Arguments:
-#   $1: Lab name and vm name compliant to labconfig arg (ex: full_vm1)
+#   $1: Lab name and vm name compliant to labconfig arg (ex: full_vm1).
+#       When -r is unset, this is "_vmN" and is used only as a unique
+#       directory name for the per-VM cidata image.
 build_vm_disk_cloudinit_args() {
   local lab=$1
   local cloudinit_args=""
-  if [ -n "${REG_LAB}" ]; then
+  if [ -n "${REG_LAB}" ] || [ -n "${USER_DATA}" ]; then
     mkdir -p ${WRK_DIR}/cloudinit/${lab}
     cat > ${WRK_DIR}/cloudinit/${lab}/meta-data <<EOF
-#cloud-config
-hostname: ${lab}.lab.bsdrp.net
+local-hostname: ${lab}.lab.bsdrp.net
 EOF
-    cat > ${WRK_DIR}/cloudinit/${lab}/user-data <<EOF
+    if [ -n "${USER_DATA}" ]; then
+      # User-supplied user-data takes precedence over -r's generated one
+      cp "${USER_DATA}" ${WRK_DIR}/cloudinit/${lab}/user-data
+    else
+      cat > ${WRK_DIR}/cloudinit/${lab}/user-data <<EOF
 #cloud-config
 runcmd:
   - /usr/local/sbin/labconfig ${lab}
 EOF
+    fi
     # Generate a 64MB VFAT image from the directory
     makefs -t msdos \
       -o "volume_label=cidata" \
@@ -585,7 +594,11 @@ run_vm() {
 		# Build component argument strings using helper functions
 		local vm_console=$(build_vm_console_args ${vm_num} "${nmdm_id}")
 		local vm_disk=$(build_vm_disk_args ${vm_num})
-    local vm_disk_cloudinit=$(build_vm_disk_cloudinit_args ${REG_LAB}_vm${vm_num})
+		# When -r is set, ${REG_LAB}_vm${vm_num} (e.g. "full_vm1") feeds labconfig.
+		# When -r is unset, drop the leading "_" so the hostname/dir is just "vmN".
+		local cloudinit_lab="vm${vm_num}"
+		[ -n "${REG_LAB}" ] && cloudinit_lab="${REG_LAB}_${cloudinit_lab}"
+		local vm_disk_cloudinit=$(build_vm_disk_cloudinit_args ${cloudinit_lab})
 		local vm_debug=$(build_vm_debug_args ${vm_num})
 		local vm_vnc=$(build_vm_vnc_args ${vm_num})
 
@@ -653,7 +666,7 @@ if [ $(id -u) -ne 0 ]; then
   fi
 fi
 
-while getopts "aBc:dghD:ei:l:m:n:qr:t:svVw:A:S:" FLAG; do
+while getopts "aBc:dghD:ei:l:m:n:qr:t:su:vVw:A:S:" FLAG; do
     case "${FLAG}" in
 	a)
 		MESHED=false
@@ -708,6 +721,10 @@ while getopts "aBc:dghD:ei:l:m:n:qr:t:svVw:A:S:" FLAG; do
 		;;
 	S)
 		ADD_DISKS_SIZE="$OPTARG"
+		;;
+	u)
+		USER_DATA="$OPTARG"
+		[ -f "${USER_DATA}" ] || usage "ERROR: user-data file not found: ${USER_DATA}"
 		;;
 	t)
 		THREADS="$OPTARG"
@@ -778,6 +795,7 @@ if ( ${VERBOSE} ); then
 	echo "- $LAN LAN(s) between all VM"
 	[ ${MESHED} = true ] && echo "- Full mesh Ethernet links between each VM"
   [ -n "${REG_LAB}" ] && echo "- Regression test lab: ${REG_LAB}"
+  [ -n "${USER_DATA}" ] && echo "- Custom cloud-init user-data: ${USER_DATA}"
 fi
 
 i=1

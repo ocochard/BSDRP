@@ -99,3 +99,7 @@ device enc
 options     RANDOM_FENESTRASX
 # Don't enter the debugger for a panic
 options     KDB_UNATTENDED
+# Receive-side scaling: kernel-wide coordination of NIC RSS buckets
+# with CPU affinity (interrupt pinning, PCB groups, netisr direct
+# dispatch).
+options     RSS
