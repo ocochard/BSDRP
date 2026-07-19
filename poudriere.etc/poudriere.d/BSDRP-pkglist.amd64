@@ -2,4 +2,5 @@ net/realtek-re-kmod
 #net/vpp
 sysutils/cpu-microcode
 sysutils/dtrace-toolkit
+sysutils/intel-nvmupdate-100g
 sysutils/intel-pcm

@@ -387,6 +387,9 @@ ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: ${
 	# the build is interrupted before the restore step).
 	@rm -rf ${OBJ_DIR}/Files
 	@cp -R ${SRC_DIR}/BSDRP/Files ${OBJ_DIR}/Files
+	# poudriere-image copies the overlay preserving ownership; force root:wheel
+	# so the image root fs isn't owned by whoever ran make.
+	@${sudo} chown -R 0:0 ${OBJ_DIR}/Files
 	# Replace version in brand-bsdrp.lua (on the staged copy)
 	@sed -i '' -e s"/BSDRP_VERSION/${VERSION}/" ${OBJ_DIR}/Files/boot/lua/brand-bsdrp.lua
 	# Image size of 4g still too big to upgrade previous 4g nanobsd image, need to reduce

@@ -171,7 +171,7 @@ archive_cfg () {
 			echo "WARNING: Can't delete /data/archives/$name.tar.xz"
 	fi
 
-	if ! tar -cJvpf /data/archives/$name.tar.xz -C /cfg/ . 2>/dev/null; then
+	if ! tar -cJvpf /data/archives/$name.tar.xz --exclude './dot.ssh.root/agent' -C /cfg/ . 2>/dev/null; then
 		echo "WARNING: Can't generate tar archive $name."
 	fi
 
@@ -200,7 +200,13 @@ save_cfg () {
 	old_IFS="$IFS"
 	IFS='
 '
-	for i in "$@" $(find * \( -type d -o -type f -o -type l \) ! -path "cron/tabs"); do
+	# Runtime-only paths under /etc that must never enter /cfg.
+	# dot.ssh.root/agent holds transient sshd agent-forwarding sockets
+	# (root's ~/.ssh is symlinked to /etc/dot.ssh.root/ so it survives reboot).
+	for i in "$@" $(find * \( -type d -o -type f -o -type l \) \
+	    ! -path "cron/tabs" \
+	    ! -path "dot.ssh.root/agent" \
+	    ! -path "dot.ssh.root/agent/*"); do
 		IFS="$old_IFS"
 		if [ -d "/etc/$i" ] ; then
 			# Does this directory exist in reference configuration ?
@@ -214,7 +220,7 @@ save_cfg () {
 						[ -z "${dir}" ] && dir="$c" || dir="${dir}/${c}"
 						full="$full \"$dir\""
 					done
-					eval "tar cf - ${full} -C /etc | tar xf - -C /cfg"
+					eval "tar cf - --exclude 'dot.ssh.root/agent' ${full} -C /etc | tar xf - -C /cfg"
 				fi
 			fi
 		elif [ -f "/cfg/$i" -o -h "/cfg/$i" ]; then
@@ -241,12 +247,12 @@ save_cfg () {
 							[ -z "${dir}" ] && dir="$c" || dir="${dir}/${c}"
 							echo "$dir" >> "$tmp_list"
 						done
-						tar cf - -T "$tmp_list" -C /etc | tar xf - -C /cfg
+						tar cf - --exclude 'dot.ssh.root/agent' -T "$tmp_list" -C /etc | tar xf - -C /cfg
 						rm -f "$tmp_list"
 						;;
 					*)
 						# Simple filename - copy directly
-						tar cf - "$i" -C /etc | tar xf - -C /cfg
+						tar cf - --exclude 'dot.ssh.root/agent' "$i" -C /etc | tar xf - -C /cfg
 						;;
 				esac
 			fi
@@ -403,7 +409,7 @@ put () {
 				die "WARNING: Can't delete previous /tmp/${CONFIG_FILE}"
 		fi
 		mount_cfg
-		if ! tar -cJvpf /tmp/${CONFIG_FILE} -C /cfg/ . 2>/dev/null; then
+		if ! tar -cJvpf /tmp/${CONFIG_FILE} --exclude './dot.ssh.root/agent' -C /cfg/ . 2>/dev/null; then
 			umount_cfg
 			die "ERROR: Can't tar /cfg to /tmp/${CONFIG_FILE}"
 		fi
