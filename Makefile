@@ -385,13 +385,13 @@ ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: ${
 	# Stage the file overlay into obj/ so we can do build-time substitutions
 	# without mutating the tracked tree (would otherwise leave git dirty if
 	# the build is interrupted before the restore step).
-	@rm -rf ${OBJ_DIR}/Files
+	@${sudo} rm -rf ${OBJ_DIR}/Files
 	@cp -R ${SRC_DIR}/BSDRP/Files ${OBJ_DIR}/Files
+	# Replace version in brand-bsdrp.lua (on the staged copy)
+	@sed -i '' -e s"/BSDRP_VERSION/${VERSION}/" ${OBJ_DIR}/Files/boot/lua/brand-bsdrp.lua
 	# poudriere-image copies the overlay preserving ownership; force root:wheel
 	# so the image root fs isn't owned by whoever ran make.
 	@${sudo} chown -R 0:0 ${OBJ_DIR}/Files
-	# Replace version in brand-bsdrp.lua (on the staged copy)
-	@sed -i '' -e s"/BSDRP_VERSION/${VERSION}/" ${OBJ_DIR}/Files/boot/lua/brand-bsdrp.lua
 	# Image size of 4g still too big to upgrade previous 4g nanobsd image, need to reduce
 	@${sudo} poudriere -e ${SRC_DIR}/poudriere.etc image -t firmware -s 3.95g \
 		-j BSDRPj -p BSDRPp -n BSDRP -h router.bsdrp.net \
