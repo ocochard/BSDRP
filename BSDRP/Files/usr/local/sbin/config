@@ -187,6 +187,14 @@ archive_cfg () {
 save_cfg () {
 	local name=$1
 	setlock
+	# Shell-syntax check on rc.conf files before saving. Catches typos
+	# (unclosed quotes, stray characters) that would prevent the system
+	# from booting. Does not catch semantic errors (misspelled variable
+	# names, invalid values).
+	for f in /etc/rc.conf /etc/rc.conf.local /etc/rc.conf.d/*; do
+		[ -f "$f" ] || continue
+		sh -n "$f" || die "ERROR: $f has shell-syntax errors, aborting save"
+	done
 	mount_cfg || die "ERROR: Can't mount /cfg"
 	archive_cfg "" || echo "WARNING: Can't archive"
 	echo "Saving configuration..."
