@@ -139,8 +139,12 @@ MODULES_OVERRIDE= \
 	unionfs \
 	usb/cdce \
 	usb/u3g \
+	usb/uchcom \
 	usb/ucom \
 	usb/uether \
+	usb/uftdi \
+	usb/uplcom \
 	usb/urndis \
+	usb/uslcom \
 	xdr \
 	zfs \
