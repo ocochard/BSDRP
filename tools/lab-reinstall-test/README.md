@@ -170,13 +170,16 @@ Destroys VM disks and tears down bridges/taps.
 
 ## Known limitations / TODO
 
-- **Default route is not preserved.** The RAM boot only re-applies
-  the primary interface's inline IP. If the target is behind a
-  router (client not on the same L2), SSH will fail after reroot.
-  Fix: capture `route -n get default` output in
-  `reinstall-prepare.sh` and re-add the gateway in the generated
-  `/etc/rc`. Tracked as follow-up.
-
 - `/usr/sbin/sockstat` is not shipped by BSDRP so the "sshd
   listener present" diagnostic in `/etc/rc` emits `MARK 8c: no
   listener on :22` even when sshd is up. Purely cosmetic.
+
+- The default route IS preserved: `reinstall-prepare.sh` captures
+  the current `route -n get default` gateway and re-adds it after
+  bringing the primary interface up in the RAM boot's `/etc/rc`.
+  When the pre-reroot system has no default route (L2-adjacent
+  operator, as with the APU2 lab boxes), the substitution
+  evaluates to a no-op — no gateway means nothing to preserve.
+  This path has NOT been exercised on real hardware yet (all
+  three test targets were L2-local), so the routed case is only
+  validated by inspecting the generated rc.

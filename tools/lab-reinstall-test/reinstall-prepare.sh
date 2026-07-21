@@ -29,7 +29,13 @@ echo "==> boot disk: /dev/${CURDISK}"
 LIVE_IFACE=$(route -n get default 2>/dev/null | awk '/interface:/ {print $2}')
 [ -z "${LIVE_IFACE}" ] && LIVE_IFACE=$(ifconfig -l | tr ' ' '\n' | grep -E '^(vt|em|igb|ix)' | head -1)
 LIVE_IFCONFIG=$(ifconfig ${LIVE_IFACE} 2>/dev/null | awk '/inet / {printf "inet %s netmask %s", $2, $4; exit}')
+# Capture the default gateway so we can restore it after ifconfig on the
+# RAM boot. Without this, a client behind a router loses SSH after reroot.
+# Empty when no default route exists (L2-adjacent client) — the RAM rc
+# handles both cases.
+LIVE_DEFAULT_GW=$(route -n get default 2>/dev/null | awk '/gateway:/ {print $2}')
 echo "==> primary iface: ${LIVE_IFACE} (${LIVE_IFCONFIG})"
+[ -n "${LIVE_DEFAULT_GW}" ] && echo "==> default gw: ${LIVE_DEFAULT_GW}"
 
 # Create RAM disk
 if [ -e /dev/md${MD_UNIT} ]; then
@@ -151,6 +157,12 @@ echo "MARK 5: bringing up lo0"
 echo "MARK 6: bringing up ${LIVE_IFACE}"
 /sbin/ifconfig ${LIVE_IFACE} ${LIVE_IFCONFIG}
 /sbin/ifconfig ${LIVE_IFACE} | head -5
+# Restore default route if the pre-reroot system had one. Empty
+# LIVE_DEFAULT_GW is fine — clients on the same L2 don't need it.
+if [ -n "${LIVE_DEFAULT_GW}" ]; then
+    echo "MARK 6b: adding default route via ${LIVE_DEFAULT_GW}"
+    /sbin/route add default ${LIVE_DEFAULT_GW} 2>&1
+fi
 echo "MARK 7: starting sshd"
 /usr/sbin/sshd -e
 echo "MARK 8: sshd exit code \$?"
