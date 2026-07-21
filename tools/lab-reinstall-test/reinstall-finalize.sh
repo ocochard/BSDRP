@@ -30,6 +30,14 @@ MNT=/tmp/newcfg
 
 if [ -f "${CFG_BACKUP}" ]; then
     /usr/bin/tar -xzf "${CFG_BACKUP}" -C "${MNT}"
+    # /cfg/fstab is disk-layout-specific; a legacy MBR-nanobsd system
+    # will have /dev/ufs/BSDRPsN paths that break on the new GPT
+    # install. Drop it so the fresh install's own /conf/base/etc/fstab
+    # is used at boot.
+    if [ -f "${MNT}/fstab" ]; then
+        /bin/rm -f "${MNT}/fstab"
+        echo "==> removed stale ${MNT}/fstab (fresh install will use its own)"
+    fi
     echo "==> Restored ${CFG_DEV}"
 fi
 

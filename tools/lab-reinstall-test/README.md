@@ -4,11 +4,14 @@ Recipe for wiping and reinstalling a BSDRP system remotely, without
 console access, by rerooting into a RAM disk and streaming a fresh
 image over ssh onto the (now-idle) boot disk.
 
-**Status: end-to-end tested in bhyve.** Sequence completes cleanly:
-kernel reroots into memory-backed UFS, sshd comes back on the same
-IP, external `dd` writes a fresh GPT image to `/dev/vtbd0`, `/cfg`
-contents are restored from a tarball preserved on the RAM disk, and
-the VM reboots into the fresh install.
+**Status: end-to-end validated on real hardware (PC Engines APU2)
+and in bhyve.** Sequence completes cleanly: kernel reroots into
+memory-backed UFS, sshd comes back on the same IP, external `dd`
+writes a fresh GPT image to the boot disk, `/cfg` is restored from
+a tarball preserved on the RAM disk, and the target reboots into
+the fresh install. SSH host keys survive across all three phases
+(pre-reinstall, RAM boot, post-reinstall). Total wall time on APU2
+with a SATA SSD: ~3-4 minutes, dominated by the ~2 minute `dd`.
 
 ## Files
 
@@ -144,3 +147,36 @@ Destroys VM disks and tears down bridges/taps.
 - On real hardware, remember that `dd`'s block-size flag is
   case-sensitive: `bs=1M` on Linux, `bs=1m` on FreeBSD. Getting it
   wrong gives you "invalid number" and a zero-byte transfer.
+
+## Known-good targets
+
+- **bhyve VM** (virtio-blk `vtbd0`, virtio-net `vtnet0`, 2 GB RAM,
+  UEFI firmware): full recipe, 15 s dd, 30 s reboot-to-fresh-boot.
+- **PC Engines APU2 (`apu2-3`)**: physical hardware, SATA SSD as
+  `ada0`, `igb0` NIC, 4 GB RAM, coreboot BIOS. Full recipe worked
+  first try; 2 min dd (SSD bound), ~30 s reboot. `/cfg` marker file
+  planted before the run was intact after the fresh boot.
+
+- **PC Engines APU2 (`apu2-2`)**: physical hardware, legacy
+  MBR-nanobsd install (older layout with BSD-in-slice + UFS labels
+  `BSDRPsN`) converted in place to the fresh GPT layout. `reinstall-
+  finalize.sh` drops the restored `/cfg/fstab` because its
+  `/dev/ufs/BSDRPsN` paths don't exist on the new GPT install; the
+  fresh install's own `/conf/base/etc/fstab` (with `/dev/gpt/BSDRPN`
+  paths) is used instead. All other `/cfg` contents (rc.conf,
+  master.passwd, host keys, etc.) restored cleanly. Booted straight
+  from `/dev/gpt/BSDRP1` — killing the GEOM_LABEL taste race that
+  had been dropping this box to `mountroot>` on every reboot.
+
+## Known limitations / TODO
+
+- **Default route is not preserved.** The RAM boot only re-applies
+  the primary interface's inline IP. If the target is behind a
+  router (client not on the same L2), SSH will fail after reroot.
+  Fix: capture `route -n get default` output in
+  `reinstall-prepare.sh` and re-add the gateway in the generated
+  `/etc/rc`. Tracked as follow-up.
+
+- `/usr/sbin/sockstat` is not shipped by BSDRP so the "sshd
+  listener present" diagnostic in `/etc/rc` emits `MARK 8c: no
+  listener on :22` even when sshd is up. Purely cosmetic.
