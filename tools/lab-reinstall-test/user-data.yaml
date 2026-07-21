@@ -1,0 +1,14 @@
+#cloud-config
+users:
+  - name: root
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICAjZV/Iy5uzn5KaM0Hg+8ixZ3lfn3s21PNIqqTQ00t5 cochard@gmail.com
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDn3fbcdRGDOmDreNnSO22iLaN64IENoZYfMCEbJE6oJJnMQhO3fZp4ClAk/mgDGSjebUkf2RgOKaWgmunFY+bBrKKd5Uc4dFuGjQbxc4DcBglESS+yQattaq8tcUMk3YjCd4oEFkopHgMmiRBBMV7Mn6idG3NGeKCFcrQpuv0CSpvpcqbeE7Fh2YwN5LLPvbCYTcJQmEIotexGvdIAn0O+UbgFE5Fsp+g/dyDTC5Z7IF0JnsDdHfgbKwMIsiSbpCmPlB5tOSB+ZgpaQDKV7CKdLT7JvAZFHhwQwkcyKSHRWC0XjfML6T6/YwXyC9AvtJW1v5qAh+x1LNwDc7QvibTD ocochard@netflix.com
+ssh_pwauth: false
+disable_root: false
+runcmd:
+  - sysrc sshd_enable=YES
+  - sysrc ifconfig_vtnet0="inet 10.99.0.2 netmask 255.255.255.0"
+  - service netif restart
+  - service sshd start
+  - /usr/local/sbin/config save
