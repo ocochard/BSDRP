@@ -1,0 +1,33 @@
+diff --git sys/dev/hwpmc/hwpmc_amd.c sys/dev/hwpmc/hwpmc_amd.c
+index 185ceff133b0..90d3676f4b7f 100644
+--- sys/dev/hwpmc/hwpmc_amd.c
++++ sys/dev/hwpmc/hwpmc_amd.c
+@@ -403,9 +403,6 @@ amd_allocate_pmc(int cpu __unused, int ri, struct pmc *pm,
+ 	if (pd->pd_class != a->pm_class)
+ 		return (EINVAL);
+ 
+-	if ((a->pm_flags & PMC_F_EV_PMU) == 0)
+-		return (EINVAL);
+-
+ 	caps = pm->pm_caps;
+ 
+ 	PMCDBG2(MDP, ALL, 1,"amd-allocate ri=%d caps=0x%x", ri, caps);
+@@ -418,7 +415,17 @@ amd_allocate_pmc(int cpu __unused, int ri, struct pmc *pm,
+ 	    ((pd->pd_caps & PMC_CAP_PRECISE) == 0))
+ 		return (EINVAL);
+ 
+-	if (strlen(pmc_cpuid) != 0) {
++	/*
++	 * The PMC_F_EV_PMU flag distinguishes an allocation using the
++	 * pmu-events tables (where the register configuration is supplied
++	 * directly in pm_amd_config) from a legacy allocation using
++	 * FreeBSD's statically-defined event table (below).  Older AMD
++	 * families (e.g. K8, Bobcat, Jaguar, Bulldozer) have no pmu-events
++	 * table, so libpmc falls back to the legacy scheme; do not gate the
++	 * PMU path on pmc_cpuid being non-empty, as that is set for every
++	 * AMD CPU and would reject the legacy allocation outright.
++	 */
++	if ((a->pm_flags & PMC_F_EV_PMU) != 0) {
+ 		config = a->pm_md.pm_amd.pm_amd_config;
+ 		if ((config & ~amd_config_mask(amd_pmcdesc[ri].pm_subclass,
+ 		    caps)) != 0)

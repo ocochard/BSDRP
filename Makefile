@@ -188,6 +188,7 @@ MAKEFILE := ${.PARSEDIR}/${.PARSEFILE}
 	sync-FreeBSD sync-ports \
 	build-builder-jail build-ports-tree build-packages \
 	clean-jail clean-ports-tree clean-packages clean-images clean-src \
+	cleanup-src-FreeBSD cleanup-src-ports \
 	release compress-images checksum-images
 
 ###############################################################################
@@ -287,24 +288,27 @@ ${OBJ_DIR}/update-src-${repo}: ${vars_file} ${src_${repo}_dir}
 	fi
 	@touch ${.TARGET}
 
-${OBJ_DIR}/patch-src-${repo}: ${OBJ_DIR}/update-src-${repo}
-	# Apply patches based on git diff check, not timestamp comparison
-	# This avoids false triggers from patch files with future timestamps
+${OBJ_DIR}/patch-src-${repo}: ${OBJ_DIR}/update-src-${repo} ${${repo}_patches}
+	# The patch files are prerequisites: adding or editing any patch makes it
+	# newer than this stamp and re-triggers the recipe, so a new patch is
+	# picked up on a plain "make" without any manual cleanup-src-${repo}.
 .if !defined(${repo}_patches) || empty(${repo}_patches)
 	@echo "WARNING: No patches found for ${repo} in ${patches_dir}"
 .else
-	# If patches already applied (git diff shows changes), skip patching
+	# Apply each patch idempotently: if it already reverse-applies cleanly it is
+	# present in the tree, so skip it; otherwise apply it. This makes the recipe
+	# safe to re-run onto an already-patched tree (the common case when only one
+	# new patch was added) without destructively resetting the source tree.
 	# git apply is more robust than patch: creates dirs, better conflict detection
-	# NOTE: If you update a patch file, run "make cleanup-src-${repo}" first
-	@if git -C ${OBJ_DIR}/${repo} diff --quiet HEAD; then \
-		echo "==> Applying ${repo} patches..."; \
-		for patch in ${${repo}_patches}; do \
+	@echo "==> Applying ${repo} patches..."; \
+	for patch in ${${repo}_patches}; do \
+		if git -C ${OBJ_DIR}/${repo} apply -p0 --reverse --check $${patch} 2>/dev/null; then \
+			echo "Skipping $${patch} (already applied)"; \
+		else \
 			echo "Processing $${patch}..."; \
 			git -C ${OBJ_DIR}/${repo} apply -p0 --whitespace=nowarn $${patch} || exit 1; \
-		done; \
-	else \
-		echo "==> ${repo} patches already applied (git tree modified), skipping"; \
-	fi
+		fi; \
+	done
 .endif
 	@touch ${.TARGET}
 
@@ -453,6 +457,19 @@ clean-src:
 	@rm -f ${OBJ_DIR}/update-src-ports
 	@rm -f ${OBJ_DIR}/cleanup-src-FreeBSD
 	@rm -f ${OBJ_DIR}/cleanup-src-ports
+
+# User-facing aliases for the stamp-file targets advertised in "make help".
+# The .for loop above defines the real targets as ${OBJ_DIR}/cleanup-src-${repo}
+# (absolute path), which "make cleanup-src-FreeBSD" cannot reach on its own.
+# Remove the stamp first so the clean always runs on demand (a stale sentinel
+# would otherwise make the delegated target report "up to date" and do nothing).
+cleanup-src-FreeBSD:
+	@rm -f ${OBJ_DIR}/cleanup-src-FreeBSD
+	@${MAKE} -f ${MAKEFILE} ${OBJ_DIR}/cleanup-src-FreeBSD
+
+cleanup-src-ports:
+	@rm -f ${OBJ_DIR}/cleanup-src-ports
+	@${MAKE} -f ${MAKEFILE} ${OBJ_DIR}/cleanup-src-ports
 
 release: all
 	@${MAKE} -f ${MAKEFILE} compress-images checksum-images

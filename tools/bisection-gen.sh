@@ -4,9 +4,15 @@
 # https://bsdrp.net
 #
 # Purpose:
-#  This script permit to build multiple image regarding a given list of svn revision number.
-#  Coupled to an auto-bench script, this permit to found regression in -current code as example.
-#  It can use a phabricator review ID too, and generate 2 images: Once with the patch and one without
+#  Builds one BSDRP image per FreeBSD source git hash in a list.
+#  Coupled to an auto-bench script, this permits finding a regression in
+#  FreeBSD -current code, for example.
+#  It can use a Phabricator review ID too, generating 2 images: one with the
+#  patch applied and one without.
+#
+#  The build is driven by the top-level Makefile: the FreeBSD hash to build is
+#  written into Makefile.vars (FreeBSD_hash), then `make MACHINE_ARCH=$ARCH
+#  release` produces the compressed images under poudriere's images dir.
 #
 
 set -eu
@@ -14,24 +20,13 @@ set -eu
 ### Variables ###
 IMAGES_DIR=""
 PHABRID=""
-# Name of the BSDRP project
-# TESTING project is a very small (should build fast)
-# Set PROJECT variable like this example:
-# env ARCH=i386 tools/bisection-gen.sh
-: ${PROJECT:=TESTING}
-: ${CONSOLE:=serial}
 : ${ARCH:=amd64}
 
-# Enable TMPFS
-TMPFS=true
-
-if (${TMPFS}); then
-	TMPOPT="-r"
-	OBJDIR="$(pwd)"/workdir/tmpfs
-else
-	TMPOPT=""
-	OBJDIR="$(pwd)"/workdir
-fi
+# Where the top-level Makefile drops compressed images:
+# ${BASEFS}/data/images/BSDRP-${VERSION}-<flavour>-${ARCH}.<ext>
+BASEFS="$(grep '^BASEFS=' /usr/local/etc/poudriere.conf | cut -d '=' -f 2)"
+[ -z "${BASEFS}" ] && BASEFS="/usr/local/poudriere"
+POUDRIERE_IMAGES_DIR="${BASEFS}/data/images"
 
 ### Functions ###
 
@@ -45,49 +40,51 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # Arguments: none
 # Returns: exits with code 0
 usage() {
-	echo "$0 nanobsd-images-dir [phabricator-id]"
+	echo "$0 images-dir [phabricator-id]"
+	echo "  env vars: ARCH (default amd64)"
 	exit 0
 }
 
-# Build BSDRP project image for specific revision
+# Build BSDRP image for a specific FreeBSD source git hash
 # Arguments:
-#   $1: SVN revision number to build
-#   $2: File image extension (optional, defaults to revision number)
-# Returns: 0 on success, exits on build failure
+#   $1: FreeBSD source git hash to build
+#   $2: File image suffix (optional, defaults to the hash)
+# Returns: 0 on success (or already-built/build-failed, logged), exits on setup error
 build_project() {
 	[ $# -lt 1 ] && die "BUG during build_project() call, missing argument"
-	SVN_REV=$1
+	SRC_HASH=$1
 	FILENAME=$1
 	[ $# -eq 2 ] && FILENAME=$2
-	echo -n "Building image matching revision ${SVN_REV}..."
-	if [ -f ${IMAGES_DIR}/BSDRP-${FILENAME}-upgrade-${ARCH}-${CONSOLE}.img ]; then
-		echo "Already existing"
-		return 0
-	elif [ -f ${IMAGES_DIR}/BSDRP-${FILENAME}-upgrade-${ARCH}-${CONSOLE}.img.xz ]; then
+	echo -n "Building image matching FreeBSD hash ${SRC_HASH}..."
+	if [ -f ${IMAGES_DIR}/BSDRP-${FILENAME}-full-${ARCH}.img.xz ]; then
 		echo "Already existing"
 		return 0
 	fi
-	#Configuring SVN revision in $PROJECT/make.conf and in version
-	sed -i "" -e "/SRC_REV=/s/.*/SRC_REV=${SVN_REV}/" $PROJECT/make.conf
-	[ ! -d $PROJECT/Files/etc ] && mkdir -p $PROJECT/Files/etc
-	echo ${SVN_REV} > $PROJECT/Files/etc/version
-	./make.sh -p ${PROJECT} -C -u -y -a ${ARCH} -c ${CONSOLE} ${TMPOPT} > ${IMAGES_DIR}/bisec.log 2>&1 && true
-	if [ ! -f ${OBJDIR}/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ]; then
-			echo "Where are ${OBJDIR}/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-full-${ARCH}-${CONSOLE}.img.xz ?"
-			echo "Check error message in ${IMAGES_DIR}/bisec.log.${SVN_REV}"
-			for i in _.bw _.bk _.iw _.ik; do
-				[ -f ${OBJDIR}/${PROJECT}.${ARCH}/$i ] && mv ${OBJDIR}/${PROJECT}.${ARCH}/$i ${IMAGES_DIR}/bisec.log.$i.${FILENAME}
-			done
-			mv ${IMAGES_DIR}/bisec.log ${IMAGES_DIR}/bisec.log.${FILENAME}
-			return 0
+	# Pin the FreeBSD source hash the Makefile checks out. The update-src-FreeBSD
+	# recipe compares this against the checked-out tree and re-checks-out on change.
+	sed -i "" -e "/^FreeBSD_hash?*=/s|.*|FreeBSD_hash?=${SRC_HASH}|" Makefile.vars
+	make MACHINE_ARCH=${ARCH} release > ${IMAGES_DIR}/bisec.log 2>&1 && true
+	# The image name embeds VERSION (from BSDRP/Files/etc/version), not the hash,
+	# so glob the freshly produced full image.
+	BUILT_IMG=$(ls -t ${POUDRIERE_IMAGES_DIR}/BSDRP-*-full-${ARCH}.img.xz 2>/dev/null | head -n 1)
+	if [ -z "${BUILT_IMG}" ] || [ ! -f "${BUILT_IMG}" ]; then
+		echo "failed"
+		echo "No full image produced in ${POUDRIERE_IMAGES_DIR} for hash ${SRC_HASH}"
+		echo "Check error messages in ${IMAGES_DIR}/bisec.log.${FILENAME}"
+		mv ${IMAGES_DIR}/bisec.log ${IMAGES_DIR}/bisec.log.${FILENAME}
+		return 0
 	fi
-	for i in full-${ARCH}-${CONSOLE}.img.xz upgrade-${ARCH}-${CONSOLE}.img.xz debug-${ARCH}.tar.xz ${ARCH}-${CONSOLE}.mtree.xz ; do
-		mv ${OBJDIR}/${PROJECT}.${ARCH}/BSDRP-${SVN_REV}-$i ${IMAGES_DIR}/BSDRP-${FILENAME}-$i
+	# Rename each produced flavour to carry the bisection FILENAME suffix.
+	VERSION=$(cat BSDRP/Files/etc/version)
+	for flavour in full-${ARCH}.img.xz upgrade-${ARCH}.img.xz debug-${ARCH}.tar.xz ${ARCH}.mtree.xz; do
+		src="${POUDRIERE_IMAGES_DIR}/BSDRP-${VERSION}-${flavour}"
+		[ -f "${src}" ] && mv "${src}" "${IMAGES_DIR}/BSDRP-${FILENAME}-${flavour}"
 	done
 
 	echo "done"
 	return 0
 }
+
 ### Main ###
 if [ $# -lt 1 ]; then
 	usage
@@ -96,43 +93,33 @@ fi
 IMAGES_DIR="$1"
 [ $# -eq 2 ] && PHABRID="$2"
 
-# Some little check
-
-[ ! -d BSDRP ] && die "This script need to be executed from the main BSDRP dir"
-[ ! -x make.sh ] && die "This script need to be executed from the main BSDRP dir"
-[ ! -d ${IMAGES_DIR} ] && die "Can't found destination dir for storing images"
+# Some little checks
+[ ! -d BSDRP ] && die "This script needs to be executed from the main BSDRP dir"
+[ ! -f Makefile.vars ] && die "This script needs to be executed from the main BSDRP dir"
+[ ! -d ${IMAGES_DIR} ] && die "Can't find destination dir for storing images"
 
 if [ -z "${PHABRID}" ]; then
-	# List of SVN revision to build image for
-	# For each image by week
-	#  svnlite log | grep 'r.*|.*|.*(Sun'
-	# 274745 to xxx
-	# From Sunday 22 March, to each last commit of sundy of each week
-	# and if build failed, take the last monday commit and if it failed again
-	# take the last tusday commit
-	#
-	SVN_REV_LIST='
-364730
-364729
+	# List of FreeBSD source git hashes to build an image for.
+	# Populate with the hashes spanning the regression window, e.g. from
+	#   git -C obj/FreeBSD/src log --oneline <good>..<bad>
+	SRC_HASH_LIST='
 	'
-	for SVN_REV in ${SVN_REV_LIST}; do
-		build_project ${SVN_REV}
+	[ -z "$(echo ${SRC_HASH_LIST})" ] && die "SRC_HASH_LIST is empty: edit the script and add FreeBSD git hashes to bisect"
+	for SRC_HASH in ${SRC_HASH_LIST}; do
+		build_project ${SRC_HASH}
 	done
 else
-	cd ${PROJECT}/FreeBSD/src
-	SVN_REV=$(svn up | tail -n 1 | grep revision | cut -d ' ' -f 3 | cut -d '.' -f 1)
-	cd ../../..
-	[ -z "${SVN_REV}" ] && die "Didn't found revision number"
+	# Build the current pinned hash twice: once clean, once with the Phabricator patch.
+	SRC_HASH=$(grep '^FreeBSD_hash?*=' Makefile.vars | cut -d '=' -f 2)
+	[ -z "${SRC_HASH}" ] && die "Didn't find FreeBSD_hash in Makefile.vars"
 	[ -f /tmp/bench-lab-patch.txt ] && rm /tmp/bench-lab-patch.txt
 	fetch -o /tmp/bench-lab-patch.txt "https://reviews.freebsd.org/${PHABRID}?download=true" || die "Can't download Phabricator patch"
 	grep -q 'DOCTYPE html' /tmp/bench-lab-patch.txt && die "Seems not a good patch (check /tmp/bench-lab-patch.txt)"
-	build_project ${SVN_REV}
-	[ -d ${PROJECT}/patches ] || mkdir ${PROJECT}/patches
-	mv /tmp/bench-lab-patch.txt ${PROJECT}/patches/freebsd.${PHABRID}.patch
-	build_project ${SVN_REV} ${SVN_REV}${PHABRID}
-	rm ${PROJECT}/patches/freebsd.${PHABRID}.patch
+	build_project ${SRC_HASH}
+	mv /tmp/bench-lab-patch.txt BSDRP/patches/freebsd.${PHABRID}.patch
+	build_project ${SRC_HASH} ${SRC_HASH}${PHABRID}
+	rm BSDRP/patches/freebsd.${PHABRID}.patch
 fi
 
 
 echo "All images were put in ${IMAGES_DIR}"
-(${TMPFS}) && echo "Don't forgot to unmount ${OBJDIR}"

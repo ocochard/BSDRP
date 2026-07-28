@@ -52,7 +52,7 @@ user_confirm () {
 	local input=""
 	echo -n $1
 	while [ "${input}" != "y" -a "${input}" != "n" -a "${input}" != "a" ]; do
-		read input <&1
+		read input
 	done
 	if [ "${input}" = "n" ]; then
 		return 1

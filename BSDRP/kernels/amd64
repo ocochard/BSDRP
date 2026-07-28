@@ -440,7 +440,10 @@ options     ROUTETABLES=16
 device enc
 
 #options           PCBGROUP                # Protocol control-block groups
-options 	RSS			# Receive-side scaling support
+#options 	RSS			# Receive-side scaling support
+					# Not enabled because forcing the
+					# net.isr hybrid path that reduce
+					# forwarding performance
 
 # Fenestras X" alternative /dev/random implementation
 options		RANDOM_FENESTRASX

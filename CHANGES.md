@@ -2,7 +2,6 @@
 
 ## New feature
 - Latest changes from FreeBSD main and ports at xx/yy/zzz
-- Enabled kernel option RSS
 
 ## Fixes
 

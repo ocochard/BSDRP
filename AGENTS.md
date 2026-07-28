@@ -35,7 +35,6 @@ The build system has three main phases:
 
 ### Key directories:
 - `BSDRP/`: Main project files including nano configuration, kernel configs, patches, and file overlays
-- `EINE/`: Easy Internet vpN Extender sub-project for large-scale network appliance deployment
 - `poudriere.etc/`: Poudriere configuration files for jail and package building
 - `tools/`: Lab scripts for testing in bhyve, QEMU, VirtualBox environments
 - `obj/`: Build artifacts and object files
@@ -129,7 +128,6 @@ sudo tools/BSDRP-lab-bhyve.sh -i BSDRP-<version>-full-amd64.img.xz -n 5 -r full
 - Images support both BIOS and UEFI boot with GPT partitioning
 - Custom kernel configurations are in `BSDRP/kernels/` (these are standalone configs, NOT `include GENERIC`, so every desired kernel option must be listed explicitly)
 - Patches for FreeBSD and ports are in `BSDRP/patches/`
-- The EINE sub-project has its own build process using `./make.sh -p EINE`
 
 ### Kernel modules
 
