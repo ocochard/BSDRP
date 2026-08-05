@@ -21,7 +21,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * arping, license:GPLv2, https://www.habets.pp.se/synscan/programs.php?prog=arping
 * bash, license:GPLv3+, https://www.gnu.org/software/bash/
 * bgpq4, license:BSD2CLAUSE, https://github.com/bgp/bgpq4
-* bird2, license:GPLv2, https://bird.nic.cz/
+* bird3, license:GPLv2, https://bird.nic.cz/
 * brotli, license:MIT, https://github.com/google/brotli
 * bsnmp-regex, license:BSD3CLAUSE, http://thewalter.net/stef/software/bsnmp-regex/
 * bsnmp-ucd, license:BSD2CLAUSE, https://github.com/trociny/bsnmp-ucd
@@ -48,6 +48,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * gmp, license:LGPL3, https://gmplib.org/
 * graphpath, license:BSD2CLAUSE, https://github.com/ocochard/graphpath
 * indexinfo, license:BSD2CLAUSE, https://codeberg.org/bapt/indexinfo
+* intel-nvmupdate-100g, license:IFL, IPL, https://downloadcenter.intel.com
 * intel-pcm, license:BSD3CLAUSE, https://github.com/intel/pcm
 * iperf, license:BSD2CLAUSE, https://sourceforge.net/projects/iperf2/
 * iperf3, license:MIT, BSD3CLAUSE, https://software.es.net/iperf/
@@ -112,11 +113,11 @@ The authors of BSDRP would like to thank the authors of these software for their
 * pmacct, license:GPLv2, http://www.pmacct.net/
 * protobuf, license:BSD3CLAUSE, https://protobuf.dev/
 * protobuf-c, license:BSD2CLAUSE, https://github.com/protobuf-c/protobuf-c
-* py311-exabgp4, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
-* py311-mrtparse, license:APACHE20, https://github.com/t2mune/mrtparse
-* py311-packaging, license:BSD2CLAUSE, APACHE20, https://packaging.pypa.io/en/stable/
-* py311-setuptools, license:MIT, https://github.com/pypa/setuptools
-* python311, license:PSFL, https://www.python.org/
+* py312-exabgp4, license:BSD3CLAUSE, https://github.com/Exa-Networks/exabgp
+* py312-mrtparse, license:APACHE20, https://github.com/t2mune/mrtparse
+* py312-packaging, license:BSD2CLAUSE, APACHE20, https://packaging.pypa.io/en/stable/
+* py312-setuptools, license:MIT, https://github.com/pypa/setuptools
+* python312, license:PSFL, https://www.python.org/
 * quagga-bgp-netgen, license:BSD2CLAUSE, https://github.com/ocochard/quagga-bgp-netgen/
 * readline, license:GPLv3, https://tiswww.case.edu/php/chet/readline/rltop.html
 * realtek-re-kmod, license:BSD4CLAUSE, https://github.com/alexdupre/rtl_bsd_drv

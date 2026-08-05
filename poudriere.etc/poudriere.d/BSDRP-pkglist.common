@@ -16,7 +16,7 @@ net-mgmt/nstat
 net-mgmt/pmacct
 net-mgmt/rtrlib
 net/arping
-net/bird2
+net/bird3
 net/dhcp6
 net/dhcprelya
 net/exabgp4
