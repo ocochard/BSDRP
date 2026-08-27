@@ -1,5 +1,5 @@
 diff --git libexec/nuageinit/nuageinit libexec/nuageinit/nuageinit
-index f7700f7d8e70..9bd140dbb049 100755
+index 712a516c519..79b152b2e79 100755
 --- libexec/nuageinit/nuageinit
 +++ libexec/nuageinit/nuageinit
 @@ -16,6 +16,30 @@ end
@@ -32,8 +32,8 @@ index f7700f7d8e70..9bd140dbb049 100755
 +
  local function default_user(obj, metadata)
  	local ssh_authorized_keys = {}
- 	if type(metadata.public_keys) == "table" then
-@@ -746,6 +770,9 @@ end
+ 	if (not obj or obj.allow_public_ssh_keys ~= false) and
+@@ -1173,6 +1197,9 @@ end
  local metadata = load_metadata(citype)
  local line, obj = load_userdata()
  
@@ -43,7 +43,7 @@ index f7700f7d8e70..9bd140dbb049 100755
  -- No user-data
  if line == nil then
  	local calls_table = {
-@@ -794,3 +821,6 @@ elseif line:sub(1, 2) == "#!" then
+@@ -1235,3 +1262,6 @@ elseif line:sub(1, 2) == "#!" then
  	-- delay for execution at rc.local time --
  	nuage.chmod(root .. "/var/cache/nuageinit/user_data", "0755")
  end
@@ -51,7 +51,7 @@ index f7700f7d8e70..9bd140dbb049 100755
 +-- Restore read-only status if root was originally mounted read-only
 +restore_root_readonly(root_was_readonly)
 diff --git libexec/rc/rc.d/nuageinit libexec/rc/rc.d/nuageinit
-index 259ce3c138e5..b8d04b5c744c 100755
+index e2f0a85bc3b..4997a21e751 100755
 --- libexec/rc/rc.d/nuageinit
 +++ libexec/rc/rc.d/nuageinit
 @@ -47,9 +47,11 @@ nuageinit_start()
