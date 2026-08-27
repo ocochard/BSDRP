@@ -35,6 +35,9 @@ set -e
 
 lock="/var/run/config.bsdrp.lock"
 
+# Only the instance that created the lock is allowed to remove it
+lock_held=false
+
 # Checking if script is running inside a jail or not
 [ $(sysctl -n security.jail.jailed) -eq 0 ] && INSIDEJAIL=false || INSIDEJAIL=true
 
@@ -45,7 +48,9 @@ die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 # And forward the original exit code too
 cleanup () {
 	rv=$?
-	[ -d $lock ] && rm -rf $lock
+	if $lock_held && [ -d "$lock" ]; then
+		rm -rf "$lock"
+	fi
 	exit $rv
 }
 
@@ -526,9 +531,14 @@ factory () {
 # Set a lock preventing to run this script in parrallel
 setlock () {
 	# We need a method for checking AND creating lock file in same step
-	if ! mkdir $lock 2>/dev/null; then
-		echo "This script is already running (file $lock detected or /var full)"
-		usage
+	if mkdir "$lock" 2>/dev/null; then
+		lock_held=true
+	elif [ -d "$lock" ]; then
+		die "another instance is already running ($lock exists). If no other instance is running, remove the stale lock with: rmdir $lock"
+	elif [ ! -w "$(dirname "$lock")" ]; then
+		die "cannot create $lock: permission denied. Run this command as root."
+	else
+		die "cannot create $lock. Check free space on $(dirname "$lock")"
 	fi
 }
 
