@@ -34,14 +34,24 @@ set -eu
 
 lock="/var/run/autosave.bsdrp.lock"
 
+# Only the instance owning the lock may remove it and stop its fswatch child.
+# Without this, an instance refused at startup would fire the EXIT trap and
+# tear down the daemon that is legitimately running.
+lock_held=false
+
 # A useful function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
 
 # Because we are using running script, we need to cleanup mess before leaving
+# And forward the original exit code too
 cleanup () {
-	logger autosave stoping
-	pkill fswatch || true
-	[ -d $lock ] && rm -rf $lock
+	rv=$?
+	if $lock_held; then
+		logger autosave stoping
+		pkill fswatch || true
+		[ -d "$lock" ] && rm -rf "$lock"
+	fi
+	exit $rv
 }
 
 logger autosave starting
@@ -49,10 +59,17 @@ logger autosave starting
 trap cleanup EXIT INT TERM
 
 # We need a method for checking AND creating lock file in same step
-if ! mkdir $lock 2>/dev/null; then
-	logger "autosave is already running (file $lock detected)"
-	echo "This script is already running (file $lock detected)"
-	usage
+if mkdir "$lock" 2>/dev/null; then
+	lock_held=true
+elif [ -d "$lock" ]; then
+	logger "autosave is already running ($lock exists)"
+	die "autosave is already running ($lock exists). If no other instance is running, remove the stale lock with: rmdir $lock"
+elif [ ! -w "$(dirname "$lock")" ]; then
+	logger "autosave cannot create $lock: permission denied"
+	die "cannot create $lock: permission denied. Run this command as root."
+else
+	logger "autosave cannot create $lock"
+	die "cannot create $lock. Check free space on $(dirname "$lock")"
 fi
 
 [ -x /usr/local/bin/fswatch ] || die "fswatch is mandatory"
