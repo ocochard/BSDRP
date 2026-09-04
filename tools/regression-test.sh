@@ -852,7 +852,7 @@ lab_vm_count() {
 		vpn)       echo 5 ;;
 		mlvpn)     echo 6 ;;
 		mlppp)     echo 6 ;;
-		ecmp)      echo 6 ;;
+		ecmp)      echo 4 ;;
 		fairshape) echo 5 ;;
 		jailpf)    echo 5 ;;
 		pimsm)     echo 4 ;;

@@ -45,6 +45,7 @@ NUMBER_VM="1"
 RAM="1G"
 THREADS=1
 REG_LAB=""
+REG_LAB_SINGLE=false	# true if the lab's labconfig function has no _vmN suffix
 USER_DATA=""
 SUDO=sudo
 if [ "${arch}" = "amd64" ]; then
@@ -204,6 +205,40 @@ validate_number() {
 	fi
 }
 
+# Check that the lab given to -r exists in labconfig and that the number of
+# VMs asked with -n matches the number of VMs this lab defines.
+# labconfig is not on the host: use the copy shipped in this source tree, which
+# is the one installed on the image built from it.
+# Arguments:
+#   $1: Lab family name (-r value)
+# Outputs: Sets REG_LAB_SINGLE for labs without a _vmN suffix
+# Returns: exits with error if the lab is unknown or the VM count differs
+validate_reg_lab() {
+	local lab=$1
+	local labconfig="$(dirname $0)/../BSDRP/Files/usr/local/sbin/labconfig"
+	local vm_count
+
+	if [ ! -f "${labconfig}" ]; then
+		echo "Warning: ${labconfig} not found, skipping -r lab validation"
+		return 0
+	fi
+
+	# Multi-VM labs define one function per VM: full_vm1(), full_vm2(), ...
+	vm_count=$(grep -c "^${lab}_vm[0-9][0-9]* *() *{" "${labconfig}") || true
+	if [ ${vm_count} -eq 0 ]; then
+		# Single-VM labs (bird_jails, frr_jails, graphpath) have no _vmN suffix
+		grep -q "^${lab} *() *{" "${labconfig}" || \
+			die "Unknown regression lab '${lab}': neither ${lab}_vmN() nor ${lab}() found in ${labconfig}"
+		REG_LAB_SINGLE=true
+		vm_count=1
+	fi
+
+	[ ${NUMBER_VM} -eq ${vm_count} ] || \
+		die "Regression lab '${lab}' needs exactly ${vm_count} VM(s), but -n ${NUMBER_VM} given"
+
+	return 0
+}
+
 # Calculate PCI bus and slot from NIC number
 # Arguments:
 #   $1: NIC number (0-based)
@@ -274,7 +309,8 @@ cleanup_on_exit() {
 # Returns: 0 on success, may exit on failure
 check_bhyve_support () {
 	# Check if bhyve vmm is loaded
-	load_module vmm
+	load_module vmm "check that your CPU supports hardware virtualization \
+(Intel VT-x/EPT or AMD-V/RVI) and that it is enabled in the BIOS"
 	# Same for serial console nmdm
 	load_module nmdm
 	if ( ! ${VALE} ); then
@@ -292,12 +328,14 @@ check_bhyve_support () {
 # Load a FreeBSD kernel module if not already loaded
 # Arguments:
 #   $1: Name of the kernel module to load
-# Returns: 0 if module loaded successfully, 1 on failure
+#   $2: Hint to display if the module can't be loaded (optional)
+# Returns: 0 if the module is loaded, exits on failure
 load_module () {
 	if ! kldstat -m $1 > /dev/null 2>&1; then
 		echo "$1 module not loaded. Loading it..."
-		${SUDO} kldload $1 && return 0 || return 1
+		${SUDO} kldload $1 || die "Can't load the $1 kernel module${2:+: $2}"
 	fi
+	return 0
 }
 
 # Detect and decompress disk image file to VM template
@@ -483,14 +521,26 @@ build_vm_disk_args() {
 	echo "${disk_args}"
 }
 
-# Build cloud-init disk argument
+# Build the cloud-init disk and its bhyve argument
 # Arguments:
-#   $1: Lab name and vm name compliant to labconfig arg (ex: full_vm1).
-#       When -r is unset, this is "_vmN" and is used only as a unique
-#       directory name for the per-VM cidata image.
+#   $1: VM number
+# Outputs: Sets the CLOUDINIT_ARGS global (empty if no cloud-init disk needed)
+# Returns: exits on error
+# Note: the result is exported through a global instead of being echoed,
+#       because a die() inside a command substitution would only kill the
+#       subshell: the VM would then silently boot without its lab config
 build_vm_disk_cloudinit_args() {
-  local lab=$1
-  local cloudinit_args=""
+  local vm_num=$1
+  # With -r, labconfig is called with "<lab>_vm<N>" (ex: full_vm1), excepted
+  # for single-VM labs, where the function name is the lab name itself.
+  # When -r is unset, this name is only used as a unique directory name for
+  # the per-VM cidata image.
+  local lab="vm${vm_num}"
+  if [ -n "${REG_LAB}" ]; then
+    ( ${REG_LAB_SINGLE} ) && lab="${REG_LAB}" || lab="${REG_LAB}_vm${vm_num}"
+  fi
+
+  CLOUDINIT_ARGS=""
   if [ -n "${REG_LAB}" ] || [ -n "${USER_DATA}" ]; then
     mkdir -p ${WRK_DIR}/cloudinit/${lab}
     cat > ${WRK_DIR}/cloudinit/${lab}/meta-data <<EOF
@@ -507,15 +557,21 @@ runcmd:
 EOF
     fi
     # Generate a 64MB VFAT image from the directory
+    # Start from a clean image: makefs can exit 0 even when it failed to
+    # create the image, so its result needs to be checked too
+    rm -f ${WRK_DIR}/cloudinit/${lab}.img
     makefs -t msdos \
       -o "volume_label=cidata" \
       -o fat_type=12 \
       -s 2m \
-      ${WRK_DIR}/cloudinit/${lab}.img ${WRK_DIR}/cloudinit/${lab} > /dev/null
+      ${WRK_DIR}/cloudinit/${lab}.img ${WRK_DIR}/cloudinit/${lab} > /dev/null || \
+      die "Can't generate the cloud-init disk ${WRK_DIR}/cloudinit/${lab}.img"
+    [ -s ${WRK_DIR}/cloudinit/${lab}.img ] || \
+      die "Empty or missing cloud-init disk ${WRK_DIR}/cloudinit/${lab}.img"
 
-    cloudinit_args="-s 1:7,virtio-blk,${WRK_DIR}/cloudinit/${lab}.img"
+    CLOUDINIT_ARGS="-s 1:7,virtio-blk,${WRK_DIR}/cloudinit/${lab}.img"
   fi
-  echo "${cloudinit_args}"
+  return 0
 }
 
 # Build debug arguments for bhyve (remote gdb support)
@@ -594,11 +650,9 @@ run_vm() {
 		# Build component argument strings using helper functions
 		local vm_console=$(build_vm_console_args ${vm_num} "${nmdm_id}")
 		local vm_disk=$(build_vm_disk_args ${vm_num})
-		# When -r is set, ${REG_LAB}_vm${vm_num} (e.g. "full_vm1") feeds labconfig.
-		# When -r is unset, drop the leading "_" so the hostname/dir is just "vmN".
-		local cloudinit_lab="vm${vm_num}"
-		[ -n "${REG_LAB}" ] && cloudinit_lab="${REG_LAB}_${cloudinit_lab}"
-		local vm_disk_cloudinit=$(build_vm_disk_cloudinit_args ${cloudinit_lab})
+		# Cloud-init disk was generated by the main loop, before starting any VM
+		local vm_disk_cloudinit=""
+		eval "vm_disk_cloudinit=\"\${VM_CLOUDINIT_${vm_num}}\""
 		local vm_debug=$(build_vm_debug_args ${vm_num})
 		local vm_vnc=$(build_vm_vnc_args ${vm_num})
 
@@ -759,6 +813,8 @@ validate_number "${LAN}" "number of LANs (-l)" 0 255
 validate_number "${CORES}" "number of cores (-c)" 1
 validate_number "${THREADS}" "number of threads (-t)" 1
 validate_number "${ADD_DISKS_NUMBER}" "number of additional disks (-A)" 0
+# Check the regression lab exists and matches the number of VM asked
+[ -n "${REG_LAB}" ] && validate_reg_lab "${REG_LAB}"
 # If default number of VM and LAN, then create at least one LAN
 [ ${NUMBER_VM} -eq 1 ] && [ ${LAN} -eq 0 ] && LAN=1
 
@@ -771,8 +827,15 @@ if [ -n "${FILE}" ]; then
 	uncompress_image
 fi
 
-if [ ${UEFI} = true ]; then
-	[ -f /usr/local/share/uefi-firmware/BHYVE_UEFI.fd ] || die "Missing bhyve-firmware package for UEFI"
+# Check the bootrom needed by this host architecture is installed
+if [ "${arch}" = "amd64" ]; then
+	if [ ${UEFI} = true ]; then
+		[ -f /usr/local/share/uefi-firmware/BHYVE_UEFI.fd ] || \
+			die "Missing bhyve-firmware package for UEFI"
+	fi
+elif [ "${arch}" = "aarch64" ]; then
+	[ -f /usr/local/share/u-boot/u-boot-bhyve-arm64/u-boot.bin ] || \
+		die "Missing u-boot-bhyve-arm64 package"
 fi
 
 # Clean-up previous interfaces if existing
@@ -920,6 +983,10 @@ ${SW_CMD},mac=${MAC_PREFIX}:\${MAC_J}:00:\${MAC_I}\"
 	#	PCI_BUS=$(( PCI_BUS + 2 ))
 	#	eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},ptnetmap-memdev\"
 	#fi
+	# Generate the cloud-init disk before starting any VM: a failure here must
+	# stop the lab, and not silently boot VMs without their configuration
+	build_vm_disk_cloudinit_args $i
+	eval VM_CLOUDINIT_${i}=\"\${CLOUDINIT_ARGS}\"
 	# Start VM
 	run_vm $i &
 	i=$(( i + 1 ))
