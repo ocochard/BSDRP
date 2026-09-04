@@ -1,13 +1,75 @@
-# BSDRP lab tools
+# BSDRP lab and test tools
 
-This directory contains scripts for spinning up BSDRP test labs on top of
-several hypervisors:
+This directory contains the scripts that launch BSDRP test labs and run the
+tests against a built image.
 
-- `BSDRP-lab-bhyve.sh` — bhyve (FreeBSD native hypervisor)
+**Test drivers**
+
+- `regression-test.sh` — the automated feature regression driver: launches a
+  lab, then asserts on its state. This is what "run the regression test"
+  means; see [regression-test.sh](#regression-testsh) below.
+- `ci-qemu-test.sh` — single-VM boot smoke test for CI: mounts the image's s3
+  cfg partition, drops an `rc.conf.local` printing "Hello world" then powering
+  off, boots it under QEMU with a 300 s timeout and greps the serial log. It
+  exercises no networking or routing — it only proves the image POSTs and
+  reaches userland.
+- `validate-image.sh` — boots an image until the `login:` prompt and records
+  the result in `/tmp/validate-images-status.txt`.
+
+**Lab launchers** (host topology + VMs, no assertions)
+
+- `BSDRP-lab-bhyve.sh` — bhyve (FreeBSD native hypervisor), documented below
 - `BSDRP-lab-qemu.sh` — QEMU
 - `BSDRP-lab-vbox.sh` / `.ps1` / `.vbs` — VirtualBox (shell, PowerShell, VBScript)
+- `lab-reinstall-test/` — cloud-init driven upgrade/reinstall test (own `README.md`)
 
-This README documents `BSDRP-lab-bhyve.sh`.
+**Build / debug helpers**
+
+- `bisection-gen.sh` — builds one image per FreeBSD git hash from a list (or,
+  for a Phabricator review, a patched and an unpatched image) to bisect a
+  regression.
+- `review-generate.sh` — builds the reference + patched image pair for a
+  FreeBSD Phabricator review.
+- `image_tool.sh` — `mount`/`umount` an image's partitions, `update` the
+  mounted root from `BSDRP/Files/`, or convert an image to qcow2 (`qemu`).
+- `mputconfig.sh` — pushes commands to several remote devices (needs only
+  `expect`).
+- `defaults.sh` — legacy nanobsd `defaults.sh` (Poul-Henning Kamp, 2005).
+  Nothing in the tree references it since the switch to poudriere-image; it is
+  not part of the build.
+
+## regression-test.sh
+
+```sh
+sudo tools/regression-test.sh BSDRP-<version>-full-amd64.img.xz full
+```
+
+Wipes any prior lab state, launches the lab through `BSDRP-lab-bhyve.sh` with
+the VM count it derives from the lab name, waits `--boot-delay` seconds
+(default 60) for cloud-init/labconfig to finish, then drives each VM's serial
+console with `expect(1)` and matches command output against per-VM assertions.
+Each check is retried to absorb convergence delays.
+
+Exit codes: `0` all assertions passed, `1` at least one failed, `2`
+setup/usage error.
+
+| Flag                | Description                                                      |
+|---------------------|------------------------------------------------------------------|
+| `--boot-delay <s>`  | Seconds to wait after launch before probing consoles (default 60) |
+| `--no-launch`       | Skip the wipe+launch step and only run the assertions against an already-running lab (alias: `--already-running`) |
+
+- The script re-execs itself under `sudo` when not run as root, so the leading
+  `sudo` is optional.
+- **Prerequisite**: `expect` on the host (`pkg install expect`). Raw
+  redirection to `/dev/nmdm*` does not drive the guest's `login(1)` reliably.
+- **Scope**: assertions exist only for the `full` lab, derived from the
+  [maximum features lab](https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab)
+  wiki page. Any other lab exits with `lab '<name>' has no assertions
+  implemented yet`.
+- `--no-launch` is the inner loop when writing assertions: launch the lab once
+  by hand (see below), then re-run the driver as many times as needed.
+- Its `lab_vm_count()` table duplicates the per-lab VM counts of `labconfig` —
+  keep both in sync.
 
 ## BSDRP-lab-bhyve.sh
 
@@ -53,6 +115,7 @@ BSDRP-lab-bhyve.sh [-aBdeghqsvV] -i FreeBSD-disk-image.img \
 | `-v`         | Attach a framebuffer + VNC server                                    |
 | `-g`         | Enable remote kgdb                                                   |
 | `-r LAB`     | Generate a cloud-init disk that runs `labconfig <lab>_vmN` on boot   |
+| `-u FILE`    | Custom cloud-init user-data, attached to every VM (overrides `-r`'s) |
 | `-w DIR`     | Working directory (default: `~/BSDRP-VMs`)                           |
 | `-d`         | Delete all VMs and the template, then exit                           |
 | `-s`         | Stop all running BSDRP VMs and exit                                  |
@@ -172,15 +235,69 @@ On first boot, VM 1 runs `labconfig full_vm1`, VM 2 runs `labconfig
 full_vm2`, etc. To re-run the lab from scratch (so cloud-init triggers
 again), destroy the VM disks first with `-d`.
 
-To use your own cloud-init payload, edit the generated files under
-`${WRK_DIR}/cloudinit/<lab>_vm<N>/` and rebuild the image with `makefs`,
-or replicate the small block in `build_vm_disk_cloudinit_args()` in the
-script.
+To use your own cloud-init payload, pass it with `-u FILE`: that user-data is
+attached to every VM (the per-VM `meta-data` is still generated) and takes
+precedence over the one `-r` would write.
 
-### Troubleshooting
+## Regression labs: labconfig + cloud-init
+
+A regression lab is three pieces working together:
+
+1. **`BSDRP-lab-bhyve.sh -r <lab>`** builds the host side: per-VM disks, the
+   full-mesh bridge/tap topology, and one cloud-init cidata disk per VM
+   (attached at PCI slot `1:7`), as described above.
+2. **`BSDRP/Files/usr/local/sbin/labconfig`**, shipped on the image, is the
+   in-VM configurator. It is a flat shell script of functions named
+   `<lab>_vm<N>` (`full_vm1`, `frr_vm3`, ...); each one writes that VM's role
+   into `rc.conf` with `sysrc`, restarts the services, and runs
+   `/usr/local/sbin/config save` to persist to nanobsd's `/cfg`. The `$1`
+   argument is called as a function name.
+3. **cloud-init inside the image** reads the cidata disk on first boot and
+   runs the `runcmd` line.
+
+**Lab families and their VM counts** (grep `^<name>_vm[0-9]* *() *{` in
+`labconfig`):
+
+- `full` (5), `frr` (7), `bgp` (7), `vpn` (5), `mlvpn` (6), `mlppp` (6),
+  `ecmp` (4), `fairshape` (5), `jailpf` (5), `pimsm` (4), `vrrp` (4)
+- Single-VM jails-based: `bird_jails`, `frr_jails`, `graphpath`. Their
+  function carries no `_vmN` suffix, so they run as `labconfig <lab>` and
+  require `-n 1`.
+
+Launching a lab by hand (`full`, 5 VMs):
+
+```sh
+sudo tools/BSDRP-lab-bhyve.sh -d    # stop VMs, wipe ~/BSDRP-VMs, tear down bridges/taps
+sudo tools/BSDRP-lab-bhyve.sh -i BSDRP-<version>-full-amd64.img.xz -n 5 -r full
+```
+
+`-d` destroys running VMs (`erase_all_vm` → `destroy_vm` → `bhyvectl
+--destroy`) before erasing the disks, so `-s` first is unnecessary. Use `-s`
+only to stop VMs while keeping their disks for a later resume.
+
+**Gotchas**
+
+- `-n` MUST match the lab's VM count: extra VMs get no labconfig function and
+  fail, missing VMs leave the topology incomplete. The script rejects a
+  mismatched `-n`, and an unknown `-r` name, up front by counting the lab's
+  functions in the in-tree `labconfig`.
+- cloud-init `runcmd` only fires on **first boot**. To re-run a lab, `-d`
+  first: otherwise the existing `/cfg` keeps the old config and labconfig is
+  never re-executed.
+- With `-n > 1`, `-l` defaults to 0 — only mesh links exist. Check the
+  `<lab>_vmN` function to see which NICs (`em0`, `vtnet0`, ...) it configures
+  and whether it expects a shared LAN.
+- `BSDRP-lab-bhyve.sh` verifies nothing about convergence: it prints the `cu`
+  commands and leaves the inspection to you (or to `regression-test.sh`).
+
+## Troubleshooting
 
 - *"Missing bhyve-firmware package for UEFI"*: install `pkg install
-  bhyve-firmware`, or pass `-B` to fall back to BIOS boot.
+  bhyve-firmware`, or pass `-B` to fall back to BIOS boot. The arm64
+  equivalent is *"Missing u-boot-bhyve-arm64 package"*.
+- *"Unknown regression lab"* / *"needs exactly N VM(s)"*: the `-r` name or the
+  `-n` count does not match `BSDRP/Files/usr/local/sbin/labconfig`; see the
+  lab table above.
 - *VM already running*: use `-s` to stop, or `-d` to wipe state.
 - *Stale bridges/taps*: `-d` calls `destroy_all_if`, which removes any
   interface tagged with a `MESH_` or `LAN_` description.

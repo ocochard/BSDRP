@@ -88,38 +88,21 @@ Use `clean-jail` / `clean-src` / `clean-all` only when something is genuinely wr
 
 ## Testing Tools
 
-The `tools/` directory contains lab scripts for testing built images:
-- `BSDRP-lab-bhyve.sh`: Test with bhyve hypervisor (supports regression-test labs via `-r`)
-- `BSDRP-lab-qemu.sh`: Test with QEMU
-- `BSDRP-lab-vbox.*`: Test with VirtualBox (shell, PowerShell, VBS variants)
-- `ci-qemu-test.sh`: Single-VM boot smoke test for CI (mounts the image's s3 cfg partition, drops an `rc.conf.local` that prints "Hello world" then powers off, runs under QEMU with a 300s timeout, greps the serial log). It does NOT exercise networking or routing features — it only proves the image POSTs and reaches userland.
-- `validate-image.sh`: Image validation
+`tools/README.md` is the reference for everything under `tools/`. Read it, and
+the target script's header comment, before running or modifying anything there
+— this section is only a map, and a map goes stale.
 
-### Regression-test labs (bhyve + cloud-init + labconfig)
-
-The full feature regression workflow is driven by three pieces working together:
-
-1. **`tools/BSDRP-lab-bhyve.sh -r <lab>`** orchestrates the host side: extracts the image, creates N per-VM disks under `~/BSDRP-VMs/`, builds a full-mesh bridge/tap topology with deterministic MACs (`58:9c:fc:<i>:<j>:<self>` for mesh links, `58:9c:fc:<lan>:00:<self>` for LANs), and for each VM N generates a cloud-init VFAT disk (label `cidata`) containing a `user-data` with `runcmd: /usr/local/sbin/labconfig <lab>_vm${N}`. The cidata disk is attached at PCI slot `1:7`.
-2. **`BSDRP/Files/usr/local/sbin/labconfig`** is the in-VM configurator shipped on the image. It is a flat shell script of functions named `<lab>_vm<N>` (e.g. `full_vm1`, `frr_vm3`). Each function uses `sysrc` to write the appropriate `rc.conf` for that VM's role, restarts services, and runs `/usr/local/sbin/config save` to persist to nanobsd's `/cfg`. Invoked as `labconfig <lab>_vm<N>` — the `$1` argument is called as a function name.
-3. **cloud-init inside the BSDRP image** reads the cidata disk on first boot and runs the `runcmd` line.
-
-**Available lab families and their VM counts** (grep `^<name>_vm.* () {` in `labconfig`):
-- `full` (5), `frr` (7), `bgp` (7), `vpn` (5), `mlvpn` (6), `mlppp` (6), `ecmp` (6), `fairshape` (5), `jailpf` (5), `pimsm` (4), `vrrp` (4)
-- Single-VM jails-based: `bird_jails`, `frr_jails`, `graphpath`
-
-**Running a regression lab** (example: full, 5 VMs):
-```bash
-sudo tools/BSDRP-lab-bhyve.sh -d    # stop running VMs, wipe ~/BSDRP-VMs, tear down bridges/taps
-sudo tools/BSDRP-lab-bhyve.sh -i BSDRP-<version>-full-amd64.img.xz -n 5 -r full
-```
-
-`-d` already destroys running VMs (via `erase_all_vm` → `destroy_vm` → `bhyvectl --destroy`) before erasing the disks, so there is no need to run `-s` first. Use `-s` only when you want to stop VMs but keep the disks for a later resume.
-
-**Important gotchas:**
-- `-n` MUST match the lab's defined VM count — extra VMs get no labconfig function and fail; missing VMs leave the topology incomplete.
-- cloud-init `runcmd` only fires on **first boot**. To re-run the same lab, run `-d` (wipes disks) before re-launching, otherwise the existing `/cfg` keeps the old config and labconfig is not re-executed.
-- When `-n > 1`, `-l` (LAN count) defaults to 0 — only mesh links exist. Check the specific `<lab>_vmN` function in `labconfig` to see which NICs (`em0`/`vtnet0` etc.) it configures and whether it expects a shared LAN.
-- The script does NOT automatically verify lab convergence — after launch it prints `cu -l /dev/nmdm-BSDRP.NB` commands and the operator manually connects to each VM's serial console to inspect routing tables / SAs / VRRP state / etc.
+- **`tools/regression-test.sh <image> <lab>`** is the automated feature
+  regression driver: it launches the lab and then asserts on it over the
+  serial consoles. This is what "run the regression test" means. Assertions
+  currently exist for the `full` lab only; needs `expect` on the host.
+- `tools/BSDRP-lab-bhyve.sh -r <lab>` only launches a lab (bhyve topology +
+  cloud-init disks that run `labconfig` in each VM). It asserts nothing.
+- `tools/ci-qemu-test.sh` is the CI boot smoke test: it proves the image
+  reaches userland, and exercises no networking or routing.
+- Per-lab VM counts live in `BSDRP/Files/usr/local/sbin/labconfig` (one
+  `<lab>_vm<N>` function per VM) and are duplicated in `regression-test.sh`'s
+  `lab_vm_count()` — changing a lab means updating both.
 
 ## Development Notes
 
