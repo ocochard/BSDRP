@@ -831,11 +831,11 @@ fi
 if [ "${arch}" = "amd64" ]; then
 	if [ ${UEFI} = true ]; then
 		[ -f /usr/local/share/uefi-firmware/BHYVE_UEFI.fd ] || \
-			die "Missing bhyve-firmware package for UEFI"
+			die "UEFI bootrom not found - install it with: pkg install bhyve-firmware (or use -B to boot in BIOS mode)"
 	fi
 elif [ "${arch}" = "aarch64" ]; then
 	[ -f /usr/local/share/u-boot/u-boot-bhyve-arm64/u-boot.bin ] || \
-		die "Missing u-boot-bhyve-arm64 package"
+		die "arm64 bootrom not found - install it with: pkg install u-boot-bhyve-arm64"
 fi
 
 # Clean-up previous interfaces if existing

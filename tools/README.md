@@ -292,9 +292,9 @@ only to stop VMs while keeping their disks for a later resume.
 
 ## Troubleshooting
 
-- *"Missing bhyve-firmware package for UEFI"*: install `pkg install
-  bhyve-firmware`, or pass `-B` to fall back to BIOS boot. The arm64
-  equivalent is *"Missing u-boot-bhyve-arm64 package"*.
+- *"UEFI bootrom not found"*: `pkg install bhyve-firmware`, or pass `-B` to
+  fall back to BIOS boot. The arm64 equivalent is *"arm64 bootrom not found"*
+  (`pkg install u-boot-bhyve-arm64`).
 - *"Unknown regression lab"* / *"needs exactly N VM(s)"*: the `-r` name or the
   `-n` count does not match `BSDRP/Files/usr/local/sbin/labconfig`; see the
   lab table above.
