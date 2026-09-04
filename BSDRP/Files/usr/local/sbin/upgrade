@@ -227,11 +227,14 @@ write_new_image() {
 	service autosave onestop || true
 
 	# Wait 30 seconds for autosave finish current backup
+	# The lock is a directory (autosave creates it with mkdir), so testing it
+	# with -f never matched and this loop used to exit immediately, letting
+	# the upgrade rewrite /etc/fstab under a running 'config save'
 	i=0
-	while [ -f /var/run/autosave.bsdrp.lock ]; do
+	while [ -e /var/run/autosave.bsdrp.lock ]; do
 		sleep 1
 		i=$((i + 1))
-		printf "Waiting for autosave: %s second before timeout" $((30 - i))
+		printf "Waiting for autosave: %s second before timeout\n" $((30 - i))
 		if [ "$i" -eq 30 ]; then
 			echo "Autosave timeout expired, but will continue"
 			break

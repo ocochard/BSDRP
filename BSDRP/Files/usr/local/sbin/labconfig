@@ -731,7 +731,11 @@ bfd
 EOF
 
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/jails/jail5/local/frr/frr.conf
-chown frr:frr /etc/jails/jail5/local/frr
+# Non-fatal: under 'set -e' a missing frr group (corrupted /etc/group) would
+# abort the whole VM configuration, jails included, instead of just leaving
+# frr's directory owned by root
+chown frr:frr /etc/jails/jail5/local/frr || \
+	echo "WARNING: can't chown frr:frr /etc/jails/jail5/local/frr"
 
 cat > /etc/jails/jail5/local/nfacctd.conf<<EOF
 daemonize: true

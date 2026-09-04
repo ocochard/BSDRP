@@ -110,6 +110,57 @@ get_next_id() {
 	echo $((maxid + 1))
 }
 
+# Is this jail already configured?
+# Checks both the /etc/jail.conf.d layout and the deprecated /etc/jail.conf one
+# Returns: 0 if a configuration already exists, 1 otherwise
+is_configured () {
+	[ -f /etc/jail.conf.d/${tenant}.conf ] && return 0
+	if [ -f /etc/jail.conf ]; then
+		grep -q "^${tenant} {" /etc/jail.conf && return 0
+		[ -d /etc/jails/${tenant} ] && return 0
+	fi
+	return 1
+}
+
+# Stop the autosave daemon while jail configuration files are written
+# autosave triggers a full 'config save' on every /etc change: letting it run
+# concurrently with the jail creation saves half-written configurations.
+# Same precaution as 'upgrade' (before touching /etc/fstab) and
+# 'config factory' (before clearing /cfg)
+# Returns: 0, even if autosave was not running
+stop_autosave () {
+	service autosave status > /dev/null 2>&1 || return 0
+	echo "Stopping autosave while the jail configuration is written..."
+	service autosave onestop > /dev/null 2>&1 || \
+		echo "WARNING: can't stop autosave"
+	# Give a save already in progress the time to finish. The lock is a
+	# directory (autosave creates it with mkdir), not a file
+	local i=0
+	while [ -e /var/run/autosave.bsdrp.lock ] && [ ${i} -lt 30 ]; do
+		sleep 1
+		i=$((i + 1))
+	done
+	return 0
+}
+
+# Enable a configured jail at boot time
+# Idempotent: sysrc(8) does not append a value already present in jail_list
+enable_jail_at_boot () {
+	sysrc -q jail_enable="YES" > /dev/null 2>&1
+	sysrc -q jail_parallel_start="YES" > /dev/null 2>&1
+	sysrc -q jail_list+=${tenant} > /dev/null 2>&1
+	if ( $NANOBSD ); then
+		# In NANOBSD mode, autosave should be enabled if jail is created
+		# It allow to automatically save customer configuration changes
+		# But autosave is only available on BSDRP, so do not display error
+		# in case it could not start it.
+		# Started only here, once the jail configuration is fully written:
+		# see stop_autosave()
+		sysrc -q autosave_enable="YES" > /dev/null 2>&1
+		service autosave restart > /dev/null 2>&1 || true
+	fi
+}
+
 # List all configured jails and their running status
 list_jails () {
 	echo "Configured jails:"
@@ -157,12 +208,20 @@ exit 1
 # TO DO: All die() call in this function need to do a cleanup
 create () {
 	[ -z "${tenant}" ] && die "BUG: tenant name mandatory"
-	[ -f /etc/jail.conf.d/${tenant}.conf ] && die "Already existng jail configuration file"
-	if [ -f /etc/jail.conf ]; then
-		# deprecated jail.conf support
-		grep -q "^${tenant} {" /etc/jail.conf && die "Already existing entry into /etc/jail.conf"
-		[ -d /etc/jails/${tenant} ] && die "Aleary existing directory /etc/jails/${tenant}"
+	# Creating an already configured jail is a no-op, and not an error: a lab
+	# or provisioning script re-running the same command must not fail, and
+	# its jail configuration and data must never be silently replaced.
+	# Still (re)enable it at boot: a previous run interrupted between the
+	# configuration file and the rc.conf update left the jail unstartable.
+	if is_configured; then
+		echo "Jail ${tenant} already configured: keeping it unchanged"
+		echo "  (delete it first with '$0 -d -j ${tenant}' to recreate it)"
+		enable_jail_at_boot
+		exit 0
 	fi
+	# No autosave while the jail configuration files are being written
+	stop_autosave
+
 	# Check if interface are already declared
 	nicslist=$nics
 	while [ "$nicslist" ] ;do
@@ -187,14 +246,6 @@ create () {
 	if ( $NANOBSD ); then
 		# NanoBSD: Only file in /etc could be saved
 		jailetc="/etc/jails/${tenant}"
-		# In NANOBSD mode, autosave should be enabled if jail is created
-		# It allow to automatically save customer configuration changes
-		# But autosave is only available on BSDRP, so do not display error
-		# in case it could not start it
-		if ! sysrc -c autosave_enable="YES"; then
-			sysrc autosave_enable="YES" > /dev/null 2>&1
-			service autosave start > /dev/null 2>&1 || true
-		fi
 	else
 		jailetc="${jailroot}/etc"
 		if ! [ -r ${jailbase}/sources/${release}.base.txz ]; then
@@ -443,9 +494,7 @@ EOF
 }
 EOF
 	# Now enable this jail
-	sysrc -q jail_enable="YES" > /dev/null 2>&1
-	sysrc -q jail_parallel_start="YES" > /dev/null 2>&1
-	sysrc -q jail_list+=${tenant} > /dev/null 2>&1
+	enable_jail_at_boot
 
 	CLEANUP_NEEDED=false
 	echo "Jail is created, you can start it now (service jail start ${tenant})"
@@ -454,6 +503,10 @@ EOF
 
 # Delete jail
 delete () {
+	# Same precaution as create(): removing the jail configuration files is
+	# a bulk /etc change, autosave must not run in parallel
+	stop_autosave
+
 	# Need to extract jail's base directory from path variable
 	# Old version: /etc/jail.conf and /etc/fstab.${tenant}
 	# New version: /etc/jail.conf.d/${tenant}.conf and /etc/jail.conf.d/${tenant}.fstab
