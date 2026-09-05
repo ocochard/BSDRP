@@ -512,7 +512,8 @@ build_vm_disk_args() {
 		for i in $(jot ${ADD_DISKS_NUMBER}); do
 			# Create disk file if it doesn't exist
 			if ! [ -f ${WRK_DIR}/${VM_NAME}_${vm_num}_add_${i} ]; then
-				truncate -S ${ADD_DISKS_SIZE} ${WRK_DIR}/${VM_NAME}_${vm_num}_add_${i}
+				truncate -s ${ADD_DISKS_SIZE} ${WRK_DIR}/${VM_NAME}_${vm_num}_add_${i} || \
+					die "Can't create additional disk ${WRK_DIR}/${VM_NAME}_${vm_num}_add_${i}"
 			fi
 			disk_args="${disk_args} -s 1:${i},ahci-hd,${WRK_DIR}/${VM_NAME}_${vm_num}_add_${i}"
 		done

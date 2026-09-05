@@ -1,0 +1,18 @@
+diff --git sys/kern/vfs_lookup.c sys/kern/vfs_lookup.c
+index 57b536eab6e..8bcbc338aa2 100644
+--- sys/kern/vfs_lookup.c
++++ sys/kern/vfs_lookup.c
+@@ -993,6 +993,13 @@ vfs_lookup_cross_mount(struct nameidata *ndp)
+ 				crosslkflags &= ~LK_SHARED;
+ 				crosslkflags |= LK_EXCLUSIVE | LK_CANRECURSE;
+ 			} else if ((crosslkflags & LK_EXCLUSIVE) != 0) {
++				/*
++				 * We are about to hold dp exclusively across
++				 * VFS_ROOT(), which for a crosslocked mount
++				 * will lock the very same vnode again, so the
++				 * recursion must be allowed here too.
++				 */
++				crosslkflags |= LK_CANRECURSE;
+ 				error = vn_lock(dp, LK_UPGRADE);
+ 				if (error != 0) {
+ 					MPASS(error == ENOENT);
