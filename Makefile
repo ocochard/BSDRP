@@ -159,6 +159,19 @@ src_ports_dir := ${OBJ_DIR}/ports
 src_arch = ${MACHINE_ARCH:S/aarch64/arm64/}
 kernel = ${OBJ_DIR}/FreeBSD/sys/${src_arch}/conf/${src_arch}
 
+# Config files concatenated as "common + optional arch-specific" by the build
+# targets below. The arch-specific half is optional, so it is only added as a
+# dependency when it exists: otherwise make would refuse to build a missing
+# prerequisite on arches that don't have one.
+pkglist_src = ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common
+srcconf_src = ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common
+.if exists(${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch})
+pkglist_src += ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch}
+.endif
+.if exists(${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${src_arch})
+srcconf_src += ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.${src_arch}
+.endif
+
 # Read version from file using != operator
 VERSION != cat ${SRC_DIR}/BSDRP/Files/etc/version
 
@@ -342,7 +355,7 @@ ${kernel}: ${SRC_DIR}/BSDRP/kernels/${src_arch}
 	@echo "Install kernel for arch ${MACHINE_ARCH} (${src_arch})"
 	@cp ${SRC_DIR}/BSDRP/kernels/${src_arch} ${OBJ_DIR}/FreeBSD/sys/${src_arch}/conf/
 
-${OBJ_DIR}/build-builder-jail: ${OBJ_DIR}/patch-sources ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common
+${OBJ_DIR}/build-builder-jail: ${OBJ_DIR}/patch-sources ${srcconf_src}
 	@echo "Build the builder jail and kernel..."
 	# All jail-src.conf need to end by MODULES_OVERRIDE section because this is arch dependends
 	@cp ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf.common ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf
@@ -369,7 +382,7 @@ ${OBJ_DIR}/build-ports-tree: ${OBJ_DIR}/patch-sources
 	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc ports -$${ports_action} -p BSDRPp -m null -M ${OBJ_DIR}/ports
 	@touch ${.TARGET}
 
-${OBJ_DIR}/build-packages: ${OBJ_DIR}/build-builder-jail ${OBJ_DIR}/build-ports-tree ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common
+${OBJ_DIR}/build-packages: ${OBJ_DIR}/build-builder-jail ${OBJ_DIR}/build-ports-tree ${pkglist_src}
 	@echo "Build packages..."
 	@cp ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.common ${OBJ_DIR}/pkglist || exit 1
 	@if [ -f ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRP-pkglist.${src_arch} ]; then \
