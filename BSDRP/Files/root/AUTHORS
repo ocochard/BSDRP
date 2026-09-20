@@ -48,7 +48,10 @@ The authors of BSDRP would like to thank the authors of these software for their
 * gmp, license:LGPL3, https://gmplib.org/
 * graphpath, license:BSD2CLAUSE, https://github.com/ocochard/graphpath
 * indexinfo, license:BSD2CLAUSE, https://codeberg.org/bapt/indexinfo
-* intel-nvmupdate-100g, license:IFL, IPL, https://downloadcenter.intel.com
+* intel-epct, license:IPL, https://www.intel.com/content/www/us/en/download/19438/ethernet-port-configuration-tool-freebsd.html
+* intel-nvmupdate-i210, license:IPL, IFL, https://www.intel.com/content/www/us/en/download/15084/intel-ethernet-adapter-complete-driver-pack.html
+* intel-nvmupdate-i225-i226, license:IPL, IFL, https://github.com/BillyCurtis/Intel-I226-V-NVM-Firmware
+* intel-nvmupdate-x550, license:IPL, IFL, https://downloadcenter.intel.com
 * intel-pcm, license:BSD3CLAUSE, https://github.com/intel/pcm
 * iperf, license:BSD2CLAUSE, https://sourceforge.net/projects/iperf2/
 * iperf3, license:MIT, BSD3CLAUSE, https://software.es.net/iperf/
@@ -105,7 +108,7 @@ The authors of BSDRP would like to thank the authors of these software for their
 * pciids, license:BSD3CLAUSE, GPLv2+, https://pci-ids.ucw.cz/
 * pcre2, license:BSD3CLAUSE, https://www.pcre.org/
 * perl5, license:ART10, GPLv1+, https://www.perl.org/
-* pimd, license:BSD3CLAUSE, http://troglobit.com/pimd.html
+* pimd, license:BSD3CLAUSE, https://github.com/ocochard/pimd
 * pimdd, license:MIT, http://antc.uoregon.edu/PIMDM/pimd-dense.html
 * pkcs11-helper, license:BSD3CLAUSE, GPLv2, https://github.com/OpenSC/pkcs11-helper
 * pkg, license:BSD2CLAUSE, https://github.com/freebsd/pkg

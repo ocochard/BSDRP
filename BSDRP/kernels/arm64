@@ -102,4 +102,6 @@ options     KDB_UNATTENDED
 # Receive-side scaling: kernel-wide coordination of NIC RSS buckets
 # with CPU affinity (interrupt pinning, PCB groups, netisr direct
 # dispatch).
-options     RSS
+# Not enabled because forcing the net.isr hybrid path that reduce
+# forwarding performance (same reason as amd64).
+#options     RSS

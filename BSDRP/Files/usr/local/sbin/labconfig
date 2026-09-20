@@ -633,6 +633,16 @@ service mpd5 start
 service ipfw start
 service sysctl reload
 service ipfw_netflow start
+# NetFlow v9 data records are useless to a collector until it has seen the
+# template. ng_netflow only appends the template when
+# time_uptime >= templ_time + templ_last_ts (netflow_v9.c), and templ_last_ts
+# starts at 0, so with the 600s default the first 10 minutes of uptime are
+# exported untemplated and dropped by nfacctd. Shorten the interval so the
+# very first export datagram carries the template.
+# Non-fatal: a failed tuning knob must not abort the rest of VM4's setup
+# (pimd start) under 'set -e'.
+ngctl msg netflow: settemplate '{ time=60 packets=20 }' || \
+	echo "WARNING: can't shorten ng_netflow v9 template interval"
 service pimd start
 echo "VM4 configured"
 }
