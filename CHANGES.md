@@ -37,7 +37,7 @@
 
 ## FreeBSD notable network stack changes introduced
 
-### iflib (Intel, Chelsio, Broadcom... drivers)
+### iflib (Intel, Broadcom... drivers)
 - New "simple_tx" transmit path: packets are sent directly while the
   transmit queue mutex is available, and only contending threads defer
   through a bounded buf_ring. It outperforms mp_ring by a wide margin
