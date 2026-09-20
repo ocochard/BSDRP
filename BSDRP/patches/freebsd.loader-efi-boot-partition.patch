@@ -1,0 +1,56 @@
+Restore booting the partition the EFI boot image was loaded from.
+
+BSDRP images are built with "poudriere image -t firmware", which puts
+gptboot.efi on the ESP instead of loader.efi.  gptboot.efi reads the GPT
+bootme attribute, picks the active system partition (BSDRP1 or BSDRP2),
+chainloads /boot/loader.efi from it and hands loader.efi that partition
+in LoadedImage->DeviceHandle (stand/efi/boot1/boot1.c:try_boot).
+
+Since ce9bfd78167 ("loader.efi: Refactor try_boot_device_partitions"),
+find_currdev() no longer tries that device: try_boot_device_partitions()
+walks the parent disk while explicitly skipping dp->pd_handle, on the
+assumption that the boot image always comes from an ESP holding no root
+filesystem.  When chainloaded, the partition gptboot.efi selected is
+therefore the one partition never considered, and loader.efi falls
+through to the first other UFS partition on the disk - the previous
+system.  Every A/B upgrade silently boots the old slice.
+
+Commit 1c85c5eea09, which introduced try_boot_device_partitions(), did
+try dp itself before its siblings; the refactor dropped it.  Restore it,
+keeping the sibling walk as the fallback for the normal ESP case.
+
+diff --git stand/efi/loader/main.c stand/efi/loader/main.c
+index 488e3eb1100..fa4647101d6 100644
+--- stand/efi/loader/main.c
++++ stand/efi/loader/main.c
+@@ -399,9 +399,10 @@ try_disk_and_partitions(pdinfo_t *disk, EFI_HANDLE skip_handle)
+ }
+ 
+ /*
+- * Search the boot device first (i.e. the ESP and any sibling partitions).
+- * Per the UEFI specification, filesystems on other devices must not be
+- * preferred until the boot device has been fully exhausted.
++ * Search the boot device first (i.e. the device we were loaded from and any
++ * sibling partitions).  Per the UEFI specification, filesystems on other
++ * devices must not be preferred until the boot device has been fully
++ * exhausted.
+  */
+ static int
+ try_boot_device_partitions(void)
+@@ -419,6 +420,16 @@ try_boot_device_partitions(void)
+ 		efi_free_devpath_name(text);
+ 	}
+ 
++	/*
++	 * Usually this is the ESP, which holds no root filesystem, and the
++	 * sibling walk below is what finds the root.  But when we have been
++	 * chainloaded (gptboot.efi hands us the partition it selected with
++	 * the GPT bootme attribute), this is the partition we are meant to
++	 * boot from, so it must be tried before its siblings.
++	 */
++	if (try_as_currdev(dp, false))
++		return (0);
++
+ 	return (try_disk_and_partitions(dp->pd_parent, dp->pd_handle));
+ }
+ 
