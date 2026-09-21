@@ -25,6 +25,7 @@ usage () {
 	echo "-mlppp: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links"
 	echo "-mlvpn: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links_with_mlvpn"
 	echo "-pimsm: https://bsdrp.net/documentation/examples/multicast_with_pim-sm"
+	echo "-pimssm: https://bsdrp.net/documentation/examples/multicast-with-pim-ssm"
 	echo "-vpn: https://bsdrp.net/documentation/examples/gre_ipsec_and_openvpn"
 	exit 1
 }
@@ -3407,6 +3408,78 @@ service pimd start
 }
 
 pimsm_vm4 () {
+sysrc hostname=VM4 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em2="inet 10.0.34.4/24" \
+	defaultrouter=10.0.34.3
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+service hostname restart
+service netif restart
+service routing restart
+/usr/local/sbin/config save
+}
+
+### PIM Source Specific Multicast lab ###
+# Same wiring as the pimsm lab, but PIM-SSM needs neither a Rendez-vous
+# Point nor a Bootstrap Router: receivers ask for an explicit (S,G) with
+# IGMPv3, so VM2 and VM3 only declare the SSM group range.
+# VM1 carries a second address (10.0.12.11) used as a decoy source: a
+# receiver joined to 10.0.12.1 must not get its traffic.
+
+pimssm_vm1 () {
+sysrc hostname=VM1 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em0="inet 10.0.12.1/24" \
+	ifconfig_em0_alias0="inet 10.0.12.11/32" \
+	defaultrouter=10.0.12.2
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+service hostname restart
+service netif restart
+service routing restart
+/usr/local/sbin/config save
+}
+
+pimssm_vm2 () {
+sysrc hostname=VM2 \
+	gateway_enable=YES \
+	ipv6_gateway_enable=YES \
+	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em1="inet 10.0.23.2/24" \
+	defaultrouter=10.0.23.3 \
+	pimd_enable=yes
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+cat > /usr/local/etc/pimd.conf <<EOF
+ssm-range default
+EOF
+service hostname restart
+service netif restart
+service routing restart
+service pimd start
+/usr/local/sbin/config save
+}
+
+pimssm_vm3 () {
+sysrc hostname=VM3 \
+	gateway_enable=YES \
+	ipv6_gateway_enable=YES \
+	ifconfig_em1="inet 10.0.23.3/24" \
+	ifconfig_em2="inet 10.0.34.3/24" \
+	defaultrouter=10.0.23.2 \
+	pimd_enable=yes
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+cat > /usr/local/etc/pimd.conf <<EOF
+ssm-range default
+EOF
+service hostname restart
+service netif restart
+service routing restart
+service pimd start
+/usr/local/sbin/config save
+}
+
+pimssm_vm4 () {
 sysrc hostname=VM4 \
 	gateway_enable=NO \
 	ipv6_gateway_enable=NO \

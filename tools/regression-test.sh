@@ -5,7 +5,7 @@
 # SCOPE: this driver currently only implements assertions for the "full" lab
 # (5 VMs - the BSDRP maximum-features lab). Other labs declared in
 # tools/BSDRP-lab-bhyve.sh (frr, bgp, vpn, mlvpn, mlppp, ecmp, fairshape,
-# jailpf, pimsm, vrrp, etc.) have no assertions defined here yet - running
+# jailpf, pimsm, pimssm, vrrp, etc.) have no assertions defined here yet - running
 # this driver against them will fail with "lab '<name>' has no assertions
 # implemented yet (only 'full' is)".
 #
@@ -856,6 +856,7 @@ lab_vm_count() {
 		fairshape) echo 5 ;;
 		jailpf)    echo 5 ;;
 		pimsm)     echo 4 ;;
+		pimssm)    echo 4 ;;
 		vrrp)      echo 4 ;;
 		*)         echo 0 ;;
 	esac
