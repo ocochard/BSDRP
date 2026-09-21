@@ -13,7 +13,7 @@ usage () {
 	echo "$0 frr_vm3         for configuring VM3 of lab FRR"
 	echo "Lab list:"
 	echo "-bird_jails: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab_with_bird"
-	echo "-bgp: https://bsdrp.net/documentation/examples/bgp_route_reflector_and_confederation_using_quagga_and_bird"
+	echo "-bgp: https://bsdrp.net/documentation/examples/bgp-route-reflector-and-confederation-using-frr-and-bird"
 	echo "-dhcp: https://bsdrp.net/documentation/examples/dhcp-relay-and-server-lab"
 	echo "-ecmp: https://bsdrp.net/documentation/examples/ecmp"
 	echo "-fairshape: https://bsdrp.net/documentation/examples/fair_traffic_shaping_per_ip_with_ipfw-dummynet"
