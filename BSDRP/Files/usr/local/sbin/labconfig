@@ -14,6 +14,7 @@ usage () {
 	echo "Lab list:"
 	echo "-bird_jails: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab_with_bird"
 	echo "-bgp: https://bsdrp.net/documentation/examples/bgp_route_reflector_and_confederation_using_quagga_and_bird"
+	echo "-dhcp: https://bsdrp.net/documentation/examples/dhcp-relay-and-server-lab"
 	echo "-ecmp: https://bsdrp.net/documentation/examples/ecmp"
 	echo "-fairshape: https://bsdrp.net/documentation/examples/fair_traffic_shaping_per_ip_with_ipfw-dummynet"
 	echo "-full: https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab"
@@ -3489,6 +3490,67 @@ ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 service hostname restart
 service netif restart
 service routing restart
+/usr/local/sbin/config save
+}
+
+### DHCP relay and server lab ###
+# VM1 (client) --- 10.0.12.0/24 --- VM2 (router and relay)
+# VM2 --- 10.0.23.0/24 --- VM3 (server)
+# Both the relay and the server are dnsmasq: it does the two roles with
+# one daemon. DNS is disabled (port=0), only DHCP is used here.
+
+dhcp_vm1 () {
+sysrc hostname=VM1 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em0=SYNCDHCP
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+service hostname restart
+service netif restart
+service routing restart
+/usr/local/sbin/config save
+}
+
+dhcp_vm2 () {
+sysrc hostname=VM2 \
+	gateway_enable=YES \
+	ipv6_gateway_enable=YES \
+	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em1="inet 10.0.23.2/24" \
+	dnsmasq_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+cat > /usr/local/etc/dnsmasq.conf <<EOF
+port=0
+log-dhcp
+dhcp-relay=10.0.12.2,10.0.23.3
+EOF
+service hostname restart
+service netif restart
+service routing restart
+service dnsmasq start
+/usr/local/sbin/config save
+}
+
+dhcp_vm3 () {
+sysrc hostname=VM3 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em1="inet 10.0.23.3/24" \
+	defaultrouter=10.0.23.2 \
+	dnsmasq_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# The 10.0.12.0/24 pool is reached through a relay: dnsmasq cannot guess
+# the netmask of a subnet it has no interface on, so it has to be given.
+cat > /usr/local/etc/dnsmasq.conf <<EOF
+port=0
+log-dhcp
+dhcp-range=10.0.12.100,10.0.12.200,255.255.255.0,12h
+dhcp-option=3,10.0.12.2
+EOF
+service hostname restart
+service netif restart
+service routing restart
+service dnsmasq start
 /usr/local/sbin/config save
 }
 
