@@ -347,7 +347,7 @@ rollback () {
 			# poudriere-image
 			gpart set -a bootme -i ${part_prev} ${boot_dev} || \
 				die "ERROR: Can't add bootme flag to previous system partition"
-			gpart unset -a bootme -i ${part_activeT} ${boot_dev} || \
+			gpart unset -a bootme -i ${part_active} ${boot_dev} || \
 				die "ERROR: Can't remove bootme flag from active system partition"
 		fi
 		;;
