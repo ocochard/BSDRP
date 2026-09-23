@@ -10,5 +10,6 @@
 	padlock \
 	qat \
 	qat_c2xxx \
+	qat_c2xxxfw \
 	qatfw \
 	vmware
