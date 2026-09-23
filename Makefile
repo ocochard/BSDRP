@@ -74,7 +74,6 @@
 #   - Avoid extracting unwanted files from package using a pkg.conf
 #     in BSDRP/Files/usr/local/etc/pkg.conf
 #   - And a post customization script in post-script.sh that:
-#     - Replace BSDRP_VERSION in boot menu
 #     - Create some symlinks
 #     - Customize fstab
 #     - Generate mtree
@@ -404,8 +403,25 @@ ${BSDRP_IMG_FULL} ${BSDRP_IMG_UPGRADE} ${BSDRP_IMG_MTREE} ${BSDRP_IMG_DEBUG}: ${
 	# the build is interrupted before the restore step).
 	@${sudo} rm -rf ${OBJ_DIR}/Files
 	@cp -R ${SRC_DIR}/BSDRP/Files ${OBJ_DIR}/Files
-	# Replace version in brand-bsdrp.lua (on the staged copy)
-	@sed -i '' -e s"/BSDRP_VERSION/${VERSION}/" ${OBJ_DIR}/Files/boot/lua/brand-bsdrp.lua
+	# Replace version in brand-bsdrp.lua (on the staged copy). The placeholder
+	# is the last 13 columns of the longest ASCII-art row, which is padded to
+	# square the boot banner, so pad/truncate the version to the same width.
+	@banner_version=$$(printf '%-13.13s' '${VERSION}') && \
+	sed -i '' -e "s/BSDRP_VERSION/$${banner_version}/" ${OBJ_DIR}/Files/boot/lua/brand-bsdrp.lua
+	# Record the upstream sources this image was built from. /etc/version holds
+	# either a release string (2.1) or a FreeBSD commit count (n312550)
+	# depending on release state, and a count orders builds without identifying
+	# them: it is not unique across branches or rebases. The hashes are.
+	@freebsd_count=$$(git -C ${src_FreeBSD_dir} rev-list --count HEAD 2>/dev/null || echo unknown); \
+	( \
+		echo "bsdrp_version=${VERSION}"; \
+		echo "freebsd_hash=${FreeBSD_hash}"; \
+		echo "freebsd_branch=${FreeBSD_branch}"; \
+		echo "freebsd_count=$${freebsd_count}"; \
+		echo "ports_hash=${ports_hash}"; \
+		echo "ports_branch=${ports_branch}"; \
+		echo "build_date=$$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
+	) > ${OBJ_DIR}/Files/etc/version.build
 	# poudriere-image copies the overlay preserving ownership; force root:wheel
 	# so the image root fs isn't owned by whoever ran make.
 	@${sudo} chown -R 0:0 ${OBJ_DIR}/Files

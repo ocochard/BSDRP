@@ -216,6 +216,13 @@ version () {
 		echo "   Console: $CONSOLE"
 	fi
    	echo "Based on: ${FREEBSD_VERSION}"
+	# Upstream sources this image was built from
+	if [ -f /etc/version.build ]; then
+		. /etc/version.build
+		echo "   FreeBSD src: ${freebsd_hash} (${freebsd_branch}, n${freebsd_count})"
+		echo "   Ports tree: ${ports_hash} (${ports_branch})"
+		echo "   Built: ${build_date}"
+	fi
 	exit 0
 }
 
