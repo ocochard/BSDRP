@@ -32,6 +32,9 @@ FWRATE=""
 MAX_FWRATE=0
 TREND=""
 PEAK=false
+# Set when the packet generator, not the DUT, is the limiting factor:
+# the search must stop but the final result still has to be reported.
+GENERATOR_LIMITED=false
 PSIZE=""
 FSIZE=""
 DMAC=""
@@ -39,7 +42,6 @@ SMAC=""
 TX_NIC=""
 RX_NIC=""
 PPS_MODE=false
-SOFT_UDP_CHK=false
 UNIT="Mb/s"
 AF=4
 # Generate 5000 flows
@@ -74,7 +76,6 @@ usage () {
 	echo "       -s Size of the UDP load"
 	echo "           default: 500 in Mb/s, 18 in pps mode"
 	echo "           Minimum load for Ethernet: 18"
-	echo "       -u Enable software UDP checksum on pkt-gen"
 	echo "Example: $0 -d 00:1b:21:d3:8f:3e -t igb2 -r igb3"
     echo "IP source range: ${SRC_NET}"
     echo "IP destination subnet: ${DST_NET}"
@@ -139,21 +140,22 @@ get_forwarding_rate () {
 	CMD_RX="pkt-gen -f rx -N -${AF} -i ${RX_NIC}"
 	echo ${CMD_RX} > ${RX_FILE}
 	${CMD_RX} >> ${RX_FILE} 2>&1 &
-	# Start a generator
-	if (${SOFT_UDP_CHK}); then
-		SCHKSUM="-U"
-	else
-		SCHKSUM=""
-		ifconfig ${TX_NIC} down
-		ifconfig ${TX_NIC} txcsum
-		ifconfig ${TX_NIC} up
-	fi
-	CMD_TX="pkt-gen -f tx -N ${SCHKSUM} -${AF} -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PACKETS_TO_SENT} \
+	RX_PID=$!
+	# Start a generator.
+	# Checksums are left to the NIC: pkt-gen computes a correct checksum for every
+	# packet of a source/destination range on its own. Do not bounce the TX
+	# interface here to force txcsum either, the receiver already has its port
+	# open in netmap mode and an ifconfig down/up costs a 2-4s link
+	# renegotiation that swallows the run.
+	CMD_TX="pkt-gen -f tx -N -${AF} -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PACKETS_TO_SENT} \
 -d ${DST_NET} -D ${DMAC} -S ${SMAC} -s ${SRC_NET}"
 	echo ${CMD_TX} > ${TX_FILE}
 	${CMD_TX} >> ${TX_FILE} 2>&1
-	# Now close the receiver
-	pkill pkt-gen || die "can't close the receiver???"
+	# Now close the receiver we started, by PID: a bare "pkill pkt-gen" also kills
+	# unrelated pkt-gen processes on this host, and a leftover receiver from an
+	# earlier run holds the netmap port so the next receiver gets no packet at all.
+	kill ${RX_PID} 2>/dev/null || true
+	wait ${RX_PID} 2>/dev/null || true
 	# Check than generator correctly generate PPS value
 	CHECK=$(extract ${TX_FILE})
 	# Then extract a uniq value
@@ -163,16 +165,21 @@ get_forwarding_rate () {
 	if [ ${CHECK} -lt ${OLOAD_TOL} ]; then
 		echo "  - Warning: Generated only ${CHECK}${UNIT} in place of ${OLOAD}${UNIT}"
 		if [ ${FWRATE} -eq ${CHECK} ]; then
-			# Dut is managing the maximum throughput of the packet generator"
-			echo "  - Measured forwarding rate = ${FWRATE} ${UNIT} wich is the maximum supported by generator"
-			exit 0
+			# DUT is managing the maximum throughput of the packet generator.
+			# Stop the search, but return so that the caller still prints the
+			# "Estimated Equilibrium ..." line: an exit here would skip it, and
+			# bench-equilibrium-ministat.sh greps that exact line, so the
+			# iteration would silently contribute no value to the median.
+			echo "  - Measured forwarding rate = ${FWRATE} ${UNIT} which is the maximum supported by generator"
+			GENERATOR_LIMITED=true
+			return 0
 		fi
 	fi
 }
 
 #### Main
 
-args=$(getopt 46d:hl:po:r:s:t:u $*)
+args=$(getopt 46d:hl:po:r:s:t: $*)
 
 set -- $args
 for i
@@ -213,10 +220,6 @@ do
 		-s)
 			PLOAD=$2
 			shift
-			shift
-			;;
-		-u)
-			SOFT_UDP_CHK=true
 			shift
 			;;
 		-4)
@@ -279,7 +282,6 @@ if [ -z "${SMAC}" ]; then
     die "Didn't get MAC of ${TX_NIC}"
 fi
 
-
 # Initial offered load value, should be set to 50% of the link bit-rate
 OLOAD=$(( LINK_RATE / 2 ))
 # step (in Mbit) should be 25% of the link bit-rate
@@ -296,6 +298,12 @@ for i in $(seq 1 16);do
 	echo "  - Step = ${STEP} ${UNIT}"
 	[ -n "${TREND}" ] && echo "  - Trend = ${TREND}"
 	get_forwarding_rate
+	if (${GENERATOR_LIMITED}); then
+		# The generator cannot offer more than the DUT forwards: the
+		# equilibrium is at least this value, no point searching further.
+		[ ${FWRATE} -gt ${MAX_FWRATE} ] && MAX_FWRATE=${FWRATE}
+		break
+	fi
 	echo "  - Measured forwarding rate = ${FWRATE} ${UNIT}"
 	if [ ${FWRATE} -gt ${OLOAD} ]; then
 		echo "  - forwarding rate greater than offering load! (forcing FWRATE=OLOAD)"
