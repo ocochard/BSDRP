@@ -144,6 +144,12 @@ get_forwarding_rate () {
 	echo ${CMD_RX} > ${RX_FILE}
 	${CMD_RX} >> ${RX_FILE} 2>&1 &
 	RX_PID=$!
+	# The netmap attach above bounces the RX link (2-4s renegotiation). Wait it
+	# out before letting the generator start, otherwise the first seconds of the
+	# 30s window are blasted into a link-down port and the median is wrecked.
+	# A host-stack announce is NOT possible here: netmap owns the NIC, so
+	# "ping -I ${RX_NIC}" fails with exit 64 and cannot refresh the switch MAC.
+	sleep 6
 	# Start a generator.
 	# Checksums are left to the NIC: pkt-gen computes a correct checksum for every
 	# packet of a source/destination range on its own. Do not bounce the TX
