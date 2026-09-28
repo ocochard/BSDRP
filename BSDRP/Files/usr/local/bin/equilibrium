@@ -44,9 +44,12 @@ RX_NIC=""
 PPS_MODE=false
 UNIT="Mb/s"
 AF=4
-# Generate 5000 flows
-SRC_NET="198.18.10.1:2001-198.18.10.71"
-DST_NET="198.19.10.1:2001-198.19.10.70"
+# Generate 2000 flows: 20 sources x 100 destinations.
+# Keep this the same count as the IPv6 defaults set by -6 below, otherwise
+# the two address families are not comparable: flow count drives the RSS
+# queue spread on the DUT.
+SRC_NET="198.18.10.1:2000-198.18.10.20"
+DST_NET="198.19.10.1:2000-198.19.10.100"
 
 ### Functions
 # Standardized error handling function
@@ -228,6 +231,8 @@ do
 			;;
 		-6)
 			AF=6
+			# 2000 flows: 20 sources x 100 destinations, same count as the
+			# IPv4 defaults above. Keep the two in step.
 			DST_NET="[2001:2:0:8010::1]:2000-[2001:2:0:8010::64]"
 			SRC_NET="[2001:2:0:10::1]:2000-[2001:2:0:10::14]"
 			shift
