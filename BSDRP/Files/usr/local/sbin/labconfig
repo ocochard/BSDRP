@@ -257,6 +257,24 @@ exit
 !
 EOF
 
+# R2 is the PIM Candidate-BSR, and only that: R4 runs FRR's pimd as the
+# sole Candidate-RP, so that every Bootstrap on the wire carries an RP the
+# other implementation wrote the Advertisement for. Overrides the packaged
+# pimd.conf, which makes every router both CBSR and CRP.
+# The BSR address is pinned to ng0 and that is load-bearing. Bootstrap
+# messages are flooded hop by hop with an RPF check towards the BSR, so the
+# BSR address must be reachable over a PIM-enabled path from every PIM
+# router. R3 runs no PIM, which rules out lo1 (10.0.0.2) and vtnet1.23
+# (10.0.23.2): R4's RPF to either goes via R3 and the BSM is dropped.
+# Unpinned, pimd takes its highest active address, which at boot is
+# 10.0.23.2 because the PPP links are not up yet -- so it silently picks the
+# one path that cannot work. "ng0" rather than 10.4.24.2 because the name
+# survives the em->vtnet rewrite the other labs' configs go through.
+cat > /usr/local/etc/pimd.conf <<EOF
+bsr-candidate ng0 priority 200
+spt-threshold packets 0 interval 100
+EOF
+
 /usr/local/sbin/config save
 hostname R2
 service netif restart
@@ -265,6 +283,16 @@ service rtadvd start
 service frr start
 service dhcprelya start
 service mpd5 start
+# pimd resolves its Candidate-BSR address from ng0 when it parses its
+# config, and needs the ADDRESS, not just the interface: mpd5 creates the
+# netgraph node several seconds before IPCP assigns 10.4.24.2, and a pimd
+# started in that window logs "Invalid Cand-BSR address 'ng0'" and falls
+# back to its highest active address -- 10.0.23.2, the one path whose RPF
+# crosses R3 and so cannot carry a Bootstrap. Wait for the inet address.
+for _ in $(jot 60); do
+	ifconfig ng0 2>/dev/null | grep -q "inet " && break
+	sleep 1
+done
 service pimd start
 echo "VM2 configured"
 }
@@ -421,8 +449,18 @@ sysrc hostname=R4 \
 	ipfw_netflow_ip=10.0.45.5 \
 	ipfw_netflow_port=2055 \
 	ipfw_netflow_version=9 \
-	pimd_enable=YES
+	pimd_enable=NO
+# R4 runs FRR's pimd instead of net/pimd: one multicast routing daemon per
+# host, they cannot share the kernel's MRT socket.
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# pimd is not in the rc script's default frr_daemons list, so name it
+# explicitly. This MUST come after the em->vtnet rewrite above: that sed is a
+# blunt global substitution and "frr_daemons" itself contains "em", so
+# setting it in the sysrc block leaves "frr_davtnetons" in rc.conf and FRR
+# silently starts its default daemon set instead. It must still precede
+# "service frr start" below.
+
+sysrc frr_daemons="mgmtd zebra bfdd isisd ospfd ospf6d ripd ripngd staticd pimd" > /dev/null
 
 cat > /usr/local/etc/frr/frr.conf <<EOF
 frr version 9.1
@@ -436,17 +474,20 @@ interface em3
  ipv6 ospf6 passive
  ipv6 ospf6 area 0.0.0.0
  ipv6 router isis BSDRP
+ ip pim
 exit
 !
 interface ng0
  ip ospf message-digest-key 1 md5 superpass
  ip ospf network point-to-point
  ipv6 ospf6 passive
+ ip pim
 exit
 !
 interface ng1
  ipv6 ospf6 network point-to-point
  ipv6 ospf6 area 0.0.0.0
+ ip pim
 exit
 !
 !
@@ -456,7 +497,13 @@ interface vtnet3
  ipv6 ospf6 passive
  ipv6 ospf6 area 0.0.0.0
 ipv6 router isis BSDRP
+ ip pim
  exit
+!
+! lo1 carries the Candidate-RP address advertised by "router pim" below.
+interface lo1
+ ip pim
+exit
 !
 router-id 0.0.0.4
 !
@@ -496,6 +543,14 @@ router isis BSDRP
 exit
 !
 bfd
+exit
+!
+! R4 is the PIM Candidate-RP; R2 (net/pimd) is the Candidate-BSR. Never both
+! on one router: an FRR that is itself the BSR never puts its own
+! Candidate-RP into the Bootstrap it originates, so the RP set stays empty.
+router pim
+ bsr candidate-rp priority 20 source address 10.0.0.4
+ bsr candidate-rp group 224.0.0.0/4
 exit
 !
 EOF
@@ -642,10 +697,11 @@ service ipfw_netflow start
 # exported untemplated and dropped by nfacctd. Shorten the interval so the
 # very first export datagram carries the template.
 # Non-fatal: a failed tuning knob must not abort the rest of VM4's setup
-# (pimd start) under 'set -e'.
+# under 'set -e'.
 ngctl msg netflow: settemplate '{ time=60 packets=20 }' || \
 	echo "WARNING: can't shorten ng_netflow v9 template interval"
-service pimd start
+# No "service pimd start" here: R4's PIM is FRR's pimd, started by
+# "service frr start" above via frr_daemons.
 echo "VM4 configured"
 }
 
@@ -692,6 +748,15 @@ sysrc -f /etc/jails/jail5/rc.conf hostname=jail5 \
 	pimd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/jails/jail5/rc.conf
 mkdir -p /etc/jails/jail5/local/frr
+# jail5 is a plain PIM router and last-hop DR: neither Candidate-BSR nor
+# Candidate-RP. R2 is the CBSR, R4 (FRR) the sole CRP. Overrides the
+# packaged pimd.conf, which makes every router both. Two hops from the BSR,
+# so jail5 learning the RP proves FRR relayed R2's Bootstrap onward.
+# /etc/jails/jail5/local/<f> is the jail's /usr/local/etc/<f>.
+cat > /etc/jails/jail5/local/pimd.conf <<EOF
+spt-threshold packets 0 interval 100
+EOF
+
 cat > /etc/jails/jail5/local/dhcpd.conf <<EOF
 option domain-name "bsdrp.net";
 default-lease-time 600;

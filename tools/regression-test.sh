@@ -578,7 +578,23 @@ lab_full_vm2() {
 	# wiki/R2 pimd running. Cross-checked from R4's neighbor table in
 	# lab_full_vm4 (R4 sees R2 over both ng0/ng1 PPTP tunnels).
 	assert 2 "pimd running" "$nmdm" \
-		"pgrep -lf pimd || echo none" 'pimd'
+		"pgrep -lf sbin/pimd || echo none" 'pimd'
+
+	# wiki/R2 is the PIM Candidate-BSR and wins the election (priority 200),
+	# and is deliberately NOT a Candidate-RP: R4 runs FRR's pimd as the sole
+	# CRP, so every Bootstrap carries an RP the other implementation wrote
+	# the Advertisement for. The BSR address is not asserted: pimd picks its
+	# highest active address, which depends on PPP link order.
+	assert 2 "PIM elected BSR priority 200" "$nmdm" \
+		"pimctl show status 2>&1" 'Priority[[:space:]]*:[[:space:]]*200'
+	assert 2 "PIM Candidate-RP disabled (R4/FRR is the RP)" "$nmdm" \
+		"pimctl show status 2>&1 | grep -A2 'Candidate RP'" 'Disabled'
+
+	# wiki/R2 BSR learned R4's Candidate-RP-Advertisement. This is FRR's
+	# CRP-Adv parsed by pimd's BSR - one of the two directions only a
+	# mixed-implementation lab can test.
+	assert 2 "PIM RP set learned 10.0.0.4 from FRR's CRP-Adv" "$nmdm" \
+		"pimctl show rp 2>&1" '224\.0\.0\.0/4[[:space:]]+10\.0\.0\.4' 120
 }
 
 # ---- R3 ------------------------------------------------------------------
@@ -640,27 +656,41 @@ lab_full_vm4() {
 	assert 4 "IPFW pipe 60 = 20 Mbit/s" "$nmdm" \
 		"ipfw pipe show 2>&1" '00060:[[:space:]]+20(\.[0-9]+)?[[:space:]]*Mbit'
 
-	# wiki/R4 pimd running.
-	assert 4 "pimd running" "$nmdm" \
-		"pgrep -lf pimd || echo none" 'pimd'
+	# wiki/R4 runs FRR's pimd, NOT net/pimd: the two cannot share the
+	# kernel's MRT socket. Match the full path - a bare "pgrep -lf pimd"
+	# matches /usr/local/lib/frr/pimd just as happily as /usr/local/sbin/pimd
+	# and would pass whichever daemon were running.
+	assert 4 "FRR pimd running" "$nmdm" \
+		"pgrep -lf lib/frr/pimd || echo none" 'pimd'
+	assert 4 "net/pimd NOT running (FRR owns the MRT socket)" "$nmdm" \
+		"pgrep -lf sbin/pimd || echo none" '^none$'
 
 	# wiki/R4 PIM neighbors: R4 should peer with R5 over vtnet3 (10.0.45.5)
 	# and with R2 over both PPTP tunnels (ng0 IPv4 = 10.4.24.2, ng1 IPv6 leg
-	# = 10.6.24.2). Neighbor uptime is non-zero when the adjacency is up;
-	# the table also lists the peer IP on its own row, so we just match the
-	# expected address strings.
+	# = 10.6.24.2). PIM must be enabled on BOTH legs: R2's elected BSR
+	# address is its ng1 address, so R4's RPF towards the BSR is ng1 and a
+	# Bootstrap arriving on ng0 alone would be dropped by the RPF check.
 	assert 4 "PIM neighbor R5 (10.0.45.5) on vtnet3" "$nmdm" \
-		"pimctl show neighbor 2>&1" '10\.0\.45\.5'
+		"vtysh -c 'show ip pim neighbor' 2>&1" '10\.0\.45\.5'
 	assert 4 "PIM neighbor R2 (10.4.24.2) on ng0" "$nmdm" \
-		"pimctl show neighbor 2>&1" '10\.4\.24\.2'
+		"vtysh -c 'show ip pim neighbor' 2>&1" '10\.4\.24\.2'
 	assert 4 "PIM neighbor R2 (10.6.24.2) on ng1" "$nmdm" \
-		"pimctl show neighbor 2>&1" '10\.6\.24\.2'
+		"vtysh -c 'show ip pim neighbor' 2>&1" '10\.6\.24\.2'
 
-	# wiki/R4 PIM BSR/RP set: both R2 (10.6.24.2) and R4 (10.6.24.4) are
-	# candidate RPs for 224.0.0.0/4 at priority 20. Static SSM mapping
-	# 232.0.0.0/8 -> 169.254.0.1 is always present.
-	assert 4 "PIM RP set has 224.0.0.0/4 candidates" "$nmdm" \
-		"pimctl show rp 2>&1" '224\.0\.0\.0/4'
+	# wiki/R4 is the sole Candidate-RP and must NOT be a Candidate-BSR: an
+	# FRR that is itself the BSR never puts its own CRP into the Bootstrap it
+	# originates, leaving the RP set empty.
+	assert 4 "FRR Candidate-RP is 10.0.0.4" "$nmdm" \
+		"vtysh -c 'show ip pim bsr candidate-rp' 2>&1" '10\.0\.0\.4'
+
+	# wiki/R4 learned R2's Bootstrap: pimd's BSM parsed by FRR. The reverse
+	# of the CRP-Adv direction asserted on R2.
+	assert 4 "FRR accepted pimd's Bootstrap (BSR 10.4.24.2)" "$nmdm" \
+		"vtysh -c 'show ip pim bsr' 2>&1" '10\.4\.24\.2' 120
+
+	# wiki/R4 won the RP election with the RP set R2's BSR flooded back.
+	assert 4 "FRR is the elected RP for 224.0.0.0/4 (Source: BSR)" "$nmdm" \
+		"vtysh -c 'show ip pim rp-info' 2>&1" '10\.0\.0\.4.*224\.0\.0\.0/4.*yes.*BSR' 120
 
 	# wiki/R4 Netflow exporter to 10.0.45.5:2055.
 	assert 4 "netflow exporting to 10.0.45.5:2055" "$nmdm" \
@@ -788,9 +818,19 @@ lab_full_vm5() {
 	# host's network stack. Check with jexec; pimctl from outside the jail
 	# cannot find the daemon's socket.
 	assert 5 "jail5: pimd running" "$nmdm" \
-		"jexec jail5 pgrep -lf pimd || echo none" 'pimd'
+		"jexec jail5 pgrep -lf sbin/pimd || echo none" 'pimd'
 	assert 5 "jail5: PIM neighbor R4 (10.0.45.4) on vtnet3" "$nmdm" \
 		"jexec jail5 pimctl show neighbor 2>&1" '10\.0\.45\.4'
+
+	# wiki/R5 jail5 is two hops from the BSR (R2), with FRR on R4 in
+	# between. It can only hold the RP set if FRR parsed R2's Bootstrap AND
+	# flooded it onward - the one property only a middle-box lab can test,
+	# and the reason R4 runs FRR rather than net/pimd. jail5 is itself
+	# neither CBSR nor CRP, so nothing here is locally originated.
+	assert 5 "jail5: learned BSR 10.4.24.2 relayed by FRR" "$nmdm" \
+		"jexec jail5 pimctl show status 2>&1" '10\.4\.24\.2' 120
+	assert 5 "jail5: learned RP 10.0.0.4 relayed by FRR" "$nmdm" \
+		"jexec jail5 pimctl show rp 2>&1" '224\.0\.0\.0/4[[:space:]]+10\.0\.0\.4' 120
 	local jls_out
 	jls_out=$(retry_check "$nmdm" "jls -N" 'jail5') || true
 	if echo "$jls_out" | grep -q jail5; then
