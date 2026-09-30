@@ -363,16 +363,34 @@ ${OBJ_DIR}/build-builder-jail: ${OBJ_DIR}/patch-sources ${srcconf_src}
 	else \
 		echo "" >> ${SRC_DIR}/poudriere.etc/poudriere.d/BSDRPj-src.conf; \
 	fi
+	# poudriere clones src with `cpdup -o`, which never deletes: files removed
+	# upstream linger in the jail and get compiled against current headers.
+	# Prune them before the clone, or a stale .c fails the build much later.
+	@jail_mnt=$$(${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -i -j BSDRPj 2>/dev/null \
+	    | awk '/^Jail mount:/ {print $$3}'); \
+	if [ -n "$${jail_mnt}" ] && [ -d "$${jail_mnt}/usr/src" ]; then \
+		(cd "$${jail_mnt}/usr/src" && find . -type f) | sort > ${OBJ_DIR}/.jail-src.list; \
+		(cd ${OBJ_DIR}/FreeBSD && find . -type f -not -path './.git/*') | sort > ${OBJ_DIR}/.new-src.list; \
+		comm -23 ${OBJ_DIR}/.jail-src.list ${OBJ_DIR}/.new-src.list > ${OBJ_DIR}/.stale-src.list; \
+		if [ -s ${OBJ_DIR}/.stale-src.list ]; then \
+			echo "Pruning $$(wc -l < ${OBJ_DIR}/.stale-src.list) files deleted upstream from the builder jail..."; \
+			(cd "$${jail_mnt}/usr/src" && ${sudo} xargs rm -f) < ${OBJ_DIR}/.stale-src.list; \
+		fi; \
+	fi
 	# Determine if jail exists: use update (u) if it exists, otherwise create (c)
 	# This allows the same target to handle both initial creation and updates
 	@JAIL_ACTION=$$(${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -ln | grep -q BSDRPj && echo "u" || echo "c"); \
 	echo "debug: $${JAIL_ACTION}"; \
-	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -$${JAIL_ACTION} -j BSDRPj -b -m src=${OBJ_DIR}/FreeBSD -K ${src_arch} > ${OBJ_DIR}/build.jail.log; \
-	if [ $$? -ne 0 ]; then \
-		echo "ERROR: Jail build failed. Last 50 lines of log:"; \
+	set -o pipefail; \
+	${sudo} poudriere -e ${SRC_DIR}/poudriere.etc jail -$${JAIL_ACTION} -j BSDRPj -b -m src=${OBJ_DIR}/FreeBSD -K ${src_arch} 2>&1 | tee ${OBJ_DIR}/build.jail.log || { \
+		echo "ERROR: builder jail build failed."; \
+		echo "ERROR: full log: ${OBJ_DIR}/build.jail.log"; \
+		echo "--- failing targets ---"; \
+		grep -n -E '^\*\*\* \[|^\*\*\* Error|error: |Error code|fatal error' ${OBJ_DIR}/build.jail.log | tail -n 20 || true; \
+		echo "--- last 50 lines ---"; \
 		tail -n 50 ${OBJ_DIR}/build.jail.log; \
 		exit 1; \
-	fi
+	}
 	@touch ${.TARGET}
 
 ${OBJ_DIR}/build-ports-tree: ${OBJ_DIR}/patch-sources
