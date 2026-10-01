@@ -452,19 +452,26 @@ lab_full_vm1() {
 
 	# wiki/R1: lagg0 should have a DHCP-acquired address. The DHCP server
 	# is dhcpd inside jail5 (R5) - this validates DHCP relay (R2) too.
-	# R1 is tested last in the lab_vm_order so by now DHCP/relay/routing
-	# have all had time to converge.
+	# Testing R1 last in lab_vm_order is not enough to make this converge:
+	# R1 boots before jail5 exists, so its first DHCPDISCOVER goes
+	# unanswered and dhclient then backs off 2/4/8/16/32/64s before asking
+	# again. The lease therefore lands minutes after boot, long after the
+	# default 45s budget, and the next two checks are downstream of it.
+	# Give the lease a budget that covers a couple of backoff rounds.
 	assert 1 "lagg0 has DHCP-acquired IPv4 (10.0.12.1)" "$nmdm" \
-		"ifconfig lagg0 inet" 'inet 10\.0\.12\.1[[:space:]]'
-	# Default route points to R2's CARP VIP.
+		"ifconfig lagg0 inet" 'inet 10\.0\.12\.1[[:space:]]' 240
+	# Default route points to R2's CARP VIP. It arrives with the lease, so
+	# a short budget is enough once the check above has passed - and keeps
+	# a genuinely leaseless lab from paying 240s again here.
 	assert 1 "default route via R2 CARP (10.0.12.254)" "$nmdm" \
-		"netstat -rn4 2>&1" 'default[[:space:]]+10\.0\.12\.254'
+		"netstat -rn4 2>&1" 'default[[:space:]]+10\.0\.12\.254' 60
 
 	# Reachability sanity check before iperf3 - if R1 cannot reach jail6 the
 	# iperf3 run is pointless and reports faster.
 	# Path: R1 -> R2 -> PPTP tunnel (shaped by R4 pipes) -> R4 -> R5 -> jail6.
+	# Also downstream of the lease: short budget for the same reason.
 	assert 1 "R1 reachability to jail6 (10.0.56.6)" "$nmdm" \
-		"ping -c 3 -W 2000 10.0.56.6 2>&1" '[123] packets received'
+		"ping -c 3 -W 2000 10.0.56.6 2>&1" '[123] packets received' 60
 
 	# wiki/R1 SNMP: bsnmpget to jail6 returns sysName.0 = "jail6".
 	# Exercises the same full path as the iperf3 test but with bsnmpd
