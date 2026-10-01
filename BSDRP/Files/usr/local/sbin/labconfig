@@ -283,16 +283,6 @@ service rtadvd start
 service frr start
 service dhcprelya start
 service mpd5 start
-# pimd resolves its Candidate-BSR address from ng0 when it parses its
-# config, and needs the ADDRESS, not just the interface: mpd5 creates the
-# netgraph node several seconds before IPCP assigns 10.4.24.2, and a pimd
-# started in that window logs "Invalid Cand-BSR address 'ng0'" and falls
-# back to its highest active address -- 10.0.23.2, the one path whose RPF
-# crosses R3 and so cannot carry a Bootstrap. Wait for the inet address.
-for _ in $(jot 60); do
-	ifconfig ng0 2>/dev/null | grep -q "inet " && break
-	sleep 1
-done
 service pimd start
 echo "VM2 configured"
 }
