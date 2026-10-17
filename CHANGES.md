@@ -1,3 +1,78 @@
+# Release 2.4 (WIP)
+
+## New features
+- Latest changes from FreeBSD main and ports at 2026/10/17
+- Add a dhcp lab: DHCP relay and server, both with dnsmasq
+- Add a pimssm lab: PIM-SSM with pimd, no RP and no BSR
+- full lab: FRRouting's pimd on R4 to test PIM-SM interoperability with
+  net/pimd
+- pimd 3.1.0 to 3.4.0: Auto-RP support (listener, candidate RP
+  announcer and mapping agent, with `autorp accept-from` to restrict
+  trusted senders); privilege separation, the daemon now runs as a root
+  parent plus an unprivileged child chrooted in /var/empty as `nobody`
+  (`--no-privsep` restores the single root process); `pimctl -j` JSON
+  output; new `pimd.conf` keywords `phyint ... passive`,
+  `igmp-accept-groups`, `crp-accept-from`, `crp-accept-group`,
+  `rp-set-limit` and `assert-preference`; many RFC 7761 Assert, Join and
+  Prune fixes; a descriptor leaked by every `pimctl` request is fixed.
+  `pimctl show compat` was removed.
+- show version: report more build information
+- equilibrium: confirm the converged value with a second probe
+
+## Fixes
+- Raise kern.ipc.maxsockbuf to 32 MiB: FRR daemons got 8 MiB socket
+  buffers instead of the 16 MiB requested and logged it on every start
+- system: fix a typo preventing system rollback
+- Ship the missing QAT firmware
+- equilibrium: use the same number of IPv4 flows as IPv6
+- nuageinit: rebase the read-only root patch on upstream changes
+
+## FreeBSD notable network stack changes introduced
+
+### Routing
+- Fix an rtentry use-after-free in multipath route append
+- fib_algo instances torn down again on rib destroy (no more leak or
+  panic on vnet destroy)
+- fib_algo: respect immediate_sync in fd_ref_nhop
+
+### pf
+- First-match-wins for nat rules, even in anchors
+- Do not corrupt neighbour advertisements when translating
+- Check AH and IPv6 extension header lengths
+- More ioctls converted to netlink, many locking and leak fixes
+
+### Drivers
+- bnxt: kTLS TX offload, RX timestamping, HW and host TX completion
+  coalescing, more Tx than Rx rings on P5+, Thor2 interrupt storm fix,
+  reliability fixes after firmware resets
+- igc: hardware RSS hash now agrees with the stack's configuration
+- e1000, igc: fix the flow control sysctl
+- ice: fix link bringup on driver load
+- iflib: do not ring the transmit doorbell when nothing is pending
+- cxgbe: report SR-IOV VF status, KTLS fixes
+
+### Misc
+- ip_encap: optionally rehash decapsulated tunnel packets on their inner
+  addresses so multipath spreads them (net.route.hash_inbound, off by
+  default)
+- loopback: MTU set to IF_MAXMTU
+- netipsec: fix V_spd_size updates
+- nd6: fix regeneration of temporary addresses in detached state
+- dummynet: fix an array overflow with large pipe profiles
+
+## Upgraded packages
+* bird3: 3.3.2_1 -> 3.4.0
+* cpu-microcode-intel: 20260812 -> 20260925
+* iperf3: 3.21 -> 3.22
+* open-vm-kmod: 13.1.0.1600026,2 -> 13.1.0.1600028,2
+* openvpn: 2.7.7 -> 2.7.8
+* pimd: 3.1.0 -> 3.4.0
+* pkt-gen: g2025.10.08 -> g2026.08.08
+* python312: 3.12.14 -> 3.12.15
+* realtek-re-kmod: 1102.01.1600026_1 -> 1102.01.1600028_2
+* tmux: 3.7c -> 3.8
+* vim: 9.2.0738 -> 9.2.1178
+
 # Release 2.3 (2026/09/20)
 
 ## New features
