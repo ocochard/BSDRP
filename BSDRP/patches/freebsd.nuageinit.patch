@@ -1,5 +1,5 @@
 diff --git libexec/nuageinit/nuageinit libexec/nuageinit/nuageinit
-index 712a516c519..79b152b2e79 100755
+index 758a7f20b30..8688202ba3b 100755
 --- libexec/nuageinit/nuageinit
 +++ libexec/nuageinit/nuageinit
 @@ -16,6 +16,30 @@ end
@@ -40,10 +40,10 @@ index 712a516c519..79b152b2e79 100755
 +-- Check if root is read-only and remount read-write if needed
 +local root_was_readonly = remount_root_rw()
 +
- -- No user-data
- if line == nil then
- 	local calls_table = {
-@@ -1235,3 +1262,6 @@ elseif line:sub(1, 2) == "#!" then
+ --  YAML user-data
+ if line == "#cloud-config" then
+ 	local pre_network_calls = {
+@@ -1237,3 +1264,6 @@ if line ~= nil and line:sub(1, 2) == "#!" then
  	-- delay for execution at rc.local time --
  	nuage.chmod(root .. "/var/cache/nuageinit/user_data", "0755")
  end
@@ -51,7 +51,7 @@ index 712a516c519..79b152b2e79 100755
 +-- Restore read-only status if root was originally mounted read-only
 +restore_root_readonly(root_was_readonly)
 diff --git libexec/rc/rc.d/nuageinit libexec/rc/rc.d/nuageinit
-index e2f0a85bc3b..4997a21e751 100755
+index 43476a71c9e..9d1a823fe7a 100755
 --- libexec/rc/rc.d/nuageinit
 +++ libexec/rc/rc.d/nuageinit
 @@ -47,9 +47,11 @@ nuageinit_start()
