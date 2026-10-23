@@ -1,7 +1,7 @@
 # Release 2.4 (WIP)
 
 ## New features
-- Latest changes from FreeBSD main and ports at 2026/10/17
+- Latest changes from FreeBSD main and ports at 2026/10/23
 - Add a dhcp lab: DHCP relay and server, both with dnsmasq
 - Add a pimssm lab: PIM-SSM with pimd, no RP and no BSR
 - full lab: FRRouting's pimd on R4 to test PIM-SM interoperability with
@@ -40,6 +40,9 @@
 - Do not corrupt neighbour advertisements when translating
 - Check AH and IPv6 extension header lengths
 - More ioctls converted to netlink, many locking and leak fixes
+- Keep every chunk of a table that a ruleset defines
+- pfctl: report why a table definition or a fingerprint flush failed
+- pflow: destroy exporters on module unload
 
 ### Drivers
 - bnxt: kTLS TX offload, RX timestamping, HW and host TX completion
@@ -49,6 +52,7 @@
 - e1000, igc: fix the flow control sysctl
 - ice: fix link bringup on driver load
 - iflib: do not ring the transmit doorbell when nothing is pending
+- iflib: pass up the frames received before a descriptor error
 - cxgbe: report SR-IOV VF status, KTLS fixes
 
 ### Misc
@@ -59,17 +63,23 @@
 - netipsec: fix V_spd_size updates
 - nd6: fix regeneration of temporary addresses in detached state
 - dummynet: fix an array overflow with large pipe profiles
+- ipfw: hold the sleepable upper half lock for periodic state expiry
+- ng_pppoe: fix m_pullup() logic
+- if_media: add 100BASE-T1 and 1000BASE-T1 media types
 
 ## Upgraded packages
 * bird3: 3.3.2_1 -> 3.4.0
+* c-ares: 1.34.8 -> 1.34.9
 * cpu-microcode-intel: 20260812 -> 20260925
+* curl: 8.22.0 -> 8.23.0
 * iperf3: 3.21 -> 3.22
-* open-vm-kmod: 13.1.0.1600026,2 -> 13.1.0.1600028,2
+* nrpe: 4.1.3 -> 4.2.0
+* open-vm-kmod: 13.1.0.1600026,2 -> 13.1.0.1600029,2
 * openvpn: 2.7.7 -> 2.7.8
 * pimd: 3.1.0 -> 3.4.0
 * pkt-gen: g2025.10.08 -> g2026.08.08
 * python312: 3.12.14 -> 3.12.15
-* realtek-re-kmod: 1102.01.1600026_1 -> 1102.01.1600028_2
+* realtek-re-kmod: 1102.01.1600026_1 -> 1102.01.1600029_2
 * tmux: 3.7c -> 3.8
 * vim: 9.2.0738 -> 9.2.1178
 
