@@ -71,6 +71,10 @@ esac
 [ -f /etc/nanobsd.conf ] || die "No /etc/nanobsd.conf found"
 . /etc/nanobsd.conf
 
+# Defensive: a corrupt or empty /etc/nanobsd.conf would leave NANO_DRIVE
+# unset, tripping set -u below.
+[ -n "${NANO_DRIVE:-}" ] || die "NANO_DRIVE not set in /etc/nanobsd.conf"
+
 #Extract LABEL name
 LABEL=${NANO_DRIVE##*/}
 
