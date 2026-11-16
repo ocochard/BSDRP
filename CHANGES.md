@@ -1,7 +1,7 @@
 # Release 2.4 (WIP)
 
 ## New features
-- Latest changes from FreeBSD main and ports at 2026/10/23
+- Latest changes from FreeBSD main and ports at 2026/11/16
 - Add a dhcp lab: DHCP relay and server, both with dnsmasq
 - Add a pimssm lab: PIM-SSM with pimd, no RP and no BSR
 - full lab: FRRouting's pimd on R4 to test PIM-SM interoperability with
@@ -31,6 +31,9 @@
 
 ### Routing
 - Fix an rtentry use-after-free in multipath route append
+- Fix a nexthop double free in rib_copy_route() and a buffer size in
+  merge_nhgrps()
+- rtnetlink: use the default weight for unset weights in NHA_GROUP
 - fib_algo instances torn down again on rib destroy (no more leak or
   panic on vnet destroy)
 - fib_algo: respect immediate_sync in fd_ref_nhop
@@ -43,6 +46,9 @@
 - Keep every chunk of a table that a ruleset defines
 - pfctl: report why a table definition or a fingerprint flush failed
 - pflow: destroy exporters on module unload
+- pfctl: DIOCXBEGIN, DIOCXROLLBACK, DIOCXCOMMIT converted to netlink;
+  `-l` to use an inherited Netlink socket
+- pfsync: better handling of large packets, mbuf leak and underflow fixes
 
 ### Drivers
 - bnxt: kTLS TX offload, RX timestamping, HW and host TX completion
@@ -54,6 +60,19 @@
 - iflib: do not ring the transmit doorbell when nothing is pending
 - iflib: pass up the frames received before a descriptor error
 - cxgbe: report SR-IOV VF status, KTLS fixes
+- bnxt: 400GBase-FR4 support, skip HW kTLS on old firmware
+- ixgbe: Total Port Shutdown on E610, missed packets counted as input
+  drops only
+- ice: VSI loopback in VEB mode, VF Tx queue restart and scheduler
+  failure recovery
+- iavf: honor negotiated VLAN offloads, report the VF RSS configuration
+- igc: count packets dropped for want of a receive descriptor
+- e1000: honor the common RSS hash-field policy
+- ena: v2.8.6, many RSS fixes
+- vtnet: honor the advertised MTU limit on attach
+- iflib: prefer simple_tx over mp_ring, a single tx DMA map, rate
+  limited deferred tx ring drain
+- netmap: handle TX buffers larger than MCLBYTES
 
 ### Misc
 - ip_encap: optionally rehash decapsulated tunnel packets on their inner
@@ -65,23 +84,44 @@
 - dummynet: fix an array overflow with large pipe profiles
 - ipfw: hold the sleepable upper half lock for periodic state expiry
 - ng_pppoe: fix m_pullup() logic
-- if_media: add 100BASE-T1 and 1000BASE-T1 media types
+- if_media: add 100BASE-T1, 1000BASE-T1 and 400G FR4 media types
+- gre: full GRE key support
+- if_geneve: several receive path fixes
+- if_bridge: use the bridge's FIB for incoming unicasts
+- lacp: fix interfaces with unknown media
+- carp: fix a race in the netlink get handler
+- netinet6: check the hop limit after pfil in ip6_tryforward(), free the
+  ICMPv6 copy on all ip6_forward() error paths
+- netipsec: several SA/SAH leak and lock fixes in AH, ESP and IPComp
+- ipfilter: UDP checksum fixes
+- tcp: BBR and RACK fixes
 
 ## Upgraded packages
-* bird3: 3.3.2_1 -> 3.4.0
+* bird3: 3.3.2_1 -> 3.4.0_1
+* brotli: 1.2.0,1 -> 1.2.1,1
 * c-ares: 1.34.8 -> 1.34.9
 * cpu-microcode-intel: 20260812 -> 20260925
 * curl: 8.22.0 -> 8.23.0
+* expat: 2.8.4 -> 2.10.0
 * iperf3: 3.21 -> 3.22
+* liblz4: 1.10.0_2,1 -> 1.11.1,1
+* libucl: 0.9.4 -> 0.10.0
+* mstflint: 4.37.0.1 -> 4.38.0.1
 * nrpe: 4.1.3 -> 4.2.0
-* open-vm-kmod: 13.1.0.1600026,2 -> 13.1.0.1600029,2
-* openvpn: 2.7.7 -> 2.7.8
+* open-vm-kmod: 13.1.0.1600026,2 -> 13.1.0.1600031,2
+* openvpn: 2.7.7 -> 2.7.9
+* pciids: 20260912 -> 20261113
+* pcre2: 10.48 -> 10.49
 * pimd: 3.1.0 -> 3.4.0
+* pkg: 2.8.4 -> 2.9.2
 * pkt-gen: g2025.10.08 -> g2026.08.08
-* python312: 3.12.14 -> 3.12.15
-* realtek-re-kmod: 1102.01.1600026_1 -> 1102.01.1600029_2
+* protobuf-c: 1.5.1_4 -> 1.5.2
+* python312: 3.12.14 -> 3.12.16
+* readline: 8.3.3 -> 8.3.6
+* realtek-re-kmod: 1102.01.1600026_1 -> 1102.01.1600031_3
+* simdjson: 4.6.11_1 -> 5.1.1
 * tmux: 3.7c -> 3.8
-* vim: 9.2.0738 -> 9.2.1178
+* vim, xxd: 9.2.0738 -> 9.2.1302
 
 # Release 2.3 (2026/09/20)
 
