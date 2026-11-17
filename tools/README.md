@@ -48,7 +48,10 @@ Wipes any prior lab state, launches the lab through `BSDRP-lab-bhyve.sh` with
 the VM count it derives from the lab name, waits `--boot-delay` seconds
 (default 60) for cloud-init/labconfig to finish, then drives each VM's serial
 console with `expect(1)` and matches command output against per-VM assertions.
-Each check is retried to absorb convergence delays.
+Each check is retried to absorb convergence delays. A final failover phase
+breaks things on purpose (CARP vhids forced to INIT, one end of a BFD-protected
+PPTP link silenced), checks the lab reacts, and restores each one, so the lab
+is left in its converged state.
 
 Exit codes: `0` all assertions passed, `1` at least one failed, `2`
 setup/usage error.

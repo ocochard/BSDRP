@@ -578,6 +578,14 @@ lab_full_vm2() {
 	assert 2 "IPsec SA to 2001:db8:23::3 present" "$nmdm" \
 		"setkey -D 2>&1" '2001:db8:23::3'
 
+	# The SAs above are actually used: BGP segments arrive signed and
+	# every signature verifies. An Established session alone does not
+	# prove this.
+	assert 2 "TCP-MD5 signed segments received" "$nmdm" \
+		"netstat -s -p tcp 2>&1" '[1-9][0-9]* packets with matching signature received'
+	assert 2 "TCP-MD5 no bad signature" "$nmdm" \
+		"netstat -s -p tcp 2>&1" '^[[:space:]]*0 packets with bad signature received'
+
 	# wiki/R2 Reachability: ping R3's loopback.
 	assert 2 "ping R3 loopback 10.0.0.3" "$nmdm" \
 		"ping -c 2 -W 1000 10.0.0.3 2>&1" '0(\.0)?% packet loss|1 packets received|2 packets received'
@@ -660,6 +668,10 @@ lab_full_vm3() {
 		"setkey -D 2>&1" '10\.0\.23\.2'
 	assert 3 "IPsec SA to 2001:db8:23::2 present" "$nmdm" \
 		"setkey -D 2>&1" '2001:db8:23::2'
+	assert 3 "TCP-MD5 signed segments received" "$nmdm" \
+		"netstat -s -p tcp 2>&1" '[1-9][0-9]* packets with matching signature received'
+	assert 3 "TCP-MD5 no bad signature" "$nmdm" \
+		"netstat -s -p tcp 2>&1" '^[[:space:]]*0 packets with bad signature received'
 
 	# wiki/R3 RIP/RIPng routes from R4 visible in bird.
 	assert 3 "bird RIP routes present" "$nmdm" \
@@ -668,6 +680,29 @@ lab_full_vm3() {
 	# wiki/R3 PF: pfctl reports state info and rules.
 	assert 3 "pf enabled" "$nmdm" \
 		"pfctl -si 2>&1" 'Status: Enabled'
+
+	# pf keeps state for the PPTP tunnels R2<->R4 that transit R3: the
+	# GRE data channel, IPv4 and IPv6.
+	assert 3 "pf GRE state 10.0.0.2 <-> 10.0.0.4 (PPTP transit)" "$nmdm" \
+		"pfctl -ss 2>&1" 'gre 10\.0\.0\.[24] (->|<-) 10\.0\.0\.[24] '
+	assert 3 "pf GRE state 2001:db8::2 <-> 2001:db8::4 (PPTP transit)" "$nmdm" \
+		"pfctl -ss 2>&1" 'gre 2001:db8::[24] (->|<-) 2001:db8::[24] '
+
+	# R3's pf drops transit TCP to port 2323. Probe from R2 towards R4's
+	# loopback, which routes through R3: the SYN must time out rather
+	# than be refused by R4. A non-filtered port is the control: refused
+	# proves R4 is reachable, so the timeout comes from pf.
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	assert 2 "control: tcp/2324 to R4 refused (not filtered)" "$nmdm2" \
+		"nc -v -z -w 3 10.0.0.4 2324 2>&1" 'Connection refused'
+	assert 2 "R3 pf drops tcp/2323 to R4 (IPv4)" "$nmdm2" \
+		"nc -v -z -w 3 10.0.0.4 2323 2>&1" 'Operation timed out'
+	assert 2 "R3 pf drops tcp/2323 to R4 (IPv6)" "$nmdm2" \
+		"nc -v -z -w 3 2001:db8::4 2323 2>&1" 'Operation timed out'
+	# pfctl -sl: label evals packets bytes ...; the SYNs above must have
+	# hit the rule.
+	assert 3 "pf block rule counted the dropped SYNs" "$nmdm" \
+		"pfctl -sl 2>&1" '^lab-block-2323 [0-9]+ [1-9][0-9]* '
 }
 
 # ---- R4 ------------------------------------------------------------------
@@ -945,6 +980,67 @@ lab_full_vm5() {
 		"jexec jail6 bsnmpget -s localhost sysName.0 2>&1" 'jail6'
 }
 
+# ---- Failover (Phase 4) --------------------------------------------------
+# Each step breaks one thing, checks the lab reacts, then restores it. The
+# restore runs whatever the checks returned, so a failed step does not
+# cascade into the next one.
+#
+# Both CARP groups have a single member (R2 on R1's LAN, jail5 on jail6's
+# LAN), so there is no election to test. net.inet.carp.allow=0 forces the
+# vhid to INIT, which releases the virtual address; allow=1 restarts the
+# state machine and, hearing no other master, the vhid becomes MASTER
+# again. That covers the state transitions and the address ownership.
+lab_full_failover() {
+	local nmdm1="${NMDM_PREFIX}1${NMDM_SUFFIX}"
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local nmdm4="${NMDM_PREFIX}4${NMDM_SUFFIX}"
+	local nmdm5="${NMDM_PREFIX}5${NMDM_SUFFIX}"
+	local if2
+
+	# R2 runs this vhid in VRRPv3 mode (carpver 3): its status line is
+	# "vrrp: <state> vrid 1", not "carp: <state> vhid 1".
+	if2=$(console_run "$nmdm2" "ifconfig -l | grep -qw vtnet0 && echo vtnet0 || echo em0" | tr -d '[:space:]')
+	console_run "$nmdm2" "sysctl net.inet.carp.allow=0" >/dev/null
+	assert 2 "CARP: carp.allow=0 puts vrid 1 in INIT" "$nmdm2" \
+		"ifconfig $if2 2>&1" 'vrrp: INIT vrid 1'
+	assert 1 "CARP: gateway 10.0.12.254 unreachable while R2 is INIT" "$nmdm1" \
+		"ping -c 2 -W 1000 10.0.12.254 2>&1" ' 0 packets received'
+	console_run "$nmdm2" "sysctl net.inet.carp.allow=1" >/dev/null
+	assert 2 "CARP: carp.allow=1 brings vrid 1 back to MASTER" "$nmdm2" \
+		"ifconfig $if2 2>&1" 'vrrp: MASTER vrid 1'
+	assert 1 "CARP: gateway 10.0.12.254 reachable again" "$nmdm1" \
+		"ping -c 2 -W 1000 10.0.12.254 2>&1" '[12] packets received'
+
+	# jail5 owns jail6's gateway, IPv4 and IPv6, on the same vhid.
+	console_run "$nmdm5" "jexec jail5 sysctl net.inet.carp.allow=0" >/dev/null
+	assert 5 "CARP: jail5 vhid 1 INIT with carp.allow=0" "$nmdm5" \
+		"jexec jail5 ifconfig epair0a 2>&1" 'carp: INIT vhid 1'
+	assert 5 "CARP: jail6 gateway 10.0.56.254 unreachable" "$nmdm5" \
+		"jexec jail6 ping -c 2 -W 1000 10.0.56.254 2>&1" ' 0 packets received'
+	assert 5 "CARP: jail6 gateway 2001:db8:56::fe unreachable" "$nmdm5" \
+		"jexec jail6 ping6 -c 2 2001:db8:56::fe 2>&1" ' 0 packets received'
+	console_run "$nmdm5" "jexec jail5 sysctl net.inet.carp.allow=1" >/dev/null
+	assert 5 "CARP: jail5 vhid 1 back to MASTER" "$nmdm5" \
+		"jexec jail5 ifconfig epair0a 2>&1" 'carp: MASTER vhid 1'
+	assert 5 "CARP: jail6 gateway 10.0.56.254 reachable again" "$nmdm5" \
+		"jexec jail6 ping -c 2 -W 1000 10.0.56.254 2>&1" '[12] packets received'
+	assert 5 "CARP: jail6 gateway 2001:db8:56::fe reachable again" "$nmdm5" \
+		"jexec jail6 ping6 -c 2 2001:db8:56::fe 2>&1" '[12] packets received'
+
+	# BFD: silence R4's end of ng0. Without BFD, R2 only notices when the
+	# OSPF dead interval (40s) expires; with it, the session times out in
+	# under a second and OSPF drops the neighbor at once. The 10s budget
+	# is far below the dead interval, so a pass can only come from BFD.
+	console_run "$nmdm4" "ifconfig ng0 down" >/dev/null
+	assert 2 "BFD: R2 drops OSPF neighbor on ng0 within 10s of R4 going silent" "$nmdm2" \
+		"vtysh -c 'show ip ospf neighbor' 2>&1 | grep -c ng0" '^0$' 10
+	console_run "$nmdm4" "ifconfig ng0 up" >/dev/null
+	assert 2 "BFD: OSPF neighbor 0.0.0.4 back to Full on ng0" "$nmdm2" \
+		"vtysh -c 'show ip ospf neighbor' 2>&1" '^0\.0\.0\.4[[:space:]].*Full.*ng0' 90
+	assert 2 "BFD: peer 10.4.24.4 back up" "$nmdm2" \
+		"vtysh -c 'show bfd peers brief' 2>&1" '10\.4\.24\.2[[:space:]]+10\.4\.24\.4[[:space:]]+up' 60
+}
+
 # === Lab metadata =========================================================
 
 lab_vm_count() {
@@ -1065,6 +1161,15 @@ fn="lab_${LAB}_throughput"
 if type "$fn" >/dev/null 2>&1; then
 	echo
 	echo "=== Phase 3: end-to-end throughput ==="
+	"$fn"
+fi
+
+# --- Phase 4: failover (break something on purpose, then restore it) -----
+# Runs last: every step disturbs the lab. Only for labs with a driver.
+fn="lab_${LAB}_failover"
+if type "$fn" >/dev/null 2>&1; then
+	echo
+	echo "=== Phase 4: failover ==="
 	"$fn"
 fi
 

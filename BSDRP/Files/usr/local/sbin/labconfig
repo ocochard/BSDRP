@@ -335,6 +335,11 @@ cat > /etc/pf.conf <<EOF
 #pass out quick on \$TO_R2_if proto gre from \$R4 to \$R2 queue VPN4_TO_R2
 
 # ALTQ is disabled since BSDRP 1.81 (too much performance impact)
+
+# Drop transit TCP to port 2323, IPv4 and IPv6. Nothing listens there:
+# without this rule a connection gets "Connection refused", with it the
+# SYN is silently dropped and the connection times out.
+block drop in quick proto tcp to port 2323 label "lab-block-2323"
 pass all
 EOF
 
