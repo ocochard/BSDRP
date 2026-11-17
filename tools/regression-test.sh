@@ -473,6 +473,13 @@ lab_full_vm1() {
 	assert 1 "R1 reachability to jail6 (10.0.56.6)" "$nmdm" \
 		"ping -c 3 -W 2000 10.0.56.6 2>&1" '[123] packets received' 60
 
+	# IPv6 control plane end to end. Forward path: RA default route via
+	# R2 -> BGP IPv6 (R2 FRR <-> R3 bird) -> RIPng (R3 -> R4). Return path:
+	# OSPFv3 over the ng1 PPTP tunnel (R4 -> R2). A break in any of these
+	# IPv6 protocols fails this ping.
+	assert 1 "R1 IPv6 reachability to R4 lo1 (2001:db8::4)" "$nmdm" \
+		"ping6 -c 3 2001:db8::4 2>&1" '[123] packets received' 60
+
 	# wiki/R1 SNMP: bsnmpget to jail6 returns sysName.0 = "jail6".
 	# Exercises the same full path as the iperf3 test but with bsnmpd
 	# in jail6 - confirms snmp UDP/161 traverses the PPTP tunnel both
@@ -558,9 +565,18 @@ lab_full_vm2() {
 		"vtysh -c 'show bgp summary' 2>&1" \
 		'10\.0\.23\.3[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9:]+[[:space:]]+[0-9]+'
 
+	# Same Established pattern on the IPv6 session, which FRR only lists
+	# under the IPv6 unicast address family.
+	assert 2 "BGP peer 2001:db8:23::3 Established" "$nmdm" \
+		"vtysh -c 'show bgp ipv6 unicast summary' 2>&1" \
+		'2001:db8:23::3[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9:]+[[:space:]]+[0-9]+'
+
 	# wiki/R2 IPsec TCP-MD5: setkey -D shows SAD entries for 10.0.23.{2,3}
+	# and 2001:db8:23::{2,3}.
 	assert 2 "IPsec SA to 10.0.23.3 present" "$nmdm" \
 		"setkey -D 2>&1" '10\.0\.23\.3'
+	assert 2 "IPsec SA to 2001:db8:23::3 present" "$nmdm" \
+		"setkey -D 2>&1" '2001:db8:23::3'
 
 	# wiki/R2 Reachability: ping R3's loopback.
 	assert 2 "ping R3 loopback 10.0.0.3" "$nmdm" \
@@ -574,6 +590,14 @@ lab_full_vm2() {
 	assert 2 "mpd5 listening on tcp/1723" "$nmdm" \
 		"sockstat -4 -l -p 1723 2>&1" 'mpd5|1723'
 
+	# Both PPTP bundles from R4 negotiated: ng0 carries the IPCP pair,
+	# ng1 the IPv6 address set by mpd5's if-up.sh. R2 is probed first, so
+	# give the PPTP handshake time to finish.
+	assert 2 "PPTP ng0 up (10.4.24.2 --> 10.4.24.4)" "$nmdm" \
+		"ifconfig ng0 2>&1" 'inet 10\.4\.24\.2 --> 10\.4\.24\.4' 120
+	assert 2 "PPTP ng1 up (2001:db8:24::2)" "$nmdm" \
+		"ifconfig ng1 2>&1" 'inet6 2001:db8:24::2 ' 120
+
 	# wiki/R2 DHCP relay: dhcprelya running.
 	assert 2 "dhcprelya running" "$nmdm" \
 		"pgrep -lf dhcprelya || echo none" 'dhcprelya'
@@ -581,6 +605,17 @@ lab_full_vm2() {
 	# wiki/R2 OSPF area 0 has routes.
 	assert 2 "OSPF area 0.0.0.0 has routes" "$nmdm" \
 		"vtysh -c 'show ip ospf route' 2>&1" 'O[[:space:]]|0\.0\.0\.0'
+
+	# OSPFv3 adjacency to R4 over the ng1 (IPv6 PPTP) tunnel.
+	assert 2 "OSPFv3 neighbor R4 (0.0.0.4) Full on ng1" "$nmdm" \
+		"vtysh -c 'show ipv6 ospf6 neighbor' 2>&1" '^0\.0\.0\.4[[:space:]].*Full.*ng1' 60
+
+	# BFD sessions to R4, registered by OSPF on ng0 (IPv4) and OSPFv3 on
+	# ng1 (IPv6, link-local endpoints).
+	assert 2 "BFD peer 10.4.24.4 up (OSPF on ng0)" "$nmdm" \
+		"vtysh -c 'show bfd peers brief' 2>&1" '10\.4\.24\.2[[:space:]]+10\.4\.24\.4[[:space:]]+up'
+	assert 2 "BFD IPv6 peer up (OSPFv3 on ng1)" "$nmdm" \
+		"vtysh -c 'show bfd peers brief' 2>&1" 'fe80::[0-9a-f:]+[[:space:]]+fe80::[0-9a-f:]+[[:space:]]+up'
 
 	# wiki/R2 pimd running. Cross-checked from R4's neighbor table in
 	# lab_full_vm4 (R4 sees R2 over both ng0/ng1 PPTP tunnels).
@@ -613,13 +648,18 @@ lab_full_vm3() {
 	assert 3 "VLAN 23: 10.0.23.3 on em1.23/vtnet1.23" "$nmdm" \
 		"ifconfig | grep -E 'inet 10\\.0\\.23\\.3 '" 'inet 10\.0\.23\.3'
 
-	# wiki/R3 BGP via bird: peer R2inet4 should be 'up'/Established.
-	assert 3 "bird BGP to R2 Established" "$nmdm" \
-		"birdc show protocols 2>&1" 'BGP.*([Ee]stablished|[Uu]p)'
+	# wiki/R3 BGP via bird: protocols R2inet4 and R2inet6 Established.
+	# Match each by name so one session cannot pass for the other.
+	assert 3 "bird BGP to R2 (IPv4) Established" "$nmdm" \
+		"birdc show protocols 2>&1" 'R2inet4[[:space:]]+BGP.*Established'
+	assert 3 "bird BGP to R2 (IPv6) Established" "$nmdm" \
+		"birdc show protocols 2>&1" 'R2inet6[[:space:]]+BGP.*Established'
 
 	# wiki/R3 IPsec to R2
 	assert 3 "IPsec SA to 10.0.23.2 present" "$nmdm" \
 		"setkey -D 2>&1" '10\.0\.23\.2'
+	assert 3 "IPsec SA to 2001:db8:23::2 present" "$nmdm" \
+		"setkey -D 2>&1" '2001:db8:23::2'
 
 	# wiki/R3 RIP/RIPng routes from R4 visible in bird.
 	assert 3 "bird RIP routes present" "$nmdm" \
@@ -642,7 +682,23 @@ lab_full_vm4() {
 	# wiki/R4 PPTP client: ng0 should appear once the tunnel comes up.
 	# mpd5 brings up ng0 (IPv4 PPTP) and ng1 (IPv6 PPTP) toward R2.
 	assert 4 "ng0 (PPTP IPv4) up" "$nmdm" \
-		"ifconfig ng0 2>&1" 'inet 10\.4\.24\.4|inet 10\.'
+		"ifconfig ng0 2>&1" 'inet 10\.4\.24\.4 --> 10\.4\.24\.2'
+	assert 4 "ng1 (PPTP IPv6) up" "$nmdm" \
+		"ifconfig ng1 2>&1" 'inet6 2001:db8:24::4 '
+
+	# Traffic through both MPPE-encrypted tunnels to R2's end.
+	assert 4 "ping R2 through ng0 (10.4.24.2)" "$nmdm" \
+		"ping -c 2 -W 1000 10.4.24.2 2>&1" '[12] packets received'
+	assert 4 "ping6 R2 through ng1 (2001:db8:24::2)" "$nmdm" \
+		"ping6 -c 2 2001:db8:24::2 2>&1" '[12] packets received'
+
+	# OSPFv3 and BFD, the R4 side of the R2 checks.
+	assert 4 "OSPFv3 neighbor R2 (0.0.0.2) Full on ng1" "$nmdm" \
+		"vtysh -c 'show ipv6 ospf6 neighbor' 2>&1" '^0\.0\.0\.2[[:space:]].*Full.*ng1'
+	assert 4 "BFD peer 10.4.24.2 up (OSPF on ng0)" "$nmdm" \
+		"vtysh -c 'show bfd peers brief' 2>&1" '10\.4\.24\.4[[:space:]]+10\.4\.24\.2[[:space:]]+up'
+	assert 4 "BFD IPv6 peer up (OSPFv3 on ng1)" "$nmdm" \
+		"vtysh -c 'show bfd peers brief' 2>&1" 'fe80::[0-9a-f:]+[[:space:]]+fe80::[0-9a-f:]+[[:space:]]+up'
 
 	# wiki/R4 IS-IS: neighbor to R5 (or jail5).
 	assert 4 "IS-IS neighbor Up" "$nmdm" \
