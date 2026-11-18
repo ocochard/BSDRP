@@ -1,0 +1,70 @@
+wg-quick (FreeBSD): keep the routes when the route monitor dies while the
+interface is still up, and parse netstat's Netif column correctly.
+
+- monitor_daemon's trap ran del_routes on any exit of the background
+  monitor. Started from a script that then ends (cloud-init), the monitor
+  is killed and deleted every route through the WireGuard interface.
+  Now it only cleans up once the interface is gone.
+- del_routes read Netif from field 6 of "netstat -nr -f inet"; it is
+  field 4, so IPv4 routes were never matched (and the trap above only
+  removed the IPv6 ones).
+
+diff --git net/wireguard-tools/Makefile net/wireguard-tools/Makefile
+index 708a203c3579..551b9b829031 100644
+--- net/wireguard-tools/Makefile
++++ net/wireguard-tools/Makefile
+@@ -1,6 +1,6 @@
+ PORTNAME=	wireguard-tools
+ DISTVERSION=	1.0.20260223
+-PORTREVISION=	2
++PORTREVISION=	3
+ CATEGORIES=	net net-vpn
+ MASTER_SITES=	https://git.zx2c4.com/wireguard-tools/snapshot/
+ 
+diff --git net/wireguard-tools/files/patch-wg-quick_freebsd.bash net/wireguard-tools/files/patch-wg-quick_freebsd.bash
+index 83254d7abac3..187ef92a88b4 100644
+--- net/wireguard-tools/files/patch-wg-quick_freebsd.bash
++++ net/wireguard-tools/files/patch-wg-quick_freebsd.bash
+@@ -1,6 +1,6 @@
+ --- wg-quick/freebsd.bash.orig	2021-09-13 22:43:31 UTC
+ +++ wg-quick/freebsd.bash
+-@@ -27,6 +27,7 @@ SAVE_CONFIG=0
++@@ -27,6 +27,7 @@ ARGS=( "$@" )
+  CONFIG_FILE=""
+  PROGRAM="${0##*/}"
+  ARGS=( "$@" )
+@@ -8,10 +8,32 @@
+  
+  cmd() {
+  	echo "[#] $*" >&3
+-@@ -283,20 +284,28 @@ monitor_daemon() {
++@@ -131,14 +132,14 @@ del_routes() {
++ 
++ del_routes() {
++ 	local todelete=( ) destination gateway netif
++-	while read -r destination _ _ _ _ netif _; do
+++	while read -r destination _ _ netif _; do
++ 		[[ $netif == "$INTERFACE" ]] && todelete+=( "$destination" )
++ 	done < <(netstat -nr -f inet)
++ 	for destination in "${todelete[@]}"; do
++ 		cmd route -q -n delete -inet "$destination" || true
++ 	done
++ 	todelete=( )
++-	while read -r destination gateway _ netif; do
+++	while read -r destination gateway _ netif _; do
++ 		[[ $netif == "$INTERFACE" || ( $netif == lo* && $gateway == "$INTERFACE" ) ]] && todelete+=( "$destination" )
++ 	done < <(netstat -nr -f inet6)
++ 	for destination in "${todelete[@]}"; do
++@@ -283,21 +284,32 @@ monitor_daemon() {
++ monitor_daemon() {
+  	echo "[+] Backgrounding route monitor" >&2
+  	(make_temp
+- 	trap 'del_routes; clean_temp; exit 0' INT TERM EXIT
++-	trap 'del_routes; clean_temp; exit 0' INT TERM EXIT
+++	# Only clean up after the interface is gone: the monitor can also be
+++	# killed while it is up (e.g. along with the session that started
+++	# wg-quick), and its routes must then stay.
+++	trap 'ifconfig "$INTERFACE" >/dev/null 2>&1 || del_routes; clean_temp; exit 0' INT TERM EXIT
+ +	local event grep_for pid
+ +	if [[ "$FREEBSD_MAJOR_VERSION" -lt 14 ]]; then
+ +		grep_for="RTM_"

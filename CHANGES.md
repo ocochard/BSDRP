@@ -11,6 +11,10 @@
   pf filtering rule, all checked by tools/regression-test.sh
 - full lab: BFD between FRR and bird, ExaBGP injecting routes, a DHCPv6
   relay and server, and LLDP
+- wireguard-tools: wg-quick no longer deletes the routes through the
+  interface when its route monitor is killed while the interface is up
+  (e.g. started from a first-boot script), and its IPv4 route cleanup
+  reads the right netstat column
 - pimd 3.1.0 to 3.4.0: Auto-RP support (listener, candidate RP
   announcer and mapping agent, with `autorp accept-from` to restrict
   trusted senders); privilege separation, the daemon now runs as a root
