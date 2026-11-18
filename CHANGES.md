@@ -17,7 +17,8 @@
 - Add a branch lab: a branch office uses two ISPs at once through two
   WireGuard tunnels, OSPF ECMP with net.route.hash_forward and BFD
   failover, checked by tools/regression-test.sh
-- ecmp lab: set net.route.hash_forward=1, so it spreads flows on bhyve
+- ecmp lab: set net.route.hash_forward=1, so it spreads flows on bhyve,
+  checked by tools/regression-test.sh
 - Kernel: net.route.hash_forward sysctl (default 0) hashes forwarded
   packets that arrive without a flow hash (vtnet on bhyve, NICs without
   RSS, traffic decrypted by WireGuard), so ECMP routes spread flows over

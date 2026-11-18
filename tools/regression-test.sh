@@ -4,9 +4,10 @@
 #
 # SCOPE: this driver implements assertions for the "full" lab (5 VMs - the
 # BSDRP maximum-features lab), the "anycast" lab (4 VMs - anycast DNS
-# failover with ExaBGP) and the "branch" lab (5 VMs - branch office ECMP
-# over two WireGuard tunnels). Other labs declared in tools/BSDRP-lab-bhyve.sh
-# (frr, bgp, vpn, mlvpn, mlppp, ecmp, fairshape, jailpf, pimsm, pimssm, vrrp,
+# failover with ExaBGP), the "branch" lab (5 VMs - branch office ECMP over
+# two WireGuard tunnels) and the "ecmp" lab (4 VMs - static multipath routes
+# over two links). Other labs declared in tools/BSDRP-lab-bhyve.sh
+# (frr, bgp, vpn, mlvpn, mlppp, fairshape, jailpf, pimsm, pimssm, vrrp,
 # etc.) have no assertions defined here yet - running this driver against
 # them will fail with "lab '<name>' has no assertions implemented yet".
 #
@@ -174,11 +175,12 @@ Usage:
 In default mode the driver auto-launches the lab: it runs
 'BSDRP-lab-bhyve.sh -d' to wipe any prior state, then
 'BSDRP-lab-bhyve.sh -i <image> -n <count> -r <lab>' with the VM count
-derived from the lab name, sleeps for --boot-delay seconds (default 60),
+(and any extra option, e.g. -l 1 for ecmp) derived from the lab name, sleeps for --boot-delay seconds (default 60),
 and finally runs every assertion.
 
 In --no-launch mode the lab must already be running:
   sudo tools/BSDRP-lab-bhyve.sh -i <image> -n <count> -r <lab>
+(add -l 1 for the ecmp lab)
 
 Options:
   --no-launch        Skip the wipe+launch step (alias: --already-running).
@@ -1406,6 +1408,80 @@ lab_branch_failover() {
 	assert 2 "ISP-A back: ECMP over both tunnels again" "$nmdm2" "$route4" '^wg0 wg1$' 90
 }
 
+# === ecmp lab =============================================================
+#
+# VM2 and VM3 are joined by two links and route 10.0.0.0/16 and
+# 2001:db8::/32 over both with static multipath routes; VM1 and VM4 are the
+# hosts at each end. net.route.hash_forward=1 spreads the flows.
+
+lab_ecmp_host() {
+	# $1: VM, $2: remote host IPv4, $3: IPv6, $4: nmdm
+	local vm="$1" dst4="$2" dst6="$3" nmdm="$4"
+
+	assert "$vm" "hostname is VM${vm}" "$nmdm" "hostname" "^VM${vm}\$"
+	assert "$vm" "ping ${dst4} over the ECMP paths" "$nmdm" \
+		"ping -c 2 -t 5 ${dst4} 2>&1" ' 0\.0% packet loss' 60
+	assert "$vm" "ping ${dst6} over the ECMP paths" "$nmdm" \
+		"ping -6 -c 2 -t 5 ${dst6} 2>&1" ' 0\.0% packet loss' 60
+}
+
+lab_ecmp_router() {
+	# $1: VM, $2: nmdm
+	local vm="$1" nmdm="$2"
+
+	assert "$vm" "hostname is VM${vm}" "$nmdm" "hostname" "^VM${vm}\$"
+	assert "$vm" "net.route.hash_forward is 1" "$nmdm" \
+		"sysctl -n net.route.hash_forward" '^1$'
+	assert "$vm" "ECMP route to 10.0.0.0/16 over both links" "$nmdm" \
+		"netstat -rn -f inet | grep -E '^10\.0\.0\.0/16 ' | awk '{print \$NF}' | sort | paste -s -d ' ' -" \
+		'^vtnet1 vtnet3$'
+	assert "$vm" "ECMP route to 2001:db8::/32 over both links" "$nmdm" \
+		"netstat -rn -f inet6 | grep -E '^2001:db8::/32 ' | awk '{print \$NF}' | sort | paste -s -d ' ' -" \
+		'^vtnet1 vtnet3$'
+}
+
+lab_ecmp_vm1() { lab_ecmp_host 1 10.0.34.4 2001:db8:34::4 "$1"; }
+lab_ecmp_vm2() { lab_ecmp_router 2 "$1"; }
+lab_ecmp_vm3() { lab_ecmp_router 3 "$1"; }
+lab_ecmp_vm4() { lab_ecmp_host 4 10.0.12.1 2001:db8:12::1 "$1"; }
+
+# Output packets of a VM's two ECMP links, "vtnet1 vtnet3". $1: nmdm
+ecmp_opkts() {
+	console_run "$1" "echo \$(netstat -I vtnet1 -n | awk 'NR==2{print \$8}') \$(netstat -I vtnet3 -n | awk 'NR==2{print \$8}')" | tail -1
+}
+
+# Phase 3: a host sends 256 UDP flows, one per source port, to the other
+# host; the router in front of it must send them over both links. Done in
+# both directions: VM1 to VM4 through VM2, VM4 to VM1 through VM3.
+lab_ecmp_throughput() {
+	local src rtr dst4 dst6 af dst before after c1 c3
+
+	for src in 1 4; do
+		if [ "$src" = 1 ]; then
+			rtr=2 dst4=10.0.34.4 dst6=2001:db8:34::4
+		else
+			rtr=3 dst4=10.0.12.1 dst6=2001:db8:12::1
+		fi
+		for af in 4 6; do
+			[ "$af" = 4 ] && dst=$dst4 || dst=$dst6
+			before=$(ecmp_opkts "${NMDM_PREFIX}${rtr}${NMDM_SUFFIX}")
+			console_run "${NMDM_PREFIX}${src}${NMDM_SUFFIX}" \
+				"for p in \$(jot 256 20000); do echo x | nc -${af} -u -w0 -p \$p ${dst} 9; done" >/dev/null
+			after=$(ecmp_opkts "${NMDM_PREFIX}${rtr}${NMDM_SUFFIX}")
+			c1=$(echo "$before $after" | awk '{print $3 - $1}')
+			c3=$(echo "$before $after" | awk '{print $4 - $2}')
+			echo "  VM${rtr} IPv${af} packets per link: vtnet1=${c1} vtnet3=${c3}"
+			# 256 flows over 2 links: anything above 64 each is a
+			# spread, a collapse gives 256 and 0.
+			if [ "$c1" -gt 64 ] && [ "$c3" -gt 64 ]; then
+				record "$rtr" "IPv${af} ECMP spreads 256 flows over both links" PASS ""
+			else
+				record "$rtr" "IPv${af} ECMP spreads 256 flows over both links" FAIL "vtnet1=${c1} vtnet3=${c3}"
+			fi
+		done
+	done
+}
+
 # === Lab metadata =========================================================
 
 lab_vm_count() {
@@ -1429,6 +1505,13 @@ lab_vm_count() {
 	esac
 }
 
+# Extra BSDRP-lab-bhyve.sh options a lab needs, beyond -n and -r.
+lab_launch_opts() {
+	case "$1" in
+		ecmp) echo "-l 1" ;;	# second VM2-VM3 link on the shared LAN
+	esac
+}
+
 # Order in which VMs are tested. In the "full" lab, R1 is the end-user
 # client whose connectivity depends on every other router being up and
 # converged (DHCP relay through R2 to dhcpd in jail5/R5, plus full
@@ -1447,8 +1530,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	full|anycast|branch) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'full', 'anycast' and 'branch' have them)" ;;
+	full|anycast|branch|ecmp) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'full', 'anycast', 'branch' and 'ecmp' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------
@@ -1467,8 +1550,10 @@ if [ "$NO_LAUNCH" -eq 0 ]; then
 	"$LAB_LAUNCHER" -d || die "failed to wipe prior lab state ($LAB_LAUNCHER -d exited non-zero)"
 
 	# Step 2: launch the lab with the correct VM count for this lab.
-	echo "+ $LAB_LAUNCHER -i $IMAGE -n $VM_COUNT -r $LAB"
-	"$LAB_LAUNCHER" -i "$IMAGE" -n "$VM_COUNT" -r "$LAB" \
+	LAUNCH_OPTS=$(lab_launch_opts "$LAB")
+	echo "+ $LAB_LAUNCHER -i $IMAGE -n $VM_COUNT $LAUNCH_OPTS -r $LAB"
+	# shellcheck disable=SC2086 # LAUNCH_OPTS holds several words
+	"$LAB_LAUNCHER" -i "$IMAGE" -n "$VM_COUNT" $LAUNCH_OPTS -r "$LAB" \
 		|| die "failed to launch lab ($LAB_LAUNCHER -i ... -r $LAB exited non-zero)"
 
 	# Step 3: give cloud-init / labconfig time to finish before we start
