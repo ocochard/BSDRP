@@ -14,6 +14,10 @@
   pf filtering rule, all checked by tools/regression-test.sh
 - full lab: BFD between FRR and bird, ExaBGP injecting routes, a DHCPv6
   relay and server, and LLDP
+- Kernel: net.route.hash_forward sysctl (default 0) hashes forwarded
+  packets that arrive without a flow hash (vtnet on bhyve, NICs without
+  RSS, traffic decrypted by WireGuard), so ECMP routes spread flows over
+  all their nexthops instead of sending them all to the first one
 - wireguard-tools: wg-quick no longer deletes the routes through the
   interface when its route monitor is killed while the interface is up
   (e.g. started from a first-boot script), and its IPv4 route cleanup

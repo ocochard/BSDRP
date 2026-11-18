@@ -1,0 +1,202 @@
+Hash forwarded packets that arrive without a flow hash, so ECMP spreads them.
+
+Multipath routes pick a nexthop with m_pkthdr.flowid % group size. On
+forwarded traffic that value comes from the receiving NIC: drivers without
+RSS, or running a single queue (vtnet on bhyve, which only offers one queue
+pair), report their queue index as an opaque flowid, so every flow takes the
+same nexthop. net.route.hash_outbound only covers locally originated
+packets.
+
+Add net.route.hash_forward (default 0). When set, a packet about to be
+forwarded whose flowid is not a hash (!M_HASHTYPE_ISHASH) gets a software
+Toeplitz hash of its addresses, protocol and, when it is not a fragment,
+ports, using the existing fib4/fib6_calc_software_hash(). Packets already
+hashed by RSS hardware are left untouched.
+
+diff --git sys/net/route.h sys/net/route.h
+index c2052dc9cde..f383f3457a1 100644
+--- sys/net/route.h
++++ sys/net/route.h
+@@ -129,6 +129,10 @@ VNET_DECLARE(u_int, rt_add_addr_allfibs); /* Announce interfaces to all fibs */
+ #define	V_fib_hash_outbound	VNET(fib_hash_outbound)
+ VNET_DECLARE(u_int, fib_hash_outbound);
+ 
++/* Calculate flowid for forwarded packets the receiving interface did not hash */
++#define	V_fib_hash_forward	VNET(fib_hash_forward)
++VNET_DECLARE(u_int, fib_hash_forward);
++
+ typedef void (*rtnumfibs_change_t)(void *, uint32_t);
+ EVENTHANDLER_DECLARE(rtnumfibs_change, rtnumfibs_change_t);
+ 
+diff --git sys/net/route/route_ctl.c sys/net/route/route_ctl.c
+index 4fd96168957..e63f21ccbee 100644
+--- sys/net/route/route_ctl.c
++++ sys/net/route/route_ctl.c
+@@ -112,6 +112,11 @@ SYSCTL_UINT(_net_route, OID_AUTO, hash_outbound, CTLFLAG_RD | CTLFLAG_VNET,
+     &VNET_NAME(fib_hash_outbound), 0,
+     "Compute flowid for locally-originated packets");
+ 
++VNET_DEFINE(u_int, fib_hash_forward) = 0;
++SYSCTL_UINT(_net_route, OID_AUTO, hash_forward, CTLFLAG_RW | CTLFLAG_VNET,
++    &VNET_NAME(fib_hash_forward), 0,
++    "Compute flowid for forwarded packets received without a hash");
++
+ /* Default entropy to add to the hash calculation for the outbound connections*/
+ uint8_t mpath_entropy_key[MPATH_ENTROPY_KEY_LEN] = {
+ 	0x6d, 0x5a, 0x56, 0xda, 0x25, 0x5b, 0x0e, 0xc2,
+diff --git sys/netinet/in_fib.c sys/netinet/in_fib.c
+index d864bce0731..5787b2bc392 100644
+--- sys/netinet/in_fib.c
++++ sys/netinet/in_fib.c
+@@ -55,6 +55,7 @@
+ #include <netinet/in.h>
+ #include <netinet/in_var.h>
+ #include <netinet/in_fib.h>
++#include <netinet/ip.h>
+ 
+ #ifdef INET
+ 
+@@ -97,6 +98,38 @@ fib4_calc_software_hash(struct in_addr src, struct in_addr dst,
+ 	  sizeof(data), (uint8_t *)&data));
+ }
+ 
++/*
++ * Gives a packet about to be forwarded a flow hash when the receiving
++ * interface did not compute one (no RSS, or a single queue that reports its
++ * queue index), so a multipath route spreads flows over its nexthops
++ * instead of sending them all to the same one.
++ * The ports are only hashed on unfragmented packets, so the fragments of a
++ * datagram follow the same path.
++ */
++void
++fib4_hash_forwarded(struct mbuf *m)
++{
++	struct ip *ip;
++	uint16_t ports[2] = { 0, 0 };
++	uint32_t hashtype;
++	int hlen;
++
++	if (V_fib_hash_forward == 0 || M_HASHTYPE_ISHASH(m))
++		return;
++
++	ip = mtod(m, struct ip *);
++	hlen = ip->ip_hl << 2;
++	if ((ip->ip_p == IPPROTO_TCP || ip->ip_p == IPPROTO_UDP ||
++	    ip->ip_p == IPPROTO_SCTP) &&
++	    (ip->ip_off & htons(IP_MF | IP_OFFMASK)) == 0 &&
++	    m->m_pkthdr.len >= hlen + (int)sizeof(ports))
++		m_copydata(m, hlen, sizeof(ports), (caddr_t)ports);
++
++	m->m_pkthdr.flowid = fib4_calc_software_hash(ip->ip_src, ip->ip_dst,
++	    ports[0], ports[1], ip->ip_p, &hashtype);
++	M_HASHTYPE_SET(m, M_HASHTYPE_OPAQUE_HASH);
++}
++
+ /*
+  * Looks up path in fib @fibnum specified by @dst.
+  * Returns path nexthop on success. Nexthop is safe to use
+diff --git sys/netinet/in_fib.h sys/netinet/in_fib.h
+index b41e9fae0cb..9c15489bd39 100644
+--- sys/netinet/in_fib.h
++++ sys/netinet/in_fib.h
+@@ -57,4 +57,5 @@ struct nhop_object *fib4_lookup_debugnet(uint32_t fibnum, struct in_addr dst,
+ uint32_t fib4_calc_software_hash(struct in_addr src, struct in_addr dst,
+     unsigned short src_port, unsigned short dst_port, char proto,
+     uint32_t *phashtype);
++void fib4_hash_forwarded(struct mbuf *m);
+ #endif
+diff --git sys/netinet/ip_fastfwd.c sys/netinet/ip_fastfwd.c
+index 0d7ae7b4152..8827d3f61b5 100644
+--- sys/netinet/ip_fastfwd.c
++++ sys/netinet/ip_fastfwd.c
+@@ -394,6 +394,7 @@ ip_tryforward(struct mbuf *m)
+ 	/*
+ 	 * Find route to destination.
+ 	 */
++	fib4_hash_forwarded(m);
+ 	if (ip_findroute(&nh, dest, m) != 0)
+ 		return (NULL);	/* icmp unreach already sent */
+ 
+diff --git sys/netinet/ip_input.c sys/netinet/ip_input.c
+index 9bc9f7f75e0..8e97787e166 100644
+--- sys/netinet/ip_input.c
++++ sys/netinet/ip_input.c
+@@ -963,6 +963,7 @@ ip_forward(struct mbuf *m, int srcrt)
+ 	sin->sin_family = AF_INET;
+ 	sin->sin_len = sizeof(*sin);
+ 	sin->sin_addr = ip->ip_dst;
++	fib4_hash_forwarded(m);
+ 	flowid = m->m_pkthdr.flowid;
+ 	ro.ro_nh = fib4_lookup(M_GETFIB(m), ip->ip_dst, 0, NHR_REF, flowid);
+ 	if (ro.ro_nh != NULL) {
+diff --git sys/netinet6/in6_fib.c sys/netinet6/in6_fib.c
+index 594a9dc0a24..8a884dc033c 100644
+--- sys/netinet6/in6_fib.c
++++ sys/netinet6/in6_fib.c
+@@ -103,6 +103,32 @@ fib6_calc_software_hash(const struct in6_addr *src, const struct in6_addr *dst,
+ 	  sizeof(data), (uint8_t *)&data));
+ }
+ 
++/*
++ * IPv6 version of fib4_hash_forwarded().  The ports are only hashed when
++ * the transport header follows the IPv6 header: fragments carry a fragment
++ * header, so they all hash on the addresses only.
++ */
++void
++fib6_hash_forwarded(struct mbuf *m)
++{
++	struct ip6_hdr *ip6;
++	uint16_t ports[2] = { 0, 0 };
++	uint32_t hashtype;
++
++	if (V_fib_hash_forward == 0 || M_HASHTYPE_ISHASH(m))
++		return;
++
++	ip6 = mtod(m, struct ip6_hdr *);
++	if ((ip6->ip6_nxt == IPPROTO_TCP || ip6->ip6_nxt == IPPROTO_UDP ||
++	    ip6->ip6_nxt == IPPROTO_SCTP) &&
++	    m->m_pkthdr.len >= (int)(sizeof(*ip6) + sizeof(ports)))
++		m_copydata(m, sizeof(*ip6), sizeof(ports), (caddr_t)ports);
++
++	m->m_pkthdr.flowid = fib6_calc_software_hash(&ip6->ip6_src,
++	    &ip6->ip6_dst, ports[0], ports[1], ip6->ip6_nxt, &hashtype);
++	M_HASHTYPE_SET(m, hashtype);
++}
++
+ /*
+  * Looks up path in fib @fibnum specified by @dst.
+  * Assumes scope is deembedded and provided in @scopeid.
+diff --git sys/netinet6/in6_fib.h sys/netinet6/in6_fib.h
+index 91df8944641..0759327eaa9 100644
+--- sys/netinet6/in6_fib.h
++++ sys/netinet6/in6_fib.h
+@@ -47,4 +47,5 @@ struct nhop_object *fib6_radix_lookup_nh(uint32_t fibnum,
+ uint32_t fib6_calc_software_hash(const struct in6_addr *src,
+     const struct in6_addr *dst, unsigned short src_port, unsigned short dst_port,
+     char proto, uint32_t *phashtype);
++void fib6_hash_forwarded(struct mbuf *m);
+ #endif
+diff --git sys/netinet6/ip6_fastfwd.c sys/netinet6/ip6_fastfwd.c
+index 4e60e18a806..7ffde228289 100644
+--- sys/netinet6/ip6_fastfwd.c
++++ sys/netinet6/ip6_fastfwd.c
+@@ -200,6 +200,7 @@ ip6_tryforward(struct mbuf *m)
+ 	/*
+ 	 * Find route to destination.
+ 	 */
++	fib6_hash_forwarded(m);
+ 	if (ip6_findroute(&nh, &dst, m) != 0) {
+ 		m = NULL;
+ 		in6_ifstat_inc(rcvif, ifs6_in_noroute);
+diff --git sys/netinet6/ip6_forward.c sys/netinet6/ip6_forward.c
+index 4b263e65a63..f51b0cea12f 100644
+--- sys/netinet6/ip6_forward.c
++++ sys/netinet6/ip6_forward.c
+@@ -185,6 +185,7 @@ ip6_forward(struct mbuf *m, int srcrt)
+ 	dst.sin6_family = AF_INET6;
+ 	dst.sin6_addr = ip6->ip6_dst;
+ 	dst.sin6_scope_id = in6_get_unicast_scopeid(&ip6->ip6_dst, m->m_pkthdr.rcvif);
++	fib6_hash_forwarded(m);
+ again:
+ 	nh = fib6_lookup(M_GETFIB(m), &dst.sin6_addr, dst.sin6_scope_id,
+ 	    NHR_REF, m->m_pkthdr.flowid);
