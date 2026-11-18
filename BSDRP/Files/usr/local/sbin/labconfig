@@ -73,8 +73,11 @@ service routing restart || true
 service netif restart
 service rtsold start
 service sshd start
-# wg-quick backgrounds a route monitor that keeps the caller's output open.
-service wireguard start > /dev/null 2>&1
+# wg-quick leaves a background route monitor whose exit trap deletes the
+# routes through wg0. Start it in its own session (daemon -f) so the end of
+# this first-boot script does not take the monitor down with it; -f also
+# detaches its output, which cloud-init would otherwise wait on.
+daemon -f service wireguard start
 echo "VM1 configured"
 }
 
@@ -854,9 +857,10 @@ service mpd5 start
 service ipfw start
 service sysctl reload
 service ipfw_netflow start
-# See R2 and R1 for why these two starts are redirected.
+# See R2 for why this start is redirected.
 service strongswan start > /dev/null 2>&1
-service wireguard start > /dev/null 2>&1
+# Own session for the wg-quick route monitor: see R1.
+daemon -f service wireguard start
 # NetFlow v9 data records are useless to a collector until it has seen the
 # template. ng_netflow only appends the template when
 # time_uptime >= templ_time + templ_last_ts (netflow_v9.c), and templ_last_ts
