@@ -6,8 +6,9 @@
 # BSDRP maximum-features lab), the "anycast" lab (4 VMs - anycast DNS
 # failover with ExaBGP), the "branch" lab (5 VMs - branch office ECMP over
 # two WireGuard tunnels), the "ecmp" lab (4 VMs - static multipath routes
-# over two links) and the "rtbh" lab (4 VMs - remotely triggered blackhole
-# against a DDoS). Other labs declared in tools/BSDRP-lab-bhyve.sh
+# over two links), the "ixp" lab (5 VMs - redundant BIRD and FRR route
+# servers on a peering LAN) and the "rtbh" lab (4 VMs - remotely triggered
+# blackhole against a DDoS). Other labs declared in tools/BSDRP-lab-bhyve.sh
 # (frr, bgp, vpn, mlvpn, mlppp, fairshape, jailpf, pimsm, pimssm, vrrp,
 # etc.) have no assertions defined here yet - running this driver against
 # them will fail with "lab '<name>' has no assertions implemented yet".
@@ -1569,6 +1570,116 @@ lab_rtbh_failover() {
 		"ping -c 2 -t 5 203.0.113.10 2>&1" ' 0\.0% packet loss' 30
 }
 
+# === ixp lab ==============================================================
+#
+# Two route servers (rs1 BIRD, rs2 FRR) on a shared peering LAN; three
+# members peer with both. as64502 also announces a hijack of as64501's
+# space; as64503 tags its routes "not to AS 64502".
+
+lab_ixp_vm1() {
+	local nmdm="$1" as af
+
+	assert 1 "hostname is rs1" "$nmdm" "hostname" '^rs1$'
+	for as in 64501 64502 64503; do
+		for af in 4 6; do
+			assert 1 "BIRD session as${as}_v${af} Established" "$nmdm" \
+				"birdc show protocols as${as}_v${af} 2>&1" 'Established' 60
+		done
+	done
+	assert 1 "hijack 198.51.100.128/25 from as64502 filtered" "$nmdm" \
+		"birdc show route filtered protocol as64502_v4 2>&1" '^198\.51\.100\.128/25 '
+	assert 1 "hijack 2001:db8:a:8000::/49 from as64502 filtered" "$nmdm" \
+		"birdc show route filtered protocol as64502_v6 2>&1" '^2001:db8:a:8000::/49 '
+}
+
+lab_ixp_vm2() {
+	local nmdm="$1"
+
+	assert 2 "hostname is rs2" "$nmdm" "hostname" '^rs2$'
+	assert 2 "FRR sessions to the 3 members Established (IPv4)" "$nmdm" \
+		"vtysh -c 'show bgp ipv4 unicast summary' 2>&1 | grep -cE '^10\.0\.0\.[345] .* [0-9]+ +[0-9]+ +N/A$'" '^3$' 60
+	assert 2 "FRR sessions to the 3 members Established (IPv6)" "$nmdm" \
+		"vtysh -c 'show bgp ipv6 unicast summary' 2>&1 | grep -cE '^2001:db8::[345] .* [0-9]+ +[0-9]+ +N/A$'" '^3$' 60
+	assert 2 "hijack 198.51.100.128/25 from as64502 filtered" "$nmdm" \
+		"vtysh -c 'show bgp ipv4 unicast neighbors 10.0.0.4 filtered-routes' 2>&1" '198\.51\.100\.128/25'
+	assert 2 "hijack 2001:db8:a:8000::/49 from as64502 filtered" "$nmdm" \
+		"vtysh -c 'show bgp ipv6 unicast neighbors 2001:db8::4 filtered-routes' 2>&1" '2001:db8:a:8000::/49'
+}
+
+# $1: VM, $2: AS, $3: peer AS, $4: peer's IPv4 prefix, $5: peer's lo1
+# IPv4, $6: peer's IPv6 lo1, $7: nmdm
+lab_ixp_member() {
+	local vm="$1" as="$2" pas="$3" pfx="$4" lo4="$5" lo6="$6" nmdm="$7"
+	local nh="10\\.0\\.0\\.$((pas - 64498))"
+
+	assert "$vm" "hostname is as${as}" "$nmdm" "hostname" "^as${as}\$"
+	assert "$vm" "${pfx} learned from both route servers" "$nmdm" \
+		"vtysh -c 'show bgp ipv4 unicast ${pfx}' 2>&1" 'Paths: \(2 available' 60
+	# Both paths read "  <peer AS>": no route server AS prepended.
+	assert "$vm" "${pfx}: AS path is ${pas} alone" "$nmdm" \
+		"vtysh -c 'show bgp ipv4 unicast ${pfx}' 2>&1 | grep -E '^  [0-9 ]+$' | sort -u | tr -d ' \\n'; echo" \
+		"^${pas}\$"
+	assert "$vm" "${pfx}: next-hop is AS${pas} itself" "$nmdm" \
+		"route -n get ${lo4} 2>&1" "gateway: ${nh}\$"
+	assert "$vm" "ping AS${pas} ${lo4} across the LAN" "$nmdm" \
+		"ping -c 2 -t 5 -S \$(ifconfig lo1 | awk '/inet /{print \$2}') ${lo4} 2>&1" ' 0\.0% packet loss' 30
+	assert "$vm" "ping AS${pas} ${lo6} across the LAN" "$nmdm" \
+		"ping -6 -c 2 -t 5 -S \$(ifconfig lo1 | awk '/inet6 2001/{print \$2}') ${lo6} 2>&1" ' 0\.0% packet loss' 30
+}
+
+lab_ixp_vm3() {
+	lab_ixp_member 3 64501 64502 203.0.113.0/24 203.0.113.1 2001:db8:b::1 "$1"
+}
+
+lab_ixp_vm4() {
+	local nmdm="$1"
+
+	lab_ixp_member 4 64502 64501 198.51.100.0/24 198.51.100.1 2001:db8:a::1 "$nmdm"
+	assert 4 "192.0.2.0/24 (tagged 0:64502 by as64503) not received" "$nmdm" \
+		"vtysh -c 'show bgp ipv4 unicast 192.0.2.0/24' 2>&1" 'Network not in table'
+	assert 4 "2001:db8:c::/48 (tagged 0:64502 by as64503) not received" "$nmdm" \
+		"vtysh -c 'show bgp ipv6 unicast 2001:db8:c::/48' 2>&1" 'Network not in table'
+}
+
+lab_ixp_vm5() {
+	local nmdm="$1"
+
+	lab_ixp_member 5 64503 64501 198.51.100.0/24 198.51.100.1 2001:db8:a::1 "$nmdm"
+	assert 5 "hijacked 198.51.100.200 still routed to as64501" "$nmdm" \
+		"route -n get 198.51.100.200 2>&1" 'gateway: 10\.0\.0\.3$'
+	# rs1 (BIRD) passes on as64501's link-local next-hop too.
+	assert 5 "hijacked 2001:db8:a:8000::1 still routed to as64501" "$nmdm" \
+		"route -n get -inet6 2001:db8:a:8000::1 2>&1" \
+		'gateway: (2001:db8::3|fe80::[0-9a-f:]+:3%vtnet4)$'
+}
+
+# Phase 4: stop each route server in turn while as64503 pings as64501:
+# the members keep the other server's routes and no packet is lost.
+lab_ixp_failover() {
+	local nmdm1="${NMDM_PREFIX}1${NMDM_SUFFIX}"
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local nmdm5="${NMDM_PREFIX}5${NMDM_SUFFIX}"
+	local paths="vtysh -c 'show bgp ipv4 unicast 198.51.100.0/24' 2>&1"
+	local rs vm nmdm stop start
+
+	for rs in 1 2; do
+		if [ "$rs" = 1 ]; then
+			nmdm="$nmdm1" stop="service bird stop" start="service bird start"
+		else
+			nmdm="$nmdm2" stop="service frr stop" start="service frr start"
+		fi
+		console_run "$nmdm5" "(ping -i 0.2 -c 100 -S 192.0.2.1 198.51.100.1 > /tmp/ixp-ping.log 2>&1 &)" >/dev/null
+		console_run "$nmdm" "$stop" >/dev/null
+		assert 5 "rs${rs} down: 198.51.100.0/24 kept from the other server" "$nmdm5" \
+			"$paths" 'Paths: \(1 available' 30
+		assert 5 "rs${rs} down: no packet lost to as64501" "$nmdm5" \
+			"tail -2 /tmp/ixp-ping.log" ' 0\.0% packet loss' 40
+		console_run "$nmdm" "$start" >/dev/null
+		assert 5 "rs${rs} back: 198.51.100.0/24 from both servers again" "$nmdm5" \
+			"$paths" 'Paths: \(2 available' 90
+	done
+}
+
 # === Lab metadata =========================================================
 
 lab_vm_count() {
@@ -1576,6 +1687,7 @@ lab_vm_count() {
 		anycast)   echo 4 ;;
 		branch)    echo 5 ;;
 		full)      echo 5 ;;
+		ixp)       echo 5 ;;
 		frr)       echo 7 ;;
 		bgp)       echo 7 ;;
 		vpn)       echo 5 ;;
@@ -1597,6 +1709,7 @@ lab_vm_count() {
 lab_launch_opts() {
 	case "$1" in
 		ecmp) echo "-l 1" ;;	# second VM2-VM3 link on the shared LAN
+		ixp)  echo "-l 1" ;;	# the peering LAN
 	esac
 }
 
@@ -1618,8 +1731,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	full|anycast|branch|ecmp|rtbh) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'full', 'anycast', 'branch', 'ecmp' and 'rtbh' have them)" ;;
+	full|anycast|branch|ecmp|ixp|rtbh) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'full', 'anycast', 'branch', 'ecmp', 'ixp' and 'rtbh' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------

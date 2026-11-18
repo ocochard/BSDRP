@@ -69,8 +69,9 @@ setup/usage error.
   [maximum features lab](https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab)
   wiki page, the `anycast` lab (anycast DNS failover with ExaBGP), the
   `branch` lab (branch office ECMP over two WireGuard tunnels), the `ecmp`
-  lab (static multipath routes, launched with `-l 1`) and the `rtbh` lab
-  (remotely triggered blackhole against a DDoS). Any other lab exits
+  lab (static multipath routes, launched with `-l 1`), the `ixp` lab
+  (redundant BIRD and FRR route servers, launched with `-l 1`) and the
+  `rtbh` lab (remotely triggered blackhole against a DDoS). Any other lab exits
   with `lab '<name>' has no assertions implemented yet`.
 - `--no-launch` is the inner loop when writing assertions: launch the lab once
   by hand (see below), then re-run the driver as many times as needed.

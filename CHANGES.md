@@ -14,6 +14,9 @@
   pf filtering rule, all checked by tools/regression-test.sh
 - full lab: BFD between FRR and bird, ExaBGP injecting routes, a DHCPv6
   relay and server, and LLDP
+- Add an ixp lab: two route servers, BIRD and FRR, on a peering LAN
+  filter each member to its own prefixes, honour "do not announce to"
+  communities and back each other up, checked by tools/regression-test.sh
 - Add an rtbh lab: a customer stops a DDoS that fills its access link
   by announcing the victim with the BLACKHOLE community (RFC 7999), and
   the ISP drops the flood upstream, checked by tools/regression-test.sh

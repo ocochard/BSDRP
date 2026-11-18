@@ -24,6 +24,7 @@ usage () {
 	echo "-frr: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab"
 	echo "-frr_jails: same as previous but with jails"
 	echo "-graphpath: https://bsdrp.net/documentation/examples/graphpath"
+	echo "-ixp: https://bsdrp.net/documentation/examples/ixp-route-server"
 	echo "-jailpf: https://bsdrp.net/documentation/examples/multi-tenant_ha_pf_firewalls"
 	echo "-mlppp: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links"
 	echo "-mlvpn: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links_with_mlvpn"
@@ -4703,6 +4704,263 @@ service routing restart
 # first-boot PATH has no /usr/local/bin.
 /usr/local/bin/iperf3 -s -D
 echo "VM4 (servers) configured"
+}
+
+### IXP route server lab ###
+# Five VMs on one shared peering LAN, 10.0.0.0/24 and 2001:db8::/64 (the
+# launcher's LAN 1: em4). Two route servers, AS 64510, run different
+# daemons, as IXPs do: rs1 (VM1) BIRD and rs2 (VM2) FRR. Three members
+# (FRR) peer with both instead of with each other:
+#   as64501 (VM3) 198.51.100.0/24 2001:db8:a::/48
+#   as64502 (VM4) 203.0.113.0/24  2001:db8:b::/48, and a hijack the
+#                 route servers drop: 198.51.100.128/25 2001:db8:a:8000::/49
+#   as64503 (VM5) 192.0.2.0/24    2001:db8:c::/48, tagged 0:64502: not
+#                 announced to AS 64502
+# The route servers are transparent: they add no AS to the path and keep
+# the member's next-hop, so traffic flows member to member on the LAN.
+
+# Members: VM number, AS, IPv4 prefix, IPv6 prefix
+IXP_MEMBERS="3 64501 198.51.100.0/24 2001:db8:a::/48
+4 64502 203.0.113.0/24 2001:db8:b::/48
+5 64503 192.0.2.0/24 2001:db8:c::/48"
+
+ixp_vm1 () {
+sysrc hostname=rs1 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em4="inet 10.0.0.1/24" \
+	ifconfig_em4_ipv6="inet6 2001:db8::1 prefixlen 64" \
+	bird_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# No kernel protocol: a route server forwards nothing. Members accepted
+# only with their registered prefixes (the IRR data an IXP builds its
+# filters from), their own AS first in the path and their own next-hop;
+# "import keep filtered" lets "birdc show route filtered" list the rest.
+cat > /usr/local/etc/bird.conf <<EOF
+log syslog all;
+router id 10.0.0.1;
+define RS_AS = 64510;
+
+protocol device {
+}
+
+# Action communities set by members: (0, peer AS) "do not announce to this
+# peer", (0, RS_AS) "do not announce to anyone".
+function rs_export(int peer_as) -> bool {
+	if (0, peer_as) ~ bgp_community then return false;
+	if (0, RS_AS) ~ bgp_community then return false;
+	return true;
+}
+
+template bgp rs_member {
+	local as RS_AS;
+	rs client;
+}
+EOF
+echo "${IXP_MEMBERS}" | while read -r vm as pfx4 pfx6; do
+	for af in 4 6; do
+		if [ ${af} = 4 ]; then
+			nbr=10.0.0.${vm}; pfx=${pfx4}
+		else
+			nbr=2001:db8::${vm}; pfx=${pfx6}
+		fi
+		cat >> /usr/local/etc/bird.conf <<EOF
+
+protocol bgp as${as}_v${af} from rs_member {
+	neighbor ${nbr} as ${as};
+	ipv${af} {
+		import keep filtered on;
+		import filter {
+			if ! (net ~ [ ${pfx} ]) then reject;
+			if bgp_path.first != ${as} then reject;
+			if bgp_next_hop != ${nbr} then reject;
+			accept;
+		};
+		export where rs_export(${as});
+	};
+}
+EOF
+	done
+done
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service bird start
+echo "VM1 (rs1) configured"
+}
+
+ixp_vm2 () {
+local conf=/usr/local/etc/frr/frr.conf
+sysrc hostname=rs2 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em4="inet 10.0.0.2/24" \
+	ifconfig_em4_ipv6="inet6 2001:db8::2 prefixlen 64"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+sysrc frr_enable=YES frr_daemons="mgmtd zebra bgpd"
+# Same policy as rs1. route-server-client keeps the AS path and next-hop
+# as received; soft-reconfiguration keeps the rejected routes for "show bgp
+# neighbors ... filtered-routes". The routes reach zebra but forward nothing: every next-hop
+# is a member on the LAN.
+cat > ${conf} <<EOF
+frr defaults traditional
+hostname rs2
+log syslog
+!
+bgp community-list standard NOT-TO-ANY seq 5 permit 0:64510
+EOF
+echo "${IXP_MEMBERS}" | while read -r vm as pfx4 pfx6; do
+	cat >> ${conf} <<EOF
+!
+ip prefix-list AS${as}-4 seq 5 permit ${pfx4}
+ipv6 prefix-list AS${as}-6 seq 5 permit ${pfx6}
+bgp as-path access-list AS${as} seq 5 permit ^${as}(_|$)
+bgp community-list standard NOT-TO-${as} seq 5 permit 0:${as}
+route-map AS${as}-IN4 permit 10
+ match ip address prefix-list AS${as}-4
+ match ip next-hop address 10.0.0.${vm}
+ match as-path AS${as}
+exit
+route-map AS${as}-IN6 permit 10
+ match ipv6 address prefix-list AS${as}-6
+ match ipv6 next-hop address 2001:db8::${vm}
+ match as-path AS${as}
+exit
+route-map AS${as}-OUT deny 10
+ match community NOT-TO-${as}
+exit
+route-map AS${as}-OUT deny 20
+ match community NOT-TO-ANY
+exit
+route-map AS${as}-OUT permit 100
+exit
+EOF
+done
+cat >> ${conf} <<EOF
+!
+router bgp 64510
+ bgp router-id 10.0.0.2
+EOF
+echo "${IXP_MEMBERS}" | while read -r vm as pfx4 pfx6; do
+	echo " neighbor 10.0.0.${vm} remote-as ${as}" >> ${conf}
+	echo " neighbor 2001:db8::${vm} remote-as ${as}" >> ${conf}
+done
+for af in 4 6; do
+	if [ ${af} = 4 ]; then
+		echo " address-family ipv4 unicast" >> ${conf}
+	else
+		echo " address-family ipv6 unicast" >> ${conf}
+	fi
+	echo "${IXP_MEMBERS}" | while read -r vm as pfx4 pfx6; do
+		if [ ${af} = 4 ]; then
+			nbr=10.0.0.${vm}
+			echo "  no neighbor 2001:db8::${vm} activate" >> ${conf}
+		else
+			nbr=2001:db8::${vm}
+			echo "  neighbor ${nbr} activate" >> ${conf}
+		fi
+		cat >> ${conf} <<EOF
+  neighbor ${nbr} route-server-client
+  neighbor ${nbr} soft-reconfiguration inbound
+  neighbor ${nbr} route-map AS${as}-IN${af} in
+  neighbor ${nbr} route-map AS${as}-OUT out
+EOF
+	done
+	echo " exit-address-family" >> ${conf}
+done
+echo "exit" >> ${conf}
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service frr start
+echo "VM2 (rs2) configured"
+}
+
+# A member: peers with both route servers, announces its aggregate (a
+# discard route gives BGP something to announce) and numbers lo1 from it.
+# $1: VM number, $2: AS, $3: IPv4 prefix, $4: IPv6 prefix. Optional
+# frr.conf lines: $5 global, $6 and $7 in the IPv4 and IPv6 address
+# families.
+ixp_member () {
+local vm=$1 as=$2 pfx4=$3 pfx6=$4
+sysrc hostname=as${as} \
+	ifconfig_em4="inet 10.0.0.${vm}/24" \
+	ifconfig_em4_ipv6="inet6 2001:db8::${vm} prefixlen 64" \
+	cloned_interfaces="lo1" \
+	ifconfig_lo1="inet ${pfx4%.0/24}.1/32" \
+	ifconfig_lo1_ipv6="inet6 ${pfx6%/48}1 prefixlen 128"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+sysrc frr_enable=YES frr_daemons="mgmtd zebra staticd bgpd"
+# The route servers do not put their AS first in the path, which FRR
+# enforces by default.
+cat > /usr/local/etc/frr/frr.conf <<EOF
+frr defaults traditional
+hostname as${as}
+log syslog
+!
+ip route ${pfx4} blackhole
+ipv6 route ${pfx6} blackhole
+${5:-!}
+router bgp ${as}
+ bgp router-id 10.0.0.${vm}
+ no bgp ebgp-requires-policy
+ neighbor RS4 peer-group
+ neighbor RS4 remote-as 64510
+ no neighbor RS4 enforce-first-as
+ neighbor RS6 peer-group
+ neighbor RS6 remote-as 64510
+ no neighbor RS6 enforce-first-as
+ neighbor 10.0.0.1 peer-group RS4
+ neighbor 10.0.0.2 peer-group RS4
+ neighbor 2001:db8::1 peer-group RS6
+ neighbor 2001:db8::2 peer-group RS6
+ !
+ address-family ipv4 unicast
+  network ${pfx4}${6:-}
+  no neighbor RS6 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network ${pfx6}${7:-}
+  neighbor RS6 activate
+ exit-address-family
+exit
+!
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service frr start
+echo "VM${vm} (as${as}) configured"
+}
+
+ixp_vm3 () {
+ixp_member 3 64501 198.51.100.0/24 2001:db8:a::/48
+}
+
+# Also announces more specifics of AS 64501's prefixes, as a misconfigured
+# or malicious member would: without the route servers' filters, the other
+# members would send AS 64501's traffic into AS 64502's discard routes.
+ixp_vm4 () {
+ixp_member 4 64502 203.0.113.0/24 2001:db8:b::/48 \
+	"ip route 198.51.100.128/25 blackhole
+ipv6 route 2001:db8:a:8000::/49 blackhole
+!" "
+  network 198.51.100.128/25" "
+  network 2001:db8:a:8000::/49"
+}
+
+# Tags its routes 0:64502: the route servers do not announce them to
+# AS 64502.
+ixp_vm5 () {
+ixp_member 5 64503 192.0.2.0/24 2001:db8:c::/48 \
+	"route-map NOT-TO-64502 permit 10
+ set community 0:64502
+exit
+!" " route-map NOT-TO-64502" " route-map NOT-TO-64502"
 }
 
 ### Main
