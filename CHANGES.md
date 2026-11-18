@@ -4,6 +4,9 @@
 - Latest changes from FreeBSD main and ports at 2026/11/17
 - Add a dhcp lab: DHCP relay and server, both with dnsmasq
 - Add a pimssm lab: PIM-SSM with pimd, no RP and no BSR
+- Add an anycast lab: two DNS sites share one address, ExaBGP's
+  healthcheck withdraws a site that stops answering, checked by
+  tools/regression-test.sh
 - full lab: FRRouting's pimd on R4 to test PIM-SM interoperability with
   net/pimd
 - full lab: strongSwan IKEv2 route-based IPsec (if_ipsec), WireGuard,

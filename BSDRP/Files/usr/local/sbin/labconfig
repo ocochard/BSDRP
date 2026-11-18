@@ -12,6 +12,7 @@ usage () {
 	echo "$0 full_vm1        for configuring VM1 of lab Full"
 	echo "$0 frr_vm3         for configuring VM3 of lab FRR"
 	echo "Lab list:"
+	echo "-anycast: https://bsdrp.net/documentation/examples/anycast-dns-failover-with-exabgp"
 	echo "-bird_jails: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab_with_bird"
 	echo "-bgp: https://bsdrp.net/documentation/examples/bgp-route-reflector-and-confederation-using-frr-and-bird"
 	echo "-dhcp: https://bsdrp.net/documentation/examples/dhcp-relay-and-server-lab"
@@ -4178,6 +4179,157 @@ service hostname restart
 service netif restart
 service routing restart
 /usr/local/sbin/config save
+}
+
+### Anycast DNS lab ###
+# VM1 (client) --- 10.0.12.0/24 --- VM2 (edge router, FRR, AS 65000)
+# VM2 --- 10.0.23.0/24 --- VM3 (DNS site A, AS 65053)
+# VM2 --- 10.0.24.0/24 --- VM4 (DNS site B, AS 65053)
+# Both sites answer DNS on the same anycast address, 192.0.2.53 and
+# 2001:db8:53::53. On each site, ExaBGP's healthcheck queries the local
+# dnsmasq every second and announces the anycast address only while it
+# answers. Site A announces MED 100 and site B MED 200, so the edge prefers
+# A and falls back to B when A's DNS stops answering.
+
+anycast_vm1 () {
+sysrc hostname=client \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em0="inet 10.0.12.1/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::1 prefixlen 64" \
+	defaultrouter=10.0.12.2 \
+	ipv6_defaultrouter=2001:db8:12::2
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+echo "VM1 (client) configured"
+}
+
+anycast_vm2 () {
+sysrc hostname=edge \
+	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64" \
+	ifconfig_em1="inet 10.0.23.2/24" \
+	ifconfig_em1_ipv6="inet6 2001:db8:23::2 prefixlen 64" \
+	ifconfig_em2="inet 10.0.24.2/24" \
+	ifconfig_em2_ipv6="inet6 2001:db8:24::2 prefixlen 64" \
+	frr_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# Short timers: if a whole site dies (not just its DNS daemon), the
+# session drops after 9s instead of the default 180s hold time.
+cat > /usr/local/etc/frr/frr.conf <<EOF
+frr defaults traditional
+hostname edge
+log syslog
+!
+router bgp 65000
+ bgp router-id 10.0.0.2
+ no bgp ebgp-requires-policy
+ neighbor SITES4 peer-group
+ neighbor SITES4 remote-as 65053
+ neighbor SITES4 timers 3 9
+ neighbor SITES6 peer-group
+ neighbor SITES6 remote-as 65053
+ neighbor SITES6 timers 3 9
+ neighbor 10.0.23.3 peer-group SITES4
+ neighbor 10.0.24.4 peer-group SITES4
+ neighbor 2001:db8:23::3 peer-group SITES6
+ neighbor 2001:db8:24::4 peer-group SITES6
+ !
+ address-family ipv4 unicast
+  no neighbor SITES6 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  neighbor SITES6 activate
+ exit-address-family
+exit
+!
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service frr start
+echo "VM2 (edge) configured"
+}
+
+# Site configuration shared by VM3 (A) and VM4 (B).
+# $1: site letter, $2: VM number (last octet), $3: MED announced when up
+anycast_site () {
+local site=$1 n=$2 med=$3
+sysrc hostname=site${site} \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em1="inet 10.0.2${n}.${n}/24" \
+	ifconfig_em1_ipv6="inet6 2001:db8:2${n}::${n} prefixlen 64" \
+	defaultrouter=10.0.2${n}.2 \
+	ipv6_defaultrouter=2001:db8:2${n}::2 \
+	cloned_interfaces=lo1 \
+	ifconfig_lo1="inet 192.0.2.53/32" \
+	ifconfig_lo1_ipv6="inet6 2001:db8:53::53 prefixlen 128" \
+	dnsmasq_enable=YES \
+	exabgp_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# The TXT record tells the client which site answered.
+cat > /usr/local/etc/dnsmasq.conf <<EOF
+no-resolv
+no-hosts
+bind-interfaces
+listen-address=127.0.0.1,192.0.2.53,2001:db8:53::53
+txt-record=site.anycast.lab,"site-${site}"
+address=/www.anycast.lab/192.0.2.80
+EOF
+# exabgp-healthcheck sets up missing addresses with Linux "ip": lo1 already
+# carries them, hence --no-ip-setup. It announces both addresses to every
+# neighbor; each session only carries its own address family.
+cat > /usr/local/etc/exabgp/exabgp.conf <<EOF
+process anycast-dns {
+	run /usr/local/bin/exabgp-healthcheck --name anycast-dns --no-ip-setup --ip 192.0.2.53/32 --ip 2001:db8:53::53/128 --withdraw-on-down --up-metric ${med} --interval 1 --rise 2 --fall 2 --timeout 1 --cmd "host -W 1 -t TXT site.anycast.lab 127.0.0.1";
+	encoder text;
+}
+neighbor 10.0.2${n}.2 {
+	router-id 10.0.0.${n};
+	local-address 10.0.2${n}.${n};
+	local-as 65053;
+	peer-as 65000;
+	family {
+		ipv4 unicast;
+	}
+	api {
+		processes [ anycast-dns ];
+	}
+}
+neighbor 2001:db8:2${n}::2 {
+	router-id 10.0.0.${n};
+	local-address 2001:db8:2${n}::${n};
+	local-as 65053;
+	peer-as 65000;
+	family {
+		ipv6 unicast;
+	}
+	api {
+		processes [ anycast-dns ];
+	}
+}
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service dnsmasq start
+# The python daemon may keep the caller's output open (cloud-init).
+service exabgp start > /dev/null 2>&1
+echo "site ${site} configured"
+}
+
+anycast_vm3 () {
+anycast_site A 3 100
+}
+
+anycast_vm4 () {
+anycast_site B 4 200
 }
 
 ### Main

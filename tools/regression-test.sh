@@ -2,12 +2,12 @@
 #
 # BSDRP regression-test driver
 #
-# SCOPE: this driver currently only implements assertions for the "full" lab
-# (5 VMs - the BSDRP maximum-features lab). Other labs declared in
-# tools/BSDRP-lab-bhyve.sh (frr, bgp, vpn, mlvpn, mlppp, ecmp, fairshape,
-# jailpf, pimsm, pimssm, vrrp, etc.) have no assertions defined here yet - running
-# this driver against them will fail with "lab '<name>' has no assertions
-# implemented yet (only 'full' is)".
+# SCOPE: this driver implements assertions for the "full" lab (5 VMs - the
+# BSDRP maximum-features lab) and the "anycast" lab (4 VMs - anycast DNS
+# failover with ExaBGP). Other labs declared in tools/BSDRP-lab-bhyve.sh
+# (frr, bgp, vpn, mlvpn, mlppp, ecmp, fairshape, jailpf, pimsm, pimssm, vrrp,
+# etc.) have no assertions defined here yet - running this driver against
+# them will fail with "lab '<name>' has no assertions implemented yet".
 #
 # Drives the serial consoles of a lab launched by BSDRP-lab-bhyve.sh -r <lab>
 # and runs per-VM assertions. Assertions for the "full" lab are derived from
@@ -1204,10 +1204,105 @@ lab_full_failover() {
 		"vtysh -c 'show bfd peers brief' 2>&1" '10\.4\.24\.2[[:space:]]+10\.4\.24\.4[[:space:]]+up' 60
 }
 
+# === anycast lab ==========================================================
+#
+# Two DNS sites announce the same anycast address through ExaBGP's
+# healthcheck; the edge prefers site A (MED 100) over site B (MED 200).
+# The site's TXT record names the site that answered.
+
+ANYCAST_DIG4="host -W 1 -t TXT site.anycast.lab 192.0.2.53 2>&1"
+ANYCAST_DIG6="host -W 1 -t TXT site.anycast.lab 2001:db8:53::53 2>&1"
+
+lab_anycast_vm1() {
+	local nmdm="$1"
+
+	assert 1 "hostname is client" "$nmdm" "hostname" '^client$'
+	# Downstream of every other VM: give BGP and the healthcheck time to
+	# converge after boot.
+	assert 1 "anycast DNS 192.0.2.53 answered by site A" "$nmdm" \
+		"$ANYCAST_DIG4" 'descriptive text "site-A"' 120
+	assert 1 "anycast DNS 2001:db8:53::53 answered by site A" "$nmdm" \
+		"$ANYCAST_DIG6" 'descriptive text "site-A"' 60
+}
+
+lab_anycast_vm2() {
+	local nmdm="$1"
+
+	assert 2 "hostname is edge" "$nmdm" "hostname" '^edge$'
+	# Established sessions show a prefix count in the State/PfxRcd column.
+	assert 2 "BGP session to site A (10.0.23.3) Established" "$nmdm" \
+		"vtysh -c 'show bgp ipv4 unicast summary' 2>&1" '^10\.0\.23\.3 .* [0-9]+ +[0-9]+ +N/A$' 120
+	assert 2 "BGP session to site B (10.0.24.4) Established" "$nmdm" \
+		"vtysh -c 'show bgp ipv4 unicast summary' 2>&1" '^10\.0\.24\.4 .* [0-9]+ +[0-9]+ +N/A$' 60
+	assert 2 "BGP session to site A (2001:db8:23::3) Established" "$nmdm" \
+		"vtysh -c 'show bgp ipv6 unicast summary' 2>&1" '^2001:db8:23::3 .* [0-9]+ +[0-9]+ +N/A$' 60
+	assert 2 "BGP session to site B (2001:db8:24::4) Established" "$nmdm" \
+		"vtysh -c 'show bgp ipv6 unicast summary' 2>&1" '^2001:db8:24::4 .* [0-9]+ +[0-9]+ +N/A$' 60
+	# Both sites announce the anycast address; site A wins on MED. Lines
+	# joined so the next hop, MED and best flag match as one path.
+	assert 2 "192.0.2.53/32 announced by both sites" "$nmdm" \
+		"vtysh -c 'show ip bgp 192.0.2.53/32' 2>&1" 'Paths: \(2 available'
+	assert 2 "192.0.2.53/32 best path: site A, MED 100" "$nmdm" \
+		"vtysh -c 'show ip bgp 192.0.2.53/32' 2>&1 | paste -s -d ' ' -" \
+		'10\.0\.23\.3 from 10\.0\.23\.3 [^ ]+ +Origin IGP, metric 100, valid, external, best'
+	assert 2 "2001:db8:53::53/128 best path: site A" "$nmdm" \
+		"vtysh -c 'show bgp ipv6 2001:db8:53::53/128' 2>&1 | paste -s -d ' ' -" \
+		'2001:db8:23::3 from 2001:db8:23::3 [^ ]+ +Origin IGP, metric [0-9]+, valid, external, best'
+}
+
+# Site checks shared by VM3 (A) and VM4 (B). $1: VM, $2: site, $3: nmdm
+lab_anycast_site() {
+	local vm="$1" site="$2" nmdm="$3"
+
+	assert "$vm" "hostname is site${site}" "$nmdm" "hostname" "^site${site}\$"
+	assert "$vm" "lo1 carries the anycast address 192.0.2.53" "$nmdm" \
+		"ifconfig lo1 2>&1" 'inet 192\.0\.2\.53 '
+	assert "$vm" "local dnsmasq answers as site-${site}" "$nmdm" \
+		"host -W 1 -t TXT site.anycast.lab 127.0.0.1 2>&1" "descriptive text \"site-${site}\""
+	assert "$vm" "ExaBGP healthcheck running" "$nmdm" \
+		"pgrep -lf exabgp-healthcheck || echo none" 'exabgp-healthcheck'
+}
+
+lab_anycast_vm3() { lab_anycast_site 3 A "$1"; }
+lab_anycast_vm4() { lab_anycast_site 4 B "$1"; }
+
+# Phase 4: break site A twice, its DNS daemon then its whole uplink, and
+# check the client is served by site B, then by site A again.
+lab_anycast_failover() {
+	local nmdm1="${NMDM_PREFIX}1${NMDM_SUFFIX}"
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local nmdm3="${NMDM_PREFIX}3${NMDM_SUFFIX}"
+	local if3
+
+	# The healthcheck fails twice (--fall 2, 1s apart) and withdraws the
+	# route: a few seconds.
+	console_run "$nmdm3" "service dnsmasq stop" >/dev/null
+	assert 1 "DNS down on site A: site B answers 192.0.2.53" "$nmdm1" \
+		"$ANYCAST_DIG4" 'descriptive text "site-B"' 15
+	assert 1 "DNS down on site A: site B answers 2001:db8:53::53" "$nmdm1" \
+		"$ANYCAST_DIG6" 'descriptive text "site-B"' 15
+	assert 2 "DNS down on site A: route withdrawn, only site B left" "$nmdm2" \
+		"vtysh -c 'show ip bgp 192.0.2.53/32' 2>&1" 'Paths: \(1 available'
+	console_run "$nmdm3" "service dnsmasq start" >/dev/null
+	assert 1 "DNS back on site A: site A answers again" "$nmdm1" \
+		"$ANYCAST_DIG4" 'descriptive text "site-A"' 15
+
+	# A dead site cannot withdraw anything: the edge's 9s hold timer
+	# notices the silence.
+	if3=$(console_run "$nmdm3" "ifconfig -l | grep -qw vtnet1 && echo vtnet1 || echo em1" | tr -d '[:space:]')
+	console_run "$nmdm3" "ifconfig $if3 down" >/dev/null
+	assert 1 "site A unreachable: site B answers within the hold time" "$nmdm1" \
+		"$ANYCAST_DIG4" 'descriptive text "site-B"' 20
+	console_run "$nmdm3" "ifconfig $if3 up" >/dev/null
+	assert 1 "site A reachable again: site A answers again" "$nmdm1" \
+		"$ANYCAST_DIG4" 'descriptive text "site-A"' 90
+}
+
 # === Lab metadata =========================================================
 
 lab_vm_count() {
 	case "$1" in
+		anycast)   echo 4 ;;
 		full)      echo 5 ;;
 		frr)       echo 7 ;;
 		bgp)       echo 7 ;;
@@ -1243,8 +1338,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	full) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'full' is)" ;;
+	full|anycast) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'full' and 'anycast' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------
