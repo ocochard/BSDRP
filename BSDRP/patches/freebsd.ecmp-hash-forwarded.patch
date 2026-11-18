@@ -12,16 +12,15 @@ forwarded whose flowid is not a hash (!M_HASHTYPE_ISHASH) gets a software
 Toeplitz hash of its addresses, protocol and, when it is not a fragment,
 ports, using the existing fib4/fib6_calc_software_hash(). Packets already
 hashed by RSS hardware are left untouched.
-
 diff --git sys/net/route.h sys/net/route.h
-index c2052dc9cde..f383f3457a1 100644
+index c2052dc9cde..d5177ed65ab 100644
 --- sys/net/route.h
 +++ sys/net/route.h
 @@ -129,6 +129,10 @@ VNET_DECLARE(u_int, rt_add_addr_allfibs); /* Announce interfaces to all fibs */
  #define	V_fib_hash_outbound	VNET(fib_hash_outbound)
  VNET_DECLARE(u_int, fib_hash_outbound);
  
-+/* Calculate flowid for forwarded packets the receiving interface did not hash */
++/* Calculate flowid for forwarded packets received without one */
 +#define	V_fib_hash_forward	VNET(fib_hash_forward)
 +VNET_DECLARE(u_int, fib_hash_forward);
 +
@@ -45,7 +44,7 @@ index 4fd96168957..e63f21ccbee 100644
  uint8_t mpath_entropy_key[MPATH_ENTROPY_KEY_LEN] = {
  	0x6d, 0x5a, 0x56, 0xda, 0x25, 0x5b, 0x0e, 0xc2,
 diff --git sys/netinet/in_fib.c sys/netinet/in_fib.c
-index d864bce0731..5787b2bc392 100644
+index d864bce0731..71ffb13ef4f 100644
 --- sys/netinet/in_fib.c
 +++ sys/netinet/in_fib.c
 @@ -55,6 +55,7 @@
@@ -56,7 +55,7 @@ index d864bce0731..5787b2bc392 100644
  
  #ifdef INET
  
-@@ -97,6 +98,38 @@ fib4_calc_software_hash(struct in_addr src, struct in_addr dst,
+@@ -97,6 +98,42 @@ fib4_calc_software_hash(struct in_addr src, struct in_addr dst,
  	  sizeof(data), (uint8_t *)&data));
  }
  
@@ -85,10 +84,14 @@ index d864bce0731..5787b2bc392 100644
 +	    ip->ip_p == IPPROTO_SCTP) &&
 +	    (ip->ip_off & htons(IP_MF | IP_OFFMASK)) == 0 &&
 +	    m->m_pkthdr.len >= hlen + (int)sizeof(ports))
-+		m_copydata(m, hlen, sizeof(ports), (caddr_t)ports);
++		m_copydata(m, hlen, sizeof(ports), ports);
 +
 +	m->m_pkthdr.flowid = fib4_calc_software_hash(ip->ip_src, ip->ip_dst,
 +	    ports[0], ports[1], ip->ip_p, &hashtype);
++	/*
++	 * Mark it as a hash, so later forwarding steps do not compute it
++	 * again and consumers such as lagg(4) can rely on it.
++	 */
 +	M_HASHTYPE_SET(m, M_HASHTYPE_OPAQUE_HASH);
 +}
 +
@@ -130,7 +133,7 @@ index 9bc9f7f75e0..8e97787e166 100644
  	ro.ro_nh = fib4_lookup(M_GETFIB(m), ip->ip_dst, 0, NHR_REF, flowid);
  	if (ro.ro_nh != NULL) {
 diff --git sys/netinet6/in6_fib.c sys/netinet6/in6_fib.c
-index 594a9dc0a24..8a884dc033c 100644
+index 594a9dc0a24..8521b823674 100644
 --- sys/netinet6/in6_fib.c
 +++ sys/netinet6/in6_fib.c
 @@ -103,6 +103,32 @@ fib6_calc_software_hash(const struct in6_addr *src, const struct in6_addr *dst,
@@ -156,11 +159,11 @@ index 594a9dc0a24..8a884dc033c 100644
 +	if ((ip6->ip6_nxt == IPPROTO_TCP || ip6->ip6_nxt == IPPROTO_UDP ||
 +	    ip6->ip6_nxt == IPPROTO_SCTP) &&
 +	    m->m_pkthdr.len >= (int)(sizeof(*ip6) + sizeof(ports)))
-+		m_copydata(m, sizeof(*ip6), sizeof(ports), (caddr_t)ports);
++		m_copydata(m, sizeof(*ip6), sizeof(ports), ports);
 +
 +	m->m_pkthdr.flowid = fib6_calc_software_hash(&ip6->ip6_src,
 +	    &ip6->ip6_dst, ports[0], ports[1], ip6->ip6_nxt, &hashtype);
-+	M_HASHTYPE_SET(m, hashtype);
++	M_HASHTYPE_SET(m, M_HASHTYPE_OPAQUE_HASH);
 +}
 +
  /*
