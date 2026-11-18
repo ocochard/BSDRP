@@ -3,8 +3,9 @@
 # BSDRP regression-test driver
 #
 # SCOPE: this driver implements assertions for the "full" lab (5 VMs - the
-# BSDRP maximum-features lab) and the "anycast" lab (4 VMs - anycast DNS
-# failover with ExaBGP). Other labs declared in tools/BSDRP-lab-bhyve.sh
+# BSDRP maximum-features lab), the "anycast" lab (4 VMs - anycast DNS
+# failover with ExaBGP) and the "branch" lab (5 VMs - branch office ECMP
+# over two WireGuard tunnels). Other labs declared in tools/BSDRP-lab-bhyve.sh
 # (frr, bgp, vpn, mlvpn, mlppp, ecmp, fairshape, jailpf, pimsm, pimssm, vrrp,
 # etc.) have no assertions defined here yet - running this driver against
 # them will fail with "lab '<name>' has no assertions implemented yet".
@@ -1298,11 +1299,119 @@ lab_anycast_failover() {
 		"$ANYCAST_DIG4" 'descriptive text "site-A"' 90
 }
 
+# === branch lab ===========================================================
+#
+# The branch reaches HQ over two WireGuard tunnels, one per ISP, with OSPF,
+# OSPFv3 and BFD on both: equal costs give ECMP routes, and
+# net.route.hash_forward=1 spreads the flows over them.
+
+lab_branch_vm1() {
+	local nmdm="$1"
+
+	assert 1 "hostname is pc" "$nmdm" "hostname" '^pc$'
+	# Downstream of both tunnels and OSPF: give them time after boot.
+	assert 1 "ping HQ 10.0.5.5 through the tunnels" "$nmdm" \
+		"ping -c 2 -t 5 10.0.5.5 2>&1" ' 0\.0% packet loss' 120
+	assert 1 "ping HQ 2001:db8:5::5 through the tunnels" "$nmdm" \
+		"ping -6 -c 2 -t 5 2001:db8:5::5 2>&1" ' 0\.0% packet loss' 60
+}
+
+# Tunnel endpoint checks shared by the branch (VM2) and HQ (VM5).
+# $1: VM, $2: hostname, $3: remote LAN IPv4 address, $4: IPv6, $5: nmdm
+lab_branch_router() {
+	local vm="$1" name="$2" lan4="$3" lan6="$4" nmdm="$5" t
+
+	assert "$vm" "hostname is ${name}" "$nmdm" "hostname" "^${name}\$"
+	assert "$vm" "net.route.hash_forward is 1" "$nmdm" \
+		"sysctl -n net.route.hash_forward" '^1$'
+	for t in 0 1; do
+		# latest-handshakes prints 0 until a handshake completes.
+		assert "$vm" "wg${t} handshake done" "$nmdm" \
+			"wg show wg${t} latest-handshakes 2>&1" '[[:space:]][1-9][0-9]+$' 60
+		assert "$vm" "OSPF neighbor Full over wg${t}" "$nmdm" \
+			"vtysh -c 'show ip ospf neighbor' 2>&1" " Full/.* wg${t}:" 90
+		assert "$vm" "OSPFv3 neighbor Full over wg${t}" "$nmdm" \
+			"vtysh -c 'show ipv6 ospf6 neighbor' 2>&1" " Full/.* wg${t}\[" 90
+	done
+	assert "$vm" "4 BFD sessions up (OSPF and OSPFv3, both tunnels)" "$nmdm" \
+		"vtysh -c 'show bfd peers brief' 2>&1 | grep -c ' up '" '^4$' 60
+	assert "$vm" "ECMP route to ${lan4} over both tunnels" "$nmdm" \
+		"netstat -rn -f inet | grep -E '^${lan4}[ /]' | awk '{print \$NF}' | sort | paste -s -d ' ' -" \
+		'^wg0 wg1$' 60
+	assert "$vm" "ECMP route to ${lan6} over both tunnels" "$nmdm" \
+		"netstat -rn -f inet6 | grep -E '^${lan6}[ /]' | awk '{print \$NF}' | sort | paste -s -d ' ' -" \
+		'^wg0 wg1$' 60
+}
+
+lab_branch_vm2() { lab_branch_router 2 branch 10.0.5.5 2001:db8:5::5 "$1"; }
+lab_branch_vm5() { lab_branch_router 5 hq 10.0.12.0 2001:db8:12:: "$1"; }
+
+# ISP router: forwards IPv4 between the branch and HQ. $1: VM, $2: site,
+# $3: nmdm
+lab_branch_isp() {
+	local vm="$1" site="$2" nmdm="$3"
+
+	assert "$vm" "hostname is isp${site}" "$nmdm" "hostname" "^isp${site}\$"
+	assert "$vm" "reaches the branch (10.0.2${vm}.2)" "$nmdm" \
+		"ping -c 2 -t 5 10.0.2${vm}.2 2>&1" ' 0\.0% packet loss'
+	assert "$vm" "reaches HQ (10.0.${vm}5.5)" "$nmdm" \
+		"ping -c 2 -t 5 10.0.${vm}5.5 2>&1" ' 0\.0% packet loss'
+}
+
+lab_branch_vm3() { lab_branch_isp 3 A "$1"; }
+lab_branch_vm4() { lab_branch_isp 4 B "$1"; }
+
+# Phase 3: the PC sends 256 UDP flows to HQ, one per source port; the
+# branch counts how many leave through each tunnel. Without a flow hash
+# every flow would take the same tunnel.
+lab_branch_throughput() {
+	local nmdm1="${NMDM_PREFIX}1${NMDM_SUFFIX}"
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local af dst counts c0 c1
+
+	for af in 4 6; do
+		[ "$af" = 4 ] && dst=10.0.5.5 || dst=2001:db8:5::5
+		console_run "$nmdm2" "for i in wg0 wg1; do (timeout 90 tcpdump -lnqi \$i udp port 9 2>/dev/null | wc -l > /tmp/ecmp.\$i &); done; sleep 2" >/dev/null
+		console_run "$nmdm1" "for p in \$(jot 256 20000); do echo x | nc -${af} -u -w0 -p \$p ${dst} 9; done" >/dev/null
+		counts=$(console_run "$nmdm2" "pkill -f 'tcpdump -lnqi'; sleep 1; echo \$(cat /tmp/ecmp.wg0) \$(cat /tmp/ecmp.wg1)" | tail -1)
+		c0=$(echo "$counts" | awk '{print $1 + 0}')
+		c1=$(echo "$counts" | awk '{print $2 + 0}')
+		echo "  IPv${af} flows per tunnel: wg0=${c0} wg1=${c1}"
+		# 256 flows over 2 nexthops: anything above 64 each is a spread,
+		# a collapse gives 256 and 0.
+		if [ "$c0" -gt 64 ] && [ "$c1" -gt 64 ]; then
+			record 2 "IPv${af} ECMP spreads 256 flows over both tunnels" PASS ""
+		else
+			record 2 "IPv${af} ECMP spreads 256 flows over both tunnels" FAIL "wg0=${c0} wg1=${c1}"
+		fi
+	done
+}
+
+# Phase 4: ISP-A loses its link to HQ. The tunnels stay up as interfaces,
+# so only BFD notices: the branch must drop the wg0 route within seconds,
+# then restore ECMP when the link comes back.
+lab_branch_failover() {
+	local nmdm1="${NMDM_PREFIX}1${NMDM_SUFFIX}"
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local nmdm3="${NMDM_PREFIX}3${NMDM_SUFFIX}"
+	local route4="netstat -rn -f inet | grep -E '^10\.0\.5\.5 ' | awk '{print \$NF}' | sort | paste -s -d ' ' -"
+	local if3
+
+	if3=$(console_run "$nmdm3" "ifconfig -l | grep -qw vtnet3 && echo vtnet3 || echo em3" | tr -d '[:space:]')
+	console_run "$nmdm3" "ifconfig $if3 down" >/dev/null
+	assert 2 "ISP-A down: route to HQ only over wg1" "$nmdm2" "$route4" '^wg1$' 10
+	assert 1 "ISP-A down: HQ still reachable" "$nmdm1" \
+		"ping -c 2 -t 5 10.0.5.5 2>&1" ' 0\.0% packet loss' 10
+	console_run "$nmdm3" "ifconfig $if3 up" >/dev/null
+	assert 2 "ISP-A back: ECMP over both tunnels again" "$nmdm2" "$route4" '^wg0 wg1$' 90
+}
+
 # === Lab metadata =========================================================
 
 lab_vm_count() {
 	case "$1" in
 		anycast)   echo 4 ;;
+		branch)    echo 5 ;;
 		full)      echo 5 ;;
 		frr)       echo 7 ;;
 		bgp)       echo 7 ;;
@@ -1338,8 +1447,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	full|anycast) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'full' and 'anycast' have them)" ;;
+	full|anycast|branch) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'full', 'anycast' and 'branch' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------

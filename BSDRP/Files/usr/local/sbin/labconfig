@@ -13,6 +13,7 @@ usage () {
 	echo "$0 frr_vm3         for configuring VM3 of lab FRR"
 	echo "Lab list:"
 	echo "-anycast: https://bsdrp.net/documentation/examples/anycast-dns-failover-with-exabgp"
+	echo "-branch: https://bsdrp.net/documentation/examples/branch-office-ecmp-over-wireguard"
 	echo "-bird_jails: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab_with_bird"
 	echo "-bgp: https://bsdrp.net/documentation/examples/bgp-route-reflector-and-confederation-using-frr-and-bird"
 	echo "-dhcp: https://bsdrp.net/documentation/examples/dhcp-relay-and-server-lab"
@@ -3932,14 +3933,11 @@ service routing restart
 #   VM2 vtnet3 <-> VM3 vtnet3   = 10.0.232.0/24   (ECMP path 2, shared LAN)
 #   VM3 vtnet2 <-> VM4 vtnet2   = 10.0.34.0/24    (server downlink)
 #
-# !!! WARNING: a bhyve lab will NOT exercise ECMP !!!
-# bhyve's virtio-net (vtnet) has no multi-queue support: the host stack uses
-# a single RSS bucket per interface and assigns the same flow-id to every
-# packet, so FreeBSD's ECMP next-hop selection collapses onto one path and
-# all traffic ends up using a single link. These ecmp_vm* functions are only
-# useful to validate the routing configuration. To observe real load
-# distribution across both paths, run the lab on physical hardware with
-# multi-queue NICs (igb(4), cxgbe(4), mlxen(4), etc.).
+# bhyve's virtio-net (vtnet) has a single queue and gives every packet the
+# same flowid, so FreeBSD's ECMP next-hop selection would collapse onto one
+# path. VM2 and VM3 set net.route.hash_forward=1, which hashes forwarded
+# packets that arrive without a flow hash, so the flows spread over both
+# paths.
 
 ecmp_vm2 () {
 sysrc hostname=VM2 \
@@ -3957,6 +3955,8 @@ sysrc hostname=VM2 \
 	ipv6_static_routes="MPATH1 MPATH2" \
 	ipv6_route_MPATH1="2001:db8:: -prefixlen 32 2001:db8:231::3" \
 	ipv6_route_MPATH2="2001:db8:: -prefixlen 32 2001:db8:232::3"
+echo "net.route.hash_forward=1" >> /etc/sysctl.conf
+sysctl net.route.hash_forward=1
 service hostname restart
 service netif restart
 service routing restart
@@ -3979,6 +3979,8 @@ sysrc hostname=VM3 \
 	ipv6_static_routes="MPATH1 MPATH2" \
 	ipv6_route_MPATH1="2001:db8:: -prefixlen 32 2001:db8:231::2" \
 	ipv6_route_MPATH2="2001:db8:: -prefixlen 32 2001:db8:232::2"
+echo "net.route.hash_forward=1" >> /etc/sysctl.conf
+sysctl net.route.hash_forward=1
 service hostname restart
 service netif restart
 service routing restart
@@ -4330,6 +4332,182 @@ anycast_site A 3 100
 
 anycast_vm4 () {
 anycast_site B 4 200
+}
+
+### Branch office lab ###
+# VM1 (PC) --- 10.0.12.0/24 --- VM2 (branch router)
+# VM2 --- 10.0.23.0/24 --- VM3 (ISP-A) --- 10.0.35.0/24 --- VM5 (HQ router)
+# VM2 --- 10.0.24.0/24 --- VM4 (ISP-B) --- 10.0.45.0/24 --- VM5
+# The branch reaches HQ over two WireGuard tunnels, one per ISP: wg0
+# (10.9.1.0/24) over ISP-A and wg1 (10.9.2.0/24) over ISP-B. OSPF and
+# OSPFv3 run over both tunnels with the same cost, so FRR installs ECMP
+# routes, and BFD drops a tunnel's adjacency within a second when its ISP
+# fails. The ISPs only carry IPv4: IPv6 travels inside the tunnels.
+# if_wg gets no IPv6 link-local address by default, and OSPFv3 needs one:
+# hence auto_linklocal.
+# WireGuard decrypted packets and vtnet packets have no flow hash, so
+# net.route.hash_forward=1 is needed for ECMP to spread the flows.
+# Lab keys, never reuse them.
+WG_BRANCH_PRIV="wKzufFch9l+SpPS417DGvSgUbhII6wcTB3ul/tjP7XQ="
+WG_BRANCH_PUB="2qxqCFgTol1zqt14XTppz83eG/aLbF0O+kM1PwCkWwk="
+WG_HQ_PRIV="GHMb2PUmcrykraEdpeMPAoZMGqxyipzKCBEUue/Xp3U="
+WG_HQ_PUB="46I9Wa1Neq3NxsMnQh+1sKjrh0np8EdLhrCoFk78pSg="
+
+branch_vm1 () {
+sysrc hostname=pc \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em0="inet 10.0.12.1/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::1 prefixlen 64" \
+	defaultrouter=10.0.12.2 \
+	ipv6_defaultrouter=2001:db8:12::2
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+echo "VM1 (pc) configured"
+}
+
+# Tunnels and routing shared by the branch (VM2) and HQ (VM5) routers.
+# $1: hostname, $2: VM number, $3: own private key, $4: peer public key,
+# $5: peer address over ISP-A, $6: over ISP-B, $7: LAN interface,
+# $8: LAN IPv4 prefix
+branch_tunnels () {
+local name=$1 n=$2 priv=$3 pub=$4 peerA=$5 peerB=$6 lan=$7 lan4=$8 t peer
+# The rc.d netif script sources /etc/start_if.<interface> before
+# configuring it: load the WireGuard keys and peer there.
+mkdir -p /usr/local/etc/wireguard
+for t in 0 1; do
+	[ $t = 0 ] && peer=${peerA} || peer=${peerB}
+	cat > /usr/local/etc/wireguard/wg$t.conf <<EOF
+[Interface]
+PrivateKey = ${priv}
+ListenPort = 5182$t
+
+[Peer]
+PublicKey = ${pub}
+Endpoint = ${peer}:5182$t
+AllowedIPs = 0.0.0.0/0, ::/0
+PersistentKeepalive = 10
+EOF
+	chmod 600 /usr/local/etc/wireguard/wg$t.conf
+	echo "wg setconf wg$t /usr/local/etc/wireguard/wg$t.conf" > /etc/start_if.wg$t
+done
+# Without it, every flow takes the first ECMP nexthop.
+echo "net.route.hash_forward=1" >> /etc/sysctl.conf
+sysctl net.route.hash_forward=1
+# "frr_daemons" contains "em": set it after the em->vtnet rewrite.
+sysrc frr_enable=YES frr_daemons="mgmtd zebra staticd bfdd ospfd ospf6d"
+cat > /usr/local/etc/frr/frr.conf <<EOF
+frr defaults traditional
+hostname ${name}
+log syslog
+!
+interface wg0
+ ip ospf network point-to-point
+ ip ospf bfd
+ ipv6 ospf6 area 0.0.0.0
+ ipv6 ospf6 network point-to-point
+ ipv6 ospf6 bfd
+exit
+!
+interface wg1
+ ip ospf network point-to-point
+ ip ospf bfd
+ ipv6 ospf6 area 0.0.0.0
+ ipv6 ospf6 network point-to-point
+ ipv6 ospf6 bfd
+exit
+!
+interface ${lan}
+ ipv6 ospf6 area 0.0.0.0
+ ipv6 ospf6 passive
+exit
+!
+router ospf
+ ospf router-id 10.0.0.${n}
+ passive-interface ${lan}
+ network 10.9.0.0/16 area 0.0.0.0
+ network ${lan4} area 0.0.0.0
+exit
+!
+router ospf6
+ ospf6 router-id 10.0.0.${n}
+exit
+!
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service frr start
+}
+
+branch_vm2 () {
+local lan=em0
+sysrc hostname=branch \
+	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64" \
+	ifconfig_em1="inet 10.0.23.2/24" \
+	ifconfig_em2="inet 10.0.24.2/24" \
+	cloned_interfaces="wg0 wg1" \
+	ifconfig_wg0="inet 10.9.1.2/24" \
+	ifconfig_wg0_ipv6="inet6 2001:db8:91::2 prefixlen 64 auto_linklocal" \
+	ifconfig_wg1="inet 10.9.2.2/24" \
+	ifconfig_wg1_ipv6="inet6 2001:db8:92::2 prefixlen 64 auto_linklocal" \
+	static_routes="ispa ispb" \
+	route_ispa="-host 10.0.35.5 10.0.23.3" \
+	route_ispb="-host 10.0.45.5 10.0.24.4"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf && lan=vtnet0
+branch_tunnels branch 2 ${WG_BRANCH_PRIV} ${WG_HQ_PUB} 10.0.35.5 10.0.45.5 \
+	${lan} 10.0.12.0/24
+echo "VM2 (branch) configured"
+}
+
+# ISP router: forwards between the branch and HQ, IPv4 only.
+# $1: site letter, $2: VM number
+branch_isp () {
+local site=$1 n=$2
+sysrc hostname=isp${site} \
+	gateway_enable=YES \
+	ipv6_gateway_enable=NO \
+	ifconfig_em1="inet 10.0.2${n}.${n}/24" \
+	ifconfig_em3="inet 10.0.${n}5.${n}/24"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+echo "VM${n} (isp${site}) configured"
+}
+
+branch_vm3 () {
+branch_isp A 3
+}
+
+branch_vm4 () {
+branch_isp B 4
+}
+
+branch_vm5 () {
+sysrc hostname=hq \
+	ifconfig_em2="inet 10.0.35.5/24" \
+	ifconfig_em3="inet 10.0.45.5/24" \
+	cloned_interfaces="lo1 wg0 wg1" \
+	ifconfig_lo1="inet 10.0.5.5/32" \
+	ifconfig_lo1_ipv6="inet6 2001:db8:5::5 prefixlen 128" \
+	ifconfig_wg0="inet 10.9.1.5/24" \
+	ifconfig_wg0_ipv6="inet6 2001:db8:91::5 prefixlen 64 auto_linklocal" \
+	ifconfig_wg1="inet 10.9.2.5/24" \
+	ifconfig_wg1_ipv6="inet6 2001:db8:92::5 prefixlen 64 auto_linklocal" \
+	static_routes="ispa ispb" \
+	route_ispa="-host 10.0.23.2 10.0.35.3" \
+	route_ispb="-host 10.0.24.2 10.0.45.4"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+branch_tunnels hq 5 ${WG_HQ_PRIV} ${WG_BRANCH_PUB} 10.0.23.2 10.0.24.2 \
+	lo1 10.0.5.5/32
+echo "VM5 (hq) configured"
 }
 
 ### Main

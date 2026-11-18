@@ -67,8 +67,9 @@ setup/usage error.
   redirection to `/dev/nmdm*` does not drive the guest's `login(1)` reliably.
 - **Scope**: assertions exist for the `full` lab, derived from the
   [maximum features lab](https://bsdrp.net/documentation/examples/maximum_bsdrp_features_lab)
-  wiki page, and the `anycast` lab (anycast DNS failover with ExaBGP). Any
-  other lab exits with `lab '<name>' has no assertions implemented yet`.
+  wiki page, the `anycast` lab (anycast DNS failover with ExaBGP) and the
+  `branch` lab (branch office ECMP over two WireGuard tunnels). Any other
+  lab exits with `lab '<name>' has no assertions implemented yet`.
 - `--no-launch` is the inner loop when writing assertions: launch the lab once
   by hand (see below), then re-run the driver as many times as needed.
 - Its `lab_vm_count()` table duplicates the per-lab VM counts of `labconfig` —
