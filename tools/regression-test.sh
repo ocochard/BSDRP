@@ -480,6 +480,15 @@ lab_full_vm1() {
 	assert 1 "R1 IPv6 reachability to R4 lo1 (2001:db8::4)" "$nmdm" \
 		"ping6 -c 3 2001:db8::4 2>&1" '[123] packets received' 60
 
+	# WireGuard road warrior to R4's loopback: the pings run inside the
+	# tunnel, the handshake timestamp proves the keys were accepted.
+	assert 1 "WireGuard: ping R4 through wg0 (10.9.14.4)" "$nmdm" \
+		"ping -c 3 -W 1000 10.9.14.4 2>&1" '[123] packets received' 60
+	assert 1 "WireGuard: ping6 R4 through wg0 (2001:db8:914::4)" "$nmdm" \
+		"ping6 -c 2 2001:db8:914::4 2>&1" '[12] packets received'
+	assert 1 "WireGuard: handshake with R4 completed" "$nmdm" \
+		"wg show wg0 latest-handshakes 2>&1" '[[:space:]][1-9][0-9]+$'
+
 	# wiki/R1 SNMP: bsnmpget to jail6 returns sysName.0 = "jail6".
 	# Exercises the same full path as the iperf3 test but with bsnmpd
 	# in jail6 - confirms snmp UDP/161 traverses the PPTP tunnel both
@@ -624,6 +633,30 @@ lab_full_vm2() {
 		"vtysh -c 'show bfd peers brief' 2>&1" '10\.4\.24\.2[[:space:]]+10\.4\.24\.4[[:space:]]+up'
 	assert 2 "BFD IPv6 peer up (OSPFv3 on ng1)" "$nmdm" \
 		"vtysh -c 'show bfd peers brief' 2>&1" 'fe80::[0-9a-f:]+[[:space:]]+fe80::[0-9a-f:]+[[:space:]]+up'
+
+	# Route-based IPsec: strongSwan negotiates IKEv2 and installs the ESP
+	# SAs for if_ipsec ipsec0 (reqid 100), underlay 10.0.23.2 <-> 10.0.34.4
+	# through R3. R2 initiates; give it time to retry while routes converge.
+	assert 2 "IPsec: IKEv2 SA up, ipsec0 CHILD_SA installed (AES-GCM)" "$nmdm" \
+		"swanctl --list-sas 2>&1" 'ipsec0: #[0-9]+, reqid 100, INSTALLED, TUNNEL, ESP:AES_GCM_16-256' 120
+	assert 2 "IPsec: ping R4 through ipsec0 (10.8.24.4)" "$nmdm" \
+		"ping -c 2 -W 1000 10.8.24.4 2>&1" '[12] packets received'
+	assert 2 "IPsec: ping6 R4 through ipsec0 (2001:db8:824::4)" "$nmdm" \
+		"ping6 -c 2 2001:db8:824::4 2>&1" '[12] packets received'
+	# The pings above decrypted on the inbound SA.
+	assert 2 "IPsec: inbound ESP SA counted packets" "$nmdm" \
+		"swanctl --list-sas 2>&1" 'in  [0-9a-f]+, +[1-9][0-9]* bytes'
+
+	# L2 overlays to R4: VXLAN over the IPv4 loopbacks, GENEVE over the
+	# IPv6 ones. The first ping may be lost to ARP over the overlay.
+	assert 2 "VXLAN: vxlan0 vni 42 10.0.0.2 -> 10.0.0.4" "$nmdm" \
+		"ifconfig vxlan0 2>&1" 'vni 42 local 10\.0\.0\.2:4789 remote 10\.0\.0\.4:4789'
+	assert 2 "VXLAN: ping R4 over vxlan0 (10.7.24.4)" "$nmdm" \
+		"ping -c 2 -W 1000 10.7.24.4 2>&1" '[12] packets received'
+	assert 2 "GENEVE: ping R4 over geneve0 (10.7.25.4)" "$nmdm" \
+		"ping -c 2 -W 1000 10.7.25.4 2>&1" '[12] packets received'
+	assert 2 "GENEVE: ping6 R4 over geneve0 (2001:db8:725::4)" "$nmdm" \
+		"ping6 -c 2 2001:db8:725::4 2>&1" '[12] packets received'
 
 	# wiki/R2 pimd running. Cross-checked from R4's neighbor table in
 	# lab_full_vm4 (R4 sees R2 over both ng0/ng1 PPTP tunnels).
@@ -795,6 +828,13 @@ lab_full_vm4() {
 		"sockstat 2>&1 | grep -E '10\\.0\\.45\\.5(:|\\.)2055' || echo none" \
 		'10\.0\.45\.5'
 
+	# IPsec responder side of R2's IKEv2 tunnel, and the NAT instance
+	# exercised in Phase 3.
+	assert 4 "IPsec: ipsec0 CHILD_SA installed (responder)" "$nmdm" \
+		"swanctl --list-sas 2>&1" 'ipsec0: #[0-9]+, reqid 100, INSTALLED, TUNNEL'
+	assert 4 "NAT: ipfw nat 1 translates to 10.0.34.44" "$nmdm" \
+		"ipfw nat show config 2>&1" 'nat 1 config ip 10\.0\.34\.44'
+
 	# Note: the iperf3 throughput tests for R4's pipes 40/41/60/61 are
 	# driven from R1 in the Phase 3 throughput postlude, AFTER every VM
 	# has been probed and assertions recorded (so failures point at
@@ -865,6 +905,8 @@ lab_full_throughput() {
 
 	# Stop the iperf3 server.
 	console_run "$nmdm5" "jexec jail6 pkill iperf3" >/dev/null
+
+	lab_full_nat_multicast
 
 	# --- jail5 nfacctd output file ---
 	# nfacctd in jail5 receives NetFlow v9 from R4 and writes a CSV per
@@ -978,6 +1020,59 @@ lab_full_vm5() {
 	# wiki/jail6: bsnmpd answers sysName.0 with "jail6".
 	assert 5 "jail6: bsnmpd answers sysName.0" "$nmdm" \
 		"jexec jail6 bsnmpget -s localhost sysName.0 2>&1" 'jail6'
+}
+
+# ---- NAT and multicast traffic (Phase 3) ---------------------------------
+lab_full_nat_multicast() {
+	local nmdm1="${NMDM_PREFIX}1${NMDM_SUFFIX}"
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local nmdm3="${NMDM_PREFIX}3${NMDM_SUFFIX}"
+	local nmdm4="${NMDM_PREFIX}4${NMDM_SUFFIX}"
+	local nmdm5="${NMDM_PREFIX}5${NMDM_SUFFIX}"
+
+	# NAT: R3 has no route back to jail6's LAN, so this ping only works
+	# because R4 translates 10.0.56.6 to 10.0.34.44. Check the far end
+	# first: pf's ICMP state is the shortest lived.
+	assert 5 "NAT: jail6 reaches R3 10.0.34.3 through R4's NAT" "$nmdm5" \
+		"jexec jail6 ping -c 3 -W 1000 10.0.34.3 2>&1" '[123] packets received'
+	assert 3 "NAT: R3 sees jail6 as 10.0.34.44" "$nmdm3" \
+		"pfctl -ss 2>&1" 'icmp 10\.0\.34\.3:8 <- 10\.0\.34\.44:'
+	assert 4 "NAT: ipfw nat 1 log counts the ICMP alias" "$nmdm4" \
+		"ipfw nat 1 show log 2>&1" 'icmp=[1-9]'
+
+	# PIM-SSM data path: jail6 sends to the channel (10.0.56.6, 232.1.1.1),
+	# R1 joins it with IGMPv3. Path: jail5 (pimd) -> R4 (FRR pimd) -> ng0
+	# -> R2 (pimd) -> R1. SSM rather than the ASM range: R2's RPF towards
+	# the RP 10.0.0.4 goes via R3, which runs no PIM, so (*,G) joins never
+	# reach R4 and an ASM stream is never delivered to R1.
+	local mc_join="iperf -s -u -B 232.1.1.1 -H 10.0.56.6 -i 1"
+	console_run "$nmdm1" "pkill -x iperf; ($mc_join > /tmp/mc.log 2>&1 &)" >/dev/null
+	assert 4 "PIM-SSM: R1's (S,G) join reached R4, OIF ng0" "$nmdm4" \
+		"vtysh -c 'show ip mroute' 2>&1" \
+		'10\.0\.56\.6[[:space:]]+232\.1\.1\.1[[:space:]].*(vtnet3|em3)[[:space:]]+ng0' 60
+	# 1000-byte datagrams fit the ng0 MTU (1456): no fragmentation.
+	console_run "$nmdm5" \
+		"jexec jail6 iperf -c 232.1.1.1 -u -T 32 -t 3 -b 1M -l 1000 >/dev/null 2>&1" 30 >/dev/null
+	assert 1 "PIM-SSM: R1 received the stream (<5% loss)" "$nmdm1" \
+		"cat /tmp/mc.log" ' [0-9]+/[1-9][0-9]{2,} \([0-4](\.[0-9]+)?%\)'
+	assert 2 "PIM-SSM: R2 kernel forwarded it (MFC packet count)" "$nmdm2" \
+		"netstat -g -f inet 2>&1" '10\.0\.56\.6[[:space:]]+232\.1\.1\.1[[:space:]]+[1-9]'
+
+	# Same stream with iperf's default 1470-byte datagrams: R4 fragments
+	# them for ng0 and R2 forwards the fragments. R2 is not a member, but
+	# ip_input() still hands every multicast packet to the local stack
+	# after ip_mforward() queued its copy, and ip_reass() rewrites the
+	# fragment header in place: the copy must own its header for R1 to get
+	# intact fragments.
+	console_run "$nmdm1" "pkill -x iperf; ($mc_join > /tmp/mc-frag.log 2>&1 &)" >/dev/null
+	assert 4 "PIM-SSM: join still in place for the fragmented run" "$nmdm4" \
+		"vtysh -c 'show ip mroute' 2>&1" \
+		'10\.0\.56\.6[[:space:]]+232\.1\.1\.1[[:space:]].*(vtnet3|em3)[[:space:]]+ng0' 60
+	console_run "$nmdm5" \
+		"jexec jail6 iperf -c 232.1.1.1 -u -T 32 -t 3 -b 1M >/dev/null 2>&1" 30 >/dev/null
+	assert 1 "PIM-SSM: fragmented datagrams forwarded intact (<5% loss)" "$nmdm1" \
+		"cat /tmp/mc-frag.log" ' [0-9]+/[1-9][0-9]{2,} \([0-4](\.[0-9]+)?%\)'
+	console_run "$nmdm1" "pkill -x iperf" >/dev/null
 }
 
 # ---- Failover (Phase 4) --------------------------------------------------

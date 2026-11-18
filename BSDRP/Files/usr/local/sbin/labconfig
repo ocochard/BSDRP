@@ -33,6 +33,13 @@ usage () {
 
 ### Full (maximum) features labs ###
 
+# WireGuard key pairs for the full lab tunnel R1 <-> R4. Published lab
+# keys: never reuse them outside this lab.
+WG_R1_PRIV="QOPbglABUE28AP7cH1/R40MRONJtCEb5D7oQsgf/SVQ="
+WG_R1_PUB="3xjpq+PndmpyTXkMqmz52M1nqiOk1aimy58gazKSJRk="
+WG_R4_PRIV="qIHrERRZTror61kg2ZnoaxrNbf2izR7midw3VJtgiXo="
+WG_R4_PUB="UeBvgWgycdsjJFw+79yOz9wFhYkMERFA7kU2mN9RdR0="
+
 full_vm1 () {
 sysrc hostname=R1 \
 	gateway_enable=NO \
@@ -42,14 +49,32 @@ sysrc hostname=R1 \
 	ifconfig_lagg0="laggproto loadbalance laggport em0 SYNCDHCP" \
 	ifconfig_lagg0_ipv6="inet6 accept_rtadv" \
 	rtsold_enable=yes \
-	sshd_enable=yes
+	sshd_enable=yes \
+	wireguard_enable=YES \
+	wireguard_interfaces="wg0"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# WireGuard road warrior to R4's loopback. Lab keys, never reuse them.
+mkdir -p /usr/local/etc/wireguard
+cat > /usr/local/etc/wireguard/wg0.conf <<EOF
+[Interface]
+PrivateKey = ${WG_R1_PRIV}
+Address = 10.9.14.1/24, 2001:db8:914::1/64
+
+[Peer]
+PublicKey = ${WG_R4_PUB}
+Endpoint = 10.0.0.4:51820
+AllowedIPs = 10.9.14.0/24, 2001:db8:914::/64
+PersistentKeepalive = 10
+EOF
+chmod 600 /usr/local/etc/wireguard/wg0.conf
 /usr/local/sbin/config save
 hostname R1
 service routing restart || true
 service netif restart
 service rtsold start
 service sshd start
+# wg-quick backgrounds a route monitor that keeps the caller's output open.
+service wireguard start > /dev/null 2>&1
 echo "VM1 configured"
 }
 
@@ -79,6 +104,66 @@ sysrc hostname=R2 \
 	kld_list+=" carp"
 kldstat -q -m carp || kldload carp
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# Tunnels to R4, set AFTER the rewrite above: "vxlanremote" and
+# "geneveremote" contain "em".
+# - ipsec0: route-based IPsec (if_ipsec), keyed by strongSwan (reqid 100),
+#   underlay 10.0.23.2 <-> 10.0.34.4 so it stays clear of the PPTP endpoints
+# - vxlan0: VXLAN over the IPv4 loopbacks
+# - geneve0: GENEVE over the IPv6 loopbacks
+kldstat -q -m ipsec || kldload ipsec
+sysrc kld_list+=" ipsec" \
+	cloned_interfaces+=" ipsec0 vxlan0 geneve0" \
+	create_args_ipsec0="reqid 100" \
+	ifconfig_ipsec0="inet tunnel 10.0.23.2 10.0.34.4" \
+	ifconfig_ipsec0_alias0="inet 10.8.24.2/32 10.8.24.4" \
+	ifconfig_ipsec0_ipv6="inet6 2001:db8:824::2 prefixlen 64" \
+	create_args_vxlan0="vxlanid 42 vxlanlocal 10.0.0.2 vxlanremote 10.0.0.4" \
+	ifconfig_vxlan0="inet 10.7.24.2/24" \
+	create_args_geneve0="geneveid 43 genevelocal 2001:db8::2 geneveremote 2001:db8::4" \
+	ifconfig_geneve0="inet 10.7.25.2/24" \
+	ifconfig_geneve0_ipv6="inet6 2001:db8:725::2 prefixlen 64" \
+	strongswan_enable=YES \
+	strongswan_interface=vici > /dev/null
+# R2 initiates; close_action restarts the tunnel if R4 tears it down.
+cat > /usr/local/etc/swanctl/swanctl.conf <<EOF
+connections {
+	r2r4 {
+		version = 2
+		local_addrs = 10.0.23.2
+		remote_addrs = 10.0.34.4
+		keyingtries = 0
+		dpd_delay = 10s
+		local {
+			auth = psk
+			id = r2
+		}
+		remote {
+			auth = psk
+			id = r4
+		}
+		children {
+			ipsec0 {
+				mode = tunnel
+				reqid = 100
+				policies = no
+				local_ts = 0.0.0.0/0, ::/0
+				remote_ts = 0.0.0.0/0, ::/0
+				esp_proposals = aes256gcm16
+				start_action = start
+				dpd_action = restart
+				close_action = start
+			}
+		}
+	}
+}
+secrets {
+	ike-r2r4 {
+		id-r2 = r2
+		id-r4 = r4
+		secret = "labsecret"
+	}
+}
+EOF
 
 cat > /usr/local/etc/mpd5/if-up.sh <<EOF
 #!/bin/sh
@@ -286,6 +371,10 @@ service frr start
 service dhcprelya start
 service mpd5 start
 service pimd start
+# After "service ipsec start": its ipsec.conf begins with "flush". The
+# redirection: charon, started through daemon(8), keeps the caller's output
+# open, which would hang whatever reads it (cloud-init).
+service strongswan start > /dev/null 2>&1
 echo "VM2 configured"
 }
 
@@ -434,6 +523,7 @@ sysrc hostname=R4 \
 	ifconfig_em3_ipv6="inet6 2001:db8:45::4 prefixlen 64" \
 	ifconfig_em2="10.0.34.4/24 mtu 1528" \
 	ifconfig_em2_ipv6="inet6 2001:db8:34::4 prefixlen 64" \
+	ifconfig_em2_alias0="inet 10.0.34.44/32" \
 	cloned_interfaces="lo1" \
 	ifconfig_lo1="inet 10.0.0.4/32" \
 	ifconfig_lo1_ipv6="inet6 2001:db8::4 prefixlen 128" \
@@ -458,6 +548,72 @@ ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 # "service frr start" below.
 
 sysrc frr_daemons="mgmtd zebra bfdd isisd ospfd ospf6d ripd ripngd staticd pimd" > /dev/null
+# Tunnels to R2 (see R2 for the details), also after the em->vtnet rewrite,
+# and the WireGuard server for R1.
+kldstat -q -m ipsec || kldload ipsec
+sysrc kld_list+=" ipsec" \
+	cloned_interfaces+=" ipsec0 vxlan0 geneve0" \
+	create_args_ipsec0="reqid 100" \
+	ifconfig_ipsec0="inet tunnel 10.0.34.4 10.0.23.2" \
+	ifconfig_ipsec0_alias0="inet 10.8.24.4/32 10.8.24.2" \
+	ifconfig_ipsec0_ipv6="inet6 2001:db8:824::4 prefixlen 64" \
+	create_args_vxlan0="vxlanid 42 vxlanlocal 10.0.0.4 vxlanremote 10.0.0.2" \
+	ifconfig_vxlan0="inet 10.7.24.4/24" \
+	create_args_geneve0="geneveid 43 genevelocal 2001:db8::4 geneveremote 2001:db8::2" \
+	ifconfig_geneve0="inet 10.7.25.4/24" \
+	ifconfig_geneve0_ipv6="inet6 2001:db8:725::4 prefixlen 64" \
+	strongswan_enable=YES \
+	strongswan_interface=vici \
+	wireguard_enable=YES \
+	wireguard_interfaces="wg0" > /dev/null
+# R4 only responds: R2 initiates and restarts the tunnel.
+cat > /usr/local/etc/swanctl/swanctl.conf <<EOF
+connections {
+	r2r4 {
+		version = 2
+		local_addrs = 10.0.34.4
+		remote_addrs = 10.0.23.2
+		dpd_delay = 10s
+		local {
+			auth = psk
+			id = r4
+		}
+		remote {
+			auth = psk
+			id = r2
+		}
+		children {
+			ipsec0 {
+				mode = tunnel
+				reqid = 100
+				policies = no
+				local_ts = 0.0.0.0/0, ::/0
+				remote_ts = 0.0.0.0/0, ::/0
+				esp_proposals = aes256gcm16
+			}
+		}
+	}
+}
+secrets {
+	ike-r2r4 {
+		id-r2 = r2
+		id-r4 = r4
+		secret = "labsecret"
+	}
+}
+EOF
+mkdir -p /usr/local/etc/wireguard
+cat > /usr/local/etc/wireguard/wg0.conf <<EOF
+[Interface]
+PrivateKey = ${WG_R4_PRIV}
+ListenPort = 51820
+Address = 10.9.14.4/24, 2001:db8:914::4/64
+
+[Peer]
+PublicKey = ${WG_R1_PUB}
+AllowedIPs = 10.9.14.1/32, 2001:db8:914::1/128
+EOF
+chmod 600 /usr/local/etc/wireguard/wg0.conf
 
 cat > /usr/local/etc/frr/frr.conf <<EOF
 frr version 9.1
@@ -671,6 +827,15 @@ kldstat -q -m dummynet || kldload dummynet
 \${fwcmd} add pipe 41 all from 10.0.0.2 to 10.0.0.4 in via any
 \${fwcmd} add pipe 60 all from 2001:db8::4 to 2001:db8::2 out via any
 \${fwcmd} add pipe 61 all from 2001:db8::2 to 2001:db8::4 in via any
+# NAT: jail6's LAN (10.0.56.0/24) reaches R3's 10.0.34.0/24, which has no
+# route back to it, as 10.0.34.44. A dedicated alias keeps the inbound rule
+# from catching any other flow to R4 (the IPsec underlay ends on 10.0.34.4).
+# Numbered after the netflow ngtee (01000): with one_pass, a nat rule ends
+# ipfw processing.
+kldstat -q -m ipfw_nat || kldload ipfw_nat
+\${fwcmd} nat 1 config ip 10.0.34.44 log
+\${fwcmd} add 1100 nat 1 ip4 from 10.0.56.0/24 to 10.0.34.0/24 out
+\${fwcmd} add 1200 nat 1 ip4 from any to 10.0.34.44 in
 # We don't want to block traffic, only shape some.
 # IMPORTANT: number the catch-all allow at 65000 so the ipfw_netflow rc.d
 # script's default ngtee rule (01000) lands BEFORE this allow and gets to
@@ -689,6 +854,9 @@ service mpd5 start
 service ipfw start
 service sysctl reload
 service ipfw_netflow start
+# See R2 and R1 for why these two starts are redirected.
+service strongswan start > /dev/null 2>&1
+service wireguard start > /dev/null 2>&1
 # NetFlow v9 data records are useless to a collector until it has seen the
 # template. ng_netflow only appends the template when
 # time_uptime >= templ_time + templ_last_ts (netflow_v9.c), and templ_last_ts

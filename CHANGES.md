@@ -6,6 +6,9 @@
 - Add a pimssm lab: PIM-SSM with pimd, no RP and no BSR
 - full lab: FRRouting's pimd on R4 to test PIM-SM interoperability with
   net/pimd
+- full lab: strongSwan IKEv2 route-based IPsec (if_ipsec), WireGuard,
+  VXLAN, GENEVE, ipfw NAT, BFD and PIM-SSM multicast traffic, and a
+  pf filtering rule, all checked by tools/regression-test.sh
 - pimd 3.1.0 to 3.4.0: Auto-RP support (listener, candidate RP
   announcer and mapping agent, with `autorp accept-from` to restrict
   trusted senders); privilege separation, the daemon now runs as a root

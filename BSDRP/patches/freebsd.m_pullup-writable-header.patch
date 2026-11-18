@@ -1,0 +1,101 @@
+Restore a private, writable header at the call sites that relied on
+m_pullup() to copy it.
+
+Before 671babc7949 ("mbuf: make m_pullup() an inline over most expected
+case", D60688), m_pullup() on a cluster mbuf always moved the header into
+a freshly allocated mbuf, even when it was already contiguous. Callers used
+that to unshare a header before modifying it:
+
+	if (!M_WRITABLE(m) || m->m_len < hlen)
+		m = m_pullup(m, hlen);
+
+The new inline returns the mbuf untouched when m_len >= len, so the header
+stays in the shared cluster. In ip_mroute's phyint_send() the copy queued
+for output then shares its IP header with the original, which ip_input()
+still passes to the local stack: ip_reass() rewrites the fragment header in
+place (offset in bytes, MF cleared, length minus the header) before the NIC
+sends the copy. Forwarded multicast fragments reach receivers corrupted
+(bad header checksum). Found by the full lab's PIM-SSM fragmented stream.
+
+Call __m_pullup(), the previous m_pullup() body, at those sites until this
+is fixed upstream.
+
+diff --git sys/netgraph/ng_ether.c sys/netgraph/ng_ether.c
+index db56ec504cf..ccaf7f2d33e 100644
+--- sys/netgraph/ng_ether.c
++++ sys/netgraph/ng_ether.c
+@@ -695,7 +695,7 @@ ng_ether_rcv_lower(hook_p hook, item_p item)
+ 	if (priv->autoSrcAddr) {
+ 		/* Make the mbuf writable if it's not already */
+ 		if (!M_WRITABLE(m)
+-		    && (m = m_pullup(m, sizeof(struct ether_header))) == NULL)
++		    && (m = __m_pullup(m, sizeof(struct ether_header))) == NULL)
+ 			return (ENOBUFS);
+ 
+ 		/* Overwrite source MAC address */
+diff --git sys/netinet/igmp.c sys/netinet/igmp.c
+index 5c6c46a4f4f..ddd009135f7 100644
+--- sys/netinet/igmp.c
++++ sys/netinet/igmp.c
+@@ -1509,7 +1509,7 @@ igmp_input(struct mbuf **mp, int *offp, int proto)
+ 	else
+ 		minlen += IGMP_MINLEN;
+ 	if ((!M_WRITABLE(m) || m->m_len < minlen) &&
+-	    (m = m_pullup(m, minlen)) == NULL) {
++	    (m = __m_pullup(m, minlen)) == NULL) {
+ 		IGMPSTAT_INC(igps_rcv_tooshort);
+ 		return (IPPROTO_DONE);
+ 	}
+diff --git sys/netinet/ip_mroute.c sys/netinet/ip_mroute.c
+index 0ab120ae08e..2a24e4fd436 100644
+--- sys/netinet/ip_mroute.c
++++ sys/netinet/ip_mroute.c
+@@ -1460,7 +1460,7 @@ X_ip_mforward(struct ip *ip, struct ifnet *ifp, struct mbuf *m,
+ 
+ 	mb0 = m_copypacket(m, M_NOWAIT);
+ 	if (mb0 && (!M_WRITABLE(mb0) || mb0->m_len < hlen))
+-		mb0 = m_pullup(mb0, hlen);
++		mb0 = __m_pullup(mb0, hlen);
+ 	if (mb0 == NULL) {
+ 		free(rte, M_MRTABLE);
+ 		MRW_WUNLOCK();
+@@ -1688,7 +1688,7 @@ ip_mdq(struct mfctable *mfct, struct mbuf *m, struct ifnet *ifp, struct mfc *rt,
+ 				struct mbuf *mm = m_copym(m, 0, hlen, M_NOWAIT);
+ 
+ 				if (mm && (!M_WRITABLE(mm) || mm->m_len < hlen))
+-					mm = m_pullup(mm, hlen);
++					mm = __m_pullup(mm, hlen);
+ 				if (mm == NULL)
+ 					return ENOBUFS;
+ 
+@@ -1832,7 +1832,7 @@ phyint_send(struct ip *ip, struct vif *vifp, struct mbuf *m)
+ 	 */
+ 	mb_copy = m_copypacket(m, M_NOWAIT);
+ 	if (mb_copy && (!M_WRITABLE(mb_copy) || mb_copy->m_len < hlen))
+-		mb_copy = m_pullup(mb_copy, hlen);
++		mb_copy = __m_pullup(mb_copy, hlen);
+ 	if (mb_copy == NULL)
+ 		return;
+ 
+diff --git sys/netinet6/ip6_mroute.c sys/netinet6/ip6_mroute.c
+index e91217ee8b2..2e9a5e2c7a6 100644
+--- sys/netinet6/ip6_mroute.c
++++ sys/netinet6/ip6_mroute.c
+@@ -1232,7 +1232,7 @@ X_ip6_mforward(struct ip6_hdr *ip6, struct ifnet *ifp, struct mbuf *m)
+ 	 * as other references may modify it in the meantime.
+ 	 */
+ 	if (mb0 && (!M_WRITABLE(mb0) || mb0->m_len < sizeof(struct ip6_hdr)))
+-		mb0 = m_pullup(mb0, sizeof(struct ip6_hdr));
++		mb0 = __m_pullup(mb0, sizeof(struct ip6_hdr));
+ 	if (mb0 == NULL) {
+ 		free(rte, M_MRTABLE6);
+ 		MFC6_UNLOCK();
+@@ -1647,7 +1647,7 @@ phyint_send(struct ip6_hdr *ip6, struct mif6 *mifp, struct mbuf *m)
+ 	mb_copy = m_copym(m, 0, M_COPYALL, M_NOWAIT);
+ 	if (mb_copy &&
+ 	    (!M_WRITABLE(mb_copy) || mb_copy->m_len < sizeof(struct ip6_hdr)))
+-		mb_copy = m_pullup(mb_copy, sizeof(struct ip6_hdr));
++		mb_copy = __m_pullup(mb_copy, sizeof(struct ip6_hdr));
+ 	if (mb_copy == NULL) {
+ 		return;
+ 	}
