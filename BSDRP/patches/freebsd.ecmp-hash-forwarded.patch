@@ -12,6 +12,66 @@ forwarded whose flowid is not a hash (!M_HASHTYPE_ISHASH) gets a software
 Toeplitz hash of its addresses, protocol and, when it is not a fragment,
 ports, using the existing fib4/fib6_calc_software_hash(). Packets already
 hashed by RSS hardware are left untouched.
+diff --git share/man/man4/route.4 share/man/man4/route.4
+index 5a6142ad09c..2009eb8ac5e 100644
+--- share/man/man4/route.4
++++ share/man/man4/route.4
+@@ -25,7 +25,7 @@
+ .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ .\" SUCH DAMAGE.
+ .\"
+-.Dd July 30, 2026
++.Dd November 18, 2026
+ .Dt ROUTE 4
+ .Os
+ .Sh NAME
+@@ -310,6 +310,46 @@ Specifiers for which addresses are present in the messages are:
+ #define RTA_AUTHOR    0x40   /* sockaddr for author of redirect */
+ #define RTA_BRD       0x80   /* for NEWADDR, broadcast or p-p dest addr */
+ .Ed
++.Sh SYSCTL VARIABLES
++The following variables control multipath routing:
++.Bl -tag -width indent
++.It Va net.route.multipath
++Allow several routes to the same destination with different gateways,
++grouped into one multipath route.
++Default is 1.
++.It Va net.route.hash_outbound
++Read-only.
++Set to 1 when the first multipath route is added: from then on,
++locally originated packets get a flow hash used to select the gateway of
++a multipath route.
++.It Va net.route.hash_forward
++Set to 1 on a router whose forwarded traffic uses only one gateway of its
++multipath routes, leaving the others idle.
++Typical cases are a router running as a virtual machine with a
++single-queue interface such as
++.Xr vtnet 4
++on
++.Xr bhyve 8 ,
++a router whose interfaces lack receive-side scaling,
++and a router sending traffic received from
++.Xr wg 4
++tunnels over multipath routes, for example a site reaching another
++through one tunnel per ISP.
++.Pp
++A multipath route selects the gateway from the flow hash of the packet,
++which the receiving interface computes.
++Those interfaces provide no hash, or
++.Xr wg 4
++clears it, so all the flows take the same gateway.
++When this variable is set, forwarded packets without a flow hash get one
++computed from their addresses, protocol and, unless fragmented, ports,
++so each flow keeps one gateway and the flows spread over all of them.
++Packets that already carry a hash from the interface are left untouched,
++so there is no need to set it when the interfaces support receive-side
++scaling.
++It costs one hash computation per forwarded packet without a hash.
++Default is 0.
++.El
+ .Sh SEE ALSO
+ .Xr sysctl 3 ,
+ .Xr route 8 ,
 diff --git sys/net/route.h sys/net/route.h
 index c2052dc9cde..d5177ed65ab 100644
 --- sys/net/route.h
