@@ -49,10 +49,21 @@ sysrc hostname=R1 \
 	ifconfig_lagg0="laggproto loadbalance laggport em0 SYNCDHCP" \
 	ifconfig_lagg0_ipv6="inet6 accept_rtadv" \
 	rtsold_enable=yes \
+	dhcp6c_enable=YES \
+	dhcp6c_interfaces=lagg0 \
 	sshd_enable=yes \
 	wireguard_enable=YES \
 	wireguard_interfaces="wg0"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# DHCPv6 address from dhcp6s on R3, through R2's dhcp6relay. SLAAC keeps
+# providing the default route and its own address.
+cat > /usr/local/etc/dhcp6c.conf <<EOF
+interface lagg0 {
+	send ia-na 0;
+};
+id-assoc na 0 {
+};
+EOF
 # WireGuard road warrior to R4's loopback. Lab keys, never reuse them.
 mkdir -p /usr/local/etc/wireguard
 cat > /usr/local/etc/wireguard/wg0.conf <<EOF
@@ -72,6 +83,7 @@ hostname R1
 service routing restart || true
 service netif restart
 service rtsold start
+service dhcp6c start
 service sshd start
 # wg-quick leaves a background route monitor whose exit trap deletes the
 # routes through wg0. Start it in its own session (daemon -f) so the end of
@@ -99,6 +111,10 @@ sysrc hostname=R2 \
 	dhcprelya_enable=YES \
 	dhcprelya_servers="10.0.45.5" \
 	dhcprelya_ifaces=em0 \
+	dhcp6relay_enable=YES \
+	dhcp6relay_interfaces=em0 \
+	dhcp6relay_flags="-r em1.23 -s 2001:db8:23::3" \
+	lldpd_enable=YES \
 	mpd_enable=YES \
 	mpd_flags="-b -s ppp" \
 	ipsec_enable=YES \
@@ -316,8 +332,10 @@ router-id 0.0.0.2
 router bgp 100
  neighbor 10.0.23.3 remote-as 100
  neighbor 10.0.23.3 password abigpassword
+ neighbor 10.0.23.3 bfd
  neighbor 2001:db8:23::3 remote-as 100
  neighbor 2001:db8:23::3 password abigpassword
+ neighbor 2001:db8:23::3 bfd
  !
  address-family ipv4 unicast
   network 10.0.0.2/32
@@ -372,6 +390,12 @@ service ipsec start
 service rtadvd start
 service frr start
 service dhcprelya start
+# Relays R1's DHCPv6 to dhcp6s on R3. "-r" names the interface towards the
+# server: dhcp6relay drops a reply arriving on any interface other than that
+# one or the client side, so the server sits behind the fixed VLAN 23 link
+# rather than behind a PPTP tunnel.
+service dhcp6relay start
+service lldpd start
 service mpd5 start
 service pimd start
 # After "service ipsec start": its ipsec.conf begins with "flush". The
@@ -390,9 +414,23 @@ sysrc hostname=R3 \
 	ifconfig_em2="inet 10.0.34.3/24 mtu 1528" \
 	ifconfig_em2_ipv6="inet6 2001:db8:34::3 prefixlen 64" \
 	bird_enable=YES \
+	dhcp6s_enable=YES \
+	dhcp6s_interface=em1.23 \
 	pf_enable=YES \
 	pf_rules="/etc/pf.conf"
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+
+# DHCPv6 server for R1's LAN, reached through R2's dhcp6relay. The pool is
+# bound to the interface the relayed requests arrive on.
+cat > /usr/local/etc/dhcp6s.conf <<EOF
+interface em1.23 {
+	address-pool r1lan 3600;
+};
+pool r1lan {
+	range 2001:db8:12::100 to 2001:db8:12::1ff;
+};
+EOF
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /usr/local/etc/dhcp6s.conf
 
 cat > /etc/pf.conf <<EOF
 #Variables definitions
@@ -483,6 +521,13 @@ protocol rip ng R4inet6 {
     };
 }
 
+# BFD for the BGP sessions with R2 (FRR bfdd at the other end)
+protocol bfd {
+}
+
+# "direct": bird treats an iBGP neighbor as multihop by default and would
+# then ask for a multihop BFD session, which FRR's single-hop one never
+# matches. R2 is on the VLAN 23 link.
 protocol bgp R2inet4 {
     local as 100;
     # Bird creates IPSEC SAD entry automatically but it need to know the source IP address
@@ -491,6 +536,8 @@ protocol bgp R2inet4 {
     neighbor 10.0.23.2 as 100;
     authentication md5;
     password "abigpassword";
+    direct;
+    bfd on;
     ipv4 {
         import all;
         export all;
@@ -505,9 +552,32 @@ protocol bgp R2inet6 {
     neighbor 2001:db8:23::2 as 100;
     authentication md5;
     password "abigpassword";
+    direct;
+    bfd on;
     ipv6 {
         import all;
         export all;
+    };
+}
+
+# ExaBGP on R4 injects TEST-NET prefixes; R2inet4/6 pass them on to R2
+protocol bgp EXA4 {
+    local as 100;
+    source address 10.0.34.3;
+    neighbor 10.0.34.4 as 65004;
+    ipv4 {
+        import all;
+        export none;
+    };
+}
+
+protocol bgp EXA6 {
+    local as 100;
+    source address 2001:db8:34::3;
+    neighbor 2001:db8:34::4 as 65004;
+    ipv6 {
+        import all;
+        export none;
     };
 }
 EOF
@@ -517,6 +587,7 @@ hostname R3
 service netif restart
 service pf start
 service bird start
+service dhcp6s start
 echo "VM3 configured"
 }
 
@@ -568,7 +639,37 @@ sysrc kld_list+=" ipsec" \
 	strongswan_enable=YES \
 	strongswan_interface=vici \
 	wireguard_enable=YES \
-	wireguard_interfaces="wg0" > /dev/null
+	wireguard_interfaces="wg0" \
+	exabgp_enable=YES \
+	lldpd_enable=YES > /dev/null
+# ExaBGP injects TEST-NET prefixes into bird on R3, which passes them on to
+# R2's FRR. Separate sessions per address family, like R2 <-> R3.
+cat > /usr/local/etc/exabgp/exabgp.conf <<EOF
+neighbor 10.0.34.3 {
+	router-id 10.0.0.4;
+	local-address 10.0.34.4;
+	local-as 65004;
+	peer-as 100;
+	family {
+		ipv4 unicast;
+	}
+	static {
+		route 192.0.2.0/24 next-hop 10.0.34.4;
+	}
+}
+neighbor 2001:db8:34::3 {
+	router-id 10.0.0.4;
+	local-address 2001:db8:34::4;
+	local-as 65004;
+	peer-as 100;
+	family {
+		ipv6 unicast;
+	}
+	static {
+		route 2001:db8:ffff::/48 next-hop 2001:db8:34::4;
+	}
+}
+EOF
 # R4 only responds: R2 initiates and restarts the tunnel.
 cat > /usr/local/etc/swanctl/swanctl.conf <<EOF
 connections {
@@ -861,6 +962,11 @@ service ipfw_netflow start
 service strongswan start > /dev/null 2>&1
 # Own session for the wg-quick route monitor: see R1.
 daemon -f service wireguard start
+# The python daemon may keep the caller's output open, like charon.
+service exabgp start > /dev/null 2>&1
+# LLDP neighbor R2 over vxlan0: the lab's host bridges drop the LLDP
+# multicast address (802.1D reserved), so only overlays see neighbors.
+service lldpd start
 # NetFlow v9 data records are useless to a collector until it has seen the
 # template. ng_netflow only appends the template when
 # time_uptime >= templ_time + templ_last_ts (netflow_v9.c), and templ_last_ts
@@ -916,7 +1022,8 @@ sysrc -f /etc/jails/jail5/rc.conf hostname=jail5 \
 	dhcpd_conf="/usr/local/etc/dhcpd.conf" \
 	frr_enable=YES \
 	nfacctd_enable=YES \
-	pimd_enable=YES
+	pimd_enable=YES \
+	lldpd_enable=YES
 ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/jails/jail5/rc.conf
 mkdir -p /etc/jails/jail5/local/frr
 # jail5 is a plain PIM router and last-hop DR: neither Candidate-BSR nor
@@ -1011,6 +1118,7 @@ sysrc -f /etc/jails/jail6/rc.conf hostname=jail6 \
 	ifconfig_lagg0_ipv6="inet6 accept_rtadv" \
 	rtsold_enable=YES \
 	bsnmpd_enable=YES \
+	lldpd_enable=YES \
 	gateway_enable=NO \
 	ipv6_gateway_enable=NO
 

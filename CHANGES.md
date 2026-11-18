@@ -9,6 +9,8 @@
 - full lab: strongSwan IKEv2 route-based IPsec (if_ipsec), WireGuard,
   VXLAN, GENEVE, ipfw NAT, BFD and PIM-SSM multicast traffic, and a
   pf filtering rule, all checked by tools/regression-test.sh
+- full lab: BFD between FRR and bird, ExaBGP injecting routes, a DHCPv6
+  relay and server, and LLDP
 - pimd 3.1.0 to 3.4.0: Auto-RP support (listener, candidate RP
   announcer and mapping agent, with `autorp accept-from` to restrict
   trusted senders); privilege separation, the daemon now runs as a root

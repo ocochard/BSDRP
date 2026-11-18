@@ -489,6 +489,12 @@ lab_full_vm1() {
 	assert 1 "WireGuard: handshake with R4 completed" "$nmdm" \
 		"wg show wg0 latest-handshakes 2>&1" '[[:space:]][1-9][0-9]+$'
 
+	# DHCPv6 address from dhcp6s on R3, relayed by R2's dhcp6relay. Like the
+	# DHCPv4 lease, the first Solicits go out before the server is up and
+	# dhcp6c backs off (up to 120s between them).
+	assert 1 "DHCPv6: lagg0 leased 2001:db8:12::1xx via R2's relay" "$nmdm" \
+		"ifconfig lagg0 inet6" 'inet6 2001:db8:12::1[0-9a-f]{2} prefixlen 128' 240
+
 	# wiki/R1 SNMP: bsnmpget to jail6 returns sysName.0 = "jail6".
 	# Exercises the same full path as the iperf3 test but with bsnmpd
 	# in jail6 - confirms snmp UDP/161 traverses the PPTP tunnel both
@@ -634,6 +640,32 @@ lab_full_vm2() {
 	assert 2 "BFD IPv6 peer up (OSPFv3 on ng1)" "$nmdm" \
 		"vtysh -c 'show bfd peers brief' 2>&1" 'fe80::[0-9a-f:]+[[:space:]]+fe80::[0-9a-f:]+[[:space:]]+up'
 
+	# BFD between two implementations: FRR bfdd here, bird on R3, both
+	# registered by the BGP sessions.
+	assert 2 "BFD peer 10.0.23.3 up (BGP, bird)" "$nmdm" \
+		"vtysh -c 'show bfd peers brief' 2>&1" '10\.0\.23\.2[[:space:]]+10\.0\.23\.3[[:space:]]+up'
+	assert 2 "BFD peer 2001:db8:23::3 up (BGP, bird)" "$nmdm" \
+		"vtysh -c 'show bfd peers brief' 2>&1" '2001:db8:23::2[[:space:]]+2001:db8:23::3[[:space:]]+up'
+
+	# ExaBGP on R4 -> bird on R3 -> FRR here: the TEST-NET prefixes arrive
+	# with ExaBGP's AS and next hop, learned from R3. Lines joined so the AS
+	# path, next hop and best flag match as one entry.
+	assert 2 "ExaBGP: 192.0.2.0/24 from R4 relayed by bird" "$nmdm" \
+		"vtysh -c 'show ip bgp 192.0.2.0/24' 2>&1 | paste -s -d ' ' -" \
+		'65004[[:space:]]+10\.0\.34\.4 from 10\.0\.23\.3 .*best'
+	assert 2 "ExaBGP: 2001:db8:ffff::/48 from R4 relayed by bird" "$nmdm" \
+		"vtysh -c 'show bgp ipv6 2001:db8:ffff::/48' 2>&1 | paste -s -d ' ' -" \
+		'65004[[:space:]]+2001:db8:34::4 from 2001:db8:23::3 .*best'
+
+	# R1's DHCPv6 relay towards R3 (asserted end to end on R1).
+	assert 2 "dhcp6relay running" "$nmdm" \
+		"pgrep -lf sbin/dhcp6relay || echo none" 'dhcp6relay'
+
+	# LLDP: the host bridges between VMs drop the LLDP multicast address
+	# (802.1D reserved range), so R4 is only seen across the VXLAN overlay.
+	assert 2 "LLDP: neighbor R4 over vxlan0" "$nmdm" \
+		"lldpcli -f keyvalue show neighbors 2>&1" '^lldp\.vxlan0\.chassis\.name=R4$'
+
 	# Route-based IPsec: strongSwan negotiates IKEv2 and installs the ESP
 	# SAs for if_ipsec ipsec0 (reqid 100), underlay 10.0.23.2 <-> 10.0.34.4
 	# through R3. R2 initiates; give it time to retry while routes converge.
@@ -695,6 +727,27 @@ lab_full_vm3() {
 		"birdc show protocols 2>&1" 'R2inet4[[:space:]]+BGP.*Established'
 	assert 3 "bird BGP to R2 (IPv6) Established" "$nmdm" \
 		"birdc show protocols 2>&1" 'R2inet6[[:space:]]+BGP.*Established'
+
+	# bird's side of the BFD sessions with FRR on R2. Single-hop, so the
+	# interface column names the VLAN 23 link.
+	assert 3 "bird BFD session to R2 (10.0.23.2) Up" "$nmdm" \
+		"birdc show bfd sessions 2>&1" '^10\.0\.23\.2[[:space:]]+[a-z]+1\.23[[:space:]]+Up'
+	assert 3 "bird BFD session to R2 (2001:db8:23::2) Up" "$nmdm" \
+		"birdc show bfd sessions 2>&1" '^2001:db8:23::2[[:space:]]+[a-z]+1\.23[[:space:]]+Up'
+
+	# ExaBGP sessions from R4 and the prefixes it injects.
+	assert 3 "bird BGP to ExaBGP (IPv4) Established" "$nmdm" \
+		"birdc show protocols 2>&1" 'EXA4[[:space:]]+BGP.*Established'
+	assert 3 "bird BGP to ExaBGP (IPv6) Established" "$nmdm" \
+		"birdc show protocols 2>&1" 'EXA6[[:space:]]+BGP.*Established'
+	assert 3 "ExaBGP: 192.0.2.0/24 received (AS65004)" "$nmdm" \
+		"birdc show route 192.0.2.0/24 2>&1" '\[EXA4 .*\[AS65004i\]'
+	assert 3 "ExaBGP: 2001:db8:ffff::/48 received (AS65004)" "$nmdm" \
+		"birdc show route 2001:db8:ffff::/48 2>&1" '\[EXA6 .*\[AS65004i\]'
+
+	# DHCPv6 server for R1 (asserted end to end on R1).
+	assert 3 "dhcp6s running" "$nmdm" \
+		"pgrep -lf sbin/dhcp6s || echo none" 'dhcp6s'
 
 	# wiki/R3 IPsec to R2
 	assert 3 "IPsec SA to 10.0.23.2 present" "$nmdm" \
@@ -834,6 +887,13 @@ lab_full_vm4() {
 		"swanctl --list-sas 2>&1" 'ipsec0: #[0-9]+, reqid 100, INSTALLED, TUNNEL'
 	assert 4 "NAT: ipfw nat 1 translates to 10.0.34.44" "$nmdm" \
 		"ipfw nat show config 2>&1" 'nat 1 config ip 10\.0\.34\.44'
+
+	# ExaBGP (asserted through bird on R3 and FRR on R2) and the R4 end of
+	# the LLDP check across vxlan0.
+	assert 4 "ExaBGP running" "$nmdm" \
+		"pgrep -lf 'm exabgp' || echo none" 'exabgp'
+	assert 4 "LLDP: neighbor R2 over vxlan0" "$nmdm" \
+		"lldpcli -f keyvalue show neighbors 2>&1" '^lldp\.vxlan0\.chassis\.name=R2$'
 
 	# Note: the iperf3 throughput tests for R4's pipes 40/41/60/61 are
 	# driven from R1 in the Phase 3 throughput postlude, AFTER every VM
@@ -1020,6 +1080,14 @@ lab_full_vm5() {
 	# wiki/jail6: bsnmpd answers sysName.0 with "jail6".
 	assert 5 "jail6: bsnmpd answers sysName.0" "$nmdm" \
 		"jexec jail6 bsnmpget -s localhost sysName.0 2>&1" 'jail6'
+
+	# LLDP across the epair between the jails, the only point-to-point
+	# Ethernet link in the lab without a host bridge in the middle. jail6's
+	# side is the lagg0 member.
+	assert 5 "LLDP: jail5 sees jail6 on epair0a" "$nmdm" \
+		"jexec jail5 lldpcli -f keyvalue show neighbors 2>&1" '^lldp\.epair0a\.chassis\.name=jail6$'
+	assert 5 "LLDP: jail6 sees jail5 on epair0b" "$nmdm" \
+		"jexec jail6 lldpcli -f keyvalue show neighbors 2>&1" '^lldp\.epair0b\.chassis\.name=jail5$'
 }
 
 # ---- NAT and multicast traffic (Phase 3) ---------------------------------
