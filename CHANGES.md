@@ -14,6 +14,11 @@
   pf filtering rule, all checked by tools/regression-test.sh
 - full lab: BFD between FRR and bird, ExaBGP injecting routes, a DHCPv6
   relay and server, and LLDP
+- Add an rtbh lab: a customer stops a DDoS that fills its access link
+  by announcing the victim with the BLACKHOLE community (RFC 7999), and
+  the ISP drops the flood upstream, checked by tools/regression-test.sh
+- frr10: zebra no longer turns IPv6 neighbor cache entries into kernel
+  host routes, which overrode static and BGP routes to the same address
 - Add a branch lab: a branch office uses two ISPs at once through two
   WireGuard tunnels, OSPF ECMP with net.route.hash_forward and BFD
   failover, checked by tools/regression-test.sh

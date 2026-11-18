@@ -29,6 +29,7 @@ usage () {
 	echo "-mlvpn: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links_with_mlvpn"
 	echo "-pimsm: https://bsdrp.net/documentation/examples/multicast_with_pim-sm"
 	echo "-pimssm: https://bsdrp.net/documentation/examples/multicast-with-pim-ssm"
+	echo "-rtbh: https://bsdrp.net/documentation/examples/rtbh-ddos-mitigation"
 	echo "-vpn: https://bsdrp.net/documentation/examples/gre_ipsec_and_openvpn"
 	exit 1
 }
@@ -4508,6 +4509,200 @@ ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
 branch_tunnels hq 5 ${WG_HQ_PRIV} ${WG_BRANCH_PUB} 10.0.23.2 10.0.24.2 \
 	lo1 10.0.5.5/32
 echo "VM5 (hq) configured"
+}
+
+### Remotely triggered blackhole (RTBH) lab ###
+# VM1 (internet) --- 10.0.12.0/24 --- VM2 (ISP, FRR, AS 64500)
+# VM2 --- 10.0.23.0/24, 10 Mbit/s --- VM3 (customer, FRR, AS 64501)
+# VM3 --- 203.0.113.0/24 --- VM4 (servers: victim .10, service .20)
+# A flood towards the victim fills the customer's 10 Mbit/s access link
+# (a dummynet pipe on the ISP), and every other service suffers. The
+# customer adds one static route tagged 666: FRR announces the victim's
+# /32 with the BLACKHOLE community (65535:666, RFC 7999), and the ISP sets
+# its next-hop to a discard address, dropping the flood before the link.
+
+rtbh_vm1 () {
+sysrc hostname=internet \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em0="inet 10.0.12.1/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::1 prefixlen 64" \
+	defaultrouter=10.0.12.2 \
+	ipv6_defaultrouter=2001:db8:12::2
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+echo "VM1 (internet) configured"
+}
+
+rtbh_vm2 () {
+local cif=em1
+sysrc hostname=isp \
+	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64" \
+	ifconfig_em1="inet 10.0.23.2/24" \
+	ifconfig_em1_ipv6="inet6 2001:db8:23::2 prefixlen 64" \
+	firewall_enable=YES \
+	firewall_script="/etc/ipfw.rules"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf && cif=vtnet1
+# The customer's access link: 10 Mbit/s towards the customer.
+cat > /etc/ipfw.rules <<EOF
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+kldstat -q -m dummynet || kldload dummynet
+\${fwcmd} -f flush
+\${fwcmd} pipe 1 config bw 10Mbit/s
+\${fwcmd} add 1000 pipe 1 ip from any to any out xmit ${cif}
+\${fwcmd} add 65000 allow ip from any to any
+EOF
+# "frr_daemons" contains "em": set it after the em->vtnet rewrite.
+sysrc frr_enable=YES frr_daemons="mgmtd zebra staticd bgpd"
+# Customer routes tagged BLACKHOLE get a discard next-hop: 192.0.2.1 and
+# 100::1 (RFC 6666 discard prefix) are static blackhole routes. Only the
+# customer's own space is accepted, as the aggregate or, when blackholed,
+# down to a single address. bgpd lets zebra resolve a next-hop through
+# another route only for multihop peers: disable-connected-check lifts that
+# for the discard next-hop. prefer-global keeps the IPv6 one from being
+# replaced by the peer's link-local address.
+cat > /usr/local/etc/frr/frr.conf <<EOF
+frr defaults traditional
+hostname isp
+log syslog
+!
+ip route 192.0.2.1/32 blackhole
+ipv6 route 100::1/128 blackhole
+!
+ip prefix-list CUST4 seq 5 permit 203.0.113.0/24 le 32
+ip prefix-list CUST4-AGG seq 5 permit 203.0.113.0/24
+ipv6 prefix-list CUST6 seq 5 permit 2001:db8:113::/48 le 128
+ipv6 prefix-list CUST6-AGG seq 5 permit 2001:db8:113::/48
+bgp community-list standard BLACKHOLE seq 5 permit 65535:666
+!
+route-map CUST4-IN permit 10
+ match ip address prefix-list CUST4
+ match community BLACKHOLE
+ set ip next-hop 192.0.2.1
+ set community no-export additive
+exit
+route-map CUST4-IN permit 20
+ match ip address prefix-list CUST4-AGG
+exit
+!
+route-map CUST6-IN permit 10
+ match ipv6 address prefix-list CUST6
+ match community BLACKHOLE
+ set ipv6 next-hop global 100::1
+ set ipv6 next-hop prefer-global
+ set community no-export additive
+exit
+route-map CUST6-IN permit 20
+ match ipv6 address prefix-list CUST6-AGG
+exit
+!
+router bgp 64500
+ bgp router-id 10.0.0.2
+ no bgp ebgp-requires-policy
+ neighbor 10.0.23.3 remote-as 64501
+ neighbor 10.0.23.3 disable-connected-check
+ neighbor 2001:db8:23::3 remote-as 64501
+ neighbor 2001:db8:23::3 disable-connected-check
+ !
+ address-family ipv4 unicast
+  neighbor 10.0.23.3 route-map CUST4-IN in
+  no neighbor 2001:db8:23::3 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  neighbor 2001:db8:23::3 activate
+  neighbor 2001:db8:23::3 route-map CUST6-IN in
+ exit-address-family
+exit
+!
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service ipfw start
+service frr start
+echo "VM2 (isp) configured"
+}
+
+rtbh_vm3 () {
+sysrc hostname=customer \
+	ifconfig_em1="inet 10.0.23.3/24" \
+	ifconfig_em1_ipv6="inet6 2001:db8:23::3 prefixlen 64" \
+	ifconfig_em2="inet 203.0.113.1/24" \
+	ifconfig_em2_ipv6="inet6 2001:db8:113::1 prefixlen 64" \
+	defaultrouter=10.0.23.2 \
+	ipv6_defaultrouter=2001:db8:23::2
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+sysrc frr_enable=YES frr_daemons="mgmtd zebra staticd bgpd"
+# A static route tagged 666 triggers the blackhole: it is redistributed
+# with the BLACKHOLE community (no NO_EXPORT here, it would keep the route
+# from the ISP: the ISP adds it). The untagged /48 discard route only gives
+# BGP the aggregate to announce.
+cat > /usr/local/etc/frr/frr.conf <<EOF
+frr defaults traditional
+hostname customer
+log syslog
+!
+ipv6 route 2001:db8:113::/48 blackhole
+!
+route-map RTBH permit 10
+ match tag 666
+ set community 65535:666
+exit
+!
+router bgp 64501
+ bgp router-id 10.0.0.3
+ no bgp ebgp-requires-policy
+ neighbor 10.0.23.2 remote-as 64500
+ neighbor 2001:db8:23::2 remote-as 64500
+ !
+ address-family ipv4 unicast
+  network 203.0.113.0/24
+  redistribute static route-map RTBH
+  no neighbor 2001:db8:23::2 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 2001:db8:113::/48
+  redistribute static route-map RTBH
+  neighbor 2001:db8:23::2 activate
+ exit-address-family
+exit
+!
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service frr start
+echo "VM3 (customer) configured"
+}
+
+rtbh_vm4 () {
+sysrc hostname=servers \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em2="inet 203.0.113.10/24" \
+	ifconfig_em2_alias0="inet 203.0.113.20/32" \
+	ifconfig_em2_ipv6="inet6 2001:db8:113::10 prefixlen 64" \
+	ifconfig_em2_alias1="inet6 2001:db8:113::20 prefixlen 128" \
+	defaultrouter=203.0.113.1 \
+	ipv6_defaultrouter=2001:db8:113::1
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+# Lets the internet VM flood the victim with "iperf3 -u". Full path: the
+# first-boot PATH has no /usr/local/bin.
+/usr/local/bin/iperf3 -s -D
+echo "VM4 (servers) configured"
 }
 
 ### Main

@@ -5,8 +5,9 @@
 # SCOPE: this driver implements assertions for the "full" lab (5 VMs - the
 # BSDRP maximum-features lab), the "anycast" lab (4 VMs - anycast DNS
 # failover with ExaBGP), the "branch" lab (5 VMs - branch office ECMP over
-# two WireGuard tunnels) and the "ecmp" lab (4 VMs - static multipath routes
-# over two links). Other labs declared in tools/BSDRP-lab-bhyve.sh
+# two WireGuard tunnels), the "ecmp" lab (4 VMs - static multipath routes
+# over two links) and the "rtbh" lab (4 VMs - remotely triggered blackhole
+# against a DDoS). Other labs declared in tools/BSDRP-lab-bhyve.sh
 # (frr, bgp, vpn, mlvpn, mlppp, fairshape, jailpf, pimsm, pimssm, vrrp,
 # etc.) have no assertions defined here yet - running this driver against
 # them will fail with "lab '<name>' has no assertions implemented yet".
@@ -1482,6 +1483,92 @@ lab_ecmp_throughput() {
 	done
 }
 
+# === rtbh lab =============================================================
+#
+# The ISP limits the customer link to 10 Mbit/s and honours the BLACKHOLE
+# community on the customer's routes; the customer triggers it with a
+# static route tagged 666.
+
+lab_rtbh_vm1() {
+	local nmdm="$1"
+
+	assert 1 "hostname is internet" "$nmdm" "hostname" '^internet$'
+	assert 1 "ping the victim 203.0.113.10" "$nmdm" \
+		"ping -c 2 -t 5 203.0.113.10 2>&1" ' 0\.0% packet loss' 90
+	assert 1 "ping the service 203.0.113.20" "$nmdm" \
+		"ping -c 2 -t 5 203.0.113.20 2>&1" ' 0\.0% packet loss'
+	assert 1 "ping the victim 2001:db8:113::10" "$nmdm" \
+		"ping -6 -c 2 -t 5 2001:db8:113::10 2>&1" ' 0\.0% packet loss' 30
+}
+
+lab_rtbh_vm2() {
+	local nmdm="$1"
+
+	assert 2 "hostname is isp" "$nmdm" "hostname" '^isp$'
+	assert 2 "customer link limited to 10 Mbit/s" "$nmdm" \
+		"ipfw pipe 1 show 2>&1" '10\.000 Mbit/s'
+	assert 2 "BGP session to the customer (10.0.23.3) Established" "$nmdm" \
+		"vtysh -c 'show bgp ipv4 unicast summary' 2>&1" '^10\.0\.23\.3 .* [0-9]+ +[0-9]+ +N/A$' 60
+	assert 2 "BGP session to the customer (2001:db8:23::3) Established" "$nmdm" \
+		"vtysh -c 'show bgp ipv6 unicast summary' 2>&1" '^2001:db8:23::3 .* [0-9]+ +[0-9]+ +N/A$' 60
+	assert 2 "customer aggregate 203.0.113.0/24 received" "$nmdm" \
+		"vtysh -c 'show bgp ipv4 unicast 203.0.113.0/24' 2>&1" '10\.0\.23\.3 from 10\.0\.23\.3'
+	assert 2 "discard next-hop 192.0.2.1 is a blackhole route" "$nmdm" \
+		"netstat -rn -f inet | grep -E '^192\.0\.2\.1 '" ' UH[^ ]*B '
+}
+
+lab_rtbh_vm3() {
+	local nmdm="$1"
+
+	assert 3 "hostname is customer" "$nmdm" "hostname" '^customer$'
+	assert 3 "203.0.113.0/24 advertised to the ISP" "$nmdm" \
+		"vtysh -c 'show bgp ipv4 unicast neighbors 10.0.23.2 advertised-routes' 2>&1" '203\.0\.113\.0/24'
+	assert 3 "2001:db8:113::/48 advertised to the ISP" "$nmdm" \
+		"vtysh -c 'show bgp ipv6 unicast neighbors 2001:db8:23::2 advertised-routes' 2>&1" '2001:db8:113::/48'
+}
+
+lab_rtbh_vm4() {
+	local nmdm="$1"
+
+	assert 4 "hostname is servers" "$nmdm" "hostname" '^servers$'
+	assert 4 "iperf3 server running on the victim" "$nmdm" \
+		"pgrep -x iperf3 || echo none" '^[0-9]+$'
+}
+
+# Phase 4: flood the victim from the internet, check the other service
+# suffers, trigger the blackhole on the customer, check the ISP drops the
+# flood and the service recovers, then withdraw the trigger.
+lab_rtbh_failover() {
+	local nmdm1="${NMDM_PREFIX}1${NMDM_SUFFIX}"
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local nmdm3="${NMDM_PREFIX}3${NMDM_SUFFIX}"
+	# Prints "congested" above 20% loss, "clean" at 0%.
+	local probe20="ping -i 0.2 -c 25 203.0.113.20 2>&1 | awk '/packet loss/ {l = \$7 + 0; print (l > 20) ? \"congested\" : (l == 0) ? \"clean\" : \"lossy\"}'"
+	local trig="ip route 203.0.113.10/32 blackhole tag 666"
+	local trig6="ipv6 route 2001:db8:113::10/128 blackhole tag 666"
+
+	console_run "$nmdm1" "(iperf3 -c 203.0.113.10 -u -b 50M -l 1400 -t 300 > /dev/null 2>&1 &)" >/dev/null
+	assert 1 "flood fills the customer link: service 203.0.113.20 loses packets" "$nmdm1" \
+		"$probe20" '^congested$' 30
+
+	console_run "$nmdm3" "vtysh -c 'conf t' -c '$trig' -c '$trig6'" >/dev/null
+	assert 2 "victim 203.0.113.10/32 blackholed at the ISP" "$nmdm2" \
+		"netstat -rn -f inet | grep -E '^203\.0\.113\.10 '" ' UH[^ ]*B ' 15
+	assert 2 "victim 2001:db8:113::10 blackholed at the ISP" "$nmdm2" \
+		"netstat -rn -f inet6 | grep -E '^2001:db8:113::10 '" ' UH[^ ]*B ' 15
+	assert 2 "BLACKHOLE route gets NO_EXPORT at the ISP" "$nmdm2" \
+		"vtysh -c 'show bgp ipv4 unicast 203.0.113.10/32' 2>&1" 'Community: blackhole no-export'
+	assert 1 "flood dropped upstream: service 203.0.113.20 clean again" "$nmdm1" \
+		"$probe20" '^clean$' 30
+
+	console_run "$nmdm3" "vtysh -c 'conf t' -c 'no $trig' -c 'no $trig6'" >/dev/null
+	console_run "$nmdm1" "pkill iperf3" >/dev/null
+	assert 2 "trigger withdrawn: victim routed to the customer again" "$nmdm2" \
+		"netstat -rn -f inet | grep -cE '^203\.0\.113\.10 '" '^0$' 15
+	assert 1 "victim 203.0.113.10 reachable again" "$nmdm1" \
+		"ping -c 2 -t 5 203.0.113.10 2>&1" ' 0\.0% packet loss' 30
+}
+
 # === Lab metadata =========================================================
 
 lab_vm_count() {
@@ -1500,6 +1587,7 @@ lab_vm_count() {
 		jailpf)    echo 5 ;;
 		pimsm)     echo 4 ;;
 		pimssm)    echo 4 ;;
+		rtbh)      echo 4 ;;
 		vrrp)      echo 4 ;;
 		*)         echo 0 ;;
 	esac
@@ -1530,8 +1618,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	full|anycast|branch|ecmp) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'full', 'anycast', 'branch' and 'ecmp' have them)" ;;
+	full|anycast|branch|ecmp|rtbh) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'full', 'anycast', 'branch', 'ecmp' and 'rtbh' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------
