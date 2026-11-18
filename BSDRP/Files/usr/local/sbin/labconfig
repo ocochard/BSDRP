@@ -12,6 +12,7 @@ usage () {
 	echo "$0 full_vm1        for configuring VM1 of lab Full"
 	echo "$0 frr_vm3         for configuring VM3 of lab FRR"
 	echo "Lab list:"
+	echo "-accounting: https://bsdrp.net/documentation/examples/per-customer-traffic-accounting"
 	echo "-anycast: https://bsdrp.net/documentation/examples/anycast-dns-failover-with-exabgp"
 	echo "-branch: https://bsdrp.net/documentation/examples/branch-office-ecmp-over-wireguard"
 	echo "-bird_jails: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab_with_bird"
@@ -4961,6 +4962,178 @@ ixp_member 5 64503 192.0.2.0/24 2001:db8:c::/48 \
  set community 0:64502
 exit
 !" " route-map NOT-TO-64502" " route-map NOT-TO-64502"
+}
+
+### Per-customer traffic accounting lab ###
+# VM1 (internet) --- 10.0.12.0/24 --- VM2 (router)
+# VM2 --- 198.51.100.0/24 --- VM3 (customer-a)
+# VM2 --- 203.0.113.0/24 --- VM4 (customer-b)
+# VM2 --- 10.0.25.0/24 --- VM5 (collector)
+# The router exports NetFlow v9 (ng_netflow, fed by ipfw) to the
+# collector, where nfacctd (pmacct) tags each flow with the customer and
+# the direction and totals bytes and packets per tag: a live table
+# ("pmacct -s") and a CSV file per minute for billing.
+
+accounting_vm1 () {
+sysrc hostname=internet \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em0="inet 10.0.12.1/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::1 prefixlen 64" \
+	defaultrouter=10.0.12.2 \
+	ipv6_defaultrouter=2001:db8:12::2
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+# Full path: the first-boot PATH has no /usr/local/bin.
+/usr/local/bin/iperf3 -s -D
+echo "VM1 (internet) configured"
+}
+
+accounting_vm2 () {
+sysrc hostname=router \
+	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64" \
+	ifconfig_em1="inet 198.51.100.1/24" \
+	ifconfig_em1_ipv6="inet6 2001:db8:a::1 prefixlen 64" \
+	ifconfig_em2="inet 203.0.113.1/24" \
+	ifconfig_em2_ipv6="inet6 2001:db8:b::1 prefixlen 64" \
+	ifconfig_em3="inet 10.0.25.2/24" \
+	firewall_enable=YES \
+	firewall_script="/etc/ipfw.rules" \
+	ipfw_netflow_enable=YES \
+	ipfw_netflow_ip=10.0.25.5 \
+	ipfw_netflow_port=2055 \
+	ipfw_netflow_version=9
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# ipfw_netflow tees every packet to ng_netflow at rule 1000. A forwarded
+# packet crosses ipfw twice, in and out: skip the tee on the way out, or
+# every byte would be accounted twice.
+cat > /etc/ipfw.rules <<'EOF'
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+${fwcmd} -f flush
+${fwcmd} add 900 skipto 1100 ip from any to any out
+${fwcmd} add 65000 allow ip from any to any
+EOF
+# Tune ng_netflow at every boot, once ipfw_netflow has created it:
+# - export a flow 5s after its last packet, and a long one every 60s
+#   (defaults: 15s and 1800s);
+# - send the v9 template with the first export, not after 600s of uptime
+#   (see full_vm4);
+# - send each flow record at once: ng_netflow only sends a datagram once
+#   it cannot hold another record, and a 1500-byte one takes many flows to
+#   fill on a quiet lab router (200 leaves room for a single record).
+cat > /usr/local/etc/rc.d/netflow_tune <<'EOF'
+#!/bin/sh
+# PROVIDE: netflow_tune
+# REQUIRE: ipfw_netflow
+
+. /etc/rc.subr
+
+name="netflow_tune"
+rcvar="${name}_enable"
+start_cmd="${name}_start"
+stop_cmd=":"
+
+netflow_tune_start()
+{
+	ngctl msg netflow: settimeouts '{ inactive=5 active=60 }'
+	ngctl msg netflow: settemplate '{ time=60 packets=20 }'
+	ngctl msg netflow: setmtu '{ mtu=200 }'
+}
+
+load_rc_config $name
+run_rc_command "$1"
+EOF
+chmod 555 /usr/local/etc/rc.d/netflow_tune
+sysrc netflow_tune_enable=YES
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service ipfw start
+service ipfw_netflow start
+service netflow_tune start
+echo "VM2 (router) configured"
+}
+
+# $1: VM, $2: hostname, $3: IPv4 /24 prefix without its last byte,
+# $4: IPv6 /64 prefix (ending in "::")
+accounting_customer () {
+sysrc hostname=$2 \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em1="inet $3.10/24" \
+	ifconfig_em1_ipv6="inet6 ${4}10 prefixlen 64" \
+	defaultrouter=$3.1 \
+	ipv6_defaultrouter=${4}1
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+echo "VM$1 ($2) configured"
+}
+
+accounting_vm3 () {
+accounting_customer 3 customer-a 198.51.100 2001:db8:a::
+}
+
+accounting_vm4 () {
+accounting_customer 4 customer-b 203.0.113 2001:db8:b::
+}
+
+accounting_vm5 () {
+sysrc hostname=collector \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em1="inet 10.0.25.5/24" \
+	nfacctd_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# Each customer's address space, IPv4 and IPv6: traffic to it is "in",
+# traffic from it "out". The first matching line wins. Tag: customer
+# number x 100, plus 1 for in, 2 for out (the memory plugin cannot
+# aggregate on text labels).
+cat > /usr/local/etc/customers.map <<EOF
+set_tag=101 dst_net=198.51.100.0/24
+set_tag=101 dst_net=2001:db8:a::/48
+set_tag=102 src_net=198.51.100.0/24
+set_tag=102 src_net=2001:db8:a::/48
+set_tag=201 dst_net=203.0.113.0/24
+set_tag=201 dst_net=2001:db8:b::/48
+set_tag=202 src_net=203.0.113.0/24
+set_tag=202 src_net=2001:db8:b::/48
+EOF
+# nfacctd_time_new: time-bins by arrival at the collector. With the
+# exporter's flow timestamps, the flows of a bulk transfer never reached a
+# CSV file in this lab.
+cat > /usr/local/etc/nfacctd.conf <<EOF
+daemonize: true
+syslog: daemon
+nfacctd_time_new: true
+nfacctd_ip: 10.0.25.5
+nfacctd_port: 2055
+pre_tag_map: /usr/local/etc/customers.map
+plugins: memory[live], print[billing]
+aggregate[live]: tag
+aggregate[billing]: tag
+imt_path[live]: /tmp/accounting.pipe
+print_output[billing]: csv
+print_output_file[billing]: /var/log/accounting-%Y%m%d-%H%M.csv
+print_refresh_time[billing]: 60
+print_history[billing]: 1m
+print_history_roundoff[billing]: m
+print_output_file_append[billing]: true
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service nfacctd start
+echo "VM5 (collector) configured"
 }
 
 ### Main

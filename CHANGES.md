@@ -14,6 +14,10 @@
   pf filtering rule, all checked by tools/regression-test.sh
 - full lab: BFD between FRR and bird, ExaBGP injecting routes, a DHCPv6
   relay and server, and LLDP
+- Add an accounting lab: the router exports NetFlow v9 (ipfw and
+  ng_netflow) and pmacct's nfacctd totals each customer's traffic, in
+  and out, IPv4 and IPv6, checked against known transfers by
+  tools/regression-test.sh
 - Add an ixp lab: two route servers, BIRD and FRR, on a peering LAN
   filter each member to its own prefixes, honour "do not announce to"
   communities and back each other up, checked by tools/regression-test.sh

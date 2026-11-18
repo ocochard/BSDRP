@@ -7,11 +7,13 @@
 # failover with ExaBGP), the "branch" lab (5 VMs - branch office ECMP over
 # two WireGuard tunnels), the "ecmp" lab (4 VMs - static multipath routes
 # over two links), the "ixp" lab (5 VMs - redundant BIRD and FRR route
-# servers on a peering LAN) and the "rtbh" lab (4 VMs - remotely triggered
-# blackhole against a DDoS). Other labs declared in tools/BSDRP-lab-bhyve.sh
-# (frr, bgp, vpn, mlvpn, mlppp, fairshape, jailpf, pimsm, pimssm, vrrp,
-# etc.) have no assertions defined here yet - running this driver against
-# them will fail with "lab '<name>' has no assertions implemented yet".
+# servers on a peering LAN), the "rtbh" lab (4 VMs - remotely triggered
+# blackhole against a DDoS) and the "accounting" lab (5 VMs - per-customer
+# traffic accounting with NetFlow and pmacct). Other labs declared in
+# tools/BSDRP-lab-bhyve.sh (frr, bgp, vpn, mlvpn, mlppp, fairshape, jailpf,
+# pimsm, pimssm, vrrp, etc.) have no assertions defined here yet - running
+# this driver against them will fail with "lab '<name>' has no assertions
+# implemented yet".
 #
 # Drives the serial consoles of a lab launched by BSDRP-lab-bhyve.sh -r <lab>
 # and runs per-VM assertions. Assertions for the "full" lab are derived from
@@ -1680,10 +1682,95 @@ lab_ixp_failover() {
 	done
 }
 
+# === accounting lab =======================================================
+#
+# The router exports NetFlow v9 to the collector, where nfacctd totals
+# bytes per customer and direction (tag: customer x 100, +1 in, +2 out).
+
+ACCT_QUERY="pmacct -s -p /tmp/accounting.pipe"
+
+lab_accounting_vm1() {
+	local nmdm="$1"
+
+	assert 1 "hostname is internet" "$nmdm" "hostname" '^internet$'
+	assert 1 "iperf3 server running" "$nmdm" \
+		"pgrep -x iperf3 || echo none" '^[0-9]+$'
+}
+
+lab_accounting_vm2() {
+	local nmdm="$1"
+
+	assert 2 "hostname is router" "$nmdm" "hostname" '^router$'
+	assert 2 "outgoing packets skip the NetFlow tee" "$nmdm" \
+		"ipfw list 900 2>&1" '^00900 skipto 1100 ip from any to any out$'
+	assert 2 "ng_netflow exporting v9 to the collector" "$nmdm" \
+		"ngctl show netflow: 2>&1" 'export9 +netflow_export'
+	assert 2 "ng_netflow tuned (5s inactive timeout)" "$nmdm" \
+		"ngctl msg netflow: info 2>&1" 'Inactive timeout=5 '
+}
+
+# $1: VM, $2: hostname, $3: nmdm
+lab_accounting_customer() {
+	local vm="$1" name="$2" nmdm="$3"
+
+	assert "$vm" "hostname is ${name}" "$nmdm" "hostname" "^${name}\$"
+	assert "$vm" "ping the internet 10.0.12.1" "$nmdm" \
+		"ping -c 2 -t 5 10.0.12.1 2>&1" ' 0\.0% packet loss' 60
+	assert "$vm" "ping the internet 2001:db8:12::1" "$nmdm" \
+		"ping -6 -c 2 -t 5 2001:db8:12::1 2>&1" ' 0\.0% packet loss' 30
+}
+
+lab_accounting_vm3() { lab_accounting_customer 3 customer-a "$1"; }
+lab_accounting_vm4() { lab_accounting_customer 4 customer-b "$1"; }
+
+lab_accounting_vm5() {
+	local nmdm="$1"
+
+	assert 5 "hostname is collector" "$nmdm" "hostname" '^collector$'
+	assert 5 "nfacctd live table answers" "$nmdm" \
+		"$ACCT_QUERY 2>&1" '^TAG +PACKETS +BYTES'
+}
+
+# Phase 3: transfer known volumes with iperf3, then check the collector
+# accounted each one to the right customer and direction: between 100%
+# and 120% of the payload (TCP/IP headers, and the ACKs of the other
+# transfer). Counting forwarded packets both in and out would give 200%.
+lab_accounting_throughput() {
+	local nmdm3="${NMDM_PREFIX}3${NMDM_SUFFIX}"
+	local nmdm4="${NMDM_PREFIX}4${NMDM_SUFFIX}"
+	local nmdm5="${NMDM_PREFIX}5${NMDM_SUFFIX}"
+	local iperf="/usr/local/bin/iperf3"
+
+	console_run "$nmdm5" "$ACCT_QUERY -e" >/dev/null
+	assert 3 "customer-a downloads 40 MiB over IPv4" "$nmdm3" \
+		"$iperf -c 10.0.12.1 -R -n 40M 2>&1" 'receiver' 60
+	assert 3 "customer-a uploads 10 MiB over IPv6" "$nmdm3" \
+		"$iperf -6 -c 2001:db8:12::1 -n 10M 2>&1" 'receiver' 60
+	assert 4 "customer-b downloads 20 MiB over IPv6" "$nmdm4" \
+		"$iperf -6 -c 2001:db8:12::1 -R -n 20M 2>&1" 'receiver' 60
+	acct_check 101 40 "customer-a in (IPv4 download)"
+	acct_check 102 10 "customer-a out (IPv6 upload)"
+	acct_check 201 20 "customer-b in (IPv6 download)"
+	# The files are written a minute or two after their time-bin.
+	assert 5 "billing CSV files hold customer-a's 40 MiB download" "$nmdm5" \
+		"cat /var/log/accounting-*.csv 2>&1 | awk -F, '\$1 == 101 { s += \$3 } END { print (s >= 40 * 1048576) ? \"ok\" : \"short\", s }'" \
+		'^ok ' 180
+}
+
+# $1: tag, $2: MiB transferred, $3: description
+acct_check() {
+	local nmdm5="${NMDM_PREFIX}5${NMDM_SUFFIX}"
+
+	assert 5 "accounted ${3}: 100-120% of ${2} MiB" "$nmdm5" \
+		"$ACCT_QUERY | awk '\$1 == $1 { r = \$3 / ($2 * 1048576); printf \"%s %.3f\\n\", (r >= 1 && r <= 1.2) ? \"ok\" : \"off\", r }'" \
+		'^ok ' 30
+}
+
 # === Lab metadata =========================================================
 
 lab_vm_count() {
 	case "$1" in
+		accounting) echo 5 ;;
 		anycast)   echo 4 ;;
 		branch)    echo 5 ;;
 		full)      echo 5 ;;
@@ -1731,8 +1818,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	full|anycast|branch|ecmp|ixp|rtbh) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'full', 'anycast', 'branch', 'ecmp', 'ixp' and 'rtbh' have them)" ;;
+	accounting|full|anycast|branch|ecmp|ixp|rtbh) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'full', 'anycast', 'branch', 'ecmp', 'ixp' and 'rtbh' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------
