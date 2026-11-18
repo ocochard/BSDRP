@@ -1,40 +1,40 @@
-Restore a private, writable header at the call sites that relied on
-m_pullup() to copy it.
+Give the multicast routing, IGMP, ip6_mloopback() and ng_ether call sites a
+private, writable header again.
 
-Before 671babc7949 ("mbuf: make m_pullup() an inline over most expected
-case", D60688), m_pullup() on a cluster mbuf always moved the header into
-a freshly allocated mbuf, even when it was already contiguous. Callers used
-that to unshare a header before modifying it:
+These callers write to a header they first unshare with:
 
-	if (!M_WRITABLE(m) || m->m_len < hlen)
-		m = m_pullup(m, hlen);
+	if (!M_WRITABLE(m) || m->m_len < len)
+		m = m_pullup(m, len);
 
-The new inline returns the mbuf untouched when m_len >= len, so the header
-stays in the shared cluster. In ip_mroute's phyint_send() the copy queued
-for output then shares its IP header with the original, which ip_input()
-still passes to the local stack: ip_reass() rewrites the fragment header in
-place (offset in bytes, MF cleared, length minus the header) before the NIC
-sends the copy. Forwarded multicast fragments reach receivers corrupted
-(bad header checksum). Found by the full lab's PIM-SSM fragmented stream.
+Since 671babc7949 ("mbuf: make m_pullup() an inline over most expected
+case", D60688), m_pullup() returns the mbuf unchanged when the bytes are
+already contiguous, so the header stays in the shared cluster. Use
+m_copyup(), which always allocates a new mbuf for the header.
 
-Call __m_pullup(), the previous m_pullup() body, at those sites until this
-is fixed upstream.
+Observed in the BSDRP full lab:
+- ip_mroute.c phyint_send(): forwarded IPv4 multicast fragments corrupted,
+  ip_reass() rewrites the original header while the copy waits to be sent.
+- ip6_mroute.c ip6_mdq(): the wrong-MIF upcall writes an mrt6msg over the
+  original IPv6 header (version, traffic class, flow label); a local member
+  receives traffic class 0x02 instead of 0xb8.
 
 diff --git sys/netgraph/ng_ether.c sys/netgraph/ng_ether.c
-index db56ec504cf..ccaf7f2d33e 100644
+index db56ec504cfe..1ec181402dce 100644
 --- sys/netgraph/ng_ether.c
 +++ sys/netgraph/ng_ether.c
-@@ -695,7 +695,7 @@ ng_ether_rcv_lower(hook_p hook, item_p item)
+@@ -694,8 +694,8 @@ ng_ether_rcv_lower(hook_p hook, item_p item)
+ 	/* Drop in the MAC address if desired */
  	if (priv->autoSrcAddr) {
  		/* Make the mbuf writable if it's not already */
- 		if (!M_WRITABLE(m)
+-		if (!M_WRITABLE(m)
 -		    && (m = m_pullup(m, sizeof(struct ether_header))) == NULL)
-+		    && (m = __m_pullup(m, sizeof(struct ether_header))) == NULL)
++		if (!M_WRITABLE(m) &&
++		    (m = m_copyup(m, sizeof(struct ether_header), 0)) == NULL)
  			return (ENOBUFS);
  
  		/* Overwrite source MAC address */
 diff --git sys/netinet/igmp.c sys/netinet/igmp.c
-index 5c6c46a4f4f..ddd009135f7 100644
+index 5c6c46a4f4f2..1e9c2fb5432f 100644
 --- sys/netinet/igmp.c
 +++ sys/netinet/igmp.c
 @@ -1509,7 +1509,7 @@ igmp_input(struct mbuf **mp, int *offp, int proto)
@@ -42,12 +42,21 @@ index 5c6c46a4f4f..ddd009135f7 100644
  		minlen += IGMP_MINLEN;
  	if ((!M_WRITABLE(m) || m->m_len < minlen) &&
 -	    (m = m_pullup(m, minlen)) == NULL) {
-+	    (m = __m_pullup(m, minlen)) == NULL) {
++	    (m = m_copyup(m, minlen, 0)) == NULL) {
  		IGMPSTAT_INC(igps_rcv_tooshort);
  		return (IPPROTO_DONE);
  	}
+@@ -1601,7 +1601,7 @@ igmp_input(struct mbuf **mp, int *offp, int proto)
+ 			   sizeof(struct in_addr) * nsrc;
+ 			if ((!M_WRITABLE(m) ||
+ 			     m->m_len < igmpv3len) &&
+-			    (m = m_pullup(m, igmpv3len)) == NULL) {
++			    (m = m_copyup(m, igmpv3len, 0)) == NULL) {
+ 				IGMPSTAT_INC(igps_rcv_tooshort);
+ 				return (IPPROTO_DONE);
+ 			}
 diff --git sys/netinet/ip_mroute.c sys/netinet/ip_mroute.c
-index 0ab120ae08e..2a24e4fd436 100644
+index 0ab120ae08e0..0e64bab1a531 100644
 --- sys/netinet/ip_mroute.c
 +++ sys/netinet/ip_mroute.c
 @@ -1460,7 +1460,7 @@ X_ip_mforward(struct ip *ip, struct ifnet *ifp, struct mbuf *m,
@@ -55,7 +64,7 @@ index 0ab120ae08e..2a24e4fd436 100644
  	mb0 = m_copypacket(m, M_NOWAIT);
  	if (mb0 && (!M_WRITABLE(mb0) || mb0->m_len < hlen))
 -		mb0 = m_pullup(mb0, hlen);
-+		mb0 = __m_pullup(mb0, hlen);
++		mb0 = m_copyup(mb0, hlen, 0);
  	if (mb0 == NULL) {
  		free(rte, M_MRTABLE);
  		MRW_WUNLOCK();
@@ -64,7 +73,7 @@ index 0ab120ae08e..2a24e4fd436 100644
  
  				if (mm && (!M_WRITABLE(mm) || mm->m_len < hlen))
 -					mm = m_pullup(mm, hlen);
-+					mm = __m_pullup(mm, hlen);
++					mm = m_copyup(mm, hlen, 0);
  				if (mm == NULL)
  					return ENOBUFS;
  
@@ -73,12 +82,12 @@ index 0ab120ae08e..2a24e4fd436 100644
  	mb_copy = m_copypacket(m, M_NOWAIT);
  	if (mb_copy && (!M_WRITABLE(mb_copy) || mb_copy->m_len < hlen))
 -		mb_copy = m_pullup(mb_copy, hlen);
-+		mb_copy = __m_pullup(mb_copy, hlen);
++		mb_copy = m_copyup(mb_copy, hlen, 0);
  	if (mb_copy == NULL)
  		return;
  
 diff --git sys/netinet6/ip6_mroute.c sys/netinet6/ip6_mroute.c
-index e91217ee8b2..2e9a5e2c7a6 100644
+index e91217ee8b2a..e0f1c1b96d99 100644
 --- sys/netinet6/ip6_mroute.c
 +++ sys/netinet6/ip6_mroute.c
 @@ -1232,7 +1232,7 @@ X_ip6_mforward(struct ip6_hdr *ip6, struct ifnet *ifp, struct mbuf *m)
@@ -86,16 +95,38 @@ index e91217ee8b2..2e9a5e2c7a6 100644
  	 */
  	if (mb0 && (!M_WRITABLE(mb0) || mb0->m_len < sizeof(struct ip6_hdr)))
 -		mb0 = m_pullup(mb0, sizeof(struct ip6_hdr));
-+		mb0 = __m_pullup(mb0, sizeof(struct ip6_hdr));
++		mb0 = m_copyup(mb0, sizeof(struct ip6_hdr), 0);
  	if (mb0 == NULL) {
  		free(rte, M_MRTABLE6);
  		MFC6_UNLOCK();
+@@ -1511,7 +1511,7 @@ ip6_mdq(struct mf6ctable *mfct, struct mbuf *m, struct ifnet *ifp,
+ 			if (mm &&
+ 			    (!M_WRITABLE(mm) ||
+ 			     mm->m_len < sizeof(struct ip6_hdr)))
+-				mm = m_pullup(mm, sizeof(struct ip6_hdr));
++				mm = m_copyup(mm, sizeof(struct ip6_hdr), 0);
+ 			if (mm == NULL)
+ 				return (ENOBUFS);
+ 
 @@ -1647,7 +1647,7 @@ phyint_send(struct ip6_hdr *ip6, struct mif6 *mifp, struct mbuf *m)
  	mb_copy = m_copym(m, 0, M_COPYALL, M_NOWAIT);
  	if (mb_copy &&
  	    (!M_WRITABLE(mb_copy) || mb_copy->m_len < sizeof(struct ip6_hdr)))
 -		mb_copy = m_pullup(mb_copy, sizeof(struct ip6_hdr));
-+		mb_copy = __m_pullup(mb_copy, sizeof(struct ip6_hdr));
++		mb_copy = m_copyup(mb_copy, sizeof(struct ip6_hdr), 0);
  	if (mb_copy == NULL) {
  		return;
+ 	}
+diff --git sys/netinet6/ip6_output.c sys/netinet6/ip6_output.c
+index b661f2f45b37..82e82bca6c73 100644
+--- sys/netinet6/ip6_output.c
++++ sys/netinet6/ip6_output.c
+@@ -3149,7 +3149,7 @@ ip6_mloopback(struct ifnet *ifp, struct mbuf *m)
+ 	 */
+ 	if (!M_WRITABLE(copym) ||
+ 	    copym->m_len < sizeof(struct ip6_hdr)) {
+-		copym = m_pullup(copym, sizeof(struct ip6_hdr));
++		copym = m_copyup(copym, sizeof(struct ip6_hdr), 0);
+ 		if (copym == NULL)
+ 			return;
  	}
