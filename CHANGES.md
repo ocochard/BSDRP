@@ -18,9 +18,10 @@
   with the ROAs of an RTR cache (rtrcache, a lab-only stand-in for a
   validator), and a new ROA stops a running hijack within seconds, checked
   by tools/regression-test.sh
-- frr10: bgpd revalidates the routes covered by a ROA the RPKI cache adds
-  or withdraws: before, they kept their old state until a manual
-  "clear bgp ... soft in"
+- frr10: bgpd re-applies the inbound policy when the RPKI cache adds or
+  withdraws a ROA, and once its initial sync is done: before, routes kept
+  their old state until a manual "clear bgp ... soft in" (backport of FRR
+  pull request #24131)
 - Add a bng lab: a PPPoE broadband gateway (mpd5) gives each subscriber
   a fixed IPv4 address by login and a fixed /56 by DHCPv6 prefix
   delegation; the CPE puts a /64 on its LAN with rtadvd, checked by

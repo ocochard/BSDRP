@@ -12,22 +12,20 @@ overrides static and BGP routes to the same host: in the rtbh lab, the
 IPv6 blackhole trigger (a static /128 tagged 666) is never selected
 ("over-ridden by better route").
 
-2. RPKI revalidation never reaches the routes
+2. RPKI updates do not re-apply the inbound policy (FRR issue #24001)
 
-When the RPKI cache adds or withdraws a ROA, bgpd revalidates the routes
-it covers: rpki_revalidate_prefix() looks the ROA prefix up with
-bgp_table_subtree_lookup(), then re-runs the inbound policy on every
-route of that subtree. bgp_table_subtree_lookup() walks the trie through
-bgp_dests, but the trie's internal nodes have none: it returns NULL as
-soon as it meets one, and the top node is internal whenever the table
-holds two prefixes without a common covering route. The routes then keep
-their old state until a manual "clear bgp ... soft in": in the rpki lab,
-a hijack that a new ROA makes invalid stays the best route ("I*>").
-
-Walk the route nodes instead, and return the subtree root as a locked
-route_node, which may be an internal node: rpki_revalidate_prefix()
-walks the subtree with route_next_until() and skips the nodes without a
-bgp_dest. Nothing is allocated, and the lock is released by the walk.
+When the RPKI cache changes the ROAs, a route that becomes invalid stays
+the best route, and a route denied as invalid that becomes valid stays
+out, until a manual "clear bgp ... soft in". Backport of the bgpd part
+of FRR pull request #24131 (four commits, tests left out), adapted to
+10.7.1 (rtrlib 0.8 names, no ASPA):
+- bgp_table_subtree_lookup() walked the trie through bgp_dests, which
+  holder nodes lack since FRR 9.1: it returns the subtree root
+  route_node now, and the walk also revalidates destinations that only
+  have Adj-RIB-In entries, so a denied route can come back;
+- the inbound policy is re-applied once the initial RTR sync is done;
+- after an overflow of the RTR to bgpd socket, all routes are
+  revalidated, instead of the drained records only.
 diff --git net/frr10/Makefile net/frr10/Makefile
 index 65e16583a9f1..05dc1340398e 100644
 --- net/frr10/Makefile
@@ -37,7 +35,7 @@ index 65e16583a9f1..05dc1340398e 100644
  DISTVERSIONPREFIX=	frr-
  DISTVERSION=	10.7.1
 -PORTREVISION=	1
-+PORTREVISION=	4
++PORTREVISION=	5
  CATEGORIES=	net
  .if defined(PYTHONTOOLS)
  PKGNAMESUFFIX=	10-pythontools
@@ -68,15 +66,39 @@ diff --git net/frr10/files/patch-bgpd_bgp__rpki.c net/frr10/files/patch-bgpd_bgp
 new file mode 100644
 --- /dev/null
 +++ net/frr10/files/patch-bgpd_bgp__rpki.c
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,262 @@
 +--- bgpd/bgp_rpki.c.orig
 ++++ bgpd/bgp_rpki.c
-+@@ -602,19 +602,16 @@
++@@ -59,6 +59,7 @@ DEFINE_MTYPE_STATIC(BGPD, BGP_RPKI_REVALIDATE, "BGP RPKI Revalidation");
++ #define EXPIRE_INTERVAL_DEFAULT 7200
++ #define RETRY_INTERVAL_DEFAULT 600
++ #define BGP_RPKI_CACHE_SERVER_SYNC_RETRY_TIMEOUT 3
+++#define RPKI_REVALIDATE_ALL_DELAY_MSEC 500
++ 
++ #define RPKI_DEBUG(...)                                                        \
++ 	if (rpki_debug_conf || rpki_debug_term) {                              \
++@@ -108,6 +109,7 @@ struct rpki_vrf {
++ 	int rpki_sync_socket_bgpd;
++ 	char *vrfname;
++ 	struct event *t_rpki_sync;
+++	struct event *t_revalidate_all;
++ 
++ 	QOBJ_FIELDS;
++ };
++@@ -156,6 +158,7 @@ static enum route_map_cmd_result_t route_match(void *rule,
++ 					       void *object);
++ static void *route_match_compile(const char *arg);
++ static void revalidate_bgp_node(struct bgp *bgp, struct bgp_dest *dest, afi_t afi, safi_t safi);
+++static void rpki_revalidate_all(struct event *event);
++ static struct rpki_vrf *get_rpki_vrf(const char *vrfname);
++ 
++ static bool rpki_debug_conf, rpki_debug_term;
++@@ -602,19 +605,22 @@ struct rpki_revalidate_prefix {
 + static void rpki_revalidate_prefix(struct event *event)
 + {
 + 	struct rpki_revalidate_prefix *rrp = EVENT_ARG(event);
 +-	struct bgp_dest *match, *node;
-++	struct route_node *match, *node;
+++	struct route_node *match, *rn;
 ++	struct bgp_dest *dest;
 + 
 + 	match = bgp_table_subtree_lookup(rrp->bgp->rib[rrp->afi][rrp->safi],
@@ -90,33 +112,241 @@ new file mode 100644
 +-		}
 +-
 +-		node = bgp_route_next_until(node, match);
-++	for (node = match; node; node = route_next_until(node, match)) {
-++		dest = bgp_dest_from_rnode(node);
-++		if (dest && bgp_dest_has_bgp_path_info_data(dest))
+++	/*
+++	 * The subtree root may be a holder node without a bgp_dest, so walk
+++	 * the route_nodes. Revalidate destinations that only have Adj-RIB-In
+++	 * entries too: a path denied by inbound policy has no path info, and
+++	 * must be re-evaluated in case it is no longer denied.
+++	 */
+++	for (rn = match; rn; rn = route_next_until(rn, match)) {
+++		dest = bgp_dest_from_rnode(rn);
+++		if (dest && (bgp_dest_has_bgp_path_info_data(dest) || dest->adj_in))
 ++			revalidate_bgp_node(rrp->bgp, dest, rrp->afi, rrp->safi);
 + 	}
 + 
 + 	XFREE(MTYPE_BGP_RPKI_REVALIDATE, rrp);
++@@ -675,23 +681,25 @@ static void bgpd_sync_callback(struct event *event)
++ 	if (atomic_load_explicit(&rpki_vrf->rtr_update_overflow, memory_order_seq_cst)) {
++ 		ssize_t size = 0;
++ 
++-		retval = read(rpki_vrf->rpki_sync_socket_bgpd, &rec, sizeof(struct pfx_record));
++-		while (retval != -1) {
++-			if (retval != sizeof(struct pfx_record))
++-				break;
++-
+++		while ((retval = read(rpki_vrf->rpki_sync_socket_bgpd, &rec,
+++				      sizeof(struct pfx_record))) > 0)
++ 			size += retval;
++-			pfx_record_to_prefix(&rec, &prefix);
++-			afi = (rec.prefix.ver == LRTR_IPV4) ? AFI_IP : AFI_IP6;
++-			revalidate_single_prefix(vrf, prefix, afi);
++-
++-			retval = read(rpki_vrf->rpki_sync_socket_bgpd, &rec,
++-				      sizeof(struct pfx_record));
++-		}
++-
++-		RPKI_DEBUG("Socket overflow detected (%zu), revalidating affected prefixes", size);
++ 
++ 		atomic_store_explicit(&rpki_vrf->rtr_update_overflow, 0, memory_order_seq_cst);
+++
+++		/*
+++		 * While the socket was full, the records that did not fit were
+++		 * dropped, so revalidating the drained ones is not enough: they
+++		 * may be a small part of the update. Revalidate all routes
+++		 * instead, unless the initial sync is still running, which ends
+++		 * with a full revalidation anyway. The timer coalesces the
+++		 * overflows of one burst.
+++		 */
+++		RPKI_DEBUG("Socket overflow detected (%zd), revalidating all routes", size);
+++		if (is_synchronized(rpki_vrf))
+++			event_add_timer_msec(bm->master, rpki_revalidate_all, rpki_vrf,
+++					     RPKI_REVALIDATE_ALL_DELAY_MSEC,
+++					     &rpki_vrf->t_revalidate_all);
++ 		return;
++ 	}
++ 
++@@ -707,35 +715,24 @@ static void bgpd_sync_callback(struct event *event)
++ 	revalidate_single_prefix(vrf, prefix, afi);
++ }
++ 
++-static void revalidate_bgp_node(struct bgp *bgp, struct bgp_dest *bgp_dest, afi_t afi, safi_t safi)
+++/*
+++ * Locally originated routes (e.g., 'network' statement) have no adj_in
+++ * entry, so neither bgp_update() of the Adj-RIB-In nor a soft inbound
+++ * reconfiguration covers them.  Force re-advertisement so the outbound
+++ * route-map re-evaluates the updated RPKI state.
+++ * If we have something like:
+++ * route-map out deny 10
+++ *   match rpki invalid
+++ * route-map out permit 20
+++ * Then a locally originated route that becomes RPKI invalid needs to be
+++ * re-evaluated against the route-map, and if we don't force
+++ * re-advertisement, it won't be.
+++ */
+++static void revalidate_local_routes(struct bgp *bgp, struct bgp_dest *bgp_dest, afi_t afi,
+++				    safi_t safi)
++ {
++-	struct bgp_adj_in *ain;
++ 	struct bgp_path_info *bpi;
++-	mpls_label_t *label;
++-	uint8_t num_labels;
++ 
++-	for (ain = bgp_dest->adj_in; ain; ain = ain->next) {
++-		struct bgp_path_info *path = bgp_dest_get_bgp_path_info(bgp_dest);
++-
++-		num_labels = BGP_PATH_INFO_NUM_LABELS(path);
++-		label = num_labels ? path->extra->labels->label : NULL;
++-
++-		(void)bgp_update(ain->peer, bgp_dest_get_prefix(bgp_dest), ain->addpath_rx_id,
++-				 ain->attr, afi, safi, ZEBRA_ROUTE_BGP, BGP_ROUTE_NORMAL, NULL,
++-				 label, num_labels, 1, NULL);
++-	}
++-
++-	/* Locally originated routes (e.g., 'network' statement) have no adj_in
++-	 * entry, so bgp_update() above won't cover them.  Force re-advertisement
++-	 * so the outbound route-map re-evaluates the updated RPKI state.
++-	 * If we have something like:
++-	 * route-map out deny 10
++-	 *   match rpki invalid
++-	 * route-map out permit 20
++-	 * Then a locally originated route that becomes RPKI invalid needs to be
++-	 * re-evaluated against the route-map, and if we don't force
++-	 * re-advertisement, it won't be.
++-	 */
++ 	for (bpi = bgp_dest_get_bgp_path_info(bgp_dest); bpi; bpi = bpi->next) {
++ 		if (bpi->peer == bgp->peer_self && bpi->type == ZEBRA_ROUTE_BGP &&
++ 		    (bpi->sub_type == BGP_ROUTE_STATIC || bpi->sub_type == BGP_ROUTE_AGGREGATE)) {
++@@ -746,6 +743,25 @@ static void revalidate_bgp_node(struct bgp *bgp, struct bgp_dest *bgp_dest, afi_
++ 	}
++ }
++ 
+++static void revalidate_bgp_node(struct bgp *bgp, struct bgp_dest *bgp_dest, afi_t afi, safi_t safi)
+++{
+++	struct bgp_adj_in *ain;
+++	mpls_label_t *label;
+++	uint8_t num_labels;
+++
+++	for (ain = bgp_dest->adj_in; ain; ain = ain->next) {
+++		/* There may be no path info if the route was denied */
+++		num_labels = ain->labels ? ain->labels->num_labels : 0;
+++		label = num_labels ? &ain->labels->label[0] : NULL;
+++
+++		(void)bgp_update(ain->peer, bgp_dest_get_prefix(bgp_dest), ain->addpath_rx_id,
+++				 ain->attr, afi, safi, ZEBRA_ROUTE_BGP, BGP_ROUTE_NORMAL, NULL,
+++				 label, num_labels, 1, NULL);
+++	}
+++
+++	revalidate_local_routes(bgp, bgp_dest, afi, safi);
+++}
+++
++ static void rpki_update_cb_sync_rtr(struct pfx_table *p __attribute__((unused)),
++ 				    const struct pfx_record rec,
++ 				    const bool added __attribute__((unused)))
++@@ -792,6 +808,63 @@ err:
++ 	flog_err(EC_LIB_DEVELOPMENT, "RPKI: %s", msg);
++ }
++ 
+++/*
+++ * Re-run the inbound policy of every peer with soft-reconfiguration inbound,
+++ * and re-advertise the locally originated routes, for the bgp instance(s)
+++ * that use this RPKI configuration.
+++ */
+++static void revalidate_all_routes(struct rpki_vrf *rpki_vrf)
+++{
+++	struct listnode *node, *pnode;
+++	struct vrf *vrf = NULL;
+++	struct peer *peer;
+++	struct bgp *bgp;
+++	afi_t afi;
+++	safi_t safi;
+++
+++	if (rpki_vrf->vrfname) {
+++		vrf = vrf_lookup_by_name(rpki_vrf->vrfname);
+++		if (!vrf)
+++			return;
+++	}
+++
+++	for (ALL_LIST_ELEMENTS_RO(bm->bgp, node, bgp)) {
+++		if (!vrf && bgp->vrf_id != VRF_DEFAULT)
+++			continue;
+++		if (vrf && bgp->vrf_id != vrf->vrf_id)
+++			continue;
+++
+++		for (ALL_LIST_ELEMENTS_RO(bgp->peer, pnode, peer)) {
+++			FOREACH_AFI_SAFI (afi, safi)
+++				bgp_soft_reconfig_in(peer, afi, safi);
+++		}
+++
+++		/*
+++		 * The soft reconfiguration only replays the Adj-RIB-In. Walk the
+++		 * tables that RPKI validates for the locally originated routes,
+++		 * as rpki_revalidate_prefix() does for the routes of one VRP.
+++		 */
+++		FOREACH_AFI_SAFI (afi, safi) {
+++			struct bgp_table *table = bgp->rib[afi][safi];
+++			struct bgp_dest *dest;
+++
+++			if (!table || (safi != SAFI_UNICAST && safi != SAFI_MULTICAST &&
+++				       safi != SAFI_LABELED_UNICAST))
+++				continue;
+++
+++			for (dest = bgp_table_top(table); dest; dest = bgp_route_next(dest)) {
+++				if (bgp_dest_has_bgp_path_info_data(dest))
+++					revalidate_local_routes(bgp, dest, afi, safi);
+++			}
+++		}
+++	}
+++}
+++
+++static void rpki_revalidate_all(struct event *event)
+++{
+++	revalidate_all_routes(EVENT_ARG(event));
+++}
+++
++ static void rpki_init_sync_socket(struct rpki_vrf *rpki_vrf)
++ {
++ 	int fds[2];
++@@ -916,6 +989,14 @@ static void sync_expired(struct event *event)
++ 	RPKI_DEBUG("rtr_mgr sync is done.");
++ 
++ 	rpki_vrf->rtr_is_synced = true;
+++
+++	/*
+++	 * Until now the validation state of every route was "not used", also
+++	 * when the VRPs of the initial sync were revalidated one by one, so
+++	 * routes that are invalid may have been accepted. Re-run the inbound
+++	 * policy now that the VRP set is complete.
+++	 */
+++	revalidate_all_routes(rpki_vrf);
++ }
++ 
++ static int start(struct rpki_vrf *rpki_vrf)
++@@ -985,6 +1066,7 @@ static void stop(struct rpki_vrf *rpki_vrf)
++ 	rpki_vrf->rtr_is_stopping = true;
++ 	if (is_running(rpki_vrf)) {
++ 		event_cancel(&rpki_vrf->t_rpki_sync);
+++		event_cancel(&rpki_vrf->t_revalidate_all);
++ 
++ 		for (ALL_LIST_ELEMENTS_RO(rpki_vrf->cache_list, cache_node, cache))
++ 			frr_pthread_non_controlled_shutdown(cache->rtr_socket->thread_id);
 diff --git net/frr10/files/patch-bgpd_bgp__table.c net/frr10/files/patch-bgpd_bgp__table.c
 new file mode 100644
 --- /dev/null
 +++ net/frr10/files/patch-bgpd_bgp__table.c
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,77 @@
 +--- bgpd/bgp_table.c.orig
 ++++ bgpd/bgp_table.c
-+@@ -242,52 +242,46 @@
++@@ -242,52 +242,41 @@ void bgp_delete_listnode(struct bgp_dest *dest)
 + 	}
 + }
 + 
 +-struct bgp_dest *bgp_table_subtree_lookup(const struct bgp_table *table,
 +-					  const struct prefix *p)
-++struct route_node *bgp_table_subtree_lookup(const struct bgp_table *table,
-++					    const struct prefix *p)
+++struct route_node *bgp_table_subtree_lookup(const struct bgp_table *table, const struct prefix *p)
 + {
 +-	struct bgp_dest *dest;
 +-	struct bgp_dest *matched = NULL;
 ++	struct route_node *node;
-++	struct route_node *matched = NULL;
 + 
 + 	/* Unique-mode case is special; no iteration or prefix search */
 +-	if (route_table_is_unique_mode(table->route_table)) {
@@ -137,44 +367,47 @@ new file mode 100644
 +-
 +-		if (dest_p->prefixlen >= p->prefixlen) {
 +-			if (!prefix_match(p, dest_p))
++-				return NULL;
++-
++-			matched = dest;
++-			break;
++-		}
++-
++-		if (!prefix_match(dest_p, p))
 ++	/*
-++	 * Search in LPM table. Walk the route nodes, not the bgp_dests: the
-++	 * internal nodes of the trie, such as its top node when it holds
-++	 * several prefixes, have no bgp_dest.
+++	 * Search in LPM table. Walk route_nodes rather than bgp_dests: holder
+++	 * nodes (rn->info == NULL) have no bgp_dest, but they are still part
+++	 * of the path to the subtree, and may be the subtree root itself.
 ++	 */
 ++	node = table->route_table->top;
 ++	while (node) {
-++		if (node->p.prefixlen >= p->prefixlen) {
-++			if (!prefix_match(p, &node->p))
-+ 				return NULL;
-+ 
-+-			matched = dest;
-++			matched = node;
-+ 			break;
-+ 		}
-+ 
-+-		if (!prefix_match(dest_p, p))
-++		if (!prefix_match(&node->p, p))
+++		/* RD-keyed (VPN, ENCAP) and flowspec tables hold no IP prefixes */
+++		if (node->p.family != p->family)
 + 			return NULL;
 + 
 +-		if (dest_p->prefixlen == p->prefixlen) {
 +-			matched = dest;
-++		if (node->p.prefixlen == p->prefixlen) {
-++			matched = node;
+++		if (node->p.prefixlen >= p->prefixlen) {
+++			if (!prefix_match(p, &node->p))
+++				return NULL;
 + 			break;
 + 		}
 + 
 +-		dest = bgp_dest_from_rnode(
 +-			node->link[prefix_bit(&p->u.prefix, dest_p->prefixlen)]);
+++		if (!prefix_match(&node->p, p))
+++			return NULL;
+++
 ++		node = node->link[prefix_bit(&p->u.prefix, node->p.prefixlen)];
 + 	}
 + 
-+ 	if (!matched)
++-	if (!matched)
+++	if (!node)
 + 		return NULL;
 + 
 +-	bgp_dest_lock_node(matched);
 +-	return matched;
-++	return route_lock_node(matched);
+++	return route_lock_node(node);
 + }
 + 
 + printfrr_ext_autoreg_p("BD", printfrr_bd);
@@ -182,24 +415,26 @@ diff --git net/frr10/files/patch-bgpd_bgp__table.h net/frr10/files/patch-bgpd_bg
 new file mode 100644
 --- /dev/null
 +++ net/frr10/files/patch-bgpd_bgp__table.h
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,22 @@
 +--- bgpd/bgp_table.h.orig
 ++++ bgpd/bgp_table.h
-+@@ -328,12 +328,14 @@
++@@ -327,13 +327,15 @@ static inline uint64_t bgp_table_version(struct bgp_table *table)
++ 
 + /* Find the subtree of the prefix p
 +  *
-+  * This will return the first node that belongs the the subtree of p. Including
++- * This will return the first node that belongs the the subtree of p. Including
 +- * p itself, if it is in the tree.
-++ * p itself, if it is in the tree. The node is locked, and may be an internal
-++ * node of the trie, without a bgp_dest: walk the subtree with
-++ * route_next_until(), which also releases the lock.
+++ * This will return the root route_node of the subtree of p, that is the first
+++ * node in the table that is covered by p, including p itself. The returned node
+++ * may be a holder node without a bgp_dest (rn->info == NULL); use
+++ * bgp_dest_from_rnode() on it and on the nodes returned by route_next_until()
+++ * to get the bgp_dests of the subtree. The returned node is locked.
 +  *
 +  * If the subtree is not present in the table, NULL is returned.
 +  */
 +-struct bgp_dest *bgp_table_subtree_lookup(const struct bgp_table *table,
 +-					  const struct prefix *p);
-++struct route_node *bgp_table_subtree_lookup(const struct bgp_table *table,
-++					    const struct prefix *p);
+++struct route_node *bgp_table_subtree_lookup(const struct bgp_table *table, const struct prefix *p);
 + 
 + static inline struct bgp_aggregate *
 + bgp_dest_get_bgp_aggregate_info(struct bgp_dest *dest)

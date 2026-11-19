@@ -2051,7 +2051,8 @@ lab_rpki_vm4() {
 # Phase 4: publish the ROAs of 203.0.113.0/24 and 2001:db8:3::/48: both
 # edges drop the hijacks within seconds, without a BGP reset. Then stop
 # the cache: the edges keep their ROAs (until the expire timer) and keep
-# filtering, and reconnect when it is back.
+# filtering, and reconnect when it is back. Last, withdraw a ROA: its
+# hijack is accepted again.
 lab_rpki_failover() {
 	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
 	local nmdm3="${NMDM_PREFIX}3${NMDM_SUFFIX}"
@@ -2092,6 +2093,14 @@ lab_rpki_failover() {
 		"vtysh -c 'show rpki cache-connection' 2>&1" 'Connected to group 1' 60
 	assert 3 "cache back: RTR session up" "$nmdm3" \
 		"birdc show protocols rtr_cache 2>&1" 'Established' 60
+
+	# Withdraw the ROA of 203.0.113.0/24: the /25 denied as invalid is not
+	# found again, so accepted again, and wins as the more specific.
+	console_run "$nmdm4" "sed -i '' '/^203\\.0\\.113\\.0/d' ${roas}" >/dev/null
+	assert 2 "ROA withdrawn: 203.0.113.10 hijacked again" "$nmdm2" \
+		"route -n get 203.0.113.10 2>&1" 'gateway: 10\.0\.25\.5$' 30
+	assert 3 "ROA withdrawn: 203.0.113.10 hijacked again" "$nmdm3" \
+		"route -n get 203.0.113.10 2>&1" 'gateway: 10\.0\.35\.5$' 30
 }
 
 # === Lab metadata =========================================================
