@@ -1,0 +1,93 @@
+ng_netflow: send partly filled export datagrams every expiry run.
+
+ng_netflow sends a NetFlow export datagram only once it cannot hold
+another record. A quiet exporter can then keep expired flows for
+minutes or hours, and the collector's per-minute totals are late or in
+the wrong time-bin. The periodic expiry run (every second) now also
+sends the pending v5 and v9 datagrams, so a flow is exported at most
+about one second after it expired.
+
+diff --git share/man/man4/ng_netflow.4 share/man/man4/ng_netflow.4
+index 78fadd0ad63..5bd27ec2a34 100644
+--- share/man/man4/ng_netflow.4
++++ share/man/man4/ng_netflow.4
+@@ -22,7 +22,7 @@
+ .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ .\" SUCH DAMAGE.
+ .\"
+-.Dd September 13, 2026
++.Dd November 18, 2026
+ .Dt NG_NETFLOW 4
+ .Os
+ .Sh NAME
+@@ -86,11 +86,13 @@ If data is received on
+ hook, it is bypassed to corresponding
+ .Va iface
+ hook without any processing (egress NetFlow disabled by default).
+-When full export datagram for an export protocol is built it is sent to the
++Expired flows are collected in an export datagram for each export protocol.
++The datagram is sent to the
+ .Va export
+ or
+ .Va export9
+-hook.
++hook when it is full, or by the next periodic expiry run, every second,
++so that a flow is exported at most about one second after it expired.
+ In normal operation, one (or more) export hook is connected to the
+ .Va inet/dgram/udp
+ hook of the
+diff --git sys/netgraph/netflow/netflow.c sys/netgraph/netflow/netflow.c
+index 3b3878dbcde..3193b678621 100644
+--- sys/netgraph/netflow/netflow.c
++++ sys/netgraph/netflow/netflow.c
+@@ -1085,6 +1085,40 @@ export_add(item_p item, struct flow_entry *fle)
+ 		return (0);	
+ }
+ 
++/*
++ * Send the export datagrams that are not full yet: on a quiet node, a
++ * datagram could otherwise wait a long time for enough flows to fill it.
++ */
++static void
++export_flush(priv_p priv)
++{
++	struct netflow_v9_packet_opt *t;
++	fib_export_p fe;
++	item_p item;
++	int i;
++
++	for (i = 0; i < priv->maxfibs; i++) {
++		if ((fe = priv_to_fib(priv, i)) == NULL)
++			continue;
++
++		mtx_lock(&fe->export_mtx);
++		item = fe->exp.item;
++		fe->exp.item = NULL;
++		mtx_unlock(&fe->export_mtx);
++		if (item != NULL)
++			export_send(priv, fe, item, NG_NOFLAGS);
++
++		mtx_lock(&fe->export9_mtx);
++		item = fe->exp.item9;
++		t = fe->exp.item9_opt;
++		fe->exp.item9 = NULL;
++		fe->exp.item9_opt = NULL;
++		mtx_unlock(&fe->export9_mtx);
++		if (item != NULL)
++			export9_send(priv, fe, item, t, NG_NOFLAGS);
++	}
++}
++
+ /* Periodic flow expiry run. */
+ void
+ ng_netflow_expire(void *arg)
+@@ -1172,6 +1206,9 @@ ng_netflow_expire(void *arg)
+ 	}
+ #endif
+ 
++	/* Send what expired since the previous run. */
++	export_flush(priv);
++
+ 	/* Schedule next expire. */
+ 	callout_reset(&priv->exp_callout, (1*hz), &ng_netflow_expire,
+ 	    (void *)priv);

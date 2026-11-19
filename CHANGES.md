@@ -14,6 +14,9 @@
   pf filtering rule, all checked by tools/regression-test.sh
 - full lab: BFD between FRR and bird, ExaBGP injecting routes, a DHCPv6
   relay and server, and LLDP
+- Kernel: ng_netflow sends a partly filled NetFlow export datagram every
+  second instead of waiting for it to fill, so a quiet router no longer
+  holds expired flows for minutes
 - Add an accounting lab: the router exports NetFlow v9 (ipfw and
   ng_netflow) and pmacct's nfacctd totals each customer's traffic, in
   and out, IPv4 and IPv6, checked against known transfers by

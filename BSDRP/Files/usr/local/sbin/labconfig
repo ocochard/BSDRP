@@ -5022,10 +5022,7 @@ EOF
 # - export a flow 5s after its last packet, and a long one every 60s
 #   (defaults: 15s and 1800s);
 # - send the v9 template with the first export, not after 600s of uptime
-#   (see full_vm4);
-# - send each flow record at once: ng_netflow only sends a datagram once
-#   it cannot hold another record, and a 1500-byte one takes many flows to
-#   fill on a quiet lab router (200 leaves room for a single record).
+#   (see full_vm4).
 cat > /usr/local/etc/rc.d/netflow_tune <<'EOF'
 #!/bin/sh
 # PROVIDE: netflow_tune
@@ -5042,7 +5039,6 @@ netflow_tune_start()
 {
 	ngctl msg netflow: settimeouts '{ inactive=5 active=60 }'
 	ngctl msg netflow: settemplate '{ time=60 packets=20 }'
-	ngctl msg netflow: setmtu '{ mtu=200 }'
 }
 
 load_rc_config $name
