@@ -14,6 +14,10 @@
   pf filtering rule, all checked by tools/regression-test.sh
 - full lab: BFD between FRR and bird, ExaBGP injecting routes, a DHCPv6
   relay and server, and LLDP
+- Add a bng lab: a PPPoE broadband gateway (mpd5) gives each subscriber
+  a fixed IPv4 address by login and a fixed /56 by DHCPv6 prefix
+  delegation; the CPE puts a /64 on its LAN with rtadvd, checked by
+  tools/regression-test.sh
 - Add an ipv6only lab: IPv6-only access where the ISP's ipfw NAT64 and
   DNS64 reach an IPv4 server, and the CPE's CLAT (464XLAT) still gives
   its LAN IPv4, checked by tools/regression-test.sh

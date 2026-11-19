@@ -15,6 +15,7 @@ usage () {
 	echo "-accounting: https://bsdrp.net/documentation/examples/per-customer-traffic-accounting"
 	echo "-anycast: https://bsdrp.net/documentation/examples/anycast-dns-failover-with-exabgp"
 	echo "-branch: https://bsdrp.net/documentation/examples/branch-office-ecmp-over-wireguard"
+	echo "-bng: https://bsdrp.net/documentation/examples/broadband-gateway-pppoe-dhcpv6-pd"
 	echo "-bird_jails: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab_with_bird"
 	echo "-bgp: https://bsdrp.net/documentation/examples/bgp-route-reflector-and-confederation-using-frr-and-bird"
 	echo "-dhcp: https://bsdrp.net/documentation/examples/dhcp-relay-and-server-lab"
@@ -5250,6 +5251,240 @@ service hostname restart
 service netif restart
 service routing restart
 echo "VM4 (client) configured"
+}
+
+### Broadband gateway (BNG) lab: PPPoE and DHCPv6 prefix delegation ###
+# VM1 (internet) --- 10.0.12.0/24, 2001:db8:12::/64 --- VM2 (bng)
+# VM2, VM3 (cpe1), VM4 (cpe2) --- shared LAN (-l 1): PPPoE sessions
+# VM3 --- 192.168.1.0/24, delegated /64 --- VM5 (host)
+# Each CPE dials PPPoE (mpd5) to the BNG, which gives it a fixed IPv4
+# address by login, and a fixed /56 by DHCPv6 prefix delegation (dhcp6s)
+# over the PPP session. The CPE puts a /64 of it on its LAN, announced
+# with rtadvd, and NATs its LAN's IPv4 behind its PPPoE address.
+
+# login password IPv4 /56 DUID: one line per subscriber. dhcp6s can only
+# delegate a prefix to a client it knows by DUID, so each CPE is set up
+# with its own DUID-LL (made-up MAC address 02:00:00:00:00:<VM>).
+BNG_SUBSCRIBERS="cpe1 cpe1-secret 198.51.100.11 2001:db8:100::/56 00:03:00:01:02:00:00:00:00:03
+cpe2 cpe2-secret 198.51.100.12 2001:db8:100:100::/56 00:03:00:01:02:00:00:00:00:04"
+
+bng_vm1 () {
+sysrc hostname=internet \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em0="inet 10.0.12.1/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::1 prefixlen 64" \
+	defaultrouter=10.0.12.2 \
+	ipv6_defaultrouter=2001:db8:12::2
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+# Full path: the first-boot PATH has no /usr/local/bin.
+/usr/local/bin/iperf3 -s -D
+echo "VM1 (internet) configured"
+}
+
+bng_vm2 () {
+local nic=em
+ifconfig -l | grep -q vtnet && nic=vtnet
+sysrc hostname=bng \
+	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64" \
+	ifconfig_em4="up" \
+	mpd_enable=YES \
+	mpd_flags="-b"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# One template: every PPPoE session on the access LAN gets its own
+# bundle and ngN interface. The BNG side of every session is 198.51.100.1;
+# mpd.secret gives each login its address.
+cat > /usr/local/etc/mpd5/mpd.conf <<EOF
+default:
+	load pppoe_server
+pppoe_server:
+	create bundle template B
+	set ipcp ranges 198.51.100.1/32 198.51.100.0/24
+	set bundle enable ipv6cp
+	set iface up-script /usr/local/etc/mpd5/if-up.sh
+	set iface down-script /usr/local/etc/mpd5/if-down.sh
+	create link template L pppoe
+	set link action bundle B
+	set link disable chap pap eap
+	set link enable chap
+	set link keep-alive 10 60
+	set link mtu 1492
+	set link max-children 100
+	set pppoe iface ${nic}4
+	set pppoe service "*"
+	set link enable incoming
+EOF
+echo "${BNG_SUBSCRIBERS}" | while read login secret ip4 pd duid; do
+	echo "${login} \"${secret}\" ${ip4}"
+done > /usr/local/etc/mpd5/mpd.secret
+chmod 600 /usr/local/etc/mpd5/mpd.secret
+echo "${BNG_SUBSCRIBERS}" | while read login secret ip4 pd duid; do
+	echo "${login} ${pd}"
+done > /usr/local/etc/mpd5/prefixes
+echo "${BNG_SUBSCRIBERS}" | while read login secret ip4 pd duid; do
+	echo "host ${login} { duid ${duid}; prefix ${pd} infinity; };"
+done > /usr/local/etc/dhcp6s.conf
+# When IPv6CP comes up: route the subscriber's /56 to its session, and
+# start a dhcp6s for it. dhcp6s serves a single interface, so each
+# session ngN gets its own, with its own pid file and control port.
+cat > /usr/local/etc/mpd5/if-up.sh <<'EOF'
+#!/bin/sh
+# mpd5 up-script: $1 interface, $2 protocol, $3 local, $4 remote, $5 login
+[ "$2" = "inet6" ] || exit 0
+pd=$(awk -v login="$5" '$1 == login { print $2 }' /usr/local/etc/mpd5/prefixes)
+[ -n "${pd}" ] || exit 0
+route -6 -q delete -net "${pd}"
+route -6 add -net "${pd}" -interface "$1"
+pidfile=/var/run/dhcp6s.$1.pid
+[ -f ${pidfile} ] && pkill -F ${pidfile}
+/usr/local/sbin/dhcp6s -c /usr/local/etc/dhcp6s.conf -P ${pidfile} \
+	-p $((5600 + ${1#ng})) "$1"
+exit 0
+EOF
+# mpd5 down-script: $1 interface, $2 protocol
+cat > /usr/local/etc/mpd5/if-down.sh <<'EOF'
+#!/bin/sh
+[ "$2" = "inet6" ] || exit 0
+pidfile=/var/run/dhcp6s.$1.pid
+[ -f ${pidfile} ] && pkill -F ${pidfile} && rm ${pidfile}
+exit 0
+EOF
+chmod +x /usr/local/etc/mpd5/if-up.sh /usr/local/etc/mpd5/if-down.sh
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service mpd5 start
+echo "VM2 (bng) configured"
+}
+
+# $1: VM, $2: hostname (the PPPoE login)
+bng_cpe () {
+local vm=$1 login=$2 nic=em secret duid oct b
+ifconfig -l | grep -q vtnet && nic=vtnet
+secret=$(echo "${BNG_SUBSCRIBERS}" | awk -v l=${login} '$1 == l { print $2 }')
+duid=$(echo "${BNG_SUBSCRIBERS}" | awk -v l=${login} '$1 == l { print $5 }')
+sysrc hostname=${login} \
+	ifconfig_em3="inet 192.168.1.1/24" \
+	ifconfig_em3_ipv6="inet6 auto_linklocal" \
+	ifconfig_em4="up" \
+	mpd_enable=YES \
+	mpd_flags="-b" \
+	pf_enable=YES \
+	rtadvd_enable=YES \
+	rtadvd_interfaces="em3"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# A static bundle: the session is always ng0. The default routes point
+# to it: IPv4 by mpd5, IPv6 by the up-script.
+cat > /usr/local/etc/mpd5/mpd.conf <<EOF
+default:
+	load pppoe_client
+pppoe_client:
+	create bundle static B1
+	set iface route default
+	set ipcp ranges 0.0.0.0/0 0.0.0.0/0
+	set bundle enable ipv6cp
+	set iface up-script /usr/local/etc/mpd5/if-up.sh
+	create link static L1 pppoe
+	set link action bundle B1
+	set auth authname ${login}
+	set auth password ${secret}
+	set link max-redial 0
+	set link mtu 1492
+	set link keep-alive 10 60
+	set pppoe iface ${nic}4
+	set pppoe service ""
+	open
+EOF
+# Ask for a prefix on the session, put its /64 number 1 on the LAN.
+cat > /usr/local/etc/dhcp6c.conf <<EOF
+interface ng0 {
+	send ia-pd 0;
+};
+id-assoc pd 0 {
+	prefix-interface ${nic}3 {
+		sla-id 1;
+		sla-len 8;
+	};
+};
+EOF
+# dhcp6c keeps its DUID in /var/db/dhcp6c_duid, on a tmpfs here: the
+# up-script writes the provisioned one (16-bit length in host byte order,
+# then the DUID, 10 bytes) before each start.
+oct=""
+for b in $(echo ${duid} | tr : ' '); do
+	oct="${oct}$(printf '\\%03o' 0x${b})"
+done
+cat > /usr/local/etc/mpd5/if-up.sh <<EOF
+#!/bin/sh
+# mpd5 up-script: \$1 interface, \$2 protocol, \$3 local, \$4 remote
+[ "\$2" = "inet6" ] || exit 0
+route -6 -q delete default
+route -6 add default -interface "\$1"
+printf '\\012\\000${oct}' > /var/db/dhcp6c_duid
+pid=\$(pgrep -x dhcp6c) && kill \${pid} && pwait \${pid}
+/usr/local/sbin/dhcp6c -c /usr/local/etc/dhcp6c.conf "\$1"
+exit 0
+EOF
+chmod +x /usr/local/etc/mpd5/if-up.sh
+cat > /etc/pf.conf <<EOF
+nat on ng0 inet from 192.168.1.0/24 to any -> (ng0)
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service pf start
+service rtadvd start
+service mpd5 start
+echo "VM${vm} (${login}) configured"
+}
+
+bng_vm3 () {
+bng_cpe 3 cpe1
+}
+
+bng_vm4 () {
+bng_cpe 4 cpe2
+}
+
+bng_vm5 () {
+local nic=em
+ifconfig -l | grep -q vtnet && nic=vtnet
+sysrc hostname=host \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em2="inet 192.168.1.10/24" \
+	ifconfig_em2_ipv6="inet6 accept_rtadv" \
+	ifconfig_em4="up" \
+	defaultrouter=192.168.1.1 \
+	rtsold_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# Not started at boot: an intruder on the access LAN, with cpe1's login
+# and a wrong password ("mpd5 -b intruder").
+cat > /usr/local/etc/mpd5/mpd.conf <<EOF
+intruder:
+	create bundle static B1
+	set ipcp ranges 0.0.0.0/0 0.0.0.0/0
+	create link static L1 pppoe
+	set link action bundle B1
+	set auth authname cpe1
+	set auth password wrong-secret
+	set pppoe iface ${nic}4
+	set pppoe service ""
+	open
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service rtsold start
+echo "VM5 (host) configured"
 }
 
 ### Main

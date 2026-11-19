@@ -9,12 +9,13 @@
 # over two links), the "ixp" lab (5 VMs - redundant BIRD and FRR route
 # servers on a peering LAN), the "rtbh" lab (4 VMs - remotely triggered
 # blackhole against a DDoS), the "accounting" lab (5 VMs - per-customer
-# traffic accounting with NetFlow and pmacct) and the "ipv6only" lab (4 VMs
-# - IPv6-only access with NAT64, DNS64 and 464XLAT). Other labs declared in
-# tools/BSDRP-lab-bhyve.sh (frr, bgp, vpn, mlvpn, mlppp, fairshape, jailpf,
-# pimsm, pimssm, vrrp, etc.) have no assertions defined here yet - running
-# this driver against them will fail with "lab '<name>' has no assertions
-# implemented yet".
+# traffic accounting with NetFlow and pmacct), the "ipv6only" lab (4 VMs -
+# IPv6-only access with NAT64, DNS64 and 464XLAT) and the "bng" lab (5 VMs
+# - PPPoE broadband gateway with DHCPv6 prefix delegation). Other labs
+# declared in tools/BSDRP-lab-bhyve.sh (frr, bgp, vpn, mlvpn, mlppp,
+# fairshape, jailpf, pimsm, pimssm, vrrp, etc.) have no assertions defined
+# here yet - running this driver against them will fail with "lab '<name>'
+# has no assertions implemented yet".
 #
 # Drives the serial consoles of a lab launched by BSDRP-lab-bhyve.sh -r <lab>
 # and runs per-VM assertions. Assertions for the "full" lab are derived from
@@ -1852,12 +1853,113 @@ lab_ipv6only_throughput() {
 		'^2001:db8:3::10(:[0-9]+)? +198\.51\.100\.'
 }
 
+# === bng lab ==============================================================
+#
+# Each CPE dials PPPoE to the BNG and gets a fixed IPv4 address by login
+# and a fixed /56 by DHCPv6 prefix delegation; cpe1's LAN host gets a
+# SLAAC address from the /64 cpe1 takes from it.
+
+lab_bng_vm1() {
+	local nmdm="$1"
+
+	assert 1 "hostname is internet" "$nmdm" "hostname" '^internet$'
+	assert 1 "iperf3 server running" "$nmdm" \
+		"pgrep -x iperf3 || echo none" '^[0-9]+$'
+}
+
+lab_bng_vm2() {
+	local nmdm="$1"
+
+	assert 2 "hostname is bng" "$nmdm" "hostname" '^bng$'
+	assert 2 "two PPPoE sessions" "$nmdm" \
+		"ifconfig -l | tr ' ' '\\n' | grep -c '^ng'" '^2$' 60
+	assert 2 "a dhcp6s for each session" "$nmdm" \
+		"pgrep -x dhcp6s | wc -l" '^ *2$' 30
+	assert 2 "cpe1's 198.51.100.11 routed to its session" "$nmdm" \
+		"route -n get 198.51.100.11 2>&1" 'interface: ng[0-9]+'
+	assert 2 "cpe1's 2001:db8:100::/56 routed to its session" "$nmdm" \
+		"route -6 -n get 2001:db8:100:: 2>&1" 'interface: ng[0-9]+'
+	assert 2 "cpe2's 2001:db8:100:100::/56 routed to its session" "$nmdm" \
+		"route -6 -n get 2001:db8:100:100:: 2>&1" 'interface: ng[0-9]+'
+}
+
+# $1: VM, $2: hostname, $3: PPPoE IPv4, $4: LAN /64 prefix, $5: nmdm
+lab_bng_cpe() {
+	local vm="$1" name="$2" ip4="$3" lan="$4" nmdm="$5"
+
+	assert "$vm" "hostname is ${name}" "$nmdm" "hostname" "^${name}\$"
+	assert "$vm" "PPPoE session with ${ip4}" "$nmdm" \
+		"ifconfig ng0 inet 2>&1" "inet ${ip4} --> 198\\.51\\.100\\.1 " 60
+	assert "$vm" "delegated ${lan}/64 on the LAN" "$nmdm" \
+		"ifconfig vtnet3 inet6 2>&1" "inet6 ${lan}:[0-9a-f:]+ prefixlen 64" 60
+	assert "$vm" "ping the internet 2001:db8:12::1" "$nmdm" \
+		"ping -6 -c 2 -t 5 2001:db8:12::1 2>&1" ' 0\.0% packet loss' 30
+}
+
+lab_bng_vm3() { lab_bng_cpe 3 cpe1 '198\.51\.100\.11' 2001:db8:100:1 "$1"; }
+lab_bng_vm4() { lab_bng_cpe 4 cpe2 '198\.51\.100\.12' 2001:db8:100:101 "$1"; }
+
+lab_bng_vm5() {
+	local nmdm="$1"
+
+	assert 5 "hostname is host" "$nmdm" "hostname" '^host$'
+	assert 5 "SLAAC address in cpe1's 2001:db8:100:1::/64" "$nmdm" \
+		"ifconfig vtnet2 inet6 2>&1" \
+		'inet6 2001:db8:100:1:[0-9a-f:]+ prefixlen 64 autoconf' 60
+	assert 5 "ping the internet 2001:db8:12::1" "$nmdm" \
+		"ping -6 -c 2 -t 5 2001:db8:12::1 2>&1" ' 0\.0% packet loss' 30
+	assert 5 "ping the internet 10.0.12.1 (NAT on cpe1)" "$nmdm" \
+		"ping -4 -c 2 -t 5 10.0.12.1 2>&1" ' 0\.0% packet loss' 30
+}
+
+# Phase 3: transfers from the host through cpe1's PPPoE session.
+lab_bng_throughput() {
+	local nmdm5="${NMDM_PREFIX}5${NMDM_SUFFIX}"
+	local iperf="/usr/local/bin/iperf3"
+
+	assert 5 "iperf3 download 20 MiB over IPv6" "$nmdm5" \
+		"$iperf -6 -c 2001:db8:12::1 -R -n 20M 2>&1" 'receiver' 60
+	assert 5 "iperf3 upload 20 MiB over IPv4" "$nmdm5" \
+		"$iperf -4 -c 10.0.12.1 -n 20M 2>&1" 'receiver' 60
+}
+
+# Phase 4: a wrong password is refused, and cpe1 gets the same prefix
+# back after it redials.
+lab_bng_failover() {
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local nmdm3="${NMDM_PREFIX}3${NMDM_SUFFIX}"
+	local nmdm5="${NMDM_PREFIX}5${NMDM_SUFFIX}"
+	local old
+
+	# The host's "intruder" mpd5 config dials with cpe1's login and a
+	# wrong password, from the host's access LAN interface.
+	console_run "$nmdm5" "mpd5 -b -p /tmp/intruder.pid -s intruder intruder" \
+		>/dev/null
+	assert 2 "wrong password refused" "$nmdm2" \
+		"grep -c 'M=Login incorrect' /var/log/daemon.log" '^[1-9][0-9]*$' 30
+	console_run "$nmdm5" "pkill -F /tmp/intruder.pid" >/dev/null
+	assert 3 "cpe1's session survived the wrong password" "$nmdm3" \
+		"ifconfig ng0 inet 2>&1" 'inet 198\.51\.100\.11 --> '
+
+	old=$(console_run "$nmdm3" "pgrep -x dhcp6c" | tr -d '[:space:]')
+	console_run "$nmdm3" "service mpd5 restart" >/dev/null
+	assert 3 "redialed: new DHCPv6 exchange" "$nmdm3" \
+		"p=\$(pgrep -x dhcp6c) && [ \"\$p\" != '${old}' ] && echo new" '^new$' 60
+	assert 3 "same 198.51.100.11 after redial" "$nmdm3" \
+		"ifconfig ng0 inet 2>&1" 'inet 198\.51\.100\.11 --> ' 60
+	assert 3 "same 2001:db8:100:1::/64 after redial" "$nmdm3" \
+		"ifconfig vtnet3 inet6 2>&1" 'inet6 2001:db8:100:1:[0-9a-f:]+ prefixlen 64' 60
+	assert 5 "host reaches the internet again over IPv6" "$nmdm5" \
+		"ping -6 -c 2 -t 5 2001:db8:12::1 2>&1" ' 0\.0% packet loss' 60
+}
+
 # === Lab metadata =========================================================
 
 lab_vm_count() {
 	case "$1" in
 		accounting) echo 5 ;;
 		anycast)   echo 4 ;;
+		bng)       echo 5 ;;
 		branch)    echo 5 ;;
 		full)      echo 5 ;;
 		ipv6only)  echo 4 ;;
@@ -1884,6 +1986,7 @@ lab_launch_opts() {
 	case "$1" in
 		ecmp) echo "-l 1" ;;	# second VM2-VM3 link on the shared LAN
 		ixp)  echo "-l 1" ;;	# the peering LAN
+		bng)  echo "-l 1" ;;	# the PPPoE access LAN
 	esac
 }
 
@@ -1905,8 +2008,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	accounting|full|anycast|branch|ecmp|ipv6only|ixp|rtbh) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'full', 'anycast', 'branch', 'ecmp', 'ipv6only', 'ixp' and 'rtbh' have them)" ;;
+	accounting|full|anycast|bng|branch|ecmp|ipv6only|ixp|rtbh) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'full', 'anycast', 'bng', 'branch', 'ecmp', 'ipv6only', 'ixp' and 'rtbh' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------
