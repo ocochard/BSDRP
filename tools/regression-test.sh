@@ -8,7 +8,8 @@
 # two WireGuard tunnels), the "ecmp" lab (4 VMs - static multipath routes
 # over two links), the "ixp" lab (5 VMs - redundant BIRD and FRR route
 # servers on a peering LAN), the "rtbh" lab (4 VMs - remotely triggered
-# blackhole against a DDoS), the "accounting" lab (5 VMs - per-customer
+# blackhole against a DDoS), the "rpki" lab (5 VMs - RPKI route origin
+# validation on FRR and BIRD), the "accounting" lab (5 VMs - per-customer
 # traffic accounting with NetFlow and pmacct), the "ipv6only" lab (4 VMs -
 # IPv6-only access with NAT64, DNS64 and 464XLAT) and the "bng" lab (5 VMs
 # - PPPoE broadband gateway with DHCPv6 prefix delegation). Other labs
@@ -1953,6 +1954,146 @@ lab_bng_failover() {
 		"ping -6 -c 2 -t 5 2001:db8:12::1 2>&1" ' 0\.0% packet loss' 60
 }
 
+# === rpki lab =============================================================
+#
+# transit-a announces the legitimate routes, transit-b more specific
+# hijacks. edge-frr and edge-bird drop the RPKI-invalid ones, with the
+# ROAs fetched from rtr-cache. The hijacks of 203.0.113.0/24 and
+# 2001:db8:3::/48 are not found (no ROA) until Phase 4 adds the ROAs.
+
+# $1: VM, $2: hostname, $3: nmdm
+lab_rpki_transit() {
+	local vm="$1" name="$2" nmdm="$3"
+
+	assert "$vm" "hostname is ${name}" "$nmdm" "hostname" "^${name}\$"
+	assert "$vm" "ExaBGP running" "$nmdm" \
+		"pgrep -f 'exabgp ' > /dev/null && echo running" '^running$'
+}
+
+lab_rpki_vm1() { lab_rpki_transit 1 transit-a "$1"; }
+lab_rpki_vm5() { lab_rpki_transit 5 transit-b "$1"; }
+
+# The forwarding checks, the same on both edges. Both transits own a .10
+# of the hijacked prefixes as seen from transit-b's side: only transit-a
+# answers on them, transit-b drops the traffic.
+# $1: VM, $2: nmdm, $3: transit-a's IPv4 regex, $4: transit-a's IPv6
+# regex, $5: transit-b's IPv4 regex
+lab_rpki_forwarding() {
+	local vm="$1" nmdm="$2" ta4="$3" ta6="$4" tb4="$5" dst
+
+	for dst in 192.0.2.10 198.51.100.10; do
+		assert "$vm" "${dst}: hijack dropped, routed to transit-a" "$nmdm" \
+			"route -n get ${dst} 2>&1" "gateway: ${ta4}\$" 60
+		assert "$vm" "ping ${dst}" "$nmdm" \
+			"ping -c 2 -t 5 ${dst} 2>&1" ' 0\.0% packet loss' 30
+	done
+	assert "$vm" "2001:db8:1::10: hijack dropped, routed to transit-a" "$nmdm" \
+		"route -n get -inet6 2001:db8:1::10 2>&1" "gateway: ${ta6}\$" 60
+	assert "$vm" "ping 2001:db8:1::10" "$nmdm" \
+		"ping -6 -c 2 -t 5 2001:db8:1::10 2>&1" ' 0\.0% packet loss' 30
+	# Without a ROA the hijack is accepted: it is more specific, and its
+	# traffic is lost.
+	assert "$vm" "203.0.113.10 (no ROA): hijacked to transit-b" "$nmdm" \
+		"route -n get 203.0.113.10 2>&1" "gateway: ${tb4}\$" 60
+	assert "$vm" "203.0.113.10 unreachable through the hijack" "$nmdm" \
+		"ping -c 2 -t 5 203.0.113.10 2>&1" ' 100\.0% packet loss'
+}
+
+lab_rpki_vm2() {
+	local nmdm="$1" pfx
+
+	assert 2 "hostname is edge-frr" "$nmdm" "hostname" '^edge-frr$'
+	assert 2 "RTR session to the cache up" "$nmdm" \
+		"vtysh -c 'show rpki cache-connection' 2>&1" 'Connected to group 1' 60
+	assert 2 "3 ROAs received" "$nmdm" \
+		"vtysh -c 'show rpki prefix-table' 2>&1 | awk '/^Number of/ { printf \"%s \", \$NF }'; echo" \
+		'^2 1 '
+	# The edges announce nothing: no outbound policy, hence "(Policy)".
+	assert 2 "BGP sessions to both transits Established (IPv4 and IPv6)" "$nmdm" \
+		"vtysh -c 'show bgp summary' 2>&1 | grep -cE '^(10\.0|2001:db8)[0-9a-f:.]* +4 .* [0-9]+ \(Policy\) N/A$'" '^4$' 60
+	for pfx in 192.0.2.0/25 198.51.100.0/25; do
+		assert 2 "invalid ${pfx} dropped" "$nmdm" \
+			"vtysh -c 'show bgp ipv4 unicast ${pfx}' 2>&1" 'Network not in table'
+	done
+	assert 2 "invalid 2001:db8:1::/49 dropped" "$nmdm" \
+		"vtysh -c 'show bgp ipv6 unicast 2001:db8:1::/49' 2>&1" 'Network not in table'
+	assert 2 "192.0.2.0/24 is RPKI valid" "$nmdm" \
+		"vtysh -c 'show bgp ipv4 unicast 192.0.2.0/24' 2>&1" 'rpki validation-state: valid'
+	lab_rpki_forwarding 2 "$nmdm" '10\.0\.12\.1' '2001:db8:12::1' '10\.0\.25\.5'
+}
+
+lab_rpki_vm3() {
+	local nmdm="$1" pfx
+
+	assert 3 "hostname is edge-bird" "$nmdm" "hostname" '^edge-bird$'
+	assert 3 "RTR session to the cache up" "$nmdm" \
+		"birdc show protocols rtr_cache 2>&1" 'Established' 60
+	assert 3 "3 ROAs received" "$nmdm" \
+		"(birdc show route table r4 count; birdc show route table r6 count) 2>&1 | awk '/ routes / { printf \"%s \", \$1 }'; echo" \
+		'^2 1 '
+	assert 3 "BGP sessions to both transits Established (IPv4 and IPv6)" "$nmdm" \
+		"birdc show protocols 2>&1 | grep -cE '^transit_[ab]_v[46] .*Established'" '^4$' 60
+	for pfx in 192.0.2.0/25 198.51.100.0/25 2001:db8:1::/49; do
+		assert 3 "invalid ${pfx} filtered" "$nmdm" \
+			"birdc show route filtered 2>&1" "^${pfx} "
+	done
+	lab_rpki_forwarding 3 "$nmdm" '10\.0\.13\.1' '2001:db8:13::1' '10\.0\.35\.5'
+}
+
+lab_rpki_vm4() {
+	local nmdm="$1"
+
+	assert 4 "hostname is rtr-cache" "$nmdm" "hostname" '^rtr-cache$'
+	assert 4 "rtrcache serving both edges" "$nmdm" \
+		"sockstat -c -p 323 | grep -c python" '^2$' 60
+}
+
+# Phase 4: publish the ROAs of 203.0.113.0/24 and 2001:db8:3::/48: both
+# edges drop the hijacks within seconds, without a BGP reset. Then stop
+# the cache: the edges keep their ROAs (until the expire timer) and keep
+# filtering, and reconnect when it is back.
+lab_rpki_failover() {
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local nmdm3="${NMDM_PREFIX}3${NMDM_SUFFIX}"
+	local nmdm4="${NMDM_PREFIX}4${NMDM_SUFFIX}"
+	local roas=/usr/local/etc/rtrcache.roas vm nmdm ta4 ta6
+
+	console_run "$nmdm4" "echo '203.0.113.0/24 24 64513' >> ${roas}" >/dev/null
+	console_run "$nmdm4" "echo '2001:db8:3::/48 48 64513' >> ${roas}" >/dev/null
+	assert 4 "new ROAs: a new serial with 5 ROAs" "$nmdm4" \
+		"grep -c 'serial [0-9]*: 5 ROAs' /var/log/rtrcache.log" '^1$' 30
+	for vm in 2 3; do
+		if [ "$vm" = 2 ]; then
+			nmdm="$nmdm2" ta4='10\.0\.12\.1' ta6='2001:db8:12::1'
+		else
+			nmdm="$nmdm3" ta4='10\.0\.13\.1' ta6='2001:db8:13::1'
+		fi
+		assert "$vm" "new ROA: 203.0.113.10 back to transit-a" "$nmdm" \
+			"route -n get 203.0.113.10 2>&1" "gateway: ${ta4}\$" 30
+		assert "$vm" "new ROA: ping 203.0.113.10" "$nmdm" \
+			"ping -c 2 -t 5 203.0.113.10 2>&1" ' 0\.0% packet loss' 30
+		assert "$vm" "new ROA: 2001:db8:3::10 back to transit-a" "$nmdm" \
+			"route -n get -inet6 2001:db8:3::10 2>&1" "gateway: ${ta6}\$" 30
+	done
+	assert 2 "no BGP session reset by the ROA change" "$nmdm2" \
+		"vtysh -c 'show bgp neighbors' 2>&1 | grep -c 'Connections established 1; dropped 0'" '^4$'
+
+	console_run "$nmdm4" "service rtrcache stop" >/dev/null
+	assert 2 "cache down: RTR session lost" "$nmdm2" \
+		"vtysh -c 'show rpki cache-connection' 2>&1" 'cache 10\.0\.24\.4 323 pref 1$' 30
+	assert 3 "cache down: RTR session lost" "$nmdm3" \
+		"birdc show protocols rtr_cache 2>&1" 'rtr_cache +RPKI +--- +start' 30
+	assert 2 "cache down: hijack of 198.51.100.10 still dropped" "$nmdm2" \
+		"route -n get 198.51.100.10 2>&1" 'gateway: 10\.0\.12\.1$'
+	assert 3 "cache down: hijack of 198.51.100.10 still dropped" "$nmdm3" \
+		"route -n get 198.51.100.10 2>&1" 'gateway: 10\.0\.13\.1$'
+	console_run "$nmdm4" "service rtrcache start" >/dev/null
+	assert 2 "cache back: RTR session up" "$nmdm2" \
+		"vtysh -c 'show rpki cache-connection' 2>&1" 'Connected to group 1' 60
+	assert 3 "cache back: RTR session up" "$nmdm3" \
+		"birdc show protocols rtr_cache 2>&1" 'Established' 60
+}
+
 # === Lab metadata =========================================================
 
 lab_vm_count() {
@@ -1975,6 +2116,7 @@ lab_vm_count() {
 		jailpf)    echo 5 ;;
 		pimsm)     echo 4 ;;
 		pimssm)    echo 4 ;;
+		rpki)      echo 5 ;;
 		rtbh)      echo 4 ;;
 		vrrp)      echo 4 ;;
 		*)         echo 0 ;;
@@ -2008,8 +2150,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	accounting|full|anycast|bng|branch|ecmp|ipv6only|ixp|rtbh) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'full', 'anycast', 'bng', 'branch', 'ecmp', 'ipv6only', 'ixp' and 'rtbh' have them)" ;;
+	accounting|full|anycast|bng|branch|ecmp|ipv6only|ixp|rpki|rtbh) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'full', 'anycast', 'bng', 'branch', 'ecmp', 'ipv6only', 'ixp', 'rpki' and 'rtbh' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------

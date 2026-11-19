@@ -33,6 +33,7 @@ usage () {
 	echo "-mlvpn: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links_with_mlvpn"
 	echo "-pimsm: https://bsdrp.net/documentation/examples/multicast_with_pim-sm"
 	echo "-pimssm: https://bsdrp.net/documentation/examples/multicast-with-pim-ssm"
+	echo "-rpki: https://bsdrp.net/documentation/examples/rpki-route-origin-validation"
 	echo "-rtbh: https://bsdrp.net/documentation/examples/rtbh-ddos-mitigation"
 	echo "-vpn: https://bsdrp.net/documentation/examples/gre_ipsec_and_openvpn"
 	exit 1
@@ -5485,6 +5486,272 @@ service netif restart
 service routing restart
 service rtsold start
 echo "VM5 (host) configured"
+}
+
+### RPKI route origin validation lab ###
+# VM1 (transit-a, AS 64501) --- 10.0.12.0/24 --- VM2 (edge-frr, AS 64500)
+# VM1 --- 10.0.13.0/24 --- VM3 (edge-bird, AS 64500)
+# VM5 (transit-b, AS 64502) --- 10.0.25.0/24 --- VM2
+# VM5 --- 10.0.35.0/24 --- VM3
+# VM4 (rtr-cache) --- 10.0.24.0/24 --- VM2, and --- 10.0.34.0/24 --- VM3
+# Each link also has an IPv6 twin, 2001:db8:12::/64 etc., except the
+# cache's. transit-a (ExaBGP) announces the legitimate routes and answers
+# on their .10 addresses. transit-b (ExaBGP) announces hijacks: more
+# specifics of them, which it blackholes. Both edges fetch the ROAs from
+# rtr-cache over the RTR protocol and drop the RPKI-invalid routes, FRR
+# with its rpki module and BIRD with its rpki protocol. 203.0.113.0/24 and
+# 2001:db8:3::/48 have no ROA at first: their hijacks are not found, so
+# accepted, until the ROAs are added at runtime.
+
+# Announced routes: VM, prefix, origin AS
+RPKI_ROUTES="1 192.0.2.0/24 64511
+1 198.51.100.0/24 64512
+1 203.0.113.0/24 64513
+1 2001:db8:1::/48 64511
+1 2001:db8:3::/48 64513
+5 192.0.2.0/25 64511
+5 198.51.100.0/25 64666
+5 203.0.113.0/25 64666
+5 2001:db8:1::/49 64666
+5 2001:db8:3::/49 64666"
+
+# A transit: an ExaBGP session per edge and address family.
+# $1: VM number, $2: AS, $3: hostname, $4 and $5: interfaces to VM2 and VM3,
+# then optional extra sysrc arguments.
+rpki_transit () {
+local vm=$1 as=$2 name=$3 if2=$4 if3=$5 conf=/usr/local/etc/exabgp/exabgp.conf
+local edge net af nbr own routes
+shift 5
+sysrc hostname=${name} \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_${if2}="inet 10.0.$(rpki_net ${vm} 2).${vm}/24" \
+	ifconfig_${if2}_ipv6="inet6 2001:db8:$(rpki_net ${vm} 2)::${vm} prefixlen 64" \
+	ifconfig_${if3}="inet 10.0.$(rpki_net ${vm} 3).${vm}/24" \
+	ifconfig_${if3}_ipv6="inet6 2001:db8:$(rpki_net ${vm} 3)::${vm} prefixlen 64" \
+	exabgp_enable=YES "$@"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+: > ${conf}
+for edge in 2 3; do
+	net=$(rpki_net ${vm} ${edge})
+	for af in 4 6; do
+		if [ ${af} = 4 ]; then
+			nbr=10.0.${net}.${edge}; own=10.0.${net}.${vm}
+			routes=$(echo "${RPKI_ROUTES}" | awk -v vm=${vm} '$1 == vm && $2 !~ /:/')
+		else
+			nbr=2001:db8:${net}::${edge}; own=2001:db8:${net}::${vm}
+			routes=$(echo "${RPKI_ROUTES}" | awk -v vm=${vm} '$1 == vm && $2 ~ /:/')
+		fi
+		cat >> ${conf} <<EOF
+neighbor ${nbr} {
+	router-id 10.0.0.${vm};
+	local-address ${own};
+	local-as ${as};
+	peer-as 64500;
+	family {
+		ipv${af} unicast;
+	}
+	static {
+EOF
+		echo "${routes}" | while read -r v pfx origin; do
+			echo "		route ${pfx} next-hop self as-path [ ${as} ${origin} ];" >> ${conf}
+		done
+		printf '\t}\n}\n' >> ${conf}
+	done
+done
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+# The python daemon may keep the caller's output open (cloud-init).
+service exabgp start > /dev/null 2>&1
+echo "VM${vm} (${name}) configured"
+}
+
+# Third octet of the link between two VMs: "25" for VM2 and VM5.
+rpki_net () {
+[ $1 -lt $2 ] && echo $1$2 || echo $2$1
+}
+
+rpki_vm1 () {
+rpki_transit 1 64501 transit-a em0 em1 \
+	cloned_interfaces=lo1 \
+	ifconfig_lo1="inet 192.0.2.10/32" \
+	ifconfig_lo1_alias0="inet 198.51.100.10/32" \
+	ifconfig_lo1_alias1="inet 203.0.113.10/32" \
+	ifconfig_lo1_ipv6="inet6 2001:db8:1::10 prefixlen 128" \
+	ifconfig_lo1_alias2="inet6 2001:db8:3::10 prefixlen 128"
+}
+
+rpki_vm2 () {
+sysrc hostname=edge-frr \
+	ifconfig_em0="inet 10.0.12.2/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:12::2 prefixlen 64" \
+	ifconfig_em2="inet 10.0.24.2/24" \
+	ifconfig_em3="inet 10.0.25.2/24" \
+	ifconfig_em3_ipv6="inet6 2001:db8:25::2 prefixlen 64" \
+	frr_enable=YES \
+	frr_daemons="mgmtd zebra bgpd" \
+	bgpd_flags="-A 127.0.0.1 -M rpki"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# bgpd loads the rpki module (-M rpki), which fetches the ROAs from the
+# cache. Invalid routes are denied; soft-reconfiguration keeps every
+# received route, so a ROA change revalidates them without a BGP reset.
+cat > /usr/local/etc/frr/frr.conf <<EOF
+frr defaults traditional
+hostname edge-frr
+log syslog
+!
+rpki
+ rpki polling_period 60
+ rpki retry_interval 10
+ rpki cache tcp 10.0.24.4 323 preference 1
+exit
+!
+route-map TRANSIT-IN deny 10
+ match rpki invalid
+exit
+route-map TRANSIT-IN permit 20
+exit
+!
+router bgp 64500
+ bgp router-id 10.0.0.2
+ neighbor TRANSIT4 peer-group
+ neighbor TRANSIT6 peer-group
+ neighbor 10.0.12.1 remote-as 64501
+ neighbor 10.0.12.1 peer-group TRANSIT4
+ neighbor 10.0.25.5 remote-as 64502
+ neighbor 10.0.25.5 peer-group TRANSIT4
+ neighbor 2001:db8:12::1 remote-as 64501
+ neighbor 2001:db8:12::1 peer-group TRANSIT6
+ neighbor 2001:db8:25::5 remote-as 64502
+ neighbor 2001:db8:25::5 peer-group TRANSIT6
+ !
+ address-family ipv4 unicast
+  neighbor TRANSIT4 soft-reconfiguration inbound
+  neighbor TRANSIT4 route-map TRANSIT-IN in
+  no neighbor TRANSIT6 activate
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  neighbor TRANSIT6 activate
+  neighbor TRANSIT6 soft-reconfiguration inbound
+  neighbor TRANSIT6 route-map TRANSIT-IN in
+ exit-address-family
+exit
+!
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service frr start
+echo "VM2 (edge-frr) configured"
+}
+
+rpki_vm3 () {
+local conf=/usr/local/etc/bird.conf
+local nbr af addr
+sysrc hostname=edge-bird \
+	ifconfig_em0="inet 10.0.13.3/24" \
+	ifconfig_em0_ipv6="inet6 2001:db8:13::3 prefixlen 64" \
+	ifconfig_em2="inet 10.0.34.3/24" \
+	ifconfig_em3="inet 10.0.35.3/24" \
+	ifconfig_em3_ipv6="inet6 2001:db8:35::3 prefixlen 64" \
+	bird_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# The rpki protocol fills the r4 and r6 ROA tables from the cache. The
+# import table keeps every received route, so BIRD revalidates them when
+# the ROA tables change ("rpki reload", on by default); "import keep
+# filtered" lets "birdc show route filtered" list the invalid ones.
+cat > ${conf} <<EOF
+log syslog all;
+router id 10.0.0.3;
+
+protocol device {
+}
+
+protocol kernel {
+	ipv4 { export all; };
+}
+
+protocol kernel {
+	ipv6 { export all; };
+}
+
+roa4 table r4;
+roa6 table r6;
+
+protocol rpki rtr_cache {
+	roa4 { table r4; };
+	roa6 { table r6; };
+	remote 10.0.34.4 port 323;
+}
+
+filter rov4 {
+	if roa_check(r4) = ROA_INVALID then reject "RPKI invalid";
+	accept;
+}
+
+filter rov6 {
+	if roa_check(r6) = ROA_INVALID then reject "RPKI invalid";
+	accept;
+}
+EOF
+for nbr in "transit_a 64501 10.0.13.1 2001:db8:13::1" \
+    "transit_b 64502 10.0.35.5 2001:db8:35::5"; do
+	set -- ${nbr}
+	for af in 4 6; do
+		[ ${af} = 4 ] && addr=$3 || addr=$4
+		cat >> ${conf} <<EOF
+
+protocol bgp ${1}_v${af} {
+	local as 64500;
+	neighbor ${addr} as ${2};
+	ipv${af} {
+		import table on;
+		import keep filtered on;
+		import filter rov${af};
+		export none;
+	};
+}
+EOF
+	done
+done
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service bird start
+echo "VM3 (edge-bird) configured"
+}
+
+rpki_vm4 () {
+sysrc hostname=rtr-cache \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em1="inet 10.0.24.4/24" \
+	ifconfig_em2="inet 10.0.34.4/24" \
+	rtrcache_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# rtrcache serves this file as is: a lab stand-in for a real validator.
+cat > /usr/local/etc/rtrcache.roas <<EOF
+# prefix max-length origin-AS
+192.0.2.0/24 24 64511
+198.51.100.0/24 24 64512
+2001:db8:1::/48 48 64511
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service rtrcache start
+echo "VM4 (rtr-cache) configured"
+}
+
+# No address on its own: the traffic its hijacks attract is dropped.
+rpki_vm5 () {
+rpki_transit 5 64502 transit-b em1 em2
 }
 
 ### Main

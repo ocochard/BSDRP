@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# PROVIDE: rtrcache
+# REQUIRE: NETWORKING
+# KEYWORD: shutdown
+#
+# Lab-only RPKI-to-Router cache, see /usr/local/sbin/rtrcache.
+# rtrcache_enable (bool):	Set to YES to enable. Default: NO
+# rtrcache_flags (str):		rtrcache options, see "rtrcache -h"
+
+. /etc/rc.subr
+
+name="rtrcache"
+rcvar=${name}_enable
+
+load_rc_config $name
+
+: ${rtrcache_enable:="NO"}
+
+pidfile="/var/run/${name}.pid"
+procname="/usr/sbin/daemon"
+command="/usr/sbin/daemon"
+command_args="-r -P ${pidfile} -o /var/log/${name}.log /usr/local/sbin/${name} ${rtrcache_flags}"
+rtrcache_flags=""
+
+run_rc_command "$1"

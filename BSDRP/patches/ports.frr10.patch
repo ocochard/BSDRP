@@ -1,0 +1,205 @@
+frr10: two fixes, one per paragraph below.
+
+1. zebra ignores the neighbor cache entries the FreeBSD kernel reports
+on the routing socket.
+
+When an IPv6 neighbor entry resolves, nd6.c sends RTM_ADD with
+RTF_HOST | RTF_LLDATA (and RTM_DELETE when it expires). zebra's
+rtm_read() skips RTF_WASCLONED but not RTF_LLDATA, so every IPv6
+neighbor on a connected network becomes a "kernel" /128 route at
+distance 0 ("K>* 2001:db8:113::10/128 is directly connected"), which
+overrides static and BGP routes to the same host: in the rtbh lab, the
+IPv6 blackhole trigger (a static /128 tagged 666) is never selected
+("over-ridden by better route").
+
+2. RPKI revalidation never reaches the routes
+
+When the RPKI cache adds or withdraws a ROA, bgpd revalidates the routes
+it covers: rpki_revalidate_prefix() looks the ROA prefix up with
+bgp_table_subtree_lookup(), then re-runs the inbound policy on every
+route of that subtree. bgp_table_subtree_lookup() walks the trie through
+bgp_dests, but the trie's internal nodes have none: it returns NULL as
+soon as it meets one, and the top node is internal whenever the table
+holds two prefixes without a common covering route. The routes then keep
+their old state until a manual "clear bgp ... soft in": in the rpki lab,
+a hijack that a new ROA makes invalid stays the best route ("I*>").
+
+Walk the route nodes instead, and return the subtree root as a locked
+route_node, which may be an internal node: rpki_revalidate_prefix()
+walks the subtree with route_next_until() and skips the nodes without a
+bgp_dest. Nothing is allocated, and the lock is released by the walk.
+diff --git net/frr10/Makefile net/frr10/Makefile
+index 65e16583a9f1..05dc1340398e 100644
+--- net/frr10/Makefile
++++ net/frr10/Makefile
+@@ -1,7 +1,7 @@
+ PORTNAME=	frr
+ DISTVERSIONPREFIX=	frr-
+ DISTVERSION=	10.7.1
+-PORTREVISION=	1
++PORTREVISION=	4
+ CATEGORIES=	net
+ .if defined(PYTHONTOOLS)
+ PKGNAMESUFFIX=	10-pythontools
+diff --git net/frr10/files/patch-zebra_kernel__socket.c net/frr10/files/patch-zebra_kernel__socket.c
+new file mode 100644
+index 000000000000..c467aa0951e9
+--- /dev/null
++++ net/frr10/files/patch-zebra_kernel__socket.c
+@@ -0,0 +1,17 @@
++--- zebra/kernel_socket.c.orig
+++++ zebra/kernel_socket.c
++@@ -1033,6 +1033,14 @@ void rtm_read(struct rt_msghdr *rtm)
++ #endif
++ #ifdef RTF_WASCLONED /*freebsd*/
++ 	if (flags & RTF_WASCLONED)
+++		return;
+++#endif
+++#ifdef RTF_LLDATA /*freebsd*/
+++	/*
+++	 * Neighbor cache entries (e.g. IPv6 ND), not routes: as kernel
+++	 * routes they would override static or BGP host routes.
+++	 */
+++	if (flags & RTF_LLDATA)
++ 		return;
++ #endif
++ 
+diff --git net/frr10/files/patch-bgpd_bgp__rpki.c net/frr10/files/patch-bgpd_bgp__rpki.c
+new file mode 100644
+--- /dev/null
++++ net/frr10/files/patch-bgpd_bgp__rpki.c
+@@ -0,0 +1,28 @@
++--- bgpd/bgp_rpki.c.orig
+++++ bgpd/bgp_rpki.c
++@@ -602,19 +602,16 @@
++ static void rpki_revalidate_prefix(struct event *event)
++ {
++ 	struct rpki_revalidate_prefix *rrp = EVENT_ARG(event);
++-	struct bgp_dest *match, *node;
+++	struct route_node *match, *node;
+++	struct bgp_dest *dest;
++ 
++ 	match = bgp_table_subtree_lookup(rrp->bgp->rib[rrp->afi][rrp->safi],
++ 					 &rrp->prefix);
++ 
++-	node = match;
++-
++-	while (node) {
++-		if (bgp_dest_has_bgp_path_info_data(node)) {
++-			revalidate_bgp_node(rrp->bgp, node, rrp->afi, rrp->safi);
++-		}
++-
++-		node = bgp_route_next_until(node, match);
+++	for (node = match; node; node = route_next_until(node, match)) {
+++		dest = bgp_dest_from_rnode(node);
+++		if (dest && bgp_dest_has_bgp_path_info_data(dest))
+++			revalidate_bgp_node(rrp->bgp, dest, rrp->afi, rrp->safi);
++ 	}
++ 
++ 	XFREE(MTYPE_BGP_RPKI_REVALIDATE, rrp);
+diff --git net/frr10/files/patch-bgpd_bgp__table.c net/frr10/files/patch-bgpd_bgp__table.c
+new file mode 100644
+--- /dev/null
++++ net/frr10/files/patch-bgpd_bgp__table.c
+@@ -0,0 +1,76 @@
++--- bgpd/bgp_table.c.orig
+++++ bgpd/bgp_table.c
++@@ -242,52 +242,46 @@
++ 	}
++ }
++ 
++-struct bgp_dest *bgp_table_subtree_lookup(const struct bgp_table *table,
++-					  const struct prefix *p)
+++struct route_node *bgp_table_subtree_lookup(const struct bgp_table *table,
+++					    const struct prefix *p)
++ {
++-	struct bgp_dest *dest;
++-	struct bgp_dest *matched = NULL;
+++	struct route_node *node;
+++	struct route_node *matched = NULL;
++ 
++ 	/* Unique-mode case is special; no iteration or prefix search */
++-	if (route_table_is_unique_mode(table->route_table)) {
++-		dest = bgp_node_lookup(table, p);
++-		return dest;
++-	}
+++	if (route_table_is_unique_mode(table->route_table))
+++		return route_node_lookup(table->route_table, p);
++ 
++-	/* Search in LPM table */
++-	dest = bgp_dest_from_rnode(table->route_table->top);
++-	if (dest == NULL)
++-		return NULL;
++-
++-	while (dest) {
++-		const struct prefix *dest_p = bgp_dest_get_prefix(dest);
++-		struct route_node *node = dest->rn;
++-
++-		if (dest_p->prefixlen >= p->prefixlen) {
++-			if (!prefix_match(p, dest_p))
+++	/*
+++	 * Search in LPM table. Walk the route nodes, not the bgp_dests: the
+++	 * internal nodes of the trie, such as its top node when it holds
+++	 * several prefixes, have no bgp_dest.
+++	 */
+++	node = table->route_table->top;
+++	while (node) {
+++		if (node->p.prefixlen >= p->prefixlen) {
+++			if (!prefix_match(p, &node->p))
++ 				return NULL;
++ 
++-			matched = dest;
+++			matched = node;
++ 			break;
++ 		}
++ 
++-		if (!prefix_match(dest_p, p))
+++		if (!prefix_match(&node->p, p))
++ 			return NULL;
++ 
++-		if (dest_p->prefixlen == p->prefixlen) {
++-			matched = dest;
+++		if (node->p.prefixlen == p->prefixlen) {
+++			matched = node;
++ 			break;
++ 		}
++ 
++-		dest = bgp_dest_from_rnode(
++-			node->link[prefix_bit(&p->u.prefix, dest_p->prefixlen)]);
+++		node = node->link[prefix_bit(&p->u.prefix, node->p.prefixlen)];
++ 	}
++ 
++ 	if (!matched)
++ 		return NULL;
++ 
++-	bgp_dest_lock_node(matched);
++-	return matched;
+++	return route_lock_node(matched);
++ }
++ 
++ printfrr_ext_autoreg_p("BD", printfrr_bd);
+diff --git net/frr10/files/patch-bgpd_bgp__table.h net/frr10/files/patch-bgpd_bgp__table.h
+new file mode 100644
+--- /dev/null
++++ net/frr10/files/patch-bgpd_bgp__table.h
+@@ -0,0 +1,20 @@
++--- bgpd/bgp_table.h.orig
+++++ bgpd/bgp_table.h
++@@ -328,12 +328,14 @@
++ /* Find the subtree of the prefix p
++  *
++  * This will return the first node that belongs the the subtree of p. Including
++- * p itself, if it is in the tree.
+++ * p itself, if it is in the tree. The node is locked, and may be an internal
+++ * node of the trie, without a bgp_dest: walk the subtree with
+++ * route_next_until(), which also releases the lock.
++  *
++  * If the subtree is not present in the table, NULL is returned.
++  */
++-struct bgp_dest *bgp_table_subtree_lookup(const struct bgp_table *table,
++-					  const struct prefix *p);
+++struct route_node *bgp_table_subtree_lookup(const struct bgp_table *table,
+++					    const struct prefix *p);
++ 
++ static inline struct bgp_aggregate *
++ bgp_dest_get_bgp_aggregate_info(struct bgp_dest *dest)

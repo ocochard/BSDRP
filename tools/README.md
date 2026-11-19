@@ -74,8 +74,9 @@ setup/usage error.
   `rtbh` lab (remotely triggered blackhole against a DDoS), the
   `accounting` lab (per-customer traffic accounting with NetFlow and
   pmacct), the `ipv6only` lab (IPv6-only access with NAT64, DNS64 and
-  464XLAT) and the `bng` lab (PPPoE broadband gateway with DHCPv6 prefix
-  delegation, launched with `-l 1`). Any other lab exits
+  464XLAT), the `bng` lab (PPPoE broadband gateway with DHCPv6 prefix
+  delegation, launched with `-l 1`) and the `rpki` lab (RPKI route origin
+  validation on FRR and BIRD). Any other lab exits
   with `lab '<name>' has no assertions implemented yet`.
 - `--no-launch` is the inner loop when writing assertions: launch the lab once
   by hand (see below), then re-run the driver as many times as needed.

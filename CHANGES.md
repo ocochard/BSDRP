@@ -14,6 +14,13 @@
   pf filtering rule, all checked by tools/regression-test.sh
 - full lab: BFD between FRR and bird, ExaBGP injecting routes, a DHCPv6
   relay and server, and LLDP
+- Add an rpki lab: FRR and BIRD edge routers drop RPKI-invalid hijacks
+  with the ROAs of an RTR cache (rtrcache, a lab-only stand-in for a
+  validator), and a new ROA stops a running hijack within seconds, checked
+  by tools/regression-test.sh
+- frr10: bgpd revalidates the routes covered by a ROA the RPKI cache adds
+  or withdraws: before, they kept their old state until a manual
+  "clear bgp ... soft in"
 - Add a bng lab: a PPPoE broadband gateway (mpd5) gives each subscriber
   a fixed IPv4 address by login and a fixed /56 by DHCPv6 prefix
   delegation; the CPE puts a /64 on its LAN with rtadvd, checked by

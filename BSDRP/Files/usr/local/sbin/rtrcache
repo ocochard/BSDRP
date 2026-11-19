@@ -1,0 +1,239 @@
+#!/usr/local/bin/python3
+"""Minimal RPKI-to-Router (RTR) cache, for BSDRP labs only.
+
+Serves the ROAs listed in a text file to routers over the RPKI-to-Router
+protocol (RFC 6810 version 0, RFC 8210 version 1, and version 2 without
+ASPA). It does NO RPKI validation: it serves whatever the file says. A
+production network runs a real validator (routinator, rpki-client with
+StayRTR, ...) on two or more servers.
+
+ROA file: one "prefix max-length origin-AS" per line, '#' starts a comment:
+    192.0.2.0/24 24 64511
+The file is re-read when it changes: the serial is increased, the routers
+are sent a Serial Notify and fetch the difference.
+"""
+
+import argparse
+import ipaddress
+import logging
+import os
+import random
+import socket
+import struct
+import threading
+import time
+
+SERIAL_NOTIFY, SERIAL_QUERY, RESET_QUERY, CACHE_RESPONSE = 0, 1, 2, 3
+IPV4_PREFIX, IPV6_PREFIX, END_OF_DATA, CACHE_RESET = 4, 6, 7, 8
+ERROR_REPORT = 10
+ERR_CORRUPT, ERR_INVALID_REQUEST, ERR_BAD_VERSION = 0, 3, 4
+ERR_BAD_PDU, ERR_UNEXPECTED_VERSION = 5, 8
+MAX_VERSION = 2
+HISTORY = 16
+
+
+def pdu(version, ptype, field, body=b""):
+    return struct.pack("!BBHI", version, ptype, field, 8 + len(body)) + body
+
+
+def prefix_pdu(version, roa, announce):
+    net, maxlen, asn = roa
+    body = struct.pack("!BBBB", 1 if announce else 0, net.prefixlen,
+                       maxlen, 0)
+    body += net.network_address.packed + struct.pack("!I", asn)
+    ptype = IPV4_PREFIX if net.version == 4 else IPV6_PREFIX
+    return pdu(version, ptype, 0, body)
+
+
+def error_pdu(version, code, text):
+    text = text.encode()
+    body = struct.pack("!I", 0) + struct.pack("!I", len(text)) + text
+    return pdu(version, ERROR_REPORT, code, body)
+
+
+def load_roas(path):
+    roas = set()
+    with open(path) as f:
+        for line in f:
+            fields = line.split("#")[0].split()
+            if not fields:
+                continue
+            net = ipaddress.ip_network(fields[0])
+            maxlen, asn = int(fields[1]), int(fields[2])
+            if not net.prefixlen <= maxlen <= net.max_prefixlen:
+                raise ValueError("bad max-length in: " + line.strip())
+            roas.add((net, maxlen, asn))
+    return frozenset(roas)
+
+
+class Cache:
+    def __init__(self, path, refresh, retry, expire):
+        self.path = path
+        self.timers = struct.pack("!III", refresh, retry, expire)
+        self.session = random.randrange(1 << 16)
+        self.lock = threading.Lock()
+        self.clients = set()
+        self.stamp = None
+        self.serial = 0
+        self.history = {}
+        self.reload()
+
+    def reload(self):
+        try:
+            st = os.stat(self.path)
+            stamp = (st.st_mtime_ns, st.st_size)
+            if stamp == self.stamp:
+                return
+            roas = load_roas(self.path)
+        except (OSError, ValueError) as e:
+            logging.error("%s: %s", self.path, e)
+            return
+        with self.lock:
+            self.stamp = stamp
+            if self.history and roas == self.history[self.serial]:
+                return
+            if self.history:
+                self.serial = (self.serial + 1) & 0xffffffff
+            self.history[self.serial] = roas
+            self.history.pop((self.serial - HISTORY) & 0xffffffff, None)
+            logging.info("serial %d: %d ROAs", self.serial, len(roas))
+            clients = list(self.clients)
+        for c in clients:
+            c.notify()
+
+    def watch(self):
+        while True:
+            time.sleep(1)
+            self.reload()
+
+    def end_of_data(self, version, serial):
+        body = struct.pack("!I", serial)
+        if version >= 1:
+            body += self.timers
+        return pdu(version, END_OF_DATA, self.session, body)
+
+    def answer(self, version, old_serial):
+        """PDUs answering a Reset Query (old_serial None) or Serial Query."""
+        with self.lock:
+            serial, roas = self.serial, self.history[self.serial]
+            if old_serial is None:
+                added, removed = roas, frozenset()
+            elif old_serial in self.history:
+                old = self.history[old_serial]
+                added, removed = roas - old, old - roas
+            else:
+                return pdu(version, CACHE_RESET, 0)
+        out = [pdu(version, CACHE_RESPONSE, self.session)]
+        out += [prefix_pdu(version, r, False) for r in sorted(removed, key=str)]
+        out += [prefix_pdu(version, r, True) for r in sorted(added, key=str)]
+        out.append(self.end_of_data(version, serial))
+        return b"".join(out)
+
+
+class Client:
+    def __init__(self, cache, sock, peer):
+        self.cache, self.sock, self.peer = cache, sock, peer
+        self.version = None
+        self.wlock = threading.Lock()
+
+    def send(self, data):
+        with self.wlock:
+            self.sock.sendall(data)
+
+    def notify(self):
+        if self.version is None:
+            return
+        try:
+            self.send(pdu(self.version, SERIAL_NOTIFY, self.cache.session,
+                          struct.pack("!I", self.cache.serial)))
+        except OSError:
+            pass
+
+    def recv(self, n):
+        data = b""
+        while len(data) < n:
+            chunk = self.sock.recv(n - len(data))
+            if not chunk:
+                raise EOFError
+            data += chunk
+        return data
+
+    def run(self):
+        logging.info("%s connected", self.peer)
+        try:
+            self.serve()
+        except (EOFError, OSError):
+            pass
+        finally:
+            with self.cache.lock:
+                self.cache.clients.discard(self)
+            self.sock.close()
+            logging.info("%s disconnected", self.peer)
+
+    def serve(self):
+        while True:
+            version, ptype, field, length = struct.unpack("!BBHI",
+                                                          self.recv(8))
+            if length < 8 or length > 4096:
+                self.send(error_pdu(min(version, MAX_VERSION), ERR_CORRUPT,
+                                    "bad PDU length"))
+                return
+            body = self.recv(length - 8)
+            if self.version is None:
+                if version > MAX_VERSION:
+                    self.send(error_pdu(MAX_VERSION, ERR_BAD_VERSION,
+                                        "unsupported protocol version"))
+                    return
+                self.version = version
+                with self.cache.lock:
+                    self.cache.clients.add(self)
+                logging.info("%s speaks version %d", self.peer, version)
+            elif version != self.version:
+                self.send(error_pdu(self.version, ERR_UNEXPECTED_VERSION,
+                                    "unexpected protocol version"))
+                return
+            if ptype == RESET_QUERY:
+                logging.info("%s reset query", self.peer)
+                self.send(self.cache.answer(version, None))
+            elif ptype == SERIAL_QUERY and len(body) == 4:
+                (serial,) = struct.unpack("!I", body)
+                logging.info("%s serial query %d", self.peer, serial)
+                if field != self.cache.session:
+                    self.send(pdu(version, CACHE_RESET, 0))
+                else:
+                    self.send(self.cache.answer(version, serial))
+            elif ptype == ERROR_REPORT:
+                logging.warning("%s sent error report %d", self.peer, field)
+                return
+            else:
+                self.send(error_pdu(version, ERR_BAD_PDU,
+                                    "unsupported PDU type %d" % ptype))
+                return
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    p.add_argument("-f", "--file", default="/usr/local/etc/rtrcache.roas")
+    p.add_argument("-p", "--port", type=int, default=323)
+    p.add_argument("--refresh", type=int, default=60)
+    p.add_argument("--retry", type=int, default=10)
+    p.add_argument("--expire", type=int, default=600)
+    args = p.parse_args()
+    logging.basicConfig(format="%(asctime)s %(message)s", level=logging.INFO)
+
+    cache = Cache(args.file, args.refresh, args.retry, args.expire)
+    if not cache.history:
+        raise SystemExit("no usable ROA file: " + args.file)
+    threading.Thread(target=cache.watch, daemon=True).start()
+    srv = socket.create_server(("", args.port), family=socket.AF_INET6,
+                               dualstack_ipv6=True)
+    logging.info("session %d, listening on port %d", cache.session,
+                 args.port)
+    while True:
+        sock, addr = srv.accept()
+        client = Client(cache, sock, addr[0].removeprefix("::ffff:"))
+        threading.Thread(target=client.run, daemon=True).start()
+
+
+if __name__ == "__main__":
+    main()
