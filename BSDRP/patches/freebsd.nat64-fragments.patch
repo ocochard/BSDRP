@@ -1,0 +1,63 @@
+ipfw nat64: translate fragmented IPv6 packets into valid IPv4 fragments.
+
+Two bugs made every IPv6 packet fragmented before a NAT64 translator
+(nat64lsn, nat64stl or nat64clat) impossible to reassemble, or corrupt,
+once in IPv4: in practice, every UDP datagram larger than the path MTU,
+IPv6 to IPv4 or through a 464XLAT CLAT, was lost.
+
+- nat64_init_ip4hdr() picked a new IPv4 Identification for each
+  fragment with ip_fillid(), before setting ip_off, whose uninitialized
+  value decided between ID 0 (RFC 6864 atomic datagram) and a fresh one.
+  The fragments of a packet must share their Identification: RFC 7915
+  section 5.1.1 takes it from the low-order 16 bits of the Fragment
+  Header's.
+- nat64_do_handle_ip6() rewrote the TCP or UDP checksum, and the port
+  for nat64lsn, at the start of every fragment. Only the first fragment
+  holds the upper layer header; in the next ones these bytes are
+  payload.
+
+diff --git sys/netpfil/ipfw/nat64/nat64_translate.c sys/netpfil/ipfw/nat64/nat64_translate.c
+index f5a1059cc7d..e4c0ea20c4f 100644
+--- sys/netpfil/ipfw/nat64/nat64_translate.c
++++ sys/netpfil/ipfw/nat64/nat64_translate.c
+@@ -520,13 +520,18 @@ nat64_init_ip4hdr(const struct ip6_hdr *ip6, const struct ip6_frag *frag,
+ 		ip->ip_ttl -= IPV6_HLIMDEC;
+ 	ip->ip_sum = 0;
+ 	ip->ip_p = (proto == IPPROTO_ICMPV6) ? IPPROTO_ICMP: proto;
+-	ip_fillid(ip, V_ip_random_id);
+ 	if (frag != NULL) {
+ 		ip->ip_off = htons(ntohs(frag->ip6f_offlg) >> 3);
+ 		if (frag->ip6f_offlg & IP6F_MORE_FRAG)
+ 			ip->ip_off |= htons(IP_MF);
++		/*
++		 * RFC 7915 5.1.1: the fragments of a packet must share their
++		 * Identification, taken from the IPv6 Fragment Header.
++		 */
++		ip->ip_id = htons(ntohl(frag->ip6f_ident) & 0xffff);
+ 	} else {
+ 		ip->ip_off = htons(IP_DF);
++		ip_fillid(ip, V_ip_random_id);
+ 	}
+ 	ip->ip_sum = in_cksum_hdr(ip);
+ }
+@@ -1669,6 +1674,12 @@ nat64_do_handle_ip6(struct mbuf *m, uint32_t aaddr, uint16_t aport,
+ 		in6_delayed_cksum(m, plen, hlen);
+ 		m->m_pkthdr.csum_flags &= ~CSUM_DELAY_DATA_IPV6;
+ 	}
++	/*
++	 * Only the first fragment holds the upper layer header: the next
++	 * ones hold payload, which must not be rewritten.
++	 */
++	if (frag != NULL && (frag->ip6f_offlg & IP6F_OFF_MASK) != 0)
++		goto output;
+ 	/* Convert checksums. */
+ 	switch (proto) {
+ 	case IPPROTO_TCP:
+@@ -1710,6 +1721,7 @@ nat64_do_handle_ip6(struct mbuf *m, uint32_t aaddr, uint16_t aport,
+ 		break;
+ 	};
+ 
++output:
+ 	m_adj(m, hlen - sizeof(ip));
+ 	bcopy(&ip, mtod(m, void *), sizeof(ip));
+ 	if (V_nat64out->output(nh->nh_ifp, m, (struct sockaddr *)&dst,

@@ -25,6 +25,7 @@ usage () {
 	echo "-frr: https://bsdrp.net/documentation/examples/simple_bgp-rip-ospf_lab"
 	echo "-frr_jails: same as previous but with jails"
 	echo "-graphpath: https://bsdrp.net/documentation/examples/graphpath"
+	echo "-ipv6only: https://bsdrp.net/documentation/examples/ipv6-only-access-with-nat64-and-464xlat"
 	echo "-ixp: https://bsdrp.net/documentation/examples/ixp-route-server"
 	echo "-jailpf: https://bsdrp.net/documentation/examples/multi-tenant_ha_pf_firewalls"
 	echo "-mlppp: https://bsdrp.net/documentation/examples/aggregating_multiple_isp_links"
@@ -5130,6 +5131,125 @@ service netif restart
 service routing restart
 service nfacctd start
 echo "VM5 (collector) configured"
+}
+
+### IPv6-only access with NAT64 and 464XLAT lab ###
+# VM1 (server) --- 203.0.113.0/24 --- VM2 (nat64)
+# VM2 --- 2001:db8:23::/64, IPv6 only --- VM3 (cpe)
+# VM3 --- 192.168.1.0/24, 2001:db8:3::/64 --- VM4 (client)
+# The ISP access network carries IPv6 only. VM2, the ISP's NAT64 (PLAT),
+# translates IPv6 to the IPv4 internet with ipfw nat64lsn and answers DNS64
+# queries. VM3, the subscriber CPE, runs a CLAT (ipfw nat64clat) so its
+# IPv4 LAN still reaches IPv4 servers over the IPv6-only access (464XLAT).
+# NAT64 prefix: 2001:db8:64::/96. The well-known 64:ff9b::/96 refuses to
+# translate to private and documentation IPv4 addresses, such as this
+# lab's server.
+
+ipv6only_vm1 () {
+sysrc hostname=server \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em0="inet 203.0.113.10/24" \
+	defaultrouter=203.0.113.1
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+# Full path: the first-boot PATH has no /usr/local/bin.
+/usr/local/bin/iperf3 -s -D
+echo "VM1 (server) configured"
+}
+
+ipv6only_vm2 () {
+sysrc hostname=nat64 \
+	ifconfig_em0="inet 203.0.113.1/24" \
+	ifconfig_em1_ipv6="inet6 2001:db8:23::1 prefixlen 64" \
+	ipv6_static_routes="cpe" \
+	ipv6_route_cpe="2001:db8:3:: -prefixlen 48 2001:db8:23::3" \
+	firewall_enable=YES \
+	firewall_nat64_enable=YES \
+	firewall_script="/etc/ipfw.rules" \
+	dnsmasq_enable=YES
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# Stateful NAT64: IPv6 clients share the 198.51.100.0/28 pool. Return
+# traffic to the pool needs no route here: ipfw consumes it on input.
+cat > /etc/ipfw.rules <<'EOF'
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+${fwcmd} -f flush
+${fwcmd} -q nat64lsn isp destroy 2>/dev/null
+${fwcmd} nat64lsn isp create prefix4 198.51.100.0/28 prefix6 2001:db8:64::/96
+${fwcmd} add 100 nat64lsn isp ip6 from any to 2001:db8:64::/96 in
+${fwcmd} add 200 nat64lsn isp ip4 from any to 198.51.100.0/28 in
+${fwcmd} add 65000 allow ip from any to any
+EOF
+# DNS64 for the subscribers. dnsmasq cannot synthesize AAAA records, so
+# the lab's only IPv4 server gets a static one in the NAT64 prefix
+# (203.0.113.10 = cb00:710a).
+cat > /usr/local/etc/dnsmasq.conf <<EOF
+no-resolv
+no-hosts
+bind-interfaces
+listen-address=::1,2001:db8:23::1
+host-record=server.example.net,203.0.113.10,2001:db8:64::cb00:710a
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service ipfw start
+service dnsmasq start
+echo "VM2 (nat64) configured"
+}
+
+ipv6only_vm3 () {
+sysrc hostname=cpe \
+	ifconfig_em1_ipv6="inet6 2001:db8:23::3 prefixlen 64" \
+	ipv6_defaultrouter=2001:db8:23::1 \
+	ifconfig_em2="inet 192.168.1.1/24" \
+	ifconfig_em2_ipv6="inet6 2001:db8:3::1 prefixlen 64" \
+	firewall_enable=YES \
+	firewall_nat64_enable=YES \
+	firewall_script="/etc/ipfw.rules"
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+# CLAT: the LAN's IPv4 packets leave as IPv6, source in the CLAT prefix
+# 2001:db8:3:464::/96 (part of the subscriber's 2001:db8:3::/48),
+# destination in the ISP's NAT64 prefix. The CPE has no IPv4 route
+# beyond its LAN: ipfw translates the packets before any route lookup.
+cat > /etc/ipfw.rules <<'EOF'
+#!/bin/sh
+fwcmd="/sbin/ipfw"
+${fwcmd} -f flush
+${fwcmd} -q nat64clat clat destroy 2>/dev/null
+${fwcmd} nat64clat clat create clat_prefix 2001:db8:3:464::/96 plat_prefix 2001:db8:64::/96
+${fwcmd} add 100 nat64clat clat ip4 from 192.168.1.0/24 to not 192.168.1.0/24 in
+${fwcmd} add 200 nat64clat clat ip6 from 2001:db8:64::/96 to 2001:db8:3:464::/96 in
+${fwcmd} add 65000 allow ip from any to any
+EOF
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+service ipfw start
+echo "VM3 (cpe) configured"
+}
+
+ipv6only_vm4 () {
+sysrc hostname=client \
+	gateway_enable=NO \
+	ipv6_gateway_enable=NO \
+	ifconfig_em2="inet 192.168.1.10/24" \
+	ifconfig_em2_ipv6="inet6 2001:db8:3::10 prefixlen 64" \
+	defaultrouter=192.168.1.1 \
+	ipv6_defaultrouter=2001:db8:3::1
+ifconfig -l | grep -q vtnet && sed -i "" 's/em/vtnet/g' /etc/rc.conf
+echo "nameserver 2001:db8:23::1" > /etc/resolv.conf
+/usr/local/sbin/config save
+service hostname restart
+service netif restart
+service routing restart
+echo "VM4 (client) configured"
 }
 
 ### Main

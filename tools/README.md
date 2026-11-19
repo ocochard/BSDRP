@@ -71,9 +71,10 @@ setup/usage error.
   `branch` lab (branch office ECMP over two WireGuard tunnels), the `ecmp`
   lab (static multipath routes, launched with `-l 1`), the `ixp` lab
   (redundant BIRD and FRR route servers, launched with `-l 1`) and the
-  `rtbh` lab (remotely triggered blackhole against a DDoS) and the
+  `rtbh` lab (remotely triggered blackhole against a DDoS), the
   `accounting` lab (per-customer traffic accounting with NetFlow and
-  pmacct). Any other lab exits
+  pmacct) and the `ipv6only` lab (IPv6-only access with NAT64, DNS64 and
+  464XLAT). Any other lab exits
   with `lab '<name>' has no assertions implemented yet`.
 - `--no-launch` is the inner loop when writing assertions: launch the lab once
   by hand (see below), then re-run the driver as many times as needed.

@@ -8,8 +8,9 @@
 # two WireGuard tunnels), the "ecmp" lab (4 VMs - static multipath routes
 # over two links), the "ixp" lab (5 VMs - redundant BIRD and FRR route
 # servers on a peering LAN), the "rtbh" lab (4 VMs - remotely triggered
-# blackhole against a DDoS) and the "accounting" lab (5 VMs - per-customer
-# traffic accounting with NetFlow and pmacct). Other labs declared in
+# blackhole against a DDoS), the "accounting" lab (5 VMs - per-customer
+# traffic accounting with NetFlow and pmacct) and the "ipv6only" lab (4 VMs
+# - IPv6-only access with NAT64, DNS64 and 464XLAT). Other labs declared in
 # tools/BSDRP-lab-bhyve.sh (frr, bgp, vpn, mlvpn, mlppp, fairshape, jailpf,
 # pimsm, pimssm, vrrp, etc.) have no assertions defined here yet - running
 # this driver against them will fail with "lab '<name>' has no assertions
@@ -1766,6 +1767,91 @@ acct_check() {
 		'^ok ' 30
 }
 
+# === ipv6only lab =========================================================
+#
+# IPv6-only access: the CPE reaches the IPv4 server through the ISP's NAT64
+# (nat64lsn, prefix 2001:db8:64::/96), natively over IPv6 with DNS64 and,
+# for its IPv4 LAN, through its own CLAT (nat64clat, 464XLAT).
+
+lab_ipv6only_vm1() {
+	local nmdm="$1"
+
+	assert 1 "hostname is server" "$nmdm" "hostname" '^server$'
+	assert 1 "iperf3 server running" "$nmdm" \
+		"pgrep -x iperf3 || echo none" '^[0-9]+$'
+	assert 1 "no IPv6 global address (IPv4-only server)" "$nmdm" \
+		"ifconfig -a inet6 | grep -c 'inet6 2001'" '^0$'
+}
+
+lab_ipv6only_vm2() {
+	local nmdm="$1"
+
+	assert 2 "hostname is nat64" "$nmdm" "hostname" '^nat64$'
+	assert 2 "nat64lsn pool 198.51.100.0/28, prefix 2001:db8:64::/96" "$nmdm" \
+		"ipfw nat64lsn isp list 2>&1" \
+		'prefix4 198\.51\.100\.0/28 prefix6 2001:db8:64::/96'
+	assert 2 "DNS64 answers the server's synthesized AAAA" "$nmdm" \
+		"host -t AAAA server.example.net ::1 2>&1" \
+		'has IPv6 address 2001:db8:64::cb00:710a$'
+}
+
+lab_ipv6only_vm3() {
+	local nmdm="$1"
+
+	assert 3 "hostname is cpe" "$nmdm" "hostname" '^cpe$'
+	assert 3 "no IPv4 default route (IPv6-only access)" "$nmdm" \
+		"netstat -rn -f inet | grep -c '^default'" '^0$'
+	assert 3 "nat64clat with CLAT prefix 2001:db8:3:464::/96" "$nmdm" \
+		"ipfw nat64clat clat list 2>&1" \
+		'clat_prefix 2001:db8:3:464::/96 plat_prefix 2001:db8:64::/96'
+	assert 3 "ping the NAT64 router 2001:db8:23::1" "$nmdm" \
+		"ping -6 -c 2 -t 5 2001:db8:23::1 2>&1" ' 0\.0% packet loss' 60
+}
+
+lab_ipv6only_vm4() {
+	local nmdm="$1"
+
+	assert 4 "hostname is client" "$nmdm" "hostname" '^client$'
+	assert 4 "DNS64 resolves server.example.net into the NAT64 prefix" \
+		"$nmdm" "host -t AAAA server.example.net 2>&1" \
+		'has IPv6 address 2001:db8:64::cb00:710a$' 60
+	assert 4 "NAT64: ping server.example.net over IPv6" "$nmdm" \
+		"ping -6 -c 2 -t 5 server.example.net 2>&1" ' 0\.0% packet loss' 30
+	assert 4 "464XLAT: ping 203.0.113.10 over IPv4" "$nmdm" \
+		"ping -4 -c 2 -t 5 203.0.113.10 2>&1" ' 0\.0% packet loss' 30
+}
+
+# Phase 3: TCP transfers both ways through each path (path MTU discovery
+# included), UDP datagrams too large for the IPv6 access, then the NAT64
+# states of both the CLAT and the native IPv6 address of the client.
+lab_ipv6only_throughput() {
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local nmdm4="${NMDM_PREFIX}4${NMDM_SUFFIX}"
+	local iperf="/usr/local/bin/iperf3"
+
+	assert 4 "464XLAT: iperf3 upload 20 MiB over IPv4" "$nmdm4" \
+		"$iperf -4 -c 203.0.113.10 -n 20M 2>&1" 'receiver' 60
+	assert 4 "464XLAT: iperf3 download 20 MiB over IPv4" "$nmdm4" \
+		"$iperf -4 -c 203.0.113.10 -R -n 20M 2>&1" 'receiver' 60
+	assert 4 "NAT64: iperf3 download 20 MiB from server.example.net" \
+		"$nmdm4" "$iperf -6 -c server.example.net -R -n 20M 2>&1" \
+		'receiver' 60
+	# 1472-byte UDP payloads make 1500-byte IPv4 packets, 1520 bytes
+	# in IPv6: each one crosses the IPv6 access as two fragments.
+	assert 4 "464XLAT: fragmented UDP upload, nothing lost" "$nmdm4" \
+		"$iperf -4 -c 203.0.113.10 -u -l 1472 -b 1M -t 2 2>&1" \
+		' 0/[1-9][0-9]* \(0%\) +receiver' 60
+	assert 4 "464XLAT: fragmented UDP download, nothing lost" "$nmdm4" \
+		"$iperf -4 -c 203.0.113.10 -u -l 1472 -b 1M -t 2 -R 2>&1" \
+		' 0/[1-9][0-9]* \(0%\) +receiver' 60
+	assert 2 "NAT64 state for the client's CLAT address" "$nmdm2" \
+		"ipfw nat64lsn isp show states 2>&1" \
+		'^2001:db8:3:464::c0a8:10a(:[0-9]+)? +198\.51\.100\.'
+	assert 2 "NAT64 state for the client's IPv6 address" "$nmdm2" \
+		"ipfw nat64lsn isp show states 2>&1" \
+		'^2001:db8:3::10(:[0-9]+)? +198\.51\.100\.'
+}
+
 # === Lab metadata =========================================================
 
 lab_vm_count() {
@@ -1774,6 +1860,7 @@ lab_vm_count() {
 		anycast)   echo 4 ;;
 		branch)    echo 5 ;;
 		full)      echo 5 ;;
+		ipv6only)  echo 4 ;;
 		ixp)       echo 5 ;;
 		frr)       echo 7 ;;
 		bgp)       echo 7 ;;
@@ -1818,8 +1905,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	accounting|full|anycast|branch|ecmp|ixp|rtbh) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'full', 'anycast', 'branch', 'ecmp', 'ixp' and 'rtbh' have them)" ;;
+	accounting|full|anycast|branch|ecmp|ipv6only|ixp|rtbh) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'full', 'anycast', 'branch', 'ecmp', 'ipv6only', 'ixp' and 'rtbh' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------
