@@ -13,10 +13,11 @@
 # traffic accounting with NetFlow and pmacct), the "ipv6only" lab (4 VMs -
 # IPv6-only access with NAT64, DNS64 and 464XLAT), the "bng" lab (5 VMs
 # - PPPoE broadband gateway with DHCPv6 prefix delegation), the "admin"
-# lab (1 VM - config, autosave, system and upgrade tools) and the "vrrp"
-# lab (4 VMs - VRRPv3 with carp, failover and preemption). Other labs
-# declared in tools/BSDRP-lab-bhyve.sh (frr, bgp, vpn, mlvpn, mlppp,
-# fairshape, jailpf, pimsm, pimssm, etc.) have no assertions defined
+# lab (1 VM - config, autosave, system and upgrade tools), the "vrrp"
+# lab (4 VMs - VRRPv3 with carp, failover and preemption) and the
+# "pimssm" lab (4 VMs - PIM source-specific multicast with pimd). Other
+# labs declared in tools/BSDRP-lab-bhyve.sh (frr, bgp, vpn, mlvpn, mlppp,
+# fairshape, jailpf, pimsm, etc.) have no assertions defined
 # here yet - running this driver against them will fail with "lab '<name>'
 # has no assertions implemented yet".
 #
@@ -2105,6 +2106,104 @@ lab_rpki_failover() {
 		"route -n get 203.0.113.10 2>&1" 'gateway: 10\.0\.35\.5$' 30
 }
 
+# === pimssm lab ===========================================================
+#
+# VM1 (source, plus a decoy source 10.0.12.11) -- VM2 (pimd) -- VM3 (pimd)
+# -- VM4 (receiver). PIM-SSM: no Rendezvous Point and no Bootstrap Router,
+# the receiver asks for (10.0.12.1, 232.1.1.1) with an IGMPv3 include-mode
+# report. An any-source join in the SSM range must receive nothing, and
+# the decoy source, which nobody asked for, must stay on the source LAN.
+
+lab_pimssm_vm1() {
+	local nmdm="$1"
+
+	assert 1 "hostname is VM1" "$nmdm" "hostname" '^VM1$'
+	assert 1 "decoy source address 10.0.12.11" "$nmdm" \
+		"ifconfig vtnet0 inet" 'inet 10\.0\.12\.11 '
+}
+
+lab_pimssm_router() {
+	local vm="$1" peer="$2" nmdm="$3"
+
+	assert "$vm" "hostname is VM${vm}" "$nmdm" "hostname" "^VM${vm}\$"
+	assert "$vm" "PIM neighbor $peer" "$nmdm" \
+		"pimctl -p -t show neighbor" "^vtnet1 +${peer} " 120
+	assert "$vm" "no Bootstrap Router elected" "$nmdm" \
+		"pimctl -p show status | awk '/^Elected BSR/ {getline; print \$3}'" '^0\.0\.0\.0$'
+	assert "$vm" "no Rendezvous Point" "$nmdm" \
+		"pimctl -p -t show rp | grep -c '^[0-9]'" '^0$'
+}
+lab_pimssm_vm2() { lab_pimssm_router 2 10.0.23.3 "$1"; }
+lab_pimssm_vm3() { lab_pimssm_router 3 10.0.23.2 "$1"; }
+
+lab_pimssm_vm4() {
+	local nmdm="$1"
+
+	assert 4 "hostname is VM4" "$nmdm" "hostname" '^VM4$'
+	assert 4 "ping the source 10.0.12.1 (unicast RPF path)" "$nmdm" \
+		"ping -c 2 -t 5 10.0.12.1 2>&1" ' 0\.0% packet loss' 60
+}
+
+# Prints how many packets to 232.1.1.1 from $1 reach VM4 in 3 seconds
+pimssm_rx() {
+	echo "timeout 3 tcpdump -pni vtnet2 udp and dst 232.1.1.1 and src $1 2>/dev/null | grep -c UDP"
+}
+
+lab_pimssm_throughput() {
+	local nmdm1="${NMDM_PREFIX}1${NMDM_SUFFIX}"
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local nmdm3="${NMDM_PREFIX}3${NMDM_SUFFIX}"
+	local nmdm4="${NMDM_PREFIX}4${NMDM_SUFFIX}"
+	local join="iperf -s -u -B 232.1.1.1%vtnet2"
+	local send="iperf -c 232.1.1.1 -u -T 32 -t 30"
+
+	# Start clean: an (S,G) left by a previous run outlives its receiver
+	# for its keepalive time, and would deliver to an any-source join
+	console_run "$nmdm1" "pkill iperf" >/dev/null
+	console_run "$nmdm4" "pkill iperf" >/dev/null
+	console_run "$nmdm2" "service pimd restart >/dev/null 2>&1" >/dev/null
+	console_run "$nmdm3" "service pimd restart >/dev/null 2>&1" >/dev/null
+	assert 3 "PIM neighbor back after the pimd restart" "$nmdm3" \
+		"pimctl -p -t show neighbor" '^vtnet1 +10\.0\.23\.2 ' 120
+
+	# Any-source join in the SSM range: ignored (RFC 4604)
+	console_run "$nmdm4" "daemon -o /tmp/asm.out $join" >/dev/null
+	assert 4 "any-source join is an exclude-mode membership" "$nmdm4" \
+		"ifmcstat -i vtnet2 -f inet" 'group 232\.1\.1\.1 mode exclude' 15
+	console_run "$nmdm1" "daemon -o /tmp/src1.out $send -B 10.0.12.1" >/dev/null
+	assert 3 "any-source join ignored: no IGMP membership" "$nmdm3" \
+		"pimctl -p -t show igmp groups | grep -c '232\.1\.1\.1'" '^0$'
+	assert 3 "any-source join ignored: no multicast route" "$nmdm3" \
+		"pimctl -p -t show mrt | grep -c '232\.1\.1\.1'" '^0$'
+	assert 4 "any-source join receives nothing" "$nmdm4" \
+		"$(pimssm_rx 10.0.12.1)" '^0$'
+	console_run "$nmdm1" "pkill iperf" >/dev/null
+	console_run "$nmdm4" "pkill iperf" >/dev/null
+
+	# Source-specific join: (10.0.12.1, 232.1.1.1) only
+	console_run "$nmdm4" "daemon -o /tmp/ssm.out $join -H 10.0.12.1" >/dev/null
+	assert 4 "source-specific join is an include-mode membership" "$nmdm4" \
+		"ifmcstat -i vtnet2 -f inet" 'group 232\.1\.1\.1 mode include' 15
+	assert 3 "IGMPv3 membership for source 10.0.12.1" "$nmdm3" \
+		"pimctl -p -t show igmp groups" '^vtnet2 +232\.1\.1\.1 +10\.0\.12\.1 ' 30
+	assert 3 "(S,G) route before any traffic, rooted at the source" "$nmdm3" \
+		"pimctl -p -t show mrt" '^10\.0\.12\.1 +232\.1\.1\.1 +SSM ' 30
+	console_run "$nmdm1" "daemon -o /tmp/src1.out $send -B 10.0.12.1" >/dev/null
+	console_run "$nmdm1" "daemon -o /tmp/src2.out $send -B 10.0.12.11" >/dev/null
+	assert 3 "requested source forwarded" "$nmdm3" \
+		"netstat -gn -f inet" '^ *10\.0\.12\.1 +232\.1\.1\.1 +[1-9][0-9]* +[0-9]+ +[0-9]+:' 30
+	assert 2 "decoy source not forwarded" "$nmdm2" \
+		"netstat -gn -f inet" '^ *10\.0\.12\.11 +232\.1\.1\.1 +0 +65535' 30
+	assert 4 "requested source received" "$nmdm4" \
+		"$(pimssm_rx 10.0.12.1)" '^[1-9][0-9]*$'
+	assert 4 "decoy source never received" "$nmdm4" \
+		"$(pimssm_rx 10.0.12.11)" '^0$'
+	assert 4 "iperf receives the flow from 10.0.12.1" "$nmdm4" \
+		"cat /tmp/ssm.out" 'connected with 10\.0\.12\.1 port'
+	console_run "$nmdm1" "pkill iperf" >/dev/null
+	console_run "$nmdm4" "pkill iperf" >/dev/null
+}
+
 # === vrrp lab =============================================================
 #
 # R1 (priority 101) and R2 (priority 100) share 192.168.1.254 (vrid 1, LAN
@@ -2424,8 +2523,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	accounting|admin|full|anycast|bng|branch|ecmp|ipv6only|ixp|rpki|rtbh|vrrp) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'admin', 'full', 'anycast', 'bng', 'branch', 'ecmp', 'ipv6only', 'ixp', 'rpki', 'rtbh' and 'vrrp' have them)" ;;
+	accounting|admin|full|anycast|bng|branch|ecmp|ipv6only|ixp|pimssm|rpki|rtbh|vrrp) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'admin', 'full', 'anycast', 'bng', 'branch', 'ecmp', 'ipv6only', 'ixp', 'pimssm', 'rpki', 'rtbh' and 'vrrp' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------

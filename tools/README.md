@@ -80,7 +80,8 @@ setup/usage error.
   `autosave`, `system reboot`, `upgrade` and `system rollback`, rebooting
   the VM three times; the upgrade alone takes several minutes) and the
   `vrrp` lab (VRRPv3 with carp, failover and preemption, launched with
-  `-l 2`). Any other lab exits
+  `-l 2`) and the `pimssm` lab (PIM source-specific multicast with pimd).
+  Any other lab exits
   with `lab '<name>' has no assertions implemented yet`.
 - `--no-launch` is the inner loop when writing assertions: launch the lab once
   by hand (see below), then re-run the driver as many times as needed.

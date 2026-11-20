@@ -96,7 +96,7 @@ the target script's header comment, before running or modifying anything there
   regression driver: it launches the lab and then asserts on it over the
   serial consoles. This is what "run the regression test" means. Assertions
   currently exist for the `full`, `accounting`, `admin`, `anycast`, `bng`,
-  `branch`, `ecmp`, `ipv6only`, `ixp`, `rpki`, `rtbh` and `vrrp` labs; needs `expect`
+  `branch`, `ecmp`, `ipv6only`, `ixp`, `pimssm`, `rpki`, `rtbh` and `vrrp` labs; needs `expect`
   on the host.
 - `tools/BSDRP-lab-bhyve.sh -r <lab>` only launches a lab (bhyve topology +
   cloud-init disks that run `labconfig` in each VM). It asserts nothing.
