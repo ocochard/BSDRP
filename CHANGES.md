@@ -3,6 +3,9 @@
 ## New features
 - Latest changes from FreeBSD main and ports at 2026/11/20
 - Add a dhcp lab: DHCP relay and server, both with dnsmasq
+- vrrp lab: checked by tools/regression-test.sh: VRRPv3 states, the
+  virtual MAC addresses, forwarding, and a failover with preemption
+  that gives both groups back to the preferred router
 - Add an admin lab: tools/regression-test.sh checks config (save, diff,
   rollback, locking, rc.conf syntax check), autosave, system reboot,
   upgrade and system rollback on one VM

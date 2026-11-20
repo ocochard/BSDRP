@@ -12,10 +12,11 @@
 # validation on FRR and BIRD), the "accounting" lab (5 VMs - per-customer
 # traffic accounting with NetFlow and pmacct), the "ipv6only" lab (4 VMs -
 # IPv6-only access with NAT64, DNS64 and 464XLAT), the "bng" lab (5 VMs
-# - PPPoE broadband gateway with DHCPv6 prefix delegation) and the "admin"
-# lab (1 VM - config, autosave, system and upgrade tools). Other labs
+# - PPPoE broadband gateway with DHCPv6 prefix delegation), the "admin"
+# lab (1 VM - config, autosave, system and upgrade tools) and the "vrrp"
+# lab (4 VMs - VRRPv3 with carp, failover and preemption). Other labs
 # declared in tools/BSDRP-lab-bhyve.sh (frr, bgp, vpn, mlvpn, mlppp,
-# fairshape, jailpf, pimsm, pimssm, vrrp, etc.) have no assertions defined
+# fairshape, jailpf, pimsm, pimssm, etc.) have no assertions defined
 # here yet - running this driver against them will fail with "lab '<name>'
 # has no assertions implemented yet".
 #
@@ -2104,6 +2105,89 @@ lab_rpki_failover() {
 		"route -n get 203.0.113.10 2>&1" 'gateway: 10\.0\.35\.5$' 30
 }
 
+# === vrrp lab =============================================================
+#
+# R1 (priority 101) and R2 (priority 100) share 192.168.1.254 (vrid 1, LAN
+# 1) and 192.168.2.254 (vrid 2, LAN 2) with carp(4) in VRRPv3 mode. R3 on
+# LAN 1 and R4 on LAN 2 route through these virtual addresses.
+# net.inet.carp.preempt=1 makes a router that loses one interface give up
+# both groups, so the traffic between the LANs never splits over R1 and R2.
+
+# Prints the VRRP state of one vrid, e.g. "MASTER prio 101"
+vrrp_state() {
+	echo "ifconfig $1 | awk '\$1 == \"vrrp:\" && \$4 == $2 {print \$2, \$5, \$6}'"
+}
+
+lab_vrrp_router() {
+	local vm="$1" name="$2" state="$3" prio="$4" nmdm="$5"
+
+	assert "$vm" "hostname is $name" "$nmdm" "hostname" "^${name}\$"
+	assert "$vm" "$state of vrid 1 on LAN 1" "$nmdm" \
+		"$(vrrp_state vtnet3 1)" "^${state} prio ${prio}\$" 60
+	assert "$vm" "$state of vrid 2 on LAN 2" "$nmdm" \
+		"$(vrrp_state vtnet4 2)" "^${state} prio ${prio}\$" 60
+	assert "$vm" "carp preemption enabled" "$nmdm" \
+		"sysctl -n net.inet.carp.preempt" '^1$'
+}
+lab_vrrp_vm1() { lab_vrrp_router 1 R1 MASTER 101 "$1"; }
+lab_vrrp_vm2() { lab_vrrp_router 2 R2 BACKUP 100 "$1"; }
+
+lab_vrrp_host() {
+	local vm="$1" name="$2" vip="$3" vmac="$4" peer="$5" nmdm="$6"
+
+	assert "$vm" "hostname is $name" "$nmdm" "hostname" "^${name}\$"
+	assert "$vm" "ping $peer through the virtual router" "$nmdm" \
+		"ping -c 2 -t 5 $peer 2>&1" ' 0\.0% packet loss' 60
+	# A VRRP virtual router answers ARP with 00:00:5e:00:01:<vrid>
+	assert "$vm" "$vip resolves to the VRRP MAC address" "$nmdm" \
+		"arp -n $vip" " at ${vmac} on "
+}
+lab_vrrp_vm3() {
+	lab_vrrp_host 3 R3 192.168.1.254 00:00:5e:00:01:01 192.168.2.4 "$1"
+}
+lab_vrrp_vm4() {
+	lab_vrrp_host 4 R4 192.168.2.254 00:00:5e:00:01:02 192.168.1.3 "$1"
+}
+
+lab_vrrp_failover() {
+	local nmdm1="${NMDM_PREFIX}1${NMDM_SUFFIX}"
+	local nmdm2="${NMDM_PREFIX}2${NMDM_SUFFIX}"
+	local nmdm3="${NMDM_PREFIX}3${NMDM_SUFFIX}"
+
+	# R3 pings R4 for 10 s across the failover. A master losing its link
+	# sends no priority 0 advertisement: the backup only takes over once
+	# the master times out (3 intervals and its skew, about 3 s here)
+	console_run "$nmdm3" "rm -f /tmp/vrrp.ping; daemon -o /tmp/vrrp.ping ping -c 40 -i 0.25 192.168.2.4" >/dev/null
+	sleep 2
+	console_run "$nmdm1" "ifconfig vtnet3 down" >/dev/null
+	assert 1 "LAN 1 down: carp demoted" "$nmdm1" \
+		"sysctl -n net.inet.carp.demotion" '^[1-9][0-9]*$' 15
+	assert 1 "LAN 1 down: vrid 2 given up too" "$nmdm1" \
+		"$(vrrp_state vtnet4 2)" '^BACKUP ' 15
+	assert 2 "LAN 1 down: MASTER of vrid 1" "$nmdm2" \
+		"$(vrrp_state vtnet3 1)" '^MASTER ' 15
+	assert 2 "LAN 1 down: MASTER of vrid 2" "$nmdm2" \
+		"$(vrrp_state vtnet4 2)" '^MASTER ' 15
+	# One ping every 0.25 s: fewer than 20 lost means under 5 s of outage
+	assert 3 "failover: R4 reachable again, under 5 s of loss" "$nmdm3" \
+		"sleep 1; awk '/packets received/ {print (\$4 >= 20) ? \"ok\" : \"lost \" 40 - \$4}' /tmp/vrrp.ping" '^ok$' 30
+	assert 3 "failover: ping R4 through R2" "$nmdm3" \
+		"ping -c 2 -t 5 192.168.2.4 2>&1" ' 0\.0% packet loss'
+
+	# R1 comes back: preemption gives it both groups again
+	console_run "$nmdm1" "ifconfig vtnet3 up" >/dev/null
+	assert 1 "LAN 1 back: carp demotion cleared" "$nmdm1" \
+		"sysctl -n net.inet.carp.demotion" '^0$' 30
+	assert 1 "LAN 1 back: MASTER of vrid 1 again" "$nmdm1" \
+		"$(vrrp_state vtnet3 1)" '^MASTER ' 30
+	assert 1 "LAN 1 back: MASTER of vrid 2 again" "$nmdm1" \
+		"$(vrrp_state vtnet4 2)" '^MASTER ' 30
+	assert 2 "LAN 1 back: BACKUP of both vrids" "$nmdm2" \
+		"ifconfig | awk '\$1 == \"vrrp:\" {print \$2}' | sort -u" '^BACKUP$' 30
+	assert 3 "LAN 1 back: ping R4 through R1" "$nmdm3" \
+		"ping -c 2 -t 5 192.168.2.4 2>&1" ' 0\.0% packet loss'
+}
+
 # === admin lab ============================================================
 #
 # One VM, no network: BSDRP's own administration tools, driven over the
@@ -2318,6 +2402,7 @@ lab_launch_opts() {
 		ecmp) echo "-l 1" ;;	# second VM2-VM3 link on the shared LAN
 		ixp)  echo "-l 1" ;;	# the peering LAN
 		bng)  echo "-l 1" ;;	# the PPPoE access LAN
+		vrrp) echo "-l 2" ;;	# the two LANs the virtual routers serve
 	esac
 }
 
@@ -2339,8 +2424,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	accounting|admin|full|anycast|bng|branch|ecmp|ipv6only|ixp|rpki|rtbh) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'admin', 'full', 'anycast', 'bng', 'branch', 'ecmp', 'ipv6only', 'ixp', 'rpki' and 'rtbh' have them)" ;;
+	accounting|admin|full|anycast|bng|branch|ecmp|ipv6only|ixp|rpki|rtbh|vrrp) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'admin', 'full', 'anycast', 'bng', 'branch', 'ecmp', 'ipv6only', 'ixp', 'rpki', 'rtbh' and 'vrrp' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------

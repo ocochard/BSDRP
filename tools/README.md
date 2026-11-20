@@ -78,8 +78,9 @@ setup/usage error.
   delegation, launched with `-l 1`), the `rpki` lab (RPKI route origin
   validation on FRR and BIRD) and the `admin` lab (one VM: `config`,
   `autosave`, `system reboot`, `upgrade` and `system rollback`, rebooting
-  the VM three times; the upgrade alone takes several minutes). Any other
-  lab exits
+  the VM three times; the upgrade alone takes several minutes) and the
+  `vrrp` lab (VRRPv3 with carp, failover and preemption, launched with
+  `-l 2`). Any other lab exits
   with `lab '<name>' has no assertions implemented yet`.
 - `--no-launch` is the inner loop when writing assertions: launch the lab once
   by hand (see below), then re-run the driver as many times as needed.
