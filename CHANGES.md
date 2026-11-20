@@ -138,6 +138,10 @@
   (ix_affinity also no longer matched anything). Use the iflib(4)
   loader tunables dev.<driver>.<unit>.iflib.core_offset and
   separate_txrx instead
+- Remove the txabdicate rc script: iflib now uses its simple transmit
+  path by default (net.iflib.prefer_mpring=0), which ignores tx_abdicate.
+  With prefer_mpring=1, set dev.<driver>.<unit>.iflib.tx_abdicate in
+  /etc/sysctl.conf instead
 - chelsio_affinity: handle T4 and T7 cards; bxe, chelsio and
   mlx5en_affinity: reject an avoidncpu or firstcpu that leaves no CPU,
   accept 2-CPU systems; mlx5en_affinity wraps back to firstcpu, and no
