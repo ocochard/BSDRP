@@ -273,7 +273,7 @@ ${src_ports_dir}:
 .for repo in FreeBSD ports
 ${OBJ_DIR}/cleanup-src-${repo}:
 	@echo "==> Cleaning ${repo} sources..."
-	@git -C ${src_${repo}_dir} checkout .
+	@git -C ${src_${repo}_dir} reset -q --hard
 	@git -C ${src_${repo}_dir} clean -fd
 	@rm -f ${OBJ_DIR}/patch-src-${repo}
 	@rm -f ${OBJ_DIR}/patch-sources
