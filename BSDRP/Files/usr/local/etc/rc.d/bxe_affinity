@@ -33,12 +33,20 @@ bxe_affinity_start()
 
 	# Work with 2 CPU minimum
 	NCPU=$(/sbin/sysctl -n hw.ncpu)
-	if [ ${NCPU} -le 2 ]; then
-		echo "Not enought CPU detected"
+	if [ ${NCPU} -lt 2 ]; then
+		echo "Not enough CPU detected"
 		exit 0
 	fi
 
 	# Exclude some CPU from binding
+	case "${bxe_affinity_avoidncpu}" in
+	''|*[!0-9]*)
+		err 1 "bxe_affinity_avoidncpu must be a non-negative integer"
+		;;
+	esac
+	if [ ${bxe_affinity_avoidncpu} -ge ${NCPU} ]; then
+		err 1 "bxe_affinity_avoidncpu (${bxe_affinity_avoidncpu}) must be lower than hw.ncpu (${NCPU})"
+	fi
 	NCPU=$((NCPU - ${bxe_affinity_avoidncpu}))
 	CPU=0
 	nics=$(/sbin/sysctl dev.bxe. | grep -c fw_version)

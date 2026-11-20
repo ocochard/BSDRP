@@ -156,7 +156,11 @@ tune_cpu_ht () {
 
 tune_harvest () {
 	# Tune the harvest mask (router only)
-	if ! chk_sysctl_eq kern.random.harvest.mask 351; then
+	# The kernel forces the pure (hardware) sources, and NET_ETHER/UMA when not
+	# compiled in: compare only the user settable bits 0-12 minus NET_ETHER (5)
+	# and UMA (9), i.e. 7647 (sys/dev/random/random_harvestq.c)
+	mask=$(sysctl -n kern.random.harvest.mask)
+	if [ $(( mask & 7647 )) -ne 351 ]; then
 		add_rc "# Disable INTERRUPT and ETHERNET from for entropy sources"
 		add_rc "harvest_mask=\"351\""
 	fi
@@ -166,7 +170,7 @@ tune_harvest () {
 tune_if_tsolro () {
 	# Disable TSO/LRO (router only)
 	# $1: list of interfaces to check
-	if chk_sysctl_eq net.inet.tcp.tso 0; then
+	if ! chk_sysctl_eq net.inet.tcp.tso 0; then
 		add_sysctl "# A router/firewall Should not use TSO"
 		add_sysctl "net.inet.tcp.tso=0"
 	fi
@@ -175,8 +179,11 @@ tune_if_tsolro () {
 	for i in $1; do
 		for CAP in LRO TSO4 TSO6; do
 			if chk_if_cap_enabled $i ${CAP}; then
+				# Append to the existing ifconfig_$i to keep its addresses
+				cur=$(sysrc -n ifconfig_$i 2>/dev/null || true)
 				add_rc "# Disable TSO/LRO on interface $i"
-				add_rc "ifconfig_$i=\"-tso4 -tso6 -lro -vlanhwtso\""
+				add_rc "ifconfig_$i=\"${cur:+${cur} }-tso4 -tso6 -lro -vlanhwtso\""
+				break
 			fi
 		done
 	done
@@ -186,8 +193,8 @@ tune_if_tsolro () {
 tune_modules () {
 	# Check if useful modules are loaded
 	if grep -q 'Feature.*AESNI' /var/run/dmesg.boot ; then
-		# CPU support it, check if not already loaded
-		if ! kldstat -n aesni 2>&1 | grep -q aesni; then
+		# CPU support it, check if not already loaded or compiled in the kernel
+		if ! kldstat -q -m nexus/aesni; then
 			add_rc "# CPU has AESNI feature, load the module"
 			add_rc "kld_list=\"cryptodev aesni\""
 		fi
@@ -195,22 +202,8 @@ tune_modules () {
 }
 
 get_ncores () {
-	# Get number of cores (excluding threads if enabled)
-	# Didn't found how to get number of physical core if HT is enabled using only sysctl
-	# Need to deal with /var/run/dmesg (dirty)
-	SMP=$(grep -e '^FreeBSD/SMP.*x' /var/run/dmesg.boot)
-	if echo ${SMP} | grep -q threads; then
-		PACKAGE=""
-		PACKAGE=$(echo ${SMP} | cut -d ' ' -f 2)
-		CORE=""
-		CORE=$(echo ${SMP} | cut -d ' ' -f 5)
-		[ -z "${PACKAGE}" ] && die "BUG in get_ncores regarding extracting PACKAGE number"
-		[ -z "${CORE}" ] && die "BUG in get_ncores regarding extracting CORE number"
-		echo $(( PACKAGE * CORE ))
-	else
-		# No Hyper threading, easy:
-		sysctl -n hw.ncpu
-	fi
+	# Get number of physical cores, all packages (excluding threads if enabled)
+	sysctl -n kern.smp.cores
 }
 
 get_if_eth () {
@@ -220,36 +213,8 @@ get_if_eth () {
 	done
 }
 
-tune_if_em () {
-	# Intel Gigabit
-	if ! chk_sysctl_eq hw.em.rx_process_limit -1; then
-		add_loader "# Remove limiting number of maximum packets to proceed"
-		add_loader "hw.em.rx_process_limit=\"-1\""
-	fi
-	if ! chk_sysctl_eq hw.igb.rx_process_limit -1; then
-		add_loader "# Remove limiting number of maximum packets to proceed"
-		add_loader "hw.igb.rx_process_limit=\"-1\""
-	fi
-	return 0
-}
-
 tune_if_ixgbe () {
 	# intel 10G
-	if ! chk_sysctl_eq hw.em.rx_process_limit -1; then
-		add_loader "# Remove limiting number of maximum packets to proceed"
-		add_loader "hw.ix.rx_process_limit=\"-1\""
-	fi
-	# Increase number of rx queue if core>8, but keept power of 2
-	if [ ${NCORE} -ge 16 ]; then
-		RXQ=""
-		RXQ=$(sysctl -n hw.ix.num_queues)
-		[ -z "${RXQ}" ] && die "BUG in tune_if_ixgbe() to extract RXQ"
-		if [ ${RXQ} -lt 16 ]; then
-			add_loader "# ixgbe(4) create 8 RX queues per default if ncore >=8"
-			add_loader "# This system has ncore >=16, so increase RX queues to 16"
-			add_loader  "hw.ix.num_queues\"16\""
-		fi
-	fi
 	if ! chk_sysctl_eq hw.ix.unsupported_sfp 1; then
 		add_loader "# Allow to use unsupported SFP"
 		add_loader "hw.ix.unsupported_sfp=\"1\""
@@ -258,8 +223,10 @@ tune_if_ixgbe () {
 
 tune_if_cxgbe () {
 	# Chelsio 10G
+	# $1: nexus name (t4nex, t5nex, t6nex, chnex)
+	# $2: port name (cxgbe, cxl, cc, che)
 	for i in toe rdma iscsi fcoe; do
-		if ! chk_sysctl_eq "dev.t5nex.0.${i}caps" 0; then
+		if ! chk_sysctl_eq "dev.$1.0.${i}caps" 0; then
 			add_loader "# Disable reserving Chelsio ASIC ressources for ${i} offload"
 			add_loader "hw.cxgbe.${i}caps_allowed=\"0\""
 		fi
@@ -267,12 +234,11 @@ tune_if_cxgbe () {
 	# Increase number of rx queue if core>8, but keept power of 2
 	if [ ${NCORE} -ge 16 ]; then
 		RXQ=""
-		RXQ=$(sysctl -n dev.cxl.0.nrxq)
+		RXQ=$(sysctl -n dev.$2.0.nrxq)
 		[ -z "${RXQ}" ] && die "BUG in tune_if_cxgbe() to extract RXQ"
 		if [ ${RXQ} -lt 16 ]; then
 			add_loader "# cxgbe(4) create 8 RX queues per default, increase this to 16"
 			add_loader "hw.cxgbe.nrxq=\"16\""
-			add_loader "hw.cxgbe.nrxq10g=\"16\""
 		fi
 	fi
 }
@@ -281,24 +247,27 @@ tune_if () {
 	# NIC drivers tuning
 	IF_LIST=$(get_if_eth)
 	($ROUTER) && tune_if_tsolro "${IF_LIST}"
-	# Need to found another way than interface name
+	# Check device tree (dev.*) and not interface name
 	# because interface can be renamed
-	sysctl -nq dev.em.0.rx_processing_limit > /dev/null 2>&1 && tune_if_em || true
-	sysctl -nq dev.igb.0.rx_processing_limit > /dev/null 2>&1 && tune_if_em || true
-	sysctl -nq dev.ix.0.rx_processing_limit > /dev/null 2>&1 && tune_if_ixgbe || true
-	sysctl -nq dev.cxl.0.nrxq > /dev/null 2>&1 && tune_if_cxgbe || true
+	# em(4)/igb(4) under iflib have no rx_process_limit tunable anymore
+	sysctl -nq dev.ix.0.%driver > /dev/null 2>&1 && tune_if_ixgbe || true
+	for nex in t4nex:cxgbe t5nex:cxl t6nex:cc chnex:che; do
+		sysctl -nq dev.${nex#*:}.0.nrxq > /dev/null 2>&1 && \
+			tune_if_cxgbe ${nex%:*} ${nex#*:} || true
+	done
 }
 
 net_inet () {
 	# default value of send interface queue length
 	# This value should be equal to the total of all interfaces's txd belonging to a lagg
 	# ixgbe uses a default txd of 2048, then let's suppose 4 ixgbe in a lagg: 8192
+	# Boot-time tunable only (CTLFLAG_RDTUN)
 	if chk_sysctl_lt net.link.ifqmaxlen 8192; then
-		add_sysctl "# Increasing the default ifqmaxlen, in case of lagg usage"
-		add_sysctl "net.link.ifqmaxlen=\"8192\""
+		add_loader "# Increasing the default ifqmaxlen, in case of lagg usage"
+		add_loader "net.link.ifqmaxlen=\"8192\""
 	fi
 	for VALUE in net.inet.raw.maxdgram net.inet.raw.recvspace; do
-        if ! chk_sysctl_lt ${VALUE} 16384; then
+        if chk_sysctl_lt ${VALUE} 16384; then
 			add_sysctl "# Increase max datagram size"
 			add_sysctl "${VALUE}=\"16384\""
 		fi
@@ -311,34 +280,9 @@ net_inet () {
 
 net_netisr () {
 	# http://wiki.freebsd.org/NetworkPerformanceTuning
-	if ! chk_sysctl_lt net.route.netisr_maxqlen 2048; then
-		add_sysctl "# route queue length (rtsock using "netstat -Q") (default 256)"
-		add_sysctl "net.route.netisr_maxqlen=\"2028\""
-	fi
-	if ! chk_sysctl_lt net.isr.maxqlimit 430080; then
-		add_sysctl "# Avoid message netisr_register: epair requested queue limit 430080 capped to net.isr.maxqlimit 1024"
-		add_sysctl "#  with jail/vnet usage"
-		add_sysctl "net.isr.maxqlimit=\"430080\""
-	fi
-}
-
-net_mbuf () {
-	# kern.ipc.nmbclusters must be increased if multiple igb (man igb)
-	# Need to calculate (regarding RAM size) this value
-	# Does vm.kmem_size should be upgraded too ?
-	# igb loads 8 rings, each of 1024 per NIC
-	chk_sysctl_lt kern.ipc.nmbclusters 262144
-	echo "On the following output, with all your NIC already configured"
-	echo "  check the current and total"
-	netstat -m | grep "mbuf clusters in use"
-}
-
-timecounter () {
-	# Are the timecounter tuning useful ?
-	TIMECOUTER_CHOICE=`sysctl -n sysctl kern.timecounter.choice`
-	if echo "${TIMECOUTER_CHOICE}" | grep -q "HPET"	; then
-		sysctl -n kern.timecounter.hardware | grep -q HPET || \
-			echo "sysctl kern.timecounter.hardware=HPET"
+	if chk_sysctl_lt net.route.netisr_maxqlen 2048; then
+		add_sysctl "# route queue length (rtsock using 'netstat -Q') (default 256)"
+		add_sysctl "net.route.netisr_maxqlen=\"2048\""
 	fi
 }
 ###################

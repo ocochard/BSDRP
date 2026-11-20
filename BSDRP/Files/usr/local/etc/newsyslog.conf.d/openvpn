@@ -1,1 +1,6 @@
-/var/log/openvpn.log       600  3     100  *     JC  /var/run/openvpn.pid
+# openvpn never reopens a --log/--log-append file (not even on SIGHUP, which
+# also restarts every tunnel), so this file must be written by syslogd(8):
+# keep the default syslog output of the rc script (--daemon), routed here by
+# /usr/local/etc/syslog.d/openvpn.conf
+# No pid file: newsyslog signals syslogd, which covers every instance.
+/var/log/openvpn.log       600  3     100  *     JC

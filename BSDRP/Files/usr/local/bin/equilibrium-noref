@@ -33,20 +33,27 @@ FWRATE=""
 MAX_FWRATE=0
 TREND=""
 PEAK=false
+# Set when the packet generator, not the DUT, is the limiting factor:
+# the search must stop but the final result still has to be reported.
+GENERATOR_LIMITED=false
 PSIZE=""
 FSIZE=""
 DMAC=""
 SMAC=""
 TX_NIC=""
+SSH_CREDS=""
+STATS_RX=""
+STATS_TX=""
 PPS_MODE=false
-SOFT_UDP_CHK=false
-SCHKSUM=""
 UNIT="Mb/s"
 AF=4
 DURATION=30
-# Generate 5000 flows
-SRC_NET="198.18.10.1:2001-198.18.10.71"
-DST_NET="198.19.10.1:2001-198.19.10.70"
+# Generate 2000 flows: 20 sources x 100 destinations.
+# Keep this the same count as the IPv6 defaults set by -6 below, otherwise
+# the two address families are not comparable: flow count drives the RSS
+# queue spread on the DUT.
+SRC_NET="198.18.10.1:2000-198.18.10.20"
+DST_NET="198.19.10.1:2000-198.19.10.100"
 
 ### Functions
 # Standardized error handling function
@@ -54,7 +61,8 @@ DST_NET="198.19.10.1:2001-198.19.10.70"
 die() { echo "ERROR: $*" >&2; exit 1; }
 
 usage () {
-	echo "Usage: $0 -d DST_MAC -t TX_NIC [-l LINK_RATE ] [-p]"
+	echo "Usage: $0 -d DST_MAC -t TX_NIC -D SSH -R RX_SYSCTL -T TX_SYSCTL"
+	echo "          [-l LINK_RATE ] [-p] [-4|-6]"
 	echo "          [-o TOLERANCE] [-s UDP-LOAD-SIZE]"
 	echo "       -d Destination MAC of the Device Under Test (DUT)"
 	echo "       -D SSH access to the DUT"
@@ -71,14 +79,13 @@ usage () {
 	echo "       -p Switch into Packet-per-second mode"
 	echo "           Input and displayed values unit change from Mb/s to Kpps"
 	echo "           Use this option for benching router in place of IPSec gateway"
-	echo "       -o define measure tolerance in % (default = 0.01 for 0.1%)"
+	echo "       -o define measure tolerance as a ratio (default = 0.01 for 1%)"
 	echo "       -R sysctl counter to retreived received packets on the DUT"
 	echo "       -t NIC used for sending load"
 	echo "       -T sysctl counter to retreived transmitted packets on the DUT"
 	echo "       -s Size of the UDP load"
 	echo "           default: 500 in Mb/s, 18 in pps mode"
 	echo "           Minimum load for Ethernet: 18"
-	echo "       -u Enable software UDP checksum on pkt-gen"
 	echo "Example: $0 -d 00:1b:21:d3:8f:3e -t igb2 -D root@1.1.1.1 -R dev.cxl.0.stats.rx_frames -T dev.cxl.1.stats.tx_frames"
     echo "IP source range: ${SRC_NET}"
     echo "IP destination subnet: ${DST_NET}"
@@ -119,20 +126,20 @@ get_forwarding_rate () {
 
 
 	# Validate SSH credentials
-	[ -z "${SSH_CREDS:-}" ] && die "ERROR: SSH credentials not provided. Use -D option."
+	[ -z "${SSH_CREDS:-}" ] && die "SSH credentials not provided. Use -D option."
 	case "${SSH_CREDS}" in
-		*[\;\|\&\$\`\(\)]*) die "ERROR: Invalid characters in SSH credentials" ;;
-		*[[:space:]]*@*[[:space:]]*) die "ERROR: Invalid SSH credential format" ;;
+		*[\;\|\&\$\`\(\)]*) die "Invalid characters in SSH credentials" ;;
+		*[[:space:]]*@*[[:space:]]*) die "Invalid SSH credential format" ;;
 	esac
 
 	# Validate sysctl parameters
-	[ -z "${STATS_RX:-}" ] && die "ERROR: RX stats parameter not provided. Use -R option."
-	[ -z "${STATS_TX:-}" ] && die "ERROR: TX stats parameter not provided. Use -T option."
+	[ -z "${STATS_RX:-}" ] && die "RX stats parameter not provided. Use -R option."
+	[ -z "${STATS_TX:-}" ] && die "TX stats parameter not provided. Use -T option."
 	case "${STATS_RX}" in
-		*[\;\|\&\$\`\(\)[:space:]]*) die "ERROR: Invalid characters in RX stats parameter" ;;
+		*[\;\|\&\$\`\(\)[:space:]]*) die "Invalid characters in RX stats parameter" ;;
 	esac
 	case "${STATS_TX}" in
-		*[\;\|\&\$\`\(\)[:space:]]*) die "ERROR: Invalid characters in TX stats parameter" ;;
+		*[\;\|\&\$\`\(\)[:space:]]*) die "Invalid characters in TX stats parameter" ;;
 	esac
 
 	# Get initial counters
@@ -142,7 +149,9 @@ get_forwarding_rate () {
 	COUNTER_RX_PREV=$(${SSH_CMD} sysctl -n "${STATS_RX}")
 	COUNTER_TX_PREV=$(${SSH_CMD} sysctl -n "${STATS_TX}")
 
-	CMD_TX="pkt-gen -f tx -N ${SCHKSUM} -${AF} -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PACKETS_TO_SENT} \
+	# Checksums are left to the NIC: pkt-gen computes a correct checksum for
+	# every packet of a source/destination range on its own.
+	CMD_TX="pkt-gen -f tx -N -${AF} -i ${TX_NIC} -l ${FSIZE} -R ${PPS} -n ${PACKETS_TO_SENT} \
 -d ${DST_NET} -D ${DMAC} -S ${SMAC} -s ${SRC_NET}"
 	echo ${CMD_TX} > ${TX_FILE}
 	${CMD_TX} >> ${TX_FILE} 2>&1
@@ -157,17 +166,23 @@ get_forwarding_rate () {
 	COUNTER_RX=$(( COUNTER_RX - COUNTER_RX_PREV ))
 	COUNTER_TX=$(( COUNTER_TX - COUNTER_TX_PREV ))
 
-	# Diff between RX and TX should be 0 (with the tolerance for keep-alive packets)
+	# Diff between RX and TX should be 0, with the tolerance absorbing
+	# keep-alive and other control packets counted on one side only
 	DIFF_PKT=$(( COUNTER_RX - COUNTER_TX ))
-	if [ ${DIFF_PKT} -eq 0 ]; then
+	[ ${DIFF_PKT} -lt 0 ] && DIFF_PKT=$(( -DIFF_PKT ))
+	DIFF_TOL=$(echo "${COUNTER_RX}*${TOLERANCE}/1" | bc)
+	if [ ${DIFF_PKT} -le ${DIFF_TOL} ]; then
 		FWRATE=${OLOAD}
 	else
+		# Rate over the generator's measured run time, not the nominal
+		# DURATION: pkt-gen runs longer than planned when it lags behind
+		# (GEN_DURATION is a decimal, so bc does the division)
 		if (${PPS_MODE}); then
 			# Converting in Kpps
-			FWRATE=$(( COUNTER_TX / DURATION / 1000 ))
+			FWRATE=$(echo "${COUNTER_TX} / ${GEN_DURATION} / 1000" | bc)
 		else
 			# Converting in Mbps
-			FWRATE=$(( COUNTER_TX / DURATION * FSIZE * 8 / 1000000 ))
+			FWRATE=$(echo "${COUNTER_TX} * ${FSIZE} * 8 / ${GEN_DURATION} / 1000000" | bc)
 		fi
 	fi
 	# Then extract a uniq value
@@ -176,16 +191,19 @@ get_forwarding_rate () {
 	if [ ${GEN_CHECK} -lt ${OLOAD_TOL} ]; then
 		echo "  - Warning: Generated only ${GEN_CHECK}${UNIT} in place of ${OLOAD}${UNIT}"
 		if [ ${FWRATE} -ge ${GEN_CHECK} ]; then
-			# Dut is managing the maximum throughput of the packet generator"
-			echo "  - Measured forwarding rate = ${FWRATE} ${UNIT} wich is the maximum supported by generator"
-			exit 0
+			# DUT is managing the maximum throughput of the packet generator.
+			# Stop the search, but return so that the caller still prints the
+			# "Estimated Equilibrium ..." line: an exit here would skip it.
+			echo "  - Measured forwarding rate = ${FWRATE} ${UNIT} which is the maximum supported by generator"
+			GENERATOR_LIMITED=true
+			return 0
 		fi
 	fi
 }
 
 #### Main
 
-args=$(getopt 46d:D:hl:po:r:R:s:t:T:u $*)
+args=$(getopt 46d:D:hl:po:R:s:t:T: $*)
 
 set -- $args
 for i
@@ -238,16 +256,14 @@ do
 			shift
 			shift
 			;;
-		-u)
-			SOFT_UDP_CHK=true
-			shift
-			;;
 		-4)
 			AF=4
 			shift
 			;;
 		-6)
 			AF=6
+			# 2000 flows: 20 sources x 100 destinations, same count as the
+			# IPv4 defaults above. Keep the two in step.
 			DST_NET="[2001:2:0:8010::1]:2000-[2001:2:0:8010::64]"
 			SRC_NET="[2001:2:0:10::1]:2000-[2001:2:0:10::14]"
 			shift
@@ -265,6 +281,10 @@ if [ -z "${DMAC}" ]; then
 fi
 if [ -z "${TX_NIC}" ]; then
 	echo "Missing TX NIC"
+	usage
+fi
+if [ -z "${SSH_CREDS}" ]; then
+	echo "Missing SSH access to the DUT"
 	usage
 fi
 if [ -z "${STATS_RX}" ]; then
@@ -311,16 +331,6 @@ OLOAD=$(( LINK_RATE / 2 ))
 # step (in Mbit) should be 25% of the link bit-rate
 STEP=$(( LINK_RATE / 4 ))
 
-# Start a generator
-if (${SOFT_UDP_CHK}); then
-	SCHKSUM="-U"
-else
-	SCHKSUM=""
-	ifconfig ${TX_NIC} down
-	ifconfig ${TX_NIC} txcsum
-	ifconfig ${TX_NIC} up
-fi
-
 echo "Benchmark tool using equilibrium throughput method"
 (${PPS_MODE}) && echo "- Benchmark mode: Throughput (pps) for Router" || echo "- Benchmark mode: Bandwitdh (bps) for VPN gateway"
 echo "- UDP load = ${PLOAD}B, IPv${AF} packet size=${PSIZE}B, Ethernet frame size=${FSIZE}B"
@@ -332,6 +342,12 @@ for i in $(seq 1 16);do
 	echo "  - Step = ${STEP} ${UNIT}"
 	[ -n "${TREND}" ] && echo "  - Trend = ${TREND}"
 	get_forwarding_rate
+	if (${GENERATOR_LIMITED}); then
+		# The generator cannot offer more than the DUT forwards: the
+		# equilibrium is at least this value, no point searching further.
+		[ ${FWRATE} -gt ${MAX_FWRATE} ] && MAX_FWRATE=${FWRATE}
+		break
+	fi
 	echo "  - Measured forwarding rate = ${FWRATE} ${UNIT}"
 	if [ ${FWRATE} -gt ${OLOAD} ]; then
 		echo "  - forwarding rate greater than offering load! (forcing FWRATE=OLOAD)"

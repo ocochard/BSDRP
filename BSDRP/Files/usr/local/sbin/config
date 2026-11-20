@@ -171,12 +171,12 @@ archive_cfg () {
 	fi
 	echo "Archiving previous configuration files..."
 	mkdir -p /data/archives || die "ERROR: Can't create /data/archives"
-	if [ "$name" = "rollback" ] && [ -f /data/archives/$name.tar.xz ]; then
-			rm /data/archives/$name.tar.xz || \
-			echo "WARNING: Can't delete /data/archives/$name.tar.xz"
-	fi
-
-	if ! tar -cJvpf /data/archives/$name.tar.xz --exclude './dot.ssh.root/agent' -C /cfg/ . 2>/dev/null; then
+	# Replace the previous archive only once the new one is complete: a
+	# failed tar (full /data) used to leave no archive at all
+	if tar -cJpf /data/archives/$name.tar.xz.new --exclude './dot.ssh.root/agent' -C /cfg/ . 2>/dev/null; then
+		mv -f /data/archives/$name.tar.xz.new /data/archives/$name.tar.xz
+	else
+		rm -f /data/archives/$name.tar.xz.new
 		echo "WARNING: Can't generate tar archive $name."
 	fi
 
@@ -204,7 +204,11 @@ save_cfg () {
 	archive_cfg "" || echo "WARNING: Can't archive"
 	echo "Saving configuration..."
 
-	(
+	# A failed copy (full /cfg) must fail the save: autosave and the
+	# reboot/halt prompts rely on its exit status
+	save_failed=false
+	if ! (
+	failed=0
 	cd /etc
 	# Looking for all regular files, symlinks AND directory in /etc
 	# symlinks can be created into /usr/local/etc/rc.d as example (multipe openvpn)
@@ -216,7 +220,7 @@ save_cfg () {
 	# Runtime-only paths under /etc that must never enter /cfg.
 	# dot.ssh.root/agent holds transient sshd agent-forwarding sockets
 	# (root's ~/.ssh is symlinked to /etc/dot.ssh.root/ so it survives reboot).
-	for i in "$@" $(find * \( -type d -o -type f -o -type l \) \
+	for i in $(find * \( -type d -o -type f -o -type l \) \
 	    ! -path "cron/tabs" \
 	    ! -path "dot.ssh.root/agent" \
 	    ! -path "dot.ssh.root/agent/*"); do
@@ -233,7 +237,8 @@ save_cfg () {
 						[ -z "${dir}" ] && dir="$c" || dir="${dir}/${c}"
 						full="$full \"$dir\""
 					done
-					eval "tar cf - --exclude 'dot.ssh.root/agent' ${full} -C /etc | tar xf - -C /cfg"
+					eval "tar cf - --exclude 'dot.ssh.root/agent' ${full} -C /etc | tar xf - -C /cfg" || \
+						{ echo "ERROR: failed to backup /etc/$i"; failed=1; }
 				fi
 			fi
 		elif [ -f "/cfg/$i" -o -h "/cfg/$i" ]; then
@@ -241,7 +246,8 @@ save_cfg () {
 			# Instruct cmp to not follow symbolic links, because some software (like freeradius)
 			# install symlink to /dev/random
 			if ! cmp -hs "/etc/$i" "/cfg/$i" || [ $(stat -f "%p%g%u" "/etc/$i") != $(stat -f "%p%g%u" "/cfg/$i") ]; then
-				cp -pfv "/etc/$i" "/cfg/$i" 2>/dev/null || echo "ERROR: failed to backup /etc/$i"
+				cp -pfv "/etc/$i" "/cfg/$i" 2>/dev/null || \
+					{ echo "ERROR: failed to backup /etc/$i"; failed=1; }
 			fi
 		else
 			# If this file was not previously saved, compare the running-version (/etc) and
@@ -260,19 +266,24 @@ save_cfg () {
 							[ -z "${dir}" ] && dir="$c" || dir="${dir}/${c}"
 							echo "$dir" >> "$tmp_list"
 						done
-						tar cf - --exclude 'dot.ssh.root/agent' -T "$tmp_list" -C /etc | tar xf - -C /cfg
+						tar cf - --exclude 'dot.ssh.root/agent' -T "$tmp_list" -C /etc | tar xf - -C /cfg || \
+							{ echo "ERROR: failed to backup /etc/$i"; failed=1; }
 						rm -f "$tmp_list"
 						;;
 					*)
 						# Simple filename - copy directly
-						tar cf - --exclude 'dot.ssh.root/agent' "$i" -C /etc | tar xf - -C /cfg
+						tar cf - --exclude 'dot.ssh.root/agent' "$i" -C /etc | tar xf - -C /cfg || \
+							{ echo "ERROR: failed to backup /etc/$i"; failed=1; }
 						;;
 				esac
 			fi
 		fi
 	done
 	IFS="$old_IFS"
-	)
+	exit $failed
+	); then
+		save_failed=true
+	fi
 
 	# Deleting file, symlink or directory in /cfg that are no more in /etc
 	(
@@ -281,7 +292,7 @@ save_cfg () {
 	old_IFS="$IFS"
 	IFS='
 '
-	for i in "$@" $(find * \( -type d -o -type l -o -type f \)); do
+	for i in $(find * \( -type d -o -type l -o -type f \)); do
 		IFS="$old_IFS"
 		[ -e "/etc/$i" ] || rm -rf "/cfg/$i"
 	done
@@ -292,6 +303,10 @@ save_cfg () {
 	fi
 
 	umount_cfg
+	if ($save_failed); then
+		logger "Configuration save FAILED"
+		die "ERROR: Configuration only partly saved (is /cfg full?)"
+	fi
 	echo "Done."
 	logger Configuration saved
 	exit 0
@@ -324,6 +339,8 @@ apply_cfg () {
 }
 
 # Display diff between current and saved configuration
+# Compares what save_cfg() would store: regular files, symlinks and new
+# directories, by content, mode and owner, and files deleted since the save
 # Return 0 if no diff found
 # Return 1 if diff found
 diff () {
@@ -341,24 +358,42 @@ diff () {
 		mount_cfg
 	fi
 	(
+	# Return 0 if /etc/$2 differs from its copy under $1
+	differs () {
+		[ -e "$1/$2" ] || [ -h "$1/$2" ] || return 0
+		# A directory only matters by its presence (save_cfg stores new ones)
+		[ -d "/etc/$2" ] && ! [ -h "/etc/$2" ] && return 1
+		cmp -hs "/etc/$2" "$1/$2" || return 0
+		[ "$(stat -f "%p%g%u" "/etc/$2")" != "$(stat -f "%p%g%u" "$1/$2")" ]
+	}
+	report () {
+		echo "1" > "$DIFF_FOUND"
+		[ "$SECOND_OPTION" = "quiet" ] && exit 0
+		echo "$1"
+	}
 	cd /etc
 	# Handle filenames with spaces by setting IFS to newline only
 	old_IFS="$IFS"
 	IFS='
 '
-	for i in "$@" $(find * -type f); do
+	# Same list as save_cfg()
+	for i in $(find * \( -type d -o -type f -o -type l \) \
+	    ! -path "cron/tabs" \
+	    ! -path "dot.ssh.root/agent" \
+	    ! -path "dot.ssh.root/agent/*"); do
 		IFS="$old_IFS"
-		if [ -f "${REFERENCE}/$i" ]; then
-			if ! cmp -hs "/etc/$i" "${REFERENCE}/$i"; then
-				echo "1" > "$DIFF_FOUND"
-				[ ! "$SECOND_OPTION" = "quiet" ] && find "$i" -print || break
-			fi
-		elif [ ! "$SECOND_OPTION" = "conf/base/etc" ]; then
-			if ! cmp -hs "/conf/base/etc/$i" "/etc/$i"; then
-				echo "1" > "$DIFF_FOUND"
-				[ ! "$SECOND_OPTION" = "quiet" ] && find "$i" -print || break
-			fi
+		if [ "$REFERENCE" = "/cfg" ] && ! [ -e "/cfg/$i" ] && ! [ -h "/cfg/$i" ]; then
+			# Never saved: compared with the default version
+			differs /conf/base/etc "$i" && report "$i"
+		else
+			differs "$REFERENCE" "$i" && report "$i"
 		fi
+	done
+	# Deleted since saved (or, against factory, default files removed)
+	cd "$REFERENCE"
+	for i in $(find * \( -type d -o -type f -o -type l \) 2>/dev/null); do
+		IFS="$old_IFS"
+		[ -e "/etc/$i" ] || [ -h "/etc/$i" ] || report "$i (deleted)"
 	done
 	IFS="$old_IFS"
 	)
@@ -514,8 +549,12 @@ factory () {
 		service autosave onestop || die "ERROR, autosave not stopped"
 	fi
 
+	# Keep a way back: 'config rollback factory' restores it
+	archive_cfg factory || echo "WARNING: Can't archive the current configuration"
 	is_mounted /cfg || mount_cfg
-	rm -rf /cfg/*  || echo "WARNING: Error during rm -rf /cfg/"
+	# Every entry, dot files included, but the file system's own ones
+	find /cfg -mindepth 1 -maxdepth 1 ! -name .snap ! -name lost+found \
+	    -exec rm -rf {} + || echo "WARNING: Error during clearing /cfg/"
 	umount_cfg
 	if [ -f /boot/loader.conf.local ]; then
 		mount -uw /

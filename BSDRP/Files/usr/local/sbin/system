@@ -52,7 +52,9 @@ user_confirm () {
 	local input=""
 	echo -n $1
 	while [ "${input}" != "y" -a "${input}" != "n" -a "${input}" != "a" ]; do
-		read input
+		# No answer possible (stdin closed, e.g. cron or ssh -n): abort,
+		# instead of looping forever on the failed read
+		read input || die "No answer on standard input, aborting"
 	done
 	if [ "${input}" = "n" ]; then
 		return 1
@@ -192,7 +194,10 @@ integrity () {
 ask_save () {
 	echo "Warning: Unsaved changes detected !"
 	config diff || true
-	user_confirm "Do you want to save the configuration before to continue or abort ? (y/n/a): " && config save || true
+	if user_confirm "Do you want to save the configuration before to continue or abort ? (y/n/a): "; then
+		# The user asked for this save: don't go on without it
+		config save || die "Configuration not saved, aborting"
+	fi
 }
 
 # Install system to another disk
@@ -367,7 +372,9 @@ rollback () {
 check_cfg () {
 	# Testing /etc/rc.conf
 	if [ -f /etc/rc.conf ]; then
-		sh /etc/rc.conf || die "There is an error in /etc/rc.conf file"
+		# Syntax check only: running it fails on any rc.conf whose last
+		# command returns non-zero (as config save does it)
+		sh -n /etc/rc.conf || die "There is an error in /etc/rc.conf file"
 	fi
 	echo "Checking if configuration is saved..."
 	config diff quiet || ask_save

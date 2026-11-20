@@ -40,11 +40,12 @@ stop_cmd="${name}_stop"
 autosave_stop () {
 	# autosave is a simple shell script with fswatch in a loop
 	# for stoping autosave, we need to stop fswatch and the autosave script
-	autosave_pid=$(pgrep -f "/bin/sh /usr/local/sbin/autosave")
-	fswatch_pid=$(pgrep -f "fswatch -1dr /etc")
-	if [ -n "${autosave_pid}" ] && [ -n "${fswatch_pid}" ]; then
-		kill ${autosave_pid} ${fswatch_pid} || logger Failed to kill autosave
-	fi
+	# The script waits for its fswatch child: its TERM trap (cleanup) only
+	# runs once fswatch exits, or once a save in progress is done
+	autosave_pid=$(pgrep -f "^/bin/sh /usr/local/sbin/autosave")
+	[ -n "${autosave_pid}" ] || return 0
+	kill ${autosave_pid} || logger Failed to kill autosave
+	pkill -P ${autosave_pid} -x fswatch || true
 }
 
 pidfile="/var/run/${name}.pid"

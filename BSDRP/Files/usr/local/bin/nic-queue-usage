@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # vim: sta:et:sw=4:ts=4:sts=4
 # -*- coding: utf-8 -*-
 # Alexander V. Chernikov's script for displaying NIC queue usage/rate
@@ -12,7 +12,7 @@ import time
 
 if len(sys.argv) < 2:
     print("Usage: {} interface".format(sys.argv[0]))
-    print("       with interface as bxe,cc,cxl,ix,ixl,igb,mce,mlxen or oce")
+    print("       with interface as bxe,cc,cxl,ix,ixl,mce,mlxen or oce")
     sys.exit(1)
 
 
@@ -20,7 +20,9 @@ def read_nic(name):
     " Parse sysctl value for each queues of the NIC "
     " rx and tx for each queue "
     " rx and tx for each NIC (to compare with the sum of rx|tx of each queue) "
-    m = re.match(r'^(bxe|cc|cxl|ix|ixl|igb|mce|mlxen|oce)(\d+)$', name)
+    # igb and em are not supported: their iflib drivers export no per-queue
+    # packet counter (only interrupt counts and ring indexes).
+    m = re.match(r'^(bxe|cc|cxl|ix|ixl|mce|mlxen|oce)(\d+)$', name)
     if not m:
         raise Exception('Invalid nic name: {}'.format(name))
     driver = m.group(1)
@@ -35,10 +37,10 @@ def read_nic(name):
             # hw.mlxen0.stat.rx_packets:
             m = re.match(r'.*\.stat.tx_ring(\d+)\.packets:\s+(\d+)', line)
             if m:
-                txq[m.group(1)] = int(m.group(2))
+                txq[int(m.group(1))] = int(m.group(2))
             m = re.match(r'.*\.stat.rx_ring(\d+)\.packets:\s+(\d+)', line)
             if m:
-                rxq[m.group(1)] = int(m.group(2))
+                rxq[int(m.group(1))] = int(m.group(2))
             m = re.match(r'.*\.stat.rx_packets:\s+(\d+)', line)
             if m:
                 agg['rx_sum'] = int(m.group(1))
@@ -47,25 +49,25 @@ def read_nic(name):
                 agg['tx_sum'] = int(m.group(1))
     else:
         for line in subprocess.check_output("/sbin/sysctl dev.{}.{}".format(m.group(1), m.group(2)).split(), universal_newlines=True).split("\n"):
-            # XXX: number of RXQ can be different than TXQ
+            # Number of RXQ can be different than TXQ (cxgbe: 16 TX, 8 RX)
             # dev.cxl.0.rxq.1.rxcsum
             # dev.cxl.1.txq.1.txpkt_wrs: 714494990
+            # dev.cxl.1.txq.1.txpkts0_pkts: 0
+            # dev.cxl.1.txq.1.txpkts1_pkts: 0
             # dev.cxl.0.stats.rx_frames
             # dev.cxl.0.stats.tx_frames
             # dev.ix.0.queue0.rx_packets: 45256216
             # dev.ix.0.queue0.tx_packets: 5
             # dev.ix.0.total_pkts_rcvd
             # dev.ix.0.total_pkts_txd
-            # dev.ixl.1.pf.que1.tx_packets
-            # dev.ixl.1.pf.que1.rx_packets
+            # dev.ixl.1.pf.txq01.packets
+            # dev.ixl.1.pf.rxq01.packets
             # dev.ixl.0.mac.bcast_pkts_txd: 1
             # dev.ixl.0.mac.mcast_pkts_txd: 5
             # dev.ixl.0.mac.ucast_pkts_txd: 0
             # dev.ixl.0.mac.bcast_pkts_rcvd: 0
             # dev.ixl.0.mac.mcast_pkts_rcvd: 0
             # dev.ixl.0.mac.ucast_pkts_rcvd: 0
-            # dev.igb.1.mac_stats.total_pkts_recvd
-            # dev.igb.1.mac_stats.total_pkts_txd
             # dev.bxe.3.queue.0.rx_pkts
             # dev.bxe.3.queue.0.tx_pkts
             # dev.bxe.3.rx_bcast_packets: 1447
@@ -81,38 +83,43 @@ def read_nic(name):
             if driver == "bxe":
                 m = re.match(r'.*\.queue.(\d+)\.tx_pkts:\s+(\d+)', line)
             elif driver in ("cc", "cxl"):
-                m = re.match(r'.*\.txq\.(\d+)\.txpkt_wrs:\s+(\d+)', line)
-            elif driver in ("ix", "igb"):
+                # One frame per txpkt work request, several per txpkts one
+                m = re.match(r'.*\.txq\.(\d+)\.(txpkt_wrs|txpkts[01]_pkts):\s+(\d+)', line)
+                if m:
+                    q = int(m.group(1))
+                    txq[q] = txq.get(q, 0) + int(m.group(3))
+                    m = None
+            elif driver == "ix":
                 m = re.match(r'.*\.queue(\d+)\.tx_packets:\s+(\d+)', line)
             elif driver == "ixl":
-                m = re.match(r'.*\.pf.que(\d+)\.tx_packets:\s+(\d+)', line)
+                m = re.match(r'.*\.pf\.txq(\d+)\.packets:\s+(\d+)', line)
             elif driver == "mce":
                 m = re.match(r'.*\.txstat(\d+)tc0\.packets:\s+(\d+)', line)
             elif driver == "oce":
                 m = re.match(r'.*\.stats.tx.queue(\d+)\.tx_pkts:\s+(\d+)', line)
             if m:
-                txq[m.group(1)] = int(m.group(2))
+                txq[int(m.group(1))] = int(m.group(2))
             if driver == "bxe":
                 m = re.match(r'.*\.queue.(\d+)\.rx_pkts:\s+(\d+)', line)
             elif driver in ("cc", "cxl"):
+                # No per-queue RX packet counter: rxcsum only counts packets
+                # whose checksum the hardware verified (see run_nic warning)
                 m = re.match(r'.*\.rxq\.(\d+)\.rxcsum:\s+(\d+)', line)
-            elif driver in ("ix", "igb"):
+            elif driver == "ix":
                 m = re.match(r'.*\.queue(\d+)\.rx_packets:\s+(\d+)', line)
             elif driver == "ixl":
-                m = re.match(r'.*\.pf.que(\d+)\.rx_packets:\s+(\d+)', line)
+                m = re.match(r'.*\.pf\.rxq(\d+)\.packets:\s+(\d+)', line)
             elif driver == "mce":
                 m = re.match(r'.*\.rxstat(\d+)\.packets:\s+(\d+)', line)
             elif driver == "oce":
                 m = re.match(r'.*\.stats.rx.queue(\d+)\.rx_pkts:\s+(\d+)', line)
             if m:
-                rxq[m.group(1)] = int(m.group(2))
+                rxq[int(m.group(1))] = int(m.group(2))
             if driver == "bxe":
                 # To do: aggregate bcast/mcast and ucast
                 m = re.match(r'.*\.rx_ucast_packets:\s+(\d+)', line)
             elif driver in ("cc", "cxl"):
                 m = re.match(r'.*\.stats.rx_frames:\s+(\d+)', line)
-            elif driver == "igb":
-                m = re.match(r'.*\.total_pkts_recvd:\s+(\d+)', line)
             elif driver == "ix":
                 m = re.match(r'.*\.total_pkts_rcvd:\s+(\d+)', line)
             elif driver == "ixl":
@@ -127,7 +134,7 @@ def read_nic(name):
             if driver == "bxe":
                 # To do: aggregate bcast/mcast and ucast
                 m = re.match(r'.*\.tx_ucast_packets:\s+(\d+)', line)
-            if driver in ("ix", "igb"):
+            elif driver == "ix":
                 m = re.match(r'.*\.total_pkts_txd:\s+(\d+)', line)
             elif driver == "ixl":
                 m = re.match(r'.*\.mac.ucast_pkts_txd:\s+(\d+)', line)
@@ -147,8 +154,10 @@ def make_diff(old_ret, new_ret):
     rxq = {}
     txq = {}
     agg = {}
+    # RX and TX queue counts differ on some NICs: walk them independently
     for i in old_ret[0]:
         rxq[i] = new_ret[0][i] - old_ret[0][i]
+    for i in old_ret[1]:
         txq[i] = new_ret[1][i] - old_ret[1][i]
 
     for i in old_ret[2]:
@@ -163,14 +172,14 @@ def print_diff(diff):
     txline = ""
     rx_sum = 0
     tx_sum = 0
-    for i in range(len(diff[0])):
-        val = str(i)
-        rx_val = int(diff[0][val])
-        tx_val = int(diff[1][val])
+    for i in sorted(diff[0]):
+        rx_val = int(diff[0][i])
         rx_sum += rx_val
+        rxline += "r{0} {1:5d}K/s ".format(i, rx_val // 1000)
+    for i in sorted(diff[1]):
+        tx_val = int(diff[1][i])
         tx_sum += tx_val
-        rxline += "r{0} {1:5d}K/s ".format(val, rx_val // 1000)
-        txline += "t{0} {1:5d}K/s ".format(val, tx_val // 1000)
+        txline += "t{0} {1:5d}K/s ".format(i, tx_val // 1000)
     rxline += "r{0} {1:5d}K/s [{2:5d}K/s]".format("T", rx_sum // 1000,
                                                   diff[2]['rx_sum'] // 1000)
     txline += "t{0} {1:5d}K/s [{2:5d}K/s]".format("T", tx_sum // 1000,
@@ -183,6 +192,10 @@ def print_diff(diff):
 
 def run_nic(name):
     " Main loop function "
+    if re.match(r'^(cc|cxl)\d+$', name):
+        print("Note: cxgbe has no per-queue RX packet counter, rN values count")
+        print("      only packets whose checksum the NIC verified (rxcsum).")
+        print("")
     ret = []
     while True:
         ret_new = read_nic(name)

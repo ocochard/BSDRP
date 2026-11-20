@@ -1,1 +1,3 @@
+# bird reopens its log files on SIGHUP (reconfiguration); it writes this pid
+# file because /etc/defaults/vendor.conf sets bird_flags="-P /var/run/bird.pid"
 /var/log/bird.log       600  3     100  *     JB    /var/run/bird.pid

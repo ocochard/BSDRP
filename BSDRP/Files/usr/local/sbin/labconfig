@@ -12,6 +12,7 @@ usage () {
 	echo "$0 full_vm1        for configuring VM1 of lab Full"
 	echo "$0 frr_vm3         for configuring VM3 of lab FRR"
 	echo "Lab list:"
+	echo "-admin: config, autosave, system and upgrade tools (regression only)"
 	echo "-accounting: https://bsdrp.net/documentation/examples/per-customer-traffic-accounting"
 	echo "-anycast: https://bsdrp.net/documentation/examples/anycast-dns-failover-with-exabgp"
 	echo "-branch: https://bsdrp.net/documentation/examples/branch-office-ecmp-over-wireguard"
@@ -5752,6 +5753,21 @@ echo "VM4 (rtr-cache) configured"
 # No address on its own: the traffic its hijacks attract is dropped.
 rpki_vm5 () {
 rpki_transit 5 64502 transit-b em1 em2
+}
+
+### Administration tools lab ###
+# A single VM, no network: tools/regression-test.sh drives config (save,
+# diff, rollback, lock), autosave, system (reboot, rollback) and upgrade
+# over the serial console, rebooting the VM several times. This function
+# only gives it a name and a saved starting point.
+admin () {
+sysrc hostname=admin
+# nuageinit's hostname (the cloud-init meta-data FQDN) would override
+# rc.conf, and the lab reboots
+rm -f /etc/rc.conf.d/hostname
+/usr/local/sbin/config save
+service hostname restart
+echo "admin configured"
 }
 
 ### Main

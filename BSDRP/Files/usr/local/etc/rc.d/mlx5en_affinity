@@ -9,7 +9,7 @@
 # Add the following lines to /etc/rc.conf.local or /etc/rc.conf
 # to enable this service:
 #
-# mlx5en_affinity_enable (bool):   Set to YES by default.
+# mlx5en_affinity_enable (bool):   Set to NO by default.
 #               Set it to YES to bind interrupt threads to different cores
 # mlx5en_affinity_avoidncpu (int):  0 by default.
 #	            Set to number of CPU to exclude from binding
@@ -34,12 +34,23 @@ mlx5en_affinity_start()
 
 	# Work with 2 CPU minimum
 	NCPU=$(/sbin/sysctl -n hw.ncpu)
-	if [ ${NCPU} -le 2 ]; then
-		echo "Not enought CPU detected"
+	if [ ${NCPU} -lt 2 ]; then
+		echo "Not enough CPU detected"
 		exit 0
 	fi
 
-	# Exclude some CPU from binding
+	# Exclude some CPU from binding: bind on [firstcpu, NCPU - avoidncpu)
+	for var in avoidncpu firstcpu; do
+		eval val=\${mlx5en_affinity_${var}}
+		case "${val}" in
+		''|*[!0-9]*)
+			err 1 "mlx5en_affinity_${var} must be a non-negative integer"
+			;;
+		esac
+	done
+	if [ $((mlx5en_affinity_firstcpu + mlx5en_affinity_avoidncpu)) -ge ${NCPU} ]; then
+		err 1 "mlx5en_affinity_firstcpu (${mlx5en_affinity_firstcpu}) + mlx5en_affinity_avoidncpu (${mlx5en_affinity_avoidncpu}) must be lower than hw.ncpu (${NCPU})"
+	fi
 	NCPU=$((NCPU - ${mlx5en_affinity_avoidncpu}))
 	CPU=${mlx5en_affinity_firstcpu}
 
@@ -55,10 +66,10 @@ mlx5en_affinity_start()
 		# Need to filter the first 3 IRQ that seems not related to RX queues
 		# Need to filter only the used IRQ (=number of channels)
 		for IRQ in `/usr/bin/vmstat -ai |\
-			/usr/bin/sed -nE "/mlx5_core${i}/s/irq([[:digit:]]+):.*/\1/p" | tail -n +4 | head -${NQ}`; do
+			/usr/bin/sed -nE "/^irq[[:digit:]]+: mlx5_core${i}[[:space:]]/s/irq([[:digit:]]+):.*/\1/p" | tail -n +4 | head -${NQ}`; do
 			echo "Bind mlx5_core${i} IRQ ${IRQ} to CPU ${CPU}"
 			/usr/bin/cpuset -l ${CPU} -x ${IRQ}
-			CPU=$(((CPU + 1) % NCPU))
+			CPU=$((mlx5en_affinity_firstcpu + (CPU + 1 - mlx5en_affinity_firstcpu) % (NCPU - mlx5en_affinity_firstcpu)))
 		done
 		CPU=${mlx5en_affinity_firstcpu}
 	done

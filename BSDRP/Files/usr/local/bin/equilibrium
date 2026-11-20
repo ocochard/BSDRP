@@ -96,7 +96,7 @@ usage () {
 	echo "       -p Switch into Packet-per-second mode"
 	echo "           Input and displayed values unit change from Mb/s to Kpps"
 	echo "           Use this option for benching router in place of IPSec gateway"
-	echo "       -o define measure tolerance in % (default = 0.01 for 0.1%)"
+	echo "       -o define measure tolerance as a ratio (default = 0.01 for 1%)"
 	echo "       -C Disable the confirmation probe of the converged value"
 	echo "           (enabled by default; costs one extra measurement window)"
 	echo "       -t NIC used for sending load"
@@ -148,7 +148,7 @@ extract () {
 		# Need to convert the bps value into a Mb/s value
 		echo $(( FWRATE_BPS / 1000000 ))
 	fi
-    rm ${WRKDATA} || die "ERROR: can't delete ${WRKDATA}"
+    rm ${WRKDATA} || die "can't delete ${WRKDATA}"
 }
 
 get_forwarding_rate () {

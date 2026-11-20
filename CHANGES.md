@@ -1,8 +1,11 @@
 # Release 2.4 (WIP)
 
 ## New features
-- Latest changes from FreeBSD main and ports at 2026/11/17
+- Latest changes from FreeBSD main and ports at 2026/11/20
 - Add a dhcp lab: DHCP relay and server, both with dnsmasq
+- Add an admin lab: tools/regression-test.sh checks config (save, diff,
+  rollback, locking, rc.conf syntax check), autosave, system reboot,
+  upgrade and system rollback on one VM
 - Add a pimssm lab: PIM-SSM with pimd, no RP and no BSR
 - Add an anycast lab: two DNS sites share one address, ExaBGP's
   healthcheck withdraws a site that stops answering, checked by
@@ -77,6 +80,75 @@
 - Raise kern.ipc.maxsockbuf to 32 MiB: FRR daemons got 8 MiB socket
   buffers instead of the 16 MiB requested and logged it on every start
 - system: fix a typo preventing system rollback
+- config: "config save <name>" no longer looks for an /etc/<name> file
+  ("tar: <name>: Cannot stat")
+- upgrade: an interrupted upgrade no longer leaves its lock behind, and a
+  refused second upgrade no longer removes the running one's lock
+- upgrade: refuse a truncated image (cut ssh stream) instead of booting
+  it, and aggregate pipe reads into full blocks before writing the disk
+- autosave: save in-place edits of existing /etc files, not only file
+  creations and removals; "service autosave stop" also stops it during a
+  save, and only kills its own fswatch
+- tenant: save the jail configuration after creating or deleting a jail
+  (a restarted autosave waited for the next /etc change, so the jail was
+  lost at reboot), and restart autosave after a delete
+- config save: fail (exit 1) when a file could not be saved (full /cfg),
+  and keep the previous archive until the new one is complete
+- config diff: report what config save would store: deleted files,
+  symlinks, new directories and mode or owner changes, not only content
+  changes of regular files (a reboot silently lost them)
+- config factory: archive the configuration first ("config rollback
+  factory" restores it), and clear the dot files in /cfg too
+- system reboot/halt: stop when the save the user asked for fails, abort
+  instead of looping forever without a terminal, and only syntax-check
+  rc.conf instead of running it
+- ngnetflow: ngnetflow_src binds the export socket (it was sent to the
+  netflow node, which refused it)
+- mpd5 if-down.sh example: fix the route removal (shell error)
+- rtrcache: skip malformed or out-of-range ROA lines instead of crashing
+  the reload thread, answer a malformed Serial Query with Corrupt Data,
+  and a router that stops reading no longer blocks notifies to the others
+- tenant: exact interface name match in the duplicate check (em1 vs
+  em10), collision-free epair names, clear errors for an invalid address
+  or a jail id too high for its MAC address, delete works with both
+  jail.conf layouts and removes the jail's configured path, a failed
+  create only removes what it created and restarts autosave
+- bird: write /var/run/bird.pid (bird_flags), so newsyslog's rotation
+  makes it reopen /var/log/bird.log
+- openvpn: /var/log/openvpn.log is now fed by syslogd and rotated without
+  restarting the tunnels
+- tuning: four inverted checks (tso, raw socket buffers, netisr queue)
+  now advise when needed, net.link.ifqmaxlen goes to loader.conf (a boot
+  tunable), the harvest_mask advice clears once applied, core count from
+  kern.smp.cores (no more abort on multi-CCX CPUs), interface flags are
+  appended to the existing ifconfig_<if>, AES-NI detected when compiled
+  in, cxgbe advice for every T4 to T7 card; advice for sysctls removed
+  with iflib (em/igb/ix process limits and queue counts) dropped
+- show disk: find the boot disk on GPT images; show process mem lists
+  per-process memory (it showed kernel malloc types); works without PAGER
+- nic-queue-usage: read the current ixl per-queue counters, count all
+  cxgbe TX packets and every TX queue; igb dropped (iflib exports no
+  per-queue packet counters)
+- equilibrium-noref: same fixes as equilibrium (result line always
+  printed, measured duration, tolerance, flow counts), and remove -u
+  (pkt-gen has no such option); both: correct the -o help (0.01 is 1%)
+- Remove the igb_affinity, ix_affinity and ixiflib_affinity rc scripts:
+  iflib already binds each queue interrupt to the CPU running its task
+  thread, and these scripts moved the interrupt alone, away from it
+  (ix_affinity also no longer matched anything). Use the iflib(4)
+  loader tunables dev.<driver>.<unit>.iflib.core_offset and
+  separate_txrx instead
+- chelsio_affinity: handle T4 and T7 cards; bxe, chelsio and
+  mlx5en_affinity: reject an avoidncpu or firstcpu that leaves no CPU,
+  accept 2-CPU systems; mlx5en_affinity wraps back to firstcpu, and no
+  longer mixes mlx5_core1 with mlx5_core1x
+- Remove dead files: rc.d/polling (no DEVICE_POLLING in the kernel),
+  rc.d/pim6dd and rc.d/pim6sd (no such packages), rc.d/pimdd (the
+  package ships its own), a net-snmp snmpd.conf (bsnmpd is used) and
+  ssmtp.conf (not shipped)
+- show mem: total from hw.realmem instead of a guess rounded from
+  hw.physmem, dirty laundry pages no longer counted as available, and
+  accurate field descriptions
 - Ship the missing QAT firmware
 - equilibrium: use the same number of IPv4 flows as IPv6
 - nuageinit: rebase the read-only root patch on upstream changes
@@ -91,6 +163,7 @@
 - fib_algo instances torn down again on rib destroy (no more leak or
   panic on vnet destroy)
 - fib_algo: respect immediate_sync in fd_ref_nhop
+- fib_algo: fix a nexthop reference leak on FLM_BATCH
 
 ### pf
 - First-match-wins for nat rules, even in anchors
@@ -103,6 +176,13 @@
 - pfctl: DIOCXBEGIN, DIOCXROLLBACK, DIOCXCOMMIT converted to netlink;
   `-l` to use an inherited Netlink socket
 - pfsync: better handling of large packets, mbuf leak and underflow fixes
+- Drop IPv6 fragmented packets whose first fragment does not carry the
+  whole header chain (RFC 7112 Section 5)
+- Fix nat46 ICMP handling and SCTP normalisation cleanup
+- route-to on the inbound pass no longer counts forwarded IPv6 packets
+  as input discards
+- pfsync: do not apply a stale destination peer from a state update
+- Stricter anchor name validation
 
 ### Drivers
 - bnxt: kTLS TX offload, RX timestamping, HW and host TX completion
@@ -153,6 +233,15 @@
 - tcp: BBR and RACK fixes, sender side SWS avoidance
 - ipfw_nat: fix a buffer length check in IP_FW_NAT44_XGETLOG
 - bsnmpd: SNMPv3 discovery and input validation hardening
+- netinet6: ip6_tryforward() keeps the next hop chosen by an ipfw fwd
+  rule, and decrements the hop limit before the outbound hooks (pf
+  route-to and reply-to no longer forward with the arrival hop limit)
+- netipsec: set the outer IPv6 flow label of tunnel mode packets from
+  the SA, so ECMP and lagg spread IPsec tunnels
+- if_epair: hash the IP header, not the Ethernet header, for queue
+  fanout (no more reordering within a flow)
+- ipfw: fix an off-by-one in the IP_FW_XADD rule count check
+- dummynet: validate object lengths in do_config()
 
 ## Upgraded packages
 * bird3: 3.3.2_1 -> 3.4.0_1
@@ -162,9 +251,10 @@
 * curl: 8.22.0 -> 8.23.0
 * expat: 2.8.4 -> 2.10.0
 * iperf: 2.2.1 -> 2.2.2
-* iperf3: 3.21 -> 3.22
+* iperf3: 3.21 -> 3.22.1
 * liblz4: 1.10.0_2,1 -> 1.11.1,1
 * libucl: 0.9.4 -> 0.10.0
+* monit: 6.0.0 -> 6.1.0
 * mstflint: 4.37.0.1 -> 4.38.0.1
 * nrpe: 4.1.3 -> 4.2.0
 * open-vm-kmod: 13.1.0.1600026,2 -> 13.1.0.1600031,2

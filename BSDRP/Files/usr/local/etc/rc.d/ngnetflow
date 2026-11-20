@@ -67,7 +67,7 @@ mkpeer netflow: ksocket export${version} inet/dgram/udp
 name netflow:export${version} netflow_export
 EOF
 	if [ -n "${ngnetflow_src}" ]; then
-		/usr/sbin/ngctl msg netflow: bind inet/${ngnetflow_src}
+		/usr/sbin/ngctl msg netflow:export${version} bind inet/${ngnetflow_src}
 	fi
 	/usr/sbin/ngctl -f- <<-EOF
 msg netflow: settimeouts { inactive = ${ngnetflow_inactimeout} active = ${ngnetflow_actimeout} }

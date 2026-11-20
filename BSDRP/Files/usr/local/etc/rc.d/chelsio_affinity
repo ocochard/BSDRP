@@ -10,7 +10,7 @@
 # Add the following lines to /etc/rc.conf.local or /etc/rc.conf
 # to enable this service:
 #
-# chelsio_affinity_enable (bool):   Set to YES by default.
+# chelsio_affinity_enable (bool):   Set to NO by default.
 #               Set it to YES to bind interrupt threads to different cores
 # chelsio_affinity_avoidncpu (int):  0 (none) by default.
 #	            Set to number of CPU to exclude from binding
@@ -25,7 +25,7 @@ rcvar=${name}_enable
 start_cmd="chelsio_affinity_start"
 
 bind_ports() {
-	# card_type example: t5nex|t6nex
+	# card_type example: t4nex|t5nex|t6nex|chnex
 	# card_index example: 0|1
 	card_type=$1
 	card_index=$2
@@ -40,7 +40,7 @@ bind_ports() {
 	echo "$card on numa-domain ${card_domain}"
 	# find ports
 	ports=$(/sbin/sysctl -n ${dev}.nports 2> /dev/null)
-	if [ -n $ports ]; then
+	if [ -n "$ports" ]; then
 		echo " $card has $ports ports"
 		# Iterate through ports on this card
 		for port in $(seq 0 $((ports - 1))); do
@@ -49,6 +49,9 @@ bind_ports() {
 			# cpuset output example: 0 1 2 3 4 5 6 7 8 9 10 11
 			CPUS=$(/usr/bin/cpuset -g -d $card_domain | sed 's/domain.*mask: //g;s/\,//g')
 			set $CPUS
+			if [ ${chelsio_affinity_avoidncpu} -ge $# ]; then
+				err 1 "chelsio_affinity_avoidncpu (${chelsio_affinity_avoidncpu}) must be lower than the $# CPUs of numa-domain ${card_domain}"
+			fi
 			if [ ${chelsio_affinity_avoidncpu} -ne 0 ]; then
 				for avoidcpu in $(seq 0 $((chelsio_affinity_avoidncpu - 1))); do
 					shift
@@ -60,6 +63,7 @@ bind_ports() {
 					# case when there are less CPU than IRQ/Queue (can this be possible?)
 					echo "    Warning: Less available CPU than queues to bind"
 					set $CPUS
+					shift ${chelsio_affinity_avoidncpu}
 				fi
 				echo "   Bind ${card}:${port}a IRQ ${irq} to CPU $1"
 				/usr/bin/cpuset -l $1 -x ${irq}
@@ -73,34 +77,42 @@ bind_ports() {
 }
 
 chelsio_affinity_start() {
-    # Need a Chelsio Card, search for T5 and T6 cards
-    Nt5=$(/sbin/sysctl -i dev.t5nex | grep -c nports)
-    Nt6=$(/sbin/sysctl -i dev.t6nex | grep -c nports)
+    # Need a Chelsio Card, search for T4, T5, T6 and T7 cards
+    ncards=0
+    for nexus in t4nex t5nex t6nex chnex; do
+        n=$(/sbin/sysctl -i dev.${nexus} | grep -c nports)
+        eval N${nexus}=${n}
+        ncards=$((ncards + n))
+        echo "# of ${nexus} cards: ${n}"
+    done
 
-    if [ $Nt5 -eq 0 ] && [ $Nt6 -eq 0 ]; then
+    if [ ${ncards} -eq 0 ]; then
         echo "No Chelsio card detected"
         exit 0
     fi
-    echo "# of T5 cards: $Nt5, # of T6 cards: $Nt6"
 
     # Minimum of 2 CPU mandatory
     NCPU=$(/sbin/sysctl -n hw.ncpu)
-    if [ ${NCPU} -le 2 ]; then
+    if [ ${NCPU} -lt 2 ]; then
         echo "Need 2 CPU minimum"
         exit 0
     fi
 
+    case "${chelsio_affinity_avoidncpu}" in
+    ''|*[!0-9]*)
+        err 1 "chelsio_affinity_avoidncpu must be a non-negative integer"
+        ;;
+    esac
+
     # iterate through cards and bind queues on every card/port/queue combo to cpus
-    if [ $Nt5 -gt 0 ]; then
-        for j in $(seq 0 $((Nt5 - 1))); do
-            bind_ports t5nex $j
-        done
-    fi
-    if [ $Nt6 -gt 0 ]; then
-        for j in $(seq 0 $((Nt6 - 1))); do
-            bind_ports t6nex $j
-        done
-    fi
+    for nexus in t4nex t5nex t6nex chnex; do
+        eval n=\${N${nexus}}
+        if [ ${n} -gt 0 ]; then
+            for j in $(seq 0 $((n - 1))); do
+                bind_ports ${nexus} $j
+            done
+        fi
+    done
 }
 
 load_rc_config $name

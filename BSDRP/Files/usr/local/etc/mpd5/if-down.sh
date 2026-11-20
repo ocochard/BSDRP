@@ -17,13 +17,13 @@
 # Returns: 0 on success, 1 on failure
 logger "$0 called with parameters: $@"
 remote_inet="1.1.1.0/24"
-remote_inet6="2001:db8:1::1 -prefixlen 64"
+remote_inet6="2001:db8:1:: -prefixlen 64"
 eval "
-	if ! route get -net -\$2 ${remote_$2}; then
-		logger "Route ${remote_inet} not in table"
+	if ! route get -net -\$2 \${remote_$2}; then
+		logger \"route \${remote_$2} not in table\"
 		return 0
 	else
-		cmd=\"route del \${remote_$2} \$4\"
+		cmd=\"route del -\$2 \${remote_$2} \$4\"
 	fi
 "
 if $cmd; then

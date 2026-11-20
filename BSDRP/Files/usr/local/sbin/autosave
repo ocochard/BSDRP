@@ -48,7 +48,8 @@ cleanup () {
 	rv=$?
 	if $lock_held; then
 		logger autosave stoping
-		pkill fswatch || true
+		# Only this instance's fswatch, not every fswatch on the system
+		pkill -P $$ -x fswatch || true
 		[ -d "$lock" ] && rm -rf "$lock"
 	fi
 	exit $rv
@@ -76,8 +77,10 @@ fi
 
 echo "Watching /etc for change..."
 # Need to exit fswatch once change detected for avoid multiple triggers
+# No -d: FreeBSD's kqueue monitor then watches directories only, and misses
+# every in-place edit (only file creation, removal or rename triggered it)
 while true; do
-	if fswatch -1dr /etc; then
+	if fswatch -1r /etc; then
 		logger autosave triggered
 		config save || logger autosave failed to save configuration
 	fi

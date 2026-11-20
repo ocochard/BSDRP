@@ -30,6 +30,7 @@ ERR_CORRUPT, ERR_INVALID_REQUEST, ERR_BAD_VERSION = 0, 3, 4
 ERR_BAD_PDU, ERR_UNEXPECTED_VERSION = 5, 8
 MAX_VERSION = 2
 HISTORY = 16
+SEND_TIMEOUT = 10
 
 
 def pdu(version, ptype, field, body=b""):
@@ -52,16 +53,26 @@ def error_pdu(version, code, text):
 
 
 def load_roas(path):
+    """ROAs of the file; a malformed line is skipped with a warning."""
     roas = set()
     with open(path) as f:
-        for line in f:
+        for lineno, line in enumerate(f, 1):
             fields = line.split("#")[0].split()
             if not fields:
                 continue
-            net = ipaddress.ip_network(fields[0])
-            maxlen, asn = int(fields[1]), int(fields[2])
-            if not net.prefixlen <= maxlen <= net.max_prefixlen:
-                raise ValueError("bad max-length in: " + line.strip())
+            try:
+                if len(fields) != 3:
+                    raise ValueError("expected: prefix max-length origin-AS")
+                net = ipaddress.ip_network(fields[0])
+                maxlen, asn = int(fields[1]), int(fields[2])
+                if not net.prefixlen <= maxlen <= net.max_prefixlen:
+                    raise ValueError("bad max-length")
+                if not 0 <= asn <= 0xffffffff:
+                    raise ValueError("bad origin AS")
+            except ValueError as e:
+                logging.warning("%s:%d: skipped (%s): %s", path, lineno, e,
+                                line.strip())
+                continue
             roas.add((net, maxlen, asn))
     return frozenset(roas)
 
@@ -98,8 +109,10 @@ class Cache:
             self.history.pop((self.serial - HISTORY) & 0xffffffff, None)
             logging.info("serial %d: %d ROAs", self.serial, len(roas))
             clients = list(self.clients)
+        # Each in its own thread: a router not reading its socket must not
+        # delay the notification of the others, nor the next reload
         for c in clients:
-            c.notify()
+            threading.Thread(target=c.notify, daemon=True).start()
 
     def watch(self):
         while True:
@@ -135,6 +148,8 @@ class Client:
         self.cache, self.sock, self.peer = cache, sock, peer
         self.version = None
         self.wlock = threading.Lock()
+        # Bound the sends: a router not reading its socket is dropped
+        self.sock.settimeout(SEND_TIMEOUT)
 
     def send(self, data):
         with self.wlock:
@@ -147,12 +162,21 @@ class Client:
             self.send(pdu(self.version, SERIAL_NOTIFY, self.cache.session,
                           struct.pack("!I", self.cache.serial)))
         except OSError:
-            pass
+            # Wake up and end the serve() thread, which closes the socket
+            try:
+                self.sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
 
     def recv(self, n):
         data = b""
         while len(data) < n:
-            chunk = self.sock.recv(n - len(data))
+            try:
+                chunk = self.sock.recv(n - len(data))
+            except TimeoutError:
+                # The timeout is for the sends: a router may stay silent
+                # until its next refresh
+                continue
             if not chunk:
                 raise EOFError
             data += chunk
@@ -195,7 +219,11 @@ class Client:
             if ptype == RESET_QUERY:
                 logging.info("%s reset query", self.peer)
                 self.send(self.cache.answer(version, None))
-            elif ptype == SERIAL_QUERY and len(body) == 4:
+            elif ptype == SERIAL_QUERY:
+                if len(body) != 4:
+                    self.send(error_pdu(version, ERR_CORRUPT,
+                                        "bad Serial Query length"))
+                    return
                 (serial,) = struct.unpack("!I", body)
                 logging.info("%s serial query %d", self.peer, serial)
                 if field != self.cache.session:

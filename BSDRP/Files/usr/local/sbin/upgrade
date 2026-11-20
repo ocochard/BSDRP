@@ -49,7 +49,6 @@ LOCK=/tmp/UPGRADE-LOCK
 die() {
 	echo -n "EXIT: " >&2
 	echo "$@" >&2
-	[ -f ${LOCK} ] && rm ${LOCK}
 	exit 1
 }
 
@@ -183,8 +182,22 @@ write_new_image() {
 		die "ERROR: Can't initialize destination partition ${BOOT_DEV}${NEXT_SLICE}"
 
 	# Copy in new system
-	dd of="${BOOT_DEV}${NEXT_SLICE}" bs=1M || \
+	# obs, not bs: bs writes each short read of the pipe (ssh) as is, and
+	# a disk refuses writes that are not a multiple of its sector size
+	dd of="${BOOT_DEV}${NEXT_SLICE}" obs=1m 2> /tmp/upgrade.dd || \
 		die "ERROR: Can't install the upgrade on ${BOOT_DEV}${NEXT_SLICE}"
+
+	# dd exits 0 on a truncated stream (cut ssh connection), and the old
+	# system left behind it would still pass fsck_ffs -n (which exits 0
+	# even on errors it does not fix): check that the whole new file
+	# system, as its superblock describes it, was written
+	written=$(awk '/bytes transferred/ {print $1}' /tmp/upgrade.dd)
+	fs_size=$(dumpfs -s "${BOOT_DEV}${NEXT_SLICE}" 2>/dev/null | \
+		awk '$1 == "ncg" {s = $4} $1 == "fsize" {f = $2} END {print s * f}')
+	[ "${fs_size:-0}" -gt 0 ] || \
+		die "ERROR: No valid file system in the upgrade image"
+	[ "${written:-0}" -ge "${fs_size}" ] || \
+		die "ERROR: Truncated upgrade image: ${written:-0} bytes received, file system needs ${fs_size}"
 
 	fsck_ffs -n "${BOOT_DEV}${NEXT_SLICE}" || \
 		die "ERROR: New file system ${BOOT_DEV}${NEXT_SLICE} check failed"
@@ -332,6 +345,10 @@ if [ -f ${LOCK} ]; then
 	die "Another upgrade already running"
 else
 	touch ${LOCK}
+	# Only the instance that created the lock removes it, on any exit:
+	# an interrupted upgrade used to leave it and block the next one
+	trap 'rm -f ${LOCK}' EXIT
+	trap 'exit 1' INT TERM
 fi
 
 case "${ARCH}" in
@@ -361,5 +378,3 @@ if [ -f /tmp/post-upgrade ]; then
 	# Execute post-upgrade script with new partition as parameter
 	sh ${DEBUG_PROPAGATE} /tmp/post-upgrade /dev/${NANO_DRIVE}${NEXT_LABEL_ID}
 fi
-
-[ -f ${LOCK} ] && rm ${LOCK}

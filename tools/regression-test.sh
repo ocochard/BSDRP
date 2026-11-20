@@ -11,8 +11,9 @@
 # blackhole against a DDoS), the "rpki" lab (5 VMs - RPKI route origin
 # validation on FRR and BIRD), the "accounting" lab (5 VMs - per-customer
 # traffic accounting with NetFlow and pmacct), the "ipv6only" lab (4 VMs -
-# IPv6-only access with NAT64, DNS64 and 464XLAT) and the "bng" lab (5 VMs
-# - PPPoE broadband gateway with DHCPv6 prefix delegation). Other labs
+# IPv6-only access with NAT64, DNS64 and 464XLAT), the "bng" lab (5 VMs
+# - PPPoE broadband gateway with DHCPv6 prefix delegation) and the "admin"
+# lab (1 VM - config, autosave, system and upgrade tools). Other labs
 # declared in tools/BSDRP-lab-bhyve.sh (frr, bgp, vpn, mlvpn, mlppp,
 # fairshape, jailpf, pimsm, pimssm, vrrp, etc.) have no assertions defined
 # here yet - running this driver against them will fail with "lab '<name>'
@@ -2103,11 +2104,190 @@ lab_rpki_failover() {
 		"route -n get 203.0.113.10 2>&1" 'gateway: 10\.0\.35\.5$' 30
 }
 
+# === admin lab ============================================================
+#
+# One VM, no network: BSDRP's own administration tools, driven over the
+# console. config (save, diff, rollback, lock, rc.conf syntax check),
+# autosave, system reboot, upgrade, then system rollback. Each action runs
+# once with console_run and logs to /tmp/regtest.* on the VM; the asserts
+# only read the result, so their retries never repeat an action. The steps
+# depend on each other and must stay in this order.
+#
+# The upgrade copies the running system partition onto the other one, as
+# "system resize-system-slice" does: it needs no second image, and the
+# booted partition (kenv vfs.root.mountfrom) proves the switch.
+
+# Run a command that reboots the VM, then wait for the new boot.
+# BSDRP-lab-bhyve.sh restarts bhyve on a guest reboot, so a new bhyve pid
+# means the VM went down. The console is left alone for a while after that:
+# console_run starts with Ctrl-C and CR, which would stop the loader's
+# 2 second autoboot or interrupt an rc script. The caller asserts on
+# /tmp/regtest.oldboot, gone with the old /tmp, that the reboot happened.
+admin_reboot() {
+	local vm="$1" nmdm="$2" cmd="$3" pid t=0
+	pid=$(pgrep -f "^bhyve: BSDRP_${vm}( |$)")
+	# The reboot kills the shell before the end marker: no output expected
+	console_run "$nmdm" "touch /tmp/regtest.oldboot; $cmd" >/dev/null || true
+	while [ "$(pgrep -f "^bhyve: BSDRP_${vm}( |$)")" = "$pid" ] && [ "$t" -lt 180 ]; do
+		sleep 2
+		t=$((t + 2))
+	done
+	sleep 45
+}
+
+lab_admin_vm1() {
+	local nmdm="$1"
+	local lock=/var/run/config.bsdrp.lock
+
+	assert 1 "hostname is admin" "$nmdm" "hostname" '^admin$'
+	assert 1 "labconfig saved the configuration" "$nmdm" \
+		"config diff quiet; echo rc=\$?" '^rc=0$'
+
+	# config save <name>: also keeps a named archive in /data/archives
+	console_run "$nmdm" "sysrc regtest_a=1 >/dev/null; config save snap1 > /tmp/regtest.save 2>&1; echo rc=\$? >> /tmp/regtest.save" 60 >/dev/null
+	assert 1 "config save snap1 succeeds" "$nmdm" \
+		"cat /tmp/regtest.save" '^rc=0$'
+	assert 1 "config save snap1 looks for no /etc/snap1" "$nmdm" \
+		"grep -c 'Cannot stat' /tmp/regtest.save" '^0$'
+	assert 1 "config save snap1 archives /data/archives/snap1.tar.xz" "$nmdm" \
+		"mount | grep -q ' /data ' || mount /data; ls -1 /data/archives; umount /data" '^snap1\.tar\.xz$'
+
+	# config rollback: restores /etc from the archive the last save made
+	console_run "$nmdm" "sysrc regtest_b=1 >/dev/null; config save >/dev/null 2>&1; config rollback > /tmp/regtest.rollback 2>&1; echo rc=\$? >> /tmp/regtest.rollback" 60 >/dev/null
+	assert 1 "config rollback succeeds" "$nmdm" \
+		"cat /tmp/regtest.rollback" '^rc=0$'
+	assert 1 "config rollback restores the previous save" "$nmdm" \
+		"echo a=\$(sysrc -n regtest_a) b=\$(sysrc -n regtest_b 2>/dev/null)" '^a=1 b=$'
+	console_run "$nmdm" "config save >/dev/null 2>&1" 60 >/dev/null
+
+	console_run "$nmdm" "echo x > /etc/regtest.unsaved" >/dev/null
+	assert 1 "config diff quiet reports an unsaved file" "$nmdm" \
+		"config diff quiet; echo rc=\$?" '^rc=1$'
+	assert 1 "config diff names the unsaved file" "$nmdm" \
+		"config diff" '^regtest\.unsaved$'
+	console_run "$nmdm" "rm /etc/regtest.unsaved" >/dev/null
+
+	# A deleted saved file and a mode change are differences too
+	console_run "$nmdm" "echo x > /etc/regtest.gone; config save >/dev/null 2>&1; rm /etc/regtest.gone" 60 >/dev/null
+	assert 1 "config diff reports a deleted saved file" "$nmdm" \
+		"config diff" '^regtest\.gone \(deleted\)$'
+	console_run "$nmdm" "config save >/dev/null 2>&1; chmod 600 /etc/rc.conf" 60 >/dev/null
+	assert 1 "config diff reports a mode change" "$nmdm" \
+		"config diff" '^rc\.conf$'
+	console_run "$nmdm" "chmod 644 /etc/rc.conf" >/dev/null
+	assert 1 "config diff clean again" "$nmdm" \
+		"config diff quiet; echo rc=\$?" '^rc=0$'
+
+	# A save refused because another instance holds the lock fails, and
+	# leaves that instance's lock in place
+	console_run "$nmdm" "mkdir $lock; config save > /tmp/regtest.lock 2>&1; echo rc=\$? >> /tmp/regtest.lock" 60 >/dev/null
+	assert 1 "config save refused while locked" "$nmdm" \
+		"cat /tmp/regtest.lock" '^rc=1$'
+	assert 1 "refused config save keeps the other instance's lock" "$nmdm" \
+		"ls -d $lock" "^${lock}\$"
+	console_run "$nmdm" "rmdir $lock" >/dev/null
+
+	console_run "$nmdm" "echo 'x=\"' > /etc/rc.conf.d/regtest; config save > /tmp/regtest.syntax 2>&1; echo rc=\$? >> /tmp/regtest.syntax; rm /etc/rc.conf.d/regtest" 60 >/dev/null
+	assert 1 "config save refuses an rc.conf.d file with a syntax error" "$nmdm" \
+		"cat /tmp/regtest.syntax" 'shell-syntax errors'
+	assert 1 "config save with a syntax error exits 1" "$nmdm" \
+		"cat /tmp/regtest.syntax" '^rc=1$'
+
+	# autosave: a second instance is refused without stopping the first
+	console_run "$nmdm" "service autosave onestart >/dev/null 2>&1; sleep 2; /usr/local/sbin/autosave > /tmp/regtest.auto 2>&1; echo rc=\$? >> /tmp/regtest.auto" 60 >/dev/null
+	assert 1 "second autosave instance refused" "$nmdm" \
+		"cat /tmp/regtest.auto" 'already running'
+	assert 1 "first autosave instance still watching /etc" "$nmdm" \
+		"pgrep -x fswatch" '^[0-9]+$'
+	console_run "$nmdm" "echo x > /etc/regtest.auto" >/dev/null
+	assert 1 "autosave saves a new file in /etc" "$nmdm" \
+		"config diff quiet; echo rc=\$?" '^rc=0$' 60
+	# An edit of an existing file: fswatch -d only saw creations and removals
+	console_run "$nmdm" "echo more >> /etc/regtest.auto" >/dev/null
+	assert 1 "autosave saves an in-place edit in /etc" "$nmdm" \
+		"config diff quiet; echo rc=\$?" '^rc=0$' 60
+	console_run "$nmdm" "service autosave onestop >/dev/null 2>&1" 60 >/dev/null
+	assert 1 "autosave stop leaves no fswatch nor lock" "$nmdm" \
+		"[ -z \"\$(pgrep -x fswatch)\" ] && [ ! -e /var/run/autosave.bsdrp.lock ] && echo STOPPED" '^STOPPED$'
+
+	# system reboot with an unsaved change: answer "n" to its save prompt.
+	# Only what config save stored in /cfg comes back.
+	console_run "$nmdm" "echo saved > /etc/regtest.saved; config save >/dev/null 2>&1; echo x > /etc/regtest.unsaved" 60 >/dev/null
+	admin_reboot 1 "$nmdm" "echo n | system reboot"
+	assert 1 "system reboot rebooted" "$nmdm" \
+		"[ -e /tmp/regtest.oldboot ] || echo NEWBOOT" '^NEWBOOT$' 180
+	assert 1 "saved file kept across reboot" "$nmdm" \
+		"cat /etc/regtest.saved" '^saved$'
+	assert 1 "saved rc.conf variable kept across reboot" "$nmdm" \
+		"sysrc -n regtest_a" '^1$'
+	assert 1 "unsaved file gone after reboot" "$nmdm" \
+		"ls /etc/regtest.unsaved 2>&1" 'No such file'
+
+	# upgrade: boot the other system partition, configuration kept
+	assert 1 "booted from system partition 1" "$nmdm" \
+		"kenv vfs.root.mountfrom" 'gpt/BSDRP1$'
+	# A cut stream must be refused before the boot partition changes
+	console_run "$nmdm" "head -c 100m /dev/gpt/BSDRP1 | upgrade > /tmp/regtest.upgcut 2>&1; echo rc=\$? >> /tmp/regtest.upgcut" 300 >/dev/null
+	assert 1 "truncated upgrade refused" "$nmdm" \
+		"cat /tmp/regtest.upgcut" 'Truncated upgrade image'
+	assert 1 "truncated upgrade exits 1" "$nmdm" \
+		"cat /tmp/regtest.upgcut" '^rc=1$'
+	assert 1 "truncated upgrade sets no bootme on partition 4" "$nmdm" \
+		"gpart list | awk '/Name:/ {n = \$3} /attrib: bootme/ {print n}' | grep -c 'p4\$'" '^0$'
+	assert 1 "truncated upgrade removes its lock" "$nmdm" \
+		"[ -e /tmp/UPGRADE-LOCK ] || echo NOLOCK" '^NOLOCK$'
+	# Detached: the next console_run's Ctrl-C would kill a foreground
+	# upgrade, and its dd can outlast any console timeout on a loaded host
+	console_run "$nmdm" "daemon -f sh -c 'cat /dev/gpt/BSDRP1 | upgrade > /tmp/regtest.upgrade 2>&1; echo rc=\$? >> /tmp/regtest.upgrade'" >/dev/null
+	assert 1 "upgrade succeeds" "$nmdm" \
+		"cat /tmp/regtest.upgrade" '^rc=0$' 900
+	assert 1 "upgrade reports completion" "$nmdm" \
+		"cat /tmp/regtest.upgrade" 'Upgrade complete'
+	assert 1 "upgrade moves bootme to partition 4" "$nmdm" \
+		"gpart list | awk '/Name:/ {n = \$3} /attrib: bootme/ {print n}'" 'p4$'
+	assert 1 "upgrade points / at gpt/BSDRP2 in fstab" "$nmdm" \
+		"grep ' / ' /etc/fstab" '^/dev/gpt/BSDRP2 '
+	admin_reboot 1 "$nmdm" "system reboot"
+	assert 1 "rebooted after upgrade" "$nmdm" \
+		"[ -e /tmp/regtest.oldboot ] || echo NEWBOOT" '^NEWBOOT$' 180
+	assert 1 "booted from system partition 2 after upgrade" "$nmdm" \
+		"kenv vfs.root.mountfrom" 'gpt/BSDRP2$'
+	assert 1 "configuration kept across upgrade" "$nmdm" \
+		"cat /etc/regtest.saved" '^saved$'
+
+	# system rollback: back to partition 1
+	console_run "$nmdm" "echo y | system rollback > /tmp/regtest.sysrb 2>&1; echo rc=\$? >> /tmp/regtest.sysrb" 120 >/dev/null
+	assert 1 "system rollback succeeds" "$nmdm" \
+		"cat /tmp/regtest.sysrb" '^rc=0$'
+	assert 1 "system rollback reports completion" "$nmdm" \
+		"cat /tmp/regtest.sysrb" 'rollback complete'
+	admin_reboot 1 "$nmdm" "system reboot"
+	assert 1 "rebooted after system rollback" "$nmdm" \
+		"[ -e /tmp/regtest.oldboot ] || echo NEWBOOT" '^NEWBOOT$' 180
+	assert 1 "booted from system partition 1 after system rollback" "$nmdm" \
+		"kenv vfs.root.mountfrom" 'gpt/BSDRP1$'
+	assert 1 "configuration kept across system rollback" "$nmdm" \
+		"cat /etc/regtest.saved" '^saved$'
+
+	# config factory: clears /cfg, after archiving it
+	console_run "$nmdm" "config factory > /tmp/regtest.factory 2>&1; echo rc=\$? >> /tmp/regtest.factory" 60 >/dev/null
+	assert 1 "config factory succeeds" "$nmdm" \
+		"cat /tmp/regtest.factory" '^rc=0$'
+	assert 1 "config factory archives the configuration first" "$nmdm" \
+		"mount | grep -q ' /data ' || mount /data; ls -1 /data/archives; umount /data" '^factory\.tar\.xz$'
+	assert 1 "config factory empties /cfg" "$nmdm" \
+		"mount /cfg; ls -A /cfg | grep -cv -e '^\.snap\$' -e '^lost+found\$'; umount /cfg" '^0$'
+	console_run "$nmdm" "config save >/dev/null 2>&1" 60 >/dev/null
+	assert 1 "config save restores the configuration after factory" "$nmdm" \
+		"config diff quiet; echo rc=\$?" '^rc=0$'
+}
+
 # === Lab metadata =========================================================
 
 lab_vm_count() {
 	case "$1" in
 		accounting) echo 5 ;;
+		admin)     echo 1 ;;
 		anycast)   echo 4 ;;
 		bng)       echo 5 ;;
 		branch)    echo 5 ;;
@@ -2159,8 +2339,8 @@ VM_COUNT=$(lab_vm_count "$LAB")
 [ "$VM_COUNT" -gt 0 ] || die "unsupported lab: $LAB"
 
 case "$LAB" in
-	accounting|full|anycast|bng|branch|ecmp|ipv6only|ixp|rpki|rtbh) ;;
-	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'full', 'anycast', 'bng', 'branch', 'ecmp', 'ipv6only', 'ixp', 'rpki' and 'rtbh' have them)" ;;
+	accounting|admin|full|anycast|bng|branch|ecmp|ipv6only|ixp|rpki|rtbh) ;;
+	*) die "lab '$LAB' has no assertions implemented yet (only 'accounting', 'admin', 'full', 'anycast', 'bng', 'branch', 'ecmp', 'ipv6only', 'ixp', 'rpki' and 'rtbh' have them)" ;;
 esac
 
 # --- Phase 0: launch the lab (unless --no-launch) ------------------------
